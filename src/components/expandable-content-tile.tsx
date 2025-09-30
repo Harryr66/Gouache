@@ -197,7 +197,7 @@ export function ExpandableContentTile({
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={artist.avatarUrl} />
+                    <AvatarImage src={artist.avatarUrl || undefined} />
                     <AvatarFallback>
                       <User className="h-8 w-8" />
                     </AvatarFallback>
