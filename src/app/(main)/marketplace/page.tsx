@@ -8,45 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Star, Heart, Filter, ChevronRight, ChevronLeft, ChevronDown } from 'lucide-react';
 import { ProductCard } from '@/components/shop/product-card';
+import { usePlaceholder } from '@/hooks/use-placeholder';
 
-// Generate SOMA placeholder URLs
-const generatePlaceholderUrl = (width: number = 300, height: number = 300) => {
-  // Default to light mode colors, will be overridden by theme detection
-  let backgroundColor = '#f8f9fa'; // very light gray
-  let textColor = '#6b7280'; // medium gray
-  
-  // Try to detect theme if we're in a browser environment
-  if (typeof window !== 'undefined') {
-    try {
-      // Check for explicit light/dark class
-      if (document.documentElement.classList.contains('dark')) {
-        backgroundColor = '#1f2937'; // dark gray
-        textColor = '#ffffff'; // white
-      } else if (document.documentElement.classList.contains('light')) {
-        backgroundColor = '#f8f9fa'; // very light gray
-        textColor = '#6b7280'; // medium gray
-      } else {
-        // No explicit theme class, check system preference
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          backgroundColor = '#1f2937'; // dark gray
-          textColor = '#ffffff'; // white
-        }
-        // Otherwise keep light mode defaults
-      }
-    } catch (error) {
-      // If theme detection fails, keep light mode defaults
-      console.warn('Theme detection failed, using light mode defaults:', error);
-    }
-  }
-  
-  return `data:image/svg+xml;base64,${btoa(`
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
-      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
-    </svg>
-  `)}`;
-};
 
 // Mock data for marketplace
 const mockProducts = [
@@ -311,6 +274,114 @@ export default function MarketplacePage() {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState('US');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  
+  // Use the placeholder hook for dynamic theme-aware placeholders
+  const placeholderUrl = usePlaceholder(300, 300);
+
+  // Mock data for marketplace - now using dynamic placeholder
+  const mockProducts = useMemo(() => [
+    {
+      id: '1',
+      title: 'Professional Oil Paint Set - 24 Colors',
+      price: 89.99,
+      originalPrice: 120.00,
+      currency: 'USD',
+      imageUrl: placeholderUrl,
+      rating: 4.8,
+      reviewCount: 1250,
+      category: 'Art Supplies',
+      subcategory: 'Oil Paints',
+      isWishlisted: false,
+      isOnSale: true,
+      tags: ['oil', 'paint', 'professional', 'artist'],
+      description: 'High-quality oil paint set perfect for professional artists',
+      seller: {
+        name: 'ArtSupply Pro',
+        rating: 4.9,
+        isVerified: true
+      }
+    },
+    {
+      id: '2',
+      title: 'Canvas Stretcher Bars - Set of 4',
+      price: 45.50,
+      currency: 'USD',
+      imageUrl: placeholderUrl,
+      rating: 4.6,
+      reviewCount: 890,
+      category: 'Art Supplies',
+      subcategory: 'Canvas',
+      isWishlisted: true,
+      isOnSale: false,
+      tags: ['canvas', 'stretcher', 'wood', 'professional'],
+      description: 'Premium pine stretcher bars for custom canvas sizes',
+      seller: {
+        name: 'Canvas Masters',
+        rating: 4.7,
+        isVerified: true
+      }
+    },
+    {
+      id: '3',
+      title: 'Watercolor Paper Pad - 140lb Cold Press',
+      price: 24.99,
+      currency: 'USD',
+      imageUrl: placeholderUrl,
+      rating: 4.9,
+      reviewCount: 2100,
+      category: 'Art Supplies',
+      subcategory: 'Paper & Surfaces',
+      isWishlisted: false,
+      isOnSale: false,
+      tags: ['watercolor', 'paper', 'cold press', 'professional'],
+      description: 'Professional-grade watercolor paper for serious artists',
+      seller: {
+        name: 'Paper Pro',
+        rating: 4.8,
+        isVerified: true
+      }
+    },
+    {
+      id: '4',
+      title: 'Professional Brush Set - 20 Brushes',
+      price: 89.99,
+      currency: 'USD',
+      imageUrl: placeholderUrl,
+      rating: 4.8,
+      reviewCount: 980,
+      category: 'Art Supplies',
+      subcategory: 'Brushes',
+      isWishlisted: false,
+      isOnSale: false,
+      tags: ['brushes', 'professional', 'synthetic', 'artist'],
+      description: 'Complete brush set for all painting techniques',
+      seller: {
+        name: 'Brush Masters',
+        rating: 4.9,
+        isVerified: true
+      }
+    },
+    {
+      id: '5',
+      title: 'Renaissance Art History Book',
+      price: 34.99,
+      currency: 'USD',
+      imageUrl: placeholderUrl,
+      rating: 4.9,
+      reviewCount: 320,
+      category: 'Books',
+      subcategory: 'Art History',
+      isWishlisted: false,
+      isOnSale: false,
+      tags: ['book', 'art history', 'renaissance', 'education'],
+      description: 'Comprehensive guide to Renaissance art and masters',
+      seller: {
+        name: 'Art Education Books',
+        rating: 4.8,
+        isVerified: true
+      }
+    }
+  ], [placeholderUrl]);
 
   const filteredProducts = useMemo(() => {
     let filtered = [...mockProducts];
