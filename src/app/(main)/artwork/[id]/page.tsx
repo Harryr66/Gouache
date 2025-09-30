@@ -18,8 +18,8 @@ const generatePlaceholderUrl = (width: number = 800, height: number = 800) => {
     (document.documentElement.classList.contains('light') || 
      !document.documentElement.classList.contains('dark'));
   
-  const backgroundColor = isLightMode ? '#f3f4f6' : '#1f2937'; // light gray or dark gray
-  const textColor = isLightMode ? '#000000' : '#ffffff'; // black or white
+  const backgroundColor = isLightMode ? '#f8f9fa' : '#1f2937'; // very light gray or dark gray
+  const textColor = isLightMode ? '#6b7280' : '#ffffff'; // medium gray or white
   
   return `data:image/svg+xml;base64,${btoa(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
@@ -36,8 +36,8 @@ const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150)
     (document.documentElement.classList.contains('light') || 
      !document.documentElement.classList.contains('dark'));
   
-  const backgroundColor = isLightMode ? '#f3f4f6' : '#1f2937'; // light gray or dark gray
-  const textColor = isLightMode ? '#000000' : '#ffffff'; // black or white
+  const backgroundColor = isLightMode ? '#f8f9fa' : '#1f2937'; // very light gray or dark gray
+  const textColor = isLightMode ? '#6b7280' : '#ffffff'; // medium gray or white
   
   return `data:image/svg+xml;base64,${btoa(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
