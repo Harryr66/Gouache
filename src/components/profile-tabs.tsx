@@ -325,7 +325,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
                 Follow artists you love to see their latest content and updates.
               </CardDescription>
               <Button asChild variant="gradient">
-                <a href="/discover">Discover Artists</a>
+                <a href="/discover">SOMA Discover</a>
               </Button>
             </CardContent>
           </Card>

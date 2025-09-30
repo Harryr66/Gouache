@@ -286,7 +286,7 @@ export default function DiscoverPage() {
       <div className="flex flex-col space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">Discover Artists</h1>
+          <h1 className="text-3xl font-bold">SOMA Discover</h1>
           <p className="text-muted-foreground">
             Explore amazing artworks from professional artists around the world
           </p>
