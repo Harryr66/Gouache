@@ -43,6 +43,10 @@ export function ExpandableContentTile({
 
   const isEpisode = 'videoUrl' in content;
   const episode = content as Episode;
+  const docuseries = content as Docuseries;
+  
+  // Get the artist from either episode or docuseries
+  const artist = isEpisode ? episode.artist : docuseries.featuredArtist;
 
   const handlePlay = () => {
     setIsPlaying(!isPlaying);
@@ -193,30 +197,30 @@ export function ExpandableContentTile({
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={content.artist.avatarUrl} />
+                    <AvatarImage src={artist.avatarUrl} />
                     <AvatarFallback>
                       <User className="h-8 w-8" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-lg font-semibold">{content.artist.name}</h3>
-                      {content.artist.isVerified && (
+                      <h3 className="text-lg font-semibold">{artist.name}</h3>
+                      {artist.isVerified && (
                         <Badge variant="secondary" className="text-xs">Verified</Badge>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
-                      {content.artist.bio || 'Artist bio coming soon...'}
+                      {artist.bio || 'Artist bio coming soon...'}
                     </p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{content.artist.followerCount.toLocaleString()} followers</span>
-                      <span>{content.artist.location}</span>
+                      <span>{artist.followerCount.toLocaleString()} followers</span>
+                      <span>{artist.location}</span>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       className="mt-3"
-                      onClick={() => window.open(`/profile/${content.artist.id}`, '_blank')}
+                      onClick={() => window.open(`/profile/${artist.id}`, '_blank')}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
                       View Profile
