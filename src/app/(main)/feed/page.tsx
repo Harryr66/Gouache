@@ -17,6 +17,17 @@ import {
   mockByCategory,
   mockDocuseries 
 } from '@/lib/streaming-data';
+
+// Generate SOMA placeholder URLs
+const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="#1f2937"/>
+      <text x="50%" y="45%" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+      <text x="50%" y="55%" text-anchor="middle" fill="#9ca3af" font-family="Arial, sans-serif" font-size="14">Content Loading</text>
+    </svg>
+  `)}`;
+};
 import { Docuseries, Episode } from '@/lib/types';
 import { Filter, X, Play } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
@@ -251,7 +262,7 @@ export default function FeedPage() {
         <div className="relative h-[80vh] min-h-[600px] overflow-hidden">
           <video
             src={mainEventEpisode.videoUrl}
-            poster={mainEventEpisode.thumbnailUrl || 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1920&h=1080&fit=crop'}
+            poster={mainEventEpisode.thumbnailUrl || generatePlaceholderUrl(1920, 1080)}
             className="w-full h-full object-cover"
             muted
             loop

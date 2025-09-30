@@ -1,5 +1,16 @@
 import { Docuseries, Episode, Artist } from './types';
 
+// Generate SOMA placeholder URLs
+const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="#1f2937"/>
+      <text x="50%" y="45%" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+      <text x="50%" y="55%" text-anchor="middle" fill="#9ca3af" font-family="Arial, sans-serif" font-size="14">Content Loading</text>
+    </svg>
+  `)}`;
+};
+
 // Mock Artists
 const mockArtists: Artist[] = [
   {
@@ -79,7 +90,7 @@ const mockEpisodes: Episode[] = [
     docuseriesId: 'ds-1',
     title: 'The Color of Emotion',
     description: 'Elena explores how different colors evoke specific emotions in her abstract paintings.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=600&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
     videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
     duration: 480, // 8 minutes
     episodeNumber: 1,
@@ -104,7 +115,7 @@ const mockEpisodes: Episode[] = [
     docuseriesId: 'ds-1',
     title: 'Finding Inspiration in Chaos',
     description: 'A deep dive into Elena\'s creative process and how she finds beauty in unexpected places.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=600&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
     videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4',
     duration: 720, // 12 minutes
     episodeNumber: 2,
@@ -129,7 +140,7 @@ const mockEpisodes: Episode[] = [
     docuseriesId: 'ds-2',
     title: 'Digital Dreams',
     description: 'Marcus takes us through his digital art creation process using cutting-edge technology.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=600&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
     videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
     duration: 600, // 10 minutes
     episodeNumber: 1,
@@ -154,7 +165,7 @@ const mockEpisodes: Episode[] = [
     docuseriesId: 'ds-3',
     title: 'Clay and Soul',
     description: 'Sophia demonstrates her ceramic sculpting techniques and the meditative quality of working with clay.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=600&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
     videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4',
     duration: 900, // 15 minutes
     episodeNumber: 1,
@@ -179,7 +190,7 @@ const mockEpisodes: Episode[] = [
     docuseriesId: 'ds-4',
     title: 'Bridging Worlds',
     description: 'Alex shows how he combines traditional painting techniques with digital tools.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=600&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
     videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
     duration: 660, // 11 minutes
     episodeNumber: 1,
@@ -207,8 +218,8 @@ export const mockDocuseries: Docuseries[] = [
     id: 'ds-1',
     title: 'Abstract Expressions',
     description: 'Follow Elena Vance as she explores the depths of abstract painting, revealing the emotional journey behind each brushstroke and the stories that colors tell.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=600&fit=crop',
-    bannerUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1200&h=675&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
+    bannerUrl: generatePlaceholderUrl(1200, 675),
     featuredArtist: mockArtists[0],
     category: 'Traditional Art',
     genre: 'Documentary',
@@ -230,8 +241,8 @@ export const mockDocuseries: Docuseries[] = [
     id: 'ds-2',
     title: 'Digital Visions',
     description: 'Marcus Chen takes us on a journey through the digital art landscape, showcasing how technology is reshaping the boundaries of artistic expression.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=600&fit=crop',
-    bannerUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=675&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
+    bannerUrl: generatePlaceholderUrl(1200, 675),
     featuredArtist: mockArtists[1],
     category: 'Digital Art',
     genre: 'Behind the Scenes',
@@ -253,8 +264,8 @@ export const mockDocuseries: Docuseries[] = [
     id: 'ds-3',
     title: 'Sculpting Stories',
     description: 'Sophia Rodriguez shares her intimate relationship with clay, exploring how sculpture becomes a form of storytelling and emotional expression.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=600&fit=crop',
-    bannerUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=675&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
+    bannerUrl: generatePlaceholderUrl(1200, 675),
     featuredArtist: mockArtists[2],
     category: 'Sculpture',
     genre: 'Process',
@@ -276,8 +287,8 @@ export const mockDocuseries: Docuseries[] = [
     id: 'ds-4',
     title: 'Hybrid Horizons',
     description: 'Alex Kim demonstrates the fusion of traditional and digital art, creating a new language of visual expression that bridges past and future.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=600&fit=crop',
-    bannerUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1200&h=675&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
+    bannerUrl: generatePlaceholderUrl(1200, 675),
     featuredArtist: mockArtists[3],
     category: 'Mixed Media',
     genre: 'Tutorial',
@@ -299,8 +310,8 @@ export const mockDocuseries: Docuseries[] = [
     id: 'ds-5',
     title: 'Watercolor Dreams',
     description: 'A serene journey through watercolor techniques and the meditative process of painting with this delicate medium.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=600&fit=crop',
-    bannerUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1200&h=675&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
+    bannerUrl: generatePlaceholderUrl(1200, 675),
     featuredArtist: mockArtists[0],
     category: 'Traditional Art',
     genre: 'Tutorial',
@@ -322,8 +333,8 @@ export const mockDocuseries: Docuseries[] = [
     id: 'ds-6',
     title: 'Street Art Revolution',
     description: 'Exploring the vibrant world of street art and its impact on urban culture and social movements.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=600&fit=crop',
-    bannerUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=675&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
+    bannerUrl: generatePlaceholderUrl(1200, 675),
     featuredArtist: mockArtists[1],
     category: 'Street Art',
     genre: 'Documentary',
@@ -345,8 +356,8 @@ export const mockDocuseries: Docuseries[] = [
     id: 'ds-7',
     title: 'Charcoal Portraits',
     description: 'Master the art of charcoal drawing with detailed techniques for creating stunning portraits and figures.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=600&fit=crop',
-    bannerUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1200&h=675&fit=crop',
+    thumbnailUrl: generatePlaceholderUrl(400, 600),
+    bannerUrl: generatePlaceholderUrl(1200, 675),
     featuredArtist: mockArtists[2],
     category: 'Traditional Art',
     genre: 'Tutorial',
