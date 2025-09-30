@@ -6,6 +6,7 @@ import { ContentRow } from '@/components/content-row';
 import { DocuseriesCard } from '@/components/docuseries-card';
 import { EpisodeCard } from '@/components/episode-card';
 import { LoadingTransition } from '@/components/loading-transition';
+import { ExpandableContentTile } from '@/components/expandable-content-tile';
 import { useWatchlist } from '@/providers/watchlist-provider';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,10 +21,18 @@ import {
 
 // Generate SOMA placeholder URLs
 const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
+  // Check if we're in light mode by looking at the document's class or theme
+  const isLightMode = typeof window !== 'undefined' && 
+    (document.documentElement.classList.contains('light') || 
+     !document.documentElement.classList.contains('dark'));
+  
+  const backgroundColor = isLightMode ? '#f3f4f6' : '#1f2937'; // light gray or dark gray
+  const textColor = isLightMode ? '#000000' : '#ffffff'; // black or white
+  
   return `data:image/svg+xml;base64,${btoa(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="#1f2937"/>
-      <text x="50%" y="50%" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+      <rect width="100%" height="100%" fill="${backgroundColor}"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
     </svg>
   `)}`;
 };
@@ -82,6 +91,7 @@ export default function FeedPage() {
   const [currentVideo, setCurrentVideo] = useState<Episode | null>(null);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [expandedContent, setExpandedContent] = useState<Episode | Docuseries | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { addToWatchlist, getContinueWatching, isInWatchlist, getWatchProgress } = useWatchlist();
 
@@ -145,33 +155,13 @@ export default function FeedPage() {
     return url;
   };
 
-  const handlePlay = (item: Docuseries | Episode) => {
-    console.log('Playing:', item.title);
-    
-    // If it's an Episode, play the video
-    if ('videoUrl' in item) {
-      const episode = item as Episode;
-      console.log('Original video URL:', episode.videoUrl);
-      
-      // Convert Google Drive URL if needed
-      const convertedUrl = convertGoogleDriveUrl(episode.videoUrl);
-      console.log('Converted video URL:', convertedUrl);
-      
-      // Create episode with converted URL
-      const episodeWithConvertedUrl = {
-        ...episode,
-        videoUrl: convertedUrl
-      };
-      
-      setCurrentVideo(episodeWithConvertedUrl);
-      setShowVideoPlayer(true);
-      setVideoError(null);
-      setIsPlaying(true);
-    } else {
-      // For Docuseries, just log for now
-      console.log('Docuseries play not implemented yet');
-      setIsPlaying(true);
-    }
+  const handleExpand = (content: Episode | Docuseries) => {
+    console.log('Expanding content:', content.title);
+    setExpandedContent(content);
+  };
+
+  const handleCloseExpanded = () => {
+    setExpandedContent(null);
   };
 
   const handleManualPlay = async () => {
@@ -360,6 +350,7 @@ export default function FeedPage() {
           onItemClick={handlePlay}
           onAddToWatchlist={handleAddToWatchlist}
           getWatchProgress={getWatchProgress}
+          onExpand={handleExpand}
         />
 
         {/* Recently Added Episodes */}
@@ -377,6 +368,7 @@ export default function FeedPage() {
               onAddToWatchlist={handleAddToWatchlist}
               isInWatchlist={isInWatchlist}
               getWatchProgress={getWatchProgress}
+              onExpand={handleExpand}
             />
           );
         })()}
@@ -392,6 +384,7 @@ export default function FeedPage() {
             onItemClick={handlePlay}
             onAddToWatchlist={handleAddToWatchlist}
             isInWatchlist={isInWatchlist}
+            onExpand={handleExpand}
           />
         )}
 
@@ -407,6 +400,7 @@ export default function FeedPage() {
             onAddToWatchlist={handleAddToWatchlist}
             isInWatchlist={isInWatchlist}
             getWatchProgress={getWatchProgress}
+            onExpand={handleExpand}
           />
         )}
       </div>
@@ -502,6 +496,14 @@ export default function FeedPage() {
         </div>
       )}
         </>
+      )}
+
+      {/* Expandable Content Tile */}
+      {expandedContent && (
+        <ExpandableContentTile
+          content={expandedContent}
+          onClose={handleCloseExpanded}
+        />
       )}
     </div>
   );

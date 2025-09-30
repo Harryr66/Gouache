@@ -18,6 +18,7 @@ interface EpisodeCardProps {
   className?: string;
   onPlay?: (episode: Episode) => void;
   onAddToWatchlist?: (docuseriesId: string) => void;
+  onExpand?: (episode: Episode) => void;
 }
 
 export function EpisodeCard({
@@ -28,7 +29,8 @@ export function EpisodeCard({
   progress = 0,
   className,
   onPlay,
-  onAddToWatchlist
+  onAddToWatchlist,
+  onExpand
 }: EpisodeCardProps) {
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -48,7 +50,10 @@ export function EpisodeCard({
 
   if (variant === 'compact') {
     return (
-      <Card className={cn('group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer', className)}>
+      <Card 
+        className={cn('group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer', className)}
+        onClick={() => onExpand?.(episode)}
+      >
         <div className="relative aspect-video overflow-hidden">
           {episode.thumbnailUrl ? (
             <img
@@ -101,7 +106,10 @@ export function EpisodeCard({
 
   if (variant === 'featured') {
     return (
-      <Card className={cn('group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer', className)}>
+      <Card 
+        className={cn('group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer', className)}
+        onClick={() => onExpand?.(episode)}
+      >
         <div className="relative aspect-video overflow-hidden">
           {episode.thumbnailUrl ? (
             <img
@@ -161,7 +169,10 @@ export function EpisodeCard({
 
   // Default variant
   return (
-    <Card className={cn('group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer', className)}>
+    <Card 
+      className={cn('group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer', className)}
+      onClick={() => onExpand?.(episode)}
+    >
       <div className="relative aspect-video overflow-hidden">
         <img
           src={episode.thumbnailUrl}
