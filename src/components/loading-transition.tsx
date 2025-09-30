@@ -14,7 +14,11 @@ export function LoadingTransition() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h1 className="text-6xl md:text-8xl font-bold text-white">
+          <h1 className="text-4xl md:text-6xl font-bold text-white drop-shadow-lg" 
+              style={{
+                textShadow: '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.1)',
+                filter: 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.2))'
+              }}>
             SOMA
           </h1>
         </motion.div>
@@ -44,16 +48,6 @@ export function LoadingTransition() {
             />
           </div>
         </motion.div>
-        
-        {/* Loading Text */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          className="text-white/70 text-lg mt-4"
-        >
-          Loading your art experience...
-        </motion.p>
       </div>
     </div>
   );
