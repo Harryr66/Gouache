@@ -5,6 +5,7 @@ import { FeaturedHero } from '@/components/featured-hero';
 import { ContentRow } from '@/components/content-row';
 import { DocuseriesCard } from '@/components/docuseries-card';
 import { EpisodeCard } from '@/components/episode-card';
+import { LoadingTransition } from '@/components/loading-transition';
 import { useWatchlist } from '@/providers/watchlist-provider';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +68,7 @@ export default function FeedPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [realEpisodes, setRealEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [minLoadingComplete, setMinLoadingComplete] = useState(false);
   const [currentVideo, setCurrentVideo] = useState<Episode | null>(null);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
@@ -99,15 +101,29 @@ export default function FeedPage() {
         console.log('Fetched episodes from Firestore:', episodes);
         console.log('Number of episodes:', episodes.length);
         setRealEpisodes(episodes);
-        setLoading(false);
+        
+        // Set minimum loading time to 1.5 seconds for smooth transition
+        setTimeout(() => {
+          setMinLoadingComplete(true);
+        }, 1500);
+        
       } catch (error) {
         console.error('Error fetching episodes:', error);
-        setLoading(false);
+        setTimeout(() => {
+          setMinLoadingComplete(true);
+        }, 1500);
       }
     };
 
     fetchEpisodes();
   }, []);
+
+  // Update loading state when both data is loaded and minimum time has passed
+  useEffect(() => {
+    if (minLoadingComplete) {
+      setLoading(false);
+    }
+  }, [minLoadingComplete]);
 
   const convertGoogleDriveUrl = (url: string) => {
     // Google Drive URLs don't work for video playback due to CORS restrictions
@@ -224,8 +240,14 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Featured Hero Section */}
-      {mainEventEpisode ? (
+      {/* Loading Transition */}
+      {loading && <LoadingTransition />}
+      
+      {/* Main Content */}
+      {!loading && (
+        <>
+          {/* Featured Hero Section */}
+          {mainEventEpisode ? (
         <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
           <video
             src={mainEventEpisode.videoUrl}
@@ -482,6 +504,8 @@ export default function FeedPage() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
