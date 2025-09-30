@@ -456,8 +456,7 @@ export default function AdminPanel() {
           return `data:image/svg+xml;base64,${btoa(`
             <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
               <rect width="100%" height="100%" fill="#1f2937"/>
-              <text x="50%" y="45%" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
-              <text x="50%" y="55%" text-anchor="middle" fill="#9ca3af" font-family="Arial, sans-serif" font-size="14">Content Loading</text>
+              <text x="50%" y="50%" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
             </svg>
           `)}`;
         };
