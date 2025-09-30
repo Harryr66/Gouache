@@ -371,20 +371,6 @@ export default function FeedPage() {
           );
         })()}
 
-        {/* Trending Now */}
-        {filteredContent.trending.length > 0 && (
-          <ContentRow
-            title="Trending Now"
-            subtitle="What's popular this week"
-            items={filteredContent.trending}
-            type="docuseries"
-            variant="default"
-            onItemClick={handlePlay}
-            onAddToWatchlist={handleAddToWatchlist}
-            isInWatchlist={isInWatchlist}
-          />
-        )}
-
         {/* New Releases */}
         {filteredContent.newReleases.length > 0 && (
           <ContentRow
