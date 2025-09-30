@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Star, Heart, Filter, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Search, Star, Heart, Filter, ChevronRight, ChevronLeft, ChevronDown } from 'lucide-react';
 import { ProductCard } from '@/components/shop/product-card';
 
 // Generate SOMA placeholder URLs
@@ -310,6 +310,7 @@ export default function MarketplacePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState('US');
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const filteredProducts = useMemo(() => {
     let filtered = [...mockProducts];
@@ -368,6 +369,18 @@ export default function MarketplacePage() {
         ? prev.filter(id => id !== productId)
         : [...prev, productId]
     );
+  };
+
+  const toggleCategoryExpansion = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
   };
 
   const selectedCategoryData = categories.find(cat => cat.id === selectedCategory);
@@ -436,34 +449,55 @@ export default function MarketplacePage() {
             <div className="bg-card rounded-lg border border-border p-4">
               <h3 className="font-semibold mb-4 text-card-foreground">Department</h3>
               <div className="space-y-2">
-                {categories.map((category) => (
-                  <div key={category.id}>
-                    <Button
-                      variant={selectedCategory === category.id ? "default" : "ghost"}
-                      className="w-full justify-start h-auto p-2 text-sm"
-                      onClick={() => {
-                        setSelectedCategory(category.id);
-                        setSelectedSubcategory('all');
-                      }}
-                    >
-                      {category.name}
-                    </Button>
-                    {selectedCategory === category.id && category.subcategories.length > 0 && (
-                      <div className="ml-4 mt-2 space-y-1">
-                        {category.subcategories.map((subcategory) => (
+                {categories.map((category) => {
+                  const isExpanded = expandedCategories.has(category.id);
+                  const isSelected = selectedCategory === category.id;
+                  
+                  return (
+                    <div key={category.id}>
+                      <div className="flex items-center">
+                        <Button
+                          variant={isSelected ? "default" : "ghost"}
+                          className="flex-1 justify-start h-auto p-2 text-sm"
+                          onClick={() => {
+                            setSelectedCategory(category.id);
+                            setSelectedSubcategory('all');
+                          }}
+                        >
+                          {category.name}
+                        </Button>
+                        {category.subcategories.length > 0 && (
                           <Button
-                            key={subcategory.id}
-                            variant={selectedSubcategory === subcategory.id ? "secondary" : "ghost"}
-                            className="w-full justify-start h-auto p-2 text-xs"
-                            onClick={() => setSelectedSubcategory(subcategory.id)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 ml-1"
+                            onClick={() => toggleCategoryExpansion(category.id)}
                           >
-                            {subcategory.name}
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
                           </Button>
-                        ))}
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {isExpanded && category.subcategories.length > 0 && (
+                        <div className="ml-4 mt-2 space-y-1">
+                          {category.subcategories.map((subcategory) => (
+                            <Button
+                              key={subcategory.id}
+                              variant={selectedSubcategory === subcategory.id ? "secondary" : "ghost"}
+                              className="w-full justify-start h-auto p-2 text-xs"
+                              onClick={() => setSelectedSubcategory(subcategory.id)}
+                            >
+                              {subcategory.name}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
