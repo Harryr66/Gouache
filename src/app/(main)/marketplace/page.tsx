@@ -515,8 +515,8 @@ export default function MarketplacePage() {
 
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar */}
-          <div className="w-full lg:w-64 flex-shrink-0">
+          {/* Sidebar - Hidden on mobile, shown on desktop */}
+          <div className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-card rounded-lg border border-border p-4">
               <h3 className="font-semibold mb-4 text-card-foreground">Department</h3>
               <div className="space-y-2">
@@ -573,6 +573,47 @@ export default function MarketplacePage() {
             </div>
           </div>
 
+          {/* Mobile Category Filter */}
+          <div className="lg:hidden mb-4">
+            <div className="bg-card rounded-lg border border-border p-4">
+              <h3 className="font-semibold mb-3 text-card-foreground">Categories</h3>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((category) => (
+                  <Button
+                    key={category.id}
+                    variant={selectedCategory === category.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCategory(category.id);
+                      setSelectedSubcategory('all');
+                    }}
+                    className="text-xs"
+                  >
+                    {category.name}
+                  </Button>
+                ))}
+              </div>
+              {selectedCategory !== 'art-supplies' && (
+                <div className="mt-3">
+                  <h4 className="text-sm font-medium mb-2">Subcategories</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.find(cat => cat.id === selectedCategory)?.subcategories.map((subcategory) => (
+                      <Button
+                        key={subcategory.id}
+                        variant={selectedSubcategory === subcategory.id ? "secondary" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedSubcategory(subcategory.id)}
+                        className="text-xs"
+                      >
+                        {subcategory.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Main Content */}
           <div className="flex-1">
             {/* Page Header */}
@@ -580,32 +621,33 @@ export default function MarketplacePage() {
               <h2 className="text-2xl font-bold text-foreground mb-2">
                 {selectedCategoryData?.name || categories[0]?.name || 'Art Supplies'}
               </h2>
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                <p className="text-muted-foreground text-sm">
                   {filteredProducts.length} products found
                 </p>
-                <div className="flex items-center gap-4">
-          <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-48">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-full sm:w-48 text-sm">
                       <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
+                    </SelectTrigger>
+                    <SelectContent>
                       {sortOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     variant="outline"
                     onClick={() => setShowFilters(!showFilters)}
+                    className="w-full sm:w-auto text-sm"
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
                   </Button>
-        </div>
-          </div>
+                </div>
+              </div>
         </div>
 
             {/* Featured Sections */}
@@ -620,7 +662,7 @@ export default function MarketplacePage() {
                         See more
                       </Button>
                     </div>
-                    <div className="grid grid-cols-6 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
                       {mostWishedFor.map((product) => (
                         <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                           <CardContent className="p-0">
@@ -668,7 +710,7 @@ export default function MarketplacePage() {
                       See more
                     </Button>
           </div>
-                  <div className="grid grid-cols-6 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
                     {fourStarsAndAbove.map((product) => (
                       <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                         <CardContent className="p-0">

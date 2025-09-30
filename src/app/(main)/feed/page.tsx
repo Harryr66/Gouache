@@ -298,7 +298,7 @@ export default function FeedPage() {
         <>
           {/* Featured Hero Section */}
           {mainEventEpisode ? (
-        <div className="relative h-[80vh] min-h-[600px] overflow-hidden">
+        <div className="relative h-[60vh] sm:h-[70vh] md:h-[80vh] min-h-[400px] sm:min-h-[500px] md:min-h-[600px] overflow-hidden">
           <video
             src={mainEventEpisode.videoUrl}
             poster={mainEventEpisode.thumbnailUrl || generatePlaceholderUrl(1920, 1080)}
@@ -308,18 +308,19 @@ export default function FeedPage() {
             playsInline
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white">
             <div className="max-w-4xl mx-auto">
-              <h1 className="text-4xl md:text-6xl font-bold mb-4">{mainEventEpisode.title}</h1>
-              <p className="text-lg md:text-xl mb-6 opacity-90 max-w-2xl">{mainEventEpisode.description}</p>
-              <div className="flex gap-4">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-2 sm:mb-4">{mainEventEpisode.title}</h1>
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl mb-4 sm:mb-6 opacity-90 max-w-2xl">{mainEventEpisode.description}</p>
+              <div className="flex gap-2 sm:gap-4">
                 <Button
-                  size="lg"
+                  size="sm"
                   variant="gradient"
                   onClick={() => handlePlay(mainEventEpisode)}
+                  className="sm:size-lg"
                 >
-                  <Play className="h-5 w-5 mr-2" />
-                  Play Now
+                  <Play className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                  <span className="text-sm sm:text-base">Play Now</span>
                 </Button>
               </div>
             </div>

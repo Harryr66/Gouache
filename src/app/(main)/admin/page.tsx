@@ -659,42 +659,42 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Admin Panel</h1>
-        <p className="text-muted-foreground">Manage artist account requests</p>
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold">Admin Panel</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Manage artist account requests</p>
       </div>
 
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
-          <TabsTrigger value="pending" className="text-xs sm:text-sm">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 h-auto">
+          <TabsTrigger value="pending" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             <span className="hidden sm:inline">Pending</span>
             <span className="sm:hidden">Pending</span>
             <span className="ml-1">({pendingRequests.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="approved" className="text-xs sm:text-sm">
+          <TabsTrigger value="approved" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             <span className="hidden sm:inline">Approved</span>
             <span className="sm:hidden">Approved</span>
             <span className="ml-1">({approvedRequests.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="rejected" className="text-xs sm:text-sm">
+          <TabsTrigger value="rejected" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             <span className="hidden sm:inline">Rejected</span>
             <span className="sm:hidden">Rejected</span>
             <span className="ml-1">({rejectedRequests.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="advertising" className="text-xs sm:text-sm">
+          <TabsTrigger value="advertising" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             <Megaphone className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Advertising</span>
             <span className="sm:hidden">Ads</span>
             <span className="ml-1">({advertisingApplications.filter(app => app.status === 'pending').length})</span>
           </TabsTrigger>
-          <TabsTrigger value="episodes" className="text-xs sm:text-sm">
+          <TabsTrigger value="episodes" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             <Video className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Episodes</span>
             <span className="sm:hidden">Videos</span>
             <span className="ml-1">({episodes.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="video-upload" className="text-xs sm:text-sm">
+          <TabsTrigger value="video-upload" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Upload</span>
             <span className="sm:hidden">Upload</span>

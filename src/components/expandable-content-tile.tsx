@@ -84,7 +84,7 @@ export function ExpandableContentTile({
         initial={{ scale: 0.9 }}
         animate={{ scale: 1 }}
         exit={{ scale: 0.9 }}
-        className="bg-background rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+        className="bg-background rounded-lg max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl mx-2 sm:mx-0"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
@@ -109,7 +109,7 @@ export function ExpandableContentTile({
           </Button>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+        <div className="overflow-y-auto max-h-[calc(95vh-80px)] sm:max-h-[calc(90vh-80px)]">
           {/* Episode Player Section */}
           {isEpisode && (
             <div className="relative bg-black">
