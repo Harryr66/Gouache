@@ -21,18 +21,11 @@ import {
 
 // Generate SOMA placeholder URLs
 const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
-  // Check if we're in light mode by looking at the document's class or theme
-  const isLightMode = typeof window !== 'undefined' && 
-    (document.documentElement.classList.contains('light') || 
-     !document.documentElement.classList.contains('dark'));
-  
-  const backgroundColor = isLightMode ? '#f8f9fa' : '#1f2937'; // very light gray or dark gray
-  const textColor = isLightMode ? '#6b7280' : '#ffffff'; // medium gray or white
-  
+  // Use CSS custom properties that will adapt to theme changes
   return `data:image/svg+xml;base64,${btoa(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="${backgroundColor}"/>
-      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+      <rect width="100%" height="100%" fill="var(--muted)" stroke="var(--border)" stroke-width="1"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="var(--muted-foreground)" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
     </svg>
   `)}`;
 };
