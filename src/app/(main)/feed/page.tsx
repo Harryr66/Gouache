@@ -248,7 +248,7 @@ export default function FeedPage() {
         <>
           {/* Featured Hero Section */}
           {mainEventEpisode ? (
-        <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
+        <div className="relative h-[80vh] min-h-[600px] overflow-hidden">
           <video
             src={mainEventEpisode.videoUrl}
             poster={mainEventEpisode.thumbnailUrl || 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1920&h=1080&fit=crop'}
