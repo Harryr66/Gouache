@@ -3,6 +3,24 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Artist } from '@/lib/types';
 
+// Generate SOMA avatar placeholder URLs
+const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
+  // Check if we're in light mode by looking at the document's class or theme
+  const isLightMode = typeof window !== 'undefined' && 
+    (document.documentElement.classList.contains('light') || 
+     !document.documentElement.classList.contains('dark'));
+  
+  const backgroundColor = isLightMode ? '#f3f4f6' : '#1f2937'; // light gray or dark gray
+  const textColor = isLightMode ? '#000000' : '#ffffff'; // black or white
+  
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="${backgroundColor}"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="24" font-weight="bold">SOMA</text>
+    </svg>
+  `)}`;
+};
+
 interface FollowContextType {
   followedArtists: Artist[];
   followArtist: (artistId: string) => void;
@@ -32,7 +50,7 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
           id: 'artist-1',
           name: 'Elena Vance',
           handle: 'elena_vance',
-          avatarUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+          avatarUrl: generateAvatarPlaceholderUrl(150, 150),
           bio: 'Abstract expressionist painter exploring the intersection of color and emotion.',
           followerCount: 1250,
           followingCount: 89,
@@ -49,7 +67,7 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
           id: 'artist-2',
           name: 'Marcus Chen',
           handle: 'marcus_chen',
-          avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+          avatarUrl: generateAvatarPlaceholderUrl(150, 150),
           bio: 'Digital artist creating futuristic cityscapes and urban narratives.',
           followerCount: 2100,
           followingCount: 156,
@@ -79,7 +97,7 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
       id: artistId,
       name: `Artist ${artistId}`,
       handle: `artist_${artistId}`,
-      avatarUrl: `https://images.unsplash.com/photo-${1500000000000 + Math.random() * 1000000000}?w=150&h=150&fit=crop&crop=face`,
+      avatarUrl: generateAvatarPlaceholderUrl(150, 150),
       bio: 'Artist bio',
       followerCount: Math.floor(Math.random() * 10000),
       followingCount: Math.floor(Math.random() * 1000),

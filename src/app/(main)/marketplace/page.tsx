@@ -9,6 +9,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, Star, Heart, Filter, ChevronRight, ChevronLeft } from 'lucide-react';
 import { ProductCard } from '@/components/shop/product-card';
 
+// Generate SOMA placeholder URLs
+const generatePlaceholderUrl = (width: number = 300, height: number = 300) => {
+  // Check if we're in light mode by looking at the document's class or theme
+  const isLightMode = typeof window !== 'undefined' && 
+    (document.documentElement.classList.contains('light') || 
+     !document.documentElement.classList.contains('dark'));
+  
+  const backgroundColor = isLightMode ? '#f3f4f6' : '#1f2937'; // light gray or dark gray
+  const textColor = isLightMode ? '#000000' : '#ffffff'; // black or white
+  
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="${backgroundColor}"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+    </svg>
+  `)}`;
+};
+
 // Mock data for marketplace
 const mockProducts = [
   {
@@ -17,7 +35,7 @@ const mockProducts = [
     price: 89.99,
     originalPrice: 120.00,
     currency: 'USD',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&h=300&fit=crop',
+    imageUrl: generatePlaceholderUrl(300, 300),
     rating: 4.8,
     reviewCount: 1250,
     category: 'Art Supplies',
@@ -37,7 +55,7 @@ const mockProducts = [
     title: 'Canvas Stretcher Bars - Set of 4',
     price: 45.50,
     currency: 'USD',
-    imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&h=300&fit=crop',
+    imageUrl: generatePlaceholderUrl(300, 300),
     rating: 4.6,
     reviewCount: 890,
     category: 'Art Supplies',
@@ -57,7 +75,7 @@ const mockProducts = [
     title: 'Watercolor Paper Pad - 140lb Cold Press',
     price: 24.99,
     currency: 'USD',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&h=300&fit=crop',
+    imageUrl: generatePlaceholderUrl(300, 300),
     rating: 4.9,
     reviewCount: 2100,
     category: 'Art Supplies',
@@ -78,7 +96,7 @@ const mockProducts = [
     price: 29.99,
     originalPrice: 39.99,
     currency: 'USD',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&h=300&fit=crop',
+    imageUrl: generatePlaceholderUrl(300, 300),
     rating: 4.7,
     reviewCount: 1560,
     category: 'Art Prints',
@@ -98,7 +116,7 @@ const mockProducts = [
     title: 'Ceramic Glaze Set - 12 Colors',
     price: 67.50,
     currency: 'USD',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&h=300&fit=crop',
+    imageUrl: generatePlaceholderUrl(300, 300),
     rating: 4.5,
     reviewCount: 720,
     category: 'Ceramics & Pottery',
@@ -118,7 +136,7 @@ const mockProducts = [
     title: 'Professional Brush Set - 20 Brushes',
     price: 89.99,
     currency: 'USD',
-    imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&h=300&fit=crop',
+    imageUrl: generatePlaceholderUrl(300, 300),
     rating: 4.8,
     reviewCount: 980,
     category: 'Art Supplies',
@@ -138,7 +156,7 @@ const mockProducts = [
     title: 'Wooden Artist Easel - Adjustable',
     price: 149.99,
     currency: 'USD',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&h=300&fit=crop',
+    imageUrl: generatePlaceholderUrl(300, 300),
     rating: 4.6,
     reviewCount: 450,
     category: 'Art Supplies',
@@ -158,7 +176,7 @@ const mockProducts = [
     title: 'Art History Book - Renaissance Masters',
     price: 34.99,
     currency: 'USD',
-    imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&h=300&fit=crop',
+    imageUrl: generatePlaceholderUrl(300, 300),
     rating: 4.9,
     reviewCount: 320,
     category: 'Books',

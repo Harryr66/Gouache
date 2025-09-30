@@ -11,6 +11,42 @@ import { useRouter } from 'next/navigation';
 import { Search, Filter, Star, TrendingUp, Clock } from 'lucide-react';
 import { Artwork } from '@/lib/types';
 
+// Generate SOMA placeholder URLs
+const generatePlaceholderUrl = (width: number = 400, height: number = 400) => {
+  // Check if we're in light mode by looking at the document's class or theme
+  const isLightMode = typeof window !== 'undefined' && 
+    (document.documentElement.classList.contains('light') || 
+     !document.documentElement.classList.contains('dark'));
+  
+  const backgroundColor = isLightMode ? '#f3f4f6' : '#1f2937'; // light gray or dark gray
+  const textColor = isLightMode ? '#000000' : '#ffffff'; // black or white
+  
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="${backgroundColor}"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+    </svg>
+  `)}`;
+};
+
+// Generate SOMA avatar placeholder URLs
+const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
+  // Check if we're in light mode by looking at the document's class or theme
+  const isLightMode = typeof window !== 'undefined' && 
+    (document.documentElement.classList.contains('light') || 
+     !document.documentElement.classList.contains('dark'));
+  
+  const backgroundColor = isLightMode ? '#f3f4f6' : '#1f2937'; // light gray or dark gray
+  const textColor = isLightMode ? '#000000' : '#ffffff'; // black or white
+  
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="${backgroundColor}"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="24" font-weight="bold">SOMA</text>
+    </svg>
+  `)}`;
+};
+
 // Mock data for discover page
 const mockArtworks: Artwork[] = [
   {
@@ -19,7 +55,7 @@ const mockArtworks: Artwork[] = [
       id: 'elena',
       name: 'Elena Vance',
       handle: 'elena_vance',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+      avatarUrl: generateAvatarPlaceholderUrl(150, 150),
       followerCount: 1250,
       followingCount: 89,
       createdAt: new Date('2023-01-15'),
@@ -28,7 +64,7 @@ const mockArtworks: Artwork[] = [
     },
     title: 'Abstract Harmony',
     description: 'A vibrant abstract piece exploring the relationship between color and emotion.',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=400&fit=crop',
+    imageUrl: generatePlaceholderUrl(400, 400),
     imageAiHint: 'Abstract painting with vibrant colors',
     discussionId: 'discussion-1',
     tags: ['abstract', 'color', 'emotion'],
@@ -60,7 +96,7 @@ const mockArtworks: Artwork[] = [
     },
     title: 'Digital Dreams',
     description: 'A futuristic cityscape rendered in digital art, exploring themes of urban isolation.',
-    imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=400&fit=crop',
+    imageUrl: generatePlaceholderUrl(400, 400),
     imageAiHint: 'Digital artwork featuring futuristic cityscape',
     discussionId: 'discussion-2',
     tags: ['digital', 'cityscape', 'futuristic'],
@@ -92,7 +128,7 @@ const mockArtworks: Artwork[] = [
     },
     title: 'Ceramic Contemplation',
     description: 'A hand-crafted ceramic sculpture representing the beauty of human contemplation.',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=400&fit=crop',
+    imageUrl: generatePlaceholderUrl(400, 400),
     imageAiHint: 'Ceramic sculpture of a woman in contemplation',
     discussionId: 'discussion-3',
     tags: ['ceramic', 'sculpture', 'contemplation'],
@@ -166,7 +202,7 @@ export default function DiscoverPage() {
           id: `artist-${i}`,
           name: randomArtist,
           handle: randomArtist.toLowerCase().replace(' ', '_'),
-          avatarUrl: `https://images.unsplash.com/photo-${1500000000000 + Math.random() * 1000000000}?w=150&h=150&fit=crop&crop=face`,
+          avatarUrl: generateAvatarPlaceholderUrl(150, 150),
           followerCount: Math.floor(Math.random() * 2000) + 100,
           followingCount: Math.floor(Math.random() * 200) + 10,
           createdAt: new Date('2023-01-01'),
@@ -175,7 +211,7 @@ export default function DiscoverPage() {
         },
         title: `${randomTitle} ${i + 1}`,
         description: `A beautiful ${randomCategory.toLowerCase()} piece that explores themes of creativity and expression.`,
-        imageUrl: `https://images.unsplash.com/photo-${1500000000000 + Math.random() * 1000000000}?w=400&h=400&fit=crop`,
+        imageUrl: generatePlaceholderUrl(400, 400),
         imageAiHint: `${randomCategory} artwork`,
         discussionId: `discussion-${Date.now()}-${i}`,
         tags: [randomCategory.toLowerCase(), 'art', 'creative'],

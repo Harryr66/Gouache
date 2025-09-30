@@ -3,6 +3,24 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { WatchHistory, Watchlist, Episode, Docuseries } from '@/lib/types';
 
+// Generate SOMA placeholder URLs
+const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
+  // Check if we're in light mode by looking at the document's class or theme
+  const isLightMode = typeof window !== 'undefined' && 
+    (document.documentElement.classList.contains('light') || 
+     !document.documentElement.classList.contains('dark'));
+  
+  const backgroundColor = isLightMode ? '#f3f4f6' : '#1f2937'; // light gray or dark gray
+  const textColor = isLightMode ? '#000000' : '#ffffff'; // black or white
+  
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="${backgroundColor}"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+    </svg>
+  `)}`;
+};
+
 interface WatchlistContextType {
   watchHistory: WatchHistory[];
   watchlist: Watchlist[];
@@ -50,8 +68,8 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
             id: 'ds-1',
             title: 'Abstract Expressions',
             description: 'Follow Elena Vance as she explores the depths of abstract painting.',
-            thumbnailUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=600&fit=crop',
-            bannerUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1200&h=675&fit=crop',
+            thumbnailUrl: generatePlaceholderUrl(400, 600),
+            bannerUrl: generatePlaceholderUrl(1200, 675),
             featuredArtist: {} as any,
             category: 'Traditional Art',
             genre: 'Documentary',

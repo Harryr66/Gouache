@@ -11,6 +11,42 @@ import { Heart, MessageCircle, Share2, ArrowLeft, ThumbsUp, ThumbsDown, Clock, P
 import { Artwork } from '@/lib/types';
 import Image from 'next/image';
 
+// Generate SOMA placeholder URLs
+const generatePlaceholderUrl = (width: number = 800, height: number = 800) => {
+  // Check if we're in light mode by looking at the document's class or theme
+  const isLightMode = typeof window !== 'undefined' && 
+    (document.documentElement.classList.contains('light') || 
+     !document.documentElement.classList.contains('dark'));
+  
+  const backgroundColor = isLightMode ? '#f3f4f6' : '#1f2937'; // light gray or dark gray
+  const textColor = isLightMode ? '#000000' : '#ffffff'; // black or white
+  
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="${backgroundColor}"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+    </svg>
+  `)}`;
+};
+
+// Generate SOMA avatar placeholder URLs
+const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
+  // Check if we're in light mode by looking at the document's class or theme
+  const isLightMode = typeof window !== 'undefined' && 
+    (document.documentElement.classList.contains('light') || 
+     !document.documentElement.classList.contains('dark'));
+  
+  const backgroundColor = isLightMode ? '#f3f4f6' : '#1f2937'; // light gray or dark gray
+  const textColor = isLightMode ? '#000000' : '#ffffff'; // black or white
+  
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="${backgroundColor}"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="24" font-weight="bold">SOMA</text>
+    </svg>
+  `)}`;
+};
+
 // Mock data for artwork thread
 const mockArtwork: Artwork = {
   id: '1',
@@ -18,14 +54,14 @@ const mockArtwork: Artwork = {
     id: 'elena',
     name: 'Elena Vance',
     handle: 'elena_vance',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+    avatarUrl: generateAvatarPlaceholderUrl(150, 150),
     followerCount: 1250,
     followingCount: 89,
     createdAt: new Date('2023-01-15')
   },
   title: 'Abstract Harmony',
   description: 'A vibrant abstract piece exploring the relationship between color and emotion.',
-  imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=800&fit=crop',
+  imageUrl: generatePlaceholderUrl(800, 800),
   imageAiHint: 'Abstract painting with vibrant colors',
   discussionId: 'discussion-1',
   tags: ['abstract', 'color', 'emotion'],
