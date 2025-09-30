@@ -155,6 +155,35 @@ export default function FeedPage() {
     return url;
   };
 
+  const handlePlay = (item: Docuseries | Episode) => {
+    console.log('Playing:', item.title);
+    
+    // If it's an Episode, play the video
+    if ('videoUrl' in item) {
+      const episode = item as Episode;
+      console.log('Original video URL:', episode.videoUrl);
+      
+      // Convert Google Drive URL if needed
+      const convertedUrl = convertGoogleDriveUrl(episode.videoUrl);
+      console.log('Converted video URL:', convertedUrl);
+      
+      // Create episode with converted URL
+      const episodeWithConvertedUrl = {
+        ...episode,
+        videoUrl: convertedUrl
+      };
+      
+      setCurrentVideo(episodeWithConvertedUrl);
+      setShowVideoPlayer(true);
+      setVideoError(null);
+      setIsPlaying(true);
+    } else {
+      // For Docuseries, just log for now
+      console.log('Docuseries play not implemented yet');
+      setIsPlaying(true);
+    }
+  };
+
   const handleExpand = (content: Episode | Docuseries) => {
     console.log('Expanding content:', content.title);
     setExpandedContent(content);
