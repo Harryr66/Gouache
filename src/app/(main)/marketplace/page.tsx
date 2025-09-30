@@ -20,7 +20,7 @@ const mockProducts = [
     imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&h=300&fit=crop',
     rating: 4.8,
     reviewCount: 1250,
-    category: 'Painting Supplies',
+    category: 'Art Supplies',
     subcategory: 'Oil Paints',
     isWishlisted: false,
     isOnSale: true,
@@ -40,8 +40,8 @@ const mockProducts = [
     imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&h=300&fit=crop',
     rating: 4.6,
     reviewCount: 890,
-    category: 'Canvas & Surfaces',
-    subcategory: 'Stretcher Bars',
+    category: 'Art Supplies',
+    subcategory: 'Canvas',
     isWishlisted: true,
     isOnSale: false,
     tags: ['canvas', 'stretcher', 'wood', 'professional'],
@@ -60,8 +60,8 @@ const mockProducts = [
     imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&h=300&fit=crop',
     rating: 4.9,
     reviewCount: 2100,
-    category: 'Paper & Surfaces',
-    subcategory: 'Watercolor Paper',
+    category: 'Art Supplies',
+    subcategory: 'Paper & Surfaces',
     isWishlisted: false,
     isOnSale: false,
     tags: ['watercolor', 'paper', 'cold press', 'professional'],
@@ -121,8 +121,8 @@ const mockProducts = [
     imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&h=300&fit=crop',
     rating: 4.8,
     reviewCount: 980,
-    category: 'Brushes & Tools',
-    subcategory: 'Brush Sets',
+    category: 'Art Supplies',
+    subcategory: 'Brushes',
     isWishlisted: false,
     isOnSale: false,
     tags: ['brushes', 'professional', 'set', 'synthetic'],
@@ -141,7 +141,7 @@ const mockProducts = [
     imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&h=300&fit=crop',
     rating: 4.6,
     reviewCount: 450,
-    category: 'Brushes & Tools',
+    category: 'Art Supplies',
     subcategory: 'Easels',
     isWishlisted: true,
     isOnSale: false,
@@ -161,7 +161,7 @@ const mockProducts = [
     imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&h=300&fit=crop',
     rating: 4.9,
     reviewCount: 320,
-    category: 'Art Books',
+    category: 'Books',
     subcategory: 'Art History',
     isWishlisted: false,
     isOnSale: false,
@@ -177,33 +177,31 @@ const mockProducts = [
 
 const categories = [
   {
-    id: 'painting-supplies',
-    name: 'Painting Supplies',
+    id: 'art-supplies',
+    name: 'Art Supplies',
     subcategories: [
       { id: 'oil-paints', name: 'Oil Paints' },
       { id: 'acrylic-paints', name: 'Acrylic Paints' },
       { id: 'watercolors', name: 'Watercolors' },
-      { id: 'gouache', name: 'Gouache' }
-    ]
-  },
-  {
-    id: 'canvas-surfaces',
-    name: 'Canvas & Surfaces',
-    subcategories: [
+      { id: 'gouache', name: 'Gouache' },
+      { id: 'brushes', name: 'Brushes' },
       { id: 'canvas', name: 'Canvas' },
-      { id: 'stretcher-bars', name: 'Stretcher Bars' },
-      { id: 'panels', name: 'Panels' },
-      { id: 'boards', name: 'Boards' }
+      { id: 'paper', name: 'Paper & Surfaces' },
+      { id: 'easels', name: 'Easels' },
+      { id: 'palette-knives', name: 'Palette Knives' },
+      { id: 'drawing-tools', name: 'Drawing Tools' }
     ]
   },
   {
-    id: 'paper-surfaces',
-    name: 'Paper & Surfaces',
+    id: 'ceramics-pottery',
+    name: 'Ceramics & Pottery',
     subcategories: [
-      { id: 'watercolor-paper', name: 'Watercolor Paper' },
-      { id: 'drawing-paper', name: 'Drawing Paper' },
-      { id: 'sketch-pads', name: 'Sketch Pads' },
-      { id: 'mixed-media', name: 'Mixed Media' }
+      { id: 'clay', name: 'Clay' },
+      { id: 'glazes', name: 'Glazes' },
+      { id: 'pottery-tools', name: 'Pottery Tools' },
+      { id: 'kilns', name: 'Kilns' },
+      { id: 'wheels', name: 'Pottery Wheels' },
+      { id: 'firing-supplies', name: 'Firing Supplies' }
     ]
   },
   {
@@ -213,37 +211,21 @@ const categories = [
       { id: 'fine-art-prints', name: 'Fine Art Prints' },
       { id: 'posters', name: 'Posters' },
       { id: 'canvas-prints', name: 'Canvas Prints' },
-      { id: 'framed-prints', name: 'Framed Prints' }
+      { id: 'framed-prints', name: 'Framed Prints' },
+      { id: 'digital-prints', name: 'Digital Prints' },
+      { id: 'limited-editions', name: 'Limited Editions' }
     ]
   },
   {
-    id: 'ceramics-pottery',
-    name: 'Ceramics & Pottery',
-    subcategories: [
-      { id: 'clay', name: 'Clay' },
-      { id: 'glazes', name: 'Glazes' },
-      { id: 'tools', name: 'Tools' },
-      { id: 'kilns', name: 'Kilns' }
-    ]
-  },
-  {
-    id: 'brushes-tools',
-    name: 'Brushes & Tools',
-    subcategories: [
-      { id: 'brush-sets', name: 'Brush Sets' },
-      { id: 'individual-brushes', name: 'Individual Brushes' },
-      { id: 'palette-knives', name: 'Palette Knives' },
-      { id: 'easels', name: 'Easels' }
-    ]
-  },
-  {
-    id: 'art-books',
-    name: 'Art Books',
+    id: 'books',
+    name: 'Books',
     subcategories: [
       { id: 'art-history', name: 'Art History' },
       { id: 'technique-books', name: 'Technique Books' },
       { id: 'artist-biographies', name: 'Artist Biographies' },
-      { id: 'art-theory', name: 'Art Theory' }
+      { id: 'art-theory', name: 'Art Theory' },
+      { id: 'instructional', name: 'Instructional' },
+      { id: 'reference-books', name: 'Reference Books' }
     ]
   }
 ];
@@ -282,7 +264,7 @@ const countries = [
 
 export default function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('painting-supplies');
+  const [selectedCategory, setSelectedCategory] = useState('art-supplies');
   const [selectedSubcategory, setSelectedSubcategory] = useState('all');
   const [sortBy, setSortBy] = useState('relevance');
   const [showFilters, setShowFilters] = useState(false);
@@ -401,10 +383,9 @@ export default function MarketplacePage() {
             <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Best Sellers</Button>
             <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">New Releases</Button>
             <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Art Supplies</Button>
-            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Art Books</Button>
+            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Ceramics & Pottery</Button>
             <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Art Prints</Button>
-            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Ceramics</Button>
-            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Easels</Button>
+            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Books</Button>
           </div>
         </div>
       </div>
