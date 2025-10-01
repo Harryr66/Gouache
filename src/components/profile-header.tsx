@@ -8,10 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Users, UserPlus, Edit, Gift, Upload, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { StoryViewer } from './story-viewer';
-import { StoryUploader } from './story-uploader';
 import { TipDialog } from './tip-dialog';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 interface ProfileHeaderProps {
   user: {
@@ -25,7 +22,6 @@ interface ProfileHeaderProps {
     isProfessional: boolean;
     isTipJarEnabled?: boolean;
     profileRingColor?: string;
-    hasActiveStory?: boolean;
   };
   isOwnProfile: boolean;
   isFollowing?: boolean;
@@ -40,8 +36,6 @@ export function ProfileHeader({
   onFollowToggle,
   currentTab
 }: ProfileHeaderProps) {
-  const [showStoryViewer, setShowStoryViewer] = useState(false);
-  const [showStoryUploader, setShowStoryUploader] = useState(false);
   const [showTipDialog, setShowTipDialog] = useState(false);
 
   // Early return if user is not properly loaded
@@ -55,25 +49,6 @@ export function ProfileHeader({
       </div>
     );
   }
-
-  const handleAvatarClick = () => {
-    if (user.hasActiveStory) {
-      setShowStoryViewer(true);
-    } else if (isOwnProfile) {
-      setShowStoryUploader(true);
-    }
-  };
-
-  const getAvatarBorderClass = () => {
-    if (user.hasActiveStory) {
-      return 'story-gradient-border';
-    }
-    return 'border-4 border-muted rounded-full';
-  };
-
-  const getAvatarBorderStyle = () => {
-    return { borderRadius: '50%' };
-  };
 
   const getDynamicButton = () => {
     if (!isOwnProfile || !user.isProfessional) return null;
@@ -107,41 +82,18 @@ export function ProfileHeader({
         <div className="flex flex-col md:flex-row gap-6">
           {/* Avatar Section */}
           <div className="flex-shrink-0">
-            <Dialog>
-              <DialogTrigger asChild>
-                <button
-                  onClick={handleAvatarClick}
-                  className={cn(
-                    'relative h-32 w-32 rounded-full transition-all hover:scale-105 overflow-hidden flex items-center justify-center',
-                    getAvatarBorderClass()
-                  )}
-                  style={getAvatarBorderStyle()}
-                >
-                  <Avatar className="h-full w-full">
-                    <AvatarImage 
-                      src={user.avatarUrl} 
-                      alt={user.displayName || 'User'}
-                      className="h-full w-full object-cover rounded-full"
-                    />
-                    <AvatarFallback className="text-2xl h-full w-full rounded-full">
-                      {user.displayName?.charAt(0)?.toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                {user.hasActiveStory ? (
-                  <StoryViewer 
-                    userId={user.id} 
-                    onClose={() => setShowStoryViewer(false)} 
-                  />
-                ) : (
-                  <StoryUploader 
-                    onClose={() => setShowStoryUploader(false)} 
-                  />
-                )}
-              </DialogContent>
-            </Dialog>
+            <div className="relative h-32 w-32 rounded-full overflow-hidden flex items-center justify-center border-4 border-muted">
+              <Avatar className="h-full w-full">
+                <AvatarImage 
+                  src={user.avatarUrl} 
+                  alt={user.displayName || 'User'}
+                  className="h-full w-full object-cover rounded-full"
+                />
+                <AvatarFallback className="text-2xl h-full w-full rounded-full">
+                  {user.displayName?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+            </div>
           </div>
 
           {/* User Information */}
