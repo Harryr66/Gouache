@@ -12,55 +12,27 @@ import { usePlaceholder } from '@/hooks/use-placeholder';
 
 const categories = [
   {
-    id: 'art-supplies',
-    name: 'Art Supplies',
-    subcategories: [
-      { id: 'oil-paints', name: 'Oil Paints' },
-      { id: 'acrylic-paints', name: 'Acrylic Paints' },
-      { id: 'watercolors', name: 'Watercolors' },
-      { id: 'gouache', name: 'Gouache' },
-      { id: 'brushes', name: 'Brushes' },
-      { id: 'canvas', name: 'Canvas' },
-      { id: 'paper', name: 'Paper & Surfaces' },
-      { id: 'easels', name: 'Easels' },
-      { id: 'palette-knives', name: 'Palette Knives' },
-      { id: 'drawing-tools', name: 'Drawing Tools' }
-    ]
-  },
-  {
-    id: 'ceramics-pottery',
-    name: 'Ceramics & Pottery',
-    subcategories: [
-      { id: 'clay', name: 'Clay' },
-      { id: 'glazes', name: 'Glazes' },
-      { id: 'pottery-tools', name: 'Pottery Tools' },
-      { id: 'kilns', name: 'Kilns' },
-      { id: 'wheels', name: 'Pottery Wheels' },
-      { id: 'firing-supplies', name: 'Firing Supplies' }
-    ]
-  },
-  {
     id: 'art-prints',
     name: 'Art Prints',
     subcategories: [
       { id: 'fine-art-prints', name: 'Fine Art Prints' },
-      { id: 'posters', name: 'Posters' },
       { id: 'canvas-prints', name: 'Canvas Prints' },
       { id: 'framed-prints', name: 'Framed Prints' },
-      { id: 'digital-prints', name: 'Digital Prints' },
-      { id: 'limited-editions', name: 'Limited Editions' }
+      { id: 'limited-editions', name: 'Limited Editions' },
+      { id: 'posters', name: 'Posters' },
+      { id: 'digital-prints', name: 'Digital Downloads' }
     ]
   },
   {
-    id: 'books',
-    name: 'Books',
+    id: 'art-books',
+    name: 'Art Books',
     subcategories: [
       { id: 'art-history', name: 'Art History' },
-      { id: 'technique-books', name: 'Technique Books' },
       { id: 'artist-biographies', name: 'Artist Biographies' },
+      { id: 'technique-books', name: 'Technique & How-To' },
       { id: 'art-theory', name: 'Art Theory' },
-      { id: 'instructional', name: 'Instructional' },
-      { id: 'reference-books', name: 'Reference Books' }
+      { id: 'coffee-table-books', name: 'Coffee Table Books' },
+      { id: 'exhibition-catalogs', name: 'Exhibition Catalogs' }
     ]
   }
 ];
@@ -99,7 +71,7 @@ const countries = [
 
 export default function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('art-supplies');
+  const [selectedCategory, setSelectedCategory] = useState('art-prints');
   const [selectedSubcategory, setSelectedSubcategory] = useState('all');
   const [sortBy, setSortBy] = useState('relevance');
   const [showFilters, setShowFilters] = useState(false);
@@ -115,102 +87,122 @@ export default function MarketplacePage() {
   const mockProducts = useMemo(() => [
     {
       id: '1',
-      title: 'Professional Oil Paint Set - 24 Colors',
+      title: 'The Starry Night - Fine Art Print',
       price: 89.99,
       originalPrice: 120.00,
       currency: 'USD',
       imageUrl: placeholderUrl,
-      rating: 4.8,
+      rating: 4.9,
       reviewCount: 1250,
-      category: 'Art Supplies',
-      subcategory: 'Oil Paints',
+      category: 'Art Prints',
+      subcategory: 'Fine Art Prints',
       isWishlisted: false,
       isOnSale: true,
-      tags: ['oil', 'paint', 'professional', 'artist'],
-      description: 'High-quality oil paint set perfect for professional artists',
+      tags: ['van gogh', 'fine art', 'museum quality', 'classic'],
+      description: 'Museum-quality giclée print of Van Gogh\'s masterpiece',
       seller: {
-        name: 'ArtSupply Pro',
+        name: 'Fine Art Reproductions',
         rating: 4.9,
         isVerified: true
       }
     },
     {
       id: '2',
-      title: 'Canvas Stretcher Bars - Set of 4',
-      price: 45.50,
+      title: 'Modern Abstract Canvas Print - Large',
+      price: 149.99,
       currency: 'USD',
       imageUrl: placeholderUrl,
-      rating: 4.6,
+      rating: 4.7,
       reviewCount: 890,
-      category: 'Art Supplies',
-      subcategory: 'Canvas',
+      category: 'Art Prints',
+      subcategory: 'Canvas Prints',
       isWishlisted: true,
       isOnSale: false,
-      tags: ['canvas', 'stretcher', 'wood', 'professional'],
-      description: 'Premium pine stretcher bars for custom canvas sizes',
+      tags: ['abstract', 'canvas', 'modern', 'gallery wrapped'],
+      description: 'Large format abstract print on gallery-wrapped canvas',
       seller: {
-        name: 'Canvas Masters',
-        rating: 4.7,
+        name: 'Modern Art Prints',
+        rating: 4.8,
         isVerified: true
       }
     },
     {
       id: '3',
-      title: 'Watercolor Paper Pad - 140lb Cold Press',
-      price: 24.99,
+      title: 'Limited Edition Banksy Print - Signed',
+      price: 450.00,
       currency: 'USD',
       imageUrl: placeholderUrl,
       rating: 4.9,
-      reviewCount: 2100,
-      category: 'Art Supplies',
-      subcategory: 'Paper & Surfaces',
+      reviewCount: 320,
+      category: 'Art Prints',
+      subcategory: 'Limited Editions',
       isWishlisted: false,
       isOnSale: false,
-      tags: ['watercolor', 'paper', 'cold press', 'professional'],
-      description: 'Professional-grade watercolor paper for serious artists',
+      tags: ['banksy', 'limited edition', 'street art', 'signed'],
+      description: 'Authenticated limited edition print, numbered and signed',
       seller: {
-        name: 'Paper Pro',
-        rating: 4.8,
-        isVerified: true
-      }
-    },
-    {
-      id: '4',
-      title: 'Professional Brush Set - 20 Brushes',
-      price: 89.99,
-      currency: 'USD',
-      imageUrl: placeholderUrl,
-      rating: 4.8,
-      reviewCount: 980,
-      category: 'Art Supplies',
-      subcategory: 'Brushes',
-      isWishlisted: false,
-      isOnSale: false,
-      tags: ['brushes', 'professional', 'synthetic', 'artist'],
-      description: 'Complete brush set for all painting techniques',
-      seller: {
-        name: 'Brush Masters',
+        name: 'Street Art Gallery',
         rating: 4.9,
         isVerified: true
       }
     },
     {
-      id: '5',
-      title: 'Renaissance Art History Book',
-      price: 34.99,
+      id: '4',
+      title: 'The Art Book - Phaidon',
+      price: 45.99,
       currency: 'USD',
       imageUrl: placeholderUrl,
-      rating: 4.9,
-      reviewCount: 320,
-      category: 'Books',
+      rating: 4.8,
+      reviewCount: 2100,
+      category: 'Art Books',
       subcategory: 'Art History',
       isWishlisted: false,
       isOnSale: false,
-      tags: ['book', 'art history', 'renaissance', 'education'],
-      description: 'Comprehensive guide to Renaissance art and masters',
+      tags: ['art history', 'reference', 'comprehensive', 'phaidon'],
+      description: 'Comprehensive guide to 500 great artists and their works',
       seller: {
-        name: 'Art Education Books',
+        name: 'Art Book Publishers',
         rating: 4.8,
+        isVerified: true
+      }
+    },
+    {
+      id: '5',
+      title: 'Frida Kahlo: The Complete Paintings',
+      price: 65.00,
+      currency: 'USD',
+      imageUrl: placeholderUrl,
+      rating: 4.9,
+      reviewCount: 780,
+      category: 'Art Books',
+      subcategory: 'Artist Biographies',
+      isWishlisted: true,
+      isOnSale: false,
+      tags: ['frida kahlo', 'biography', 'paintings', 'monograph'],
+      description: 'Comprehensive monograph featuring all of Kahlo\'s paintings',
+      seller: {
+        name: 'Taschen Books',
+        rating: 4.9,
+        isVerified: true
+      }
+    },
+    {
+      id: '6',
+      title: 'Color Theory for Artists - Hardcover',
+      price: 34.99,
+      currency: 'USD',
+      imageUrl: placeholderUrl,
+      rating: 4.7,
+      reviewCount: 1450,
+      category: 'Art Books',
+      subcategory: 'Technique & How-To',
+      isWishlisted: false,
+      isOnSale: false,
+      tags: ['color theory', 'technique', 'how-to', 'educational'],
+      description: 'Practical guide to understanding and applying color theory',
+      seller: {
+        name: 'Art Education Press',
+        rating: 4.7,
         isVerified: true
       }
     }
@@ -338,10 +330,8 @@ export default function MarketplacePage() {
           <div className="flex items-center gap-2 sm:gap-4 text-sm overflow-x-auto pb-2">
             <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Best Sellers</Button>
             <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">New Releases</Button>
-            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Art Supplies</Button>
-            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Ceramics & Pottery</Button>
             <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Art Prints</Button>
-            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Books</Button>
+            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Art Books</Button>
           </div>
         </div>
       </div>
@@ -426,7 +416,7 @@ export default function MarketplacePage() {
                   </Button>
                 ))}
               </div>
-              {selectedCategory !== 'art-supplies' && (
+              {selectedCategory && selectedCategory !== 'all' && (
                 <div className="mt-3">
                   <h4 className="text-sm font-medium mb-2">Subcategories</h4>
                   <div className="flex flex-wrap gap-2">
@@ -452,7 +442,7 @@ export default function MarketplacePage() {
             {/* Page Header */}
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-foreground mb-2">
-                {selectedCategoryData?.name || categories[0]?.name || 'Art Supplies'}
+                {selectedCategoryData?.name || categories[0]?.name || 'Art Prints'}
               </h2>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
                 <p className="text-muted-foreground text-sm">
