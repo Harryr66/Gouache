@@ -287,9 +287,22 @@ export default function ProfileEditPage() {
 
     setIsSubmittingRequest(true);
     try {
+      // Create a clean user object without undefined values
+      const cleanUser = {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        displayName: user.displayName || user.name,
+        ...(user.avatarUrl && { avatarUrl: user.avatarUrl }),
+        ...(user.bio && { bio: user.bio }),
+        ...(user.location && { location: user.location }),
+        isProfessional: user.isProfessional || false
+      };
+
       const artistRequest: Omit<ArtistRequest, 'id'> = {
         userId: user.id,
-        user: user,
+        user: cleanUser as any,
         portfolioImages,
         artistStatement: artistRequestData.artistStatement,
         experience: artistRequestData.experience,
