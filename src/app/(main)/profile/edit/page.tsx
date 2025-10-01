@@ -290,14 +290,20 @@ export default function ProfileEditPage() {
       // Create a clean user object without undefined values
       const cleanUser = {
         id: user.id,
-        name: user.name,
         username: user.username,
         email: user.email,
-        displayName: user.displayName || user.name,
+        displayName: user.displayName,
         ...(user.avatarUrl && { avatarUrl: user.avatarUrl }),
         ...(user.bio && { bio: user.bio }),
         ...(user.location && { location: user.location }),
-        isProfessional: user.isProfessional || false
+        ...(user.website && { website: user.website }),
+        followerCount: user.followerCount || 0,
+        followingCount: user.followingCount || 0,
+        postCount: user.postCount || 0,
+        isVerified: user.isVerified || false,
+        isProfessional: user.isProfessional || false,
+        createdAt: user.createdAt || new Date(),
+        updatedAt: user.updatedAt || new Date()
       };
 
       const artistRequest: Omit<ArtistRequest, 'id'> = {
