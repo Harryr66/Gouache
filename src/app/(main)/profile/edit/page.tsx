@@ -184,22 +184,75 @@ export default function ProfileEditPage() {
     const files = event.target.files;
     if (!files || files.length === 0 || !user) return;
 
-    setIsLoading(true);
-    try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        const compressedFile = await compressImage(file);
-        const imageRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${file.name}`);
-        await uploadBytes(imageRef, compressedFile);
-        return await getDownloadURL(imageRef);
+    if (portfolioImages.length + files.length > 10) {
+      toast({
+        title: "Too many images",
+        description: "You can upload a maximum of 10 portfolio images.",
+        variant: "destructive"
       });
+      return;
+    }
 
-      const urls = await Promise.all(uploadPromises);
+    setIsLoading(true);
+    console.log('📸 Starting portfolio image upload...', files.length, 'files');
+    
+    try {
+      const urls: string[] = [];
+      
+      // Upload files one by one to avoid overwhelming the system
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        console.log(`📸 Uploading file ${i + 1}/${files.length}:`, file.name);
+        
+        try {
+          // Compress image
+          const compressedFile = await compressImage(file);
+          console.log(`✅ Image compressed:`, compressedFile.size, 'bytes');
+          
+          // Create storage reference
+          const timestamp = Date.now();
+          const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+          const imageRef = ref(storage, `portfolio/${user.id}/${fileName}`);
+          console.log(`📤 Uploading to:`, imageRef.fullPath);
+          
+          // Upload file with metadata
+          const metadata = {
+            contentType: compressedFile.type,
+            customMetadata: {
+              uploadedBy: user.id,
+              originalName: file.name
+            }
+          };
+          
+          const uploadResult = await uploadBytes(imageRef, compressedFile, metadata);
+          console.log(`✅ Upload successful:`, uploadResult.metadata.fullPath);
+          
+          // Get download URL
+          const downloadURL = await getDownloadURL(imageRef);
+          console.log(`✅ Download URL obtained:`, downloadURL);
+          
+          urls.push(downloadURL);
+        } catch (fileError: any) {
+          console.error(`❌ Error uploading file ${file.name}:`, fileError);
+          throw new Error(`Failed to upload ${file.name}: ${fileError.message || 'Unknown error'}`);
+        }
+      }
+
       setPortfolioImages(prev => [...prev, ...urls]);
-    } catch (error) {
-      console.error('Error uploading portfolio images:', error);
+      console.log(`✅ All ${urls.length} portfolio images uploaded successfully`);
+      
+      toast({
+        title: "Upload successful",
+        description: `${urls.length} image${urls.length > 1 ? 's' : ''} uploaded successfully.`,
+      });
+      
+      // Reset file input
+      event.target.value = '';
+    } catch (error: any) {
+      console.error('❌ Portfolio image upload failed:', error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload portfolio images. Please try again.",
+        description: error.message || "Failed to upload portfolio images. Please check your internet connection and try again.",
         variant: "destructive"
       });
     } finally {

@@ -23,6 +23,18 @@ service firebase.storage {
       allow read, write: if true; // Allow profile picture uploads
     }
     
+    // Allow uploads to portfolio folder (for artist portfolio images)
+    match /portfolio/{userId}/{allPaths=**} {
+      allow read: if true; // Allow public read access
+      allow write: if request.auth != null && request.auth.uid == userId; // Only allow authenticated users to upload to their own portfolio
+    }
+    
+    // Allow uploads to marketplace products folder
+    match /marketplace/{allPaths=**} {
+      allow read: if true; // Allow public read access
+      allow write: if request.auth != null; // Only allow authenticated users to upload products
+    }
+    
     // Allow uploads to test folder (for testing)
     match /test/{allPaths=**} {
       allow read, write: if true; // Allow test uploads
