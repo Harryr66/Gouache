@@ -843,23 +843,25 @@ export default function ProfileEditPage() {
           </Card>
         )}
 
-        {/* Submit Button */}
-        <div className="flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="gradient"
-            disabled={isLoading || handleAvailable === false}
-          >
-            {isLoading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
+        {/* Submit Button - Only show if not viewing artist request */}
+        {!showArtistRequest && (
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="gradient"
+              disabled={isLoading || handleAvailable === false}
+            >
+              {isLoading ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   );
