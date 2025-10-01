@@ -87,6 +87,7 @@ export default function AdminPanel() {
   const [isProductUploading, setIsProductUploading] = useState(false);
   const [productStock, setProductStock] = useState('1');
   const [isProductOnSale, setIsProductOnSale] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     const artistRequestsQuery = query(
@@ -978,1202 +979,437 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold">Admin Panel</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">Manage artist account requests</p>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
       </div>
 
-      <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8 h-auto">
-          <TabsTrigger value="pending" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
-            <span className="hidden sm:inline">Pending</span>
-            <span className="sm:hidden">Pending</span>
-            <span className="ml-1">({pendingRequests.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="approved" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
-            <span className="hidden sm:inline">Approved</span>
-            <span className="sm:hidden">Approved</span>
-            <span className="ml-1">({approvedRequests.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="rejected" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
-            <span className="hidden sm:inline">Rejected</span>
-            <span className="sm:hidden">Rejected</span>
-            <span className="ml-1">({rejectedRequests.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="advertising" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
-            <Megaphone className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Advertising</span>
-            <span className="sm:hidden">Ads</span>
-            <span className="ml-1">({advertisingApplications.filter(app => app.status === 'pending').length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="marketplace" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
-            <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Marketplace</span>
-            <span className="sm:hidden">Shop</span>
-            <span className="ml-1">({marketplaceProducts.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="affiliate" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
-            <Link className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Affiliate</span>
-            <span className="sm:hidden">Affiliate</span>
-            <span className="ml-1">({affiliateRequests.filter(req => req.status === 'pending').length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="episodes" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
-            <Video className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Episodes</span>
-            <span className="sm:hidden">Videos</span>
-            <span className="ml-1">({episodes.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="video-upload" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
-            <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Upload</span>
-            <span className="sm:hidden">Upload</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pending" className="mt-6">
-          <div className="space-y-4">
-            {pendingRequests.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
-                  <p className="text-muted-foreground">All artist requests have been reviewed.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              pendingRequests.map((request) => (
-                <Card key={request.id} className="overflow-hidden">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.user.avatarUrl || undefined} alt={request.user.displayName} />
-                          <AvatarFallback>{request.user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">{request.user.displayName}</h3>
-                          <p className="text-sm text-muted-foreground">@{request.user.username}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(request.status)}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedRequest(request)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Review
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Portfolio Images</Label>
-                        <div className="grid grid-cols-3 gap-2 mt-2">
-                          {request.portfolioImages.slice(0, 3).map((url, index) => (
-                            <img
-                              key={index}
-                              src={url}
-                              alt={`Portfolio ${index + 1}`}
-                              className="w-full h-20 object-cover rounded"
-                            />
-                          ))}
-                          {request.portfolioImages.length > 3 && (
-                            <div className="flex items-center justify-center bg-muted rounded text-sm">
-                              +{request.portfolioImages.length - 3} more
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Artist Statement</Label>
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-3">
-                          {request.artistStatement}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        Submitted {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any).toDate().toLocaleDateString()}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="approved" className="mt-6">
-          <div className="space-y-4">
-            {approvedRequests.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <Check className="h-12 w-12 mx-auto text-green-500 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No approved requests</h3>
-                  <p className="text-muted-foreground">No artist requests have been approved yet.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              approvedRequests.map((request) => (
-                <Card key={request.id} className="overflow-hidden">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.user.avatarUrl || undefined} alt={request.user.displayName} />
-                          <AvatarFallback>{request.user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">{request.user.displayName}</h3>
-                          <p className="text-sm text-muted-foreground">@{request.user.username}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(request.status)}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedRequest(request)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        Approved {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate().toLocaleDateString()}
-                      </div>
-                      {request.reviewedBy && (
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          By {request.reviewedBy}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="rejected" className="mt-6">
-          <div className="space-y-4">
-            {rejectedRequests.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <X className="h-12 w-12 mx-auto text-red-500 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No rejected requests</h3>
-                  <p className="text-muted-foreground">No artist requests have been rejected yet.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              rejectedRequests.map((request) => (
-                <Card key={request.id} className="overflow-hidden">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.user.avatarUrl || undefined} alt={request.user.displayName} />
-                          <AvatarFallback>{request.user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">{request.user.displayName}</h3>
-                          <p className="text-sm text-muted-foreground">@{request.user.username}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(request.status)}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedRequest(request)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {request.rejectionReason && (
-                        <div>
-                          <Label className="text-sm font-medium">Rejection Reason</Label>
-                          <p className="text-sm text-muted-foreground">{request.rejectionReason}</p>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          Rejected {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate().toLocaleDateString()}
-                        </div>
-                        {request.reviewedBy && (
-                          <div className="flex items-center gap-1">
-                            <User className="h-4 w-4" />
-                            By {request.reviewedBy}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="episodes" className="mt-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Episodes Management</h2>
-              <div className="text-sm text-muted-foreground">
-                {episodes.length} total episodes
-              </div>
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Artist Account */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Artist Account</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Pending</span>
+              <Badge variant="outline">({pendingRequests.length})</Badge>
             </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Approved</span>
+              <Badge variant="outline">({approvedRequests.length})</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Rejected</span>
+              <Badge variant="outline">({rejectedRequests.length})</Badge>
+            </div>
+          </CardContent>
+        </Card>
 
-            {episodes.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Video className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <CardTitle className="mb-2">No episodes uploaded</CardTitle>
-                  <CardDescription>
-                    Upload your first video using the Upload tab.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {episodes.map((episode) => (
-                  <Card key={episode.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="w-32 h-20 rounded-lg overflow-hidden bg-muted">
-                          <img
-                            src={episode.thumbnailUrl}
-                            alt={episode.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold">{episode.title}</h3>
-                            {episode.isMainEvent && (
-                              <Badge variant="default" className="bg-red-600 text-white">
-                                Main Event
-                              </Badge>
-                            )}
-                            <Badge variant="secondary">
-                              {episode.displayLocation}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                            {episode.description}
-                          </p>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                            <span>{episode.likes} likes</span>
-                            <span>{episode.viewCount} views</span>
-                            <span>{episode.categories?.join(', ')}</span>
-                            <span>Created {episode.createdAt instanceof Date ? episode.createdAt.toLocaleDateString() : 'Recently'}</span>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {episode.tags?.slice(0, 3).map((tag, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedEpisode(episode)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleToggleMainEvent(episode)}
-                            disabled={isProcessing}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            {episode.isMainEvent ? 'Remove Main' : 'Set Main'}
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setSelectedEpisode(episode)}
-                            disabled={isProcessing}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
+        {/* Episodes */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Video className="h-4 w-4" />
+              Episodes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Episodes</span>
+              <Badge variant="outline">({episodes.length})</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Drafts</span>
+              <Badge variant="outline">(0)</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Archived</span>
+              <Badge variant="outline">(0)</Badge>
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="video-upload" className="mt-6">
+        {/* Marketplace */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Marketplace
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Products</span>
+              <Badge variant="outline">({marketplaceProducts.length})</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Requests</span>
+              <Badge variant="outline">({affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Archived</span>
+              <Badge variant="outline">(0)</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Advertising */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Megaphone className="h-4 w-4" />
+              Advertising
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Live Media</span>
+              <Badge variant="outline">({advertisingApplications.filter(app => app.status === 'approved').length})</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Requests</span>
+              <Badge variant="outline">({advertisingApplications.filter(app => app.status === 'pending').length})</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Archived</span>
+              <Badge variant="outline">(0)</Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Upload Button */}
+      <div className="flex justify-end mb-6">
+        <Button onClick={() => setShowUploadModal(true)} className="flex items-center gap-2">
+          <Upload className="h-4 w-4" />
+          Upload
+        </Button>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="space-y-6">
+        {/* Pending Requests Section */}
+        {pendingRequests.length === 0 ? (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Video className="h-5 w-5" />
-                Upload Video to Home Feed
-              </CardTitle>
-              <CardDescription>
-                Upload videos that will appear in the main home episodes feed for all SOMA users.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Video File Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="video-upload">Video File *</Label>
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                  <input
-                    id="video-upload"
-                    type="file"
-                    accept="video/*"
-                    onChange={handleVideoFileChange}
-                    className="hidden"
-                  />
-                  <Label htmlFor="video-upload" className="cursor-pointer">
-                    <div className="space-y-2">
-                      <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                      <div>
-                        <span className="text-sm font-medium">Click to upload video</span>
-                        <p className="text-xs text-muted-foreground">MP4, MOV, AVI (any size)</p>
-                      </div>
-                    </div>
-                  </Label>
-                  {videoFile && (
-                    <div className="mt-4">
-                      <p className="text-sm font-medium">Selected: {videoFile.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Size: {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Custom Video URL */}
-              <div className="space-y-2">
-                <Label htmlFor="custom-video-url">Custom Video URL (Backup)</Label>
-                <Input
-                  id="custom-video-url"
-                  type="url"
-                  placeholder="https://example.com/video.mp4"
-                  value={customVideoUrl}
-                  onChange={(e) => setCustomVideoUrl(e.target.value)}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Provide a direct video URL as backup if Firebase Storage fails. 
-                  Use YouTube, Google Drive, Dropbox, or any direct MP4 URL.
-                </p>
-              </div>
-
-              {/* Thumbnail Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="thumbnail-upload">Thumbnail Image (Optional)</Label>
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                  <input
-                    id="thumbnail-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleThumbnailFileChange}
-                    className="hidden"
-                  />
-                  <Label htmlFor="thumbnail-upload" className="cursor-pointer">
-                    <div className="space-y-2">
-                      <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                      <div>
-                        <span className="text-sm font-medium">Click to upload thumbnail</span>
-                        <p className="text-xs text-muted-foreground">JPG, PNG, GIF up to 5MB</p>
-                      </div>
-                    </div>
-                  </Label>
-                  {thumbnailFile && (
-                    <div className="mt-4">
-                      <div className="flex items-center justify-center space-x-4">
-                        <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-muted-foreground/25">
-                          <img
-                            src={URL.createObjectURL(thumbnailFile)}
-                            alt="Thumbnail preview"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-sm font-medium">Selected: {thumbnailFile.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Size: {(thumbnailFile.size / (1024 * 1024)).toFixed(2)} MB
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => setThumbnailFile(null)}
-                            className="text-xs text-red-500 hover:text-red-700 mt-1"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Upload a custom thumbnail image for better video presentation. If not provided, a default thumbnail will be used.
-                </p>
-              </div>
-
-              {/* Video Title */}
-              <div className="space-y-2">
-                <Label htmlFor="video-title">Title *</Label>
-                <Input
-                  id="video-title"
-                  value={videoTitle}
-                  onChange={(e) => setVideoTitle(e.target.value)}
-                  placeholder="Enter video title..."
-                />
-              </div>
-
-              {/* Video Description */}
-              <div className="space-y-2">
-                <Label htmlFor="video-description">Description *</Label>
-                <Textarea
-                  id="video-description"
-                  value={videoDescription}
-                  onChange={(e) => setVideoDescription(e.target.value)}
-                  placeholder="Enter video description..."
-                  rows={4}
-                />
-              </div>
-
-
-              {/* Art Medium Categories */}
-              <div className="space-y-2">
-                <Label>Art Medium Categories</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {ART_MEDIUM_CATEGORIES.map((category) => (
-                    <label key={category} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={videoCategories.includes(category)}
-                        onChange={() => toggleCategory(category)}
-                        className="rounded border-gray-300"
-                      />
-                      <span className="text-sm">{category}</span>
-                    </label>
-                  ))}
-                </div>
-                {videoCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {videoCategories.map((category) => (
-                      <Badge key={category} variant="secondary" className="flex items-center gap-1">
-                        {category}
-                        <button
-                          type="button"
-                          onClick={() => toggleCategory(category)}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Display Location */}
-              <div className="space-y-2">
-                <Label htmlFor="display-location">Display Location</Label>
-                <Select value={videoDisplayLocation} onValueChange={(value: any) => setVideoDisplayLocation(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select where to display the video" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="main-banner">Main Banner (Featured Hero)</SelectItem>
-                    <SelectItem value="new-releases">New Releases</SelectItem>
-                    <SelectItem value="trending">Trending Now</SelectItem>
-                    <SelectItem value="most-loved">Most Loved</SelectItem>
-                    <SelectItem value="all">All Sections</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Choose where this video should appear on the home feed
-                </p>
-              </div>
-
-              {/* Main Event Checkbox */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <input
-                    id="main-event"
-                    type="checkbox"
-                    checked={isMainEvent}
-                    onChange={(e) => setIsMainEvent(e.target.checked)}
-                    className="rounded border-gray-300"
-                  />
-                  <Label htmlFor="main-event" className="text-sm font-medium">
-                    Main Event
-                  </Label>
-                </div>
-                <p className="text-xs text-muted-foreground ml-6">
-                  Check this box for high-profile episodes that should appear in the hero banner section. 
-                  This overrides the display location setting above.
-                </p>
-              </div>
-
-              {/* Tags */}
-              <div className="space-y-2">
-                <Label>Tags</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Add a tag..."
-                    onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                  />
-                  <Button type="button" onClick={addTag} size="sm">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                {videoTags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {videoTags.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeTag(tag)}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Upload Button */}
-              <Button
-                onClick={handleVideoUpload}
-                disabled={isUploading || !videoFile || !videoTitle.trim() || !videoDescription.trim()}
-                className="w-full"
-              >
-                {isUploading ? (
-                  <>
-                    <Upload className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Video to Home Feed
-                  </>
-                )}
-              </Button>
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
+              <p className="text-muted-foreground text-center">
+                All requests have been reviewed and processed.
+              </p>
             </CardContent>
           </Card>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Pending Requests</h2>
+            {pendingRequests.map((request) => (
+              <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex gap-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={request.user.avatarUrl || ''} />
+                        <AvatarFallback>
+                          {request.user.displayName?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
+                          <Badge variant="outline">Pending</Badge>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <p><strong>Email:</strong> {request.user.email}</p>
+                            <p><strong>Experience:</strong> {request.experience}</p>
+                          </div>
+                          <div>
+                            <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                            <p><strong>Portfolio Images:</strong> {request.portfolioImages.length}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm mt-2">{request.artistStatement}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedRequest(request)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprove(request)}
+                        disabled={isProcessing}
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setRejectionReason('');
+                        }}
+                        disabled={isProcessing}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
 
-          {/* Product Upload Form */}
-          <Card className="mt-6">
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Upload Product to Marketplace
+              <CardTitle className="flex items-center justify-between">
+                Upload Content
+                <Button variant="ghost" size="sm" onClick={() => setShowUploadModal(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
               </CardTitle>
-              <CardDescription>
-                Add new products to the marketplace with 2-5 images on white background
-              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Product Title */}
-              <div className="space-y-2">
-                <Label htmlFor="product-title">Product Title *</Label>
-                <Input
-                  id="product-title"
-                  value={productTitle}
-                  onChange={(e) => setProductTitle(e.target.value)}
-                  placeholder="Enter product title..."
-                />
-              </div>
+            <CardContent>
+              <Tabs defaultValue="video-upload" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="video-upload">Video Upload</TabsTrigger>
+                  <TabsTrigger value="product-upload">Product Upload</TabsTrigger>
+                </TabsList>
 
-              {/* Product Description */}
-              <div className="space-y-2">
-                <Label htmlFor="product-description">Product Description *</Label>
-                <Textarea
-                  id="product-description"
-                  value={productDescription}
-                  onChange={(e) => setProductDescription(e.target.value)}
-                  placeholder="Enter product description..."
-                  rows={3}
-                />
-              </div>
+                <TabsContent value="video-upload" className="mt-6">
+                  {/* Video Upload Form */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="video-title">Video Title *</Label>
+                      <Input
+                        id="video-title"
+                        value={videoTitle}
+                        onChange={(e) => setVideoTitle(e.target.value)}
+                        placeholder="Enter video title..."
+                      />
+                    </div>
 
-              {/* Price Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="product-price">Price *</Label>
-                  <Input
-                    id="product-price"
-                    type="number"
-                    step="0.01"
-                    value={productPrice}
-                    onChange={(e) => setProductPrice(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="product-original-price">Original Price (if on sale)</Label>
-                  <Input
-                    id="product-original-price"
-                    type="number"
-                    step="0.01"
-                    value={productOriginalPrice}
-                    onChange={(e) => setProductOriginalPrice(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="video-description">Video Description *</Label>
+                      <Textarea
+                        id="video-description"
+                        value={videoDescription}
+                        onChange={(e) => setVideoDescription(e.target.value)}
+                        placeholder="Enter video description..."
+                        rows={3}
+                      />
+                    </div>
 
-              {/* Category and Subcategory */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="product-category">Category *</Label>
-                  <Select value={productCategory} onValueChange={(value) => {
-                    setProductCategory(value);
-                    // Reset subcategory when category changes
-                    setProductSubcategory(value === 'art-prints' ? 'fine-art-prints' : 'art-history');
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="art-prints">Art Prints</SelectItem>
-                      <SelectItem value="art-books">Art Books</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="product-subcategory">Subcategory *</Label>
-                  <Select value={productSubcategory} onValueChange={setProductSubcategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select subcategory" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {productCategory === 'art-prints' ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="video-file">Video File *</Label>
+                      <Input
+                        id="video-file"
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="thumbnail-file">Thumbnail (optional)</Label>
+                      <Input
+                        id="thumbnail-file"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleVideoUpload}
+                      disabled={isUploading || !videoFile || !videoTitle.trim() || !videoDescription.trim()}
+                      className="w-full"
+                    >
+                      {isUploading ? (
                         <>
-                          <SelectItem value="fine-art-prints">Fine Art Prints</SelectItem>
-                          <SelectItem value="canvas-prints">Canvas Prints</SelectItem>
-                          <SelectItem value="framed-prints">Framed Prints</SelectItem>
-                          <SelectItem value="limited-editions">Limited Editions</SelectItem>
-                          <SelectItem value="posters">Posters</SelectItem>
-                          <SelectItem value="digital-prints">Digital Downloads</SelectItem>
+                          <Upload className="h-4 w-4 mr-2 animate-spin" />
+                          Uploading...
                         </>
                       ) : (
                         <>
-                          <SelectItem value="art-history">Art History</SelectItem>
-                          <SelectItem value="artist-biographies">Artist Biographies</SelectItem>
-                          <SelectItem value="technique-books">Technique & How-To</SelectItem>
-                          <SelectItem value="art-theory">Art Theory</SelectItem>
-                          <SelectItem value="coffee-table-books">Coffee Table Books</SelectItem>
-                          <SelectItem value="exhibition-catalogs">Exhibition Catalogs</SelectItem>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload Video
                         </>
                       )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Stock and Sale Status */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="product-stock">Stock Quantity *</Label>
-                  <Input
-                    id="product-stock"
-                    type="number"
-                    min="0"
-                    value={productStock}
-                    onChange={(e) => setProductStock(e.target.value)}
-                    placeholder="1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      id="product-on-sale"
-                      type="checkbox"
-                      checked={isProductOnSale}
-                      onChange={(e) => setIsProductOnSale(e.target.checked)}
-                      className="rounded"
-                    />
-                    <Label htmlFor="product-on-sale">Product is on sale</Label>
+                    </Button>
                   </div>
-                </div>
-              </div>
+                </TabsContent>
 
-              {/* Product Images */}
-              <div className="space-y-2">
-                <Label htmlFor="product-images">Product Images * (2-5 images on white background)</Label>
-                <Input
-                  id="product-images"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    setProductImages(files);
-                  }}
-                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Upload 2-5 high-quality images of your product on a white background
-                </p>
-                {productImages.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {productImages.map((file, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        {file.name}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newFiles = productImages.filter((_, i) => i !== index);
-                            setProductImages(newFiles);
-                          }}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
+                <TabsContent value="product-upload" className="mt-6">
+                  {/* Product Upload Form */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="product-title">Product Title *</Label>
+                      <Input
+                        id="product-title"
+                        value={productTitle}
+                        onChange={(e) => setProductTitle(e.target.value)}
+                        placeholder="Enter product title..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="product-description">Product Description *</Label>
+                      <Textarea
+                        id="product-description"
+                        value={productDescription}
+                        onChange={(e) => setProductDescription(e.target.value)}
+                        placeholder="Enter product description..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="product-price">Price *</Label>
+                        <Input
+                          id="product-price"
+                          type="number"
+                          step="0.01"
+                          value={productPrice}
+                          onChange={(e) => setProductPrice(e.target.value)}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="product-category">Category *</Label>
+                        <Select value={productCategory} onValueChange={(value) => {
+                          setProductCategory(value);
+                          setProductSubcategory(value === 'art-prints' ? 'fine-art-prints' : 'art-history');
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="art-prints">Art Prints</SelectItem>
+                            <SelectItem value="art-books">Art Books</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="product-images">Product Images * (2-5 images on white background)</Label>
+                      <Input
+                        id="product-images"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setProductImages(files);
+                        }}
+                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Upload 2-5 high-quality images of your product on a white background
+                      </p>
+                    </div>
+
+                    <Button
+                      onClick={handleProductUpload}
+                      disabled={isProductUploading || !productTitle.trim() || !productDescription.trim() || !productPrice.trim() || productImages.length < 2}
+                      className="w-full"
+                    >
+                      {isProductUploading ? (
+                        <>
+                          <Upload className="h-4 w-4 mr-2 animate-spin" />
+                          Uploading Product...
+                        </>
+                      ) : (
+                        <>
+                          <Package className="h-4 w-4 mr-2" />
+                          Upload Product
+                        </>
+                      )}
+                    </Button>
                   </div>
-                )}
-              </div>
-
-              {/* Product Tags */}
-              <div className="space-y-2">
-                <Label htmlFor="product-tags">Product Tags</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="product-tags"
-                    value={newProductTag}
-                    onChange={(e) => setNewProductTag(e.target.value)}
-                    placeholder="Add a tag..."
-                    onKeyPress={(e) => e.key === 'Enter' && addProductTag()}
-                  />
-                  <Button type="button" onClick={addProductTag} size="sm">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                {productTags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {productTags.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeProductTag(tag)}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Upload Button */}
-              <Button
-                onClick={handleProductUpload}
-                disabled={isProductUploading || !productTitle.trim() || !productDescription.trim() || !productPrice.trim() || productImages.length < 2}
-                className="w-full"
-              >
-                {isProductUploading ? (
-                  <>
-                    <Upload className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading Product...
-                  </>
-                ) : (
-                  <>
-                    <Package className="h-4 w-4 mr-2" />
-                    Upload Product to Marketplace
-                  </>
-                )}
-              </Button>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="advertising" className="mt-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Advertising Applications</h2>
-              <div className="text-sm text-muted-foreground">
-                {advertisingApplications.length} total applications
-              </div>
-            </div>
-
-            {advertisingApplications.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Megaphone className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <CardTitle className="mb-2">No advertising applications</CardTitle>
-                  <CardDescription>
-                    No advertising applications have been submitted yet.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {advertisingApplications.map((application) => (
-                  <Card key={application.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold">{application.companyName}</h3>
-                            {getStatusBadge(application.status)}
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                            <div>
-                              <p><strong>Contact:</strong> {application.contactName}</p>
-                              <p><strong>Email:</strong> {application.email}</p>
-                              {application.phone && <p><strong>Phone:</strong> {application.phone}</p>}
-                              {application.website && <p><strong>Website:</strong> <a href={application.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{application.website}</a></p>}
-                            </div>
-                            <div>
-                              <p><strong>Type:</strong> {application.advertisingType}</p>
-                              {application.budget && <p><strong>Budget:</strong> {application.budget}</p>}
-                              <p><strong>Submitted:</strong> {application.submittedAt instanceof Date ? application.submittedAt.toLocaleDateString() : (application.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
-                            </div>
-                          </div>
-                          {application.targetAudience && (
-                            <div className="mt-3">
-                              <p className="text-sm"><strong>Target Audience:</strong> {application.targetAudience}</p>
-                            </div>
-                          )}
-                          {application.campaignGoals && (
-                            <div className="mt-2">
-                              <p className="text-sm"><strong>Campaign Goals:</strong> {application.campaignGoals}</p>
-                            </div>
-                          )}
-                          {application.message && (
-                            <div className="mt-2">
-                              <p className="text-sm"><strong>Additional Message:</strong> {application.message}</p>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedAdApplication(application)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          {application.status === 'pending' && (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => handleApproveAdApplication(application)}
-                                disabled={isProcessing}
-                              >
-                                <Check className="h-4 w-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedAdApplication(application);
-                                  setRejectionReason('');
-                                }}
-                                disabled={isProcessing}
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Reject
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Marketplace Products Tab */}
-        <TabsContent value="marketplace" className="mt-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Marketplace Products</h2>
-              <div className="text-sm text-muted-foreground">
-                {marketplaceProducts.length} total products
-              </div>
-            </div>
-
-            {marketplaceProducts.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <CardTitle className="mb-2">No marketplace products</CardTitle>
-                  <CardDescription>
-                    No products have been uploaded to the marketplace yet.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {marketplaceProducts.map((product) => (
-                  <Card key={product.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex gap-4">
-                          {product.images.length > 0 && (
-                            <img 
-                              src={product.images[0]} 
-                              alt={product.title}
-                              className="w-16 h-16 object-cover rounded-lg"
-                            />
-                          )}
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-lg font-semibold">{product.title}</h3>
-                              <Badge variant={product.isActive ? "default" : "secondary"}>
-                                {product.isActive ? "Active" : "Inactive"}
-                              </Badge>
-                              {product.isOnSale && <Badge variant="destructive">On Sale</Badge>}
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-2">{product.description}</p>
-                            <div className="flex items-center gap-4 text-sm">
-                              <span className="font-semibold">${product.price} {product.currency}</span>
-                              <span>Stock: {product.stock}</span>
-                              <span>Sales: {product.salesCount}</span>
-                              <span>Rating: {product.rating.toFixed(1)} ({product.reviewCount} reviews)</span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="outline">{product.category}</Badge>
-                              <Badge variant="outline">{product.subcategory}</Badge>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedProduct(product)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteProduct(product)}
-                            disabled={isProcessing}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Affiliate Requests Tab */}
-        <TabsContent value="affiliate" className="mt-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Affiliate Product Requests</h2>
-              <div className="text-sm text-muted-foreground">
-                {affiliateRequests.length} total requests
-              </div>
-            </div>
-
-            {affiliateRequests.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Link className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <CardTitle className="mb-2">No affiliate requests</CardTitle>
-                  <CardDescription>
-                    No affiliate product requests have been submitted yet.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {affiliateRequests.map((request) => (
-                  <Card key={request.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex gap-4">
-                          {request.productImages.length > 0 && (
-                            <img 
-                              src={request.productImages[0]} 
-                              alt={request.productTitle}
-                              className="w-16 h-16 object-cover rounded-lg"
-                            />
-                          )}
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-lg font-semibold">{request.productTitle}</h3>
-                              {getStatusBadge(request.status)}
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                              <div>
-                                <p><strong>Company:</strong> {request.companyName}</p>
-                                <p><strong>Contact:</strong> {request.contactName}</p>
-                                <p><strong>Email:</strong> {request.email}</p>
-                                <p><strong>Website:</strong> <a href={request.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.website}</a></p>
-                              </div>
-                              <div>
-                                <p><strong>Price:</strong> ${request.productPrice} {request.productCurrency}</p>
-                                <p><strong>Category:</strong> {request.productCategory} / {request.productSubcategory}</p>
-                                <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
-                              </div>
-                            </div>
-                            <p className="text-sm mt-2">{request.productDescription}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="outline">{request.productCategory}</Badge>
-                              <Badge variant="outline">{request.productSubcategory}</Badge>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedAffiliateRequest(request)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          {request.status === 'pending' && (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => handleApproveAffiliateRequest(request)}
-                                disabled={isProcessing}
-                              >
-                                <Check className="h-4 w-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedAffiliateRequest(request);
-                                  setRejectionReason('');
-                                }}
-                                disabled={isProcessing}
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Reject
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
 
       {/* Request Detail Modal */}
       {selectedRequest && (
         <AlertDialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
           <AlertDialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <AlertDialogHeader>
-              <AlertDialogTitle>Artist Request Review</AlertDialogTitle>
-              <AlertDialogDescription>
-                Review the artist request from {selectedRequest.user.displayName}
-              </AlertDialogDescription>
+              <AlertDialogTitle className="flex items-center gap-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={selectedRequest.user.avatarUrl || undefined} alt={selectedRequest.user.displayName} />
+                  <AvatarFallback>{selectedRequest.user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div>{selectedRequest.user.displayName}</div>
+                  <div className="text-sm font-normal text-muted-foreground">@{selectedRequest.user.username}</div>
+                </div>
+              </AlertDialogTitle>
             </AlertDialogHeader>
 
             <div className="space-y-6">
-              {/* User Info */}
-              <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={selectedRequest.user.avatarUrl || undefined} alt={selectedRequest.user.displayName} />
-                  <AvatarFallback className="text-lg">{selectedRequest.user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-xl font-semibold">{selectedRequest.user.displayName}</h3>
-                  <p className="text-muted-foreground">@{selectedRequest.user.username}</p>
-                  <p className="text-sm text-muted-foreground">{selectedRequest.user.email}</p>
-                </div>
-                <div className="ml-auto">
-                  {getStatusBadge(selectedRequest.status)}
-                </div>
-              </div>
-
               {/* Portfolio Images */}
-              <div>
-                <Label className="text-lg font-semibold">Portfolio Images</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                  {selectedRequest.portfolioImages.map((url, index) => (
-                    <img
-                      key={index}
-                      src={url}
-                      alt={`Portfolio ${index + 1}`}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  ))}
+              {selectedRequest.portfolioImages.length > 0 && (
+                <div>
+                  <Label className="text-base font-semibold">Portfolio Images</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+                    {selectedRequest.portfolioImages.map((url, index) => (
+                      <img
+                        key={index}
+                        src={url}
+                        alt={`Portfolio ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border"
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Artist Statement */}
               <div>
-                <Label className="text-lg font-semibold">Artist Statement</Label>
-                <p className="text-muted-foreground mt-2 whitespace-pre-wrap">{selectedRequest.artistStatement}</p>
+                <Label className="text-base font-semibold">Artist Statement</Label>
+                <p className="mt-2 text-sm text-muted-foreground">{selectedRequest.artistStatement}</p>
               </div>
 
               {/* Experience */}
-              {selectedRequest.experience && (
-                <div>
-                  <Label className="text-lg font-semibold">Experience & Background</Label>
-                  <p className="text-muted-foreground mt-2 whitespace-pre-wrap">{selectedRequest.experience}</p>
-                </div>
-              )}
+              <div>
+                <Label className="text-base font-semibold">Experience</Label>
+                <p className="mt-2 text-sm text-muted-foreground">{selectedRequest.experience}</p>
+              </div>
 
               {/* Social Links */}
               {selectedRequest.socialLinks && (
                 <div>
-                  <Label className="text-lg font-semibold">Social Media Links</Label>
-                  <div className="grid grid-cols-2 gap-4 mt-2">
+                  <Label className="text-base font-semibold">Social Links</Label>
+                  <div className="mt-2 space-y-2">
+                    {selectedRequest.socialLinks.website && (
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-4 w-4" />
+                        <span className="text-sm">Website: {selectedRequest.socialLinks.website}</span>
+                      </div>
+                    )}
                     {selectedRequest.socialLinks.instagram && (
                       <div className="flex items-center gap-2">
                         <ExternalLink className="h-4 w-4" />
@@ -2184,12 +1420,6 @@ export default function AdminPanel() {
                       <div className="flex items-center gap-2">
                         <ExternalLink className="h-4 w-4" />
                         <span className="text-sm">Twitter: {selectedRequest.socialLinks.twitter}</span>
-                      </div>
-                    )}
-                    {selectedRequest.socialLinks.website && (
-                      <div className="flex items-center gap-2">
-                        <ExternalLink className="h-4 w-4" />
-                        <span className="text-sm">Website: {selectedRequest.socialLinks.website}</span>
                       </div>
                     )}
                     {selectedRequest.socialLinks.tiktok && (
@@ -2254,95 +1484,6 @@ export default function AdminPanel() {
           </AlertDialogContent>
         </AlertDialog>
       )}
-
-      {/* Episode Detail Modal */}
-      {selectedEpisode && (
-        <AlertDialog open={!!selectedEpisode} onOpenChange={() => setSelectedEpisode(null)}>
-          <AlertDialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Episode Details</AlertDialogTitle>
-              <AlertDialogDescription>
-                Manage episode: {selectedEpisode.title}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-
-            <div className="space-y-6">
-              {/* Video Preview */}
-              <div className="flex gap-6">
-                <div className="w-64 h-36 rounded-lg overflow-hidden bg-muted">
-                  <img
-                    src={selectedEpisode.thumbnailUrl}
-                    alt={selectedEpisode.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-2">{selectedEpisode.title}</h3>
-                  <p className="text-muted-foreground mb-4">{selectedEpisode.description}</p>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p><strong>Views:</strong> {selectedEpisode.viewCount}</p>
-                      <p><strong>Likes:</strong> {selectedEpisode.likes}</p>
-                      <p><strong>Comments:</strong> {selectedEpisode.commentsCount}</p>
-                    </div>
-                    <div>
-                      <p><strong>Display Location:</strong> {selectedEpisode.displayLocation}</p>
-                      <p><strong>Main Event:</strong> {selectedEpisode.isMainEvent ? 'Yes' : 'No'}</p>
-                      <p><strong>Published:</strong> {selectedEpisode.isPublished ? 'Yes' : 'No'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Categories and Tags */}
-              <div>
-                <Label className="text-lg font-semibold">Categories</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {selectedEpisode.categories?.map((category, index) => (
-                    <Badge key={index} variant="secondary">{category}</Badge>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-lg font-semibold">Tags</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {selectedEpisode.tags?.map((tag, index) => (
-                    <Badge key={index} variant="outline">{tag}</Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Video URL */}
-              <div>
-                <Label className="text-lg font-semibold">Video URL</Label>
-                <p className="text-sm text-muted-foreground mt-1 break-all">{selectedEpisode.videoUrl}</p>
-              </div>
-            </div>
-
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setSelectedEpisode(null)}>
-                Close
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => handleToggleMainEvent(selectedEpisode)}
-                disabled={isProcessing}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {isProcessing ? 'Updating...' : (selectedEpisode.isMainEvent ? 'Remove from Main Event' : 'Set as Main Event')}
-              </AlertDialogAction>
-              <AlertDialogAction
-                onClick={() => handleDeleteEpisode(selectedEpisode)}
-                className="bg-red-600 hover:bg-red-700"
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Deleting...' : 'Delete Episode'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
-
     </div>
   );
 }
