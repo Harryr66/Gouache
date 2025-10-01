@@ -88,6 +88,7 @@ export default function AdminPanel() {
   const [productStock, setProductStock] = useState('1');
   const [isProductOnSale, setIsProductOnSale] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedView, setSelectedView] = useState<string>('artist-pending');
 
   useEffect(() => {
     const artistRequestsQuery = query(
@@ -992,18 +993,33 @@ export default function AdminPanel() {
             <CardTitle className="text-lg">Artist Account</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Pending</span>
-              <Badge variant="outline">({pendingRequests.length})</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Approved</span>
-              <Badge variant="outline">({approvedRequests.length})</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Rejected</span>
-              <Badge variant="outline">({rejectedRequests.length})</Badge>
-            </div>
+            <button
+              onClick={() => setSelectedView('artist-pending')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'artist-pending' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Pending</span>
+              <Badge variant={selectedView === 'artist-pending' ? 'secondary' : 'outline'}>({pendingRequests.length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('artist-approved')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'artist-approved' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Approved</span>
+              <Badge variant={selectedView === 'artist-approved' ? 'secondary' : 'outline'}>({approvedRequests.length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('artist-rejected')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'artist-rejected' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Rejected</span>
+              <Badge variant={selectedView === 'artist-rejected' ? 'secondary' : 'outline'}>({rejectedRequests.length})</Badge>
+            </button>
           </CardContent>
         </Card>
 
@@ -1016,18 +1032,33 @@ export default function AdminPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Episodes</span>
-              <Badge variant="outline">({episodes.length})</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Drafts</span>
-              <Badge variant="outline">(0)</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Archived</span>
-              <Badge variant="outline">(0)</Badge>
-            </div>
+            <button
+              onClick={() => setSelectedView('episodes-all')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'episodes-all' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Episodes</span>
+              <Badge variant={selectedView === 'episodes-all' ? 'secondary' : 'outline'}>({episodes.length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('episodes-drafts')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'episodes-drafts' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Drafts</span>
+              <Badge variant={selectedView === 'episodes-drafts' ? 'secondary' : 'outline'}>(0)</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('episodes-archived')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'episodes-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Archived</span>
+              <Badge variant={selectedView === 'episodes-archived' ? 'secondary' : 'outline'}>(0)</Badge>
+            </button>
           </CardContent>
         </Card>
 
@@ -1040,18 +1071,33 @@ export default function AdminPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Products</span>
-              <Badge variant="outline">({marketplaceProducts.length})</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Requests</span>
-              <Badge variant="outline">({affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Archived</span>
-              <Badge variant="outline">(0)</Badge>
-            </div>
+            <button
+              onClick={() => setSelectedView('marketplace-products')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'marketplace-products' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Products</span>
+              <Badge variant={selectedView === 'marketplace-products' ? 'secondary' : 'outline'}>({marketplaceProducts.length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('marketplace-requests')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'marketplace-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Requests</span>
+              <Badge variant={selectedView === 'marketplace-requests' ? 'secondary' : 'outline'}>({affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('marketplace-archived')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'marketplace-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Archived</span>
+              <Badge variant={selectedView === 'marketplace-archived' ? 'secondary' : 'outline'}>(0)</Badge>
+            </button>
           </CardContent>
         </Card>
 
@@ -1064,18 +1110,33 @@ export default function AdminPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Live Media</span>
-              <Badge variant="outline">({advertisingApplications.filter(app => app.status === 'approved').length})</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Requests</span>
-              <Badge variant="outline">({advertisingApplications.filter(app => app.status === 'pending').length})</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Archived</span>
-              <Badge variant="outline">(0)</Badge>
-            </div>
+            <button
+              onClick={() => setSelectedView('advertising-live')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'advertising-live' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Live Media</span>
+              <Badge variant={selectedView === 'advertising-live' ? 'secondary' : 'outline'}>({advertisingApplications.filter(app => app.status === 'approved').length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('advertising-requests')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'advertising-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Requests</span>
+              <Badge variant={selectedView === 'advertising-requests' ? 'secondary' : 'outline'}>({advertisingApplications.filter(app => app.status === 'pending').length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('advertising-archived')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'advertising-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Archived</span>
+              <Badge variant={selectedView === 'advertising-archived' ? 'secondary' : 'outline'}>(0)</Badge>
+            </button>
           </CardContent>
         </Card>
       </div>
@@ -1090,84 +1151,498 @@ export default function AdminPanel() {
 
       {/* Main Content Area */}
       <div className="space-y-6">
-        {/* Pending Requests Section */}
-        {pendingRequests.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Clock className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
-              <p className="text-muted-foreground text-center">
-                All requests have been reviewed and processed.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Pending Requests</h2>
-            {pendingRequests.map((request) => (
-              <Card key={request.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={request.user.avatarUrl || ''} />
-                        <AvatarFallback>
-                          {request.user.displayName?.charAt(0) || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
-                          <Badge variant="outline">Pending</Badge>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                          <div>
-                            <p><strong>Email:</strong> {request.user.email}</p>
-                            <p><strong>Experience:</strong> {request.experience}</p>
+        {/* Artist Account - Pending */}
+        {selectedView === 'artist-pending' && (
+          pendingRequests.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
+                <p className="text-muted-foreground text-center">
+                  All artist requests have been reviewed.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Pending Artist Requests</h2>
+              {pendingRequests.map((request) => (
+                <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={request.user.avatarUrl || ''} />
+                          <AvatarFallback>
+                            {request.user.displayName?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
+                            <Badge variant="outline">Pending</Badge>
                           </div>
-                          <div>
-                            <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
-                            <p><strong>Portfolio Images:</strong> {request.portfolioImages.length}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                            <div>
+                              <p><strong>Email:</strong> {request.user.email}</p>
+                              <p><strong>Experience:</strong> {request.experience}</p>
+                            </div>
+                            <div>
+                              <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                              <p><strong>Portfolio Images:</strong> {request.portfolioImages.length}</p>
+                            </div>
                           </div>
+                          <p className="text-sm mt-2">{request.artistStatement}</p>
                         </div>
-                        <p className="text-sm mt-2">{request.artistStatement}</p>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedRequest(request)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(request)}
+                          disabled={isProcessing}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setRejectionReason('');
+                          }}
+                          disabled={isProcessing}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-2 ml-4">
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Artist Account - Approved */}
+        {selectedView === 'artist-approved' && (
+          approvedRequests.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Check className="h-12 w-12 text-green-500 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No approved requests</h3>
+                <p className="text-muted-foreground text-center">
+                  No artist requests have been approved yet.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Approved Artists</h2>
+              {approvedRequests.map((request) => (
+                <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={request.user.avatarUrl || ''} />
+                          <AvatarFallback>
+                            {request.user.displayName?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
+                            <Badge variant="default" className="bg-green-600">Approved</Badge>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                            <div>
+                              <p><strong>Email:</strong> {request.user.email}</p>
+                              <p><strong>Reviewed:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p><strong>Reviewed by:</strong> {request.reviewedBy || 'admin'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setSelectedRequest(request)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleApprove(request)}
-                        disabled={isProcessing}
-                      >
-                        <Check className="h-4 w-4 mr-1" />
-                        Approve
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setRejectionReason('');
-                        }}
-                        disabled={isProcessing}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Reject
+                        View Details
                       </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Artist Account - Rejected */}
+        {selectedView === 'artist-rejected' && (
+          rejectedRequests.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <X className="h-12 w-12 text-red-500 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No rejected requests</h3>
+                <p className="text-muted-foreground text-center">
+                  No artist requests have been rejected yet.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Rejected Artist Requests</h2>
+              {rejectedRequests.map((request) => (
+                <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={request.user.avatarUrl || ''} />
+                          <AvatarFallback>
+                            {request.user.displayName?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
+                            <Badge variant="destructive">Rejected</Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground mb-2">
+                            <p><strong>Reason:</strong> {request.rejectionReason || 'No reason provided'}</p>
+                            <p><strong>Rejected:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedRequest(request)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View Details
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Episodes - All */}
+        {selectedView === 'episodes-all' && (
+          episodes.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Video className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No episodes uploaded</h3>
+                <p className="text-muted-foreground text-center">
+                  Upload your first video using the Upload button.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">All Episodes</h2>
+              {episodes.map((episode) => (
+                <Card key={episode.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-32 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        <img
+                          src={episode.thumbnailUrl}
+                          alt={episode.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold">{episode.title}</h3>
+                          {episode.isMainEvent && (
+                            <Badge variant="default" className="bg-red-600">Main Event</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{episode.description}</p>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span>{episode.viewCount} views</span>
+                          <span>{episode.likes} likes</span>
+                          <span>Created {episode.createdAt instanceof Date ? episode.createdAt.toLocaleDateString() : 'Recently'}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedEpisode(episode)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteEpisode(episode)}
+                          disabled={isProcessing}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Marketplace - Products */}
+        {selectedView === 'marketplace-products' && (
+          marketplaceProducts.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No products yet</h3>
+                <p className="text-muted-foreground text-center">
+                  Upload your first product using the Upload button.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Marketplace Products</h2>
+              {marketplaceProducts.map((product) => (
+                <Card key={product.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        {product.images.length > 0 && (
+                          <img 
+                            src={product.images[0]} 
+                            alt={product.title}
+                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{product.title}</h3>
+                            <Badge variant={product.isActive ? "default" : "secondary"}>
+                              {product.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                            {product.isOnSale && <Badge variant="destructive">On Sale</Badge>}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{product.description}</p>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="font-semibold">${product.price} {product.currency}</span>
+                            <span>Stock: {product.stock}</span>
+                            <span>Sales: {product.salesCount}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedProduct(product)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteProduct(product)}
+                          disabled={isProcessing}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Marketplace - Affiliate Requests */}
+        {selectedView === 'marketplace-requests' && (
+          affiliateRequests.filter(req => req.status === 'pending').length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Link className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No affiliate requests</h3>
+                <p className="text-muted-foreground text-center">
+                  No affiliate product requests pending review.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Affiliate Product Requests</h2>
+              {affiliateRequests.filter(req => req.status === 'pending').map((request) => (
+                <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        {request.productImages.length > 0 && (
+                          <img 
+                            src={request.productImages[0]} 
+                            alt={request.productTitle}
+                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{request.productTitle}</h3>
+                            <Badge variant="outline">Pending</Badge>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                            <div>
+                              <p><strong>Company:</strong> {request.companyName}</p>
+                              <p><strong>Email:</strong> {request.email}</p>
+                            </div>
+                            <div>
+                              <p><strong>Price:</strong> ${request.productPrice} {request.productCurrency}</p>
+                              <p><strong>Category:</strong> {request.productCategory}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedAffiliateRequest(request)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApproveAffiliateRequest(request)}
+                          disabled={isProcessing}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRejectAffiliateRequest(request)}
+                          disabled={isProcessing}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Advertising - Requests */}
+        {selectedView === 'advertising-requests' && (
+          advertisingApplications.filter(app => app.status === 'pending').length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No advertising requests</h3>
+                <p className="text-muted-foreground text-center">
+                  No advertising applications pending review.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Advertising Applications</h2>
+              {advertisingApplications.filter(app => app.status === 'pending').map((application) => (
+                <Card key={application.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold">{application.companyName}</h3>
+                          <Badge variant="outline">Pending</Badge>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <p><strong>Contact:</strong> {application.contactName}</p>
+                            <p><strong>Email:</strong> {application.email}</p>
+                          </div>
+                          <div>
+                            <p><strong>Type:</strong> {application.advertisingType}</p>
+                            <p><strong>Budget:</strong> {application.budget || 'Not specified'}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedAdApplication(application)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApproveAdApplication(application)}
+                          disabled={isProcessing}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setSelectedAdApplication(application)}
+                          disabled={isProcessing}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Empty states for other views */}
+        {(selectedView === 'episodes-drafts' || selectedView === 'episodes-archived' || 
+          selectedView === 'marketplace-archived' || selectedView === 'advertising-live' || 
+          selectedView === 'advertising-archived') && (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No items</h3>
+              <p className="text-muted-foreground text-center">
+                This section is currently empty.
+              </p>
+            </CardContent>
+          </Card>
         )}
       </div>
 
