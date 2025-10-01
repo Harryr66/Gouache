@@ -261,7 +261,7 @@ export default function AdvertisePage() {
                       />
                       <Label htmlFor="advertising">Advertising Only</Label>
                     </div>
-                    <p className="text-xs text-muted-foreground ml-6">Promote your brand through ads</p>
+                    <p className="text-xs text-muted-foreground ml-6">Promote your brand through promoted ad placements</p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
@@ -276,7 +276,7 @@ export default function AdvertisePage() {
                       />
                       <Label htmlFor="affiliate">Marketplace Partnership</Label>
                     </div>
-                    <p className="text-xs text-muted-foreground ml-6">Sell products with affiliate links</p>
+                    <p className="text-xs text-muted-foreground ml-6">Sell products via our affiliate marketplace</p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
