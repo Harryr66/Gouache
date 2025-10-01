@@ -88,7 +88,7 @@ export default function AdvertisePage() {
     try {
       // Submit advertising application if requested
       if (submissionType === 'advertising' || submissionType === 'both') {
-        await addDoc(collection(db, 'advertisingApplications'), {
+        const adData = {
           companyName: formData.companyName,
           contactName: formData.contactName,
           email: formData.email,
@@ -104,12 +104,14 @@ export default function AdvertisePage() {
           submittedAt: serverTimestamp(),
           createdAt: new Date(),
           updatedAt: new Date()
-        });
+        };
+        const adDocRef = await addDoc(collection(db, 'advertisingApplications'), adData);
+        console.log('✅ Advertising application submitted successfully:', adDocRef.id, adData);
       }
 
       // Submit affiliate request if requested
       if (submissionType === 'affiliate' || submissionType === 'both') {
-        await addDoc(collection(db, 'affiliateRequests'), {
+        const affiliateData = {
           companyName: formData.companyName,
           contactName: formData.contactName,
           email: formData.email,
@@ -129,7 +131,9 @@ export default function AdvertisePage() {
           message: formData.message,
           status: 'pending',
           submittedAt: serverTimestamp()
-        });
+        };
+        const affiliateDocRef = await addDoc(collection(db, 'affiliateRequests'), affiliateData);
+        console.log('✅ Affiliate request submitted successfully:', affiliateDocRef.id, affiliateData);
       }
 
       const submissionText = submissionType === 'both' ? 'applications have been' : 'application has been';

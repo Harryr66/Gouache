@@ -118,6 +118,7 @@ export default function AdminPanel() {
 
     const fetchData = async () => {
       try {
+        console.log('🔄 Admin Panel: Fetching all data...');
         const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
@@ -131,34 +132,40 @@ export default function AdminPanel() {
           ...doc.data()
         })) as ArtistRequest[];
         setArtistRequests(requests);
+        console.log(`✅ Loaded ${requests.length} artist requests:`, requests);
 
         const applications = advertisingSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as AdvertisingApplication[];
         setAdvertisingApplications(applications);
+        console.log(`✅ Loaded ${applications.length} advertising applications:`, applications);
 
         const episodes = episodesSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Episode[];
         setEpisodes(episodes);
+        console.log(`✅ Loaded ${episodes.length} episodes:`, episodes);
 
         const products = marketplaceSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as MarketplaceProduct[];
         setMarketplaceProducts(products);
+        console.log(`✅ Loaded ${products.length} marketplace products:`, products);
 
         const affiliateRequests = affiliateSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as AffiliateProductRequest[];
         setAffiliateRequests(affiliateRequests);
+        console.log(`✅ Loaded ${affiliateRequests.length} affiliate requests:`, affiliateRequests);
 
         setLoading(false);
+        console.log('✅ Admin Panel: All data loaded successfully');
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('❌ Error fetching admin panel data:', error);
         setLoading(false);
       }
     };

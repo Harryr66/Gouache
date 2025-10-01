@@ -250,7 +250,8 @@ export default function ProfileEditPage() {
         submittedAt: new Date()
       };
 
-      await addDoc(collection(db, 'artistRequests'), artistRequest);
+      const docRef = await addDoc(collection(db, 'artistRequests'), artistRequest);
+      console.log('✅ Artist request submitted successfully:', docRef.id, artistRequest);
 
       toast({
         title: "Request submitted",
