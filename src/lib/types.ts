@@ -61,6 +61,72 @@ export interface AdvertisingApplication {
   rejectionReason?: string;
 }
 
+export interface MarketplaceProduct {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  currency: string;
+  category: string;
+  subcategory: string;
+  images: string[];
+  sellerId: string;
+  sellerName: string;
+  sellerWebsite?: string;
+  affiliateLink?: string;
+  isAffiliate: boolean;
+  isActive: boolean;
+  stock: number;
+  rating: number;
+  reviewCount: number;
+  tags: string[];
+  dimensions?: {
+    width: number;
+    height: number;
+    depth?: number;
+    unit: 'cm' | 'in';
+  };
+  weight?: number;
+  shippingInfo?: {
+    freeShipping: boolean;
+    shippingCost: number;
+    estimatedDays: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  salesCount: number;
+  isOnSale: boolean;
+  isWishlisted?: boolean;
+}
+
+export interface AffiliateProductRequest {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  website: string;
+  productCategory: string;
+  productSubcategory: string;
+  productTitle: string;
+  productDescription: string;
+  productPrice: number;
+  productCurrency: string;
+  productImages: string[];
+  affiliateLink: string;
+  commissionRate?: number;
+  targetAudience?: string;
+  marketingGoals?: string;
+  message?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: Date;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  rejectionReason?: string;
+  notes?: string;
+}
+
 export interface Artwork {
   id: string;
   artist: Artist;

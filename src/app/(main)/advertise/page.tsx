@@ -33,6 +33,7 @@ const budgetRanges = [
 
 export default function AdvertisePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionType, setSubmissionType] = useState<'advertising' | 'affiliate' | 'both'>('advertising');
   const [formData, setFormData] = useState({
     companyName: '',
     contactName: '',
@@ -44,7 +45,17 @@ export default function AdvertisePage() {
     targetAudience: '',
     campaignGoals: '',
     message: '',
-    timeline: ''
+    timeline: '',
+    // Affiliate-specific fields
+    productCategory: '',
+    productSubcategory: '',
+    productTitle: '',
+    productDescription: '',
+    productPrice: '',
+    productCurrency: 'USD',
+    affiliateLink: '',
+    commissionRate: '',
+    marketingGoals: ''
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -54,7 +65,17 @@ export default function AdvertisePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.companyName || !formData.contactName || !formData.email || !formData.advertisingType) {
+    // Validate required fields based on submission type
+    const requiredFields = ['companyName', 'contactName', 'email'];
+    if (submissionType === 'advertising' || submissionType === 'both') {
+      requiredFields.push('advertisingType');
+    }
+    if (submissionType === 'affiliate' || submissionType === 'both') {
+      requiredFields.push('website', 'productCategory', 'productSubcategory', 'productTitle', 'productDescription', 'productPrice', 'affiliateLink');
+    }
+
+    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+    if (missingFields.length > 0) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -65,17 +86,56 @@ export default function AdvertisePage() {
 
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, 'advertisingApplications'), {
-        ...formData,
-        status: 'pending',
-        submittedAt: serverTimestamp(),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
+      // Submit advertising application if requested
+      if (submissionType === 'advertising' || submissionType === 'both') {
+        await addDoc(collection(db, 'advertisingApplications'), {
+          companyName: formData.companyName,
+          contactName: formData.contactName,
+          email: formData.email,
+          phone: formData.phone,
+          website: formData.website,
+          advertisingType: formData.advertisingType,
+          budget: formData.budget,
+          targetAudience: formData.targetAudience,
+          campaignGoals: formData.campaignGoals,
+          message: formData.message,
+          timeline: formData.timeline,
+          status: 'pending',
+          submittedAt: serverTimestamp(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
 
+      // Submit affiliate request if requested
+      if (submissionType === 'affiliate' || submissionType === 'both') {
+        await addDoc(collection(db, 'affiliateRequests'), {
+          companyName: formData.companyName,
+          contactName: formData.contactName,
+          email: formData.email,
+          phone: formData.phone,
+          website: formData.website,
+          productCategory: formData.productCategory,
+          productSubcategory: formData.productSubcategory,
+          productTitle: formData.productTitle,
+          productDescription: formData.productDescription,
+          productPrice: parseFloat(formData.productPrice),
+          productCurrency: formData.productCurrency,
+          productImages: [], // Will be uploaded separately
+          affiliateLink: formData.affiliateLink,
+          commissionRate: formData.commissionRate,
+          targetAudience: formData.targetAudience,
+          marketingGoals: formData.marketingGoals,
+          message: formData.message,
+          status: 'pending',
+          submittedAt: serverTimestamp()
+        });
+      }
+
+      const submissionText = submissionType === 'both' ? 'applications have been' : 'application has been';
       toast({
         title: "Application Submitted",
-        description: "Your advertising application has been submitted successfully. We'll review it and get back to you within 2-3 business days.",
+        description: `Your ${submissionText} submitted successfully. We'll review it and get back to you within 2-3 business days.`,
       });
 
       // Reset form
@@ -90,7 +150,16 @@ export default function AdvertisePage() {
         targetAudience: '',
         campaignGoals: '',
         message: '',
-        timeline: ''
+        timeline: '',
+        productCategory: '',
+        productSubcategory: '',
+        productTitle: '',
+        productDescription: '',
+        productPrice: '',
+        productCurrency: 'USD',
+        affiliateLink: '',
+        commissionRate: '',
+        marketingGoals: ''
       });
     } catch (error) {
       console.error('Error submitting application:', error);
@@ -163,14 +232,69 @@ export default function AdvertisePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Advertising Application
+              {submissionType === 'affiliate' ? 'Marketplace Partnership Application' : 
+               submissionType === 'both' ? 'Advertising & Marketplace Partnership' : 
+               'Advertising Application'}
             </CardTitle>
             <CardDescription>
-              Fill out the form below to submit your advertising application. Our team will review it and get back to you within 2-3 business days.
+              {submissionType === 'affiliate' ? 'Apply to showcase your products in our marketplace with affiliate links.' :
+               submissionType === 'both' ? 'Apply for both advertising opportunities and marketplace partnership.' :
+               'Fill out the form below to submit your advertising application. Our team will review it and get back to you within 2-3 business days.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Submission Type Selection */}
+              <div className="space-y-2">
+                <Label>What are you interested in? *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        id="advertising"
+                        type="radio"
+                        name="submissionType"
+                        value="advertising"
+                        checked={submissionType === 'advertising'}
+                        onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'affiliate' | 'both')}
+                        className="rounded"
+                      />
+                      <Label htmlFor="advertising">Advertising Only</Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-6">Promote your brand through ads</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        id="affiliate"
+                        type="radio"
+                        name="submissionType"
+                        value="affiliate"
+                        checked={submissionType === 'affiliate'}
+                        onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'affiliate' | 'both')}
+                        className="rounded"
+                      />
+                      <Label htmlFor="affiliate">Marketplace Partnership</Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-6">Sell products with affiliate links</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        id="both"
+                        type="radio"
+                        name="submissionType"
+                        value="both"
+                        checked={submissionType === 'both'}
+                        onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'affiliate' | 'both')}
+                        className="rounded"
+                      />
+                      <Label htmlFor="both">Both Options</Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-6">Advertising + marketplace</p>
+                  </div>
+                </div>
+              </div>
               {/* Company Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-foreground">Company Information</h3>
@@ -312,8 +436,159 @@ export default function AdvertisePage() {
                 </div>
               </div>
 
+              {/* Affiliate Product Information */}
+              {(submissionType === 'affiliate' || submissionType === 'both') && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground">Product Information</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="productCategory">Product Category *</Label>
+                      <Select value={formData.productCategory} onValueChange={(value) => {
+                        handleInputChange('productCategory', value);
+                        // Reset subcategory when category changes
+                        handleInputChange('productSubcategory', value === 'art-prints' ? 'fine-art-prints' : 'art-history');
+                      }}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="art-prints">Art Prints</SelectItem>
+                          <SelectItem value="art-books">Art Books</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="productSubcategory">Product Subcategory *</Label>
+                      <Select value={formData.productSubcategory} onValueChange={(value) => handleInputChange('productSubcategory', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select subcategory" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {formData.productCategory === 'art-prints' ? (
+                            <>
+                              <SelectItem value="fine-art-prints">Fine Art Prints</SelectItem>
+                              <SelectItem value="canvas-prints">Canvas Prints</SelectItem>
+                              <SelectItem value="framed-prints">Framed Prints</SelectItem>
+                              <SelectItem value="limited-editions">Limited Editions</SelectItem>
+                              <SelectItem value="posters">Posters</SelectItem>
+                              <SelectItem value="digital-prints">Digital Downloads</SelectItem>
+                            </>
+                          ) : formData.productCategory === 'art-books' ? (
+                            <>
+                              <SelectItem value="art-history">Art History</SelectItem>
+                              <SelectItem value="artist-biographies">Artist Biographies</SelectItem>
+                              <SelectItem value="technique-books">Technique & How-To</SelectItem>
+                              <SelectItem value="art-theory">Art Theory</SelectItem>
+                              <SelectItem value="coffee-table-books">Coffee Table Books</SelectItem>
+                              <SelectItem value="exhibition-catalogs">Exhibition Catalogs</SelectItem>
+                            </>
+                          ) : null}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="productTitle">Product Title *</Label>
+                    <Input
+                      id="productTitle"
+                      value={formData.productTitle}
+                      onChange={(e) => handleInputChange('productTitle', e.target.value)}
+                      placeholder="Enter product title"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="productDescription">Product Description *</Label>
+                    <Textarea
+                      id="productDescription"
+                      value={formData.productDescription}
+                      onChange={(e) => handleInputChange('productDescription', e.target.value)}
+                      placeholder="Describe your product in detail"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="productPrice">Product Price *</Label>
+                      <Input
+                        id="productPrice"
+                        type="number"
+                        step="0.01"
+                        value={formData.productPrice}
+                        onChange={(e) => handleInputChange('productPrice', e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="productCurrency">Currency</Label>
+                      <Select value={formData.productCurrency} onValueChange={(value) => handleInputChange('productCurrency', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                          <SelectItem value="CAD">CAD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="affiliateLink">Affiliate Link *</Label>
+                    <Input
+                      id="affiliateLink"
+                      value={formData.affiliateLink}
+                      onChange={(e) => handleInputChange('affiliateLink', e.target.value)}
+                      placeholder="https://yourwebsite.com/product-page"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This is where customers will be redirected when they click "Buy Now"
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="commissionRate">Commission Rate (optional)</Label>
+                    <Input
+                      id="commissionRate"
+                      value={formData.commissionRate}
+                      onChange={(e) => handleInputChange('commissionRate', e.target.value)}
+                      placeholder="e.g., 10% or $5 per sale"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="marketingGoals">Marketing Goals</Label>
+                    <Textarea
+                      id="marketingGoals"
+                      value={formData.marketingGoals}
+                      onChange={(e) => handleInputChange('marketingGoals', e.target.value)}
+                      placeholder="What are your marketing goals for this product?"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-semibold text-foreground mb-2">Product Image Requirements</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Upload 2-5 high-quality images on a white background</li>
+                      <li>• Images should be at least 1000x1000 pixels</li>
+                      <li>• Product should be clearly visible and well-lit</li>
+                      <li>• Images will be uploaded after your application is approved</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting...' : 'Submit Application'}
+                {isSubmitting ? 'Submitting...' : 
+                 submissionType === 'both' ? 'Submit Applications' :
+                 submissionType === 'affiliate' ? 'Submit Partnership Application' :
+                 'Submit Application'}
               </Button>
             </form>
           </CardContent>

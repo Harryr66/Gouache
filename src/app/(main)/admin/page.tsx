@@ -14,8 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
-import { ArtistRequest, Episode, AdvertisingApplication } from '@/lib/types';
-import { Check, X, Eye, Clock, User, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit } from 'lucide-react';
+import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest } from '@/lib/types';
+import { Check, X, Eye, Clock, User, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const ART_MEDIUM_CATEGORIES = [
@@ -49,10 +49,14 @@ export default function AdminPanel() {
   const [artistRequests, setArtistRequests] = useState<ArtistRequest[]>([]);
   const [advertisingApplications, setAdvertisingApplications] = useState<AdvertisingApplication[]>([]);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
+  const [affiliateRequests, setAffiliateRequests] = useState<AffiliateProductRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<ArtistRequest | null>(null);
   const [selectedAdApplication, setSelectedAdApplication] = useState<AdvertisingApplication | null>(null);
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<MarketplaceProduct | null>(null);
+  const [selectedAffiliateRequest, setSelectedAffiliateRequest] = useState<AffiliateProductRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -70,6 +74,20 @@ export default function AdminPanel() {
   const [newTag, setNewTag] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
+  // Product upload states
+  const [productTitle, setProductTitle] = useState('');
+  const [productDescription, setProductDescription] = useState('');
+  const [productPrice, setProductPrice] = useState('');
+  const [productOriginalPrice, setProductOriginalPrice] = useState('');
+  const [productCategory, setProductCategory] = useState('art-prints');
+  const [productSubcategory, setProductSubcategory] = useState('fine-art-prints');
+  const [productImages, setProductImages] = useState<File[]>([]);
+  const [productTags, setProductTags] = useState<string[]>([]);
+  const [newProductTag, setNewProductTag] = useState('');
+  const [isProductUploading, setIsProductUploading] = useState(false);
+  const [productStock, setProductStock] = useState('1');
+  const [isProductOnSale, setIsProductOnSale] = useState(false);
+
   useEffect(() => {
     const artistRequestsQuery = query(
       collection(db, 'artistRequests'),
@@ -86,12 +104,24 @@ export default function AdminPanel() {
       orderBy('createdAt', 'desc')
     );
 
+    const marketplaceQuery = query(
+      collection(db, 'marketplaceProducts'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const affiliateQuery = query(
+      collection(db, 'affiliateRequests'),
+      orderBy('submittedAt', 'desc')
+    );
+
     const fetchData = async () => {
       try {
-        const [artistSnapshot, advertisingSnapshot, episodesSnapshot] = await Promise.all([
+        const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
-          getDocs(episodesQuery)
+          getDocs(episodesQuery),
+          getDocs(marketplaceQuery),
+          getDocs(affiliateQuery)
         ]);
 
         const requests = artistSnapshot.docs.map(doc => ({
@@ -111,6 +141,19 @@ export default function AdminPanel() {
           ...doc.data()
         })) as Episode[];
         setEpisodes(episodes);
+
+        const products = marketplaceSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as MarketplaceProduct[];
+        setMarketplaceProducts(products);
+
+        const affiliateRequests = affiliateSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as AffiliateProductRequest[];
+        setAffiliateRequests(affiliateRequests);
+
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -583,6 +626,282 @@ export default function AdminPanel() {
     }
   };
 
+  // Product upload function
+  const handleProductUpload = async () => {
+    if (!productTitle.trim() || !productDescription.trim() || !productPrice.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (productImages.length < 2) {
+      toast({
+        title: "Error",
+        description: "Please upload at least 2 product images on a white background.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (productImages.length > 5) {
+      toast({
+        title: "Error",
+        description: "Maximum 5 product images allowed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProductUploading(true);
+
+    try {
+      console.log('=== STARTING PRODUCT UPLOAD ===');
+      console.log('Product title:', productTitle);
+      console.log('Product images count:', productImages.length);
+
+      // Upload product images to Firebase Storage
+      const uploadedImageUrls: string[] = [];
+      
+      for (let i = 0; i < productImages.length; i++) {
+        const imageFile = productImages[i];
+        console.log(`Uploading image ${i + 1}/${productImages.length}:`, imageFile.name);
+        
+        const imageRef = ref(storage, `marketplace/products/${Date.now()}-${imageFile.name}`);
+        const uploadTask = uploadBytesResumable(imageRef, imageFile);
+        
+        await new Promise((resolve, reject) => {
+          uploadTask.on('state_changed',
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              console.log(`Image ${i + 1} upload progress: ${progress}%`);
+            },
+            (error) => {
+              console.error(`Error uploading image ${i + 1}:`, error);
+              reject(error);
+            },
+            async () => {
+              try {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                console.log(`Image ${i + 1} uploaded successfully:`, downloadURL);
+                uploadedImageUrls.push(downloadURL);
+                resolve(downloadURL);
+              } catch (error) {
+                console.error(`Error getting download URL for image ${i + 1}:`, error);
+                reject(error);
+              }
+            }
+          );
+        });
+      }
+
+      console.log('All images uploaded successfully:', uploadedImageUrls);
+
+      // Create product document in Firestore
+      const productData: Omit<MarketplaceProduct, 'id'> = {
+        title: productTitle,
+        description: productDescription,
+        price: parseFloat(productPrice),
+        originalPrice: productOriginalPrice ? parseFloat(productOriginalPrice) : undefined,
+        currency: 'USD',
+        category: productCategory,
+        subcategory: productSubcategory,
+        images: uploadedImageUrls,
+        sellerId: 'admin',
+        sellerName: 'SOMA Marketplace',
+        isAffiliate: false,
+        isActive: true,
+        stock: parseInt(productStock),
+        rating: 0,
+        reviewCount: 0,
+        tags: productTags,
+        salesCount: 0,
+        isOnSale: isProductOnSale,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      console.log('=== SAVING PRODUCT TO FIRESTORE ===');
+      console.log('Product data:', productData);
+      
+      const docRef = await addDoc(collection(db, 'marketplaceProducts'), productData);
+      console.log('Product saved to Firestore with ID:', docRef.id);
+
+      toast({
+        title: "Product Uploaded Successfully",
+        description: "Your product has been uploaded and will appear in the marketplace.",
+      });
+
+      // Reset form
+      setProductTitle('');
+      setProductDescription('');
+      setProductPrice('');
+      setProductOriginalPrice('');
+      setProductCategory('art-prints');
+      setProductSubcategory('fine-art-prints');
+      setProductImages([]);
+      setProductTags([]);
+      setNewProductTag('');
+      setProductStock('1');
+      setIsProductOnSale(false);
+      
+    } catch (error) {
+      console.error('Error uploading product:', error);
+      let errorMessage = "Failed to upload product. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('storage/unauthorized')) {
+          errorMessage = "Storage access denied. Please check Firebase Storage rules.";
+        } else if (error.message.includes('storage/bucket-not-found')) {
+          errorMessage = "Firebase Storage bucket not found. Please set up Storage in Firebase Console.";
+        } else {
+          errorMessage = `Upload failed: ${error.message}`;
+        }
+      }
+      
+      toast({
+        title: "Upload Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsProductUploading(false);
+    }
+  };
+
+  // Product tag management functions
+  const addProductTag = () => {
+    if (newProductTag.trim() && !productTags.includes(newProductTag.trim())) {
+      setProductTags([...productTags, newProductTag.trim()]);
+      setNewProductTag('');
+    }
+  };
+
+  const removeProductTag = (tagToRemove: string) => {
+    setProductTags(productTags.filter(tag => tag !== tagToRemove));
+  };
+
+  // Product management functions
+  const handleDeleteProduct = async (product: MarketplaceProduct) => {
+    setIsProcessing(true);
+    try {
+      // Delete product images from Storage if they exist
+      for (const imageUrl of product.images) {
+        if (imageUrl.includes('firebasestorage')) {
+          const imageRef = ref(storage, imageUrl);
+          await deleteObject(imageRef);
+        }
+      }
+
+      // Delete product document from Firestore
+      await deleteDoc(doc(db, 'marketplaceProducts', product.id));
+
+      toast({
+        title: "Product Deleted",
+        description: "Product has been successfully deleted from the marketplace.",
+      });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: "Delete Error",
+        description: "Failed to delete product. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Affiliate request management functions
+  const handleApproveAffiliateRequest = async (request: AffiliateProductRequest) => {
+    setIsProcessing(true);
+    try {
+      // Update the affiliate request status
+      await updateDoc(doc(db, 'affiliateRequests', request.id), {
+        status: 'approved',
+        reviewedAt: serverTimestamp(),
+        reviewedBy: 'admin',
+        notes: adminNotes
+      });
+
+      // Create a marketplace product from the affiliate request
+      const productData: Omit<MarketplaceProduct, 'id'> = {
+        title: request.productTitle,
+        description: request.productDescription,
+        price: request.productPrice,
+        currency: request.productCurrency,
+        category: request.productCategory,
+        subcategory: request.productSubcategory,
+        images: request.productImages,
+        sellerId: 'affiliate',
+        sellerName: request.companyName,
+        sellerWebsite: request.website,
+        affiliateLink: request.affiliateLink,
+        isAffiliate: true,
+        isActive: true,
+        stock: 999, // Unlimited stock for affiliate products
+        rating: 0,
+        reviewCount: 0,
+        tags: [],
+        salesCount: 0,
+        isOnSale: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      await addDoc(collection(db, 'marketplaceProducts'), productData);
+
+      toast({
+        title: "Affiliate Request Approved",
+        description: "The affiliate product has been added to the marketplace.",
+      });
+
+      setSelectedAffiliateRequest(null);
+      setAdminNotes('');
+    } catch (error) {
+      console.error('Error approving affiliate request:', error);
+      toast({
+        title: "Approval Error",
+        description: "Failed to approve affiliate request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRejectAffiliateRequest = async (request: AffiliateProductRequest) => {
+    setIsProcessing(true);
+    try {
+      await updateDoc(doc(db, 'affiliateRequests', request.id), {
+        status: 'rejected',
+        reviewedAt: serverTimestamp(),
+        reviewedBy: 'admin',
+        rejectionReason: rejectionReason
+      });
+
+      toast({
+        title: "Affiliate Request Rejected",
+        description: "The affiliate request has been rejected.",
+      });
+
+      setSelectedAffiliateRequest(null);
+      setRejectionReason('');
+      setAdminNotes('');
+    } catch (error) {
+      console.error('Error rejecting affiliate request:', error);
+      toast({
+        title: "Rejection Error",
+        description: "Failed to reject affiliate request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Episode management functions
   const handleDeleteEpisode = async (episode: Episode) => {
     setIsProcessing(true);
@@ -666,7 +985,7 @@ export default function AdminPanel() {
       </div>
 
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 h-auto">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8 h-auto">
           <TabsTrigger value="pending" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             <span className="hidden sm:inline">Pending</span>
             <span className="sm:hidden">Pending</span>
@@ -687,6 +1006,18 @@ export default function AdminPanel() {
             <span className="hidden sm:inline">Advertising</span>
             <span className="sm:hidden">Ads</span>
             <span className="ml-1">({advertisingApplications.filter(app => app.status === 'pending').length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="marketplace" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Marketplace</span>
+            <span className="sm:hidden">Shop</span>
+            <span className="ml-1">({marketplaceProducts.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="affiliate" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            <Link className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Affiliate</span>
+            <span className="sm:hidden">Affiliate</span>
+            <span className="ml-1">({affiliateRequests.filter(req => req.status === 'pending').length})</span>
           </TabsTrigger>
           <TabsTrigger value="episodes" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             <Video className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -1262,6 +1593,235 @@ export default function AdminPanel() {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Product Upload Form */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Upload Product to Marketplace
+              </CardTitle>
+              <CardDescription>
+                Add new products to the marketplace with 2-5 images on white background
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Product Title */}
+              <div className="space-y-2">
+                <Label htmlFor="product-title">Product Title *</Label>
+                <Input
+                  id="product-title"
+                  value={productTitle}
+                  onChange={(e) => setProductTitle(e.target.value)}
+                  placeholder="Enter product title..."
+                />
+              </div>
+
+              {/* Product Description */}
+              <div className="space-y-2">
+                <Label htmlFor="product-description">Product Description *</Label>
+                <Textarea
+                  id="product-description"
+                  value={productDescription}
+                  onChange={(e) => setProductDescription(e.target.value)}
+                  placeholder="Enter product description..."
+                  rows={3}
+                />
+              </div>
+
+              {/* Price Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="product-price">Price *</Label>
+                  <Input
+                    id="product-price"
+                    type="number"
+                    step="0.01"
+                    value={productPrice}
+                    onChange={(e) => setProductPrice(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="product-original-price">Original Price (if on sale)</Label>
+                  <Input
+                    id="product-original-price"
+                    type="number"
+                    step="0.01"
+                    value={productOriginalPrice}
+                    onChange={(e) => setProductOriginalPrice(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Category and Subcategory */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="product-category">Category *</Label>
+                  <Select value={productCategory} onValueChange={(value) => {
+                    setProductCategory(value);
+                    // Reset subcategory when category changes
+                    setProductSubcategory(value === 'art-prints' ? 'fine-art-prints' : 'art-history');
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="art-prints">Art Prints</SelectItem>
+                      <SelectItem value="art-books">Art Books</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="product-subcategory">Subcategory *</Label>
+                  <Select value={productSubcategory} onValueChange={setProductSubcategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select subcategory" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {productCategory === 'art-prints' ? (
+                        <>
+                          <SelectItem value="fine-art-prints">Fine Art Prints</SelectItem>
+                          <SelectItem value="canvas-prints">Canvas Prints</SelectItem>
+                          <SelectItem value="framed-prints">Framed Prints</SelectItem>
+                          <SelectItem value="limited-editions">Limited Editions</SelectItem>
+                          <SelectItem value="posters">Posters</SelectItem>
+                          <SelectItem value="digital-prints">Digital Downloads</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="art-history">Art History</SelectItem>
+                          <SelectItem value="artist-biographies">Artist Biographies</SelectItem>
+                          <SelectItem value="technique-books">Technique & How-To</SelectItem>
+                          <SelectItem value="art-theory">Art Theory</SelectItem>
+                          <SelectItem value="coffee-table-books">Coffee Table Books</SelectItem>
+                          <SelectItem value="exhibition-catalogs">Exhibition Catalogs</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Stock and Sale Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="product-stock">Stock Quantity *</Label>
+                  <Input
+                    id="product-stock"
+                    type="number"
+                    min="0"
+                    value={productStock}
+                    onChange={(e) => setProductStock(e.target.value)}
+                    placeholder="1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      id="product-on-sale"
+                      type="checkbox"
+                      checked={isProductOnSale}
+                      onChange={(e) => setIsProductOnSale(e.target.checked)}
+                      className="rounded"
+                    />
+                    <Label htmlFor="product-on-sale">Product is on sale</Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Images */}
+              <div className="space-y-2">
+                <Label htmlFor="product-images">Product Images * (2-5 images on white background)</Label>
+                <Input
+                  id="product-images"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setProductImages(files);
+                  }}
+                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Upload 2-5 high-quality images of your product on a white background
+                </p>
+                {productImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {productImages.map((file, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                        {file.name}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newFiles = productImages.filter((_, i) => i !== index);
+                            setProductImages(newFiles);
+                          }}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Product Tags */}
+              <div className="space-y-2">
+                <Label htmlFor="product-tags">Product Tags</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="product-tags"
+                    value={newProductTag}
+                    onChange={(e) => setNewProductTag(e.target.value)}
+                    placeholder="Add a tag..."
+                    onKeyPress={(e) => e.key === 'Enter' && addProductTag()}
+                  />
+                  <Button type="button" onClick={addProductTag} size="sm">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {productTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {productTags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeProductTag(tag)}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Button */}
+              <Button
+                onClick={handleProductUpload}
+                disabled={isProductUploading || !productTitle.trim() || !productDescription.trim() || !productPrice.trim() || productImages.length < 2}
+                className="w-full"
+              >
+                {isProductUploading ? (
+                  <>
+                    <Upload className="h-4 w-4 mr-2 animate-spin" />
+                    Uploading Product...
+                  </>
+                ) : (
+                  <>
+                    <Package className="h-4 w-4 mr-2" />
+                    Upload Product to Marketplace
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="advertising" className="mt-6">
@@ -1347,6 +1907,191 @@ export default function AdminPanel() {
                                 size="sm"
                                 onClick={() => {
                                   setSelectedAdApplication(application);
+                                  setRejectionReason('');
+                                }}
+                                disabled={isProcessing}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Marketplace Products Tab */}
+        <TabsContent value="marketplace" className="mt-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Marketplace Products</h2>
+              <div className="text-sm text-muted-foreground">
+                {marketplaceProducts.length} total products
+              </div>
+            </div>
+
+            {marketplaceProducts.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <CardTitle className="mb-2">No marketplace products</CardTitle>
+                  <CardDescription>
+                    No products have been uploaded to the marketplace yet.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {marketplaceProducts.map((product) => (
+                  <Card key={product.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-4">
+                          {product.images.length > 0 && (
+                            <img 
+                              src={product.images[0]} 
+                              alt={product.title}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold">{product.title}</h3>
+                              <Badge variant={product.isActive ? "default" : "secondary"}>
+                                {product.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                              {product.isOnSale && <Badge variant="destructive">On Sale</Badge>}
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">{product.description}</p>
+                            <div className="flex items-center gap-4 text-sm">
+                              <span className="font-semibold">${product.price} {product.currency}</span>
+                              <span>Stock: {product.stock}</span>
+                              <span>Sales: {product.salesCount}</span>
+                              <span>Rating: {product.rating.toFixed(1)} ({product.reviewCount} reviews)</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="outline">{product.category}</Badge>
+                              <Badge variant="outline">{product.subcategory}</Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedProduct(product)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteProduct(product)}
+                            disabled={isProcessing}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Affiliate Requests Tab */}
+        <TabsContent value="affiliate" className="mt-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Affiliate Product Requests</h2>
+              <div className="text-sm text-muted-foreground">
+                {affiliateRequests.length} total requests
+              </div>
+            </div>
+
+            {affiliateRequests.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Link className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <CardTitle className="mb-2">No affiliate requests</CardTitle>
+                  <CardDescription>
+                    No affiliate product requests have been submitted yet.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {affiliateRequests.map((request) => (
+                  <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-4">
+                          {request.productImages.length > 0 && (
+                            <img 
+                              src={request.productImages[0]} 
+                              alt={request.productTitle}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold">{request.productTitle}</h3>
+                              {getStatusBadge(request.status)}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                              <div>
+                                <p><strong>Company:</strong> {request.companyName}</p>
+                                <p><strong>Contact:</strong> {request.contactName}</p>
+                                <p><strong>Email:</strong> {request.email}</p>
+                                <p><strong>Website:</strong> <a href={request.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.website}</a></p>
+                              </div>
+                              <div>
+                                <p><strong>Price:</strong> ${request.productPrice} {request.productCurrency}</p>
+                                <p><strong>Category:</strong> {request.productCategory} / {request.productSubcategory}</p>
+                                <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                              </div>
+                            </div>
+                            <p className="text-sm mt-2">{request.productDescription}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="outline">{request.productCategory}</Badge>
+                              <Badge variant="outline">{request.productSubcategory}</Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedAffiliateRequest(request)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          {request.status === 'pending' && (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => handleApproveAffiliateRequest(request)}
+                                disabled={isProcessing}
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedAffiliateRequest(request);
                                   setRejectionReason('');
                                 }}
                                 disabled={isProcessing}
