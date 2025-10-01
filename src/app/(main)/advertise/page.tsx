@@ -11,12 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
-import { Megaphone, Target, Users, DollarSign, Calendar, Globe } from 'lucide-react';
+import { Megaphone, DollarSign, Calendar } from 'lucide-react';
 
 const advertisingTypes = [
   { value: 'banner', label: 'Banner Advertisement', description: 'Display ads on key pages' },
   { value: 'sponsored-content', label: 'Sponsored Content', description: 'Native content integration' },
-  { value: 'video', label: 'Video Advertisement', description: 'Pre-roll and mid-roll ads' },
+  { value: 'video', label: 'Video Advertisement', description: 'Featured video placements' },
   { value: 'newsletter', label: 'Newsletter Sponsorship', description: 'Email marketing integration' },
   { value: 'event', label: 'Event Sponsorship', description: 'Sponsor art events and exhibitions' },
   { value: 'influencer', label: 'Influencer Partnership', description: 'Collaborate with artists' }
@@ -185,31 +185,6 @@ export default function AdvertisePage() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Reach the art community and connect with passionate artists, collectors, and art enthusiasts worldwide.
           </p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-foreground">10K+</h3>
-              <p className="text-muted-foreground">Active Users</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Globe className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-foreground">50+</h3>
-              <p className="text-muted-foreground">Countries</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Target className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-foreground">95%</h3>
-              <p className="text-muted-foreground">Engagement Rate</p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Advertising Types */}
