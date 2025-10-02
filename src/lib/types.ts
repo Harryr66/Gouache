@@ -263,6 +263,49 @@ export interface Comment {
   moderationReason?: string;
 }
 
+export interface Advertisement {
+  id: string;
+  title: string;
+  description: string;
+  advertiserName: string;
+  advertiserWebsite?: string;
+  mediaUrl: string;
+  thumbnailUrl?: string;
+  duration: number; // in seconds
+  type: 'pre-roll' | 'post-roll' | 'banner' | 'overlay';
+  targetAudience?: string[];
+  budget?: number;
+  currency?: string;
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+  impressions: number;
+  clicks: number;
+  views: number;
+  clickThroughRate: number;
+  costPerImpression: number;
+  costPerClick: number;
+  totalSpent: number;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string; // admin user ID
+}
+
+export interface AdvertisementAnalytics {
+  id: string;
+  advertisementId: string;
+  date: Date;
+  impressions: number;
+  clicks: number;
+  views: number;
+  uniqueViews: number;
+  completionRate: number; // percentage of users who watched the full ad
+  clickThroughRate: number;
+  costPerImpression: number;
+  costPerClick: number;
+  revenue: number;
+}
+
 export interface CommentReport {
   id: string;
   commentId: string;

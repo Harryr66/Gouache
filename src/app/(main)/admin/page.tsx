@@ -14,8 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
-import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Comment, CommentReport } from '@/lib/types';
-import { Check, X, Eye, Clock, User, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, MessageCircle, Flag, Ban, AlertTriangle } from 'lucide-react';
+import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Comment, CommentReport, Advertisement, AdvertisementAnalytics } from '@/lib/types';
+import { Check, X, Eye, Clock, User, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, MessageCircle, Flag, Ban, AlertTriangle, Play, Pause, BarChart3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const ART_MEDIUM_CATEGORIES = [
@@ -97,6 +97,25 @@ export default function AdminPanel() {
   const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
   const [selectedReport, setSelectedReport] = useState<CommentReport | null>(null);
   const [moderationReason, setModerationReason] = useState('');
+  
+  // Advertising states
+  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
+  const [advertisementAnalytics, setAdvertisementAnalytics] = useState<AdvertisementAnalytics[]>([]);
+  const [selectedAdvertisement, setSelectedAdvertisement] = useState<Advertisement | null>(null);
+  const [showAdUploadModal, setShowAdUploadModal] = useState(false);
+  
+  // Ad upload states
+  const [adTitle, setAdTitle] = useState('');
+  const [adDescription, setAdDescription] = useState('');
+  const [advertiserName, setAdvertiserName] = useState('');
+  const [advertiserWebsite, setAdvertiserWebsite] = useState('');
+  const [adMediaFile, setAdMediaFile] = useState<File | null>(null);
+  const [adThumbnailFile, setAdThumbnailFile] = useState<File | null>(null);
+  const [adDuration, setAdDuration] = useState('');
+  const [adBudget, setAdBudget] = useState('');
+  const [adStartDate, setAdStartDate] = useState('');
+  const [adEndDate, setAdEndDate] = useState('');
+  const [isAdUploading, setIsAdUploading] = useState(false);
 
   useEffect(() => {
     const artistRequestsQuery = query(
@@ -134,17 +153,29 @@ export default function AdminPanel() {
       orderBy('reportedAt', 'desc')
     );
 
+    const advertisementsQuery = query(
+      collection(db, 'advertisements'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const advertisementAnalyticsQuery = query(
+      collection(db, 'advertisementAnalytics'),
+      orderBy('date', 'desc')
+    );
+
     const fetchData = async () => {
       try {
         console.log('🔄 Admin Panel: Fetching all data...');
-        const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot, commentsSnapshot, reportsSnapshot] = await Promise.all([
+        const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot, commentsSnapshot, reportsSnapshot, advertisementsSnapshot, analyticsSnapshot] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
           getDocs(episodesQuery),
           getDocs(marketplaceQuery),
           getDocs(affiliateQuery),
           getDocs(commentsQuery),
-          getDocs(commentReportsQuery)
+          getDocs(commentReportsQuery),
+          getDocs(advertisementsQuery),
+          getDocs(advertisementAnalyticsQuery)
         ]);
 
         const requests = artistSnapshot.docs.map(doc => ({
@@ -195,6 +226,20 @@ export default function AdminPanel() {
         })) as CommentReport[];
         setCommentReports(reports);
         console.log(`✅ Loaded ${reports.length} comment reports:`, reports);
+
+        const advertisements = advertisementsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Advertisement[];
+        setAdvertisements(advertisements);
+        console.log(`✅ Loaded ${advertisements.length} advertisements:`, advertisements);
+
+        const analytics = analyticsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as AdvertisementAnalytics[];
+        setAdvertisementAnalytics(analytics);
+        console.log(`✅ Loaded ${analytics.length} advertisement analytics:`, analytics);
 
         setLoading(false);
         console.log('✅ Admin Panel: All data loaded successfully');
@@ -813,6 +858,96 @@ export default function AdminPanel() {
     }
   };
 
+  // Advertising upload function
+  const handleAdUpload = async () => {
+    if (!adMediaFile || !adTitle.trim() || !adDescription.trim() || !advertiserName.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields and select a media file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAdUploading(true);
+    try {
+      console.log('🎬 Starting advertisement upload...');
+      
+      // Upload media file
+      const mediaRef = ref(storage, `advertisements/${Date.now()}_${adMediaFile.name}`);
+      const mediaUploadResult = await uploadBytesResumable(mediaRef, adMediaFile);
+      const mediaUrl = await getDownloadURL(mediaUploadResult.ref);
+      console.log('✅ Advertisement media uploaded:', mediaUrl);
+
+      // Upload thumbnail if provided
+      let thumbnailUrl = '';
+      if (adThumbnailFile) {
+        const thumbnailRef = ref(storage, `advertisements/thumbnails/${Date.now()}_${adThumbnailFile.name}`);
+        const thumbnailUploadResult = await uploadBytesResumable(thumbnailRef, adThumbnailFile);
+        thumbnailUrl = await getDownloadURL(thumbnailUploadResult.ref);
+        console.log('✅ Advertisement thumbnail uploaded:', thumbnailUrl);
+      }
+
+      // Create advertisement document
+      const advertisementData: Omit<Advertisement, 'id'> = {
+        title: adTitle,
+        description: adDescription,
+        advertiserName,
+        advertiserWebsite: advertiserWebsite || undefined,
+        mediaUrl,
+        thumbnailUrl: thumbnailUrl || undefined,
+        duration: parseInt(adDuration) || 30, // Default to 30 seconds
+        type: 'pre-roll',
+        budget: adBudget ? parseFloat(adBudget) : undefined,
+        currency: 'USD',
+        startDate: adStartDate ? new Date(adStartDate) : new Date(),
+        endDate: adEndDate ? new Date(adEndDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        isActive: true,
+        impressions: 0,
+        clicks: 0,
+        views: 0,
+        clickThroughRate: 0,
+        costPerImpression: 0,
+        costPerClick: 0,
+        totalSpent: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdBy: 'admin'
+      };
+
+      const docRef = await addDoc(collection(db, 'advertisements'), advertisementData);
+      console.log('✅ Advertisement saved to Firestore with ID:', docRef.id);
+
+      toast({
+        title: "Advertisement Uploaded Successfully",
+        description: `"${adTitle}" has been uploaded and will play as pre-roll ads.`,
+      });
+
+      // Reset form
+      setAdTitle('');
+      setAdDescription('');
+      setAdvertiserName('');
+      setAdvertiserWebsite('');
+      setAdMediaFile(null);
+      setAdThumbnailFile(null);
+      setAdDuration('');
+      setAdBudget('');
+      setAdStartDate('');
+      setAdEndDate('');
+      setShowAdUploadModal(false);
+
+    } catch (error) {
+      console.error('Error uploading advertisement:', error);
+      toast({
+        title: "Upload Error",
+        description: "Failed to upload advertisement. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAdUploading(false);
+    }
+  };
+
   // Product tag management functions
   const addProductTag = () => {
     if (newProductTag.trim() && !productTags.includes(newProductTag.trim())) {
@@ -1266,6 +1401,24 @@ export default function AdminPanel() {
               <span className="text-sm">Archived</span>
               <Badge variant={selectedView === 'advertising-archived' ? 'secondary' : 'outline'}>(0)</Badge>
             </button>
+            <button
+              onClick={() => setSelectedView('advertising-media')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'advertising-media' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Media Ads</span>
+              <Badge variant={selectedView === 'advertising-media' ? 'secondary' : 'outline'}>({advertisements.length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('advertising-analytics')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'advertising-analytics' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Analytics</span>
+              <Badge variant={selectedView === 'advertising-analytics' ? 'secondary' : 'outline'}>({advertisementAnalytics.length})</Badge>
+            </button>
           </CardContent>
         </Card>
 
@@ -1309,11 +1462,15 @@ export default function AdminPanel() {
         </Card>
       </div>
 
-      {/* Upload Button */}
-      <div className="flex justify-end mb-6">
+      {/* Upload Buttons */}
+      <div className="flex justify-end gap-4 mb-6">
+        <Button onClick={() => setShowAdUploadModal(true)} className="flex items-center gap-2">
+          <Megaphone className="h-4 w-4" />
+          Upload Ad
+        </Button>
         <Button onClick={() => setShowUploadModal(true)} className="flex items-center gap-2">
           <Upload className="h-4 w-4" />
-          Upload
+          Upload Content
         </Button>
       </div>
 
@@ -2017,6 +2174,224 @@ export default function AdminPanel() {
             </div>
           )
         )}
+
+        {/* Advertising Media Management */}
+        {selectedView === 'advertising-media' && (
+          advertisements.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No advertisements uploaded</h3>
+                <p className="text-muted-foreground text-center">
+                  Upload pre-roll advertisements to play before episodes.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Advertising Media</h2>
+              {advertisements.map((ad) => (
+                <Card key={ad.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        <div className="w-32 h-20 bg-muted rounded-lg flex items-center justify-center">
+                          {ad.thumbnailUrl ? (
+                            <img src={ad.thumbnailUrl} alt={ad.title} className="w-full h-full object-cover rounded-lg" />
+                          ) : (
+                            <Play className="h-8 w-8 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{ad.title}</h3>
+                            <Badge variant={ad.isActive ? 'default' : 'secondary'}>
+                              {ad.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">{ad.description}</p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                            <div>
+                              <p><strong>Advertiser:</strong> {ad.advertiserName}</p>
+                              <p><strong>Duration:</strong> {ad.duration}s</p>
+                            </div>
+                            <div>
+                              <p><strong>Views:</strong> {ad.views.toLocaleString()}</p>
+                              <p><strong>Clicks:</strong> {ad.clicks.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p><strong>CTR:</strong> {ad.clickThroughRate.toFixed(2)}%</p>
+                              <p><strong>Budget:</strong> ${ad.budget?.toLocaleString() || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p><strong>Start:</strong> {ad.startDate instanceof Date ? ad.startDate.toLocaleDateString() : 'N/A'}</p>
+                              <p><strong>End:</strong> {ad.endDate instanceof Date ? ad.endDate.toLocaleDateString() : 'N/A'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedAdvertisement(ad)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            // Toggle active status
+                            updateDoc(doc(db, 'advertisements', ad.id), {
+                              isActive: !ad.isActive,
+                              updatedAt: serverTimestamp()
+                            });
+                          }}
+                          disabled={isProcessing}
+                        >
+                          {ad.isActive ? (
+                            <>
+                              <Pause className="h-4 w-4 mr-1" />
+                              Pause
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4 mr-1" />
+                              Activate
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            // Delete advertisement
+                            deleteDoc(doc(db, 'advertisements', ad.id));
+                          }}
+                          disabled={isProcessing}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Advertising Analytics */}
+        {selectedView === 'advertising-analytics' && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Advertising Analytics</h2>
+            
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <BarChart3 className="h-8 w-8 text-primary" />
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-muted-foreground">Total Impressions</p>
+                      <p className="text-2xl font-bold">
+                        {advertisements.reduce((sum, ad) => sum + ad.impressions, 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <Eye className="h-8 w-8 text-primary" />
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-muted-foreground">Total Views</p>
+                      <p className="text-2xl font-bold">
+                        {advertisements.reduce((sum, ad) => sum + ad.views, 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <ExternalLink className="h-8 w-8 text-primary" />
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-muted-foreground">Total Clicks</p>
+                      <p className="text-2xl font-bold">
+                        {advertisements.reduce((sum, ad) => sum + ad.clicks, 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <Megaphone className="h-8 w-8 text-primary" />
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-muted-foreground">Active Ads</p>
+                      <p className="text-2xl font-bold">
+                        {advertisements.filter(ad => ad.isActive).length}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Detailed Analytics Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Advertisement Performance</CardTitle>
+                <CardDescription>Detailed analytics for each advertisement</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {advertisements.map((ad) => (
+                    <div key={ad.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold">{ad.title}</h3>
+                        <Badge variant={ad.isActive ? 'default' : 'secondary'}>
+                          {ad.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Impressions</p>
+                          <p className="font-semibold">{ad.impressions.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Views</p>
+                          <p className="font-semibold">{ad.views.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Clicks</p>
+                          <p className="font-semibold">{ad.clicks.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">CTR</p>
+                          <p className="font-semibold">{ad.clickThroughRate.toFixed(2)}%</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Revenue</p>
+                          <p className="font-semibold">${ad.totalSpent.toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Upload Modal */}
@@ -2197,6 +2572,151 @@ export default function AdminPanel() {
                   </div>
                 </TabsContent>
               </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Advertising Upload Modal */}
+      {showAdUploadModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+            <CardHeader className="flex-shrink-0">
+              <CardTitle className="flex items-center justify-between">
+                Upload Advertisement
+                <Button variant="ghost" size="sm" onClick={() => setShowAdUploadModal(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-y-auto pb-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ad-title">Advertisement Title *</Label>
+                  <Input
+                    id="ad-title"
+                    value={adTitle}
+                    onChange={(e) => setAdTitle(e.target.value)}
+                    placeholder="Enter advertisement title..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ad-description">Description *</Label>
+                  <Textarea
+                    id="ad-description"
+                    value={adDescription}
+                    onChange={(e) => setAdDescription(e.target.value)}
+                    placeholder="Enter advertisement description..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="advertiser-name">Advertiser Name *</Label>
+                    <Input
+                      id="advertiser-name"
+                      value={advertiserName}
+                      onChange={(e) => setAdvertiserName(e.target.value)}
+                      placeholder="Enter advertiser name..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="advertiser-website">Advertiser Website</Label>
+                    <Input
+                      id="advertiser-website"
+                      value={advertiserWebsite}
+                      onChange={(e) => setAdvertiserWebsite(e.target.value)}
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ad-media">Advertisement Media * (Video/Image)</Label>
+                  <Input
+                    id="ad-media"
+                    type="file"
+                    accept="video/*,image/*"
+                    onChange={(e) => setAdMediaFile(e.target.files?.[0] || null)}
+                    className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ad-thumbnail">Thumbnail (optional)</Label>
+                  <Input
+                    id="ad-thumbnail"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setAdThumbnailFile(e.target.files?.[0] || null)}
+                    className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ad-duration">Duration (seconds)</Label>
+                    <Input
+                      id="ad-duration"
+                      type="number"
+                      value={adDuration}
+                      onChange={(e) => setAdDuration(e.target.value)}
+                      placeholder="30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ad-budget">Budget ($)</Label>
+                    <Input
+                      id="ad-budget"
+                      type="number"
+                      step="0.01"
+                      value={adBudget}
+                      onChange={(e) => setAdBudget(e.target.value)}
+                      placeholder="1000.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ad-start-date">Start Date</Label>
+                    <Input
+                      id="ad-start-date"
+                      type="date"
+                      value={adStartDate}
+                      onChange={(e) => setAdStartDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ad-end-date">End Date</Label>
+                  <Input
+                    id="ad-end-date"
+                    type="date"
+                    value={adEndDate}
+                    onChange={(e) => setAdEndDate(e.target.value)}
+                  />
+                </div>
+
+                <Button
+                  onClick={handleAdUpload}
+                  disabled={isAdUploading || !adMediaFile || !adTitle.trim() || !adDescription.trim() || !advertiserName.trim()}
+                  className="w-full h-12 text-base font-medium"
+                  size="lg"
+                >
+                  {isAdUploading ? (
+                    <>
+                      <Upload className="h-5 w-5 mr-2 animate-spin" />
+                      Uploading Advertisement...
+                    </>
+                  ) : (
+                    <>
+                      <Megaphone className="h-5 w-5 mr-2" />
+                      Upload Advertisement
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

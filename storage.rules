@@ -29,11 +29,17 @@ service firebase.storage {
       allow write: if request.auth != null; // Allow any authenticated user to upload portfolio images
     }
     
-    // Allow uploads to marketplace products folder
-    match /marketplace/{allPaths=**} {
-      allow read: if true; // Allow public read access
-      allow write: if request.auth != null; // Only allow authenticated users to upload products
-    }
+// Allow uploads to marketplace products folder
+match /marketplace/{allPaths=**} {
+  allow read: if true; // Allow public read access
+  allow write: if request.auth != null; // Only allow authenticated users to upload products
+}
+
+// Allow uploads to advertisements folder
+match /advertisements/{allPaths=**} {
+  allow read: if true; // Allow public read access
+  allow write: if request.auth != null; // Only allow authenticated users to upload advertisements
+}
     
     // Allow uploads to test folder (for testing)
     match /test/{allPaths=**} {
