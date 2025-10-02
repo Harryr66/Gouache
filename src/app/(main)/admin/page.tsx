@@ -1656,8 +1656,8 @@ export default function AdminPanel() {
       {/* Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
+          <Card className="w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+            <CardHeader className="flex-shrink-0">
               <CardTitle className="flex items-center justify-between">
                 Upload Content
                 <Button variant="ghost" size="sm" onClick={() => setShowUploadModal(false)}>
@@ -1665,11 +1665,11 @@ export default function AdminPanel() {
                 </Button>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 overflow-y-auto pb-6">
               <Tabs defaultValue="video-upload" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="video-upload">Video Upload</TabsTrigger>
-                  <TabsTrigger value="product-upload">Product Upload</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 h-12">
+                  <TabsTrigger value="video-upload" className="text-sm font-medium">Video Upload</TabsTrigger>
+                  <TabsTrigger value="product-upload" className="text-sm font-medium">Product Upload</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="video-upload" className="mt-6">
@@ -1703,7 +1703,7 @@ export default function AdminPanel() {
                         type="file"
                         accept="video/*"
                         onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                        className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
                       />
                     </div>
 
@@ -1714,23 +1714,24 @@ export default function AdminPanel() {
                         type="file"
                         accept="image/*"
                         onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
-                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                        className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
                       />
                     </div>
 
                     <Button
                       onClick={handleVideoUpload}
                       disabled={isUploading || !videoFile || !videoTitle.trim() || !videoDescription.trim()}
-                      className="w-full"
+                      className="w-full h-12 text-base font-medium"
+                      size="lg"
                     >
                       {isUploading ? (
                         <>
-                          <Upload className="h-4 w-4 mr-2 animate-spin" />
-                          Uploading...
+                          <Upload className="h-5 w-5 mr-2 animate-spin" />
+                          Uploading Video...
                         </>
                       ) : (
                         <>
-                          <Upload className="h-4 w-4 mr-2" />
+                          <Upload className="h-5 w-5 mr-2" />
                           Upload Video
                         </>
                       )}
@@ -1802,7 +1803,7 @@ export default function AdminPanel() {
                           const files = Array.from(e.target.files || []);
                           setProductImages(files);
                         }}
-                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                        className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
                       />
                       <p className="text-xs text-muted-foreground">
                         Upload 2-5 high-quality images of your product on a white background
@@ -1812,16 +1813,17 @@ export default function AdminPanel() {
                     <Button
                       onClick={handleProductUpload}
                       disabled={isProductUploading || !productTitle.trim() || !productDescription.trim() || !productPrice.trim() || productImages.length < 2}
-                      className="w-full"
+                      className="w-full h-12 text-base font-medium"
+                      size="lg"
                     >
                       {isProductUploading ? (
                         <>
-                          <Upload className="h-4 w-4 mr-2 animate-spin" />
+                          <Upload className="h-5 w-5 mr-2 animate-spin" />
                           Uploading Product...
                         </>
                       ) : (
                         <>
-                          <Package className="h-4 w-4 mr-2" />
+                          <Package className="h-5 w-5 mr-2" />
                           Upload Product
                         </>
                       )}
