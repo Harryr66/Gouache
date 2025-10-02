@@ -152,6 +152,7 @@ export interface Artwork {
   updatedAt: Date;
   views?: number;
   likes?: number;
+  commentsCount?: number;
   isAI?: boolean;
   aiAssistance?: 'none' | 'assisted' | 'generated';
   processExplanation?: string;
