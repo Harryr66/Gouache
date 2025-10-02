@@ -52,7 +52,7 @@ const revenueChartConfig = {
     },
 } satisfies ChartConfig
 
-const topContentData: { id: string; title: string; imageUrl: string; imageAiHint: string; likes: number; shares: number; }[] = [];
+const topContentData: { id: string; title: string; imageUrl: string; imageAiHint: string; likes: number; shares: number; views: number; commentsCount: number; }[] = [];
 
 const demographicsData: { location: string; followers: number; fill: string; }[] = [];
 
