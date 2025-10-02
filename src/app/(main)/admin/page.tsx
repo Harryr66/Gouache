@@ -69,7 +69,8 @@ export default function AdminPanel() {
   const [videoDescription, setVideoDescription] = useState('');
   const [videoTags, setVideoTags] = useState<string[]>([]);
   const [videoCategories, setVideoCategories] = useState<string[]>([]);
-  const [videoDisplayLocation, setVideoDisplayLocation] = useState<'main-banner' | 'new-releases' | 'trending' | 'most-loved' | 'all'>('new-releases');
+  // Episodes are always added to "New Releases" when published
+  const videoDisplayLocation = 'new-releases';
   const [isMainEvent, setIsMainEvent] = useState(false);
   const [newTag, setNewTag] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -638,7 +639,6 @@ export default function AdminPanel() {
       setVideoDescription('');
       setVideoTags([]);
       setVideoCategories([]);
-      setVideoDisplayLocation('new-releases');
       setIsMainEvent(false);
       setNewTag('');
       
