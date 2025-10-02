@@ -164,7 +164,6 @@ export function ExpandedArtworkView({ artwork, discussion, onClose }: ExpandedAr
                             {/* Stats */}
                             <div className="flex items-center justify-between text-sm text-muted-foreground">
                                 <span>{artwork.views || 0} views</span>
-                                <span>{artwork.likes || 0} likes</span>
                                 <span>{discussion?.replyCount || 0} comments</span>
                             </div>
                         </div>

@@ -154,7 +154,7 @@ export function EpisodeCard({
                 initialLikedBy={episode.likedBy || []}
                 size="sm"
                 variant="ghost"
-                showCount={true}
+                showCount={false}
               />
               <span className="flex items-center">
                 <MessageCircle className="h-4 w-4 mr-1" />
@@ -239,7 +239,7 @@ export function EpisodeCard({
               initialLikedBy={episode.likedBy || []}
               size="sm"
               variant="ghost"
-              showCount={true}
+              showCount={false}
             />
             <span className="flex items-center">
               <MessageCircle className="h-3 w-3 mr-1" />

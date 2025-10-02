@@ -30,7 +30,6 @@ export function ArtPost({ post }: { post: Post }) {
       <div className="p-4 flex items-center space-x-4">
         <button className="flex items-center space-x-2 text-gray-400 hover:text-white">
           <Heart size={24} />
-          <span>{post.likes}</span>
         </button>
         <button className="flex items-center space-x-2 text-gray-400 hover:text-white">
           <MessageCircle size={24} />

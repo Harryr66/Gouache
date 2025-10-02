@@ -113,7 +113,7 @@ export function ArtworkCard({
         <div className="flex items-center justify-between text-xs md:text-sm text-muted-foreground">
           <div className="flex items-center space-x-2 md:space-x-4">
             <span>{artwork.views || 0} views</span>
-            <span>{likeCount} likes</span>
+            <span>{artwork.commentsCount || 0} comments</span>
           </div>
           <div className="flex items-center space-x-1 md:space-x-2">
             {artwork.category && (

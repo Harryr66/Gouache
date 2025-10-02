@@ -208,7 +208,7 @@ export function AnalyticsDashboard() {
                 <CardHeader>
                     <CardTitle>Top Performing Content</CardTitle>
                     <CardDescription>
-                    Your most popular posts based on likes and shares.
+                    Your most popular posts based on views and comments.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -217,8 +217,8 @@ export function AnalyticsDashboard() {
                             <TableRow>
                                 <TableHead className="w-[80px]">Artwork</TableHead>
                                 <TableHead>Title</TableHead>
-                                <TableHead className="text-right">Likes</TableHead>
-                                <TableHead className="text-right">Shares</TableHead>
+                                <TableHead className="text-right">Views</TableHead>
+                                <TableHead className="text-right">Comments</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -236,8 +236,8 @@ export function AnalyticsDashboard() {
                                             />
                                         </TableCell>
                                         <TableCell className="font-medium">{post.title}</TableCell>
-                                        <TableCell className="text-right">{post.likes.toLocaleString()}</TableCell>
-                                        <TableCell className="text-right">{post.shares.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right">{post.views.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right">{post.commentsCount.toLocaleString()}</TableCell>
                                     </TableRow>
                                 ))
                             ) : (
