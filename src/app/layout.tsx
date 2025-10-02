@@ -22,9 +22,6 @@ export const metadata: Metadata = {
   title: 'SOMA',
   description:
     'A social marketplace for artists and art lovers to connect, discover, and trade art.',
-  icons: {
-    icon: '/favicon.ico',
-  },
 };
 
 export default function RootLayout({
