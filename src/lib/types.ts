@@ -238,6 +238,45 @@ export interface Event {
   currency?: string;
 }
 
+export interface Comment {
+  id: string;
+  contentId: string;
+  contentType: 'episode' | 'docuseries' | 'artwork';
+  author: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl?: string;
+  };
+  content: string;
+  createdAt: Date;
+  updatedAt?: Date;
+  likes: number;
+  dislikes: number;
+  replies: Comment[];
+  isDeleted: boolean;
+  isReported: boolean;
+  reportCount: number;
+  isModerated: boolean;
+  moderatedBy?: string;
+  moderatedAt?: Date;
+  moderationReason?: string;
+}
+
+export interface CommentReport {
+  id: string;
+  commentId: string;
+  reporterId: string;
+  reporterName: string;
+  reason: 'spam' | 'harassment' | 'inappropriate' | 'hate_speech' | 'violence' | 'other';
+  description?: string;
+  reportedAt: Date;
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  action?: 'warning' | 'comment_removed' | 'user_suspended' | 'no_action';
+}
+
 export interface ChatMessage {
   id: string;
   user: {

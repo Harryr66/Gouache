@@ -14,8 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
-import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest } from '@/lib/types';
-import { Check, X, Eye, Clock, User, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image } from 'lucide-react';
+import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Comment, CommentReport } from '@/lib/types';
+import { Check, X, Eye, Clock, User, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, MessageCircle, Flag, Ban, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const ART_MEDIUM_CATEGORIES = [
@@ -89,6 +89,13 @@ export default function AdminPanel() {
   const [isProductOnSale, setIsProductOnSale] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedView, setSelectedView] = useState<string>('artist-pending');
+  
+  // Comment moderation states
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentReports, setCommentReports] = useState<CommentReport[]>([]);
+  const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
+  const [selectedReport, setSelectedReport] = useState<CommentReport | null>(null);
+  const [moderationReason, setModerationReason] = useState('');
 
   useEffect(() => {
     const artistRequestsQuery = query(
@@ -116,15 +123,27 @@ export default function AdminPanel() {
       orderBy('submittedAt', 'desc')
     );
 
+    const commentsQuery = query(
+      collection(db, 'comments'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const commentReportsQuery = query(
+      collection(db, 'commentReports'),
+      orderBy('reportedAt', 'desc')
+    );
+
     const fetchData = async () => {
       try {
         console.log('🔄 Admin Panel: Fetching all data...');
-        const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot] = await Promise.all([
+        const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot, commentsSnapshot, reportsSnapshot] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
           getDocs(episodesQuery),
           getDocs(marketplaceQuery),
-          getDocs(affiliateQuery)
+          getDocs(affiliateQuery),
+          getDocs(commentsQuery),
+          getDocs(commentReportsQuery)
         ]);
 
         const requests = artistSnapshot.docs.map(doc => ({
@@ -161,6 +180,20 @@ export default function AdminPanel() {
         })) as AffiliateProductRequest[];
         setAffiliateRequests(affiliateRequests);
         console.log(`✅ Loaded ${affiliateRequests.length} affiliate requests:`, affiliateRequests);
+
+        const comments = commentsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Comment[];
+        setComments(comments);
+        console.log(`✅ Loaded ${comments.length} comments:`, comments);
+
+        const reports = reportsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as CommentReport[];
+        setCommentReports(reports);
+        console.log(`✅ Loaded ${reports.length} comment reports:`, reports);
 
         setLoading(false);
         console.log('✅ Admin Panel: All data loaded successfully');
@@ -972,9 +1005,98 @@ export default function AdminPanel() {
     }
   };
 
+  // Comment moderation functions
+  const handleModerateComment = async (comment: Comment, action: 'approve' | 'remove' | 'warn', reason?: string) => {
+    setIsProcessing(true);
+    try {
+      await updateDoc(doc(db, 'comments', comment.id), {
+        isModerated: action === 'approve',
+        isDeleted: action === 'remove',
+        moderationReason: reason || '',
+        moderatedBy: 'admin',
+        moderatedAt: serverTimestamp()
+      });
+
+      toast({
+        title: "Comment Moderated",
+        description: `Comment has been ${action === 'approve' ? 'approved' : action === 'remove' ? 'removed' : 'user warned'}.`,
+      });
+
+      setSelectedComment(null);
+      setModerationReason('');
+    } catch (error) {
+      console.error('Error moderating comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to moderate comment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSuspendUser = async (userId: string, reason: string) => {
+    setIsProcessing(true);
+    try {
+      await updateDoc(doc(db, 'userProfiles', userId), {
+        isSuspended: true,
+        suspensionReason: reason,
+        suspendedAt: serverTimestamp(),
+        suspendedBy: 'admin'
+      });
+
+      toast({
+        title: "User Suspended",
+        description: "User account has been suspended.",
+      });
+    } catch (error) {
+      console.error('Error suspending user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to suspend user. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReviewReport = async (report: CommentReport, action: 'dismiss' | 'resolve', actionTaken?: string) => {
+    setIsProcessing(true);
+    try {
+      await updateDoc(doc(db, 'commentReports', report.id), {
+        status: action === 'dismiss' ? 'dismissed' : 'resolved',
+        reviewedBy: 'admin',
+        reviewedAt: serverTimestamp(),
+        action: actionTaken || 'no_action'
+      });
+
+      toast({
+        title: "Report Reviewed",
+        description: `Report has been ${action === 'dismiss' ? 'dismissed' : 'resolved'}.`,
+      });
+
+      setSelectedReport(null);
+    } catch (error) {
+      console.error('Error reviewing report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to review report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const pendingRequests = artistRequests.filter(req => req.status === 'pending');
   const approvedRequests = artistRequests.filter(req => req.status === 'approved');
   const rejectedRequests = artistRequests.filter(req => req.status === 'rejected');
+  
+  const reportedComments = comments.filter(comment => comment.isReported && !comment.isModerated);
+  const pendingReports = commentReports.filter(report => report.status === 'pending');
+  const moderatedComments = comments.filter(comment => comment.isModerated);
 
   if (loading) {
     return (
@@ -1143,6 +1265,45 @@ export default function AdminPanel() {
             >
               <span className="text-sm">Archived</span>
               <Badge variant={selectedView === 'advertising-archived' ? 'secondary' : 'outline'}>(0)</Badge>
+            </button>
+          </CardContent>
+        </Card>
+
+        {/* Comment Moderation */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Comment Moderation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <button
+              onClick={() => setSelectedView('comments-reported')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'comments-reported' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Reported Comments</span>
+              <Badge variant={selectedView === 'comments-reported' ? 'secondary' : 'outline'}>({reportedComments.length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('reports-pending')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'reports-pending' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Pending Reports</span>
+              <Badge variant={selectedView === 'reports-pending' ? 'secondary' : 'outline'}>({pendingReports.length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('comments-moderated')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'comments-moderated' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Moderated</span>
+              <Badge variant={selectedView === 'comments-moderated' ? 'secondary' : 'outline'}>({moderatedComments.length})</Badge>
             </button>
           </CardContent>
         </Card>
@@ -1650,6 +1811,211 @@ export default function AdminPanel() {
               </p>
             </CardContent>
           </Card>
+        )}
+
+        {/* Comment Moderation - Reported Comments */}
+        {selectedView === 'comments-reported' && (
+          reportedComments.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <MessageCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No reported comments</h3>
+                <p className="text-muted-foreground text-center">
+                  All reported comments have been reviewed.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Reported Comments</h2>
+              {reportedComments.map((comment) => (
+                <Card key={comment.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={comment.author.avatarUrl || ''} />
+                          <AvatarFallback>
+                            {comment.author.displayName?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{comment.author.displayName}</h3>
+                            <Badge variant="destructive">Reported ({comment.reportCount})</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">{comment.content}</p>
+                          <div className="text-xs text-muted-foreground">
+                            <span>Posted: {comment.createdAt instanceof Date ? comment.createdAt.toLocaleDateString() : 'N/A'}</span>
+                            <span className="mx-2">•</span>
+                            <span>Likes: {comment.likes}</span>
+                            <span className="mx-2">•</span>
+                            <span>Dislikes: {comment.dislikes}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedComment(comment)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Review
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleModerateComment(comment, 'approve')}
+                          disabled={isProcessing}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleModerateComment(comment, 'remove', 'Inappropriate content')}
+                          disabled={isProcessing}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Comment Moderation - Pending Reports */}
+        {selectedView === 'reports-pending' && (
+          pendingReports.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Flag className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No pending reports</h3>
+                <p className="text-muted-foreground text-center">
+                  All reports have been reviewed.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Pending Reports</h2>
+              {pendingReports.map((report) => (
+                <Card key={report.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold">Report by {report.reporterName}</h3>
+                          <Badge variant="destructive">{report.reason.replace('_', ' ')}</Badge>
+                        </div>
+                        {report.description && (
+                          <p className="text-sm text-muted-foreground mb-3">{report.description}</p>
+                        )}
+                        <div className="text-xs text-muted-foreground">
+                          <span>Reported: {report.reportedAt instanceof Date ? report.reportedAt.toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedReport(report)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleReviewReport(report, 'resolve', 'comment_removed')}
+                          disabled={isProcessing}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Resolve
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReviewReport(report, 'dismiss')}
+                          disabled={isProcessing}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Dismiss
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Comment Moderation - Moderated Comments */}
+        {selectedView === 'comments-moderated' && (
+          moderatedComments.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No moderated comments</h3>
+                <p className="text-muted-foreground text-center">
+                  Comments that have been reviewed and moderated.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Moderated Comments</h2>
+              {moderatedComments.map((comment) => (
+                <Card key={comment.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={comment.author.avatarUrl || ''} />
+                          <AvatarFallback>
+                            {comment.author.displayName?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{comment.author.displayName}</h3>
+                            <Badge variant="secondary">Moderated</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">{comment.content}</p>
+                          {comment.moderationReason && (
+                            <p className="text-xs text-destructive mb-2">
+                              <strong>Reason:</strong> {comment.moderationReason}
+                            </p>
+                          )}
+                          <div className="text-xs text-muted-foreground">
+                            <span>Posted: {comment.createdAt instanceof Date ? comment.createdAt.toLocaleDateString() : 'N/A'}</span>
+                            <span className="mx-2">•</span>
+                            <span>Moderated: {comment.moderatedAt instanceof Date ? comment.moderatedAt.toLocaleDateString() : 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSuspendUser(comment.author.id, 'Repeated violations')}
+                          disabled={isProcessing}
+                        >
+                          <Ban className="h-4 w-4 mr-1" />
+                          Suspend User
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
         )}
       </div>
 

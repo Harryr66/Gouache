@@ -18,6 +18,7 @@ import {
   Share2, 
   ExternalLink,
   ArrowLeft,
+  Flag,
   X,
   ShoppingBag,
   User
@@ -269,7 +270,7 @@ export function ExpandableContentTile({
             )}
 
             {/* Discussion Section */}
-            <Card className="bg-gray-100 dark:bg-slate-800">
+            <Card className="bg-gray-100 dark:bg-black border-gray-200 dark:border-gray-800">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-4">
                   <MessageCircle className="h-5 w-5" />
@@ -281,10 +282,14 @@ export function ExpandableContentTile({
                 <div className="mb-4">
                   <textarea
                     placeholder="Share your thoughts about this content..."
-                    className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-slate-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                     rows={3}
                   />
-                  <div className="flex justify-end mt-2">
+                  <div className="flex justify-between mt-2">
+                    <Button variant="outline" size="sm">
+                      <Flag className="h-4 w-4 mr-1" />
+                      Report
+                    </Button>
                     <Button size="sm">Post Comment</Button>
                   </div>
                 </div>
