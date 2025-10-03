@@ -54,7 +54,6 @@ export default function AdvertisePage() {
     productPrice: '',
     productCurrency: 'USD',
     affiliateLink: '',
-    commissionRate: '',
     marketingGoals: ''
   });
 
@@ -125,7 +124,6 @@ export default function AdvertisePage() {
           productCurrency: formData.productCurrency,
           productImages: [], // Will be uploaded separately
           affiliateLink: formData.affiliateLink,
-          commissionRate: formData.commissionRate,
           targetAudience: formData.targetAudience,
           marketingGoals: formData.marketingGoals,
           message: formData.message,
@@ -162,7 +160,6 @@ export default function AdvertisePage() {
         productPrice: '',
         productCurrency: 'USD',
         affiliateLink: '',
-        commissionRate: '',
         marketingGoals: ''
       });
     } catch (error) {
@@ -528,16 +525,6 @@ export default function AdvertisePage() {
                     <p className="text-xs text-muted-foreground">
                       This is where customers will be redirected when they click "Buy Now"
                     </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="commissionRate">Commission Rate (optional)</Label>
-                    <Input
-                      id="commissionRate"
-                      value={formData.commissionRate}
-                      onChange={(e) => handleInputChange('commissionRate', e.target.value)}
-                      placeholder="e.g., 10% or $5 per sale"
-                    />
                   </div>
 
                   <div className="space-y-2">

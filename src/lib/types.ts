@@ -115,7 +115,6 @@ export interface AffiliateProductRequest {
   productCurrency: string;
   productImages: string[];
   affiliateLink: string;
-  commissionRate?: number;
   targetAudience?: string;
   marketingGoals?: string;
   message?: string;
