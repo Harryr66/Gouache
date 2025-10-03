@@ -354,13 +354,13 @@ export default function ProfileEditPage() {
     if (!user) return;
     
     if (formData.handle !== user.username && handleAvailable !== true) {
-                toast({
+      toast({
         title: "Handle not available",
         description: "Please choose a different handle.",
         variant: "destructive"
-                });
-                return;
-            }
+      });
+      return;
+    }
             
     setIsLoading(true);
     
