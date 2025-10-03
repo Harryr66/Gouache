@@ -806,7 +806,7 @@ export default function AdminPanel() {
         subcategory: productSubcategory,
         images: uploadedImageUrls,
         sellerId: 'admin',
-        sellerName: 'SOMA Marketplace',
+        sellerName: 'SOMA Learn',
         isAffiliate: false,
         isActive: true,
         stock: parseInt(productStock),
@@ -1316,7 +1316,7 @@ export default function AdminPanel() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
-              Marketplace
+              Learn
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -1697,7 +1697,7 @@ export default function AdminPanel() {
             </Card>
           ) : (
           <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Marketplace Products</h2>
+              <h2 className="text-2xl font-bold">Learn Products</h2>
               {marketplaceProducts.map((product) => (
                 <Card key={product.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
@@ -1753,7 +1753,7 @@ export default function AdminPanel() {
           )
         )}
 
-        {/* Marketplace - Affiliate Requests */}
+        {/* Learn - Affiliate Requests */}
         {selectedView === 'marketplace-requests' && (
           affiliateRequests.filter(req => req.status === 'pending').length === 0 ? (
               <Card>

@@ -9,13 +9,13 @@ import {
   Eye, 
   Upload, 
   User,
-  Store
+  Brain
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Home', href: '/feed', icon: Home },
   { name: 'Discover', href: '/discover', icon: Eye },
-  { name: 'Marketplace', href: '/marketplace', icon: Store },
+  { name: 'Learn', href: '/marketplace', icon: Brain },
   { name: 'Profile', href: '/profile', icon: User },
 ];
 

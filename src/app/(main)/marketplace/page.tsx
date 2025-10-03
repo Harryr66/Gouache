@@ -69,7 +69,7 @@ const countries = [
   { code: 'AR', name: 'Argentina' }
 ];
 
-export default function MarketplacePage() {
+export default function LearnPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('art-prints');
   const [selectedSubcategory, setSelectedSubcategory] = useState('all');
@@ -288,7 +288,7 @@ export default function MarketplacePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">SOMA Marketplace</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">SOMA Learn</h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="hidden sm:inline">Deliver to</span>
                 <span className="sm:hidden">Country:</span>
@@ -315,7 +315,7 @@ export default function MarketplacePage() {
           <div className="flex items-center gap-4 mb-4">
             <div className="flex-1 relative">
             <Input
-                placeholder="Search SOMA Marketplace"
+                placeholder="Search SOMA Learn"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-10 rounded-r-none"

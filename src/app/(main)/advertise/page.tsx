@@ -208,13 +208,13 @@ export default function AdvertisePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              {submissionType === 'affiliate' ? 'Marketplace Partnership Application' : 
-               submissionType === 'both' ? 'Advertising & Marketplace Partnership' : 
+              {submissionType === 'affiliate' ? 'Learn Partnership Application' : 
+               submissionType === 'both' ? 'Advertising & Learn Partnership' : 
                'Advertising Application'}
             </CardTitle>
             <CardDescription>
-              {submissionType === 'affiliate' ? 'Apply to showcase your products in our marketplace with affiliate links.' :
-               submissionType === 'both' ? 'Apply for both advertising opportunities and marketplace partnership.' :
+              {submissionType === 'affiliate' ? 'Apply to showcase your products in our learn platform with affiliate links.' :
+               submissionType === 'both' ? 'Apply for both advertising opportunities and learn partnership.' :
                'Fill out the form below to submit your advertising application. Our team will review it and get back to you within 2-3 business days.'}
             </CardDescription>
           </CardHeader>
@@ -250,9 +250,9 @@ export default function AdvertisePage() {
                         onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'affiliate' | 'both')}
                         className="rounded"
                       />
-                      <Label htmlFor="affiliate">Marketplace Partnership</Label>
+                      <Label htmlFor="affiliate">Learn Partnership</Label>
                     </div>
-                    <p className="text-xs text-muted-foreground ml-6">Sell products via our affiliate marketplace</p>
+                    <p className="text-xs text-muted-foreground ml-6">Sell products via our affiliate learn platform</p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
