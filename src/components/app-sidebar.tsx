@@ -5,15 +5,29 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { 
-  Home, 
   Eye, 
   Upload, 
   User,
   Brain
 } from 'lucide-react';
 
+// Simple pentagon icon component
+const PentagonIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 2L22 8.5L18 21H6L2 8.5L12 2Z" />
+  </svg>
+);
+
 const navigation = [
-  { name: 'Home', href: '/feed', icon: Home },
+  { name: 'Home', href: '/feed', icon: PentagonIcon },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Learn', href: '/marketplace', icon: Brain },
   { name: 'Upload Profile', href: '/upload', icon: Upload },
