@@ -61,6 +61,11 @@ export default function AdminPanel() {
   const [adminNotes, setAdminNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   
+  // Admin authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  
   // Video upload states
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -221,6 +226,40 @@ export default function AdminPanel() {
 
     fetchData();
   }, []);
+
+  // Admin authentication function
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsPasswordLoading(true);
+    
+    try {
+      // Simple password check - in production, this should be more secure
+      const correctPassword = 'SOMA_ADMIN_2024'; // You can change this password
+      
+      if (adminPassword === correctPassword) {
+        setIsAuthenticated(true);
+        toast({
+          title: "Access Granted",
+          description: "Welcome to the admin panel.",
+        });
+      } else {
+        toast({
+          title: "Access Denied",
+          description: "Invalid admin password.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Admin login error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to authenticate. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
 
   const handleApprove = async (request: ArtistRequest) => {
     setIsProcessing(true);
@@ -1118,6 +1157,52 @@ export default function AdminPanel() {
   const rejectedRequests = artistRequests.filter(req => req.status === 'rejected');
   
 
+  // Password gate - show login form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Admin Access</CardTitle>
+            <CardDescription>
+              Enter the admin password to access the panel
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAdminLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="admin-password">Admin Password</Label>
+                <Input
+                  id="admin-password"
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  placeholder="Enter admin password"
+                  required
+                  disabled={isPasswordLoading}
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isPasswordLoading || !adminPassword.trim()}
+              >
+                {isPasswordLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Authenticating...
+                  </>
+                ) : (
+                  'Access Admin Panel'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -1130,8 +1215,23 @@ export default function AdminPanel() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
+      <div className="mb-8 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            setIsAuthenticated(false);
+            setAdminPassword('');
+            toast({
+              title: "Logged Out",
+              description: "You have been logged out of the admin panel.",
+            });
+          }}
+          className="flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Logout
+        </Button>
       </div>
 
       {/* Overview Cards */}
