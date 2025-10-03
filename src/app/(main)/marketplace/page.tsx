@@ -3,622 +3,660 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Star, Heart, Filter, ChevronRight, ChevronLeft, ChevronDown } from 'lucide-react';
-import { ProductCard } from '@/components/shop/product-card';
+import { Search, Star, Users, Clock, Play, Award, BookOpen, Filter, ChevronRight, ChevronLeft, ChevronDown, GraduationCap, Palette, Camera, Brush, Scissors } from 'lucide-react';
+import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
 
-const categories = [
+// Course categories for art school
+const courseCategories = [
   {
-    id: 'art-prints',
-    name: 'Art Prints',
+    id: 'painting',
+    name: 'Painting',
+    icon: Palette,
     subcategories: [
-      { id: 'fine-art-prints', name: 'Fine Art Prints' },
-      { id: 'canvas-prints', name: 'Canvas Prints' },
-      { id: 'framed-prints', name: 'Framed Prints' },
-      { id: 'limited-editions', name: 'Limited Editions' },
-      { id: 'posters', name: 'Posters' },
-      { id: 'digital-prints', name: 'Digital Downloads' }
+      { id: 'oil-painting', name: 'Oil Painting' },
+      { id: 'watercolor', name: 'Watercolor' },
+      { id: 'acrylic', name: 'Acrylic' },
+      { id: 'gouache', name: 'Gouache' },
+      { id: 'mixed-media', name: 'Mixed Media' }
     ]
   },
   {
-    id: 'art-books',
-    name: 'Art Books',
+    id: 'drawing',
+    name: 'Drawing',
+    icon: Brush,
     subcategories: [
-      { id: 'art-history', name: 'Art History' },
-      { id: 'artist-biographies', name: 'Artist Biographies' },
-      { id: 'technique-books', name: 'Technique & How-To' },
-      { id: 'art-theory', name: 'Art Theory' },
-      { id: 'coffee-table-books', name: 'Coffee Table Books' },
-      { id: 'exhibition-catalogs', name: 'Exhibition Catalogs' }
+      { id: 'pencil-drawing', name: 'Pencil Drawing' },
+      { id: 'charcoal', name: 'Charcoal' },
+      { id: 'ink', name: 'Ink & Pen' },
+      { id: 'pastel', name: 'Pastel' },
+      { id: 'figure-drawing', name: 'Figure Drawing' }
+    ]
+  },
+  {
+    id: 'digital-art',
+    name: 'Digital Art',
+    icon: Camera,
+    subcategories: [
+      { id: 'digital-painting', name: 'Digital Painting' },
+      { id: 'illustration', name: 'Digital Illustration' },
+      { id: 'concept-art', name: 'Concept Art' },
+      { id: 'ui-design', name: 'UI/UX Design' },
+      { id: '3d-modeling', name: '3D Modeling' }
+    ]
+  },
+  {
+    id: 'sculpture',
+    name: 'Sculpture',
+    icon: Scissors,
+    subcategories: [
+      { id: 'clay-sculpture', name: 'Clay Sculpture' },
+      { id: 'stone-carving', name: 'Stone Carving' },
+      { id: 'metalwork', name: 'Metalwork' },
+      { id: 'wood-carving', name: 'Wood Carving' },
+      { id: 'ceramics', name: 'Ceramics' }
+    ]
+  },
+  {
+    id: 'photography',
+    name: 'Photography',
+    icon: Camera,
+    subcategories: [
+      { id: 'portrait-photography', name: 'Portrait Photography' },
+      { id: 'landscape-photography', name: 'Landscape Photography' },
+      { id: 'street-photography', name: 'Street Photography' },
+      { id: 'studio-photography', name: 'Studio Photography' },
+      { id: 'photo-editing', name: 'Photo Editing' }
+    ]
+  },
+  {
+    id: 'art-history',
+    name: 'Art History',
+    icon: BookOpen,
+    subcategories: [
+      { id: 'renaissance', name: 'Renaissance Art' },
+      { id: 'modern-art', name: 'Modern Art' },
+      { id: 'contemporary-art', name: 'Contemporary Art' },
+      { id: 'art-movements', name: 'Art Movements' },
+      { id: 'art-criticism', name: 'Art Criticism' }
     ]
   }
 ];
 
 const sortOptions = [
   { value: 'relevance', label: 'Most Relevant' },
-  { value: 'price-low', label: 'Price: Low to High' },
-  { value: 'price-high', label: 'Price: High to Low' },
   { value: 'rating', label: 'Highest Rated' },
-  { value: 'newest', label: 'Newest First' },
-  { value: 'best-selling', label: 'Best Selling' }
+  { value: 'newest', label: 'Newest Courses' },
+  { value: 'popular', label: 'Most Popular' },
+  { value: 'price-low', label: 'Price: Low to High' },
+  { value: 'price-high', label: 'Price: High to Low' }
 ];
 
-const countries = [
-  { code: 'US', name: 'United States' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'SE', name: 'Sweden' },
-  { code: 'NO', name: 'Norway' },
-  { code: 'DK', name: 'Denmark' },
-  { code: 'FI', name: 'Finland' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'KR', name: 'South Korea' },
-  { code: 'CN', name: 'China' },
-  { code: 'IN', name: 'India' },
-  { code: 'BR', name: 'Brazil' },
-  { code: 'MX', name: 'Mexico' },
-  { code: 'AR', name: 'Argentina' }
+const difficultyLevels = [
+  { value: 'beginner', label: 'Beginner' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'advanced', label: 'Advanced' },
+  { value: 'all', label: 'All Levels' }
+];
+
+const courseFormats = [
+  { value: 'self-paced', label: 'Self-Paced' },
+  { value: 'live', label: 'Live Sessions' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'all', label: 'All Formats' }
 ];
 
 export default function LearnPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('art-prints');
+  const [selectedCategory, setSelectedCategory] = useState('painting');
   const [selectedSubcategory, setSelectedSubcategory] = useState('all');
   const [sortBy, setSortBy] = useState('relevance');
+  const [difficulty, setDifficulty] = useState('all');
+  const [format, setFormat] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [wishlist, setWishlist] = useState<string[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState('US');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   
   // Use the placeholder hook for dynamic theme-aware placeholders
-  const placeholderUrl = usePlaceholder(300, 300);
+  const placeholderUrl = usePlaceholder(400, 300);
+  const avatarPlaceholder = usePlaceholder(60, 60);
 
-  // Mock data for marketplace - now using dynamic placeholder
-  const mockProducts = useMemo(() => [
+  // Mock course data for art school
+  const mockCourses = useMemo(() => [
     {
       id: '1',
-      title: 'The Starry Night - Fine Art Print',
+      title: 'Master Oil Painting Techniques',
+      instructor: {
+        name: 'Elena Petrova',
+        avatar: avatarPlaceholder,
+        rating: 4.9,
+        students: 2847,
+        verified: true
+      },
+      description: 'Learn advanced oil painting techniques from a professional artist with 15+ years of experience.',
+      thumbnail: placeholderUrl,
       price: 89.99,
       originalPrice: 120.00,
       currency: 'USD',
-      imageUrl: placeholderUrl,
-      rating: 4.9,
-      reviewCount: 1250,
-      category: 'Art Prints',
-      subcategory: 'Fine Art Prints',
-      isWishlisted: false,
+      rating: 4.8,
+      reviewCount: 324,
+      category: 'Painting',
+      subcategory: 'Oil Painting',
+      difficulty: 'Intermediate',
+      duration: '8 weeks',
+      format: 'Self-Paced',
+      students: 1247,
+      lessons: 24,
       isOnSale: true,
-      tags: ['van gogh', 'fine art', 'museum quality', 'classic'],
-      description: 'Museum-quality giclée print of Van Gogh\'s masterpiece',
-      seller: {
-        name: 'Fine Art Reproductions',
-        rating: 4.9,
-        isVerified: true
-      }
+      isNew: false,
+      isFeatured: true,
+      tags: ['oil-painting', 'techniques', 'masterclass'],
+      skills: ['Color Theory', 'Brush Techniques', 'Composition', 'Lighting']
     },
     {
       id: '2',
-      title: 'Modern Abstract Canvas Print - Large',
-      price: 149.99,
+      title: 'Digital Art Fundamentals',
+      instructor: {
+        name: 'Marcus Chen',
+        avatar: avatarPlaceholder,
+        rating: 4.7,
+        students: 1923,
+        verified: true
+      },
+      description: 'Complete beginner course covering digital art basics, tools, and fundamental techniques.',
+      thumbnail: placeholderUrl,
+      price: 49.99,
+      originalPrice: null,
       currency: 'USD',
-      imageUrl: placeholderUrl,
-      rating: 4.7,
-      reviewCount: 890,
-      category: 'Art Prints',
-      subcategory: 'Canvas Prints',
-      isWishlisted: true,
+      rating: 4.6,
+      reviewCount: 189,
+      category: 'Digital Art',
+      subcategory: 'Digital Painting',
+      difficulty: 'Beginner',
+      duration: '6 weeks',
+      format: 'Live Sessions',
+      students: 892,
+      lessons: 18,
       isOnSale: false,
-      tags: ['abstract', 'canvas', 'modern', 'gallery wrapped'],
-      description: 'Large format abstract print on gallery-wrapped canvas',
-      seller: {
-        name: 'Modern Art Prints',
-        rating: 4.8,
-        isVerified: true
-      }
+      isNew: true,
+      isFeatured: false,
+      tags: ['digital-art', 'beginner', 'fundamentals'],
+      skills: ['Digital Tools', 'Basic Drawing', 'Color Theory', 'Layers']
     },
     {
       id: '3',
-      title: 'Limited Edition Banksy Print - Signed',
-      price: 450.00,
-      currency: 'USD',
-      imageUrl: placeholderUrl,
-      rating: 4.9,
-      reviewCount: 320,
-      category: 'Art Prints',
-      subcategory: 'Limited Editions',
-      isWishlisted: false,
-      isOnSale: false,
-      tags: ['banksy', 'limited edition', 'street art', 'signed'],
-      description: 'Authenticated limited edition print, numbered and signed',
-      seller: {
-        name: 'Street Art Gallery',
+      title: 'Watercolor Landscapes',
+      instructor: {
+        name: 'Sarah Williams',
+        avatar: avatarPlaceholder,
         rating: 4.9,
-        isVerified: true
-      }
+        students: 1567,
+        verified: true
+      },
+      description: 'Create stunning watercolor landscapes with professional techniques and composition tips.',
+      thumbnail: placeholderUrl,
+      price: 69.99,
+      originalPrice: 89.99,
+      currency: 'USD',
+      rating: 4.7,
+      reviewCount: 267,
+      category: 'Painting',
+      subcategory: 'Watercolor',
+      difficulty: 'Intermediate',
+      duration: '5 weeks',
+      format: 'Hybrid',
+      students: 634,
+      lessons: 15,
+      isOnSale: true,
+      isNew: false,
+      isFeatured: true,
+      tags: ['watercolor', 'landscapes', 'composition'],
+      skills: ['Watercolor Techniques', 'Landscape Composition', 'Color Mixing', 'Atmospheric Perspective']
     },
     {
       id: '4',
-      title: 'The Art Book - Phaidon',
-      price: 45.99,
-      currency: 'USD',
-      imageUrl: placeholderUrl,
-      rating: 4.8,
-      reviewCount: 2100,
-      category: 'Art Books',
-      subcategory: 'Art History',
-      isWishlisted: false,
-      isOnSale: false,
-      tags: ['art history', 'reference', 'comprehensive', 'phaidon'],
-      description: 'Comprehensive guide to 500 great artists and their works',
-      seller: {
-        name: 'Art Book Publishers',
+      title: 'Figure Drawing Masterclass',
+      instructor: {
+        name: 'David Rodriguez',
+        avatar: avatarPlaceholder,
         rating: 4.8,
-        isVerified: true
-      }
+        students: 2134,
+        verified: true
+      },
+      description: 'Master human anatomy and figure drawing with live model sessions and detailed instruction.',
+      thumbnail: placeholderUrl,
+      price: 129.99,
+      originalPrice: null,
+      currency: 'USD',
+      rating: 4.9,
+      reviewCount: 445,
+      category: 'Drawing',
+      subcategory: 'Figure Drawing',
+      difficulty: 'Advanced',
+      duration: '10 weeks',
+      format: 'Live Sessions',
+      students: 1567,
+      lessons: 30,
+      isOnSale: false,
+      isNew: false,
+      isFeatured: true,
+      tags: ['figure-drawing', 'anatomy', 'masterclass'],
+      skills: ['Human Anatomy', 'Proportions', 'Gesture Drawing', 'Shading Techniques']
     },
     {
       id: '5',
-      title: 'Frida Kahlo: The Complete Paintings',
-      price: 65.00,
-      currency: 'USD',
-      imageUrl: placeholderUrl,
-      rating: 4.9,
-      reviewCount: 780,
-      category: 'Art Books',
-      subcategory: 'Artist Biographies',
-      isWishlisted: true,
-      isOnSale: false,
-      tags: ['frida kahlo', 'biography', 'paintings', 'monograph'],
-      description: 'Comprehensive monograph featuring all of Kahlo\'s paintings',
-      seller: {
-        name: 'Taschen Books',
+      title: 'Art History: Renaissance to Modern',
+      instructor: {
+        name: 'Dr. Isabella Romano',
+        avatar: avatarPlaceholder,
         rating: 4.9,
-        isVerified: true
-      }
+        students: 987,
+        verified: true
+      },
+      description: 'Comprehensive journey through art history from Renaissance masters to modern movements.',
+      thumbnail: placeholderUrl,
+      price: 39.99,
+      originalPrice: null,
+      currency: 'USD',
+      rating: 4.8,
+      reviewCount: 156,
+      category: 'Art History',
+      subcategory: 'Renaissance Art',
+      difficulty: 'Beginner',
+      duration: '12 weeks',
+      format: 'Self-Paced',
+      students: 423,
+      lessons: 36,
+      isOnSale: false,
+      isNew: true,
+      isFeatured: false,
+      tags: ['art-history', 'renaissance', 'modern-art'],
+      skills: ['Art Analysis', 'Historical Context', 'Art Movements', 'Critical Thinking']
     },
     {
       id: '6',
-      title: 'Color Theory for Artists - Hardcover',
-      price: 34.99,
-      currency: 'USD',
-      imageUrl: placeholderUrl,
-      rating: 4.7,
-      reviewCount: 1450,
-      category: 'Art Books',
-      subcategory: 'Technique & How-To',
-      isWishlisted: false,
-      isOnSale: false,
-      tags: ['color theory', 'technique', 'how-to', 'educational'],
-      description: 'Practical guide to understanding and applying color theory',
-      seller: {
-        name: 'Art Education Press',
+      title: 'Portrait Photography Workshop',
+      instructor: {
+        name: 'Alex Thompson',
+        avatar: avatarPlaceholder,
         rating: 4.7,
-        isVerified: true
-      }
+        students: 1345,
+        verified: true
+      },
+      description: 'Professional portrait photography techniques, lighting, and post-processing.',
+      thumbnail: placeholderUrl,
+      price: 79.99,
+      originalPrice: 99.99,
+      currency: 'USD',
+      rating: 4.6,
+      reviewCount: 198,
+      category: 'Photography',
+      subcategory: 'Portrait Photography',
+      difficulty: 'Intermediate',
+      duration: '4 weeks',
+      format: 'Hybrid',
+      students: 567,
+      lessons: 12,
+      isOnSale: true,
+      isNew: false,
+      isFeatured: false,
+      tags: ['photography', 'portraits', 'lighting'],
+      skills: ['Portrait Lighting', 'Camera Settings', 'Posing', 'Post-Processing']
     }
-  ], [placeholderUrl]);
+  ], [placeholderUrl, avatarPlaceholder]);
 
-  const filteredProducts = useMemo(() => {
-    let filtered = [...mockProducts];
+  const filteredCourses = useMemo(() => {
+    let filtered = mockCourses;
 
-    // Filter by search query
+    // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(product =>
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      filtered = filtered.filter(course => 
+        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.instructor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
-    // Filter by category
+    // Category filter
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(product => 
-        product.category.toLowerCase().replace(/\s+/g, '-') === selectedCategory
-      );
+      filtered = filtered.filter(course => course.category.toLowerCase() === selectedCategory);
     }
 
-    // Filter by subcategory
+    // Subcategory filter
     if (selectedSubcategory !== 'all') {
-      filtered = filtered.filter(product => 
-        product.subcategory.toLowerCase().replace(/\s+/g, '-') === selectedSubcategory
-      );
+      filtered = filtered.filter(course => course.subcategory.toLowerCase().replace(/\s+/g, '-') === selectedSubcategory);
     }
 
-    // Sort products
-    filtered.sort((a, b) => {
-    switch (sortBy) {
-      case 'price-low':
-        return a.price - b.price;
-      case 'price-high':
-        return b.price - a.price;
-      case 'rating':
-        return b.rating - a.rating;
-        case 'newest':
-          return b.reviewCount - a.reviewCount; // Using review count as proxy for newness
-        case 'best-selling':
-          return b.reviewCount - a.reviewCount;
-      default:
-        return 0;
+    // Difficulty filter
+    if (difficulty !== 'all') {
+      filtered = filtered.filter(course => course.difficulty.toLowerCase() === difficulty);
     }
-  });
+
+    // Format filter
+    if (format !== 'all') {
+      filtered = filtered.filter(course => course.format.toLowerCase().replace(/\s+/g, '-') === format);
+    }
+
+    // Sort
+    switch (sortBy) {
+      case 'rating':
+        filtered.sort((a, b) => b.rating - a.rating);
+        break;
+      case 'newest':
+        filtered.sort((a, b) => b.isNew ? 1 : -1);
+        break;
+      case 'popular':
+        filtered.sort((a, b) => b.students - a.students);
+        break;
+      case 'price-low':
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-high':
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      default:
+        // Relevance - featured first, then by rating
+        filtered.sort((a, b) => {
+          if (a.isFeatured && !b.isFeatured) return -1;
+          if (!a.isFeatured && b.isFeatured) return 1;
+          return b.rating - a.rating;
+        });
+    }
 
     return filtered;
-  }, [searchQuery, selectedCategory, selectedSubcategory, sortBy]);
+  }, [mockCourses, searchQuery, selectedCategory, selectedSubcategory, difficulty, format, sortBy]);
 
-  const mostWishedFor = mockProducts.filter(p => p.isWishlisted).slice(0, 6);
-  const fourStarsAndAbove = mockProducts.filter(p => p.rating >= 4.0).slice(0, 6);
-  const onSale = mockProducts.filter(p => p.isOnSale).slice(0, 6);
-
-  const toggleWishlist = (productId: string) => {
-    setWishlist(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
+  const toggleCategory = (categoryId: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId);
+    } else {
+      newExpanded.add(categoryId);
+    }
+    setExpandedCategories(newExpanded);
   };
 
-  const toggleCategoryExpansion = (categoryId: string) => {
-    setExpandedCategories(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(categoryId)) {
-        newSet.delete(categoryId);
-      } else {
-        newSet.add(categoryId);
-      }
-      return newSet;
-    });
-  };
-
-  const selectedCategoryData = categories.find(cat => cat.id === selectedCategory);
+  const coursesPerPage = 12;
+  const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
+  const startIndex = (currentPage - 1) * coursesPerPage;
+  const paginatedCourses = filteredCourses.slice(startIndex, startIndex + coursesPerPage);
 
   return (
     <div className="min-h-screen bg-background">
-        {/* Header */}
+      {/* Header */}
       <div className="bg-background border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">SOMA Learn</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+                <GraduationCap className="h-8 w-8 text-primary" />
+                SOMA Art School
+              </h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Deliver to</span>
-                <span className="sm:hidden">Country:</span>
-                <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                  <SelectTrigger className="w-32 sm:w-40 h-8 text-sm">
+                <span>Learn from the best artists</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 relative">
+              <Input
+                placeholder="Search courses, instructors, or skills..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-12 rounded-r-none pl-4"
+              />
+              <Button className="absolute right-0 top-0 h-12 px-4 rounded-l-none">
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="h-12 px-4"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
+          </div>
+
+          {/* Filters */}
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Difficulty</label>
+                <Select value={difficulty} onValueChange={setDifficulty}>
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {countries.map((country) => (
-                      <SelectItem key={country.code} value={country.code}>
-                        {country.name}
+                    {difficultyLevels.map((level) => (
+                      <SelectItem key={level.value} value={level.value}>
+                        {level.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Format</label>
+                <Select value={format} onValueChange={setFormat}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courseFormats.map((format) => (
+                      <SelectItem key={format.value} value={format.value}>
+                        {format.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Sort By</label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setDifficulty('all');
+                    setFormat('all');
+                    setSortBy('relevance');
+                  }}
+                  className="w-full"
+                >
+                  Clear Filters
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              {/* Shopping cart removed - monetizing via affiliate links */}
-            </div>
-          </div>
-
-          {/* Search Bar */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex-1 relative">
-            <Input
-                placeholder="Search SOMA Learn"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-10 rounded-r-none"
-              />
-              <Button className="absolute right-0 top-0 h-10 px-4 rounded-l-none">
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <div className="flex items-center gap-2 sm:gap-4 text-sm overflow-x-auto pb-2">
-            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Best Sellers</Button>
-            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">New Releases</Button>
-            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Art Prints</Button>
-            <Button variant="ghost" className="px-2 sm:px-3 py-2 h-auto font-normal whitespace-nowrap text-xs sm:text-sm">Art Books</Button>
-          </div>
+          )}
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar - Hidden on mobile, shown on desktop */}
-          <div className="hidden lg:block w-64 flex-shrink-0">
-            <div className="bg-card rounded-lg border border-border p-4">
-              <h3 className="font-semibold mb-4 text-card-foreground">Department</h3>
-              <div className="space-y-2">
-                {categories.map((category) => {
+          {/* Sidebar - Categories */}
+          <div className="lg:w-64 flex-shrink-0">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Course Categories</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {courseCategories.map((category) => {
                   const isExpanded = expandedCategories.has(category.id);
-                  const isSelected = selectedCategory === category.id;
+                  const IconComponent = category.icon;
                   
                   return (
                     <div key={category.id}>
-                      <div className="flex items-center">
-                        <Button
-                          variant={isSelected ? "default" : "ghost"}
-                          className="flex-1 justify-start h-auto p-2 text-sm"
-                          onClick={() => {
-                            setSelectedCategory(category.id);
-                            setSelectedSubcategory('all');
-                          }}
-                        >
-                          {category.name}
-                        </Button>
-                        {category.subcategories.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 ml-1"
-                            onClick={() => toggleCategoryExpansion(category.id)}
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                      {isExpanded && category.subcategories.length > 0 && (
-                        <div className="ml-4 mt-2 space-y-1">
+                      <button
+                        onClick={() => toggleCategory(category.id)}
+                        className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="h-4 w-4" />
+                          <span className="text-sm font-medium">{category.name}</span>
+                        </div>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="ml-6 space-y-1 mt-2">
                           {category.subcategories.map((subcategory) => (
-                            <Button
+                            <button
                               key={subcategory.id}
-                              variant={selectedSubcategory === subcategory.id ? "secondary" : "ghost"}
-                              className="w-full justify-start h-auto p-2 text-xs"
-                              onClick={() => setSelectedSubcategory(subcategory.id)}
+                              onClick={() => {
+                                setSelectedCategory(category.id);
+                                setSelectedSubcategory(subcategory.id);
+                              }}
+                              className={`w-full text-left p-2 rounded text-sm transition-colors ${
+                                selectedSubcategory === subcategory.id
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'hover:bg-muted/30'
+                              }`}
                             >
                               {subcategory.name}
-                            </Button>
+                            </button>
                           ))}
                         </div>
                       )}
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Category Filter */}
-          <div className="lg:hidden mb-4">
-            <div className="bg-card rounded-lg border border-border p-4">
-              <h3 className="font-semibold mb-3 text-card-foreground">Categories</h3>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
-                  <Button
-                    key={category.id}
-                    variant={selectedCategory === category.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setSelectedCategory(category.id);
-                      setSelectedSubcategory('all');
-                    }}
-                    className="text-xs"
-                  >
-                    {category.name}
-                  </Button>
-                ))}
-              </div>
-              {selectedCategory && selectedCategory !== 'all' && (
-                <div className="mt-3">
-                  <h4 className="text-sm font-medium mb-2">Subcategories</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {categories.find(cat => cat.id === selectedCategory)?.subcategories.map((subcategory) => (
-                      <Button
-                        key={subcategory.id}
-                        variant={selectedSubcategory === subcategory.id ? "secondary" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedSubcategory(subcategory.id)}
-                        className="text-xs"
-                      >
-                        {subcategory.name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Main Content */}
           <div className="flex-1">
-            {/* Page Header */}
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                {selectedCategoryData?.name || categories[0]?.name || 'Art Prints'}
-              </h2>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                <p className="text-muted-foreground text-sm">
-                  {filteredProducts.length} products found
+            {/* Results Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {filteredCourses.length} Course{filteredCourses.length !== 1 ? 's' : ''} Found
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {selectedCategory !== 'all' && `in ${courseCategories.find(c => c.id === selectedCategory)?.name}`}
+                  {selectedSubcategory !== 'all' && ` • ${courseCategories
+                    .find(c => c.id === selectedCategory)
+                    ?.subcategories.find(s => s.id === selectedSubcategory)?.name}`}
                 </p>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-full sm:w-48 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sortOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="w-full sm:w-auto text-sm"
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filters
-                  </Button>
-                </div>
               </div>
-        </div>
+            </div>
 
-            {/* Featured Sections */}
-            {selectedCategory === 'all' && (
-              <div className="space-y-8 mb-8">
-                {/* Most Wished For */}
-                {mostWishedFor.length > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold">Most wished for</h3>
-                      <Button variant="ghost" className="text-blue-600 hover:text-blue-700">
-                        See more
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
-                      {mostWishedFor.map((product) => (
-                        <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                          <CardContent className="p-0">
-                            <div className="relative">
-                              <img
-                                src={product.imageUrl}
-                                alt={product.title}
-                                className="w-full h-48 object-cover"
-                              />
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="absolute top-2 right-2 h-8 w-8 p-0"
-                                onClick={() => toggleWishlist(product.id)}
-                              >
-                                <Heart className={`h-4 w-4 ${wishlist.includes(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                              </Button>
-                            </div>
-                            <div className="p-3">
-                              <h4 className="font-medium text-sm line-clamp-2 mb-2">{product.title}</h4>
-                              <div className="flex items-center gap-1 mb-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                <span className="text-xs text-muted-foreground">{product.rating}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-green-600">${product.price}</span>
-                                {product.originalPrice && (
-                                  <span className="text-xs text-muted-foreground line-through">${product.originalPrice}</span>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">{product.reviewCount} reviews</p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 4 Stars and Above */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">4 stars and above</h3>
-                    <Button variant="ghost" className="text-blue-600 hover:text-blue-700">
-                      See more
-                    </Button>
-          </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
-                    {fourStarsAndAbove.map((product) => (
-                      <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                        <CardContent className="p-0">
-                          <div className="relative">
-                            <img
-                              src={product.imageUrl}
-                              alt={product.title}
-                              className="w-full h-48 object-cover"
-                            />
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="absolute top-2 right-2 h-8 w-8 p-0"
-                              onClick={() => toggleWishlist(product.id)}
-                            >
-                              <Heart className={`h-4 w-4 ${wishlist.includes(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                            </Button>
-                          </div>
-                          <div className="p-3">
-                            <h4 className="font-medium text-sm line-clamp-2 mb-2">{product.title}</h4>
-                            <div className="flex items-center gap-1 mb-1">
-                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                              <span className="text-xs text-muted-foreground">{product.rating}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-green-600">${product.price}</span>
-                              {product.originalPrice && (
-                                <span className="text-xs text-muted-foreground line-through">${product.originalPrice}</span>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">{product.reviewCount} reviews</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-          </div>
-        )}
-
-            {/* Product Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
-                <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <CardContent className="p-0">
-                    <div className="relative">
-                      <img
-                        src={product.imageUrl}
-                        alt={product.title}
-                        className="w-full h-64 object-cover"
-                      />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="absolute top-2 right-2 h-8 w-8 p-0"
-                        onClick={() => toggleWishlist(product.id)}
-                      >
-                        <Heart className={`h-4 w-4 ${wishlist.includes(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                      </Button>
-                      {product.isOnSale && (
-                        <Badge className="absolute top-2 left-2 bg-red-500">Sale</Badge>
+            {/* Course Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {paginatedCourses.map((course) => (
+                <Card key={course.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
+                  <div className="relative">
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 left-3 flex gap-2">
+                      {course.isFeatured && (
+                        <Badge className="bg-primary text-primary-foreground">
+                          <Star className="h-3 w-3 mr-1" />
+                          Featured
+                        </Badge>
+                      )}
+                      {course.isNew && (
+                        <Badge variant="secondary">New</Badge>
+                      )}
+                      {course.isOnSale && (
+                        <Badge variant="destructive">Sale</Badge>
                       )}
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold mb-2 line-clamp-2">{product.title}</h3>
-                      <div className="flex items-center gap-1 mb-2">
+                    <div className="absolute top-3 right-3">
+                      <Badge variant="outline" className="bg-background/80">
+                        {course.difficulty}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                        {course.title}
+                      </h3>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mb-3">
+                      <img
+                        src={course.instructor.avatar}
+                        alt={course.instructor.name}
+                        className="w-6 h-6 rounded-full"
+                      />
+                      <span className="text-sm text-muted-foreground">{course.instructor.name}</span>
+                      {course.instructor.verified && (
+                        <Award className="h-3 w-3 text-primary" />
+                      )}
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                      {course.description}
+                    </p>
+                    
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {course.duration}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Play className="h-3 w-3" />
+                        {course.lessons} lessons
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {course.students.toLocaleString()}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm text-muted-foreground">{product.rating}</span>
-                        <span className="text-sm text-muted-foreground">({product.reviewCount})</span>
+                        <span className="text-sm font-medium">{course.rating}</span>
+                        <span className="text-xs text-muted-foreground">({course.reviewCount})</span>
                       </div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-bold text-lg text-green-600">${product.price}</span>
-                        {product.originalPrice && (
-                          <span className="text-sm text-muted-foreground line-through">${product.originalPrice}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {course.format}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-primary">
+                          ${course.price}
+                        </span>
+                        {course.originalPrice && (
+                          <span className="text-sm text-muted-foreground line-through">
+                            ${course.originalPrice}
+                          </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xs text-muted-foreground">by {product.seller.name}</span>
-                        {product.seller.isVerified && (
-                          <Badge variant="secondary" className="text-xs">Verified</Badge>
-                        )}
-                      </div>
-                      <Button className="w-full">
-                        View Product
-                      </Button>
+                      <Link href={`/learn/${course.id}`}>
+                        <Button size="sm" className="gradient-button">
+                          View Course
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>
@@ -626,17 +664,39 @@ export default function LearnPage() {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-center gap-2 mt-8">
-              <Button variant="outline" size="sm">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm">1</Button>
-              <Button variant="outline" size="sm">2</Button>
-              <Button variant="outline" size="sm">3</Button>
-              <Button variant="outline" size="sm">
-                <ChevronRight className="h-4 w-4" />
-            </Button>
-            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {page}
+                  </Button>
+                ))}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
