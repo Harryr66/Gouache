@@ -38,7 +38,6 @@ export default function ProfileEditPage() {
       artistType: '',
     location: '',
     isProfessional: false,
-    isTipJarEnabled: false,
   });
 
   const [artistRequestData, setArtistRequestData] = useState({
@@ -66,7 +65,6 @@ export default function ProfileEditPage() {
             artistType: changes.artistType || user.artistType || '',
             location: changes.location || user.location || '',
             isProfessional: changes.isProfessional || user.isProfessional || false,
-            isTipJarEnabled: changes.isTipJarEnabled || user.isTipJarEnabled || false
           });
           
           if (changes.avatarUrl && changes.avatarUrl !== user.avatarUrl) {
@@ -85,7 +83,6 @@ export default function ProfileEditPage() {
           artistType: user.artistType || '',
           location: user.location || '',
           isProfessional: user.isProfessional || false,
-          isTipJarEnabled: user.isTipJarEnabled || false,
         });
       }
     }
@@ -405,7 +402,6 @@ export default function ProfileEditPage() {
         artistType: formData.artistType,
         location: formData.location,
         isProfessional: formData.isProfessional,
-        isTipJarEnabled: formData.isTipJarEnabled,
         updatedAt: new Date()
       };
 
@@ -647,7 +643,7 @@ export default function ProfileEditPage() {
               <div className="space-y-1">
                 <Label>Professional Artist Account</Label>
                 <p className="text-sm text-muted-foreground">
-                  Enable additional features like shop, community, and tip jar
+                  Enable additional features like shop and community
                 </p>
               </div>
               <Switch
@@ -657,18 +653,6 @@ export default function ProfileEditPage() {
             </div>
 
             {formData.isProfessional && (
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Tip Jar</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow followers to send you tips
-                  </p>
-                </div>
-                <Switch 
-                  checked={formData.isTipJarEnabled}
-                  onCheckedChange={(checked) => handleInputChange('isTipJarEnabled', checked)}
-                />
-              </div>
             )}
           </CardContent>
         </Card>

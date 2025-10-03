@@ -397,7 +397,6 @@ export interface User {
   isActive: boolean;
   lastSeen?: Date;
   artistType?: string;
-  isTipJarEnabled?: boolean;
   portfolio?: Array<{
     id: string;
     imageUrl: string;

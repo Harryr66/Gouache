@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Users, UserPlus, Edit, Gift, Upload, Plus } from 'lucide-react';
+import { Heart, Users, UserPlus, Edit, Upload, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TipDialog } from './tip-dialog';
 
 interface ProfileHeaderProps {
   user: {
@@ -20,7 +19,6 @@ interface ProfileHeaderProps {
     followerCount: number;
     followingCount: number;
     isProfessional: boolean;
-    isTipJarEnabled?: boolean;
     profileRingColor?: string;
   };
   isOwnProfile: boolean;
@@ -36,7 +34,6 @@ export function ProfileHeader({
   onFollowToggle,
   currentTab
 }: ProfileHeaderProps) {
-  const [showTipDialog, setShowTipDialog] = useState(false);
 
   // Early return if user is not properly loaded
   if (!user) {
@@ -146,15 +143,6 @@ export function ProfileHeader({
                     </Link>
                   </Button>
                   
-                  {user.isProfessional && user.isTipJarEnabled && (
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowTipDialog(true)}
-                    >
-                      <Gift className="h-4 w-4 mr-2" />
-                      Tip
-                    </Button>
-                  )}
                   
                   {user.isProfessional && (
                     <Button asChild variant="gradient">
@@ -181,14 +169,6 @@ export function ProfileHeader({
         </div>
       </Card>
 
-      {/* Tip Dialog */}
-      {showTipDialog && (
-        <TipDialog 
-          artistId={user.id}
-          artistName={user.displayName || 'User'}
-          onClose={() => setShowTipDialog(false)} 
-        />
-      )}
     </>
   );
 }
