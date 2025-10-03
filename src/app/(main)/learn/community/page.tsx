@@ -51,25 +51,6 @@ const mockCommunityData = {
       isTrending: true
     },
     {
-      id: 2,
-      user: {
-        name: 'Maria Rodriguez',
-        avatar: '',
-        verified: false,
-        level: 'Advanced',
-        courses: 12
-      },
-      title: 'Color theory tips for digital artists',
-      content: 'Does anyone have tips for achieving more vibrant colors in digital art? I feel like my colors are coming out muddy and desaturated.',
-      date: '2024-01-18',
-      replies: 18,
-      likes: 31,
-      category: 'Digital Art',
-      tags: ['color-theory', 'digital-art', 'techniques'],
-      isPinned: true,
-      isTrending: false
-    },
-    {
       id: 3,
       user: {
         name: 'David Chen',
@@ -99,15 +80,6 @@ const mockCommunityData = {
       course: 'Master Oil Painting Techniques',
       level: 'Intermediate'
     },
-    {
-      id: 2,
-      name: 'Digital Art Beginners',
-      description: 'Support group for those new to digital art. Share progress, ask questions, and learn together.',
-      members: 78,
-      nextMeeting: '2024-01-23',
-      course: 'Digital Art Fundamentals',
-      level: 'Beginner'
-    }
   ],
   challenges: [
     {
@@ -165,7 +137,7 @@ export default function CommunityPage() {
   
   const placeholderUrl = usePlaceholder(60, 60);
 
-  const categories = ['all', 'Painting', 'Drawing', 'Digital Art', 'Sculpture', 'Photography', 'Art History'];
+  const categories = ['all', 'Painting', 'Drawing', 'Sculpture', 'Books'];
 
   const filteredDiscussions = mockCommunityData.discussions.filter(discussion => {
     const matchesSearch = discussion.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -281,10 +253,8 @@ export default function CommunityPage() {
                           <option value="General">General</option>
                           <option value="Painting">Painting</option>
                           <option value="Drawing">Drawing</option>
-                          <option value="Digital Art">Digital Art</option>
                           <option value="Sculpture">Sculpture</option>
-                          <option value="Photography">Photography</option>
-                          <option value="Art History">Art History</option>
+                          <option value="Books">Books</option>
                         </select>
                         <Button type="submit" className="gradient-button">
                           Post Discussion
@@ -529,7 +499,7 @@ export default function CommunityPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {['Oil Painting Techniques', 'Digital Art Tools', 'Color Theory', 'Figure Drawing', 'Watercolor Tips'].map((topic, index) => (
+                  {['Oil Painting Techniques', 'Color Theory', 'Figure Drawing', 'Watercolor Tips', 'Sculpture Basics', 'Art Books'].map((topic, index) => (
                     <div key={index} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer">
                       <span className="text-sm">{topic}</span>
                       <TrendingUp className="h-3 w-3 text-orange-500" />

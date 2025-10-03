@@ -37,18 +37,6 @@ const courseCategories = [
     ]
   },
   {
-    id: 'digital-art',
-    name: 'Digital Art',
-    icon: Camera,
-    subcategories: [
-      { id: 'digital-painting', name: 'Digital Painting' },
-      { id: 'illustration', name: 'Digital Illustration' },
-      { id: 'concept-art', name: 'Concept Art' },
-      { id: 'ui-design', name: 'UI/UX Design' },
-      { id: '3d-modeling', name: '3D Modeling' }
-    ]
-  },
-  {
     id: 'sculpture',
     name: 'Sculpture',
     icon: Scissors,
@@ -61,29 +49,18 @@ const courseCategories = [
     ]
   },
   {
-    id: 'photography',
-    name: 'Photography',
-    icon: Camera,
-    subcategories: [
-      { id: 'portrait-photography', name: 'Portrait Photography' },
-      { id: 'landscape-photography', name: 'Landscape Photography' },
-      { id: 'street-photography', name: 'Street Photography' },
-      { id: 'studio-photography', name: 'Studio Photography' },
-      { id: 'photo-editing', name: 'Photo Editing' }
-    ]
-  },
-  {
-    id: 'art-history',
-    name: 'Art History',
+    id: 'books',
+    name: 'Books',
     icon: BookOpen,
     subcategories: [
-      { id: 'renaissance', name: 'Renaissance Art' },
-      { id: 'modern-art', name: 'Modern Art' },
-      { id: 'contemporary-art', name: 'Contemporary Art' },
-      { id: 'art-movements', name: 'Art Movements' },
-      { id: 'art-criticism', name: 'Art Criticism' }
+      { id: 'art-techniques', name: 'Art Techniques' },
+      { id: 'art-history', name: 'Art History' },
+      { id: 'artist-biographies', name: 'Artist Biographies' },
+      { id: 'art-theory', name: 'Art Theory' },
+      { id: 'coffee-table-books', name: 'Coffee Table Books' },
+      { id: 'exhibition-catalogs', name: 'Exhibition Catalogs' }
     ]
-  }
+  },
 ];
 
 const sortOptions = [
@@ -157,36 +134,6 @@ export default function LearnPage() {
       skills: ['Color Theory', 'Brush Techniques', 'Composition', 'Lighting']
     },
     {
-      id: '2',
-      title: 'Digital Art Fundamentals',
-      instructor: {
-        name: 'Marcus Chen',
-        avatar: avatarPlaceholder,
-        rating: 4.7,
-        students: 1923,
-        verified: true
-      },
-      description: 'Complete beginner course covering digital art basics, tools, and fundamental techniques.',
-      thumbnail: placeholderUrl,
-      price: 49.99,
-      originalPrice: null,
-      currency: 'USD',
-      rating: 4.6,
-      reviewCount: 189,
-      category: 'Digital Art',
-      subcategory: 'Digital Painting',
-      difficulty: 'Beginner',
-      duration: '6 weeks',
-      format: 'Live Sessions',
-      students: 892,
-      lessons: 18,
-      isOnSale: false,
-      isNew: true,
-      isFeatured: false,
-      tags: ['digital-art', 'beginner', 'fundamentals'],
-      skills: ['Digital Tools', 'Basic Drawing', 'Color Theory', 'Layers']
-    },
-    {
       id: '3',
       title: 'Watercolor Landscapes',
       instructor: {
@@ -247,64 +194,94 @@ export default function LearnPage() {
       skills: ['Human Anatomy', 'Proportions', 'Gesture Drawing', 'Shading Techniques']
     },
     {
-      id: '5',
-      title: 'Art History: Renaissance to Modern',
+      id: '4',
+      title: 'The Complete Guide to Oil Painting',
       instructor: {
-        name: 'Dr. Isabella Romano',
+        name: 'Robert Johnson',
         avatar: avatarPlaceholder,
-        rating: 4.9,
-        students: 987,
+        rating: 4.8,
+        students: 892,
         verified: true
       },
-      description: 'Comprehensive journey through art history from Renaissance masters to modern movements.',
+      description: 'Comprehensive guide covering all aspects of oil painting from materials to advanced techniques.',
       thumbnail: placeholderUrl,
-      price: 39.99,
-      originalPrice: null,
+      price: 24.99,
+      originalPrice: 34.99,
       currency: 'USD',
-      rating: 4.8,
+      rating: 4.7,
       reviewCount: 156,
-      category: 'Art History',
-      subcategory: 'Renaissance Art',
+      category: 'Books',
+      subcategory: 'Art Techniques',
       difficulty: 'Beginner',
-      duration: '12 weeks',
-      format: 'Self-Paced',
+      duration: 'Self-Paced',
+      format: 'E-Book',
       students: 423,
-      lessons: 36,
-      isOnSale: false,
-      isNew: true,
-      isFeatured: false,
-      tags: ['art-history', 'renaissance', 'modern-art'],
-      skills: ['Art Analysis', 'Historical Context', 'Art Movements', 'Critical Thinking']
-    },
-    {
-      id: '6',
-      title: 'Portrait Photography Workshop',
-      instructor: {
-        name: 'Alex Thompson',
-        avatar: avatarPlaceholder,
-        rating: 4.7,
-        students: 1345,
-        verified: true
-      },
-      description: 'Professional portrait photography techniques, lighting, and post-processing.',
-      thumbnail: placeholderUrl,
-      price: 79.99,
-      originalPrice: 99.99,
-      currency: 'USD',
-      rating: 4.6,
-      reviewCount: 198,
-      category: 'Photography',
-      subcategory: 'Portrait Photography',
-      difficulty: 'Intermediate',
-      duration: '4 weeks',
-      format: 'Hybrid',
-      students: 567,
-      lessons: 12,
+      lessons: 1,
       isOnSale: true,
       isNew: false,
       isFeatured: false,
-      tags: ['photography', 'portraits', 'lighting'],
-      skills: ['Portrait Lighting', 'Camera Settings', 'Posing', 'Post-Processing']
+      tags: ['oil-painting', 'techniques', 'guide'],
+      skills: ['Oil Painting Basics', 'Color Theory', 'Brush Techniques', 'Composition']
+    },
+    {
+      id: '5',
+      title: 'Van Gogh: The Life and Art',
+      instructor: {
+        name: 'Dr. Sarah Mitchell',
+        avatar: avatarPlaceholder,
+        rating: 4.9,
+        students: 567,
+        verified: true
+      },
+      description: 'In-depth biography exploring Van Gogh\'s life, artistic development, and lasting influence on modern art.',
+      thumbnail: placeholderUrl,
+      price: 19.99,
+      originalPrice: null,
+      currency: 'USD',
+      rating: 4.8,
+      reviewCount: 89,
+      category: 'Books',
+      subcategory: 'Artist Biographies',
+      difficulty: 'Beginner',
+      duration: 'Self-Paced',
+      format: 'E-Book',
+      students: 234,
+      lessons: 1,
+      isOnSale: false,
+      isNew: true,
+      isFeatured: false,
+      tags: ['van-gogh', 'biography', 'art-history'],
+      skills: ['Art History', 'Biography Analysis', 'Artistic Influence', 'Cultural Context']
+    },
+    {
+      id: '6',
+      title: 'Color Theory for Artists',
+      instructor: {
+        name: 'Michael Chen',
+        avatar: avatarPlaceholder,
+        rating: 4.6,
+        students: 1234,
+        verified: true
+      },
+      description: 'Master the principles of color theory and learn how to apply them effectively in your artwork.',
+      thumbnail: placeholderUrl,
+      price: 29.99,
+      originalPrice: 39.99,
+      currency: 'USD',
+      rating: 4.5,
+      reviewCount: 203,
+      category: 'Books',
+      subcategory: 'Art Theory',
+      difficulty: 'Intermediate',
+      duration: 'Self-Paced',
+      format: 'E-Book',
+      students: 678,
+      lessons: 1,
+      isOnSale: true,
+      isNew: false,
+      isFeatured: true,
+      tags: ['color-theory', 'art-theory', 'techniques'],
+      skills: ['Color Harmony', 'Color Psychology', 'Color Mixing', 'Visual Impact']
     }
   ], [placeholderUrl, avatarPlaceholder]);
 
@@ -387,7 +364,7 @@ export default function LearnPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+        {/* Header */}
       <div className="bg-background border-b border-border">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
@@ -405,7 +382,7 @@ export default function LearnPage() {
           {/* Search Bar */}
           <div className="flex items-center gap-4 mb-6">
             <div className="flex-1 relative">
-              <Input
+            <Input
                 placeholder="Search courses, instructors, or skills..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -442,7 +419,7 @@ export default function LearnPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+                      </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Format</label>
                 <Select value={format} onValueChange={setFormat}>
@@ -460,22 +437,22 @@ export default function LearnPage() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Sort By</label>
-                <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+                      {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
               </div>
               <div className="flex items-end">
-                <Button 
-                  variant="outline" 
+                  <Button
+                    variant="outline"
                   onClick={() => {
                     setDifficulty('all');
                     setFormat('all');
@@ -484,9 +461,9 @@ export default function LearnPage() {
                   className="w-full"
                 >
                   Clear Filters
-                </Button>
-              </div>
-            </div>
+                  </Button>
+        </div>
+          </div>
           )}
         </div>
       </div>
@@ -513,7 +490,7 @@ export default function LearnPage() {
                         <div className="flex items-center gap-2">
                           <IconComponent className="h-4 w-4" />
                           <span className="text-sm font-medium">{category.name}</span>
-                        </div>
+                    </div>
                         <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                       </button>
                       
@@ -535,13 +512,13 @@ export default function LearnPage() {
                               {subcategory.name}
                             </button>
                           ))}
-                        </div>
-                      )}
-                    </div>
+                              </div>
+                                )}
+                              </div>
                   );
                 })}
-              </CardContent>
-            </Card>
+                          </CardContent>
+                        </Card>
           </div>
 
           {/* Main Content */}
@@ -565,8 +542,8 @@ export default function LearnPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {paginatedCourses.map((course) => (
                 <Card key={course.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
-                  <div className="relative">
-                    <img
+                          <div className="relative">
+                            <img
                       src={course.thumbnail}
                       alt={course.title}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
@@ -583,13 +560,13 @@ export default function LearnPage() {
                       )}
                       {course.isOnSale && (
                         <Badge variant="destructive">Sale</Badge>
-                      )}
-                    </div>
+                              )}
+                            </div>
                     <div className="absolute top-3 right-3">
                       <Badge variant="outline" className="bg-background/80">
                         {course.difficulty}
                       </Badge>
-                    </div>
+                          </div>
                   </div>
                   
                   <CardContent className="p-4">
@@ -597,7 +574,7 @@ export default function LearnPage() {
                       <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors">
                         {course.title}
                       </h3>
-                    </div>
+          </div>
                     
                     <div className="flex items-center gap-2 mb-3">
                       <img
@@ -639,7 +616,7 @@ export default function LearnPage() {
                       <Badge variant="outline" className="text-xs">
                         {course.format}
                       </Badge>
-                    </div>
+                      </div>
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -655,7 +632,7 @@ export default function LearnPage() {
                       <Link href={`/learn/${course.id}`}>
                         <Button size="sm" className="gradient-button">
                           View Course
-                        </Button>
+                      </Button>
                       </Link>
                     </div>
                   </CardContent>
@@ -672,8 +649,8 @@ export default function LearnPage() {
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
                 
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <Button
@@ -693,9 +670,9 @@ export default function LearnPage() {
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+                <ChevronRight className="h-4 w-4" />
+            </Button>
+            </div>
             )}
           </div>
         </div>
