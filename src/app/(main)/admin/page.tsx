@@ -91,12 +91,6 @@ export default function AdminPanel() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedView, setSelectedView] = useState<string>('artist-pending');
   
-  // Comment moderation states
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [commentReports, setCommentReports] = useState<CommentReport[]>([]);
-  const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
-  const [selectedReport, setSelectedReport] = useState<CommentReport | null>(null);
-  const [moderationReason, setModerationReason] = useState('');
   
   // Advertising states
   const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
@@ -143,15 +137,6 @@ export default function AdminPanel() {
       orderBy('submittedAt', 'desc')
     );
 
-    const commentsQuery = query(
-      collection(db, 'comments'),
-      orderBy('createdAt', 'desc')
-    );
-
-    const commentReportsQuery = query(
-      collection(db, 'commentReports'),
-      orderBy('reportedAt', 'desc')
-    );
 
     const advertisementsQuery = query(
       collection(db, 'advertisements'),
@@ -166,30 +151,28 @@ export default function AdminPanel() {
     const fetchData = async () => {
       try {
         console.log('🔄 Admin Panel: Fetching all data...');
-        const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot, commentsSnapshot, reportsSnapshot, advertisementsSnapshot, analyticsSnapshot] = await Promise.all([
+        const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot, advertisementsSnapshot, analyticsSnapshot] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
           getDocs(episodesQuery),
           getDocs(marketplaceQuery),
           getDocs(affiliateQuery),
-          getDocs(commentsQuery),
-          getDocs(commentReportsQuery),
           getDocs(advertisementsQuery),
           getDocs(advertisementAnalyticsQuery)
         ]);
 
         const requests = artistSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as ArtistRequest[];
-        setArtistRequests(requests);
+        id: doc.id,
+        ...doc.data()
+      })) as ArtistRequest[];
+      setArtistRequests(requests);
         console.log(`✅ Loaded ${requests.length} artist requests:`, requests);
 
         const applications = advertisingSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as AdvertisingApplication[];
-        setAdvertisingApplications(applications);
+        id: doc.id,
+        ...doc.data()
+      })) as AdvertisingApplication[];
+      setAdvertisingApplications(applications);
         console.log(`✅ Loaded ${applications.length} advertising applications:`, applications);
 
         const episodes = episodesSnapshot.docs.map(doc => ({
@@ -213,19 +196,6 @@ export default function AdminPanel() {
         setAffiliateRequests(affiliateRequests);
         console.log(`✅ Loaded ${affiliateRequests.length} affiliate requests:`, affiliateRequests);
 
-        const comments = commentsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Comment[];
-        setComments(comments);
-        console.log(`✅ Loaded ${comments.length} comments:`, comments);
-
-        const reports = reportsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as CommentReport[];
-        setCommentReports(reports);
-        console.log(`✅ Loaded ${reports.length} comment reports:`, reports);
 
         const advertisements = advertisementsSnapshot.docs.map(doc => ({
           id: doc.id,
@@ -479,7 +449,7 @@ export default function AdminPanel() {
     console.log('Description:', videoDescription);
     
     let videoUrl = '';
-    let thumbnailUrl = '';
+      let thumbnailUrl = '';
     
     try {
       // Upload video file to Firebase Storage
@@ -569,11 +539,11 @@ export default function AdminPanel() {
         
         try {
           console.log('Uploading thumbnail bytes...');
-          await uploadBytes(thumbnailRef, thumbnailFile);
+        await uploadBytes(thumbnailRef, thumbnailFile);
           console.log('Thumbnail bytes uploaded successfully');
           
           console.log('Getting thumbnail download URL...');
-          thumbnailUrl = await getDownloadURL(thumbnailRef);
+        thumbnailUrl = await getDownloadURL(thumbnailRef);
           console.log('Thumbnail URL obtained:', thumbnailUrl);
         } catch (thumbnailError) {
           console.error('Thumbnail upload failed:', thumbnailError);
@@ -791,7 +761,7 @@ export default function AdminPanel() {
         title: productTitle,
         description: productDescription,
         price: parseFloat(productPrice),
-        originalPrice: productOriginalPrice ? parseFloat(productOriginalPrice) : undefined,
+        ...(productOriginalPrice && { originalPrice: parseFloat(productOriginalPrice) }),
         currency: 'USD',
         category: productCategory,
         subcategory: productSubcategory,
@@ -1140,98 +1110,13 @@ export default function AdminPanel() {
     }
   };
 
-  // Comment moderation functions
-  const handleModerateComment = async (comment: Comment, action: 'approve' | 'remove' | 'warn', reason?: string) => {
-    setIsProcessing(true);
-    try {
-      await updateDoc(doc(db, 'comments', comment.id), {
-        isModerated: action === 'approve',
-        isDeleted: action === 'remove',
-        moderationReason: reason || '',
-        moderatedBy: 'admin',
-        moderatedAt: serverTimestamp()
-      });
 
-      toast({
-        title: "Comment Moderated",
-        description: `Comment has been ${action === 'approve' ? 'approved' : action === 'remove' ? 'removed' : 'user warned'}.`,
-      });
 
-      setSelectedComment(null);
-      setModerationReason('');
-    } catch (error) {
-      console.error('Error moderating comment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to moderate comment. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleSuspendUser = async (userId: string, reason: string) => {
-    setIsProcessing(true);
-    try {
-      await updateDoc(doc(db, 'userProfiles', userId), {
-        isSuspended: true,
-        suspensionReason: reason,
-        suspendedAt: serverTimestamp(),
-        suspendedBy: 'admin'
-      });
-
-      toast({
-        title: "User Suspended",
-        description: "User account has been suspended.",
-      });
-    } catch (error) {
-      console.error('Error suspending user:', error);
-      toast({
-        title: "Error",
-        description: "Failed to suspend user. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleReviewReport = async (report: CommentReport, action: 'dismiss' | 'resolve', actionTaken?: string) => {
-    setIsProcessing(true);
-    try {
-      await updateDoc(doc(db, 'commentReports', report.id), {
-        status: action === 'dismiss' ? 'dismissed' : 'resolved',
-        reviewedBy: 'admin',
-        reviewedAt: serverTimestamp(),
-        action: actionTaken || 'no_action'
-      });
-
-      toast({
-        title: "Report Reviewed",
-        description: `Report has been ${action === 'dismiss' ? 'dismissed' : 'resolved'}.`,
-      });
-
-      setSelectedReport(null);
-    } catch (error) {
-      console.error('Error reviewing report:', error);
-      toast({
-        title: "Error",
-        description: "Failed to review report. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const pendingRequests = artistRequests.filter(req => req.status === 'pending');
   const approvedRequests = artistRequests.filter(req => req.status === 'approved');
   const rejectedRequests = artistRequests.filter(req => req.status === 'rejected');
   
-  const reportedComments = comments.filter(comment => comment.isReported && !comment.isModerated);
-  const pendingReports = commentReports.filter(report => report.status === 'pending');
-  const moderatedComments = comments.filter(comment => comment.isModerated);
 
   if (loading) {
     return (
@@ -1288,7 +1173,7 @@ export default function AdminPanel() {
         </Card>
 
         {/* Episodes */}
-        <Card>
+              <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Video className="h-4 w-4" />
@@ -1422,44 +1307,6 @@ export default function AdminPanel() {
           </CardContent>
         </Card>
 
-        {/* Comment Moderation */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MessageCircle className="h-4 w-4" />
-              Comment Moderation
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <button
-              onClick={() => setSelectedView('comments-reported')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'comments-reported' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Reported Comments</span>
-              <Badge variant={selectedView === 'comments-reported' ? 'secondary' : 'outline'}>({reportedComments.length})</Badge>
-            </button>
-            <button
-              onClick={() => setSelectedView('reports-pending')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'reports-pending' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Pending Reports</span>
-              <Badge variant={selectedView === 'reports-pending' ? 'secondary' : 'outline'}>({pendingReports.length})</Badge>
-            </button>
-            <button
-              onClick={() => setSelectedView('comments-moderated')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'comments-moderated' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Moderated</span>
-              <Badge variant={selectedView === 'comments-moderated' ? 'secondary' : 'outline'}>({moderatedComments.length})</Badge>
-            </button>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Upload Buttons */}
@@ -1482,13 +1329,13 @@ export default function AdminPanel() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Clock className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
+                  <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
                 <p className="text-muted-foreground text-center">
                   All artist requests have been reviewed.
                 </p>
-              </CardContent>
-            </Card>
-          ) : (
+                </CardContent>
+              </Card>
+            ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Pending Artist Requests</h2>
               {pendingRequests.map((request) => (
@@ -1508,14 +1355,14 @@ export default function AdminPanel() {
                             <Badge variant="outline">Pending</Badge>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                            <div>
+                        <div>
                               <p><strong>Email:</strong> {request.user.email}</p>
                               <p><strong>Experience:</strong> {request.experience}</p>
-                            </div>
+                        </div>
                             <div>
                               <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
                               <p><strong>Portfolio Images:</strong> {request.portfolioImages.length}</p>
-                            </div>
+                      </div>
                           </div>
                           <p className="text-sm mt-2">{request.artistStatement}</p>
                         </div>
@@ -1554,7 +1401,7 @@ export default function AdminPanel() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+                            </div>
           )
         )}
 
@@ -1588,17 +1435,17 @@ export default function AdminPanel() {
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
                             <Badge variant="default" className="bg-green-600">Approved</Badge>
-                          </div>
+                        </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
                             <div>
                               <p><strong>Email:</strong> {request.user.email}</p>
                               <p><strong>Reviewed:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
-                            </div>
-                            <div>
+                      </div>
+                      <div>
                               <p><strong>Reviewed by:</strong> {request.reviewedBy || 'admin'}</p>
-                            </div>
-                          </div>
-                        </div>
+                      </div>
+                    </div>
+                      </div>
                       </div>
                       <Button
                         variant="outline"
@@ -1612,23 +1459,23 @@ export default function AdminPanel() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+          </div>
           )
         )}
 
         {/* Artist Account - Rejected */}
         {selectedView === 'artist-rejected' && (
           rejectedRequests.length === 0 ? (
-            <Card>
+              <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <X className="h-12 w-12 text-red-500 mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No rejected requests</h3>
                 <p className="text-muted-foreground text-center">
                   No artist requests have been rejected yet.
                 </p>
-              </CardContent>
-            </Card>
-          ) : (
+                </CardContent>
+              </Card>
+            ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Rejected Artist Requests</h2>
               {rejectedRequests.map((request) => (
@@ -1646,26 +1493,26 @@ export default function AdminPanel() {
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
                             <Badge variant="destructive">Rejected</Badge>
-                          </div>
+                        </div>
                           <div className="text-sm text-muted-foreground mb-2">
                             <p><strong>Reason:</strong> {request.rejectionReason || 'No reason provided'}</p>
                             <p><strong>Rejected:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
-                          </div>
+                      </div>
                         </div>
                       </div>
-                      <Button
-                        variant="outline"
+                        <Button
+                          variant="outline"
                         size="sm"
-                        onClick={() => setSelectedRequest(request)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
+                          onClick={() => setSelectedRequest(request)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
                         View Details
-                      </Button>
-                    </div>
+                        </Button>
+                      </div>
                   </CardContent>
                 </Card>
               ))}
-            </div>
+                    </div>
           )
         )}
 
@@ -1703,12 +1550,12 @@ export default function AdminPanel() {
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{episode.description}</p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span>{episode.viewCount} views</span>
                           <span>{episode.likes} likes</span>
                           <span>Created {episode.createdAt instanceof Date ? episode.createdAt.toLocaleDateString() : 'Recently'}</span>
-                        </div>
                       </div>
+                        </div>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -1732,7 +1579,7 @@ export default function AdminPanel() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+          </div>
           )
         )}
 
@@ -1749,7 +1596,7 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
+          <div className="space-y-4">
               <h2 className="text-2xl font-bold">Marketplace Products</h2>
               {marketplaceProducts.map((product) => (
                 <Card key={product.id} className="hover:shadow-lg transition-shadow">
@@ -1809,16 +1656,16 @@ export default function AdminPanel() {
         {/* Marketplace - Affiliate Requests */}
         {selectedView === 'marketplace-requests' && (
           affiliateRequests.filter(req => req.status === 'pending').length === 0 ? (
-            <Card>
+              <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Link className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No affiliate requests</h3>
                 <p className="text-muted-foreground text-center">
                   No affiliate product requests pending review.
                 </p>
-              </CardContent>
-            </Card>
-          ) : (
+                </CardContent>
+              </Card>
+            ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Affiliate Product Requests</h2>
               {affiliateRequests.filter(req => req.status === 'pending').map((request) => (
@@ -1839,14 +1686,14 @@ export default function AdminPanel() {
                             <Badge variant="outline">Pending</Badge>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                            <div>
+                        <div>
                               <p><strong>Company:</strong> {request.companyName}</p>
                               <p><strong>Email:</strong> {request.email}</p>
-                            </div>
+                        </div>
                             <div>
                               <p><strong>Price:</strong> ${request.productPrice} {request.productCurrency}</p>
                               <p><strong>Category:</strong> {request.productCategory}</p>
-                            </div>
+                      </div>
                           </div>
                         </div>
                       </div>
@@ -1881,7 +1728,7 @@ export default function AdminPanel() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+                        </div>
           )
         )}
 
@@ -2000,7 +1847,7 @@ export default function AdminPanel() {
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold">{comment.author.displayName}</h3>
                             <Badge variant="destructive">Reported ({comment.reportCount})</Badge>
-                          </div>
+          </div>
                           <p className="text-sm text-muted-foreground mb-3">{comment.content}</p>
                           <div className="text-xs text-muted-foreground">
                             <span>Posted: {comment.createdAt instanceof Date ? comment.createdAt.toLocaleDateString() : 'N/A'}</span>
@@ -2049,7 +1896,7 @@ export default function AdminPanel() {
         {/* Comment Moderation - Pending Reports */}
         {selectedView === 'reports-pending' && (
           pendingReports.length === 0 ? (
-            <Card>
+          <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Flag className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No pending reports</h3>
@@ -2069,13 +1916,13 @@ export default function AdminPanel() {
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-lg font-semibold">Report by {report.reporterName}</h3>
                           <Badge variant="destructive">{report.reason.replace('_', ' ')}</Badge>
-                        </div>
+                      </div>
                         {report.description && (
                           <p className="text-sm text-muted-foreground mb-3">{report.description}</p>
                         )}
                         <div className="text-xs text-muted-foreground">
                           <span>Reported: {report.reportedAt instanceof Date ? report.reportedAt.toLocaleDateString() : 'N/A'}</span>
-                        </div>
+                    </div>
                       </div>
                       <div className="flex gap-2 ml-4">
                         <Button
@@ -2142,19 +1989,19 @@ export default function AdminPanel() {
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold">{comment.author.displayName}</h3>
                             <Badge variant="secondary">Moderated</Badge>
-                          </div>
+                    </div>
                           <p className="text-sm text-muted-foreground mb-3">{comment.content}</p>
                           {comment.moderationReason && (
                             <p className="text-xs text-destructive mb-2">
                               <strong>Reason:</strong> {comment.moderationReason}
                             </p>
-                          )}
+                  )}
                           <div className="text-xs text-muted-foreground">
                             <span>Posted: {comment.createdAt instanceof Date ? comment.createdAt.toLocaleDateString() : 'N/A'}</span>
                             <span className="mx-2">•</span>
                             <span>Moderated: {comment.moderatedAt instanceof Date ? comment.moderatedAt.toLocaleDateString() : 'N/A'}</span>
-                          </div>
-                        </div>
+                </div>
+              </div>
                       </div>
                       <div className="flex gap-2 ml-4">
                         <Button
@@ -2211,18 +2058,18 @@ export default function AdminPanel() {
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">{ad.description}</p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
-                            <div>
+                      <div>
                               <p><strong>Advertiser:</strong> {ad.advertiserName}</p>
                               <p><strong>Duration:</strong> {ad.duration}s</p>
-                            </div>
+                      </div>
                             <div>
                               <p><strong>Views:</strong> {ad.views.toLocaleString()}</p>
                               <p><strong>Clicks:</strong> {ad.clicks.toLocaleString()}</p>
-                            </div>
+                    </div>
                             <div>
                               <p><strong>CTR:</strong> {ad.clickThroughRate.toFixed(2)}%</p>
                               <p><strong>Budget:</strong> ${ad.budget?.toLocaleString() || 'N/A'}</p>
-                            </div>
+                        </div>
                             <div>
                               <p><strong>Start:</strong> {ad.startDate instanceof Date ? ad.startDate.toLocaleDateString() : 'N/A'}</p>
                               <p><strong>End:</strong> {ad.endDate instanceof Date ? ad.endDate.toLocaleDateString() : 'N/A'}</p>
@@ -2274,12 +2121,12 @@ export default function AdminPanel() {
                           <Trash2 className="h-4 w-4 mr-1" />
                           Delete
                         </Button>
+                        </div>
                       </div>
-                    </div>
                   </CardContent>
                 </Card>
               ))}
-            </div>
+                    </div>
           )
         )}
 
@@ -2299,7 +2146,7 @@ export default function AdminPanel() {
                       <p className="text-2xl font-bold">
                         {advertisements.reduce((sum, ad) => sum + ad.impressions, 0).toLocaleString()}
                       </p>
-                    </div>
+                </div>
                   </div>
                 </CardContent>
               </Card>
@@ -2312,8 +2159,8 @@ export default function AdminPanel() {
                       <p className="text-sm font-medium text-muted-foreground">Total Views</p>
                       <p className="text-2xl font-bold">
                         {advertisements.reduce((sum, ad) => sum + ad.views, 0).toLocaleString()}
-                      </p>
-                    </div>
+                </p>
+              </div>
                   </div>
                 </CardContent>
               </Card>
@@ -2416,39 +2263,39 @@ export default function AdminPanel() {
                 <TabsContent value="video-upload" className="mt-6">
                   {/* Video Upload Form */}
                   <div className="space-y-4">
-                    <div className="space-y-2">
+              <div className="space-y-2">
                       <Label htmlFor="video-title">Video Title *</Label>
-                      <Input
-                        id="video-title"
-                        value={videoTitle}
-                        onChange={(e) => setVideoTitle(e.target.value)}
-                        placeholder="Enter video title..."
-                      />
-                    </div>
+                <Input
+                  id="video-title"
+                  value={videoTitle}
+                  onChange={(e) => setVideoTitle(e.target.value)}
+                  placeholder="Enter video title..."
+                />
+              </div>
 
-                    <div className="space-y-2">
+              <div className="space-y-2">
                       <Label htmlFor="video-description">Video Description *</Label>
-                      <Textarea
-                        id="video-description"
-                        value={videoDescription}
-                        onChange={(e) => setVideoDescription(e.target.value)}
-                        placeholder="Enter video description..."
+                <Textarea
+                  id="video-description"
+                  value={videoDescription}
+                  onChange={(e) => setVideoDescription(e.target.value)}
+                  placeholder="Enter video description..."
                         rows={3}
-                      />
-                    </div>
+                />
+              </div>
 
-                    <div className="space-y-2">
+              <div className="space-y-2">
                       <Label htmlFor="video-file">Video File *</Label>
-                      <Input
+                <Input
                         id="video-file"
                         type="file"
                         accept="video/*"
                         onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
                         className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
-                      />
-                    </div>
+                />
+              </div>
 
-                    <div className="space-y-2">
+              <div className="space-y-2">
                       <Label htmlFor="thumbnail-file">Thumbnail (optional)</Label>
                       <Input
                         id="thumbnail-file"
@@ -2457,7 +2304,7 @@ export default function AdminPanel() {
                         onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
                         className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
                       />
-                    </div>
+                </div>
 
                     <Button
                       onClick={handleVideoUpload}
@@ -2477,13 +2324,13 @@ export default function AdminPanel() {
                         </>
                       )}
                     </Button>
-                  </div>
+              </div>
                 </TabsContent>
 
                 <TabsContent value="product-upload" className="mt-6">
                   {/* Product Upload Form */}
                   <div className="space-y-4">
-                    <div className="space-y-2">
+              <div className="space-y-2">
                       <Label htmlFor="product-title">Product Title *</Label>
                       <Input
                         id="product-title"
@@ -2491,9 +2338,9 @@ export default function AdminPanel() {
                         onChange={(e) => setProductTitle(e.target.value)}
                         placeholder="Enter product title..."
                       />
-                    </div>
+              </div>
 
-                    <div className="space-y-2">
+              <div className="space-y-2">
                       <Label htmlFor="product-description">Product Description *</Label>
                       <Textarea
                         id="product-description"
@@ -2502,12 +2349,12 @@ export default function AdminPanel() {
                         placeholder="Enter product description..."
                         rows={3}
                       />
-                    </div>
+              </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
+              <div className="space-y-2">
                         <Label htmlFor="product-price">Price *</Label>
-                        <Input
+                  <Input
                           id="product-price"
                           type="number"
                           step="0.01"
@@ -2515,7 +2362,7 @@ export default function AdminPanel() {
                           onChange={(e) => setProductPrice(e.target.value)}
                           placeholder="0.00"
                         />
-                      </div>
+                </div>
                       <div className="space-y-2">
                         <Label htmlFor="product-category">Category *</Label>
                         <Select value={productCategory} onValueChange={(value) => {
@@ -2530,8 +2377,8 @@ export default function AdminPanel() {
                             <SelectItem value="art-books">Art Books</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
-                    </div>
+                  </div>
+              </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="product-images">Product Images * (2-5 images on white background)</Label>
@@ -2551,7 +2398,7 @@ export default function AdminPanel() {
                       </p>
                     </div>
 
-                    <Button
+              <Button
                       onClick={handleProductUpload}
                       disabled={isProductUploading || !productTitle.trim() || !productDescription.trim() || !productPrice.trim() || productImages.length < 2}
                       className="w-full h-12 text-base font-medium"
@@ -2561,14 +2408,14 @@ export default function AdminPanel() {
                         <>
                           <Upload className="h-5 w-5 mr-2 animate-spin" />
                           Uploading Product...
-                        </>
-                      ) : (
-                        <>
+                  </>
+                ) : (
+                  <>
                           <Package className="h-5 w-5 mr-2" />
                           Upload Product
-                        </>
-                      )}
-                    </Button>
+                  </>
+                )}
+              </Button>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -2590,7 +2437,7 @@ export default function AdminPanel() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto pb-6">
-              <div className="space-y-4">
+          <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="ad-title">Advertisement Title *</Label>
                   <Input
@@ -2599,7 +2446,7 @@ export default function AdminPanel() {
                     onChange={(e) => setAdTitle(e.target.value)}
                     placeholder="Enter advertisement title..."
                   />
-                </div>
+              </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="ad-description">Description *</Label>
@@ -2610,7 +2457,7 @@ export default function AdminPanel() {
                     placeholder="Enter advertisement description..."
                     rows={3}
                   />
-                </div>
+            </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -2621,7 +2468,7 @@ export default function AdminPanel() {
                       onChange={(e) => setAdvertiserName(e.target.value)}
                       placeholder="Enter advertiser name..."
                     />
-                  </div>
+                          </div>
                   <div className="space-y-2">
                     <Label htmlFor="advertiser-website">Advertiser Website</Label>
                     <Input
@@ -2630,8 +2477,8 @@ export default function AdminPanel() {
                       onChange={(e) => setAdvertiserWebsite(e.target.value)}
                       placeholder="https://example.com"
                     />
-                  </div>
-                </div>
+                            </div>
+                            </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="ad-media">Advertisement Media * (Video/Image)</Label>
@@ -2642,7 +2489,7 @@ export default function AdminPanel() {
                     onChange={(e) => setAdMediaFile(e.target.files?.[0] || null)}
                     className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
                   />
-                </div>
+                          </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="ad-thumbnail">Thumbnail (optional)</Label>
@@ -2653,7 +2500,7 @@ export default function AdminPanel() {
                     onChange={(e) => setAdThumbnailFile(e.target.files?.[0] || null)}
                     className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
                   />
-                </div>
+                            </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
@@ -2665,7 +2512,7 @@ export default function AdminPanel() {
                       onChange={(e) => setAdDuration(e.target.value)}
                       placeholder="30"
                     />
-                  </div>
+                            </div>
                   <div className="space-y-2">
                     <Label htmlFor="ad-budget">Budget ($)</Label>
                     <Input
@@ -2676,7 +2523,7 @@ export default function AdminPanel() {
                       onChange={(e) => setAdBudget(e.target.value)}
                       placeholder="1000.00"
                     />
-                  </div>
+                            </div>
                   <div className="space-y-2">
                     <Label htmlFor="ad-start-date">Start Date</Label>
                     <Input
@@ -2685,7 +2532,7 @@ export default function AdminPanel() {
                       value={adStartDate}
                       onChange={(e) => setAdStartDate(e.target.value)}
                     />
-                  </div>
+                        </div>
                 </div>
 
                 <div className="space-y-2">
@@ -2698,7 +2545,7 @@ export default function AdminPanel() {
                   />
                 </div>
 
-                <Button
+                          <Button
                   onClick={handleAdUpload}
                   disabled={isAdUploading || !adMediaFile || !adTitle.trim() || !adDescription.trim() || !advertiserName.trim()}
                   className="w-full h-12 text-base font-medium"
@@ -2713,14 +2560,14 @@ export default function AdminPanel() {
                     <>
                       <Megaphone className="h-5 w-5 mr-2" />
                       Upload Advertisement
-                    </>
-                  )}
+                            </>
+                          )}
                 </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            )}
 
       {/* Request Detail Modal */}
       {selectedRequest && (
@@ -2742,19 +2589,19 @@ export default function AdminPanel() {
             <div className="space-y-6">
               {/* Portfolio Images */}
               {selectedRequest.portfolioImages.length > 0 && (
-                <div>
+              <div>
                   <Label className="text-base font-semibold">Portfolio Images</Label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
-                    {selectedRequest.portfolioImages.map((url, index) => (
-                      <img
-                        key={index}
-                        src={url}
-                        alt={`Portfolio ${index + 1}`}
+                  {selectedRequest.portfolioImages.map((url, index) => (
+                    <img
+                      key={index}
+                      src={url}
+                      alt={`Portfolio ${index + 1}`}
                         className="w-full h-32 object-cover rounded-lg border"
-                      />
-                    ))}
-                  </div>
+                    />
+                  ))}
                 </div>
+              </div>
               )}
 
               {/* Artist Statement */}
@@ -2764,10 +2611,10 @@ export default function AdminPanel() {
               </div>
 
               {/* Experience */}
-              <div>
+                <div>
                 <Label className="text-base font-semibold">Experience</Label>
                 <p className="mt-2 text-sm text-muted-foreground">{selectedRequest.experience}</p>
-              </div>
+                </div>
 
               {/* Social Links */}
               {selectedRequest.socialLinks && (
