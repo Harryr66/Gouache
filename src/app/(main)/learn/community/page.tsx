@@ -137,7 +137,7 @@ export default function CommunityPage() {
   
   const placeholderUrl = usePlaceholder(60, 60);
 
-  const categories = ['all', 'Painting', 'Drawing', 'Sculpture', 'Books'];
+  const categories = ['all', 'Painting', 'Drawing', 'Sculpture', 'Pottery & Ceramics', 'Books'];
 
   const filteredDiscussions = mockCommunityData.discussions.filter(discussion => {
     const matchesSearch = discussion.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -254,6 +254,7 @@ export default function CommunityPage() {
                           <option value="Painting">Painting</option>
                           <option value="Drawing">Drawing</option>
                           <option value="Sculpture">Sculpture</option>
+                          <option value="Pottery & Ceramics">Pottery & Ceramics</option>
                           <option value="Books">Books</option>
                         </select>
                         <Button type="submit" className="gradient-button">
@@ -499,7 +500,7 @@ export default function CommunityPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {['Oil Painting Techniques', 'Color Theory', 'Figure Drawing', 'Watercolor Tips', 'Sculpture Basics', 'Art Books'].map((topic, index) => (
+                  {['Oil Painting Techniques', 'Color Theory', 'Figure Drawing', 'Watercolor Tips', 'Sculpture Basics', 'Pottery & Ceramics', 'Art Books'].map((topic, index) => (
                     <div key={index} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer">
                       <span className="text-sm">{topic}</span>
                       <TrendingUp className="h-3 w-3 text-orange-500" />

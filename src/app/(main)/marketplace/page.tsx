@@ -41,11 +41,24 @@ const courseCategories = [
     name: 'Sculpture',
     icon: Scissors,
     subcategories: [
-      { id: 'clay-sculpture', name: 'Clay Sculpture' },
       { id: 'stone-carving', name: 'Stone Carving' },
       { id: 'metalwork', name: 'Metalwork' },
       { id: 'wood-carving', name: 'Wood Carving' },
-      { id: 'ceramics', name: 'Ceramics' }
+      { id: 'mixed-media-sculpture', name: 'Mixed Media Sculpture' },
+      { id: 'installation-art', name: 'Installation Art' }
+    ]
+  },
+  {
+    id: 'pottery-ceramics',
+    name: 'Pottery & Ceramics',
+    icon: Scissors,
+    subcategories: [
+      { id: 'wheel-throwing', name: 'Wheel Throwing' },
+      { id: 'hand-building', name: 'Hand Building' },
+      { id: 'glazing-techniques', name: 'Glazing Techniques' },
+      { id: 'kiln-firing', name: 'Kiln Firing' },
+      { id: 'ceramic-sculpture', name: 'Ceramic Sculpture' },
+      { id: 'functional-pottery', name: 'Functional Pottery' }
     ]
   },
   {
@@ -282,6 +295,96 @@ export default function LearnPage() {
       isFeatured: true,
       tags: ['color-theory', 'art-theory', 'techniques'],
       skills: ['Color Harmony', 'Color Psychology', 'Color Mixing', 'Visual Impact']
+    },
+    {
+      id: '7',
+      title: 'Wheel Throwing Mastery',
+      instructor: {
+        name: 'Emma Rodriguez',
+        avatar: avatarPlaceholder,
+        rating: 4.9,
+        students: 756,
+        verified: true
+      },
+      description: 'Learn the fundamentals of wheel throwing and create beautiful functional pottery pieces.',
+      thumbnail: placeholderUrl,
+      price: 79.99,
+      originalPrice: 99.99,
+      currency: 'USD',
+      rating: 4.8,
+      reviewCount: 134,
+      category: 'Pottery & Ceramics',
+      subcategory: 'Wheel Throwing',
+      difficulty: 'Beginner',
+      duration: '6 weeks',
+      format: 'Live Sessions',
+      students: 345,
+      lessons: 18,
+      isOnSale: true,
+      isNew: false,
+      isFeatured: true,
+      tags: ['wheel-throwing', 'pottery', 'ceramics'],
+      skills: ['Centering Clay', 'Pulling Walls', 'Shaping Techniques', 'Trimming']
+    },
+    {
+      id: '8',
+      title: 'Hand Building Techniques',
+      instructor: {
+        name: 'James Wilson',
+        avatar: avatarPlaceholder,
+        rating: 4.7,
+        students: 623,
+        verified: true
+      },
+      description: 'Master hand building methods including pinch, coil, and slab construction techniques.',
+      thumbnail: placeholderUrl,
+      price: 69.99,
+      originalPrice: null,
+      currency: 'USD',
+      rating: 4.6,
+      reviewCount: 98,
+      category: 'Pottery & Ceramics',
+      subcategory: 'Hand Building',
+      difficulty: 'Beginner',
+      duration: '5 weeks',
+      format: 'Self-Paced',
+      students: 267,
+      lessons: 15,
+      isOnSale: false,
+      isNew: true,
+      isFeatured: false,
+      tags: ['hand-building', 'pottery', 'techniques'],
+      skills: ['Pinch Pottery', 'Coil Building', 'Slab Construction', 'Surface Decoration']
+    },
+    {
+      id: '9',
+      title: 'Stone Carving Fundamentals',
+      instructor: {
+        name: 'Antonio Silva',
+        avatar: avatarPlaceholder,
+        rating: 4.8,
+        students: 445,
+        verified: true
+      },
+      description: 'Learn traditional stone carving techniques and create your own sculptural works.',
+      thumbnail: placeholderUrl,
+      price: 89.99,
+      originalPrice: 119.99,
+      currency: 'USD',
+      rating: 4.7,
+      reviewCount: 76,
+      category: 'Sculpture',
+      subcategory: 'Stone Carving',
+      difficulty: 'Intermediate',
+      duration: '8 weeks',
+      format: 'Hybrid',
+      students: 189,
+      lessons: 24,
+      isOnSale: true,
+      isNew: false,
+      isFeatured: false,
+      tags: ['stone-carving', 'sculpture', 'traditional'],
+      skills: ['Tool Selection', 'Stone Preparation', 'Carving Techniques', 'Finishing Methods']
     }
   ], [placeholderUrl, avatarPlaceholder]);
 

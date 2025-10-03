@@ -33,7 +33,7 @@ const budgetRanges = [
 
 export default function AdvertisePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionType, setSubmissionType] = useState<'advertising' | 'affiliate' | 'both'>('advertising');
+  const [submissionType, setSubmissionType] = useState<'advertising' | 'course-submission'>('advertising');
   const [formData, setFormData] = useState({
     companyName: '',
     contactName: '',
@@ -46,15 +46,17 @@ export default function AdvertisePage() {
     campaignGoals: '',
     message: '',
     timeline: '',
-    // Affiliate-specific fields
-    productCategory: '',
-    productSubcategory: '',
-    productTitle: '',
-    productDescription: '',
-    productPrice: '',
-    productCurrency: 'USD',
-    affiliateLink: '',
-    marketingGoals: ''
+    // Course submission fields
+    courseTitle: '',
+    courseCategory: '',
+    courseSubcategory: '',
+    courseDescription: '',
+    courseDuration: '',
+    courseFormat: '',
+    instructorBio: '',
+    teachingExperience: '',
+    sampleWork: '',
+    courseGoals: ''
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -66,11 +68,11 @@ export default function AdvertisePage() {
     
     // Validate required fields based on submission type
     const requiredFields = ['companyName', 'contactName', 'email'];
-    if (submissionType === 'advertising' || submissionType === 'both') {
+    if (submissionType === 'advertising') {
       requiredFields.push('advertisingType');
     }
-    if (submissionType === 'affiliate' || submissionType === 'both') {
-      requiredFields.push('website', 'productCategory', 'productSubcategory', 'productTitle', 'productDescription', 'productPrice', 'affiliateLink');
+    if (submissionType === 'course-submission') {
+      requiredFields.push('courseTitle', 'courseCategory', 'courseSubcategory', 'courseDescription', 'instructorBio', 'teachingExperience');
     }
 
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
@@ -86,7 +88,7 @@ export default function AdvertisePage() {
     setIsSubmitting(true);
     try {
       // Submit advertising application if requested
-      if (submissionType === 'advertising' || submissionType === 'both') {
+      if (submissionType === 'advertising') {
         const adData = {
           companyName: formData.companyName,
           contactName: formData.contactName,
@@ -108,33 +110,33 @@ export default function AdvertisePage() {
         console.log('✅ Advertising application submitted successfully:', adDocRef.id, adData);
       }
 
-      // Submit affiliate request if requested
-      if (submissionType === 'affiliate' || submissionType === 'both') {
-        const affiliateData = {
+      // Submit course submission request if requested
+      if (submissionType === 'course-submission') {
+        const courseData = {
           companyName: formData.companyName,
           contactName: formData.contactName,
           email: formData.email,
           phone: formData.phone,
           website: formData.website,
-          productCategory: formData.productCategory,
-          productSubcategory: formData.productSubcategory,
-          productTitle: formData.productTitle,
-          productDescription: formData.productDescription,
-          productPrice: parseFloat(formData.productPrice),
-          productCurrency: formData.productCurrency,
-          productImages: [], // Will be uploaded separately
-          affiliateLink: formData.affiliateLink,
-          targetAudience: formData.targetAudience,
-          marketingGoals: formData.marketingGoals,
+          courseTitle: formData.courseTitle,
+          courseCategory: formData.courseCategory,
+          courseSubcategory: formData.courseSubcategory,
+          courseDescription: formData.courseDescription,
+          courseDuration: formData.courseDuration,
+          courseFormat: formData.courseFormat,
+          instructorBio: formData.instructorBio,
+          teachingExperience: formData.teachingExperience,
+          sampleWork: formData.sampleWork,
+          courseGoals: formData.courseGoals,
           message: formData.message,
           status: 'pending',
           submittedAt: serverTimestamp()
         };
-        const affiliateDocRef = await addDoc(collection(db, 'affiliateRequests'), affiliateData);
-        console.log('✅ Affiliate request submitted successfully:', affiliateDocRef.id, affiliateData);
+        const courseDocRef = await addDoc(collection(db, 'courseSubmissionRequests'), courseData);
+        console.log('✅ Course submission request submitted successfully:', courseDocRef.id, courseData);
       }
 
-      const submissionText = submissionType === 'both' ? 'applications have been' : 'application has been';
+      const submissionText = 'application has been';
       toast({
         title: "Application Submitted",
         description: `Your ${submissionText} submitted successfully. We'll review it and get back to you within 2-3 business days.`,
@@ -153,14 +155,16 @@ export default function AdvertisePage() {
         campaignGoals: '',
         message: '',
         timeline: '',
-        productCategory: '',
-        productSubcategory: '',
-        productTitle: '',
-        productDescription: '',
-        productPrice: '',
-        productCurrency: 'USD',
-        affiliateLink: '',
-        marketingGoals: ''
+        courseTitle: '',
+        courseCategory: '',
+        courseSubcategory: '',
+        courseDescription: '',
+        courseDuration: '',
+        courseFormat: '',
+        instructorBio: '',
+        teachingExperience: '',
+        sampleWork: '',
+        courseGoals: ''
       });
     } catch (error) {
       console.error('Error submitting application:', error);
@@ -208,13 +212,11 @@ export default function AdvertisePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              {submissionType === 'affiliate' ? 'Learn Partnership Application' : 
-               submissionType === 'both' ? 'Advertising & Learn Partnership' : 
+              {submissionType === 'course-submission' ? 'Course Submission Request' : 
                'Advertising Application'}
             </CardTitle>
             <CardDescription>
-              {submissionType === 'affiliate' ? 'Apply to showcase your products in our learn platform with affiliate links.' :
-               submissionType === 'both' ? 'Apply for both advertising opportunities and learn partnership.' :
+              {submissionType === 'course-submission' ? 'Request permission to submit a course to our art school platform. Our team will review your proposal and get back to you within 2-3 business days.' :
                'Fill out the form below to submit your advertising application. Our team will review it and get back to you within 2-3 business days.'}
             </CardDescription>
           </CardHeader>
@@ -223,7 +225,7 @@ export default function AdvertisePage() {
               {/* Submission Type Selection */}
               <div className="space-y-2">
                 <Label>What are you interested in? *</Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
                       <input
@@ -232,7 +234,7 @@ export default function AdvertisePage() {
                         name="submissionType"
                         value="advertising"
                         checked={submissionType === 'advertising'}
-                        onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'affiliate' | 'both')}
+                        onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'course-submission')}
                         className="rounded"
                       />
                       <Label htmlFor="advertising">Advertising Only</Label>
@@ -242,32 +244,17 @@ export default function AdvertisePage() {
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
                       <input
-                        id="affiliate"
+                        id="course-submission"
                         type="radio"
                         name="submissionType"
-                        value="affiliate"
-                        checked={submissionType === 'affiliate'}
-                        onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'affiliate' | 'both')}
+                        value="course-submission"
+                        checked={submissionType === 'course-submission'}
+                        onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'course-submission')}
                         className="rounded"
                       />
-                      <Label htmlFor="affiliate">Learn Partnership</Label>
+                      <Label htmlFor="course-submission">Course Submission</Label>
                     </div>
-                    <p className="text-xs text-muted-foreground ml-6">Sell products via our affiliate learn platform</p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        id="both"
-                        type="radio"
-                        name="submissionType"
-                        value="both"
-                        checked={submissionType === 'both'}
-                        onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'affiliate' | 'both')}
-                        className="rounded"
-                      />
-                      <Label htmlFor="both">Both Options</Label>
-                    </div>
-                    <p className="text-xs text-muted-foreground ml-6">Advertising + marketplace</p>
+                    <p className="text-xs text-muted-foreground ml-6">Request permission to submit a course to our art school</p>
                   </div>
                 </div>
               </div>
@@ -414,148 +401,189 @@ export default function AdvertisePage() {
               </div>
               )}
 
-              {/* Affiliate Product Information */}
-              {(submissionType === 'affiliate' || submissionType === 'both') && (
+              {/* Course Submission Information */}
+              {submissionType === 'course-submission' && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">Product Information</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Course Information</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="productCategory">Product Category *</Label>
-                      <Select value={formData.productCategory} onValueChange={(value) => {
-                        handleInputChange('productCategory', value);
-                        // Reset subcategory when category changes
-                        handleInputChange('productSubcategory', value === 'art-prints' ? 'fine-art-prints' : 'art-history');
+                      <Label htmlFor="courseCategory">Course Category *</Label>
+                      <Select value={formData.courseCategory} onValueChange={(value) => {
+                        handleInputChange('courseCategory', value);
+                        handleInputChange('courseSubcategory', '');
                       }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="art-prints">Art Prints</SelectItem>
-                          <SelectItem value="art-books">Art Books</SelectItem>
+                          <SelectItem value="painting">Painting</SelectItem>
+                          <SelectItem value="drawing">Drawing</SelectItem>
+                          <SelectItem value="sculpture">Sculpture</SelectItem>
+                          <SelectItem value="pottery-ceramics">Pottery & Ceramics</SelectItem>
+                          <SelectItem value="books">Books</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="productSubcategory">Product Subcategory *</Label>
-                      <Select value={formData.productSubcategory} onValueChange={(value) => handleInputChange('productSubcategory', value)}>
+                      <Label htmlFor="courseSubcategory">Course Subcategory *</Label>
+                      <Select value={formData.courseSubcategory} onValueChange={(value) => handleInputChange('courseSubcategory', value)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select subcategory" />
                         </SelectTrigger>
                         <SelectContent>
-                          {formData.productCategory === 'art-prints' ? (
+                          {formData.courseCategory === 'painting' && (
                             <>
-                              <SelectItem value="fine-art-prints">Fine Art Prints</SelectItem>
-                              <SelectItem value="canvas-prints">Canvas Prints</SelectItem>
-                              <SelectItem value="framed-prints">Framed Prints</SelectItem>
-                              <SelectItem value="limited-editions">Limited Editions</SelectItem>
-                              <SelectItem value="posters">Posters</SelectItem>
-                              <SelectItem value="digital-prints">Digital Downloads</SelectItem>
+                              <SelectItem value="oil-painting">Oil Painting</SelectItem>
+                              <SelectItem value="watercolor">Watercolor</SelectItem>
+                              <SelectItem value="acrylic">Acrylic</SelectItem>
+                              <SelectItem value="gouache">Gouache</SelectItem>
+                              <SelectItem value="mixed-media">Mixed Media</SelectItem>
                             </>
-                          ) : formData.productCategory === 'art-books' ? (
+                          )}
+                          {formData.courseCategory === 'drawing' && (
                             <>
+                              <SelectItem value="pencil-drawing">Pencil Drawing</SelectItem>
+                              <SelectItem value="charcoal">Charcoal</SelectItem>
+                              <SelectItem value="ink">Ink & Pen</SelectItem>
+                              <SelectItem value="pastel">Pastel</SelectItem>
+                              <SelectItem value="figure-drawing">Figure Drawing</SelectItem>
+                            </>
+                          )}
+                          {formData.courseCategory === 'sculpture' && (
+                            <>
+                              <SelectItem value="stone-carving">Stone Carving</SelectItem>
+                              <SelectItem value="metalwork">Metalwork</SelectItem>
+                              <SelectItem value="wood-carving">Wood Carving</SelectItem>
+                              <SelectItem value="mixed-media-sculpture">Mixed Media Sculpture</SelectItem>
+                              <SelectItem value="installation-art">Installation Art</SelectItem>
+                            </>
+                          )}
+                          {formData.courseCategory === 'pottery-ceramics' && (
+                            <>
+                              <SelectItem value="wheel-throwing">Wheel Throwing</SelectItem>
+                              <SelectItem value="hand-building">Hand Building</SelectItem>
+                              <SelectItem value="glazing-techniques">Glazing Techniques</SelectItem>
+                              <SelectItem value="kiln-firing">Kiln Firing</SelectItem>
+                              <SelectItem value="ceramic-sculpture">Ceramic Sculpture</SelectItem>
+                              <SelectItem value="functional-pottery">Functional Pottery</SelectItem>
+                            </>
+                          )}
+                          {formData.courseCategory === 'books' && (
+                            <>
+                              <SelectItem value="art-techniques">Art Techniques</SelectItem>
                               <SelectItem value="art-history">Art History</SelectItem>
                               <SelectItem value="artist-biographies">Artist Biographies</SelectItem>
-                              <SelectItem value="technique-books">Technique & How-To</SelectItem>
                               <SelectItem value="art-theory">Art Theory</SelectItem>
                               <SelectItem value="coffee-table-books">Coffee Table Books</SelectItem>
                               <SelectItem value="exhibition-catalogs">Exhibition Catalogs</SelectItem>
                             </>
-                          ) : null}
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="productTitle">Product Title *</Label>
+                    <Label htmlFor="courseTitle">Course Title *</Label>
                     <Input
-                      id="productTitle"
-                      value={formData.productTitle}
-                      onChange={(e) => handleInputChange('productTitle', e.target.value)}
-                      placeholder="Enter product title"
+                      id="courseTitle"
+                      value={formData.courseTitle}
+                      onChange={(e) => handleInputChange('courseTitle', e.target.value)}
+                      placeholder="Enter course title"
+                      required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="productDescription">Product Description *</Label>
+                    <Label htmlFor="courseDescription">Course Description *</Label>
                     <Textarea
-                      id="productDescription"
-                      value={formData.productDescription}
-                      onChange={(e) => handleInputChange('productDescription', e.target.value)}
-                      placeholder="Describe your product in detail"
-                      rows={3}
+                      id="courseDescription"
+                      value={formData.courseDescription}
+                      onChange={(e) => handleInputChange('courseDescription', e.target.value)}
+                      placeholder="Describe your course in detail"
+                      rows={4}
+                      required
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="productPrice">Product Price *</Label>
+                      <Label htmlFor="courseDuration">Course Duration</Label>
                       <Input
-                        id="productPrice"
-                        type="number"
-                        step="0.01"
-                        value={formData.productPrice}
-                        onChange={(e) => handleInputChange('productPrice', e.target.value)}
-                        placeholder="0.00"
+                        id="courseDuration"
+                        value={formData.courseDuration}
+                        onChange={(e) => handleInputChange('courseDuration', e.target.value)}
+                        placeholder="e.g., 6 weeks, 8 hours"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="productCurrency">Currency</Label>
-                      <Select value={formData.productCurrency} onValueChange={(value) => handleInputChange('productCurrency', value)}>
+                      <Label htmlFor="courseFormat">Course Format</Label>
+                      <Select value={formData.courseFormat} onValueChange={(value) => handleInputChange('courseFormat', value)}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select format" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="GBP">GBP</SelectItem>
-                          <SelectItem value="CAD">CAD</SelectItem>
+                          <SelectItem value="self-paced">Self-Paced</SelectItem>
+                          <SelectItem value="live-sessions">Live Sessions</SelectItem>
+                          <SelectItem value="hybrid">Hybrid</SelectItem>
+                          <SelectItem value="e-book">E-Book</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="affiliateLink">Affiliate Link *</Label>
-                    <Input
-                      id="affiliateLink"
-                      value={formData.affiliateLink}
-                      onChange={(e) => handleInputChange('affiliateLink', e.target.value)}
-                      placeholder="https://yourwebsite.com/product-page"
+                    <Label htmlFor="instructorBio">Instructor Bio *</Label>
+                    <Textarea
+                      id="instructorBio"
+                      value={formData.instructorBio}
+                      onChange={(e) => handleInputChange('instructorBio', e.target.value)}
+                      placeholder="Tell us about yourself, your background, and expertise"
+                      rows={4}
+                      required
                     />
-                    <p className="text-xs text-muted-foreground">
-                      This is where customers will be redirected when they click "Buy Now"
-                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="marketingGoals">Marketing Goals</Label>
+                    <Label htmlFor="teachingExperience">Teaching Experience *</Label>
                     <Textarea
-                      id="marketingGoals"
-                      value={formData.marketingGoals}
-                      onChange={(e) => handleInputChange('marketingGoals', e.target.value)}
-                      placeholder="What are your marketing goals for this product?"
+                      id="teachingExperience"
+                      value={formData.teachingExperience}
+                      onChange={(e) => handleInputChange('teachingExperience', e.target.value)}
+                      placeholder="Describe your teaching experience and qualifications"
+                      rows={3}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sampleWork">Sample Work/Portfolio</Label>
+                    <Textarea
+                      id="sampleWork"
+                      value={formData.sampleWork}
+                      onChange={(e) => handleInputChange('sampleWork', e.target.value)}
+                      placeholder="Share links to your portfolio, previous work, or sample lessons"
                       rows={3}
                     />
                   </div>
 
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h4 className="font-semibold text-foreground mb-2">Product Image Requirements</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Upload 2-5 high-quality images on a white background</li>
-                      <li>• Images should be at least 1000x1000 pixels</li>
-                      <li>• Product should be clearly visible and well-lit</li>
-                      <li>• Images will be uploaded after your application is approved</li>
-                    </ul>
+                  <div className="space-y-2">
+                    <Label htmlFor="courseGoals">Course Goals</Label>
+                    <Textarea
+                      id="courseGoals"
+                      value={formData.courseGoals}
+                      onChange={(e) => handleInputChange('courseGoals', e.target.value)}
+                      placeholder="What will students learn and achieve from this course?"
+                      rows={3}
+                    />
                   </div>
                 </div>
               )}
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? 'Submitting...' : 
-                 submissionType === 'both' ? 'Submit Applications' :
-                 submissionType === 'affiliate' ? 'Submit Partnership Application' :
+                 submissionType === 'course-submission' ? 'Submit Course Request' :
                  'Submit Application'}
               </Button>
             </form>
