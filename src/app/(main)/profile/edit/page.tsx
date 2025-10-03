@@ -428,10 +428,10 @@ export default function ProfileEditPage() {
       // Clear offline changes after successful save
       localStorage.removeItem(`profile_offline_changes_${user.id}`);
 
-        toast({
+      toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
-        });
+      });
 
       router.push(`/profile/${user.id}`);
     } catch (error) {
