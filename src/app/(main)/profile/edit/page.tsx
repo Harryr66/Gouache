@@ -464,13 +464,13 @@ export default function ProfileEditPage() {
           variant: "destructive"
         });
       } else if ((error as any)?.message?.includes('undefined')) {
-          toast({
+        toast({
           title: "Update failed",
           description: "There was an issue with the profile data. Please try again.",
           variant: "destructive"
-          });
+        });
       } else {
-          toast({
+        toast({
           title: "Update failed",
           description: `Unable to save changes: ${(error as any)?.message || 'Connection error'}`,
           variant: "destructive"
