@@ -101,7 +101,7 @@ export default function ProfileEditPage() {
   const checkHandleAvailability = async (handle: string) => {
     if (!handle || handle === user?.username) {
       setHandleAvailable(null);
-        return;
+      return;
     }
 
     setIsCheckingHandle(true);
