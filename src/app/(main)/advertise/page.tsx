@@ -320,7 +320,7 @@ export default function AdvertisePage() {
               </div>
 
               {/* Campaign Details */}
-              {(submissionType === 'advertising' || submissionType === 'both') && (
+              {submissionType === 'advertising' && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">Campaign Details</h3>
                 
