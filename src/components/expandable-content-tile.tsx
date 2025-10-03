@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { 
   Play, 
   Pause, 
@@ -14,11 +13,9 @@ import {
   VolumeX, 
   Maximize2, 
   Heart, 
-  MessageCircle, 
   Share2, 
   ExternalLink,
   ArrowLeft,
-  Flag,
   X,
   ShoppingBag,
   User
@@ -40,7 +37,6 @@ export function ExpandableContentTile({
   const [isMuted, setIsMuted] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
-  const [showComments, setShowComments] = useState(false);
 
   const isEpisode = 'videoUrl' in content;
   const episode = content as Episode;
@@ -268,64 +264,6 @@ export function ExpandableContentTile({
                 </CardContent>
               </Card>
             )}
-
-            {/* Discussion Section */}
-            <Card className="bg-gray-100 dark:bg-black border-gray-200 dark:border-gray-800">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <MessageCircle className="h-5 w-5" />
-                  <h3 className="text-lg font-semibold">Discussion</h3>
-                  <Badge variant="secondary">{isEpisode ? episode.commentsCount : 0} comments</Badge>
-                </div>
-                
-                {/* Comment Input */}
-                <div className="mb-4">
-                  <textarea
-                    placeholder="Share your thoughts about this content..."
-                    className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-slate-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
-                    rows={3}
-                  />
-                  <div className="flex justify-between mt-2">
-                    <Button variant="outline" size="sm">
-                      <Flag className="h-4 w-4 mr-1" />
-                      Report
-                    </Button>
-                    <Button size="sm">Post Comment</Button>
-                  </div>
-                </div>
-
-                <Separator className="my-4" />
-
-                {/* Sample Comments */}
-                <div className="space-y-4">
-                  <div className="flex gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>JD</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">John Doe</span>
-                        <span className="text-xs text-muted-foreground">2 hours ago</span>
-                      </div>
-                      <p className="text-sm">Amazing technique! I've been trying to master this style for months.</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>SM</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">Sarah Miller</span>
-                        <span className="text-xs text-muted-foreground">4 hours ago</span>
-                      </div>
-                      <p className="text-sm">Where can I find those brushes you mentioned?</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </motion.div>
