@@ -483,13 +483,13 @@ export default function LearnPage() {
           </div>
 
           {/* Search Bar */}
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mb-6">
             <div className="flex-1 relative">
-            <Input
+              <Input
                 placeholder="Search courses, instructors, or skills..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-12 rounded-r-none pl-4"
+                className="h-12 rounded-r-none pl-4 pr-12"
               />
               <Button className="absolute right-0 top-0 h-12 px-4 rounded-l-none">
                 <Search className="h-4 w-4" />
@@ -498,10 +498,10 @@ export default function LearnPage() {
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className="h-12 px-4"
+              className="h-12 px-4 flex-shrink-0"
             >
               <Filter className="h-4 w-4 mr-2" />
-              Filters
+              <span className="hidden sm:inline">Filters</span>
             </Button>
           </div>
 
