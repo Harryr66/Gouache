@@ -652,8 +652,6 @@ export default function ProfileEditPage() {
               />
             </div>
 
-            {formData.isProfessional && (
-            )}
           </CardContent>
         </Card>
 
