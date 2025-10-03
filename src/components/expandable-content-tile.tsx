@@ -18,7 +18,8 @@ import {
   ArrowLeft,
   X,
   ShoppingBag,
-  User
+  User,
+  MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -148,14 +149,6 @@ export function ExpandableContentTile({
                     className={`bg-black/50 hover:bg-black/70 ${isLiked ? 'text-red-500' : ''}`}
                   >
                     <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setShowComments(!showComments)}
-                    className="bg-black/50 hover:bg-black/70"
-                  >
-                    <MessageCircle className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="secondary"
