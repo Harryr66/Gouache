@@ -47,6 +47,64 @@ export default function ProfileEditPage() {
       console.error('❌ Firebase connection test failed:', error);
     }
   };
+
+  // Test portfolio upload with a sample file
+  const testPortfolioUpload = async () => {
+    try {
+      console.log('🧪 Testing portfolio upload with sample file...');
+      
+      if (!auth.currentUser) {
+        console.error('❌ No authenticated user');
+        toast({
+          title: "Test failed",
+          description: "No authenticated user found",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create a test image file
+      const canvas = document.createElement('canvas');
+      canvas.width = 100;
+      canvas.height = 100;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(0, 0, 100, 100);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '16px Arial';
+        ctx.fillText('TEST', 25, 50);
+      }
+      
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          console.error('❌ Failed to create test image blob');
+          return;
+        }
+        
+        const testFile = new File([blob], 'test-image.png', { type: 'image/png' });
+        console.log('📸 Created test file:', testFile.name, testFile.size, 'bytes');
+        
+        // Test the upload function directly
+        const mockEvent = {
+          target: {
+            files: [testFile],
+            value: ''
+          }
+        } as any;
+        
+        await handlePortfolioImageUpload(mockEvent);
+      }, 'image/png');
+      
+    } catch (error) {
+      console.error('❌ Test portfolio upload failed:', error);
+      toast({
+        title: "Test failed",
+        description: error.message || "Test upload failed",
+        variant: "destructive"
+      });
+    }
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingHandle, setIsCheckingHandle] = useState(false);
   const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
@@ -205,8 +263,13 @@ export default function ProfileEditPage() {
   };
 
   const handlePortfolioImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('🎯 handlePortfolioImageUpload called with event:', event);
+    console.log('🎯 Event target:', event.target);
+    console.log('🎯 Event target files:', event.target.files);
+    
     const files = event.target.files;
     if (!files || files.length === 0) {
+      console.log('❌ No files selected');
       toast({
         title: "No files selected",
         description: "Please select at least one image to upload.",
@@ -214,6 +277,8 @@ export default function ProfileEditPage() {
       });
       return;
     }
+    
+    console.log('✅ Files selected:', files.length, Array.from(files).map(f => f.name));
 
     if (!user) {
       toast({
@@ -767,7 +832,38 @@ export default function ProfileEditPage() {
                   {/* Portfolio Images */}
                   <div className="space-y-4">
                     <div>
-                      <Label>Portfolio Images *</Label>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>Portfolio Images *</Label>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={testPortfolioUpload}
+                            className="text-xs"
+                          >
+                            Test Upload
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const fileInput = document.getElementById('portfolio-upload') as HTMLInputElement;
+                              console.log('🔍 File input element:', fileInput);
+                              if (fileInput) {
+                                console.log('🔍 File input found, triggering click');
+                                fileInput.click();
+                              } else {
+                                console.error('❌ File input element not found');
+                              }
+                            }}
+                            className="text-xs"
+                          >
+                            Debug File Input
+                          </Button>
+                        </div>
+                      </div>
                       <p className="text-sm text-muted-foreground mb-2">
                         Upload 3-10 images showcasing your best work
                       </p>
@@ -792,12 +888,24 @@ export default function ProfileEditPage() {
                         ))}
                         {portfolioImages.length < 10 && (
                           <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center h-32">
-                            <Label htmlFor="portfolio-upload" className="cursor-pointer">
+                            <div 
+                              className="cursor-pointer w-full h-full flex items-center justify-center"
+                              onClick={() => {
+                                console.log('🎯 Add image clicked, triggering file input');
+                                const fileInput = document.getElementById('portfolio-upload') as HTMLInputElement;
+                                if (fileInput) {
+                                  console.log('🎯 File input found, clicking it');
+                                  fileInput.click();
+                                } else {
+                                  console.error('❌ File input not found');
+                                }
+                              }}
+                            >
                               <div className="text-center">
                                 <Plus className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground">Add Image</span>
                               </div>
-                            </Label>
+                            </div>
                             <input
                               id="portfolio-upload"
                               type="file"
@@ -805,6 +913,7 @@ export default function ProfileEditPage() {
                               multiple
                               onChange={handlePortfolioImageUpload}
                               className="hidden"
+                              style={{ display: 'none' }}
                             />
                           </div>
                         )}
