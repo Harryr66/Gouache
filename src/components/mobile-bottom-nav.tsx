@@ -44,12 +44,12 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 p-2 rounded-md transition-colors text-foreground w-16 border-2 border-transparent',
+                'flex flex-col items-center justify-center p-3 rounded-md transition-colors text-foreground w-16 border-2 border-transparent',
                 isActive && 'gradient-border'
               )}
             >
               {item.href === '/profile' ? (
-                <Avatar className="h-6 w-6">
+                <Avatar className="h-7 w-7">
                    <AvatarImage src={avatarUrl || undefined} alt={user?.displayName || 'User'} data-ai-hint="artist portrait" />
                    <AvatarFallback>
                       <svg
@@ -66,9 +66,8 @@ export function MobileBottomNav() {
                    </AvatarFallback>
                 </Avatar>
               ) : (
-                <item.icon className="h-6 w-6" />
+                <item.icon className="h-7 w-7" />
               )}
-              <span className="text-xs font-medium">{item.label}</span>
             </Link>
           );
         })}
