@@ -7,21 +7,20 @@ import { Eye, Upload, User, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
-// Custom sound waves play button icon
+// Custom sound bars play button icon
 const RoundedPlayIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
-    viewBox="0 0 32 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+    viewBox="0 0 28 24"
+    fill="currentColor"
+    stroke="none"
   >
-    <polygon points="8,5 8,19 18,12" />
-    <path d="M18,8 C20,8 22,10 22,12 C22,14 20,16 18,16" />
-    <path d="M18,6 C21,6 24,9 24,12 C24,15 21,18 18,18" />
-    <path d="M18,4 C22,4 26,8 26,12 C26,16 22,20 18,20" />
+    <polygon points="6,4 6,20 16,12" />
+    <rect x="18" y="16" width="1.5" height="4" rx="0.75" />
+    <rect x="19.5" y="14" width="1.5" height="8" rx="0.75" />
+    <rect x="21" y="10" width="1.5" height="16" rx="0.75" />
+    <rect x="22.5" y="14" width="1.5" height="8" rx="0.75" />
+    <rect x="24" y="16" width="1.5" height="4" rx="0.75" />
   </svg>
 );
 
