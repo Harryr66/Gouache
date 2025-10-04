@@ -12,13 +12,10 @@ const RoundedPlayIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+    fill="currentColor"
   >
-    <path d="M8 5v14l11-7z" />
+    <path d="M8 5c-1.5 0-3 1.5-3 3v8c0 1.5 1.5 3 3 3s3-1.5 3-3V8c0-1.5-1.5-3-3-3z" rx="4" ry="4" />
+    <path d="M16.5 7c0.5 0 1.5 0.5 1.5 1v8c0 0.5-1 1.5-1.5 1.5s-1.5-1-1.5-1.5V8c0-0.5 1-1 1.5-1z" rx="3" ry="3" />
   </svg>
 );
 
