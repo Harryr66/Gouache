@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { 
-  Home,
+  Play,
   Eye, 
   Upload, 
   User,
@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Home', href: '/feed', icon: Home },
+  { name: 'Docuseries', href: '/feed', icon: Play },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Learn', href: '/marketplace', icon: Brain },
   { name: 'Profile', href: '/profile', icon: User },
