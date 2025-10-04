@@ -3,12 +3,27 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Play, Eye, Upload, User, Brain } from 'lucide-react';
+import { Eye, Upload, User, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
+// Custom rounded play button icon
+const RoundedPlayIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M8 5v14l11-7z" />
+  </svg>
+);
+
 const mobileNavItems = [
-  { href: '/feed', icon: Play, label: 'Docuseries' },
+  { href: '/feed', icon: RoundedPlayIcon, label: 'Docuseries' },
   { href: '/discover', icon: Eye, label: 'Discover' },
   { href: '/marketplace', icon: Brain, label: 'Learn' },
   { href: '/profile', icon: User, label: 'Profile' },

@@ -5,15 +5,29 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { 
-  Play,
   Eye, 
   Upload, 
   User,
   Brain
 } from 'lucide-react';
 
+// Custom rounded play button icon
+const RoundedPlayIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M8 5v14l11-7z" />
+  </svg>
+);
+
 const navigation = [
-  { name: 'Docuseries', href: '/feed', icon: Play },
+  { name: 'Docuseries', href: '/feed', icon: RoundedPlayIcon },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Learn', href: '/marketplace', icon: Brain },
   { name: 'Upload Profile', href: '/upload', icon: Upload },
