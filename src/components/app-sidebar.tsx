@@ -11,20 +11,15 @@ import {
   Brain
 } from 'lucide-react';
 
-// Custom sound bars play button icon
+// Custom rounded triangle play icon
 const RoundedPlayIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
-    viewBox="0 0 28 24"
+    viewBox="0 0 24 24"
     fill="currentColor"
     stroke="none"
   >
-    <polygon points="6,4 6,20 16,12" />
-    <rect x="18" y="16" width="1.5" height="4" rx="0.75" />
-    <rect x="19.5" y="14" width="1.5" height="8" rx="0.75" />
-    <rect x="21" y="10" width="1.5" height="16" rx="0.75" />
-    <rect x="22.5" y="14" width="1.5" height="8" rx="0.75" />
-    <rect x="24" y="16" width="1.5" height="4" rx="0.75" />
+    <polygon points="7,5 7,19 17,12" />
   </svg>
 );
 
