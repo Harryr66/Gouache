@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { doc, updateDoc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { db, storage, auth } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { ArtistRequest } from '@/lib/types';
 
@@ -23,6 +23,30 @@ import { ArtistRequest } from '@/lib/types';
 export default function ProfileEditPage() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
+
+  // Test Firebase connectivity
+  const testFirebaseConnection = async () => {
+    try {
+      console.log('🔍 Testing Firebase connection...');
+      console.log('📊 Auth state:', auth.currentUser ? 'Authenticated' : 'Not authenticated');
+      console.log('📊 Storage bucket:', storage.app.options.storageBucket);
+      console.log('📊 User ID:', auth.currentUser?.uid);
+      
+      // Test storage write permissions
+      if (auth.currentUser) {
+        const testRef = ref(storage, `test/${auth.currentUser.uid}/connection-test.txt`);
+        const testBlob = new Blob(['Firebase connection test'], { type: 'text/plain' });
+        await uploadBytes(testRef, testBlob);
+        console.log('✅ Firebase storage write test successful');
+        
+        // Clean up test file
+        await deleteObject(testRef);
+        console.log('✅ Firebase storage cleanup successful');
+      }
+    } catch (error) {
+      console.error('❌ Firebase connection test failed:', error);
+    }
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingHandle, setIsCheckingHandle] = useState(false);
   const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
@@ -53,6 +77,9 @@ export default function ProfileEditPage() {
 
   useEffect(() => {
     if (user) {
+      // Test Firebase connection when user is available
+      testFirebaseConnection();
+      
       // Check for offline changes first
       const offlineChanges = localStorage.getItem(`profile_offline_changes_${user.id}`);
       if (offlineChanges) {
@@ -179,7 +206,33 @@ export default function ProfileEditPage() {
 
   const handlePortfolioImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0 || !user) return;
+    if (!files || files.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please select at least one image to upload.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to upload portfolio images.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check Firebase Auth state
+    if (!auth.currentUser) {
+      toast({
+        title: "Authentication expired",
+        description: "Your session has expired. Please log in again.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     if (portfolioImages.length + files.length > 10) {
       toast({
@@ -192,6 +245,7 @@ export default function ProfileEditPage() {
 
     setIsLoading(true);
     console.log('📸 Starting portfolio image upload...', files.length, 'files');
+    console.log('🔐 User authenticated:', !!auth.currentUser, 'User ID:', auth.currentUser?.uid);
     
     try {
       const urls: string[] = [];
@@ -199,7 +253,17 @@ export default function ProfileEditPage() {
       // Upload files one by one to avoid overwhelming the system
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        console.log(`📸 Uploading file ${i + 1}/${files.length}:`, file.name);
+        console.log(`📸 Uploading file ${i + 1}/${files.length}:`, file.name, file.size, 'bytes');
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`${file.name} is not a valid image file. Please upload JPG, PNG, or GIF images only.`);
+        }
+        
+        // Validate file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`${file.name} is too large. Please upload images smaller than 10MB.`);
+        }
         
         try {
           // Compress image
@@ -231,7 +295,21 @@ export default function ProfileEditPage() {
           urls.push(downloadURL);
         } catch (fileError: any) {
           console.error(`❌ Error uploading file ${file.name}:`, fileError);
-          throw new Error(`Failed to upload ${file.name}: ${fileError.message || 'Unknown error'}`);
+          
+          // Provide more specific error messages
+          if (fileError.code === 'storage/unauthorized') {
+            throw new Error(`Authentication failed. Please log in again and try uploading ${file.name}.`);
+          } else if (fileError.code === 'storage/canceled') {
+            throw new Error(`Upload canceled for ${file.name}. Please try again.`);
+          } else if (fileError.code === 'storage/unknown') {
+            throw new Error(`Network error while uploading ${file.name}. Please check your connection and try again.`);
+          } else if (fileError.code === 'storage/invalid-format') {
+            throw new Error(`Invalid file format for ${file.name}. Please use JPG, PNG, or GIF images.`);
+          } else if (fileError.code === 'storage/object-not-found') {
+            throw new Error(`Storage error for ${file.name}. Please try again.`);
+          } else {
+            throw new Error(`Failed to upload ${file.name}: ${fileError.message || 'Unknown error'}`);
+          }
         }
       }
 
@@ -247,6 +325,17 @@ export default function ProfileEditPage() {
       event.target.value = '';
     } catch (error: any) {
       console.error('❌ Portfolio image upload failed:', error);
+      
+      // Log additional debugging information
+      console.error('🔍 Debug info:', {
+        userExists: !!user,
+        authUserExists: !!auth.currentUser,
+        authUserUid: auth.currentUser?.uid,
+        storageBucket: storage.app.options.storageBucket,
+        errorCode: error.code,
+        errorMessage: error.message
+      });
+      
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload portfolio images. Please check your internet connection and try again.",
