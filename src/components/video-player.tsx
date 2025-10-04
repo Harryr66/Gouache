@@ -171,7 +171,7 @@ export function VideoPlayer({
         src={videoUrl}
         poster={thumbnailUrl}
         loop={loop}
-        muted={isMuted}
+        muted={false}
         playsInline
         className="w-full h-full object-cover"
         preload="metadata"

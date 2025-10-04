@@ -479,7 +479,7 @@ export default function FeedPage() {
                 className="w-full h-full object-contain"
                 controls
                 autoPlay
-                muted={true}
+                muted={false}
                 playsInline
                 onLoadStart={() => {
                   console.log('Video loading started');

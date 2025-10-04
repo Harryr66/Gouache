@@ -3,27 +3,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Eye, Upload, User, Brain } from 'lucide-react';
+import { Home, Eye, Upload, User, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
-// Simple pentagon icon component
-const PentagonIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M12 2L22 8.5L18 21H6L2 8.5L12 2Z" />
-  </svg>
-);
-
 const mobileNavItems = [
-  { href: '/feed', icon: PentagonIcon, label: 'Home' },
+  { href: '/feed', icon: Home, label: 'Home' },
   { href: '/discover', icon: Eye, label: 'Discover' },
   { href: '/marketplace', icon: Brain, label: 'Learn' },
   { href: '/profile', icon: User, label: 'Profile' },
