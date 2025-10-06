@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, Calendar, Gavel, Package, Play, Bookmark, UserPlus, Clock, Heart } from 'lucide-react';
+import { Plus, Upload, Users, Calendar, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { ProductCard } from './shop/product-card';
 import { EventCard } from './event-card';
@@ -16,6 +16,7 @@ import { DocuseriesCard } from './docuseries-card';
 import { PortfolioManager } from './portfolio-manager';
 import { useWatchlist } from '@/providers/watchlist-provider';
 import { useFollow } from '@/providers/follow-provider';
+import { useCourses } from '@/providers/course-provider';
 import { mockDocuseries, mockEpisodes } from '@/lib/streaming-data';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
@@ -30,6 +31,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
   const [showCreateCommunity, setShowCommunity] = useState(false);
   const { watchlist, watchHistory, getContinueWatching, isInWatchlist, getWatchProgress } = useWatchlist();
   const { followedArtists, unfollowArtist } = useFollow();
+  const { courses, isLoading: coursesLoading } = useCourses();
+  
+  // Get courses by this instructor
+  const instructorCourses = courses.filter(course => course.instructor.userId === userId);
 
   if (isProfessional) {
     return (
@@ -69,7 +74,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
           <Tabs defaultValue="products" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="products">Products</TabsTrigger>
-              <TabsTrigger value="auctions">Active Auctions</TabsTrigger>
+              <TabsTrigger value="courses">Learn</TabsTrigger>
               <TabsTrigger value="events">Events</TabsTrigger>
             </TabsList>
 
@@ -103,17 +108,100 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
               </Card>
             </TabsContent>
 
-            {/* Auctions Sub-tab */}
-            <TabsContent value="auctions" className="space-y-4">
-              <Card className="p-8 text-center">
-                <CardContent>
-                  <Gavel className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <CardTitle className="mb-2">Auctions Coming Soon</CardTitle>
-                  <CardDescription>
-                    Live auction functionality will be available soon.
-                  </CardDescription>
-                </CardContent>
-              </Card>
+            {/* Learn/Courses Sub-tab */}
+            <TabsContent value="courses" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Courses & Learning</h3>
+                {isOwnProfile && (
+                  <Button variant="gradient" asChild>
+                    <a href="/learn/submit">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Course
+                    </a>
+                  </Button>
+                )}
+              </div>
+
+              {coursesLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...Array(3)].map((_, i) => (
+                    <Card key={i} className="animate-pulse">
+                      <CardContent className="p-4">
+                        <div className="h-32 bg-muted rounded mb-4"></div>
+                        <div className="h-4 bg-muted rounded mb-2"></div>
+                        <div className="h-3 bg-muted rounded w-2/3"></div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : instructorCourses.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {instructorCourses.map((course) => (
+                    <Card key={course.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
+                      <div className="relative">
+                        <img
+                          src={course.thumbnail}
+                          alt={course.title}
+                          className="w-full h-32 object-cover"
+                        />
+                        <div className="absolute top-2 right-2">
+                          <Badge variant="secondary" className="text-xs">
+                            ${course.price}
+                          </Badge>
+                        </div>
+                      </div>
+                      <CardContent className="p-4">
+                        <h4 className="font-semibold mb-2 line-clamp-2">{course.title}</h4>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {course.description}
+                        </p>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4" />
+                            <span>{course.lessons} lessons</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-yellow-500">★</span>
+                            <span>{course.rating.toFixed(1)}</span>
+                            <span>({course.reviewCount})</span>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between">
+                          <Badge variant="outline" className="text-xs">
+                            {course.difficulty}
+                          </Badge>
+                          <Button size="sm" variant="outline" asChild>
+                            <a href={`/learn/${course.id}`}>
+                              View Course
+                            </a>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-8 text-center">
+                  <CardContent>
+                    <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <CardTitle className="mb-2">No courses yet</CardTitle>
+                    <CardDescription className="mb-4">
+                      {isOwnProfile 
+                        ? "Share your knowledge by creating your first course."
+                        : "This instructor hasn't created any courses yet."
+                      }
+                    </CardDescription>
+                    {isOwnProfile && (
+                      <Button variant="gradient" asChild>
+                        <a href="/learn/submit">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Your First Course
+                        </a>
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* Events Sub-tab */}

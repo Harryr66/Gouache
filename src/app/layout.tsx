@@ -3,6 +3,7 @@ import { Inter, Belleza, Alegreya } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { AuthProvider } from '@/providers/auth-provider';
+import { CourseProvider } from '@/providers/course-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
@@ -45,8 +46,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
-            <Toaster />
+            <CourseProvider>
+              {children}
+              <Toaster />
+            </CourseProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

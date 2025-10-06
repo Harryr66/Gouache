@@ -100,7 +100,7 @@ export default function ProfileEditPage() {
       console.error('❌ Test portfolio upload failed:', error);
       toast({
         title: "Test failed",
-        description: error.message || "Test upload failed",
+        description: error instanceof Error ? error.message : "Test upload failed",
         variant: "destructive"
       });
     }

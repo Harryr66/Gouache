@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
-import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics } from '@/lib/types';
+import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission } from '@/lib/types';
 import { Check, X, Eye, Clock, User, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -116,6 +116,12 @@ export default function AdminPanel() {
   const [adEndDate, setAdEndDate] = useState('');
   const [isAdUploading, setIsAdUploading] = useState(false);
 
+  // Course management state
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [courseSubmissions, setCourseSubmissions] = useState<CourseSubmission[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [selectedCourseSubmission, setSelectedCourseSubmission] = useState<CourseSubmission | null>(null);
+
   useEffect(() => {
     const artistRequestsQuery = query(
       collection(db, 'artistRequests'),
@@ -152,18 +158,28 @@ export default function AdminPanel() {
       collection(db, 'advertisementAnalytics'),
       orderBy('date', 'desc')
     );
+    const coursesQuery = query(
+      collection(db, 'courses'),
+      orderBy('createdAt', 'desc')
+    );
+    const courseSubmissionsQuery = query(
+      collection(db, 'courseSubmissions'),
+      orderBy('submittedAt', 'desc')
+    );
 
     const fetchData = async () => {
       try {
         console.log('🔄 Admin Panel: Fetching all data...');
-        const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot, advertisementsSnapshot, analyticsSnapshot] = await Promise.all([
+        const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot, advertisementsSnapshot, analyticsSnapshot, coursesSnapshot, courseSubmissionsSnapshot] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
           getDocs(episodesQuery),
           getDocs(marketplaceQuery),
           getDocs(affiliateQuery),
           getDocs(advertisementsQuery),
-          getDocs(advertisementAnalyticsQuery)
+          getDocs(advertisementAnalyticsQuery),
+          getDocs(coursesQuery),
+          getDocs(courseSubmissionsQuery)
         ]);
 
         const requests = artistSnapshot.docs.map(doc => ({
@@ -215,6 +231,30 @@ export default function AdminPanel() {
         })) as AdvertisementAnalytics[];
         setAdvertisementAnalytics(analytics);
         console.log(`✅ Loaded ${analytics.length} advertisement analytics:`, analytics);
+
+        const courses = coursesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+          publishedAt: doc.data().publishedAt?.toDate(),
+          instructor: {
+            ...doc.data().instructor,
+            createdAt: doc.data().instructor?.createdAt?.toDate() || new Date(),
+            updatedAt: doc.data().instructor?.updatedAt?.toDate() || new Date(),
+          },
+        })) as Course[];
+        setCourses(courses);
+        console.log(`✅ Loaded ${courses.length} courses:`, courses);
+
+        const submissions = courseSubmissionsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          submittedAt: doc.data().submittedAt?.toDate() || new Date(),
+          reviewedAt: doc.data().reviewedAt?.toDate(),
+        })) as CourseSubmission[];
+        setCourseSubmissions(submissions);
+        console.log(`✅ Loaded ${submissions.length} course submissions:`, submissions);
 
         setLoading(false);
         console.log('✅ Admin Panel: All data loaded successfully');
@@ -957,6 +997,91 @@ export default function AdminPanel() {
     }
   };
 
+  // Course management functions
+  const handleCoursePublish = async (courseId: string) => {
+    try {
+      await updateDoc(doc(db, 'courses', courseId), {
+        isPublished: true,
+        publishedAt: new Date(),
+        updatedAt: new Date(),
+      });
+      
+      toast({
+        title: "Course Published",
+        description: "The course has been published successfully.",
+      });
+    } catch (error) {
+      console.error('Error publishing course:', error);
+      toast({
+        title: "Publish Failed",
+        description: "Failed to publish course. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCourseUnpublish = async (courseId: string) => {
+    try {
+      await updateDoc(doc(db, 'courses', courseId), {
+        isPublished: false,
+        updatedAt: new Date(),
+      });
+      
+      toast({
+        title: "Course Unpublished",
+        description: "The course has been unpublished successfully.",
+      });
+    } catch (error) {
+      console.error('Error unpublishing course:', error);
+      toast({
+        title: "Unpublish Failed",
+        description: "Failed to unpublish course. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCourseSubmissionReview = async (submissionId: string, status: 'approved' | 'rejected', notes?: string) => {
+    try {
+      await updateDoc(doc(db, 'courseSubmissions', submissionId), {
+        status,
+        reviewedAt: new Date(),
+        reviewedBy: 'admin',
+        notes,
+      });
+      
+      toast({
+        title: "Submission Reviewed",
+        description: `Course submission has been ${status}.`,
+      });
+    } catch (error) {
+      console.error('Error reviewing course submission:', error);
+      toast({
+        title: "Review Failed",
+        description: "Failed to review course submission. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCourseDelete = async (courseId: string) => {
+    try {
+      await deleteDoc(doc(db, 'courses', courseId));
+      
+      toast({
+        title: "Course Deleted",
+        description: "The course has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete course. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Product tag management functions
   const addProductTag = () => {
     if (newProductTag.trim() && !productTags.includes(newProductTag.trim())) {
@@ -1346,6 +1471,45 @@ export default function AdminPanel() {
             >
               <span className="text-sm">Archived</span>
               <Badge variant={selectedView === 'marketplace-archived' ? 'secondary' : 'outline'}>(0)</Badge>
+            </button>
+          </CardContent>
+        </Card>
+
+        {/* Course Management */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Play className="h-4 w-4" />
+              Course Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <button
+              onClick={() => setSelectedView('courses-published')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'courses-published' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Published Courses</span>
+              <Badge variant={selectedView === 'courses-published' ? 'secondary' : 'outline'}>({courses.filter(c => c.isPublished).length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('courses-draft')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'courses-draft' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Draft Courses</span>
+              <Badge variant={selectedView === 'courses-draft' ? 'secondary' : 'outline'}>({courses.filter(c => !c.isPublished).length})</Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('course-submissions')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'course-submissions' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Course Requests</span>
+              <Badge variant={selectedView === 'course-submissions' ? 'secondary' : 'outline'}>({courseSubmissions.filter(s => s.status === 'pending').length})</Badge>
             </button>
           </CardContent>
         </Card>
@@ -2133,6 +2297,201 @@ export default function AdminPanel() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Course Management Sections */}
+        {/* Published Courses */}
+        {selectedView === 'courses-published' && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Published Courses</h2>
+            {courses.filter(c => c.isPublished).length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <Play className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No published courses</h3>
+                  <p className="text-muted-foreground text-center">
+                    No courses have been published yet.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {courses.filter(c => c.isPublished).map((course) => (
+                  <Card key={course.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-4">
+                          <img
+                            src={course.thumbnail}
+                            alt={course.title}
+                            className="w-20 h-20 object-cover rounded-lg"
+                          />
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold mb-2">{course.title}</h3>
+                            <p className="text-muted-foreground mb-2">{course.description}</p>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>Instructor: {course.instructor.name}</span>
+                              <span>Students: {course.students}</span>
+                              <span>Rating: {course.rating}/5</span>
+                              <span>Price: ${course.price}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCourseUnpublish(course.id)}
+                          >
+                            Unpublish
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleCourseDelete(course.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Draft Courses */}
+        {selectedView === 'courses-draft' && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Draft Courses</h2>
+            {courses.filter(c => !c.isPublished).length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <Edit className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No draft courses</h3>
+                  <p className="text-muted-foreground text-center">
+                    No courses are currently in draft status.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {courses.filter(c => !c.isPublished).map((course) => (
+                  <Card key={course.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-4">
+                          <img
+                            src={course.thumbnail}
+                            alt={course.title}
+                            className="w-20 h-20 object-cover rounded-lg"
+                          />
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold mb-2">{course.title}</h3>
+                            <p className="text-muted-foreground mb-2">{course.description}</p>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>Instructor: {course.instructor.name}</span>
+                              <span>Price: ${course.price}</span>
+                              <span>Created: {course.createdAt.toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleCoursePublish(course.id)}
+                          >
+                            Publish
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleCourseDelete(course.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Course Submissions */}
+        {selectedView === 'course-submissions' && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Course Submission Requests</h2>
+            {courseSubmissions.filter(s => s.status === 'pending').length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <User className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
+                  <p className="text-muted-foreground text-center">
+                    No course submission requests pending review.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {courseSubmissions.filter(s => s.status === 'pending').map((submission) => (
+                  <Card key={submission.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold mb-2">{submission.courseTitle}</h3>
+                          <p className="text-muted-foreground mb-4">{submission.courseDescription}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p><strong>Company:</strong> {submission.companyName}</p>
+                              <p><strong>Contact:</strong> {submission.contactName}</p>
+                              <p><strong>Email:</strong> {submission.email}</p>
+                              <p><strong>Website:</strong> {submission.website}</p>
+                            </div>
+                            <div>
+                              <p><strong>Category:</strong> {submission.courseCategory}</p>
+                              <p><strong>Subcategory:</strong> {submission.courseSubcategory}</p>
+                              <p><strong>Duration:</strong> {submission.courseDuration || 'Not specified'}</p>
+                              <p><strong>Format:</strong> {submission.courseFormat || 'Not specified'}</p>
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <p><strong>Instructor Bio:</strong></p>
+                            <p className="text-muted-foreground">{submission.instructorBio}</p>
+                          </div>
+                          <div className="mt-4">
+                            <p><strong>Teaching Experience:</strong></p>
+                            <p className="text-muted-foreground">{submission.teachingExperience}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 ml-4">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleCourseSubmissionReview(submission.id, 'approved')}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleCourseSubmissionReview(submission.id, 'rejected')}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

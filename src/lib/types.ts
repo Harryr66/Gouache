@@ -126,6 +126,166 @@ export interface AffiliateProductRequest {
   notes?: string;
 }
 
+// SOMA Learn Course System Types
+export interface Instructor {
+  id: string;
+  userId: string;
+  name: string;
+  avatar: string;
+  bio: string;
+  rating: number;
+  students: number;
+  courses: number;
+  verified: boolean;
+  location?: string;
+  website?: string;
+  socialLinks?: {
+    instagram?: string;
+    twitter?: string;
+    youtube?: string;
+    facebook?: string;
+    linkedin?: string;
+  };
+  credentials?: string;
+  specialties: string[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CourseLesson {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'video' | 'assignment' | 'quiz' | 'reading' | 'live';
+  duration?: string;
+  videoUrl?: string;
+  content?: string;
+  attachments?: string[];
+  isPreview: boolean;
+  isCompleted?: boolean;
+  order: number;
+}
+
+export interface CourseWeek {
+  week: number;
+  title: string;
+  description?: string;
+  lessons: CourseLesson[];
+}
+
+export interface CourseReview {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
+  isVerified: boolean;
+}
+
+export interface CourseDiscussion {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  title: string;
+  content: string;
+  replies: CourseDiscussionReply[];
+  createdAt: Date;
+  updatedAt: Date;
+  isPinned: boolean;
+  isResolved: boolean;
+}
+
+export interface CourseDiscussionReply {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  createdAt: Date;
+  isInstructorReply: boolean;
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  longDescription?: string;
+  instructor: Instructor;
+  thumbnail: string;
+  previewVideoUrl?: string;
+  price: number;
+  originalPrice?: number;
+  currency: string;
+  category: string;
+  subcategory: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  duration: string;
+  format: 'Self-Paced' | 'Live Sessions' | 'Hybrid' | 'E-Book';
+  students: number;
+  lessons: number;
+  rating: number;
+  reviewCount: number;
+  isOnSale: boolean;
+  isNew: boolean;
+  isFeatured: boolean;
+  isPublished: boolean;
+  tags: string[];
+  skills: string[];
+  curriculum: CourseWeek[];
+  reviews: CourseReview[];
+  discussions: CourseDiscussion[];
+  enrollmentCount: number;
+  completionRate: number;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt?: Date;
+}
+
+export interface CourseEnrollment {
+  id: string;
+  userId: string;
+  courseId: string;
+  enrolledAt: Date;
+  completedAt?: Date;
+  progress: number; // 0-100
+  currentWeek: number;
+  currentLesson: number;
+  completedLessons: string[];
+  lastAccessedAt: Date;
+  certificateEarned: boolean;
+  certificateUrl?: string;
+  isActive: boolean;
+}
+
+export interface CourseSubmission {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  website: string;
+  courseTitle: string;
+  courseCategory: string;
+  courseSubcategory: string;
+  courseDescription: string;
+  courseDuration?: string;
+  courseFormat?: string;
+  instructorBio: string;
+  teachingExperience: string;
+  sampleWork?: string;
+  courseGoals?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: Date;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  rejectionReason?: string;
+  notes?: string;
+}
+
 export interface Artwork {
   id: string;
   artist: Artist;
