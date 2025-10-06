@@ -178,6 +178,7 @@ export default function CourseSubmissionPage() {
 
       // Create instructor profile if needed
       const instructorData = {
+        id: `instructor-${user.id}`, // Generate instructor ID
         userId: user.id,
         name: user.displayName || 'Unknown Instructor',
         avatar: user.avatarUrl || '',
