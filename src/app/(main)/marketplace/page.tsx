@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, Star, Users, Clock, Play, Award, BookOpen, Filter, ChevronRight, ChevronLeft, ChevronDown, GraduationCap, Palette, Camera, Brush, Scissors } from 'lucide-react';
 import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
+import { useCourses } from '@/providers/course-provider';
 
 // Course categories for art school
 const courseCategories = [
@@ -113,6 +114,10 @@ export default function LearnPage() {
   // Use the placeholder hook for dynamic theme-aware placeholders
   const placeholderUrl = usePlaceholder(400, 300);
   const avatarPlaceholder = usePlaceholder(60, 60);
+  const itemsPerPage = 12;
+  
+  // Get real courses from provider
+  const { courses: realCourses, isLoading } = useCourses();
 
   // Mock course data for art school
   const mockCourses = useMemo(() => [
@@ -389,7 +394,9 @@ export default function LearnPage() {
   ], [placeholderUrl, avatarPlaceholder]);
 
   const filteredCourses = useMemo(() => {
-    let filtered = mockCourses;
+    // Use real courses if available, otherwise fall back to mock courses
+    const coursesToUse = realCourses.length > 0 ? realCourses : mockCourses;
+    let filtered = coursesToUse;
 
     // Search filter
     if (searchQuery) {
@@ -448,7 +455,7 @@ export default function LearnPage() {
     }
 
     return filtered;
-  }, [mockCourses, searchQuery, selectedCategory, selectedSubcategory, difficulty, format, sortBy]);
+  }, [realCourses, mockCourses, searchQuery, selectedCategory, selectedSubcategory, difficulty, format, sortBy]);
 
   const toggleCategory = (categoryId: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -464,6 +471,18 @@ export default function LearnPage() {
   const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
   const startIndex = (currentPage - 1) * coursesPerPage;
   const paginatedCourses = filteredCourses.slice(startIndex, startIndex + coursesPerPage);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading courses...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
