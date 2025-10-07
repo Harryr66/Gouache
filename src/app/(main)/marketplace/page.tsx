@@ -477,7 +477,7 @@ export default function LearnPage() {
                 SOMA Learn
               </h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Learn from the best artists</span>
+                <span>Learn directly from the best artists</span>
               </div>
             </div>
           </div>
