@@ -400,32 +400,32 @@ export default function LearnPage() {
 
     // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(course => 
+      filtered = filtered.filter((course: any) => 
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.instructor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        course.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
     // Category filter
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(course => course.category.toLowerCase() === selectedCategory);
+      filtered = filtered.filter((course: any) => course.category.toLowerCase() === selectedCategory);
     }
 
     // Subcategory filter
     if (selectedSubcategory !== 'all') {
-      filtered = filtered.filter(course => course.subcategory.toLowerCase().replace(/\s+/g, '-') === selectedSubcategory);
+      filtered = filtered.filter((course: any) => course.subcategory.toLowerCase().replace(/\s+/g, '-') === selectedSubcategory);
     }
 
     // Difficulty filter
     if (difficulty !== 'all') {
-      filtered = filtered.filter(course => course.difficulty.toLowerCase() === difficulty);
+      filtered = filtered.filter((course: any) => course.difficulty.toLowerCase() === difficulty);
     }
 
     // Format filter
     if (format !== 'all') {
-      filtered = filtered.filter(course => course.format.toLowerCase().replace(/\s+/g, '-') === format);
+      filtered = filtered.filter((course: any) => course.format.toLowerCase().replace(/\s+/g, '-') === format);
     }
 
     // Sort
