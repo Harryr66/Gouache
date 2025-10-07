@@ -395,7 +395,7 @@ export default function LearnPage() {
 
   const filteredCourses = useMemo(() => {
     // Use real courses if available, otherwise fall back to mock courses
-    const coursesToUse = realCourses.length > 0 ? realCourses : mockCourses;
+    const coursesToUse: any[] = realCourses.length > 0 ? realCourses : mockCourses;
     let filtered = coursesToUse;
 
     // Search filter
