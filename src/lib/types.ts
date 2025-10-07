@@ -23,7 +23,7 @@ export interface ArtistRequest {
   userId: string;
   user: User;
   portfolioImages: string[];
-  artistStatement: string;
+  artistStatement?: string;
   experience: string;
   socialLinks?: {
     instagram?: string;

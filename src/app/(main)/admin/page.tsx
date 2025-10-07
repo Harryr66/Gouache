@@ -1628,7 +1628,9 @@ export default function AdminPanel() {
                               <p><strong>Portfolio Images:</strong> {request.portfolioImages.length}</p>
                       </div>
                           </div>
-                          <p className="text-sm mt-2">{request.artistStatement}</p>
+                          {request.artistStatement && (
+                            <p className="text-sm mt-2">{request.artistStatement}</p>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2 ml-4">
@@ -2860,10 +2862,12 @@ export default function AdminPanel() {
               )}
 
               {/* Artist Statement */}
-              <div>
-                <Label className="text-base font-semibold">Artist Statement</Label>
-                <p className="mt-2 text-sm text-muted-foreground">{selectedRequest.artistStatement}</p>
-              </div>
+              {selectedRequest.artistStatement && (
+                <div>
+                  <Label className="text-base font-semibold">Artist Statement</Label>
+                  <p className="mt-2 text-sm text-muted-foreground">{selectedRequest.artistStatement}</p>
+                </div>
+              )}
 
               {/* Experience */}
                 <div>

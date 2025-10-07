@@ -433,14 +433,6 @@ export default function ProfileEditPage() {
       return;
     }
 
-    if (!artistRequestData.artistStatement.trim()) {
-      toast({
-        title: "Artist statement required",
-        description: "Please provide an artist statement.",
-        variant: "destructive"
-      });
-      return;
-    }
 
     setIsSubmittingRequest(true);
     try {
@@ -960,18 +952,6 @@ export default function ProfileEditPage() {
                     </div>
                   </div>
 
-                  {/* Artist Statement */}
-                  <div className="space-y-2">
-                    <Label htmlFor="artistStatement">Artist Statement *</Label>
-                    <Textarea
-                      id="artistStatement"
-                      value={artistRequestData.artistStatement}
-                      onChange={(e) => setArtistRequestData(prev => ({ ...prev, artistStatement: e.target.value }))}
-                      placeholder="Describe your artistic vision, inspiration, and what drives your creative process..."
-                      rows={4}
-                    />
-                  </div>
-
                   {/* Experience */}
                   <div className="space-y-2">
                     <Label htmlFor="experience">Experience & Background</Label>
@@ -1051,7 +1031,7 @@ export default function ProfileEditPage() {
                     <Button
                       type="button"
                       onClick={handleArtistRequestSubmit}
-                      disabled={isSubmittingRequest || portfolioImages.length === 0 || !artistRequestData.artistStatement.trim()}
+                      disabled={isSubmittingRequest || portfolioImages.length === 0}
                     >
                       {isSubmittingRequest ? 'Submitting...' : 'Submit Request'}
                     </Button>
