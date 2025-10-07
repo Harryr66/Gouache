@@ -119,6 +119,8 @@ export default function ProfileEditPage() {
     bio: '',
       artistType: '',
     location: '',
+    countryOfOrigin: '',
+    countryOfResidence: '',
     isProfessional: false,
   });
 
@@ -149,6 +151,8 @@ export default function ProfileEditPage() {
             bio: changes.bio || user.bio || '',
             artistType: changes.artistType || user.artistType || '',
             location: changes.location || user.location || '',
+            countryOfOrigin: changes.countryOfOrigin || user.countryOfOrigin || '',
+            countryOfResidence: changes.countryOfResidence || user.countryOfResidence || '',
             isProfessional: changes.isProfessional || user.isProfessional || false,
           });
           
@@ -167,6 +171,8 @@ export default function ProfileEditPage() {
           bio: user.bio || '',
           artistType: user.artistType || '',
           location: user.location || '',
+          countryOfOrigin: user.countryOfOrigin || '',
+          countryOfResidence: user.countryOfResidence || '',
           isProfessional: user.isProfessional || false,
         });
       }
@@ -555,6 +561,8 @@ export default function ProfileEditPage() {
         bio: formData.bio,
         artistType: formData.artistType,
         location: formData.location,
+        countryOfOrigin: formData.countryOfOrigin,
+        countryOfResidence: formData.countryOfResidence,
         isProfessional: formData.isProfessional,
         updatedAt: new Date()
       };
@@ -764,23 +772,54 @@ export default function ProfileEditPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
+              <Label htmlFor="bio">Biography (up to 5 sentences)</Label>
               <Textarea
                 id="bio"
                 value={formData.bio}
-                onChange={(e) => handleInputChange('bio', e.target.value)}
-                placeholder="Tell us about yourself..."
-                rows={4}
+                onChange={(e) => {
+                  const sentences = e.target.value.split(/[.!?]+/).filter(s => s.trim());
+                  if (sentences.length <= 5) {
+                    handleInputChange('bio', e.target.value);
+                  }
+                }}
+                placeholder="Tell your story in up to 5 sentences..."
+                rows={5}
+                className="resize-none"
               />
+              <p className="text-xs text-muted-foreground">
+                {formData.bio.split(/[.!?]+/).filter(s => s.trim()).length} / 5 sentences
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="countryOfOrigin">Country of Origin</Label>
+                <Input
+                  id="countryOfOrigin"
+                  value={formData.countryOfOrigin}
+                  onChange={(e) => handleInputChange('countryOfOrigin', e.target.value)}
+                  placeholder="e.g., United States"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="countryOfResidence">Country of Residence</Label>
+                <Input
+                  id="countryOfResidence"
+                  value={formData.countryOfResidence}
+                  onChange={(e) => handleInputChange('countryOfResidence', e.target.value)}
+                  placeholder="e.g., United Kingdom"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location">City / Location</Label>
               <Input
                 id="location"
                 value={formData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
-                placeholder="City, Country"
+                placeholder="City, State/Region"
               />
             </div>
           </CardContent>

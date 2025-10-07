@@ -4,10 +4,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Users, UserPlus, Edit, Upload, Plus } from 'lucide-react';
+import { Heart, Users, UserPlus, Edit, Upload, Plus, MapPin, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 interface ProfileHeaderProps {
   user: {
@@ -16,6 +17,8 @@ interface ProfileHeaderProps {
     username: string;
     avatarUrl?: string;
     bio?: string;
+    countryOfOrigin?: string;
+    countryOfResidence?: string;
     followerCount: number;
     followingCount: number;
     isProfessional: boolean;
@@ -124,14 +127,6 @@ export function ProfileHeader({
               </div>
             </div>
 
-            {/* Bio */}
-            {user.bio && (
-              <div className="text-foreground">
-                <p className="whitespace-pre-line">{user.bio}</p>
-              </div>
-            )}
-
-
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3">
               {isOwnProfile ? (
@@ -168,6 +163,72 @@ export function ProfileHeader({
           </div>
         </div>
       </Card>
+
+      {/* Biography Section */}
+      {(user.bio || user.countryOfOrigin || user.countryOfResidence) && (
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  Biography
+                </h2>
+                {user.bio && (
+                  <div className="text-foreground leading-relaxed">
+                    <p className="whitespace-pre-line text-base">{user.bio}</p>
+                  </div>
+                )}
+                {!user.bio && isOwnProfile && (
+                  <p className="text-muted-foreground italic">
+                    Add a biography to tell your story (up to 5 sentences)
+                  </p>
+                )}
+              </div>
+
+              {(user.countryOfOrigin || user.countryOfResidence) && (
+                <>
+                  <Separator />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {user.countryOfOrigin && (
+                      <div className="flex items-start gap-3">
+                        <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-sm text-muted-foreground mb-1">Country of Origin</p>
+                          <p className="text-foreground">{user.countryOfOrigin}</p>
+                        </div>
+                      </div>
+                    )}
+                    {user.countryOfResidence && (
+                      <div className="flex items-start gap-3">
+                        <Globe className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-sm text-muted-foreground mb-1">Currently Based In</p>
+                          <p className="text-foreground">{user.countryOfResidence}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {isOwnProfile && !user.countryOfOrigin && !user.countryOfResidence && (
+                <>
+                  <Separator />
+                  <div className="text-center py-2">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/profile/edit">
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Add Location Information
+                      </Link>
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
     </>
   );

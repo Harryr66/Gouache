@@ -547,6 +547,8 @@ export interface User {
   bio?: string;
   website?: string;
   location?: string;
+  countryOfOrigin?: string;
+  countryOfResidence?: string;
   followerCount: number;
   followingCount: number;
   postCount: number;
