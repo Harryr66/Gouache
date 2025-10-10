@@ -164,6 +164,218 @@ const sampleCourses = [
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-15'),
     publishedAt: new Date('2024-01-01')
+  },
+  {
+    id: 'course-2',
+    title: 'Watercolor Landscapes: From Sketch to Final Piece',
+    description: 'Create stunning watercolor landscapes with professional techniques and color mixing strategies.',
+    longDescription: 'Discover the magic of watercolor landscapes in this comprehensive course. Learn to capture light, atmosphere, and emotion in your paintings.',
+    instructor: sampleInstructors[1],
+    thumbnail: '',
+    previewVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    price: 69.99,
+    originalPrice: 89.99,
+    currency: 'USD',
+    category: 'painting',
+    subcategory: 'Watercolor',
+    difficulty: 'Beginner',
+    duration: '6 weeks',
+    format: 'Self-Paced',
+    students: 892,
+    lessons: 18,
+    rating: 4.9,
+    reviewCount: 267,
+    isOnSale: true,
+    isNew: true,
+    isFeatured: true,
+    isPublished: true,
+    tags: ['watercolor', 'landscape', 'nature'],
+    skills: ['Wet-on-Wet Technique', 'Color Mixing', 'Composition', 'Atmospheric Perspective'],
+    curriculum: [
+      {
+        week: 1,
+        title: 'Watercolor Fundamentals',
+        description: 'Essential watercolor techniques',
+        lessons: [
+          {
+            id: 'lesson-w1',
+            title: 'Materials and Paper Selection',
+            description: 'Choosing the right tools',
+            type: 'video',
+            duration: '12 min',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            isPreview: true,
+            order: 1
+          }
+        ]
+      }
+    ],
+    reviews: [],
+    discussions: [],
+    enrollmentCount: 892,
+    completionRate: 85.2,
+    createdAt: new Date('2024-02-01'),
+    updatedAt: new Date('2024-02-15'),
+    publishedAt: new Date('2024-02-01')
+  },
+  {
+    id: 'course-3',
+    title: 'Figure Drawing Fundamentals',
+    description: 'Master the art of drawing the human figure with proportion, gesture, and anatomy lessons.',
+    longDescription: 'Build a solid foundation in figure drawing through structured lessons on anatomy, proportion, and gesture.',
+    instructor: sampleInstructors[0],
+    thumbnail: '',
+    previewVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    price: 79.99,
+    originalPrice: 99.99,
+    currency: 'USD',
+    category: 'drawing',
+    subcategory: 'Figure Drawing',
+    difficulty: 'Beginner',
+    duration: '10 weeks',
+    format: 'Self-Paced',
+    students: 1456,
+    lessons: 32,
+    rating: 4.7,
+    reviewCount: 412,
+    isOnSale: false,
+    isNew: false,
+    isFeatured: false,
+    isPublished: true,
+    tags: ['figure-drawing', 'anatomy', 'gesture'],
+    skills: ['Proportion', 'Gesture Drawing', 'Anatomy', 'Shading'],
+    curriculum: [
+      {
+        week: 1,
+        title: 'Basic Proportions',
+        description: 'Understanding human proportions',
+        lessons: [
+          {
+            id: 'lesson-f1',
+            title: 'Introduction to Proportions',
+            description: 'The 8-head method',
+            type: 'video',
+            duration: '18 min',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            isPreview: true,
+            order: 1
+          }
+        ]
+      }
+    ],
+    reviews: [],
+    discussions: [],
+    enrollmentCount: 1456,
+    completionRate: 72.8,
+    createdAt: new Date('2024-01-10'),
+    updatedAt: new Date('2024-01-25'),
+    publishedAt: new Date('2024-01-10')
+  },
+  {
+    id: 'course-4',
+    title: 'Pottery Wheel Throwing Basics',
+    description: 'Learn to create beautiful pottery pieces on the wheel with hands-on techniques.',
+    longDescription: 'Start your pottery journey with this beginner-friendly wheel throwing course.',
+    instructor: sampleInstructors[1],
+    thumbnail: '',
+    previewVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    price: 99.99,
+    originalPrice: 129.99,
+    currency: 'USD',
+    category: 'pottery-ceramics',
+    subcategory: 'Wheel Throwing',
+    difficulty: 'Beginner',
+    duration: '12 weeks',
+    format: 'Self-Paced',
+    students: 634,
+    lessons: 28,
+    rating: 4.8,
+    reviewCount: 189,
+    isOnSale: true,
+    isNew: true,
+    isFeatured: false,
+    isPublished: true,
+    tags: ['pottery', 'ceramics', 'wheel-throwing'],
+    skills: ['Centering', 'Pulling', 'Shaping', 'Trimming'],
+    curriculum: [
+      {
+        week: 1,
+        title: 'Getting Started',
+        description: 'Wheel throwing basics',
+        lessons: [
+          {
+            id: 'lesson-p1',
+            title: 'Clay Preparation',
+            description: 'Wedging and preparing clay',
+            type: 'video',
+            duration: '15 min',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            isPreview: true,
+            order: 1
+          }
+        ]
+      }
+    ],
+    reviews: [],
+    discussions: [],
+    enrollmentCount: 634,
+    completionRate: 81.5,
+    createdAt: new Date('2024-02-10'),
+    updatedAt: new Date('2024-02-20'),
+    publishedAt: new Date('2024-02-10')
+  },
+  {
+    id: 'course-5',
+    title: 'Acrylic Painting for Beginners',
+    description: 'Start your painting journey with acrylic paints - versatile, forgiving, and vibrant.',
+    longDescription: 'Perfect for complete beginners, this course covers everything you need to know to start painting with acrylics.',
+    instructor: sampleInstructors[0],
+    thumbnail: '',
+    previewVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    price: 59.99,
+    originalPrice: 79.99,
+    currency: 'USD',
+    category: 'painting',
+    subcategory: 'Acrylic',
+    difficulty: 'Beginner',
+    duration: '4 weeks',
+    format: 'Self-Paced',
+    students: 2145,
+    lessons: 16,
+    rating: 4.6,
+    reviewCount: 578,
+    isOnSale: true,
+    isNew: false,
+    isFeatured: true,
+    isPublished: true,
+    tags: ['acrylic', 'beginner', 'painting'],
+    skills: ['Brush Control', 'Color Mixing', 'Layering', 'Texture'],
+    curriculum: [
+      {
+        week: 1,
+        title: 'Acrylic Basics',
+        description: 'Foundation techniques',
+        lessons: [
+          {
+            id: 'lesson-a1',
+            title: 'Understanding Acrylics',
+            description: 'Properties and materials',
+            type: 'video',
+            duration: '10 min',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            isPreview: true,
+            order: 1
+          }
+        ]
+      }
+    ],
+    reviews: [],
+    discussions: [],
+    enrollmentCount: 2145,
+    completionRate: 88.4,
+    createdAt: new Date('2023-12-15'),
+    updatedAt: new Date('2024-01-05'),
+    publishedAt: new Date('2023-12-15')
   }
 ];
 
