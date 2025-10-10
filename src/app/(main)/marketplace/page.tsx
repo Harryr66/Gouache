@@ -395,7 +395,13 @@ export default function LearnPage() {
 
   const filteredCourses = useMemo(() => {
     // Use real courses if available, otherwise fall back to mock courses
+    console.log('🎓 Marketplace: Real courses count:', realCourses.length);
+    console.log('🎓 Marketplace: Real courses:', realCourses);
+    console.log('🎓 Marketplace: isLoading:', isLoading);
+    
     const coursesToUse: any[] = realCourses.length > 0 ? realCourses : mockCourses;
+    console.log('🎓 Marketplace: Using', coursesToUse.length, 'courses (real or mock)');
+    
     let filtered = coursesToUse;
 
     // Search filter

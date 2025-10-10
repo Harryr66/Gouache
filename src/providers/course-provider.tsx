@@ -64,49 +64,66 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
   // Load courses
   useEffect(() => {
+    console.log('🎓 CourseProvider: Setting up courses listener...');
+    
     const coursesQuery = query(
       collection(db, 'courses'),
       where('isPublished', '==', true),
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(coursesQuery, (snapshot) => {
-      const coursesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        publishedAt: doc.data().publishedAt?.toDate(),
-        instructor: {
-          ...doc.data().instructor,
-          createdAt: doc.data().instructor?.createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().instructor?.updatedAt?.toDate() || new Date(),
-        },
-        reviews: doc.data().reviews?.map((review: any) => ({
-          ...review,
-          createdAt: review.createdAt?.toDate() || new Date(),
-        })) || [],
-        discussions: doc.data().discussions?.map((discussion: any) => ({
-          ...discussion,
-          createdAt: discussion.createdAt?.toDate() || new Date(),
-          updatedAt: discussion.updatedAt?.toDate() || new Date(),
-          replies: discussion.replies?.map((reply: any) => ({
-            ...reply,
-            createdAt: reply.createdAt?.toDate() || new Date(),
-          })) || [],
-        })) || [],
-        curriculum: doc.data().curriculum?.map((week: any) => ({
-          ...week,
-          lessons: week.lessons?.map((lesson: any) => ({
-            ...lesson,
-            isCompleted: false, // Will be updated based on user enrollment
-          })) || [],
-        })) || [],
-      })) as Course[];
+    const unsubscribe = onSnapshot(
+      coursesQuery, 
+      (snapshot) => {
+        console.log(`🎓 CourseProvider: Received ${snapshot.docs.length} published courses`);
+        
+        const coursesData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('🎓 Course data:', doc.id, data);
+          
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+            publishedAt: data.publishedAt?.toDate(),
+            instructor: {
+              ...data.instructor,
+              createdAt: data.instructor?.createdAt?.toDate() || new Date(),
+              updatedAt: data.instructor?.updatedAt?.toDate() || new Date(),
+            },
+            reviews: data.reviews?.map((review: any) => ({
+              ...review,
+              createdAt: review.createdAt?.toDate() || new Date(),
+            })) || [],
+            discussions: data.discussions?.map((discussion: any) => ({
+              ...discussion,
+              createdAt: discussion.createdAt?.toDate() || new Date(),
+              updatedAt: discussion.updatedAt?.toDate() || new Date(),
+              replies: discussion.replies?.map((reply: any) => ({
+                ...reply,
+                createdAt: reply.createdAt?.toDate() || new Date(),
+              })) || [],
+            })) || [],
+            curriculum: data.curriculum?.map((week: any) => ({
+              ...week,
+              lessons: week.lessons?.map((lesson: any) => ({
+                ...lesson,
+                isCompleted: false, // Will be updated based on user enrollment
+              })) || [],
+            })) || [],
+          };
+        }) as Course[];
 
-      setCourses(coursesData);
-      setIsLoading(false);
-    });
+        console.log('🎓 CourseProvider: Processed courses:', coursesData);
+        setCourses(coursesData);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('🎓 CourseProvider: Error loading courses:', error);
+        setIsLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
