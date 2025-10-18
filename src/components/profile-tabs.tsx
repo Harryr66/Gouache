@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, Calendar, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart } from 'lucide-react';
+import { Plus, Upload, Users, Calendar, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain, MapPin } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { ProductCard } from './shop/product-card';
 import { EventCard } from './event-card';
@@ -73,9 +73,18 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
         <TabsContent value="marketplace" className="space-y-4">
           <Tabs defaultValue="products" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="products">Products</TabsTrigger>
-              <TabsTrigger value="courses">Learn</TabsTrigger>
-              <TabsTrigger value="events">Events</TabsTrigger>
+              <TabsTrigger value="products" className="flex items-center gap-2">
+                <ShoppingBag className="h-4 w-4" />
+                Products
+              </TabsTrigger>
+              <TabsTrigger value="courses" className="flex items-center gap-2">
+                <Brain className="h-4 w-4" />
+                Learn
+              </TabsTrigger>
+              <TabsTrigger value="events" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Events
+              </TabsTrigger>
             </TabsList>
 
             {/* Products Sub-tab */}

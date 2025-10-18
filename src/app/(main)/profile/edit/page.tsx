@@ -764,22 +764,34 @@ export default function ProfileEditPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bio">Biography (up to 5 sentences)</Label>
+              <Label htmlFor="bio">Bio {user?.isProfessional ? '(extended biography for artists)' : '(up to 5 sentences)'}</Label>
               <Textarea
                 id="bio"
                 value={formData.bio}
                 onChange={(e) => {
-                  const sentences = e.target.value.split(/[.!?]+/).filter(s => s.trim());
-                  if (sentences.length <= 5) {
+                  if (user?.isProfessional) {
+                    // Professional artists can have extended biographies
                     handleInputChange('bio', e.target.value);
+                  } else {
+                    // Regular users limited to 5 sentences
+                    const sentences = e.target.value.split(/[.!?]+/).filter(s => s.trim());
+                    if (sentences.length <= 5) {
+                      handleInputChange('bio', e.target.value);
+                    }
                   }
                 }}
-                placeholder="Tell your story in up to 5 sentences..."
-                rows={5}
+                placeholder={user?.isProfessional 
+                  ? "Share your artistic journey, inspirations, and story..." 
+                  : "Tell your story in up to 5 sentences..."
+                }
+                rows={user?.isProfessional ? 8 : 5}
                 className="resize-none"
               />
               <p className="text-xs text-muted-foreground">
-                {formData.bio.split(/[.!?]+/).filter(s => s.trim()).length} / 5 sentences
+                {user?.isProfessional 
+                  ? `${formData.bio.length} characters`
+                  : `${formData.bio.split(/[.!?]+/).filter(s => s.trim()).length} / 5 sentences`
+                }
               </p>
             </div>
 
