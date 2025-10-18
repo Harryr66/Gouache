@@ -2,10 +2,15 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useTheme } from 'next-themes';
 
 export function LoadingTransition() {
+  const { theme, resolvedTheme } = useTheme();
+  const currentTheme = resolvedTheme || theme || 'dark';
+  const isDark = currentTheme === 'dark';
+
   return (
-    <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+    <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
       <div className="text-center">
         {/* SOMA Logo */}
         <motion.div
@@ -14,10 +19,14 @@ export function LoadingTransition() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg" 
+          <h1 className={`text-2xl md:text-3xl font-bold drop-shadow-lg ${isDark ? 'text-white' : 'text-black'}`}
               style={{
-                textShadow: '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.1)',
-                filter: 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.2))'
+                textShadow: isDark 
+                  ? '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.1)'
+                  : '0 0 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 0, 0, 0.1)',
+                filter: isDark 
+                  ? 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.2))'
+                  : 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.2))'
               }}>
             SOMA
           </h1>
@@ -32,17 +41,17 @@ export function LoadingTransition() {
         >
           <div className="flex space-x-1">
             <motion.div
-              className="w-3 h-3 bg-white rounded-full"
+              className={`w-3 h-3 rounded-full ${isDark ? 'bg-white' : 'bg-black'}`}
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
             />
             <motion.div
-              className="w-3 h-3 bg-white rounded-full"
+              className={`w-3 h-3 rounded-full ${isDark ? 'bg-white' : 'bg-black'}`}
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
             />
             <motion.div
-              className="w-3 h-3 bg-white rounded-full"
+              className={`w-3 h-3 rounded-full ${isDark ? 'bg-white' : 'bg-black'}`}
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
             />
