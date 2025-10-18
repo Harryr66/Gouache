@@ -129,8 +129,9 @@ export default function LearnPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   
   // Use the placeholder hook for dynamic theme-aware placeholders
-  const placeholderUrl = usePlaceholder(400, 300);
-  const avatarPlaceholder = usePlaceholder(60, 60);
+  const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
+  const placeholderUrl = generatePlaceholderUrl(400, 300);
+  const avatarPlaceholder = generateAvatarPlaceholderUrl(60, 60);
   const itemsPerPage = 12;
   
   // Get real courses from provider

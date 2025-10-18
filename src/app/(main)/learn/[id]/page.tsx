@@ -178,8 +178,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [newComment, setNewComment] = useState('');
   const [newDiscussion, setNewDiscussion] = useState({ title: '', content: '' });
   
-  const placeholderUrl = usePlaceholder(800, 450);
-  const avatarPlaceholder = usePlaceholder(60, 60);
+  const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
+  const placeholderUrl = generatePlaceholderUrl(800, 450);
+  const avatarPlaceholder = generateAvatarPlaceholderUrl(60, 60);
 
   const course = {
     ...mockCourse,

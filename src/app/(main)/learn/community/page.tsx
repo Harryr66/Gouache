@@ -135,7 +135,8 @@ export default function CommunityPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [newPost, setNewPost] = useState({ title: '', content: '', category: 'General' });
   
-  const placeholderUrl = usePlaceholder(60, 60);
+  const { generateAvatarPlaceholderUrl } = usePlaceholder();
+  const placeholderUrl = generateAvatarPlaceholderUrl(60, 60);
 
   const categories = ['all', 'Painting', 'Drawing', 'Sculpture', 'Pottery & Ceramics', 'Books'];
 
