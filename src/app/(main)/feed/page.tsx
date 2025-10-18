@@ -18,45 +18,7 @@ import {
   mockByCategory,
   mockDocuseries 
 } from '@/lib/streaming-data';
-
-// Generate SOMA placeholder URLs
-const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
-  // Default to light mode colors, will be overridden by theme detection
-  let backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
-  let textColor = '#000000'; // black
-  
-  // Try to detect theme if we're in a browser environment
-  if (typeof window !== 'undefined') {
-    try {
-      // Check for explicit light/dark class
-      if (document.documentElement.classList.contains('dark')) {
-        backgroundColor = '#374151'; // lighter gray for dark mode contrast
-        textColor = '#ffffff'; // white
-      } else if (document.documentElement.classList.contains('light')) {
-        backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
-        textColor = '#000000'; // black
-      } else {
-        // No explicit theme class, check system preference
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          backgroundColor = '#374151'; // lighter gray for dark mode contrast
-          textColor = '#ffffff'; // white
-        }
-        // Otherwise keep light mode defaults (off-white with black text)
-      }
-    } catch (error) {
-      // If theme detection fails, keep light mode defaults
-      console.warn('Theme detection failed, using light mode defaults:', error);
-    }
-  }
-  
-  return `data:image/svg+xml;base64,${btoa(`
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
-      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
-    </svg>
-  `)}`;
-};
+import { usePlaceholder } from '@/hooks/use-placeholder';
 import { Docuseries, Episode } from '@/lib/types';
 import { Filter, X, Play } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
@@ -115,6 +77,7 @@ export default function FeedPage() {
   const [expandedContent, setExpandedContent] = useState<Episode | Docuseries | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { addToWatchlist, getContinueWatching, isInWatchlist, getWatchProgress } = useWatchlist();
+  const { generatePlaceholderUrl } = usePlaceholder();
 
   // Get the main event episode (most recent one marked as main event)
   const mainEventEpisode = useMemo(() => {

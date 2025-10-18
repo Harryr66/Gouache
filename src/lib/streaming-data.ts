@@ -1,35 +1,11 @@
 import { Docuseries, Episode, Artist } from './types';
 
-// Generate SOMA placeholder URLs
+// Static placeholder generation for server-side rendering
+// These will be overridden by the usePlaceholder hook in components
 const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
-  // Default to light mode colors, will be overridden by theme detection
-  let backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
-  let textColor = '#000000'; // black
-  
-  // Try to detect theme if we're in a browser environment
-  if (typeof window !== 'undefined') {
-    try {
-      // Check for explicit light/dark class
-      if (document.documentElement.classList.contains('dark')) {
-        backgroundColor = '#374151'; // lighter gray for dark mode contrast
-        textColor = '#ffffff'; // white
-      } else if (document.documentElement.classList.contains('light')) {
-        backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
-        textColor = '#000000'; // black
-      } else {
-        // No explicit theme class, check system preference
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          backgroundColor = '#374151'; // lighter gray for dark mode contrast
-          textColor = '#ffffff'; // white
-        }
-        // Otherwise keep light mode defaults (off-white with black text)
-      }
-    } catch (error) {
-      // If theme detection fails, keep light mode defaults
-      console.warn('Theme detection failed, using light mode defaults:', error);
-    }
-  }
+  // Default to light mode for SSR
+  const backgroundColor = '#f5f5f5';
+  const textColor = '#000000';
   
   return `data:image/svg+xml;base64,${btoa(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
@@ -39,36 +15,10 @@ const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
   `)}`;
 };
 
-// Generate SOMA avatar placeholder URLs
 const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
-  // Default to light mode colors, will be overridden by theme detection
-  let backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
-  let textColor = '#000000'; // black
-  
-  // Try to detect theme if we're in a browser environment
-  if (typeof window !== 'undefined') {
-    try {
-      // Check for explicit light/dark class
-      if (document.documentElement.classList.contains('dark')) {
-        backgroundColor = '#374151'; // lighter gray for dark mode contrast
-        textColor = '#ffffff'; // white
-      } else if (document.documentElement.classList.contains('light')) {
-        backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
-        textColor = '#000000'; // black
-      } else {
-        // No explicit theme class, check system preference
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          backgroundColor = '#374151'; // lighter gray for dark mode contrast
-          textColor = '#ffffff'; // white
-        }
-        // Otherwise keep light mode defaults (off-white with black text)
-      }
-    } catch (error) {
-      // If theme detection fails, keep light mode defaults
-      console.warn('Theme detection failed, using light mode defaults:', error);
-    }
-  }
+  // Default to light mode for SSR
+  const backgroundColor = '#f5f5f5';
+  const textColor = '#000000';
   
   return `data:image/svg+xml;base64,${btoa(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">

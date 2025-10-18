@@ -1,37 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
+import { useTheme } from 'next-themes';
 
-export const usePlaceholder = (width: number = 400, height: number = 600) => {
-  const [placeholderUrl, setPlaceholderUrl] = useState<string>('');
-
-  useEffect(() => {
-    const generatePlaceholder = () => {
-      // Default to light mode colors, will be overridden by theme detection
-      let backgroundColor = '#f8f9fa'; // very light gray
-      let textColor = '#6b7280'; // medium gray
+export const usePlaceholder = () => {
+  const { theme, resolvedTheme } = useTheme();
+  
+  const generatePlaceholderUrl = useMemo(() => {
+    return (width: number = 400, height: number = 600) => {
+      // Determine the actual theme being used
+      const currentTheme = resolvedTheme || theme || 'light';
       
-      // Try to detect theme if we're in a browser environment
-      if (typeof window !== 'undefined') {
-        try {
-          // Check for explicit light/dark class
-          if (document.documentElement.classList.contains('dark')) {
-            backgroundColor = '#1f2937'; // dark gray
-            textColor = '#ffffff'; // white
-          } else if (document.documentElement.classList.contains('light')) {
-            backgroundColor = '#f8f9fa'; // very light gray
-            textColor = '#6b7280'; // medium gray
-          } else {
-            // No explicit theme class, check system preference
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (prefersDark) {
-              backgroundColor = '#1f2937'; // dark gray
-              textColor = '#ffffff'; // white
-            }
-            // Otherwise keep light mode defaults
-          }
-        } catch (error) {
-          // If theme detection fails, keep light mode defaults
-          console.warn('Theme detection failed, using light mode defaults:', error);
-        }
+      let backgroundColor: string;
+      let textColor: string;
+      
+      if (currentTheme === 'dark') {
+        backgroundColor = '#374151'; // lighter gray for dark mode contrast
+        textColor = '#ffffff'; // white
+      } else {
+        backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
+        textColor = '#000000'; // black
       }
       
       return `data:image/svg+xml;base64,${btoa(`
@@ -41,57 +27,22 @@ export const usePlaceholder = (width: number = 400, height: number = 600) => {
         </svg>
       `)}`;
     };
-
-    setPlaceholderUrl(generatePlaceholder());
-
-    // Listen for theme changes
-    const observer = new MutationObserver(() => {
-      setPlaceholderUrl(generatePlaceholder());
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-
-    return () => observer.disconnect();
-  }, [width, height]);
-
-  return placeholderUrl;
-};
-
-export const useAvatarPlaceholder = (width: number = 150, height: number = 150) => {
-  const [placeholderUrl, setPlaceholderUrl] = useState<string>('');
-
-  useEffect(() => {
-    const generatePlaceholder = () => {
-      // Default to light mode colors, will be overridden by theme detection
-      let backgroundColor = '#f8f9fa'; // very light gray
-      let textColor = '#6b7280'; // medium gray
+  }, [theme, resolvedTheme]);
+  
+  const generateAvatarPlaceholderUrl = useMemo(() => {
+    return (width: number = 150, height: number = 150) => {
+      // Determine the actual theme being used
+      const currentTheme = resolvedTheme || theme || 'light';
       
-      // Try to detect theme if we're in a browser environment
-      if (typeof window !== 'undefined') {
-        try {
-          // Check for explicit light/dark class
-          if (document.documentElement.classList.contains('dark')) {
-            backgroundColor = '#1f2937'; // dark gray
-            textColor = '#ffffff'; // white
-          } else if (document.documentElement.classList.contains('light')) {
-            backgroundColor = '#f8f9fa'; // very light gray
-            textColor = '#6b7280'; // medium gray
-          } else {
-            // No explicit theme class, check system preference
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (prefersDark) {
-              backgroundColor = '#1f2937'; // dark gray
-              textColor = '#ffffff'; // white
-            }
-            // Otherwise keep light mode defaults
-          }
-        } catch (error) {
-          // If theme detection fails, keep light mode defaults
-          console.warn('Theme detection failed, using light mode defaults:', error);
-        }
+      let backgroundColor: string;
+      let textColor: string;
+      
+      if (currentTheme === 'dark') {
+        backgroundColor = '#374151'; // lighter gray for dark mode contrast
+        textColor = '#ffffff'; // white
+      } else {
+        backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
+        textColor = '#000000'; // black
       }
       
       return `data:image/svg+xml;base64,${btoa(`
@@ -101,21 +52,10 @@ export const useAvatarPlaceholder = (width: number = 150, height: number = 150) 
         </svg>
       `)}`;
     };
-
-    setPlaceholderUrl(generatePlaceholder());
-
-    // Listen for theme changes
-    const observer = new MutationObserver(() => {
-      setPlaceholderUrl(generatePlaceholder());
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-
-    return () => observer.disconnect();
-  }, [width, height]);
-
-  return placeholderUrl;
+  }, [theme, resolvedTheme]);
+  
+  return {
+    generatePlaceholderUrl,
+    generateAvatarPlaceholderUrl
+  };
 };
