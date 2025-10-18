@@ -213,10 +213,23 @@ export default function FeedPage() {
       .sort((a, b) => b.likes - a.likes)
       .slice(0, 6);
 
+    // Generate dynamic placeholders for mock data
+    const dynamicNewReleases = mockNewReleases.map(docuseries => ({
+      ...docuseries,
+      thumbnailUrl: generatePlaceholderUrl(400, 600),
+      bannerUrl: generatePlaceholderUrl(1200, 675)
+    }));
+
+    const dynamicTrendingNow = mockTrendingNow.map(docuseries => ({
+      ...docuseries,
+      thumbnailUrl: generatePlaceholderUrl(400, 600),
+      bannerUrl: generatePlaceholderUrl(1200, 675)
+    }));
+
     if (selectedCategory === 'all') {
       return {
-        trending: mockTrendingNow,
-        newReleases: mockNewReleases,
+        trending: dynamicTrendingNow,
+        newReleases: dynamicNewReleases,
         mostLoved: mostLovedEpisodes
       };
     }
@@ -247,7 +260,7 @@ export default function FeedPage() {
       newReleases: filteredDocuseries,
       mostLoved: mostLovedEpisodes
     };
-  }, [selectedCategory, realEpisodes]);
+  }, [selectedCategory, realEpisodes, generatePlaceholderUrl]);
 
   const activeFiltersCount = selectedCategory !== 'all' ? 1 : 0;
 
