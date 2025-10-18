@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTheme } from 'next-themes';
 
 interface PlaceholderImageProps {
   width?: number;
@@ -15,14 +16,33 @@ export function PlaceholderImage({
   className = '', 
   alt = 'SOMA Placeholder' 
 }: PlaceholderImageProps) {
+  const { theme, resolvedTheme } = useTheme();
+  const currentTheme = resolvedTheme || theme || 'light';
+  
+  const isDark = currentTheme === 'dark';
+  
   return (
     <div 
-      className={`bg-gray-800 flex items-center justify-center ${className}`}
-      style={{ width, height }}
+      className={`flex items-center justify-center ${className}`}
+      style={{ 
+        width, 
+        height,
+        backgroundColor: isDark ? '#6b7280' : '#f5f5f5'
+      }}
     >
       <div className="text-center">
-        <h2 className="text-white text-2xl font-bold mb-2">SOMA</h2>
-        <p className="text-gray-400 text-sm">Content Loading</p>
+        <h2 
+          className="text-2xl font-bold mb-2"
+          style={{ color: isDark ? '#ffffff' : '#000000' }}
+        >
+          SOMA
+        </h2>
+        <p 
+          className="text-sm"
+          style={{ color: isDark ? '#d1d5db' : '#6b7280' }}
+        >
+          Content Loading
+        </p>
       </div>
     </div>
   );
@@ -31,24 +51,24 @@ export function PlaceholderImage({
 // Generate placeholder URLs for data
 export const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
   // Default to light mode colors, will be overridden by theme detection
-  let backgroundColor = '#f8f9fa'; // very light gray
-  let textColor = '#6b7280'; // medium gray
+  let backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
+  let textColor = '#000000'; // black
   
   // Try to detect theme if we're in a browser environment
   if (typeof window !== 'undefined') {
     try {
       // Check for explicit light/dark class
       if (document.documentElement.classList.contains('dark')) {
-        backgroundColor = '#1f2937'; // dark gray
+        backgroundColor = '#6b7280'; // much lighter gray for dark mode contrast
         textColor = '#ffffff'; // white
       } else if (document.documentElement.classList.contains('light')) {
-        backgroundColor = '#f8f9fa'; // very light gray
-        textColor = '#6b7280'; // medium gray
+        backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
+        textColor = '#000000'; // black
       } else {
         // No explicit theme class, check system preference
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (prefersDark) {
-          backgroundColor = '#1f2937'; // dark gray
+          backgroundColor = '#6b7280'; // much lighter gray for dark mode contrast
           textColor = '#ffffff'; // white
         }
         // Otherwise keep light mode defaults
