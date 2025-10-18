@@ -3,8 +3,8 @@ import { Docuseries, Episode, Artist } from './types';
 // Generate SOMA placeholder URLs
 const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
   // Default to light mode colors, will be overridden by theme detection
-  let backgroundColor = '#f8f9fa'; // very light gray
-  let textColor = '#6b7280'; // medium gray
+  let backgroundColor = '#fefefe'; // off-white
+  let textColor = '#000000'; // black
   
   // Try to detect theme if we're in a browser environment
   if (typeof window !== 'undefined') {
@@ -14,8 +14,8 @@ const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
         backgroundColor = '#1f2937'; // dark gray
         textColor = '#ffffff'; // white
       } else if (document.documentElement.classList.contains('light')) {
-        backgroundColor = '#f8f9fa'; // very light gray
-        textColor = '#6b7280'; // medium gray
+        backgroundColor = '#fefefe'; // off-white
+        textColor = '#000000'; // black
       } else {
         // No explicit theme class, check system preference
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -23,7 +23,7 @@ const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
           backgroundColor = '#1f2937'; // dark gray
           textColor = '#ffffff'; // white
         }
-        // Otherwise keep light mode defaults
+        // Otherwise keep light mode defaults (off-white with black text)
       }
     } catch (error) {
       // If theme detection fails, keep light mode defaults
@@ -42,8 +42,8 @@ const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
 // Generate SOMA avatar placeholder URLs
 const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
   // Default to light mode colors, will be overridden by theme detection
-  let backgroundColor = '#f8f9fa'; // very light gray
-  let textColor = '#6b7280'; // medium gray
+  let backgroundColor = '#fefefe'; // off-white
+  let textColor = '#000000'; // black
   
   // Try to detect theme if we're in a browser environment
   if (typeof window !== 'undefined') {
@@ -53,8 +53,8 @@ const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150)
         backgroundColor = '#1f2937'; // dark gray
         textColor = '#ffffff'; // white
       } else if (document.documentElement.classList.contains('light')) {
-        backgroundColor = '#f8f9fa'; // very light gray
-        textColor = '#6b7280'; // medium gray
+        backgroundColor = '#fefefe'; // off-white
+        textColor = '#000000'; // black
       } else {
         // No explicit theme class, check system preference
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -62,7 +62,7 @@ const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150)
           backgroundColor = '#1f2937'; // dark gray
           textColor = '#ffffff'; // white
         }
-        // Otherwise keep light mode defaults
+        // Otherwise keep light mode defaults (off-white with black text)
       }
     } catch (error) {
       // If theme detection fails, keep light mode defaults

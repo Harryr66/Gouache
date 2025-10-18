@@ -33,6 +33,10 @@ const COURSE_CATEGORIES = {
     name: 'Pottery & Ceramics',
     subcategories: ['Wheel Throwing', 'Hand Building', 'Glazing Techniques', 'Kiln Firing', 'Ceramic Sculpture', 'Functional Pottery']
   },
+  'styles': {
+    name: 'Styles',
+    subcategories: ['Abstract', 'Realism', 'Impressionism', 'Expressionism', 'Surrealism', 'Minimalism', 'Contemporary', 'Pop Art', 'Cubism', 'Street Art']
+  },
   'books': {
     name: 'Books',
     subcategories: ['Art Techniques', 'Art History', 'Artist Biographies', 'Art Theory', 'Coffee Table Books', 'Exhibition Catalogs']

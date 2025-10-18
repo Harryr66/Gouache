@@ -34,6 +34,10 @@ const courseCategories = {
     name: 'Pottery & Ceramics',
     subcategories: ['Wheel Throwing', 'Hand Building', 'Glazing Techniques', 'Kiln Firing', 'Ceramic Sculpture', 'Functional Pottery']
   },
+  'styles': {
+    name: 'Styles',
+    subcategories: ['Abstract', 'Realism', 'Impressionism', 'Expressionism', 'Surrealism', 'Minimalism', 'Contemporary', 'Pop Art', 'Cubism', 'Street Art']
+  },
   'books': {
     name: 'Books',
     subcategories: ['Art Techniques', 'Art History', 'Artist Biographies', 'Art Theory', 'Coffee Table Books', 'Exhibition Catalogs']
@@ -376,6 +380,112 @@ const sampleCourses = [
     createdAt: new Date('2023-12-15'),
     updatedAt: new Date('2024-01-05'),
     publishedAt: new Date('2023-12-15')
+  },
+  {
+    id: 'course-6',
+    title: 'Abstract Expressionism: Finding Your Voice',
+    description: 'Explore abstract expressionism and develop your unique artistic style through spontaneous creation.',
+    longDescription: 'Dive into the world of abstract expressionism and learn to express emotions and ideas through non-representational art.',
+    instructor: sampleInstructors[0],
+    thumbnail: '',
+    previewVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    price: 94.99,
+    originalPrice: 119.99,
+    currency: 'USD',
+    category: 'styles',
+    subcategory: 'Abstract',
+    difficulty: 'Intermediate',
+    duration: '6 weeks',
+    format: 'Self-Paced',
+    students: 743,
+    lessons: 20,
+    rating: 4.8,
+    reviewCount: 201,
+    isOnSale: true,
+    isNew: true,
+    isFeatured: true,
+    isPublished: true,
+    tags: ['abstract', 'expressionism', 'contemporary'],
+    skills: ['Spontaneous Composition', 'Color Theory', 'Texture Building', 'Emotional Expression'],
+    curriculum: [
+      {
+        week: 1,
+        title: 'Introduction to Abstract Art',
+        description: 'Understanding abstract expressionism',
+        lessons: [
+          {
+            id: 'lesson-abs1',
+            title: 'What is Abstract Expressionism?',
+            description: 'History and key concepts',
+            type: 'video',
+            duration: '20 min',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            isPreview: true,
+            order: 1
+          }
+        ]
+      }
+    ],
+    reviews: [],
+    discussions: [],
+    enrollmentCount: 743,
+    completionRate: 76.3,
+    createdAt: new Date('2024-02-20'),
+    updatedAt: new Date('2024-03-01'),
+    publishedAt: new Date('2024-02-20')
+  },
+  {
+    id: 'course-7',
+    title: 'Mastering Realism: Photorealistic Techniques',
+    description: 'Learn to create stunningly realistic artwork with advanced techniques in observation and rendering.',
+    longDescription: 'Master the art of realism through detailed lessons on observation, proportion, value, and rendering techniques.',
+    instructor: sampleInstructors[1],
+    thumbnail: '',
+    previewVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    price: 109.99,
+    originalPrice: 139.99,
+    currency: 'USD',
+    category: 'styles',
+    subcategory: 'Realism',
+    difficulty: 'Advanced',
+    duration: '12 weeks',
+    format: 'Self-Paced',
+    students: 521,
+    lessons: 36,
+    rating: 4.9,
+    reviewCount: 156,
+    isOnSale: false,
+    isNew: false,
+    isFeatured: false,
+    isPublished: true,
+    tags: ['realism', 'photorealism', 'advanced'],
+    skills: ['Observation', 'Value Control', 'Edge Work', 'Photo Reference Use'],
+    curriculum: [
+      {
+        week: 1,
+        title: 'Foundations of Realism',
+        description: 'Building observational skills',
+        lessons: [
+          {
+            id: 'lesson-real1',
+            title: 'The Art of Observation',
+            description: 'Seeing like an artist',
+            type: 'video',
+            duration: '25 min',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            isPreview: true,
+            order: 1
+          }
+        ]
+      }
+    ],
+    reviews: [],
+    discussions: [],
+    enrollmentCount: 521,
+    completionRate: 68.9,
+    createdAt: new Date('2024-01-20'),
+    updatedAt: new Date('2024-02-05'),
+    publishedAt: new Date('2024-01-20')
   }
 ];
 

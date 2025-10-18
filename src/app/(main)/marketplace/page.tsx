@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Star, Users, Clock, Play, Award, BookOpen, Filter, ChevronRight, ChevronLeft, ChevronDown, GraduationCap, Palette, Camera, Brush, Scissors } from 'lucide-react';
+import { Search, Star, Users, Clock, Play, Award, BookOpen, Filter, ChevronRight, ChevronLeft, ChevronDown, GraduationCap, Palette, Camera, Brush, Scissors, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
 import { useCourses } from '@/providers/course-provider';
@@ -60,6 +60,23 @@ const courseCategories = [
       { id: 'kiln-firing', name: 'Kiln Firing' },
       { id: 'ceramic-sculpture', name: 'Ceramic Sculpture' },
       { id: 'functional-pottery', name: 'Functional Pottery' }
+    ]
+  },
+  {
+    id: 'styles',
+    name: 'Styles',
+    icon: Sparkles,
+    subcategories: [
+      { id: 'abstract', name: 'Abstract' },
+      { id: 'realism', name: 'Realism' },
+      { id: 'impressionism', name: 'Impressionism' },
+      { id: 'expressionism', name: 'Expressionism' },
+      { id: 'surrealism', name: 'Surrealism' },
+      { id: 'minimalism', name: 'Minimalism' },
+      { id: 'contemporary', name: 'Contemporary' },
+      { id: 'pop-art', name: 'Pop Art' },
+      { id: 'cubism', name: 'Cubism' },
+      { id: 'street-art', name: 'Street Art' }
     ]
   },
   {
