@@ -13,7 +13,7 @@ export const usePlaceholder = () => {
       let textColor: string;
       
       if (currentTheme === 'dark') {
-        backgroundColor = '#374151'; // lighter gray for dark mode contrast
+        backgroundColor = '#6b7280'; // much lighter gray for dark mode contrast
         textColor = '#ffffff'; // white
       } else {
         backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
@@ -38,7 +38,7 @@ export const usePlaceholder = () => {
       let textColor: string;
       
       if (currentTheme === 'dark') {
-        backgroundColor = '#374151'; // lighter gray for dark mode contrast
+        backgroundColor = '#6b7280'; // much lighter gray for dark mode contrast
         textColor = '#ffffff'; // white
       } else {
         backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
