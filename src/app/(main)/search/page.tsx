@@ -109,7 +109,7 @@ const mockArtworks: Artwork[] = [
     price: 150,
     currency: 'USD',
     isForSale: true,
-    category: 'Digital Art',
+    category: 'Oil Painting',
     medium: 'Digital',
     dimensions: { width: 1920, height: 1080, unit: 'px' },
     createdAt: new Date('2024-01-10'),
@@ -166,7 +166,6 @@ const SORT_OPTIONS = [
 const CATEGORIES = [
   'All',
   'Abstract',
-  'Digital Art',
   'Sculpture',
   'Mixed Media',
   'Oil Painting',

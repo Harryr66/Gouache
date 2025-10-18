@@ -124,7 +124,7 @@ const mockArtworks: Artwork[] = [
     price: 150,
     currency: 'USD',
     isForSale: true,
-    category: 'Digital Art',
+    category: 'Oil Painting',
     medium: 'Digital',
     dimensions: { width: 1920, height: 1080, unit: 'px' },
     createdAt: new Date('2024-01-10'),
@@ -171,7 +171,6 @@ const mockArtworks: Artwork[] = [
 const categories = [
   'All',
   'Abstract',
-  'Digital Art',
   'Sculpture',
   'Mixed Media',
   // Painting styles instead of generic "Painting"
@@ -214,7 +213,7 @@ export default function DiscoverPage() {
     const newArtworks: Artwork[] = [];
     const artists = ['Elena Vance', 'Marcus Chen', 'Sophia Rodriguez', 'Alex Rivera', 'Maya Patel', 'David Kim', 'Emma Wilson', 'James Brown'];
     const titles = ['Abstract Harmony', 'Digital Dreams', 'Ceramic Contemplation', 'Urban Reflections', 'Nature\'s Symphony', 'Cosmic Journey', 'Emotional Landscapes', 'Minimalist Forms'];
-    const categories = ['Abstract', 'Digital Art', 'Sculpture', 'Mixed Media', 'Oil Painting', 'Acrylic Painting', 'Watercolor', 'Charcoal Drawing', 'Pencil Drawing', 'Ink Drawing', 'Pastel Drawing', 'Gouache', 'Tempera', 'Fresco', 'Encaustic'];
+    const categories = ['Abstract', 'Sculpture', 'Mixed Media', 'Oil Painting', 'Acrylic Painting', 'Watercolor', 'Charcoal Drawing', 'Pencil Drawing', 'Ink Drawing', 'Pastel Drawing', 'Gouache', 'Tempera', 'Fresco', 'Encaustic'];
     const mediums = ['Oil on Canvas', 'Digital', 'Acrylic', 'Watercolor', 'Ceramic', 'Bronze', 'Mixed Media', 'Charcoal', 'Pencil', 'Ink', 'Pastel', 'Gouache', 'Tempera', 'Fresco', 'Encaustic'];
     
     for (let i = 0; i < 9; i++) {
