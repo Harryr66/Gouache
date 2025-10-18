@@ -3,7 +3,7 @@ import { Docuseries, Episode, Artist } from './types';
 // Generate SOMA placeholder URLs
 const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
   // Default to light mode colors, will be overridden by theme detection
-  let backgroundColor = '#fefefe'; // off-white
+  let backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
   let textColor = '#000000'; // black
   
   // Try to detect theme if we're in a browser environment
@@ -14,7 +14,7 @@ const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
         backgroundColor = '#1f2937'; // dark gray
         textColor = '#ffffff'; // white
       } else if (document.documentElement.classList.contains('light')) {
-        backgroundColor = '#fefefe'; // off-white
+        backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
         textColor = '#000000'; // black
       } else {
         // No explicit theme class, check system preference
@@ -42,7 +42,7 @@ const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
 // Generate SOMA avatar placeholder URLs
 const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
   // Default to light mode colors, will be overridden by theme detection
-  let backgroundColor = '#fefefe'; // off-white
+  let backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
   let textColor = '#000000'; // black
   
   // Try to detect theme if we're in a browser environment
@@ -53,7 +53,7 @@ const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150)
         backgroundColor = '#1f2937'; // dark gray
         textColor = '#ffffff'; // white
       } else if (document.documentElement.classList.contains('light')) {
-        backgroundColor = '#fefefe'; // off-white
+        backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
         textColor = '#000000'; // black
       } else {
         // No explicit theme class, check system preference
