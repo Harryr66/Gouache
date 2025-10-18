@@ -5,82 +5,242 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { EpisodeCard } from '@/components/episode-card';
-import { DocuseriesCard } from '@/components/docuseries-card';
-import { useWatchlist } from '@/providers/watchlist-provider';
-import { mockDocuseries, mockEpisodes } from '@/lib/streaming-data';
-import { Docuseries, Episode } from '@/lib/types';
-import { Search, Filter, X, Clock, Star, Eye } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArtworkTile } from '@/components/artwork-tile';
+import { Artwork } from '@/lib/types';
+import { Search, Filter, X, DollarSign, Palette, Star } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+// Generate placeholder URLs
+const generatePlaceholderUrl = (width: number = 400, height: number = 400) => {
+  let backgroundColor = '#f5f5f5';
+  let textColor = '#000000';
+  
+  if (typeof window !== 'undefined') {
+    try {
+      if (document.documentElement.classList.contains('dark')) {
+        backgroundColor = '#374151';
+        textColor = '#ffffff';
+      }
+    } catch (error) {
+      console.warn('Theme detection failed:', error);
+    }
+  }
+  
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+    </svg>
+  `)}`;
+};
+
+const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
+  const isLightMode = typeof window !== 'undefined' && 
+    (document.documentElement.classList.contains('light') || 
+     !document.documentElement.classList.contains('dark'));
+  
+  const backgroundColor = isLightMode ? '#f5f5f5' : '#374151';
+  const textColor = isLightMode ? '#000000' : '#ffffff';
+  
+  return `data:image/svg+xml;base64,${btoa(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="${backgroundColor}"/>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="24" font-weight="bold">SOMA</text>
+    </svg>
+  `)}`;
+};
+
+// Mock artwork data for search
+const mockArtworks: Artwork[] = [
+  {
+    id: '1',
+    artist: {
+      id: 'elena',
+      name: 'Elena Vance',
+      handle: 'elena_vance',
+      avatarUrl: generateAvatarPlaceholderUrl(150, 150),
+      followerCount: 1250,
+      followingCount: 89,
+      createdAt: new Date('2023-01-15'),
+      isProfessional: true,
+      isVerified: true
+    },
+    title: 'Abstract Harmony',
+    description: 'A vibrant abstract piece exploring the relationship between color and emotion.',
+    imageUrl: generatePlaceholderUrl(400, 400),
+    imageAiHint: 'Abstract painting with vibrant colors',
+    discussionId: 'discussion-1',
+    tags: ['abstract', 'color', 'emotion'],
+    price: 250,
+    currency: 'USD',
+    isForSale: true,
+    category: 'Oil Painting',
+    medium: 'Oil on Canvas',
+    dimensions: { width: 24, height: 30, unit: 'in' },
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-15'),
+    views: 156,
+    likes: 42,
+    isAI: false,
+    aiAssistance: 'none'
+  },
+  {
+    id: '2',
+    artist: {
+      id: 'marcus',
+      name: 'Marcus Chen',
+      handle: 'marcus_chen',
+      avatarUrl: generateAvatarPlaceholderUrl(150, 150),
+      followerCount: 2100,
+      followingCount: 156,
+      createdAt: new Date('2022-11-20'),
+      isProfessional: true,
+      isVerified: true
+    },
+    title: 'Digital Dreams',
+    description: 'A futuristic cityscape rendered in digital art, exploring themes of urban isolation.',
+    imageUrl: generatePlaceholderUrl(400, 400),
+    imageAiHint: 'Digital artwork featuring futuristic cityscape',
+    discussionId: 'discussion-2',
+    tags: ['digital', 'cityscape', 'futuristic'],
+    price: 150,
+    currency: 'USD',
+    isForSale: true,
+    category: 'Digital Art',
+    medium: 'Digital',
+    dimensions: { width: 1920, height: 1080, unit: 'px' },
+    createdAt: new Date('2024-01-10'),
+    updatedAt: new Date('2024-01-10'),
+    views: 89,
+    likes: 23,
+    isAI: true,
+    aiAssistance: 'assisted'
+  },
+  {
+    id: '3',
+    artist: {
+      id: 'sophia',
+      name: 'Sophia Rodriguez',
+      handle: 'sophia_art',
+      avatarUrl: generateAvatarPlaceholderUrl(150, 150),
+      followerCount: 890,
+      followingCount: 234,
+      createdAt: new Date('2023-03-10'),
+      isProfessional: true,
+      isVerified: false
+    },
+    title: 'Watercolor Serenity',
+    description: 'A delicate watercolor painting capturing the peaceful essence of nature.',
+    imageUrl: generatePlaceholderUrl(400, 400),
+    imageAiHint: 'Watercolor painting of nature scene',
+    discussionId: 'discussion-3',
+    tags: ['watercolor', 'nature', 'serenity'],
+    price: 180,
+    currency: 'USD',
+    isForSale: true,
+    category: 'Watercolor',
+    medium: 'Watercolor',
+    dimensions: { width: 16, height: 20, unit: 'in' },
+    createdAt: new Date('2024-01-05'),
+    updatedAt: new Date('2024-01-05'),
+    views: 67,
+    likes: 15,
+    isAI: false,
+    aiAssistance: 'none'
+  }
+];
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Most Relevant' },
   { value: 'newest', label: 'Newest First' },
   { value: 'oldest', label: 'Oldest First' },
-  { value: 'rating', label: 'Highest Rated' },
+  { value: 'popular', label: 'Most Popular' },
+  { value: 'price-low', label: 'Price: Low to High' },
+  { value: 'price-high', label: 'Price: High to Low' },
   { value: 'views', label: 'Most Viewed' },
-  { value: 'duration', label: 'Duration' },
 ];
 
-const DURATION_FILTERS = [
-  { value: 'all', label: 'Any Duration' },
-  { value: 'short', label: 'Under 10 min' },
-  { value: 'medium', label: '10-30 min' },
-  { value: 'long', label: 'Over 30 min' },
+const CATEGORIES = [
+  'All',
+  'Abstract',
+  'Digital Art',
+  'Sculpture',
+  'Mixed Media',
+  'Oil Painting',
+  'Acrylic Painting',
+  'Watercolor',
+  'Charcoal Drawing',
+  'Pencil Drawing',
+  'Ink Drawing',
+  'Pastel Drawing',
+  'Gouache',
+  'Tempera',
+  'Fresco',
+  'Encaustic'
+];
+
+const MEDIUMS = [
+  'All',
+  'Oil on Canvas',
+  'Digital',
+  'Acrylic',
+  'Watercolor',
+  'Ceramic',
+  'Bronze',
+  'Mixed Media',
+  'Charcoal',
+  'Pencil',
+  'Ink',
+  'Pastel',
+  'Gouache',
+  'Tempera',
+  'Fresco',
+  'Encaustic'
 ];
 
 export default function SearchPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<'all' | 'docuseries' | 'episodes'>('all');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedGenre, setSelectedGenre] = useState('all');
-  const [selectedDuration, setSelectedDuration] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedMedium, setSelectedMedium] = useState('All');
+  const [priceRange, setPriceRange] = useState([0, 1000]);
   const [sortBy, setSortBy] = useState('relevance');
   const [showFilters, setShowFilters] = useState(false);
+  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
+  const [showForSaleOnly, setShowForSaleOnly] = useState(false);
+  const [showAIOnly, setShowAIOnly] = useState(false);
   
-  const { addToWatchlist, isInWatchlist, getWatchProgress } = useWatchlist();
-
-  const allContent = useMemo(() => {
-    const docuseriesWithType = mockDocuseries.map(ds => ({ ...ds, type: 'docuseries' as const }));
-    const episodesWithType = mockEpisodes.map(ep => ({ ...ep, type: 'episodes' as const }));
-    return [...docuseriesWithType, ...episodesWithType];
-  }, []);
-
-  const filteredContent = useMemo(() => {
-    let filtered = allContent.filter(item => {
+  const filteredArtworks = useMemo(() => {
+    let filtered = mockArtworks.filter(artwork => {
       // Search query filter
       const matchesSearch = searchQuery === '' || 
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item as any).tags?.some((tag: string) => 
-          tag.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        artwork.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        artwork.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        artwork.artist.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        artwork.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      // Type filter
-      const matchesType = selectedType === 'all' || item.type === selectedType;
+      // Category filter
+      const matchesCategory = selectedCategory === 'All' || artwork.category === selectedCategory;
 
-      // Category filter (for docuseries)
-      const matchesCategory = selectedCategory === 'all' || 
-        (item.type === 'docuseries' && (item as Docuseries).category === selectedCategory);
+      // Medium filter
+      const matchesMedium = selectedMedium === 'All' || artwork.medium === selectedMedium;
 
-      // Genre filter (for docuseries)
-      const matchesGenre = selectedGenre === 'all' || 
-        (item.type === 'docuseries' && (item as Docuseries).genre === selectedGenre);
+      // Price range filter
+      const matchesPrice = artwork.price >= priceRange[0] && artwork.price <= priceRange[1];
 
-      // Duration filter (for episodes)
-      const matchesDuration = selectedDuration === 'all' || 
-        (item.type === 'episodes' && (() => {
-          const episode = item as Episode;
-          const durationMinutes = episode.duration / 60;
-          switch (selectedDuration) {
-            case 'short': return durationMinutes < 10;
-            case 'medium': return durationMinutes >= 10 && durationMinutes <= 30;
-            case 'long': return durationMinutes > 30;
-            default: return true;
-          }
-        })());
+      // Verified artists filter
+      const matchesVerified = !showVerifiedOnly || artwork.artist.isVerified;
 
-      return matchesSearch && matchesType && matchesCategory && matchesGenre && matchesDuration;
+      // For sale filter
+      const matchesForSale = !showForSaleOnly || artwork.isForSale;
+
+      // AI filter
+      const matchesAI = !showAIOnly || artwork.isAI;
+
+      return matchesSearch && matchesCategory && matchesMedium && matchesPrice && matchesVerified && matchesForSale && matchesAI;
     });
 
     // Sort results
@@ -90,47 +250,46 @@ export default function SearchPage() {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case 'oldest':
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case 'rating':
-          return (b as any).rating - (a as any).rating;
+        case 'popular':
+          return (b.likes || 0) - (a.likes || 0);
+        case 'price-low':
+          return (a.price || 0) - (b.price || 0);
+        case 'price-high':
+          return (b.price || 0) - (a.price || 0);
         case 'views':
-          return (b as any).viewCount - (a as any).viewCount;
-        case 'duration':
-          if (a.type === 'episodes' && b.type === 'episodes') {
-            return (b as Episode).duration - (a as Episode).duration;
-          }
-          return 0;
+          return (b.views || 0) - (a.views || 0);
         default: // relevance
           return 0;
       }
     });
 
     return filtered;
-  }, [allContent, searchQuery, selectedType, selectedCategory, selectedGenre, selectedDuration, sortBy]);
+  }, [searchQuery, selectedCategory, selectedMedium, priceRange, sortBy, showVerifiedOnly, showForSaleOnly, showAIOnly]);
 
-  const handlePlay = (item: Docuseries | Episode) => {
-    console.log('Playing:', item.title);
-  };
-
-  const handleAddToWatchlist = (docuseriesId: string) => {
-    addToWatchlist(docuseriesId);
+  const handleArtworkClick = (artwork: Artwork) => {
+    router.push(`/artwork/${artwork.id}`);
   };
 
   const clearFilters = () => {
     setSearchQuery('');
-    setSelectedType('all');
-    setSelectedCategory('all');
-    setSelectedGenre('all');
-    setSelectedDuration('all');
+    setSelectedCategory('All');
+    setSelectedMedium('All');
+    setPriceRange([0, 1000]);
     setSortBy('relevance');
+    setShowVerifiedOnly(false);
+    setShowForSaleOnly(false);
+    setShowAIOnly(false);
   };
 
   const activeFiltersCount = [
     searchQuery,
-    selectedType !== 'all',
-    selectedCategory !== 'all',
-    selectedGenre !== 'all',
-    selectedDuration !== 'all',
-    sortBy !== 'relevance'
+    selectedCategory !== 'All',
+    selectedMedium !== 'All',
+    priceRange[0] > 0 || priceRange[1] < 1000,
+    sortBy !== 'relevance',
+    showVerifiedOnly,
+    showForSaleOnly,
+    showAIOnly
   ].filter(Boolean).length;
 
   return (
@@ -138,9 +297,9 @@ export default function SearchPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">Search</h1>
+          <h1 className="text-4xl font-bold mb-4">Advanced Search</h1>
           <p className="text-muted-foreground text-lg">
-            Find docuseries and episodes that inspire you
+            Find artworks with precise filters and search criteria
           </p>
         </div>
 
@@ -149,7 +308,7 @@ export default function SearchPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              placeholder="Search for docuseries, episodes, artists..."
+              placeholder="Search artworks, artists, tags, or descriptions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-3 text-lg"
@@ -167,7 +326,7 @@ export default function SearchPage() {
                 className="flex items-center gap-2"
               >
                 <Filter className="h-4 w-4" />
-                Filters
+                Advanced Filters
                 {activeFiltersCount > 0 && (
                   <Badge variant="secondary" className="ml-1">
                     {activeFiltersCount}
@@ -183,7 +342,7 @@ export default function SearchPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
-                {filteredContent.length} results
+                {filteredArtworks.length} artwork{filteredArtworks.length !== 1 ? 's' : ''} found
               </span>
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-48">
@@ -201,72 +360,98 @@ export default function SearchPage() {
           </div>
 
           {showFilters && (
-            <Card className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Type Filter */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Content Type</label>
-                  <Select value={selectedType} onValueChange={(value: any) => setSelectedType(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Content</SelectItem>
-                      <SelectItem value="docuseries">Docuseries</SelectItem>
-                      <SelectItem value="episodes">Episodes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
+            <Card className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Category Filter */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Category</label>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <Palette className="h-4 w-4" />
+                    Category
+                  </label>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="Traditional Art">Traditional Art</SelectItem>
-                      <SelectItem value="Digital Art">Digital Art</SelectItem>
-                      <SelectItem value="Sculpture">Sculpture</SelectItem>
-                      <SelectItem value="Mixed Media">Mixed Media</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Genre Filter */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Genre</label>
-                  <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Genres</SelectItem>
-                      <SelectItem value="Documentary">Documentary</SelectItem>
-                      <SelectItem value="Behind the Scenes">Behind the Scenes</SelectItem>
-                      <SelectItem value="Tutorial">Tutorial</SelectItem>
-                      <SelectItem value="Process">Process</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Duration Filter */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Duration</label>
-                  <Select value={selectedDuration} onValueChange={setSelectedDuration}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DURATION_FILTERS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                      {CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Medium Filter */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Medium</label>
+                  <Select value={selectedMedium} onValueChange={setSelectedMedium}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MEDIUMS.map((medium) => (
+                        <SelectItem key={medium} value={medium}>
+                          {medium}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Price Range Filter */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Price Range: ${priceRange[0]} - ${priceRange[1]}
+                  </label>
+                  <Slider
+                    value={priceRange}
+                    onValueChange={setPriceRange}
+                    max={1000}
+                    min={0}
+                    step={50}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Additional Filters */}
+                <div className="space-y-4">
+                  <label className="text-sm font-medium block">Additional Filters</label>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="verified" 
+                      checked={showVerifiedOnly}
+                      onCheckedChange={(checked) => setShowVerifiedOnly(checked as boolean)}
+                    />
+                    <label htmlFor="verified" className="text-sm flex items-center gap-2">
+                      <Star className="h-4 w-4" />
+                      Verified Artists Only
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="forsale" 
+                      checked={showForSaleOnly}
+                      onCheckedChange={(checked) => setShowForSaleOnly(checked as boolean)}
+                    />
+                    <label htmlFor="forsale" className="text-sm">
+                      For Sale Only
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="ai" 
+                      checked={showAIOnly}
+                      onCheckedChange={(checked) => setShowAIOnly(checked as boolean)}
+                    />
+                    <label htmlFor="ai" className="text-sm">
+                      AI-Assisted Art Only
+                    </label>
+                  </div>
                 </div>
               </div>
             </Card>
@@ -274,40 +459,25 @@ export default function SearchPage() {
         </div>
 
         {/* Results */}
-        {filteredContent.length === 0 ? (
+        {filteredArtworks.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold mb-2">No results found</h3>
+            <h3 className="text-xl font-semibold mb-2">No artworks found</h3>
             <p className="text-muted-foreground mb-4">
-              Try adjusting your search terms or filters.
+              Try adjusting your search terms or filters to find what you're looking for.
             </p>
             <Button onClick={clearFilters} variant="outline">
               Clear All Filters
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredContent.map((item) => (
-              <div key={`${item.type}-${item.id}`}>
-                {item.type === 'docuseries' ? (
-                  <DocuseriesCard
-                    docuseries={item as Docuseries}
-                    variant="default"
-                    onPlay={handlePlay}
-                    onAddToWatchlist={handleAddToWatchlist}
-                  />
-                ) : (
-                  <EpisodeCard
-                    episode={item as Episode}
-                    docuseries={mockDocuseries.find(ds => ds.id === (item as Episode).docuseriesId)}
-                    variant="default"
-                    showProgress={true}
-                    progress={getWatchProgress((item as Episode).id)}
-                    onPlay={handlePlay}
-                    onAddToWatchlist={handleAddToWatchlist}
-                  />
-                )}
-              </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {filteredArtworks.map((artwork) => (
+              <ArtworkTile
+                key={artwork.id}
+                artwork={artwork}
+                onClick={() => handleArtworkClick(artwork)}
+              />
             ))}
           </div>
         )}

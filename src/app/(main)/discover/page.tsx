@@ -172,11 +172,20 @@ const categories = [
   'All',
   'Abstract',
   'Digital Art',
-  'Photography',
   'Sculpture',
-  'Painting',
   'Mixed Media',
-  'NFTs'
+  // Painting styles instead of generic "Painting"
+  'Oil Painting',
+  'Acrylic Painting',
+  'Watercolor',
+  'Charcoal Drawing',
+  'Pencil Drawing',
+  'Ink Drawing',
+  'Pastel Drawing',
+  'Gouache',
+  'Tempera',
+  'Fresco',
+  'Encaustic'
 ];
 
 const sortOptions = [
@@ -205,8 +214,8 @@ export default function DiscoverPage() {
     const newArtworks: Artwork[] = [];
     const artists = ['Elena Vance', 'Marcus Chen', 'Sophia Rodriguez', 'Alex Rivera', 'Maya Patel', 'David Kim', 'Emma Wilson', 'James Brown'];
     const titles = ['Abstract Harmony', 'Digital Dreams', 'Ceramic Contemplation', 'Urban Reflections', 'Nature\'s Symphony', 'Cosmic Journey', 'Emotional Landscapes', 'Minimalist Forms'];
-    const categories = ['Abstract', 'Digital Art', 'Photography', 'Sculpture', 'Painting', 'Mixed Media'];
-    const mediums = ['Oil on Canvas', 'Digital', 'Acrylic', 'Watercolor', 'Ceramic', 'Bronze', 'Mixed Media'];
+    const categories = ['Abstract', 'Digital Art', 'Sculpture', 'Mixed Media', 'Oil Painting', 'Acrylic Painting', 'Watercolor', 'Charcoal Drawing', 'Pencil Drawing', 'Ink Drawing', 'Pastel Drawing', 'Gouache', 'Tempera', 'Fresco', 'Encaustic'];
+    const mediums = ['Oil on Canvas', 'Digital', 'Acrylic', 'Watercolor', 'Ceramic', 'Bronze', 'Mixed Media', 'Charcoal', 'Pencil', 'Ink', 'Pastel', 'Gouache', 'Tempera', 'Fresco', 'Encaustic'];
     
     for (let i = 0; i < 9; i++) {
       const randomArtist = artists[Math.floor(Math.random() * artists.length)];
