@@ -1,13 +1,65 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 
 export function LoadingTransition() {
   const { theme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render until mounted to prevent hydration issues
+  if (!mounted) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <div className="text-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">
+            SOMA
+          </h1>
+          <div className="flex items-center justify-center space-x-2 mt-4">
+            <div className="flex space-x-1">
+              <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+              <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+              <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Try multiple methods to detect theme
   const currentTheme = resolvedTheme || theme || 'dark';
-  const isDark = currentTheme === 'dark';
+  
+  // Fallback: Check DOM directly for theme class
+  let isDark = currentTheme === 'dark';
+  if (typeof window !== 'undefined') {
+    try {
+      const hasDarkClass = document.documentElement.classList.contains('dark');
+      const hasLightClass = document.documentElement.classList.contains('light');
+      
+      if (hasDarkClass) {
+        isDark = true;
+      } else if (hasLightClass) {
+        isDark = false;
+      }
+    } catch (error) {
+      console.warn('Theme detection from DOM failed:', error);
+    }
+  }
+
+  console.log('🎨 LoadingTransition theme detection:', { 
+    theme, 
+    resolvedTheme, 
+    currentTheme, 
+    isDark,
+    domClasses: typeof window !== 'undefined' ? document.documentElement.className : 'N/A'
+  });
 
   return (
     <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
