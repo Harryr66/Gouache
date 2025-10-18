@@ -27,7 +27,7 @@ export function PlaceholderImage({
       style={{ 
         width, 
         height,
-        backgroundColor: isDark ? '#475569' : '#f5f5f5'
+        backgroundColor: isDark ? '#374151' : '#f5f5f5'
       }}
     >
       <div className="text-center">
@@ -59,7 +59,7 @@ export const generatePlaceholderUrl = (width: number = 400, height: number = 600
     try {
       // Check for explicit light/dark class
       if (document.documentElement.classList.contains('dark')) {
-        backgroundColor = '#475569'; // darker slate grey for dark mode
+        backgroundColor = '#374151'; // darker grey (same as what was incorrectly used in light mode)
         textColor = '#ffffff'; // white
       } else if (document.documentElement.classList.contains('light')) {
         backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
@@ -68,7 +68,7 @@ export const generatePlaceholderUrl = (width: number = 400, height: number = 600
         // No explicit theme class, check system preference
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (prefersDark) {
-          backgroundColor = '#475569'; // darker slate grey for dark mode
+          backgroundColor = '#374151'; // darker grey (same as what was incorrectly used in light mode)
           textColor = '#ffffff'; // white
         }
         // Otherwise keep light mode defaults
