@@ -11,7 +11,7 @@ const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
     try {
       // Check for explicit light/dark class
       if (document.documentElement.classList.contains('dark')) {
-        backgroundColor = '#1f2937'; // dark gray
+        backgroundColor = '#374151'; // lighter gray for dark mode contrast
         textColor = '#ffffff'; // white
       } else if (document.documentElement.classList.contains('light')) {
         backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
@@ -20,7 +20,7 @@ const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
         // No explicit theme class, check system preference
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (prefersDark) {
-          backgroundColor = '#1f2937'; // dark gray
+          backgroundColor = '#374151'; // lighter gray for dark mode contrast
           textColor = '#ffffff'; // white
         }
         // Otherwise keep light mode defaults (off-white with black text)
@@ -50,7 +50,7 @@ const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150)
     try {
       // Check for explicit light/dark class
       if (document.documentElement.classList.contains('dark')) {
-        backgroundColor = '#1f2937'; // dark gray
+        backgroundColor = '#374151'; // lighter gray for dark mode contrast
         textColor = '#ffffff'; // white
       } else if (document.documentElement.classList.contains('light')) {
         backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
@@ -59,7 +59,7 @@ const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150)
         // No explicit theme class, check system preference
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (prefersDark) {
-          backgroundColor = '#1f2937'; // dark gray
+          backgroundColor = '#374151'; // lighter gray for dark mode contrast
           textColor = '#ffffff'; // white
         }
         // Otherwise keep light mode defaults (off-white with black text)
