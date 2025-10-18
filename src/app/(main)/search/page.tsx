@@ -228,7 +228,7 @@ export default function SearchPage() {
       const matchesMedium = selectedMedium === 'All' || artwork.medium === selectedMedium;
 
       // Price range filter
-      const matchesPrice = artwork.price >= priceRange[0] && artwork.price <= priceRange[1];
+      const matchesPrice = (artwork.price || 0) >= priceRange[0] && (artwork.price || 0) <= priceRange[1];
 
       // Verified artists filter
       const matchesVerified = !showVerifiedOnly || artwork.artist.isVerified;
