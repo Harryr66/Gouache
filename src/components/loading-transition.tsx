@@ -53,11 +53,25 @@ export function LoadingTransition() {
     }
   }
 
+  // Define gradient colors for each theme
+  const getDotColors = (isDark: boolean) => {
+    if (isDark) {
+      // Dark theme gradient colors: #51C4D3, #77ACF1, #EF88AD
+      return ['#51C4D3', '#77ACF1', '#EF88AD'];
+    } else {
+      // Light theme gradient colors: #1e3a8a, #3b82f6, #60a5fa
+      return ['#1e3a8a', '#3b82f6', '#60a5fa'];
+    }
+  };
+
+  const dotColors = getDotColors(isDark);
+
   console.log('🎨 LoadingTransition theme detection:', { 
     theme, 
     resolvedTheme, 
     currentTheme, 
     isDark,
+    dotColors,
     domClasses: typeof window !== 'undefined' ? document.documentElement.className : 'N/A'
   });
 
@@ -93,17 +107,20 @@ export function LoadingTransition() {
         >
           <div className="flex space-x-1">
             <motion.div
-              className={`w-3 h-3 rounded-full ${isDark ? 'bg-white' : 'bg-black'}`}
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: dotColors[0] }}
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
             />
             <motion.div
-              className={`w-3 h-3 rounded-full ${isDark ? 'bg-white' : 'bg-black'}`}
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: dotColors[1] }}
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
             />
             <motion.div
-              className={`w-3 h-3 rounded-full ${isDark ? 'bg-white' : 'bg-black'}`}
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: dotColors[2] }}
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
             />
