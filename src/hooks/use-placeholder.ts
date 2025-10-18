@@ -9,15 +9,19 @@ export const usePlaceholder = () => {
       // Determine the actual theme being used
       const currentTheme = resolvedTheme || theme || 'light';
       
+      console.log('🎨 Placeholder theme detection:', { theme, resolvedTheme, currentTheme });
+      
       let backgroundColor: string;
       let textColor: string;
       
       if (currentTheme === 'dark') {
-        backgroundColor = '#374151'; // darker grey (same as what was incorrectly used in light mode)
+        backgroundColor = '#374151'; // darker grey for dark mode
         textColor = '#ffffff'; // white
+        console.log('🌙 Using DARK mode colors:', backgroundColor, textColor);
       } else {
         backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
         textColor = '#000000'; // black
+        console.log('☀️ Using LIGHT mode colors:', backgroundColor, textColor);
       }
       
       return `data:image/svg+xml;base64,${btoa(`
