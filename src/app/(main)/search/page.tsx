@@ -10,7 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArtworkTile } from '@/components/artwork-tile';
 import { Artwork } from '@/lib/types';
-import { Search, Filter, X, DollarSign, Palette, Star } from 'lucide-react';
+import { Search, Filter, X, DollarSign, Palette, Star, Globe, MapPin, Tag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // Generate placeholder URLs
@@ -66,7 +66,9 @@ const mockArtworks: Artwork[] = [
       followingCount: 89,
       createdAt: new Date('2023-01-15'),
       isProfessional: true,
-      isVerified: true
+      isVerified: true,
+      countryOfOrigin: 'United States',
+      countryOfResidence: 'United States'
     },
     title: 'Abstract Harmony',
     description: 'A vibrant abstract piece exploring the relationship between color and emotion.',
@@ -98,7 +100,9 @@ const mockArtworks: Artwork[] = [
       followingCount: 156,
       createdAt: new Date('2022-11-20'),
       isProfessional: true,
-      isVerified: true
+      isVerified: true,
+      countryOfOrigin: 'China',
+      countryOfResidence: 'Canada'
     },
     title: 'Digital Dreams',
     description: 'A futuristic cityscape rendered in digital art, exploring themes of urban isolation.',
@@ -130,7 +134,9 @@ const mockArtworks: Artwork[] = [
       followingCount: 234,
       createdAt: new Date('2023-03-10'),
       isProfessional: true,
-      isVerified: false
+      isVerified: false,
+      countryOfOrigin: 'Spain',
+      countryOfResidence: 'United Kingdom'
     },
     title: 'Watercolor Serenity',
     description: 'A delicate watercolor painting capturing the peaceful essence of nature.',
@@ -200,6 +206,54 @@ const MEDIUMS = [
   'Encaustic'
 ];
 
+const COUNTRIES = [
+  'All',
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Australia',
+  'Germany',
+  'France',
+  'Italy',
+  'Spain',
+  'Netherlands',
+  'Japan',
+  'South Korea',
+  'Brazil',
+  'Mexico',
+  'Argentina',
+  'India',
+  'China',
+  'Russia',
+  'South Africa',
+  'Nigeria',
+  'Egypt',
+  'Other'
+];
+
+const COMMON_TAGS = [
+  'abstract',
+  'realism',
+  'impressionism',
+  'expressionism',
+  'surrealism',
+  'minimalism',
+  'contemporary',
+  'traditional',
+  'modern',
+  'classical',
+  'nature',
+  'portrait',
+  'landscape',
+  'still-life',
+  'figurative',
+  'geometric',
+  'colorful',
+  'monochrome',
+  'textured',
+  'smooth'
+];
+
 export default function SearchPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,6 +265,12 @@ export default function SearchPage() {
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
   const [showForSaleOnly, setShowForSaleOnly] = useState(false);
   const [showAIOnly, setShowAIOnly] = useState(false);
+  
+  // New filter states
+  const [selectedCountryOfOrigin, setSelectedCountryOfOrigin] = useState('All');
+  const [selectedCountryOfResidence, setSelectedCountryOfResidence] = useState('All');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   
   const filteredArtworks = useMemo(() => {
     let filtered = mockArtworks.filter(artwork => {
@@ -239,7 +299,23 @@ export default function SearchPage() {
       // AI filter
       const matchesAI = !showAIOnly || artwork.isAI;
 
-      return matchesSearch && matchesCategory && matchesMedium && matchesPrice && matchesVerified && matchesForSale && matchesAI;
+      // Country of origin filter
+      const matchesCountryOfOrigin = selectedCountryOfOrigin === 'All' || 
+        (artwork.artist as any).countryOfOrigin === selectedCountryOfOrigin;
+
+      // Country of residence filter
+      const matchesCountryOfResidence = selectedCountryOfResidence === 'All' || 
+        (artwork.artist as any).countryOfResidence === selectedCountryOfResidence;
+
+      // Tags filter
+      const matchesTags = selectedTags.length === 0 || 
+        selectedTags.some(tag => artwork.tags?.some(artworkTag => 
+          artworkTag.toLowerCase().includes(tag.toLowerCase())
+        ));
+
+      return matchesSearch && matchesCategory && matchesMedium && matchesPrice && 
+             matchesVerified && matchesForSale && matchesAI && 
+             matchesCountryOfOrigin && matchesCountryOfResidence && matchesTags;
     });
 
     // Sort results
@@ -263,10 +339,24 @@ export default function SearchPage() {
     });
 
     return filtered;
-  }, [searchQuery, selectedCategory, selectedMedium, priceRange, sortBy, showVerifiedOnly, showForSaleOnly, showAIOnly]);
+  }, [searchQuery, selectedCategory, selectedMedium, priceRange, sortBy, showVerifiedOnly, showForSaleOnly, showAIOnly, selectedCountryOfOrigin, selectedCountryOfResidence, selectedTags]);
 
-  const handleArtworkClick = (artwork: Artwork) => {
-    router.push(`/artwork/${artwork.id}`);
+  const addTag = (tag: string) => {
+    if (tag.trim() && !selectedTags.includes(tag.trim())) {
+      setSelectedTags([...selectedTags, tag.trim()]);
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleTagInputKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag(tagInput);
+      setTagInput('');
+    }
   };
 
   const clearFilters = () => {
@@ -278,6 +368,10 @@ export default function SearchPage() {
     setShowVerifiedOnly(false);
     setShowForSaleOnly(false);
     setShowAIOnly(false);
+    setSelectedCountryOfOrigin('All');
+    setSelectedCountryOfResidence('All');
+    setSelectedTags([]);
+    setTagInput('');
   };
 
   const activeFiltersCount = [
@@ -288,7 +382,10 @@ export default function SearchPage() {
     sortBy !== 'relevance',
     showVerifiedOnly,
     showForSaleOnly,
-    showAIOnly
+    showAIOnly,
+    selectedCountryOfOrigin !== 'All',
+    selectedCountryOfResidence !== 'All',
+    selectedTags.length > 0
   ].filter(Boolean).length;
 
   return (
@@ -450,6 +547,87 @@ export default function SearchPage() {
                     <label htmlFor="ai" className="text-sm">
                       AI-Assisted Art Only
                     </label>
+                  </div>
+                </div>
+
+                {/* Country of Origin Filter */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Artist Country of Origin
+                  </label>
+                  <Select value={selectedCountryOfOrigin} onValueChange={setSelectedCountryOfOrigin}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Country of Residence Filter */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Artist Country of Residence
+                  </label>
+                  <Select value={selectedCountryOfResidence} onValueChange={setSelectedCountryOfResidence}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Tags Filter */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Tags
+                  </label>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Type a tag and press Enter..."
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyPress={handleTagInputKeyPress}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {COMMON_TAGS.map((tag) => (
+                        <Button
+                          key={tag}
+                          variant={selectedTags.includes(tag) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => selectedTags.includes(tag) ? removeTag(tag) : addTag(tag)}
+                        >
+                          {tag}
+                        </Button>
+                      ))}
+                    </div>
+                    {selectedTags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedTags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                            {tag}
+                            <X 
+                              className="h-3 w-3 cursor-pointer" 
+                              onClick={() => removeTag(tag)}
+                            />
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
