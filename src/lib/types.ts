@@ -11,6 +11,9 @@ export interface Artist {
   isVerified?: boolean;
   isProfessional?: boolean;
   location?: string;
+  // Optional country fields for advanced search filters
+  countryOfOrigin?: string;
+  countryOfResidence?: string;
   socialLinks?: {
     instagram?: string;
     twitter?: string;
