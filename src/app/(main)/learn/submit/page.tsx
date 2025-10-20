@@ -284,7 +284,7 @@ export default function CourseSubmissionPage() {
       const courseData = {
         title: formData.title,
         description: formData.description,
-        longDescription: formData.longDescription,
+        // longDescription already included above; avoid duplicate keys
         instructor: instructorData,
         thumbnail: thumbnailUrl,
         price: parseFloat(formData.price),
