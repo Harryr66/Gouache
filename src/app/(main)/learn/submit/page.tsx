@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,13 +8,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Upload, Plus, Trash2, BookOpen } from 'lucide-react';
+import { ArrowLeft, Upload, Plus, Trash2, BookOpen, ListChecks, Image as ImageIcon, DollarSign, Search, Rocket, Video, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { useCourses } from '@/providers/course-provider';
 import { toast } from '@/hooks/use-toast';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
+import { storage, db } from '@/lib/firebase';
+import { collection, doc, getDocs, query, setDoc, where, serverTimestamp } from 'firebase/firestore';
 
 const COURSE_CATEGORIES = {
   'painting': {
@@ -50,6 +51,20 @@ export default function CourseSubmissionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [trailerFile, setTrailerFile] = useState<File | null>(null);
+  const [trailerPreviewUrl, setTrailerPreviewUrl] = useState<string | null>(null);
+
+  // Kajabi-style multi-step wizard
+  const steps = [
+    { id: 'basics', label: 'Basics', icon: BookOpen },
+    { id: 'curriculum', label: 'Curriculum', icon: ListChecks },
+    { id: 'media', label: 'Media', icon: ImageIcon },
+    { id: 'pricing', label: 'Pricing & Offers', icon: DollarSign },
+    { id: 'seo', label: 'SEO', icon: Search },
+    { id: 'publish', label: 'Publish', icon: Rocket },
+  ] as const;
+  type StepId = typeof steps[number]['id'];
+  const [activeStep, setActiveStep] = useState<StepId>('basics');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -68,11 +83,44 @@ export default function CourseSubmissionPage() {
     instructorBio: '',
     credentials: '',
     specialties: [] as string[],
+    // SEO
+    metaTitle: '',
+    metaDescription: '',
+    slug: '',
+    // Curriculum
+    curriculum: [] as Array<{ id: string; title: string; description?: string; type: 'video' | 'reading' | 'assignment'; duration?: string }>,
+    // Publish options
+    isPublished: false,
   });
 
   const [newTag, setNewTag] = useState('');
   const [newSkill, setNewSkill] = useState('');
   const [newSpecialty, setNewSpecialty] = useState('');
+  const [newLessonTitle, setNewLessonTitle] = useState('');
+  const [newLessonType, setNewLessonType] = useState<'video' | 'reading' | 'assignment'>('video');
+  const [newLessonDuration, setNewLessonDuration] = useState('');
+
+  // Restore draft from localStorage (Kajabi-like autosave) and save to Firestore for cross-device
+  useEffect(() => {
+    try {
+      const draft = localStorage.getItem('soma-course-draft');
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        setFormData((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch {}
+  }, []);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      try {
+        localStorage.setItem('soma-course-draft', JSON.stringify(formData));
+        if (user) {
+          setDoc(doc(db, 'courseDrafts', user.id), { formData, updatedAt: serverTimestamp() }, { merge: true }).catch(()=>{});
+        }
+      } catch {}
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [formData]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -84,6 +132,15 @@ export default function CourseSubmissionPage() {
       setThumbnailFile(file);
       const previewUrl = URL.createObjectURL(file);
       setThumbnailPreview(previewUrl);
+    }
+  };
+
+  const handleTrailerUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setTrailerFile(file);
+      const url = URL.createObjectURL(file);
+      setTrailerPreviewUrl(url);
     }
   };
 
@@ -138,6 +195,23 @@ export default function CourseSubmissionPage() {
     }));
   };
 
+  const addLesson = () => {
+    if (!newLessonTitle.trim()) return;
+    setFormData(prev => ({
+      ...prev,
+      curriculum: [
+        ...prev.curriculum,
+        { id: `${Date.now()}`, title: newLessonTitle.trim(), type: newLessonType, duration: newLessonDuration }
+      ]
+    }));
+    setNewLessonTitle('');
+    setNewLessonDuration('');
+    setNewLessonType('video');
+  };
+  const removeLesson = (lessonId: string) => {
+    setFormData(prev => ({ ...prev, curriculum: prev.curriculum.filter(l => l.id !== lessonId) }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -150,7 +224,7 @@ export default function CourseSubmissionPage() {
       return;
     }
 
-    // Validate required fields
+    // Validate required fields (based on step)
     const requiredFields = ['title', 'description', 'category', 'subcategory', 'difficulty', 'duration', 'format', 'price', 'instructorBio'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
@@ -179,6 +253,14 @@ export default function CourseSubmissionPage() {
       const thumbnailRef = ref(storage, `course-thumbnails/${user.id}/${Date.now()}_${thumbnailFile.name}`);
       await uploadBytes(thumbnailRef, thumbnailFile);
       const thumbnailUrl = await getDownloadURL(thumbnailRef);
+
+      // Upload optional trailer
+      let trailerUrl: string | undefined;
+      if (trailerFile) {
+        const trailerRef = ref(storage, `course-trailers/${user.id}/${Date.now()}_${trailerFile.name}`);
+        await uploadBytes(trailerRef, trailerFile);
+        trailerUrl = await getDownloadURL(trailerRef);
+      }
 
       // Create instructor profile if needed
       const instructorData = {
@@ -214,12 +296,14 @@ export default function CourseSubmissionPage() {
         duration: formData.duration,
         format: formData.format as 'Self-Paced' | 'Live Sessions' | 'Hybrid' | 'E-Book',
         students: 0,
-        lessons: 0,
+        lessons: formData.curriculum.length,
         rating: 0,
         reviewCount: 0,
         isOnSale: !!formData.originalPrice,
         isNew: true,
         isFeatured: false,
+        // Force admin approval requirement: mark as pending and not published
+        status: 'pending' as const,
         isPublished: false,
         tags: formData.tags,
         skills: formData.skills,
@@ -230,6 +314,8 @@ export default function CourseSubmissionPage() {
         completionRate: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
+        previewVideoUrl: trailerUrl,
+        longDescription: formData.longDescription,
       };
 
       // Create the course
@@ -255,24 +341,56 @@ export default function CourseSubmissionPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-8 max-w-5xl">
       <Button variant="outline" onClick={() => router.back()} className="mb-6">
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back
       </Button>
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        {/* Sidebar Steps */}
+        <div className="md:col-span-2 lg:col-span-1">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Create Course</CardTitle>
+              <CardDescription>Step {steps.findIndex(s=>s.id===activeStep)+1} of {steps.length}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {steps.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setActiveStep(s.id)}
+                  className={`w-full flex items-center gap-2 rounded-md border px-3 py-2 text-left transition-colors ${activeStep===s.id? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/50'}`}
+                >
+                  <s.icon className="h-4 w-4" />
+                  <span className="text-sm font-medium">{s.label}</span>
+                </button>
+              ))}
+              <div className="pt-2">
+                <Button type="button" variant="outline" className="w-full" onClick={() => toast({ title: 'Draft saved' })}>
+                  <Save className="h-4 w-4 mr-2" /> Save Draft
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            Create Course
-          </CardTitle>
-          <CardDescription>
-            Share your knowledge and expertise with the SOMA Learn community.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Main Form */}
+        <div className="md:col-span-3 lg:col-span-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                {steps.find(s=>s.id===activeStep)?.label}
+              </CardTitle>
+              <CardDescription>
+                Share your knowledge and expertise with the SOMA Learn community.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {activeStep === 'basics' && (
+                  <>
             {/* Course Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Course Information</h3>
@@ -449,8 +567,142 @@ export default function CourseSubmissionPage() {
                 </div>
               </div>
             </div>
+                  </>
+                )}
+
+                {activeStep === 'curriculum' && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Curriculum Builder</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <Input placeholder="Lesson title" value={newLessonTitle} onChange={(e)=>setNewLessonTitle(e.target.value)} />
+                      <Select value={newLessonType} onValueChange={(v: any)=>setNewLessonType(v)}>
+                        <SelectTrigger><SelectValue placeholder="Type"/></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="video">Video</SelectItem>
+                          <SelectItem value="reading">Reading</SelectItem>
+                          <SelectItem value="assignment">Assignment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex gap-2">
+                        <Input placeholder="Duration (e.g., 8 min)" value={newLessonDuration} onChange={(e)=>setNewLessonDuration(e.target.value)} />
+                        <Button type="button" onClick={addLesson} size="sm"><Plus className="h-4 w-4"/></Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {formData.curriculum.length === 0 && (
+                        <p className="text-sm text-muted-foreground">No lessons added yet.</p>
+                      )}
+                      <ul className="space-y-2">
+                        {formData.curriculum.map(lesson => (
+                          <li
+                            key={lesson.id}
+                            className="flex items-center justify-between rounded-md border p-2"
+                            draggable
+                            onDragStart={() => (window as any)._dnd = lesson.id}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={() => {
+                              const from = (window as any)._dnd as string | undefined;
+                              if (!from || from === lesson.id) return;
+                              setFormData(prev => {
+                                const items = [...prev.curriculum];
+                                const fromIdx = items.findIndex(i => i.id === from);
+                                const toIdx = items.findIndex(i => i.id === lesson.id);
+                                if (fromIdx === -1 || toIdx === -1) return prev;
+                                const [moved] = items.splice(fromIdx, 1);
+                                items.splice(toIdx, 0, moved);
+                                return { ...prev, curriculum: items };
+                              });
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <ListChecks className="h-4 w-4"/>
+                              <span className="font-medium">{lesson.title}</span>
+                              <Badge variant="outline" className="ml-2">{lesson.type}</Badge>
+                              {lesson.duration && <span className="text-xs text-muted-foreground">{lesson.duration}</span>}
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" onClick={()=>removeLesson(lesson.id)}>
+                              <Trash2 className="h-4 w-4"/>
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {activeStep === 'media' && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Media</h3>
+                    <div className="space-y-2">
+                      <Label>Optional Trailer Video</Label>
+                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                        <input type="file" accept="video/*" id="trailer-upload" className="hidden" onChange={handleTrailerUpload} />
+                        <label htmlFor="trailer-upload" className="cursor-pointer">
+                          {trailerPreviewUrl ? (
+                            <video className="mx-auto w-full max-w-md rounded-lg" src={trailerPreviewUrl} controls />
+                          ) : (
+                            <div className="space-y-2">
+                              <Video className="h-12 w-12 mx-auto text-muted-foreground" />
+                              <p className="text-sm">Upload an optional trailer video</p>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeStep === 'pricing' && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Pricing & Offers</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="price">Price (USD) *</Label>
+                        <Input id="price" type="number" step="0.01" value={formData.price} onChange={(e)=>handleInputChange('price', e.target.value)} placeholder="0.00" required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="originalPrice">Original Price (optional)</Label>
+                        <Input id="originalPrice" type="number" step="0.01" value={formData.originalPrice} onChange={(e)=>handleInputChange('originalPrice', e.target.value)} placeholder="0.00" />
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Tip: Use an original price to show a discounted launch offer.</p>
+                  </div>
+                )}
+
+                {activeStep === 'seo' && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">SEO</h3>
+                    <div className="space-y-2">
+                      <Label>Meta Title</Label>
+                      <Input value={formData.metaTitle} onChange={(e)=>handleInputChange('metaTitle', e.target.value)} placeholder="Title for search engines" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Meta Description</Label>
+                      <Textarea value={formData.metaDescription} onChange={(e)=>handleInputChange('metaDescription', e.target.value)} placeholder="One or two sentences that summarize your course" rows={3} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Course URL Slug</Label>
+                      <Input value={slug} onChange={(e)=>setSlug(e.target.value)} placeholder="e.g., mastering-oil-painting" />
+                      <p className={`text-xs ${isSlugUnique ? 'text-green-600' : 'text-destructive'}`}>
+                        {isSlugUnique ? 'Slug is available' : 'Slug is already in use'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {activeStep === 'publish' && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Publish Settings</h3>
+                    <div className="flex items-center gap-3">
+                      <input id="publish-toggle" type="checkbox" checked={formData.isPublished} onChange={(e)=>handleInputChange('isPublished', e.target.checked)} />
+                      <Label htmlFor="publish-toggle">Publish immediately after approval</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Your course will be reviewed by SOMA. If approved, it will be published automatically if enabled.</p>
+                  </div>
+                )}
 
             {/* Tags and Skills */}
+            {activeStep === 'basics' && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Tags & Skills</h3>
               
@@ -512,8 +764,10 @@ export default function CourseSubmissionPage() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Instructor Information */}
+            {activeStep === 'basics' && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Instructor Information</h3>
               
@@ -569,16 +823,31 @@ export default function CourseSubmissionPage() {
                 </div>
               </div>
             </div>
+            )}
 
-            {/* Submit Button */}
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting} className="gradient-button">
-                {isSubmitting ? 'Submitting...' : 'Submit Course'}
-              </Button>
+            {/* Actions */}
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                {steps.map((s, i) => s.id === activeStep && (
+                  <span key={s.id} className="text-xs text-muted-foreground">Step {i+1} of {steps.length}</span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setActiveStep(steps[Math.max(0, steps.findIndex(s=>s.id===activeStep)-1)].id)}>Back</Button>
+                {activeStep !== 'publish' ? (
+                  <Button type="button" onClick={() => setActiveStep(steps[Math.min(steps.length-1, steps.findIndex(s=>s.id===activeStep)+1)].id)}>Continue</Button>
+                ) : (
+                  <Button type="submit" disabled={isSubmitting} className="gradient-button">
+                    {isSubmitting ? 'Submitting...' : 'Submit Course'}
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

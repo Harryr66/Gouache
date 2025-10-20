@@ -34,9 +34,18 @@ export default function UploadPage() {
             <p className="text-muted-foreground mb-6">
               You need a verified professional artist account to upload content.
             </p>
-            <Button onClick={() => router.push('/profile/edit')} variant="gradient">
-              Upgrade Account
+            <Button
+              onClick={() => router.push('/profile/edit')}
+              variant="gradient"
+              className="mb-2"
+            >
+              Request Artist Account
             </Button>
+            <div>
+              <Button onClick={() => router.push('/profile?artistRequest=pending')} variant="outline">
+                I already applied – check status
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

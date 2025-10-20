@@ -286,11 +286,11 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
     <Tabs defaultValue="watchlist" className="w-full" onValueChange={onTabChange}>
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
-        <TabsTrigger value="bookmarks">Bookmarks</TabsTrigger>
+        <TabsTrigger value="learn">Learn</TabsTrigger>
         <TabsTrigger value="following">Following</TabsTrigger>
       </TabsList>
 
-      {/* Watchlist Tab - Previously Watched */}
+      {/* Watchlist Tab - Continue Watching + Bookmarks */}
       <TabsContent value="watchlist" className="space-y-4">
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
@@ -327,15 +327,13 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
             </CardContent>
           </Card>
         )}
-      </TabsContent>
 
-      {/* Bookmarks Tab - Saved Episodes */}
-      <TabsContent value="bookmarks" className="space-y-4">
-        <div className="flex items-center gap-2">
+        {/* Bookmarks moved under Watchlist */}
+        <div className="flex items-center gap-2 pt-4">
           <Bookmark className="h-5 w-5" />
           <h3 className="text-lg font-semibold">Bookmarked Episodes</h3>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {watchlist.map((item) => (
             item.docuseries && (
@@ -364,6 +362,41 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
             </CardContent>
           </Card>
         )}
+      </TabsContent>
+
+      {/* Learn Tab - Purchased Courses & Subscribed Communities */}
+      <TabsContent value="learn" className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            <h3 className="text-lg font-semibold">Your Courses</h3>
+          </div>
+          <Card className="p-6 text-center">
+            <CardContent>
+              <CardTitle className="mb-2">No courses yet</CardTitle>
+              <CardDescription className="mb-4">When you enroll in courses, they will appear here.</CardDescription>
+              <Button asChild variant="gradient">
+                <a href="/marketplace">Explore Courses</a>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            <h3 className="text-lg font-semibold">Communities</h3>
+          </div>
+          <Card className="p-6 text-center">
+            <CardContent>
+              <CardTitle className="mb-2">No communities yet</CardTitle>
+              <CardDescription className="mb-4">Subscribed communities (free or paid) will show here.</CardDescription>
+              <Button asChild variant="outline">
+                <a href="/learn/community">Browse Communities</a>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </TabsContent>
 
       {/* Following Tab - Followed Artists */}

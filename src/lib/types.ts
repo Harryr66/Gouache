@@ -100,6 +100,9 @@ export interface MarketplaceProduct {
   updatedAt: Date;
   salesCount: number;
   isOnSale: boolean;
+  // Admin approval workflow
+  isApproved?: boolean;
+  status?: 'pending' | 'approved' | 'rejected';
   isWishlisted?: boolean;
 }
 
@@ -236,6 +239,8 @@ export interface Course {
   isNew: boolean;
   isFeatured: boolean;
   isPublished: boolean;
+  // Admin approval workflow
+  status?: 'pending' | 'approved' | 'rejected';
   tags: string[];
   skills: string[];
   curriculum: CourseWeek[];

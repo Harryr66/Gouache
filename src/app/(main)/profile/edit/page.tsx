@@ -479,6 +479,9 @@ export default function ProfileEditPage() {
         description: "Your artist account request has been submitted for review.",
       });
 
+      // Redirect to profile with pending indicator
+      router.push('/profile?artistRequest=pending');
+
       setShowArtistRequest(false);
       setPortfolioImages([]);
       setArtistRequestData({
