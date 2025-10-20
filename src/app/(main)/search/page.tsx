@@ -653,7 +653,6 @@ export default function SearchPage() {
               <ArtworkTile
                 key={artwork.id}
                 artwork={artwork}
-                onClick={() => handleArtworkClick(artwork)}
               />
             ))}
           </div>
