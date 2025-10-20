@@ -100,6 +100,10 @@ export default function CourseSubmissionPage() {
   const [newLessonType, setNewLessonType] = useState<'video' | 'reading' | 'assignment'>('video');
   const [newLessonDuration, setNewLessonDuration] = useState('');
 
+  // Slug state & validation
+  const [slug, setSlug] = useState('');
+  const [isSlugUnique, setIsSlugUnique] = useState(true);
+
   // Restore draft from localStorage (Kajabi-like autosave) and save to Firestore for cross-device
   useEffect(() => {
     try {
@@ -121,6 +125,33 @@ export default function CourseSubmissionPage() {
     }, 500);
     return () => clearTimeout(timeout);
   }, [formData]);
+
+  // Auto-generate slug from title and validate
+  useEffect(() => {
+    const next = formData.title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+    setSlug(next);
+  }, [formData.title]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!slug) { setIsSlugUnique(true); return; }
+      try {
+        const q = query(collection(db, 'courses'), where('slug', '==', slug));
+        const snap = await getDocs(q);
+        if (!cancelled) setIsSlugUnique(snap.empty);
+      } catch {
+        if (!cancelled) setIsSlugUnique(true);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [slug]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
