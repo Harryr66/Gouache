@@ -10,6 +10,7 @@ import { Search, Star, Users, Clock, Play, Award, BookOpen, Filter, ChevronRight
 import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
 import { useCourses } from '@/providers/course-provider';
+import { ThemeLoading } from '@/components/theme-loading';
 
 // Course categories for art school
 const courseCategories = [
@@ -500,10 +501,7 @@ export default function LearnPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading courses...</p>
-        </div>
+        <ThemeLoading text="Loading courses..." size="lg" />
       </div>
     );
   }

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRouter } from 'next/navigation';
 import { Search, Filter, Star, TrendingUp, Clock } from 'lucide-react';
 import { Artwork } from '@/lib/types';
+import { ThemeLoading } from '@/components/theme-loading';
 
 // Generate SOMA placeholder URLs
 const generatePlaceholderUrl = (width: number = 400, height: number = 400) => {
@@ -480,10 +481,7 @@ export default function DiscoverPage() {
         {/* Loading Indicator */}
         {isLoading && (
           <div className="flex justify-center py-8">
-            <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-              <span className="text-muted-foreground">Loading more artworks...</span>
-            </div>
+            <ThemeLoading text="Loading more artworks..." size="md" />
           </div>
         )}
 

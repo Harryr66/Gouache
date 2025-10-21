@@ -19,6 +19,7 @@ import { useFollow } from '@/providers/follow-provider';
 import { useCourses } from '@/providers/course-provider';
 import { mockDocuseries, mockEpisodes } from '@/lib/streaming-data';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { ThemeLoading } from './theme-loading';
 
 interface ProfileTabsProps {
   userId: string;
@@ -132,16 +133,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
               </div>
 
               {coursesLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[...Array(3)].map((_, i) => (
-                    <Card key={i} className="animate-pulse">
-                      <CardContent className="p-4">
-                        <div className="h-32 bg-muted rounded mb-4"></div>
-                        <div className="h-4 bg-muted rounded mb-2"></div>
-                        <div className="h-3 bg-muted rounded w-2/3"></div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="flex justify-center py-12">
+                  <ThemeLoading text="Loading courses..." size="md" />
                 </div>
               ) : instructorCourses.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

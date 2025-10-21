@@ -18,6 +18,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { db, storage, auth } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { ArtistRequest } from '@/lib/types';
+import { ThemeLoading } from '@/components/theme-loading';
 
 
 export default function ProfileEditPage() {
@@ -639,7 +640,11 @@ export default function ProfileEditPage() {
   };
 
   if (!user) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <ThemeLoading text="Loading profile..." size="lg" />
+      </div>
+    );
   }
 
   return (
