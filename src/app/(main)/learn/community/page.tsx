@@ -14,7 +14,6 @@ import {
   Share2, 
   Award, 
   Users, 
-  TrendingUp, 
   Calendar,
   Filter,
   Search,
@@ -23,7 +22,6 @@ import {
   BookOpen,
   Play,
   Clock,
-  CheckCircle,
   Zap
 } from 'lucide-react';
 import { usePlaceholder } from '@/hooks/use-placeholder';
@@ -70,15 +68,36 @@ const mockCommunityData = {
       isTrending: true
     }
   ],
-  studyGroups: [
+  bubbles: [
     {
       id: 1,
-      name: 'Oil Painting Study Group',
-      description: 'Weekly meetups for oil painting enthusiasts to practice together and share techniques.',
+      name: 'Oil Painting Techniques',
+      description: 'Discuss oil painting techniques, share tips, and get feedback on your work.',
       members: 45,
-      nextMeeting: '2024-01-25',
-      course: 'Master Oil Painting Techniques',
+      topic: 'Painting',
+      isActive: true,
+      lastMessage: '2 hours ago',
       level: 'Intermediate'
+    },
+    {
+      id: 2,
+      name: 'Digital Art Tools',
+      description: 'Share your favorite digital art tools, brushes, and software recommendations.',
+      members: 32,
+      topic: 'Digital Art',
+      isActive: true,
+      lastMessage: '5 minutes ago',
+      level: 'All Levels'
+    },
+    {
+      id: 3,
+      name: 'Gallery Opening Discussion',
+      description: 'Chat about the upcoming gallery opening event and coordinate attendance.',
+      members: 18,
+      topic: 'Events',
+      isActive: true,
+      lastMessage: '1 hour ago',
+      level: 'All Levels'
     },
   ],
   challenges: [
@@ -99,32 +118,6 @@ const mockCommunityData = {
       daysLeft: 8,
       category: 'Theory',
       difficulty: 'Intermediate'
-    }
-  ],
-  achievements: [
-    {
-      id: 1,
-      title: 'First Course Completed',
-      description: 'Congratulations on completing your first course!',
-      icon: '🎓',
-      earned: true,
-      date: '2024-01-10'
-    },
-    {
-      id: 2,
-      title: 'Community Helper',
-      description: 'Helped 10 fellow students with their questions.',
-      icon: '🤝',
-      earned: true,
-      date: '2024-01-15'
-    },
-    {
-      id: 3,
-      title: 'Art Showcase',
-      description: 'Shared your artwork with the community.',
-      icon: '🎨',
-      earned: false,
-      date: null
     }
   ]
 };
@@ -215,7 +208,7 @@ export default function CommunityPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="discussions">Discussions</TabsTrigger>
-                <TabsTrigger value="study-groups">Study Groups</TabsTrigger>
+                <TabsTrigger value="bubbles">Bubbles</TabsTrigger>
                 <TabsTrigger value="challenges">Challenges</TabsTrigger>
                 <TabsTrigger value="showcase">Showcase</TabsTrigger>
               </TabsList>
@@ -340,41 +333,89 @@ export default function CommunityPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="study-groups" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {mockCommunityData.studyGroups.map((group) => (
-                    <Card key={group.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader>
-                        <CardTitle className="text-lg">{group.name}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground mb-4">{group.description}</p>
-                        <div className="space-y-2 mb-4">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Members</span>
-                            <span className="text-sm font-medium">{group.members}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Next Meeting</span>
-                            <span className="text-sm font-medium">{group.nextMeeting}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Course</span>
-                            <span className="text-sm font-medium">{group.course}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Level</span>
-                            <Badge variant="outline" className="text-xs">
-                              {group.level}
+              <TabsContent value="bubbles" className="space-y-4">
+                {/* Create New Bubble */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Plus className="h-5 w-5" />
+                      Create New Bubble
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Bubble Name</label>
+                        <Input placeholder="e.g., Watercolor Techniques Discussion" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Description</label>
+                        <Textarea 
+                          placeholder="Describe what this bubble will discuss..."
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="gradient" className="flex-1">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Bubble
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Active Bubbles */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Active Bubbles</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {mockCommunityData.bubbles.map((bubble) => (
+                      <Card key={bubble.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg">{bubble.name}</CardTitle>
+                            <Badge variant={bubble.isActive ? "default" : "secondary"}>
+                              {bubble.isActive ? "Active" : "Inactive"}
                             </Badge>
                           </div>
-                        </div>
-                        <Button className="w-full gradient-button">
-                          Join Group
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-muted-foreground mb-4">{bubble.description}</p>
+                          <div className="space-y-2 mb-4">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Members</span>
+                              <span className="text-sm font-medium">{bubble.members}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Topic</span>
+                              <Badge variant="outline" className="text-xs">
+                                {bubble.topic}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Last Message</span>
+                              <span className="text-sm font-medium">{bubble.lastMessage}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Level</span>
+                              <Badge variant="outline" className="text-xs">
+                                {bubble.level}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button className="flex-1 gradient-button">
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              Join Bubble
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Users className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
               </TabsContent>
 
@@ -439,77 +480,7 @@ export default function CommunityPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Achievements */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Your Achievements</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {mockCommunityData.achievements.map((achievement) => (
-                    <div key={achievement.id} className={`flex items-center gap-3 p-3 rounded-lg ${
-                      achievement.earned ? 'bg-green-50 dark:bg-green-900/20' : 'bg-muted/50'
-                    }`}>
-                      <div className="text-2xl">{achievement.icon}</div>
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm">{achievement.title}</h4>
-                        <p className="text-xs text-muted-foreground">{achievement.description}</p>
-                        {achievement.earned && (
-                          <p className="text-xs text-green-600 dark:text-green-400">
-                            Earned {achievement.date}
-                          </p>
-                        )}
-                      </div>
-                      {achievement.earned && (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Your Progress</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Courses Completed</span>
-                  <span className="font-medium">3</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Discussions Started</span>
-                  <span className="font-medium">7</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Artworks Shared</span>
-                  <span className="font-medium">12</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Community Points</span>
-                  <span className="font-medium">1,247</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Trending Topics */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Trending Topics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {['Oil Painting Techniques', 'Color Theory', 'Figure Drawing', 'Watercolor Tips', 'Sculpture Basics', 'Pottery & Ceramics', 'Art Books'].map((topic, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer">
-                      <span className="text-sm">{topic}</span>
-                      <TrendingUp className="h-3 w-3 text-orange-500" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            {/* Sidebar content removed - keeping it clean and focused */}
           </div>
         </div>
       </div>
