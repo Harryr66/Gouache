@@ -73,7 +73,7 @@ export default function DiscoverPage() {
   // Create theme-specific placeholder function for Discover
   const getDiscoverPlaceholder = () => {
     if (isDark) {
-      return getDiscoverPlaceholder(); // Use hook for dark theme
+      return generatePlaceholderUrl(400, 300); // Use hook for dark theme
     } else {
       // Force light theme placeholder
       return `data:image/svg+xml;base64,${btoa(`
