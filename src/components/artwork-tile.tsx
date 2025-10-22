@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Artwork, Artist } from '@/lib/types';
 import { useFollow } from '@/providers/follow-provider';
 import { usePlaceholder } from '@/hooks/use-placeholder';
+import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
@@ -38,6 +39,7 @@ interface ArtworkTileProps {
 export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
+  const { theme, resolvedTheme } = useTheme();
   const [showArtistPreview, setShowArtistPreview] = useState(false);
 
   const handleTileClick = () => {
@@ -157,7 +159,11 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
           )}
 
           {/* Artist banner at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm p-2">
+          <div className={`absolute bottom-0 left-0 right-0 backdrop-blur-sm p-2 ${
+            (resolvedTheme || theme) === 'dark' 
+              ? 'bg-black/80' 
+              : 'bg-red-600/90'
+          }`}>
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
                 <AvatarImage src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(24, 24)} />
