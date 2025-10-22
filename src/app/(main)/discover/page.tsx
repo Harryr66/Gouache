@@ -70,13 +70,18 @@ export default function DiscoverPage() {
     // Give theme time to load and be detected
     const timer = setTimeout(() => {
       setIsThemeLoading(false);
-    }, 1000); // 1 second delay to ensure theme is loaded
+    }, 2000); // 2 second delay to ensure theme is fully loaded and established
     
     return () => clearTimeout(timer);
   }, []);
   
-  // Generate placeholder URL with robust theme detection
+  // Generate placeholder URL with robust theme detection - ONLY after theme is loaded
   const getDiscoverPlaceholder = () => {
+    // Don't generate placeholders until theme is fully loaded
+    if (isThemeLoading) {
+      return ''; // Return empty string during loading
+    }
+    
     if (typeof document === 'undefined') {
       return generatePlaceholderUrl(400, 300);
     }
@@ -97,7 +102,7 @@ export default function DiscoverPage() {
       isDark = prefersDark;
     }
     
-    console.log('🎨 Discover theme check:', { 
+    console.log('🎨 Discover theme check (AFTER LOADING):', { 
       hasDarkClass,
       hasLightClass,
       prefersDark,
