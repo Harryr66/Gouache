@@ -27,9 +27,9 @@ export const usePlaceholder = () => {
       };
     } else {
       return {
-        backgroundColor: '#f8f9fa', // slightly muted off-white grey for light mode
-        textColor: '#000000', // black
-        strokeColor: '#e5e7eb' // light stroke for light mode
+        backgroundColor: '#6b7280', // grey for light mode
+        textColor: '#ffffff', // white text on grey background
+        strokeColor: '#4b5563' // darker grey stroke for light mode
       };
     }
   };
