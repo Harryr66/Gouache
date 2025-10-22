@@ -155,6 +155,192 @@ export default function DiscoverPage() {
       events: [],
       courses: [],
       discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-4',
+      name: 'Akira Tanaka',
+      handle: 'akira_tanaka',
+      bio: 'Japanese watercolor artist specializing in traditional techniques with modern interpretations. My work captures the essence of nature and urban life in Tokyo.',
+      followerCount: 15600,
+      followingCount: 78,
+      createdAt: new Date('2022-08-15'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Tokyo, Japan',
+      countryOfOrigin: 'Japan',
+      countryOfResidence: 'Japan',
+      socialLinks: {
+        instagram: 'https://instagram.com/akira_tanaka_art',
+        x: 'https://x.com/akira_tanaka',
+        website: 'https://akira-tanaka.com'
+      },
+      portfolioImages: [
+        { id: '8', imageUrl: generatePlaceholderUrl(600, 600), title: 'Cherry Blossom Dreams', description: 'Traditional watercolor of spring', medium: 'Watercolor', year: '2023', tags: ['watercolor', 'nature'], createdAt: new Date() },
+        { id: '9', imageUrl: generatePlaceholderUrl(600, 600), title: 'Tokyo Nights', description: 'Urban watercolor scene', medium: 'Watercolor', year: '2023', tags: ['watercolor', 'urban'], createdAt: new Date() },
+        { id: '10', imageUrl: generatePlaceholderUrl(600, 600), title: 'Mountain Serenity', description: 'Peaceful mountain landscape', medium: 'Watercolor', year: '2023', tags: ['watercolor', 'landscape'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-5',
+      name: 'Isabella Martinez',
+      handle: 'isabella_martinez',
+      bio: 'Contemporary oil painter exploring themes of femininity, identity, and cultural heritage. My work combines classical techniques with modern storytelling.',
+      followerCount: 18900,
+      followingCount: 145,
+      createdAt: new Date('2021-12-03'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Mexico City, Mexico',
+      countryOfOrigin: 'Mexico',
+      countryOfResidence: 'Mexico',
+      socialLinks: {
+        instagram: 'https://instagram.com/isabella_martinez_art',
+        x: 'https://x.com/isabella_martinez',
+        website: 'https://isabella-martinez.art'
+      },
+      portfolioImages: [
+        { id: '11', imageUrl: generatePlaceholderUrl(600, 600), title: 'Cultural Heritage', description: 'Celebrating Mexican traditions', medium: 'Oil on Canvas', year: '2023', tags: ['oil', 'culture'], createdAt: new Date() },
+        { id: '12', imageUrl: generatePlaceholderUrl(600, 600), title: 'Feminine Strength', description: 'Portrait of empowerment', medium: 'Oil on Canvas', year: '2023', tags: ['oil', 'portrait'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-6',
+      name: 'David Kim',
+      handle: 'david_kim',
+      bio: 'Mixed media artist working with found objects, textiles, and digital elements. My installations explore themes of memory, displacement, and cultural identity.',
+      followerCount: 11200,
+      followingCount: 98,
+      createdAt: new Date('2022-03-22'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Seoul, South Korea',
+      countryOfOrigin: 'South Korea',
+      countryOfResidence: 'South Korea',
+      socialLinks: {
+        instagram: 'https://instagram.com/david_kim_art',
+        x: 'https://x.com/david_kim',
+        website: 'https://david-kim.art'
+      },
+      portfolioImages: [
+        { id: '13', imageUrl: generatePlaceholderUrl(600, 600), title: 'Memory Fragments', description: 'Mixed media installation', medium: 'Mixed Media', year: '2023', tags: ['mixed-media', 'memory'], createdAt: new Date() },
+        { id: '14', imageUrl: generatePlaceholderUrl(600, 600), title: 'Cultural Tapestry', description: 'Textile and digital fusion', medium: 'Mixed Media', year: '2023', tags: ['mixed-media', 'textile'], createdAt: new Date() },
+        { id: '15', imageUrl: generatePlaceholderUrl(600, 600), title: 'Digital Memories', description: 'Technology meets tradition', medium: 'Mixed Media', year: '2023', tags: ['mixed-media', 'digital'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-7',
+      name: 'Emma Thompson',
+      handle: 'emma_thompson',
+      bio: 'Contemporary ceramic artist creating functional and sculptural pieces. My work explores the relationship between form, function, and emotional expression.',
+      followerCount: 8700,
+      followingCount: 67,
+      createdAt: new Date('2022-07-18'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'London, UK',
+      countryOfOrigin: 'United Kingdom',
+      countryOfResidence: 'United Kingdom',
+      socialLinks: {
+        instagram: 'https://instagram.com/emma_thompson_ceramics',
+        x: 'https://x.com/emma_thompson',
+        website: 'https://emma-thompson-ceramics.com'
+      },
+      portfolioImages: [
+        { id: '16', imageUrl: generatePlaceholderUrl(600, 600), title: 'Organic Forms', description: 'Natural ceramic shapes', medium: 'Ceramic', year: '2023', tags: ['ceramic', 'organic'], createdAt: new Date() },
+        { id: '17', imageUrl: generatePlaceholderUrl(600, 600), title: 'Functional Art', description: 'Beautiful and useful ceramics', medium: 'Ceramic', year: '2023', tags: ['ceramic', 'functional'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-8',
+      name: 'Raj Patel',
+      handle: 'raj_patel',
+      bio: 'Photographer and digital artist capturing the essence of urban life and cultural diversity. My work documents contemporary society through a lens of empathy and understanding.',
+      followerCount: 14300,
+      followingCount: 112,
+      createdAt: new Date('2021-09-12'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Mumbai, India',
+      countryOfOrigin: 'India',
+      countryOfResidence: 'India',
+      socialLinks: {
+        instagram: 'https://instagram.com/raj_patel_photography',
+        x: 'https://x.com/raj_patel',
+        website: 'https://raj-patel-photography.com'
+      },
+      portfolioImages: [
+        { id: '18', imageUrl: generatePlaceholderUrl(600, 600), title: 'Street Stories', description: 'Urban life documentation', medium: 'Photography', year: '2023', tags: ['photography', 'street'], createdAt: new Date() },
+        { id: '19', imageUrl: generatePlaceholderUrl(600, 600), title: 'Cultural Mosaic', description: 'Diverse community portraits', medium: 'Photography', year: '2023', tags: ['photography', 'culture'], createdAt: new Date() },
+        { id: '20', imageUrl: generatePlaceholderUrl(600, 600), title: 'Digital Dreams', description: 'Surreal digital manipulation', medium: 'Digital Art', year: '2023', tags: ['digital', 'surreal'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-9',
+      name: 'Luna Andersson',
+      handle: 'luna_andersson',
+      bio: 'Swedish textile artist creating large-scale installations and wearable art. My work explores themes of nature, sustainability, and Nordic mythology.',
+      followerCount: 9600,
+      followingCount: 89,
+      createdAt: new Date('2022-01-25'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Stockholm, Sweden',
+      countryOfOrigin: 'Sweden',
+      countryOfResidence: 'Sweden',
+      socialLinks: {
+        instagram: 'https://instagram.com/luna_andersson_textiles',
+        x: 'https://x.com/luna_andersson',
+        website: 'https://luna-andersson.com'
+      },
+      portfolioImages: [
+        { id: '21', imageUrl: generatePlaceholderUrl(600, 600), title: 'Nordic Textiles', description: 'Traditional patterns reimagined', medium: 'Textile', year: '2023', tags: ['textile', 'nordic'], createdAt: new Date() },
+        { id: '22', imageUrl: generatePlaceholderUrl(600, 600), title: 'Nature Weavings', description: 'Organic textile forms', medium: 'Textile', year: '2023', tags: ['textile', 'nature'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-10',
+      name: 'Ahmed Hassan',
+      handle: 'ahmed_hassan',
+      bio: 'Calligraphy artist and painter blending traditional Arabic script with contemporary visual art. My work bridges cultural heritage with modern expression.',
+      followerCount: 17800,
+      followingCount: 134,
+      createdAt: new Date('2021-11-08'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Cairo, Egypt',
+      countryOfOrigin: 'Egypt',
+      countryOfResidence: 'Egypt',
+      socialLinks: {
+        instagram: 'https://instagram.com/ahmed_hassan_calligraphy',
+        x: 'https://x.com/ahmed_hassan',
+        website: 'https://ahmed-hassan-calligraphy.com'
+      },
+      portfolioImages: [
+        { id: '23', imageUrl: generatePlaceholderUrl(600, 600), title: 'Sacred Script', description: 'Traditional Arabic calligraphy', medium: 'Ink on Paper', year: '2023', tags: ['calligraphy', 'traditional'], createdAt: new Date() },
+        { id: '24', imageUrl: generatePlaceholderUrl(600, 600), title: 'Modern Verses', description: 'Contemporary calligraphic art', medium: 'Mixed Media', year: '2023', tags: ['calligraphy', 'contemporary'], createdAt: new Date() },
+        { id: '25', imageUrl: generatePlaceholderUrl(600, 600), title: 'Cultural Bridge', description: 'East meets West in script', medium: 'Mixed Media', year: '2023', tags: ['calligraphy', 'cultural'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
     }
   ];
 
@@ -234,6 +420,7 @@ export default function DiscoverPage() {
         
         setArtworks(artworksData);
         console.log('🎨 Discover: Loaded', finalArtists.length, 'artists and', artworksData.length, 'artworks');
+        console.log('📊 Artwork breakdown:', finalArtists.map(a => `${a.name}: ${a.portfolioImages?.length || 0} pieces`));
       } catch (error) {
         console.error('Error fetching artists:', error);
         // Fall back to mock data on error
@@ -266,6 +453,8 @@ export default function DiscoverPage() {
           }
         });
         setArtworks(mockArtworks);
+        console.log('🎨 Discover: Using mock data -', mockArtists.length, 'artists and', mockArtworks.length, 'artworks');
+        console.log('📊 Mock artwork breakdown:', mockArtists.map(a => `${a.name}: ${a.portfolioImages?.length || 0} pieces`));
       } finally {
         setIsLoading(false);
       }
@@ -712,7 +901,7 @@ export default function DiscoverPage() {
               <span className="text-sm text-muted-foreground">Showing artworks from all artists</span>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2">
               {artworks.map((artwork) => (
                 <ArtworkTile key={artwork.id} artwork={artwork} />
               ))}
