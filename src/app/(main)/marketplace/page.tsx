@@ -526,7 +526,7 @@ export default function LearnPage() {
           {/* Search Bar */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mb-6">
             <div className="flex-1 relative">
-              <Input
+            <Input
                 placeholder="Search courses, instructors, or skills..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

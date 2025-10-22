@@ -2024,10 +2024,10 @@ export default function AdminPanel() {
                           <Badge variant="outline">Pending</Badge>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                          <div>
+                        <div>
                             <p><strong>Contact:</strong> {application.contactName}</p>
                             <p><strong>Email:</strong> {application.email}</p>
-                          </div>
+                        </div>
                           <div>
                             <p><strong>Type:</strong> {application.advertisingType}</p>
                             <p><strong>Budget:</strong> {application.budget || 'Not specified'}</p>
@@ -2184,8 +2184,8 @@ export default function AdminPanel() {
                           <Trash2 className="h-4 w-4 mr-1" />
                           Delete
                         </Button>
-                        </div>
                       </div>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -2209,7 +2209,7 @@ export default function AdminPanel() {
                       <p className="text-2xl font-bold">
                         {advertisements.reduce((sum, ad) => sum + ad.impressions, 0).toLocaleString()}
                       </p>
-                </div>
+          </div>
                   </div>
                 </CardContent>
               </Card>
@@ -2258,11 +2258,11 @@ export default function AdminPanel() {
             </div>
 
             {/* Detailed Analytics Table */}
-            <Card>
-              <CardHeader>
+          <Card>
+            <CardHeader>
                 <CardTitle>Advertisement Performance</CardTitle>
                 <CardDescription>Detailed analytics for each advertisement</CardDescription>
-              </CardHeader>
+            </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {advertisements.map((ad) => (
@@ -2274,26 +2274,26 @@ export default function AdminPanel() {
                         </Badge>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                        <div>
+                      <div>
                           <p className="text-muted-foreground">Impressions</p>
                           <p className="font-semibold">{ad.impressions.toLocaleString()}</p>
-                        </div>
+                      </div>
                         <div>
                           <p className="text-muted-foreground">Views</p>
                           <p className="font-semibold">{ad.views.toLocaleString()}</p>
-                        </div>
+                    </div>
                         <div>
                           <p className="text-muted-foreground">Clicks</p>
                           <p className="font-semibold">{ad.clicks.toLocaleString()}</p>
-                        </div>
+                    </div>
                         <div>
                           <p className="text-muted-foreground">CTR</p>
                           <p className="font-semibold">{ad.clickThroughRate.toFixed(2)}%</p>
-                        </div>
+                </div>
                         <div>
                           <p className="text-muted-foreground">Revenue</p>
                           <p className="font-semibold">${ad.totalSpent.toLocaleString()}</p>
-                        </div>
+              </div>
                       </div>
                     </div>
                   ))}
@@ -2338,8 +2338,8 @@ export default function AdminPanel() {
                               <span>Students: {course.students}</span>
                               <span>Rating: {course.rating}/5</span>
                               <span>Price: ${course.price}</span>
-                            </div>
-                          </div>
+                      </div>
+                    </div>
                         </div>
                         <div className="flex gap-2">
                           <Button
@@ -2399,7 +2399,7 @@ export default function AdminPanel() {
                               <span>Instructor: {course.instructor.name}</span>
                               <span>Price: ${course.price}</span>
                               <span>Created: {course.createdAt.toLocaleDateString()}</span>
-                            </div>
+                        </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -2422,9 +2422,9 @@ export default function AdminPanel() {
                     </CardContent>
                   </Card>
                 ))}
-              </div>
-            )}
-          </div>
+                    </div>
+                  )}
+                </div>
         )}
 
         {/* Course Submissions */}
@@ -2497,7 +2497,7 @@ export default function AdminPanel() {
             )}
           </div>
         )}
-      </div>
+              </div>
 
       {/* Upload Modal */}
       {showUploadModal && (
@@ -2864,10 +2864,10 @@ export default function AdminPanel() {
 
               {/* Artist Statement */}
               {selectedRequest.artistStatement && (
-                <div>
+              <div>
                   <Label className="text-base font-semibold">Artist Statement</Label>
                   <p className="mt-2 text-sm text-muted-foreground">{selectedRequest.artistStatement}</p>
-                </div>
+              </div>
               )}
 
               {/* Experience */}
