@@ -403,7 +403,7 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
                           </div>
                           <div className="flex items-center gap-1">
                             <Heart className="h-4 w-4" />
-                            {course.rating.toFixed(1)} ⭐
+                            {(course.rating ?? 0).toFixed(1)} ⭐
                           </div>
                         </div>
                         <Button className="w-full">
