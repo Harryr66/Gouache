@@ -71,30 +71,27 @@ export const usePlaceholder = () => {
         `)}`;
       }
       
-      // More robust theme detection
+      // FORCE THEME DETECTION - Check document class directly
+      const isDarkMode = typeof document !== 'undefined' && 
+        (document.documentElement.classList.contains('dark') || 
+         document.documentElement.getAttribute('data-theme') === 'dark');
+      
       const currentTheme = resolvedTheme || theme || 'light';
       
-      // Additional check for system theme
-      const isSystemDark = typeof window !== 'undefined' && 
-        window.matchMedia && 
-        window.matchMedia('(prefers-color-scheme: dark)').matches;
-      
-      const finalTheme = currentTheme === 'system' ? (isSystemDark ? 'dark' : 'light') : currentTheme;
-      
-      console.log('🎨 Theme detection:', { 
+      console.log('🎨 FORCE Theme detection:', { 
         theme, 
         resolvedTheme, 
-        currentTheme, 
-        finalTheme, 
-        mounted,
-        isSystemDark 
+        currentTheme,
+        isDarkMode,
+        documentClass: typeof document !== 'undefined' ? document.documentElement.className : 'N/A',
+        mounted 
       });
       
-      if (finalTheme === 'dark') {
-        console.log('🌙 Using DARK theme placeholder - #1e293b');
+      if (isDarkMode || currentTheme === 'dark') {
+        console.log('🌙 FORCE Using DARK theme placeholder - #1e293b');
         return generateDarkThemePlaceholderUrl(width, height);
       } else {
-        console.log('☀️ Using LIGHT theme placeholder - #fafafa');
+        console.log('☀️ FORCE Using LIGHT theme placeholder - #fafafa');
         return generateLightThemePlaceholderUrl(width, height);
       }
     };
@@ -112,17 +109,14 @@ export const usePlaceholder = () => {
         `)}`;
       }
       
-      // More robust theme detection
+      // FORCE THEME DETECTION - Check document class directly
+      const isDarkMode = typeof document !== 'undefined' && 
+        (document.documentElement.classList.contains('dark') || 
+         document.documentElement.getAttribute('data-theme') === 'dark');
+      
       const currentTheme = resolvedTheme || theme || 'light';
       
-      // Additional check for system theme
-      const isSystemDark = typeof window !== 'undefined' && 
-        window.matchMedia && 
-        window.matchMedia('(prefers-color-scheme: dark)').matches;
-      
-      const finalTheme = currentTheme === 'system' ? (isSystemDark ? 'dark' : 'light') : currentTheme;
-      
-      if (finalTheme === 'dark') {
+      if (isDarkMode || currentTheme === 'dark') {
         return generateDarkThemeAvatarPlaceholderUrl(width, height);
       } else {
         return generateLightThemeAvatarPlaceholderUrl(width, height);
