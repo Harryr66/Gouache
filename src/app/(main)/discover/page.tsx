@@ -76,6 +76,88 @@ export default function DiscoverPage() {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
 
+  // Mock artists data for fallback
+  const mockArtists: Artist[] = [
+    {
+      id: 'artist-1',
+      name: 'Elena Vance',
+      handle: 'elena_vance',
+      bio: 'Abstract expressionist painter exploring the intersection of color and emotion. My work delves into the subconscious, bringing forth vivid emotional landscapes that challenge perception.',
+      followerCount: 12500,
+      followingCount: 89,
+      createdAt: new Date('2023-01-15'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'New York, NY',
+      countryOfOrigin: 'United States',
+      countryOfResidence: 'United States',
+      socialLinks: {
+        instagram: 'https://instagram.com/elena_vance',
+        x: 'https://x.com/elena_vance',
+        website: 'https://elena-vance.com'
+      },
+      portfolioImages: [
+        { id: '1', imageUrl: generatePlaceholderUrl(600, 600), title: 'Abstract Harmony', description: 'A vibrant exploration of color', medium: 'Oil on Canvas', year: '2023', tags: ['abstract', 'color'], createdAt: new Date() },
+        { id: '2', imageUrl: generatePlaceholderUrl(600, 600), title: 'Emotional Landscapes', description: 'Deep emotional expression', medium: 'Acrylic', year: '2023', tags: ['abstract', 'emotion'], createdAt: new Date() },
+        { id: '3', imageUrl: generatePlaceholderUrl(600, 600), title: 'Color Symphony', description: 'Harmonious color composition', medium: 'Mixed Media', year: '2023', tags: ['abstract', 'color'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-2',
+      name: 'Marcus Chen',
+      handle: 'marcus_chen',
+      bio: 'Digital and traditional artist creating futuristic cityscapes and urban narratives. Specializing in mixed media that bridges the gap between physical and digital art.',
+      followerCount: 21000,
+      followingCount: 156,
+      createdAt: new Date('2022-11-20'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Los Angeles, CA',
+      countryOfOrigin: 'China',
+      countryOfResidence: 'United States',
+      socialLinks: {
+        instagram: 'https://instagram.com/marcus_chen',
+        x: 'https://x.com/marcuschen',
+        website: 'https://marcuschen.art'
+      },
+      portfolioImages: [
+        { id: '4', imageUrl: generatePlaceholderUrl(600, 600), title: 'Digital Dreams', description: 'Futuristic cityscape', medium: 'Digital Art', year: '2023', tags: ['digital', 'urban'], createdAt: new Date() },
+        { id: '5', imageUrl: generatePlaceholderUrl(600, 600), title: 'Urban Reflections', description: 'City life exploration', medium: 'Mixed Media', year: '2023', tags: ['urban', 'reflection'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-3',
+      name: 'Sophia Rodriguez',
+      handle: 'sophia_rodriguez',
+      bio: 'Contemporary sculptor working with bronze, stone, and mixed materials. My sculptures explore themes of identity, culture, and human connection.',
+      followerCount: 8900,
+      followingCount: 234,
+      createdAt: new Date('2021-06-10'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Barcelona, Spain',
+      countryOfOrigin: 'Spain',
+      countryOfResidence: 'Spain',
+      socialLinks: {
+        instagram: 'https://instagram.com/sophia_rodriguez_art',
+        website: 'https://sophiarodriguez.com'
+      },
+      portfolioImages: [
+        { id: '6', imageUrl: generatePlaceholderUrl(600, 600), title: 'Ceramic Contemplation', description: 'Thoughtful ceramic work', medium: 'Ceramic', year: '2023', tags: ['sculpture', 'ceramic'], createdAt: new Date() },
+        { id: '7', imageUrl: generatePlaceholderUrl(600, 600), title: 'Bronze Identity', description: 'Identity exploration in bronze', medium: 'Bronze', year: '2023', tags: ['sculpture', 'bronze'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    }
+  ];
+
   // Fetch real artists from Firestore
   useEffect(() => {
     const fetchArtists = async () => {
@@ -117,11 +199,13 @@ export default function DiscoverPage() {
           };
         });
         
-        setArtists(artistsData);
+        // Use real data if available, otherwise fall back to mock data
+        const finalArtists = artistsData.length > 0 ? artistsData : mockArtists;
+        setArtists(finalArtists);
         
         // Generate artworks from artists' portfolios
         const artworksData: Artwork[] = [];
-        artistsData.forEach(artist => {
+        finalArtists.forEach(artist => {
           if (artist.portfolioImages && artist.portfolioImages.length > 0) {
             artist.portfolioImages.forEach((portfolioItem, index) => {
               artworksData.push({
@@ -149,8 +233,39 @@ export default function DiscoverPage() {
         });
         
         setArtworks(artworksData);
+        console.log('🎨 Discover: Loaded', finalArtists.length, 'artists and', artworksData.length, 'artworks');
       } catch (error) {
         console.error('Error fetching artists:', error);
+        // Fall back to mock data on error
+        setArtists(mockArtists);
+        const mockArtworks: Artwork[] = [];
+        mockArtists.forEach(artist => {
+          if (artist.portfolioImages && artist.portfolioImages.length > 0) {
+            artist.portfolioImages.forEach((portfolioItem, index) => {
+              mockArtworks.push({
+                id: `artwork-${artist.id}-${index}`,
+                artist,
+                title: portfolioItem.title,
+                description: portfolioItem.description || '',
+                imageUrl: portfolioItem.imageUrl,
+                imageAiHint: portfolioItem.title,
+                discussionId: `discussion-${artist.id}-${index}`,
+                tags: portfolioItem.tags || [],
+                price: Math.floor(Math.random() * 5000) + 500,
+                currency: 'USD',
+                isForSale: Math.random() > 0.3,
+                category: portfolioItem.medium || 'Mixed Media',
+                medium: portfolioItem.medium || 'Mixed Media',
+                dimensions: { width: 24, height: 30, unit: 'in' },
+                createdAt: portfolioItem.createdAt,
+                updatedAt: portfolioItem.createdAt,
+                views: Math.floor(Math.random() * 5000),
+                likes: Math.floor(Math.random() * 500),
+              });
+            });
+          }
+        });
+        setArtworks(mockArtworks);
       } finally {
         setIsLoading(false);
       }
