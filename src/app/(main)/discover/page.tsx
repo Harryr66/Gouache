@@ -234,6 +234,7 @@ export default function DiscoverPage() {
         title: `${category} ${i + 1}`,
         description: `A beautiful ${category.toLowerCase()} piece by ${artist.name}`,
         imageUrl: generatePlaceholderUrl(600, 600),
+        imageAiHint: `${category} artwork`,
         discussionId: `discussion-${artist.id}-${i}`,
         tags: [category.toLowerCase(), 'art'],
         price: Math.floor(Math.random() * 5000) + 500,
