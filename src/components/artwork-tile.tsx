@@ -210,9 +210,8 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      variant="default"
                       asChild
-                      className="flex items-center gap-2 bg-primary hover:bg-primary/90"
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white border-0"
                     >
                       <Link href={`/profile/${artwork.artist.handle}`}>
                         <ExternalLink className="h-4 w-4" />

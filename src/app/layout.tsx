@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { AuthProvider } from '@/providers/auth-provider';
 import { CourseProvider } from '@/providers/course-provider';
+import { DiscoverSettingsProvider } from '@/providers/discover-settings-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
@@ -47,8 +48,10 @@ export default function RootLayout({
         >
           <AuthProvider>
             <CourseProvider>
-              {children}
-              <Toaster />
+              <DiscoverSettingsProvider>
+                {children}
+                <Toaster />
+              </DiscoverSettingsProvider>
             </CourseProvider>
           </AuthProvider>
         </ThemeProvider>

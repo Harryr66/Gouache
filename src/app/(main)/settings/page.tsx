@@ -18,10 +18,15 @@ import {
   Download,
   Upload,
   Trash2,
-  CheckCircle
+  CheckCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 
 export default function SettingsPage() {
+  const { settings: discoverSettings, updateSettings: updateDiscoverSettings } = useDiscoverSettings();
+  
   const [profileData, setProfileData] = useState({
     username: 'artist123',
     displayName: 'Artist Name',
@@ -111,6 +116,7 @@ export default function SettingsPage() {
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="privacy">Privacy</TabsTrigger>
+            <TabsTrigger value="discover">Discover</TabsTrigger>
             <TabsTrigger value="data">Data</TabsTrigger>
           </TabsList>
 
@@ -293,6 +299,48 @@ export default function SettingsPage() {
                   />
                 </div>
                 <Button onClick={handleSave}>Save Privacy Settings</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="discover" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Eye className="h-5 w-5" />
+                  <span>Discover Settings</span>
+                </CardTitle>
+                <CardDescription>
+                  Customize what content you see in the Discover section
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="hideAiAssistedArt">Hide AI-Assisted Art</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Hide artworks tagged with "AI assisted" to only see 100% human-made art
+                    </p>
+                  </div>
+                  <Switch
+                    id="hideAiAssistedArt"
+                    checked={discoverSettings.hideAiAssistedArt}
+                    onCheckedChange={(checked) => updateDiscoverSettings({ hideAiAssistedArt: checked })}
+                  />
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-start space-x-3">
+                    <EyeOff className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-sm">About AI-Assisted Art Filtering</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        When enabled, artworks tagged with "AI assisted" will be hidden from your Discover feed. 
+                        This helps you focus on traditional, handcrafted artwork created entirely by human artists.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <Button onClick={handleSave}>Save Discover Settings</Button>
               </CardContent>
             </Card>
           </TabsContent>
