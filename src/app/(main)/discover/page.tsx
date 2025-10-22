@@ -64,12 +64,12 @@ export default function DiscoverPage() {
   const { user } = useAuth();
   
   // Add loading state to ensure theme is properly loaded
-  const [isLoading, setIsLoading] = useState(true);
+  const [isThemeLoading, setIsThemeLoading] = useState(true);
   
   useEffect(() => {
     // Give theme time to load and be detected
     const timer = setTimeout(() => {
-      setIsLoading(false);
+      setIsThemeLoading(false);
     }, 1000); // 1 second delay to ensure theme is loaded
     
     return () => clearTimeout(timer);
@@ -873,7 +873,7 @@ export default function DiscoverPage() {
   }
 
   // Show loading screen while theme loads
-  if (isLoading) {
+  if (isThemeLoading) {
     return <ThemeLoading />;
   }
 
