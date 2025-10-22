@@ -56,34 +56,51 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
 
   // Mock data for artist's additional content
   const generateArtistContent = (artist: Artist) => ({
-    discussions: [
-      {
-        id: `discussion-${artist.id}-1`,
-        title: `${artist.name} - Behind the Scenes`,
-        replies: Math.floor(Math.random() * 50) + 5,
-        lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
-      },
-      {
-        id: `discussion-${artist.id}-2`,
-        title: `Q&A with ${artist.name}`,
-        replies: Math.floor(Math.random() * 30) + 3,
-        lastActivity: new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000)
-      }
-    ],
     events: [
       {
         id: `event-${artist.id}-1`,
         title: `${artist.name} - Gallery Opening`,
+        description: 'Join us for an exclusive gallery opening featuring new works by the artist.',
         date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() + 32 * 24 * 60 * 60 * 1000),
         location: artist.location || 'TBA',
-        type: 'Exhibition'
+        venue: 'Modern Art Gallery',
+        type: 'Exhibition',
+        bookingUrl: 'https://gallery-booking.com/event1',
+        imageUrl: generatePlaceholderUrl(400, 200),
+        price: 'Free',
+        capacity: 100,
+        isEditable: true
       },
       {
         id: `event-${artist.id}-2`,
         title: 'Live Art Workshop',
+        description: 'Learn advanced techniques in a hands-on workshop with the artist.',
         date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000), // 3 hours later
         location: 'Virtual Event',
-        type: 'Workshop'
+        venue: 'Online Studio',
+        type: 'Workshop',
+        bookingUrl: 'https://workshop-booking.com/event2',
+        imageUrl: generatePlaceholderUrl(400, 200),
+        price: '$75',
+        capacity: 25,
+        isEditable: true
+      },
+      {
+        id: `event-${artist.id}-3`,
+        title: 'Artist Talk & Q&A',
+        description: 'An intimate conversation about the creative process and artistic journey.',
+        date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // 2 hours later
+        location: 'Community Center',
+        venue: 'Downtown Arts Center',
+        type: 'Talk',
+        bookingUrl: 'https://talk-booking.com/event3',
+        imageUrl: generatePlaceholderUrl(400, 200),
+        price: '$25',
+        capacity: 50,
+        isEditable: true
       }
     ],
     courses: [
@@ -256,9 +273,8 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
 
             {/* Content Tabs */}
             <Tabs defaultValue="portfolio" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-                <TabsTrigger value="discussions">Discussions</TabsTrigger>
                 <TabsTrigger value="events">Events</TabsTrigger>
                 <TabsTrigger value="courses">Courses</TabsTrigger>
               </TabsList>
@@ -266,7 +282,7 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
               <TabsContent value="portfolio" className="mt-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {Array.from({ length: 8 }, (_, i) => (
-                    <Card key={i} className="aspect-square overflow-hidden">
+                    <Card key={i} className="aspect-square overflow-hidden border-border">
                       <Image
                         src={generatePlaceholderUrl(200, 200)}
                         alt={`Artwork ${i + 1}`}
@@ -279,55 +295,84 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
                 </div>
               </TabsContent>
 
-              <TabsContent value="discussions" className="mt-4">
-                <div className="space-y-3">
-                  {artistContent.discussions.map((discussion) => (
-                    <Card key={discussion.id} className="p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{discussion.title}</h4>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <MessageCircle className="h-4 w-4" />
-                              {discussion.replies} replies
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {discussion.lastActivity.toLocaleDateString()}
-                            </div>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/discussion/${discussion.id}`}>
-                            <ExternalLink className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
 
               <TabsContent value="events" className="mt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   {artistContent.events.map((event) => (
-                    <Card key={event.id} className="p-4 hover:shadow-md transition-shadow">
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between">
-                          <h4 className="font-medium">{event.title}</h4>
-                          <Badge variant="secondary">{event.type}</Badge>
+                    <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className="flex flex-col md:flex-row">
+                        {/* Event Image */}
+                        <div className="md:w-1/3 h-48 md:h-auto">
+                          <Image
+                            src={event.imageUrl}
+                            alt={event.title}
+                            width={400}
+                            height={200}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          {event.date.toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          })}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
-                          {event.location}
+                        
+                        {/* Event Details */}
+                        <div className="md:w-2/3 p-4 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="font-semibold text-lg">{event.title}</h4>
+                              <Badge variant="secondary" className="mt-1">{event.type}</Badge>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-600">{event.price}</div>
+                              <div className="text-sm text-muted-foreground">{event.capacity} spots</div>
+                            </div>
+                          </div>
+                          
+                          <p className="text-sm text-muted-foreground">{event.description}</p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <div className="font-medium">
+                                  {event.date.toLocaleDateString('en-US', { 
+                                    weekday: 'short',
+                                    month: 'short', 
+                                    day: 'numeric', 
+                                    year: 'numeric' 
+                                  })}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {event.date.toLocaleTimeString('en-US', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })} - {event.endDate.toLocaleTimeString('en-US', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <div className="font-medium">{event.venue}</div>
+                                <div className="text-muted-foreground">{event.location}</div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2 pt-2">
+                            <Button asChild className="flex-1">
+                              <a href={event.bookingUrl} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Book Now
+                              </a>
+                            </Button>
+                            {event.isEditable && (
+                              <Button variant="outline" size="sm">
+                                Edit Event
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -369,4 +414,5 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
       </Dialog>
     </>
   );
+}
 }
