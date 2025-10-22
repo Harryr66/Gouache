@@ -143,7 +143,7 @@ export default function ProfileEditPage() {
     experience: '',
     socialLinks: {
       instagram: '',
-      twitter: '',
+      x: '',
       website: '',
       tiktok: ''
     }
@@ -477,7 +477,7 @@ export default function ProfileEditPage() {
         experience: artistRequestData.experience,
         socialLinks: {
           instagram: artistRequestData.socialLinks.instagram || undefined,
-          twitter: artistRequestData.socialLinks.twitter || undefined,
+          x: artistRequestData.socialLinks.x || undefined,
           website: artistRequestData.socialLinks.website || undefined,
           tiktok: artistRequestData.socialLinks.tiktok || undefined,
         },
@@ -501,7 +501,7 @@ export default function ProfileEditPage() {
       setArtistRequestData({
         artistStatement: '',
         experience: '',
-        socialLinks: { instagram: '', twitter: '', website: '', tiktok: '' }
+        socialLinks: { instagram: '', x: '', website: '', tiktok: '' }
       });
     } catch (error) {
       console.error('Error submitting artist request:', error);
@@ -1032,13 +1032,13 @@ export default function ProfileEditPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="twitter">Twitter</Label>
+                        <Label htmlFor="x">X (formerly Twitter)</Label>
                         <Input
-                          id="twitter"
-                          value={artistRequestData.socialLinks.twitter}
+                          id="x"
+                          value={artistRequestData.socialLinks.x}
                           onChange={(e) => setArtistRequestData(prev => ({ 
                             ...prev, 
-                            socialLinks: { ...prev.socialLinks, twitter: e.target.value }
+                            socialLinks: { ...prev.socialLinks, x: e.target.value }
                           }))}
                           placeholder="@username or URL"
                         />
