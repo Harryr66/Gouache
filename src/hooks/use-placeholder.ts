@@ -9,41 +9,40 @@ export const usePlaceholder = () => {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Helper function to get theme colors
+  const getThemeColors = (currentTheme: string) => {
+    // Additional check: look at document class as fallback
+    const isDarkMode = currentTheme === 'dark' || 
+                      (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
+    
+    if (isDarkMode) {
+      return {
+        backgroundColor: '#0f172a', // darker slate grey with blue tint for dark mode
+        textColor: '#ffffff', // white
+        strokeColor: '#374151' // darker stroke for dark mode
+      };
+    } else {
+      return {
+        backgroundColor: '#f5f5f5', // light grey for light mode
+        textColor: '#000000', // black
+        strokeColor: '#e5e7eb' // light stroke for light mode
+      };
+    }
+  };
   
   const generatePlaceholderUrl = useMemo(() => {
     return (width: number = 400, height: number = 600) => {
-      // Don't generate placeholder until mounted to avoid hydration mismatch
-      if (!mounted) {
-        return `data:image/svg+xml;base64,${btoa(`
-          <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="#f5f5f5" stroke="#e5e7eb" stroke-width="1"/>
-            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
-          </svg>
-        `)}`;
-      }
-
       // Determine the actual theme being used
       const currentTheme = resolvedTheme || theme || 'light';
+      const colors = getThemeColors(currentTheme);
       
-      console.log('🎨 Placeholder theme detection:', { theme, resolvedTheme, currentTheme, mounted });
-      
-      let backgroundColor: string;
-      let textColor: string;
-      
-      if (currentTheme === 'dark') {
-        backgroundColor = '#0f172a'; // darker slate grey with blue tint for dark mode
-        textColor = '#ffffff'; // white
-        console.log('🌙 Using DARK mode colors:', backgroundColor, textColor);
-      } else {
-        backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
-        textColor = '#000000'; // black
-        console.log('☀️ Using LIGHT mode colors:', backgroundColor, textColor);
-      }
+      console.log('🎨 Placeholder theme detection:', { theme, resolvedTheme, currentTheme, mounted, colors });
       
       return `data:image/svg+xml;base64,${btoa(`
         <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
+          <rect width="100%" height="100%" fill="${colors.backgroundColor}" stroke="${colors.strokeColor}" stroke-width="1"/>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="${colors.textColor}" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
         </svg>
       `)}`;
     };
@@ -51,34 +50,14 @@ export const usePlaceholder = () => {
   
   const generateAvatarPlaceholderUrl = useMemo(() => {
     return (width: number = 150, height: number = 150) => {
-      // Don't generate placeholder until mounted to avoid hydration mismatch
-      if (!mounted) {
-        return `data:image/svg+xml;base64,${btoa(`
-          <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="#f5f5f5" stroke="#e5e7eb" stroke-width="1"/>
-            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
-          </svg>
-        `)}`;
-      }
-
       // Determine the actual theme being used
       const currentTheme = resolvedTheme || theme || 'light';
-      
-      let backgroundColor: string;
-      let textColor: string;
-      
-      if (currentTheme === 'dark') {
-        backgroundColor = '#0f172a'; // darker slate grey with blue tint for dark mode
-        textColor = '#ffffff'; // white
-      } else {
-        backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
-        textColor = '#000000'; // black
-      }
+      const colors = getThemeColors(currentTheme);
       
       return `data:image/svg+xml;base64,${btoa(`
         <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
+          <rect width="100%" height="100%" fill="${colors.backgroundColor}" stroke="${colors.strokeColor}" stroke-width="1"/>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="${colors.textColor}" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
         </svg>
       `)}`;
     };
