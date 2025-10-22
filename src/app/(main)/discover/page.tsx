@@ -497,7 +497,7 @@ export default function DiscoverPage() {
   useEffect(() => {
     const fetchArtists = async () => {
       try {
-        setIsLoading(true);
+        setIsDataLoading(true);
         const artistsQuery = query(
           collection(db, 'users'),
           where('isProfessional', '==', true),
@@ -605,7 +605,7 @@ export default function DiscoverPage() {
         console.log('🎨 Discover: Using mock data -', mockArtists.length, 'artists and', mockArtworks.length, 'artworks');
         console.log('📊 Mock artwork breakdown:', mockArtists.map(a => `${a.name}: ${a.portfolioImages?.length || 0} pieces`));
       } finally {
-    setIsLoading(false);
+    setIsDataLoading(false);
       }
     };
 
