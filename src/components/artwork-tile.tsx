@@ -162,7 +162,7 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
           <div className={`absolute bottom-0 left-0 right-0 backdrop-blur-sm p-2 ${
             (resolvedTheme || theme) === 'dark' 
               ? 'bg-black/80' 
-              : 'bg-red-600/90'
+              : 'bg-red-600'
           }`}>
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">

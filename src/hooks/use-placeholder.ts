@@ -12,9 +12,12 @@ export const usePlaceholder = () => {
 
   // Helper function to get theme colors
   const getThemeColors = (currentTheme: string) => {
-    // Additional check: look at document class as fallback
+    // More robust theme detection
     const isDarkMode = currentTheme === 'dark' || 
-                      (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
+                      (typeof document !== 'undefined' && document.documentElement.classList.contains('dark')) ||
+                      (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    
+    console.log('🎨 Theme detection:', { currentTheme, isDarkMode, documentClass: typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : 'N/A' });
     
     if (isDarkMode) {
       return {
