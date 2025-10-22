@@ -312,15 +312,16 @@ export default function AdminPanel() {
         notes: adminNotes
       });
 
-      // Update the user's profile to make them a professional artist
+      // Update the user's profile to make them a verified professional artist
       await updateDoc(doc(db, 'userProfiles', request.userId), {
         isProfessional: true,
+        isVerified: true,
         updatedAt: serverTimestamp()
       });
 
       toast({
-        title: "Request approved",
-        description: `${request.user.displayName} is now a professional artist.`,
+        title: "Verification approved",
+        description: `${request.user.displayName} is now a verified professional artist.`,
       });
 
       setSelectedRequest(null);
@@ -358,8 +359,8 @@ export default function AdminPanel() {
       });
 
       toast({
-        title: "Request rejected",
-        description: `Request from ${request.user.displayName} has been rejected.`,
+        title: "Verification rejected",
+        description: `Professional verification request from ${request.user.displayName} has been rejected.`,
       });
 
       setSelectedRequest(null);
@@ -1361,10 +1362,10 @@ export default function AdminPanel() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Artist Account */}
+        {/* Professional Verification */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Artist Account</CardTitle>
+            <CardTitle className="text-lg">Professional Verification</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <button
@@ -1601,7 +1602,7 @@ export default function AdminPanel() {
               </Card>
             ) : (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Pending Artist Requests</h2>
+              <h2 className="text-2xl font-bold">Pending Professional Verification Requests</h2>
               {pendingRequests.map((request) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
@@ -1685,7 +1686,7 @@ export default function AdminPanel() {
             </Card>
           ) : (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Approved Artists</h2>
+              <h2 className="text-2xl font-bold">Verified Professional Artists</h2>
               {approvedRequests.map((request) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
@@ -1743,7 +1744,7 @@ export default function AdminPanel() {
               </Card>
             ) : (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Rejected Artist Requests</h2>
+              <h2 className="text-2xl font-bold">Rejected Professional Verification Requests</h2>
               {rejectedRequests.map((request) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">

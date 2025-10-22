@@ -72,6 +72,7 @@ export default function DiscoverPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCountryOfOrigin, setSelectedCountryOfOrigin] = useState<string>('all');
   const [selectedCountryOfResidence, setSelectedCountryOfResidence] = useState<string>('all');
+  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
@@ -603,6 +604,46 @@ export default function DiscoverPage() {
     }
   };
 
+  // Filter artworks based on search and filters
+  const filteredArtworks = artworks.filter((artwork) => {
+    // Search filter
+    if (searchTerm) {
+      const matchesSearch = artwork.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           artwork.imageAiHint.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        artwork.artist.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           artwork.artist.handle.toLowerCase().includes(searchTerm.toLowerCase());
+      if (!matchesSearch) return false;
+    }
+
+    // Category filter
+    if (selectedCategory !== 'All') {
+      if (artwork.category !== selectedCategory) return false;
+    }
+    
+    // Verified professional artists filter
+    if (showVerifiedOnly) {
+      if (!artwork.artist.isVerified || !artwork.artist.isProfessional) return false;
+    }
+    
+    return true;
+  });
+
+    // Sort artworks
+  const sortedArtworks = [...filteredArtworks].sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'popular':
+          return (b.likes || 0) - (a.likes || 0);
+        case 'price-low':
+          return (a.price || 0) - (b.price || 0);
+        case 'price-high':
+          return (b.price || 0) - (a.price || 0);
+        default:
+          return 0;
+      }
+    });
+
   const filteredArtists = artists.filter(artist => {
     // Search term filter
     if (searchTerm) {
@@ -622,6 +663,11 @@ export default function DiscoverPage() {
       if (artist.countryOfResidence !== selectedCountryOfResidence) return false;
     }
     
+    // Filter by verified professional artists
+    if (showVerifiedOnly) {
+      if (!artist.isVerified || !artist.isProfessional) return false;
+    }
+    
     return true;
   });
   
@@ -635,13 +681,15 @@ export default function DiscoverPage() {
     setSelectedCategory('All');
     setSelectedCountryOfOrigin('all');
     setSelectedCountryOfResidence('all');
+    setShowVerifiedOnly(false);
   };
   
   // Count active filters
   const activeFiltersCount = [
     selectedCountryOfOrigin !== 'all',
     selectedCountryOfResidence !== 'all',
-    selectedCategory !== 'All'
+    selectedCategory !== 'All',
+    showVerifiedOnly
   ].filter(Boolean).length;
 
   if (selectedArtist) {
@@ -863,6 +911,14 @@ export default function DiscoverPage() {
                     <SelectItem value="price-high">Price: High to Low</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button
+                  variant={showVerifiedOnly ? "default" : "outline"}
+                  onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
+                  className="whitespace-nowrap"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Verified Only
+                </Button>
               </>
             )}
             
@@ -890,6 +946,14 @@ export default function DiscoverPage() {
               ))}
             </SelectContent>
           </Select>
+                <Button
+                  variant={showVerifiedOnly ? "default" : "outline"}
+                  onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
+                  className="whitespace-nowrap"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Verified Only
+                </Button>
                 {activeFiltersCount > 0 && (
                   <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap">
                     Clear Filters ({activeFiltersCount})
@@ -985,7 +1049,7 @@ export default function DiscoverPage() {
         ) : (
           <div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2">
-              {artworks.map((artwork) => (
+              {sortedArtworks.map((artwork) => (
                 <ArtworkTile key={artwork.id} artwork={artwork} />
               ))}
             </div>

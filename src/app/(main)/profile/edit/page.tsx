@@ -489,8 +489,8 @@ export default function ProfileEditPage() {
       console.log('✅ Artist request submitted successfully:', docRef.id, artistRequest);
 
       toast({
-        title: "Request submitted",
-        description: "Your artist account request has been submitted for review.",
+        title: "Verification request submitted",
+        description: "Your professional artist verification request has been submitted for review.",
       });
 
       // Redirect to profile with pending indicator
@@ -507,7 +507,7 @@ export default function ProfileEditPage() {
       console.error('Error submitting artist request:', error);
       toast({
         title: "Submission failed",
-        description: "Failed to submit artist request. Please try again.",
+        description: "Failed to submit verification request. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -877,9 +877,9 @@ export default function ProfileEditPage() {
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <Label>Professional Artist Account</Label>
+                <Label>Artist Account</Label>
                 <p className="text-sm text-muted-foreground">
-                  Enable additional features like shop and community
+                  Enable artist features like portfolio uploads and discoverability
                 </p>
               </div>
               <Switch
@@ -888,16 +888,53 @@ export default function ProfileEditPage() {
               />
             </div>
 
+            {/* Verified Professional Artist Status */}
+            {formData.isProfessional && (
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Label>Verified Professional Artist</Label>
+                    {user?.isVerified ? (
+                      <Badge variant="default" className="bg-green-600">
+                        <Check className="h-3 w-3 mr-1" />
+                        Verified
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">
+                        Pending Review
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {user?.isVerified 
+                      ? "You are a verified professional artist with full platform access"
+                      : "Request verification to access advanced features and gain credibility"
+                    }
+                  </p>
+                </div>
+                {!user?.isVerified && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowArtistRequest(true)}
+                  >
+                    Request Verification
+                  </Button>
+                )}
+              </div>
+            )}
+
           </CardContent>
         </Card>
 
         {/* Artist Account Request */}
-        {!formData.isProfessional && (
+        {formData.isProfessional && !user?.isVerified && (
           <Card>
             <CardHeader>
-              <CardTitle>Become a Professional Artist</CardTitle>
+              <CardTitle>Request Professional Verification</CardTitle>
               <CardDescription>
-                Request to become a professional artist to upload artworks, be discoverable, and access additional features.
+                Submit your portfolio and credentials to become a verified professional artist with enhanced features and credibility.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -907,7 +944,7 @@ export default function ProfileEditPage() {
                   className="w-full"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Request Artist Account
+                  Request Professional Verification
                 </Button>
               ) : (
                 <div className="space-y-6">
@@ -1084,7 +1121,7 @@ export default function ProfileEditPage() {
                       onClick={handleArtistRequestSubmit}
                       disabled={isSubmittingRequest || portfolioImages.length === 0}
                     >
-                      {isSubmittingRequest ? 'Submitting...' : 'Submit Request'}
+                      {isSubmittingRequest ? 'Submitting...' : 'Submit Verification Request'}
                     </Button>
                   </div>
                 </div>
