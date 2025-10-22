@@ -163,7 +163,7 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
           {/* Artist banner at bottom */}
           <div className={`absolute bottom-0 left-0 right-0 backdrop-blur-sm p-2 ${
             (resolvedTheme || theme) === 'dark' 
-              ? 'bg-black/80' 
+              ? 'bg-gray-900/90' 
               : 'bg-red-600'
           }`}>
             <div className="flex items-center gap-2">
@@ -174,7 +174,11 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
                   <span className="text-white text-sm font-medium truncate">{artwork.artist.name}</span>
-                  {artwork.artist.isVerified && <CheckCircle className="h-3 w-3 text-blue-400 flex-shrink-0" />}
+                  {artwork.artist.isVerified && <CheckCircle className={`h-3 w-3 flex-shrink-0 ${
+                    (resolvedTheme || theme) === 'dark' 
+                      ? 'text-blue-400' 
+                      : 'text-white'
+                  }`} />}
                 </div>
                 {artwork.artist.location && (
                   <div className="flex items-center gap-1">
