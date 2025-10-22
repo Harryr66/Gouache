@@ -1,15 +1,31 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 
 export const usePlaceholder = () => {
   const { theme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted before using theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const generatePlaceholderUrl = useMemo(() => {
     return (width: number = 400, height: number = 600) => {
+      // Don't generate placeholder until mounted to avoid hydration mismatch
+      if (!mounted) {
+        return `data:image/svg+xml;base64,${btoa(`
+          <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#f5f5f5" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
+          </svg>
+        `)}`;
+      }
+
       // Determine the actual theme being used
       const currentTheme = resolvedTheme || theme || 'light';
       
-      console.log('🎨 Placeholder theme detection:', { theme, resolvedTheme, currentTheme });
+      console.log('🎨 Placeholder theme detection:', { theme, resolvedTheme, currentTheme, mounted });
       
       let backgroundColor: string;
       let textColor: string;
@@ -31,10 +47,20 @@ export const usePlaceholder = () => {
         </svg>
       `)}`;
     };
-  }, [theme, resolvedTheme]);
+  }, [theme, resolvedTheme, mounted]);
   
   const generateAvatarPlaceholderUrl = useMemo(() => {
     return (width: number = 150, height: number = 150) => {
+      // Don't generate placeholder until mounted to avoid hydration mismatch
+      if (!mounted) {
+        return `data:image/svg+xml;base64,${btoa(`
+          <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#f5f5f5" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
+          </svg>
+        `)}`;
+      }
+
       // Determine the actual theme being used
       const currentTheme = resolvedTheme || theme || 'light';
       
@@ -56,7 +82,7 @@ export const usePlaceholder = () => {
         </svg>
       `)}`;
     };
-  }, [theme, resolvedTheme]);
+  }, [theme, resolvedTheme, mounted]);
   
   return {
     generatePlaceholderUrl,
