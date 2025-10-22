@@ -27,7 +27,7 @@ export const usePlaceholder = () => {
       };
     } else {
       return {
-        backgroundColor: '#f5f5f5', // light grey for light mode
+        backgroundColor: '#f8f9fa', // slightly muted off-white grey for light mode
         textColor: '#000000', // black
         strokeColor: '#e5e7eb' // light stroke for light mode
       };
