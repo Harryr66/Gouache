@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Upload, X, Check, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
@@ -20,6 +21,18 @@ import { toast } from '@/hooks/use-toast';
 import { ArtistRequest } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 
+// Countries list for dropdowns
+const COUNTRIES = [
+  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 
+  'France', 'Italy', 'Spain', 'Netherlands', 'Belgium', 'Switzerland',
+  'Japan', 'South Korea', 'China', 'India', 'Brazil', 'Mexico', 
+  'Argentina', 'Colombia', 'South Africa', 'Egypt', 'Morocco',
+  'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland', 'Portugal',
+  'Greece', 'Turkey', 'Israel', 'United Arab Emirates', 'Singapore',
+  'New Zealand', 'Ireland', 'Austria', 'Czech Republic', 'Russia',
+  'Nigeria', 'Kenya', 'Ghana', 'Chile', 'Peru', 'Venezuela',
+  'Philippines', 'Thailand', 'Indonesia', 'Malaysia', 'Vietnam'
+];
 
 export default function ProfileEditPage() {
   const router = useRouter();
@@ -806,22 +819,40 @@ export default function ProfileEditPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="countryOfOrigin">Country of Origin</Label>
-                <Input
-                  id="countryOfOrigin"
-                  value={formData.countryOfOrigin}
-                  onChange={(e) => handleInputChange('countryOfOrigin', e.target.value)}
-                  placeholder="e.g., United States"
-                />
+                <Select 
+                  value={formData.countryOfOrigin || ''} 
+                  onValueChange={(value) => handleInputChange('countryOfOrigin', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your country of origin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="countryOfResidence">Country of Residence</Label>
-                <Input
-                  id="countryOfResidence"
-                  value={formData.countryOfResidence}
-                  onChange={(e) => handleInputChange('countryOfResidence', e.target.value)}
-                  placeholder="e.g., United Kingdom"
-                />
+                <Select 
+                  value={formData.countryOfResidence || ''} 
+                  onValueChange={(value) => handleInputChange('countryOfResidence', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your country of residence" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
