@@ -302,8 +302,8 @@ export default function DiscoverPage() {
   });
   
   // Get unique countries from artists for filter options
-  const availableOriginCountries = Array.from(new Set(mockArtists.map(a => a.countryOfOrigin).filter(Boolean))).sort();
-  const availableResidenceCountries = Array.from(new Set(mockArtists.map(a => a.countryOfResidence).filter(Boolean))).sort();
+  const availableOriginCountries = Array.from(new Set(mockArtists.map(a => a.countryOfOrigin).filter(Boolean))) as string[];
+  const availableResidenceCountries = Array.from(new Set(mockArtists.map(a => a.countryOfResidence).filter(Boolean))) as string[];
   
   // Clear filters function
   const clearFilters = () => {
