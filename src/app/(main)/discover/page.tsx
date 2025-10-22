@@ -75,15 +75,32 @@ export default function DiscoverPage() {
     return () => clearTimeout(timer);
   }, []);
   
-  // Generate placeholder URL with forced theme detection
+  // Generate placeholder URL with robust theme detection
   const getDiscoverPlaceholder = () => {
     if (typeof document === 'undefined') {
       return generatePlaceholderUrl(400, 300);
     }
     
-    // Force check document class directly
-    const isDark = document.documentElement.classList.contains('dark');
+    // Multiple theme detection methods
+    const hasDarkClass = document.documentElement.classList.contains('dark');
+    const hasLightClass = document.documentElement.classList.contains('light');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Determine theme with fallback logic
+    let isDark = false;
+    if (hasDarkClass) {
+      isDark = true;
+    } else if (hasLightClass) {
+      isDark = false;
+    } else {
+      // Fallback to system preference
+      isDark = prefersDark;
+    }
+    
     console.log('🎨 Discover theme check:', { 
+      hasDarkClass,
+      hasLightClass,
+      prefersDark,
       isDark,
       documentClass: document.documentElement.className,
       isThemeLoading
