@@ -61,20 +61,42 @@ export const usePlaceholder = () => {
   // Main function that chooses the correct placeholder
   const generatePlaceholderUrl = useMemo(() => {
     return (width: number = 400, height: number = 600) => {
+      if (!mounted) {
+        // Return a neutral placeholder during SSR
+        return `data:image/svg+xml;base64,${btoa(`
+          <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#6b7280" stroke="#4b5563" stroke-width="1"/>
+            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
+          </svg>
+        `)}`;
+      }
+      
       const currentTheme = resolvedTheme || theme || 'light';
       
-      console.log('🎨 Theme detection:', { theme, resolvedTheme, currentTheme });
+      console.log('🎨 Theme detection:', { theme, resolvedTheme, currentTheme, mounted });
       
       if (currentTheme === 'dark') {
+        console.log('🌙 Using DARK theme placeholder');
         return generateDarkThemePlaceholderUrl(width, height);
       } else {
+        console.log('☀️ Using LIGHT theme placeholder');
         return generateLightThemePlaceholderUrl(width, height);
       }
     };
-  }, [theme, resolvedTheme, generateLightThemePlaceholderUrl, generateDarkThemePlaceholderUrl]);
+  }, [theme, resolvedTheme, generateLightThemePlaceholderUrl, generateDarkThemePlaceholderUrl, mounted]);
   
   const generateAvatarPlaceholderUrl = useMemo(() => {
     return (width: number = 150, height: number = 150) => {
+      if (!mounted) {
+        // Return a neutral placeholder during SSR
+        return `data:image/svg+xml;base64,${btoa(`
+          <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#6b7280" stroke="#4b5563" stroke-width="1"/>
+            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
+          </svg>
+        `)}`;
+      }
+      
       const currentTheme = resolvedTheme || theme || 'light';
       
       if (currentTheme === 'dark') {
@@ -83,7 +105,7 @@ export const usePlaceholder = () => {
         return generateLightThemeAvatarPlaceholderUrl(width, height);
       }
     };
-  }, [theme, resolvedTheme, generateLightThemeAvatarPlaceholderUrl, generateDarkThemeAvatarPlaceholderUrl]);
+  }, [theme, resolvedTheme, generateLightThemeAvatarPlaceholderUrl, generateDarkThemeAvatarPlaceholderUrl, mounted]);
   
   return {
     generatePlaceholderUrl,
