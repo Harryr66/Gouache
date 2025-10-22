@@ -63,21 +63,8 @@ export default function DiscoverPage() {
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { user } = useAuth();
   
-  // Force correct placeholder colors - same as everywhere else
-  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-  const placeholderUrl = isDark 
-    ? `data:image/svg+xml;base64,${btoa(`
-        <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#0a0f1a" stroke="#1e293b" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
-        </svg>
-      `)}`
-    : `data:image/svg+xml;base64,${btoa(`
-        <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#fafafa" stroke="#e5e5e5" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
-        </svg>
-      `)}`;
+  // Use EXACTLY the same approach as every other page
+  const placeholderUrl = generatePlaceholderUrl(400, 300);
   
   const [view, setView] = useState<'artworks' | 'artists'>('artworks');
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
