@@ -210,7 +210,17 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      variant={following ? "outline" : "default"}
+                      variant="default"
+                      asChild
+                      className="flex items-center gap-2 bg-primary hover:bg-primary/90"
+                    >
+                      <Link href={`/profile/${artwork.artist.handle}`}>
+                        <ExternalLink className="h-4 w-4" />
+                        View Profile
+                      </Link>
+                    </Button>
+                    <Button
+                      variant={following ? "outline" : "secondary"}
                       onClick={handleFollowToggle}
                       className="flex items-center gap-2"
                     >

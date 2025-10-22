@@ -341,6 +341,138 @@ export default function DiscoverPage() {
       events: [],
       courses: [],
       discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-11',
+      name: 'Maria Santos',
+      handle: 'maria_santos',
+      bio: 'Brazilian street artist creating vibrant murals that celebrate community and social justice. My work transforms urban spaces into canvases of hope.',
+      followerCount: 14200,
+      followingCount: 98,
+      createdAt: new Date('2022-05-14'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'São Paulo, Brazil',
+      countryOfOrigin: 'Brazil',
+      countryOfResidence: 'Brazil',
+      socialLinks: {
+        instagram: 'https://instagram.com/maria_santos_street',
+        x: 'https://x.com/maria_santos',
+        website: 'https://maria-santos-art.com'
+      },
+      portfolioImages: [
+        { id: '26', imageUrl: generatePlaceholderUrl(600, 600), title: 'Community Mural', description: 'Vibrant street art celebrating unity', medium: 'Spray Paint', year: '2023', tags: ['street-art', 'community'], createdAt: new Date() },
+        { id: '27', imageUrl: generatePlaceholderUrl(600, 600), title: 'Social Justice', description: 'Art for change and awareness', medium: 'Mixed Media', year: '2023', tags: ['street-art', 'social'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-12',
+      name: 'Oliver Wright',
+      handle: 'oliver_wright',
+      bio: 'Australian landscape painter capturing the raw beauty of the outback and coastal regions. My work explores the relationship between nature and human experience.',
+      followerCount: 10800,
+      followingCount: 76,
+      createdAt: new Date('2021-08-30'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Melbourne, Australia',
+      countryOfOrigin: 'Australia',
+      countryOfResidence: 'Australia',
+      socialLinks: {
+        instagram: 'https://instagram.com/oliver_wright_landscapes',
+        x: 'https://x.com/oliver_wright',
+        website: 'https://oliver-wright-art.com'
+      },
+      portfolioImages: [
+        { id: '28', imageUrl: generatePlaceholderUrl(600, 600), title: 'Outback Dreams', description: 'Vast Australian landscapes', medium: 'Oil on Canvas', year: '2023', tags: ['landscape', 'australia'], createdAt: new Date() },
+        { id: '29', imageUrl: generatePlaceholderUrl(600, 600), title: 'Coastal Serenity', description: 'Peaceful beach scenes', medium: 'Oil on Canvas', year: '2023', tags: ['landscape', 'coastal'], createdAt: new Date() },
+        { id: '30', imageUrl: generatePlaceholderUrl(600, 600), title: 'Desert Sunsets', description: 'Golden hour in the outback', medium: 'Oil on Canvas', year: '2023', tags: ['landscape', 'desert'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-13',
+      name: 'Zara Khan',
+      handle: 'zara_khan',
+      bio: 'Pakistani miniature painter preserving traditional techniques while exploring contemporary themes. My work bridges centuries-old artistry with modern narratives.',
+      followerCount: 16500,
+      followingCount: 112,
+      createdAt: new Date('2022-02-18'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Lahore, Pakistan',
+      countryOfOrigin: 'Pakistan',
+      countryOfResidence: 'Pakistan',
+      socialLinks: {
+        instagram: 'https://instagram.com/zara_khan_miniatures',
+        x: 'https://x.com/zara_khan',
+        website: 'https://zara-khan-miniatures.com'
+      },
+      portfolioImages: [
+        { id: '31', imageUrl: generatePlaceholderUrl(600, 600), title: 'Traditional Tales', description: 'Classic miniature storytelling', medium: 'Miniature Painting', year: '2023', tags: ['miniature', 'traditional'], createdAt: new Date() },
+        { id: '32', imageUrl: generatePlaceholderUrl(600, 600), title: 'Modern Narratives', description: 'Contemporary themes in miniature', medium: 'Miniature Painting', year: '2023', tags: ['miniature', 'contemporary'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-14',
+      name: 'James Mitchell',
+      handle: 'james_mitchell',
+      bio: 'Canadian wood sculptor creating intricate pieces from reclaimed materials. My work explores themes of sustainability and the beauty found in natural forms.',
+      followerCount: 9200,
+      followingCount: 84,
+      createdAt: new Date('2022-09-12'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Vancouver, Canada',
+      countryOfOrigin: 'Canada',
+      countryOfResidence: 'Canada',
+      socialLinks: {
+        instagram: 'https://instagram.com/james_mitchell_sculpture',
+        x: 'https://x.com/james_mitchell',
+        website: 'https://james-mitchell-sculpture.com'
+      },
+      portfolioImages: [
+        { id: '33', imageUrl: generatePlaceholderUrl(600, 600), title: 'Reclaimed Beauty', description: 'Sculpture from salvaged wood', medium: 'Wood Sculpture', year: '2023', tags: ['sculpture', 'wood'], createdAt: new Date() },
+        { id: '34', imageUrl: generatePlaceholderUrl(600, 600), title: 'Natural Forms', description: 'Organic shapes in wood', medium: 'Wood Sculpture', year: '2023', tags: ['sculpture', 'organic'], createdAt: new Date() },
+        { id: '35', imageUrl: generatePlaceholderUrl(600, 600), title: 'Sustainable Art', description: 'Eco-conscious sculptural work', medium: 'Wood Sculpture', year: '2023', tags: ['sculpture', 'sustainable'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
+    },
+    {
+      id: 'artist-15',
+      name: 'Yuki Nakamura',
+      handle: 'yuki_nakamura',
+      bio: 'Japanese contemporary artist working with traditional paper-making techniques and modern installations. My work explores the intersection of craft and conceptual art.',
+      followerCount: 13400,
+      followingCount: 95,
+      createdAt: new Date('2021-12-07'),
+      isVerified: true,
+      isProfessional: true,
+      location: 'Kyoto, Japan',
+      countryOfOrigin: 'Japan',
+      countryOfResidence: 'Japan',
+      socialLinks: {
+        instagram: 'https://instagram.com/yuki_nakamura_paper',
+        x: 'https://x.com/yuki_nakamura',
+        website: 'https://yuki-nakamura-art.com'
+      },
+      portfolioImages: [
+        { id: '36', imageUrl: generatePlaceholderUrl(600, 600), title: 'Paper Installations', description: 'Large-scale paper artworks', medium: 'Paper Installation', year: '2023', tags: ['paper', 'installation'], createdAt: new Date() },
+        { id: '37', imageUrl: generatePlaceholderUrl(600, 600), title: 'Traditional Craft', description: 'Handmade paper techniques', medium: 'Handmade Paper', year: '2023', tags: ['paper', 'traditional'], createdAt: new Date() }
+      ],
+      events: [],
+      courses: [],
+      discoverThumbnail: generatePlaceholderUrl(600, 600)
     }
   ];
 
@@ -404,11 +536,11 @@ export default function DiscoverPage() {
                 discussionId: `discussion-${artist.id}-${index}`,
                 tags: portfolioItem.tags || [],
                 price: Math.floor(Math.random() * 5000) + 500,
-                currency: 'USD',
+        currency: 'USD',
                 isForSale: Math.random() > 0.3,
                 category: portfolioItem.medium || 'Mixed Media',
                 medium: portfolioItem.medium || 'Mixed Media',
-                dimensions: { width: 24, height: 30, unit: 'in' },
+        dimensions: { width: 24, height: 30, unit: 'in' },
                 createdAt: portfolioItem.createdAt,
                 updatedAt: portfolioItem.createdAt,
                 views: Math.floor(Math.random() * 5000),
@@ -456,7 +588,7 @@ export default function DiscoverPage() {
         console.log('🎨 Discover: Using mock data -', mockArtists.length, 'artists and', mockArtworks.length, 'artworks');
         console.log('📊 Mock artwork breakdown:', mockArtists.map(a => `${a.name}: ${a.portfolioImages?.length || 0} pieces`));
       } finally {
-        setIsLoading(false);
+    setIsLoading(false);
       }
     };
 
@@ -680,24 +812,24 @@ export default function DiscoverPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold mb-2">Discover</h1>
           <p className="text-muted-foreground">Explore artworks and artists from around the world</p>
         </div>
-      </div>
+        </div>
 
       {/* Search & Filters */}
       <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+          <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
+            <Input
                 placeholder="Search artists and artworks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
             </div>
             <Tabs value={view} onValueChange={(v) => setView(v as 'artworks' | 'artists')} className="w-full sm:w-auto">
               <TabsList className="grid w-full grid-cols-2">
@@ -710,21 +842,21 @@ export default function DiscoverPage() {
           <div className="flex gap-3 mt-3 overflow-x-auto pb-2 flex-wrap">
             {view === 'artworks' && (
               <>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
                     {categories.map((cat) => (
                       <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={sortBy} onValueChange={setSortBy}>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
                     <SelectItem value="newest">Newest</SelectItem>
                     <SelectItem value="popular">Most Popular</SelectItem>
                     <SelectItem value="price-low">Price: Low to High</SelectItem>
@@ -755,9 +887,9 @@ export default function DiscoverPage() {
                     <SelectItem value="all">All Residences</SelectItem>
                     {availableResidenceCountries.map((country) => (
                       <SelectItem key={country} value={country}>{country}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              ))}
+            </SelectContent>
+          </Select>
                 {activeFiltersCount > 0 && (
                   <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap">
                     Clear Filters ({activeFiltersCount})
@@ -824,9 +956,9 @@ export default function DiscoverPage() {
                       <Separator />
 
                       <div className="flex items-center gap-2">
-                        <Button
+          <Button
                           variant={following ? "outline" : "default"}
-                          size="sm"
+            size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleFollowToggle(artist);
@@ -835,17 +967,17 @@ export default function DiscoverPage() {
                         >
                           {following ? <UserCheck className="h-3 w-3 mr-1" /> : <UserPlus className="h-3 w-3 mr-1" />}
                           {following ? 'Following' : 'Follow'}
-                        </Button>
-                        <Button
+          </Button>
+          <Button
                           variant="ghost"
-                          size="sm"
+            size="sm"
                           onClick={() => setSelectedArtist(artist)}
                         >
                           View Profile
-                        </Button>
-                      </div>
+          </Button>
+        </div>
                     </CardContent>
-                  </div>
+          </div>
                 </Card>
               );
             })}
@@ -861,8 +993,8 @@ export default function DiscoverPage() {
             {isLoading && (
               <div className="flex justify-center py-12">
                 <ThemeLoading text="Loading more artworks..." size="md" />
-              </div>
-            )}
+          </div>
+        )}
           </div>
         )}
       </div>
