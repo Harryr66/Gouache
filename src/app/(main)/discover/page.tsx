@@ -70,20 +70,6 @@ export default function DiscoverPage() {
     documentClass: typeof document !== 'undefined' ? document.documentElement.className : 'N/A' 
   });
   
-  // Create theme-specific placeholder function for Discover
-  const getDiscoverPlaceholder = () => {
-    if (isDark) {
-      return generatePlaceholderUrl(400, 300); // Use hook for dark theme
-    } else {
-      // Force light theme placeholder
-      return `data:image/svg+xml;base64,${btoa(`
-        <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#fafafa" stroke="#e5e5e5" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
-        </svg>
-      `)}`;
-    }
-  };
   
   const [view, setView] = useState<'artworks' | 'artists'>('artworks');
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
@@ -120,13 +106,13 @@ export default function DiscoverPage() {
         website: 'https://elena-vance.com'
       },
       portfolioImages: [
-        { id: '1', imageUrl: getDiscoverPlaceholder(), title: 'Abstract Harmony', description: 'A vibrant exploration of color', medium: 'Oil on Canvas', year: '2023', tags: ['abstract', 'color'], createdAt: new Date() },
-        { id: '2', imageUrl: getDiscoverPlaceholder(), title: 'Emotional Landscapes', description: 'Deep emotional expression', medium: 'Acrylic', year: '2023', tags: ['abstract', 'emotion'], createdAt: new Date() },
-        { id: '3', imageUrl: getDiscoverPlaceholder(), title: 'Color Symphony', description: 'Harmonious color composition', medium: 'Mixed Media', year: '2023', tags: ['abstract', 'color'], createdAt: new Date() }
+        { id: '1', imageUrl: generatePlaceholderUrl(400, 300), title: 'Abstract Harmony', description: 'A vibrant exploration of color', medium: 'Oil on Canvas', year: '2023', tags: ['abstract', 'color'], createdAt: new Date() },
+        { id: '2', imageUrl: generatePlaceholderUrl(400, 300), title: 'Emotional Landscapes', description: 'Deep emotional expression', medium: 'Acrylic', year: '2023', tags: ['abstract', 'emotion'], createdAt: new Date() },
+        { id: '3', imageUrl: generatePlaceholderUrl(400, 300), title: 'Color Symphony', description: 'Harmonious color composition', medium: 'Mixed Media', year: '2023', tags: ['abstract', 'color'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-2',
@@ -147,12 +133,12 @@ export default function DiscoverPage() {
         website: 'https://marcuschen.art'
       },
       portfolioImages: [
-        { id: '4', imageUrl: getDiscoverPlaceholder(), title: 'Digital Dreams', description: 'Futuristic cityscape', medium: 'Digital Art', year: '2023', tags: ['digital', 'urban'], createdAt: new Date() },
-        { id: '5', imageUrl: getDiscoverPlaceholder(), title: 'Urban Reflections', description: 'City life exploration', medium: 'Mixed Media', year: '2023', tags: ['urban', 'reflection'], createdAt: new Date() }
+        { id: '4', imageUrl: generatePlaceholderUrl(400, 300), title: 'Digital Dreams', description: 'Futuristic cityscape', medium: 'Digital Art', year: '2023', tags: ['digital', 'urban'], createdAt: new Date() },
+        { id: '5', imageUrl: generatePlaceholderUrl(400, 300), title: 'Urban Reflections', description: 'City life exploration', medium: 'Mixed Media', year: '2023', tags: ['urban', 'reflection'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-3',
@@ -172,12 +158,12 @@ export default function DiscoverPage() {
         website: 'https://sophiarodriguez.com'
       },
       portfolioImages: [
-        { id: '6', imageUrl: getDiscoverPlaceholder(), title: 'Ceramic Contemplation', description: 'Thoughtful ceramic work', medium: 'Ceramic', year: '2023', tags: ['sculpture', 'ceramic'], createdAt: new Date() },
-        { id: '7', imageUrl: getDiscoverPlaceholder(), title: 'Bronze Identity', description: 'Identity exploration in bronze', medium: 'Bronze', year: '2023', tags: ['sculpture', 'bronze'], createdAt: new Date() }
+        { id: '6', imageUrl: generatePlaceholderUrl(400, 300), title: 'Ceramic Contemplation', description: 'Thoughtful ceramic work', medium: 'Ceramic', year: '2023', tags: ['sculpture', 'ceramic'], createdAt: new Date() },
+        { id: '7', imageUrl: generatePlaceholderUrl(400, 300), title: 'Bronze Identity', description: 'Identity exploration in bronze', medium: 'Bronze', year: '2023', tags: ['sculpture', 'bronze'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-4',
@@ -198,13 +184,13 @@ export default function DiscoverPage() {
         website: 'https://akira-tanaka.com'
       },
       portfolioImages: [
-        { id: '8', imageUrl: getDiscoverPlaceholder(), title: 'Cherry Blossom Dreams', description: 'Traditional watercolor of spring', medium: 'Watercolor', year: '2023', tags: ['watercolor', 'nature'], createdAt: new Date() },
-        { id: '9', imageUrl: getDiscoverPlaceholder(), title: 'Tokyo Nights', description: 'Urban watercolor scene', medium: 'Watercolor', year: '2023', tags: ['watercolor', 'urban'], createdAt: new Date() },
-        { id: '10', imageUrl: getDiscoverPlaceholder(), title: 'Mountain Serenity', description: 'Peaceful mountain landscape', medium: 'Watercolor', year: '2023', tags: ['watercolor', 'landscape'], createdAt: new Date() }
+        { id: '8', imageUrl: generatePlaceholderUrl(400, 300), title: 'Cherry Blossom Dreams', description: 'Traditional watercolor of spring', medium: 'Watercolor', year: '2023', tags: ['watercolor', 'nature'], createdAt: new Date() },
+        { id: '9', imageUrl: generatePlaceholderUrl(400, 300), title: 'Tokyo Nights', description: 'Urban watercolor scene', medium: 'Watercolor', year: '2023', tags: ['watercolor', 'urban'], createdAt: new Date() },
+        { id: '10', imageUrl: generatePlaceholderUrl(400, 300), title: 'Mountain Serenity', description: 'Peaceful mountain landscape', medium: 'Watercolor', year: '2023', tags: ['watercolor', 'landscape'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-5',
@@ -225,12 +211,12 @@ export default function DiscoverPage() {
         website: 'https://isabella-martinez.art'
       },
       portfolioImages: [
-        { id: '11', imageUrl: getDiscoverPlaceholder(), title: 'Cultural Heritage', description: 'Celebrating Mexican traditions', medium: 'Oil on Canvas', year: '2023', tags: ['oil', 'culture'], createdAt: new Date() },
-        { id: '12', imageUrl: getDiscoverPlaceholder(), title: 'Feminine Strength', description: 'Portrait of empowerment', medium: 'Oil on Canvas', year: '2023', tags: ['oil', 'portrait'], createdAt: new Date() }
+        { id: '11', imageUrl: generatePlaceholderUrl(400, 300), title: 'Cultural Heritage', description: 'Celebrating Mexican traditions', medium: 'Oil on Canvas', year: '2023', tags: ['oil', 'culture'], createdAt: new Date() },
+        { id: '12', imageUrl: generatePlaceholderUrl(400, 300), title: 'Feminine Strength', description: 'Portrait of empowerment', medium: 'Oil on Canvas', year: '2023', tags: ['oil', 'portrait'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-6',
@@ -251,13 +237,13 @@ export default function DiscoverPage() {
         website: 'https://david-kim.art'
       },
       portfolioImages: [
-        { id: '13', imageUrl: getDiscoverPlaceholder(), title: 'Memory Fragments', description: 'Mixed media installation', medium: 'Mixed Media', year: '2023', tags: ['mixed-media', 'memory'], createdAt: new Date() },
-        { id: '14', imageUrl: getDiscoverPlaceholder(), title: 'Cultural Tapestry', description: 'Textile and digital fusion', medium: 'Mixed Media', year: '2023', tags: ['mixed-media', 'textile'], createdAt: new Date() },
-        { id: '15', imageUrl: getDiscoverPlaceholder(), title: 'Digital Memories', description: 'Technology meets tradition', medium: 'Mixed Media', year: '2023', tags: ['mixed-media', 'digital'], createdAt: new Date() }
+        { id: '13', imageUrl: generatePlaceholderUrl(400, 300), title: 'Memory Fragments', description: 'Mixed media installation', medium: 'Mixed Media', year: '2023', tags: ['mixed-media', 'memory'], createdAt: new Date() },
+        { id: '14', imageUrl: generatePlaceholderUrl(400, 300), title: 'Cultural Tapestry', description: 'Textile and digital fusion', medium: 'Mixed Media', year: '2023', tags: ['mixed-media', 'textile'], createdAt: new Date() },
+        { id: '15', imageUrl: generatePlaceholderUrl(400, 300), title: 'Digital Memories', description: 'Technology meets tradition', medium: 'Mixed Media', year: '2023', tags: ['mixed-media', 'digital'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-7',
@@ -278,12 +264,12 @@ export default function DiscoverPage() {
         website: 'https://emma-thompson-ceramics.com'
       },
       portfolioImages: [
-        { id: '16', imageUrl: getDiscoverPlaceholder(), title: 'Organic Forms', description: 'Natural ceramic shapes', medium: 'Ceramic', year: '2023', tags: ['ceramic', 'organic'], createdAt: new Date() },
-        { id: '17', imageUrl: getDiscoverPlaceholder(), title: 'Functional Art', description: 'Beautiful and useful ceramics', medium: 'Ceramic', year: '2023', tags: ['ceramic', 'functional'], createdAt: new Date() }
+        { id: '16', imageUrl: generatePlaceholderUrl(400, 300), title: 'Organic Forms', description: 'Natural ceramic shapes', medium: 'Ceramic', year: '2023', tags: ['ceramic', 'organic'], createdAt: new Date() },
+        { id: '17', imageUrl: generatePlaceholderUrl(400, 300), title: 'Functional Art', description: 'Beautiful and useful ceramics', medium: 'Ceramic', year: '2023', tags: ['ceramic', 'functional'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-8',
@@ -304,13 +290,13 @@ export default function DiscoverPage() {
         website: 'https://raj-patel-photography.com'
       },
       portfolioImages: [
-        { id: '18', imageUrl: getDiscoverPlaceholder(), title: 'Street Stories', description: 'Urban life documentation', medium: 'Photography', year: '2023', tags: ['photography', 'street'], createdAt: new Date() },
-        { id: '19', imageUrl: getDiscoverPlaceholder(), title: 'Cultural Mosaic', description: 'Diverse community portraits', medium: 'Photography', year: '2023', tags: ['photography', 'culture'], createdAt: new Date() },
-        { id: '20', imageUrl: getDiscoverPlaceholder(), title: 'Digital Dreams', description: 'Surreal digital manipulation', medium: 'Digital Art', year: '2023', tags: ['digital', 'surreal'], createdAt: new Date() }
+        { id: '18', imageUrl: generatePlaceholderUrl(400, 300), title: 'Street Stories', description: 'Urban life documentation', medium: 'Photography', year: '2023', tags: ['photography', 'street'], createdAt: new Date() },
+        { id: '19', imageUrl: generatePlaceholderUrl(400, 300), title: 'Cultural Mosaic', description: 'Diverse community portraits', medium: 'Photography', year: '2023', tags: ['photography', 'culture'], createdAt: new Date() },
+        { id: '20', imageUrl: generatePlaceholderUrl(400, 300), title: 'Digital Dreams', description: 'Surreal digital manipulation', medium: 'Digital Art', year: '2023', tags: ['digital', 'surreal'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-9',
@@ -331,12 +317,12 @@ export default function DiscoverPage() {
         website: 'https://luna-andersson.com'
       },
       portfolioImages: [
-        { id: '21', imageUrl: getDiscoverPlaceholder(), title: 'Nordic Textiles', description: 'Traditional patterns reimagined', medium: 'Textile', year: '2023', tags: ['textile', 'nordic'], createdAt: new Date() },
-        { id: '22', imageUrl: getDiscoverPlaceholder(), title: 'Nature Weavings', description: 'Organic textile forms', medium: 'Textile', year: '2023', tags: ['textile', 'nature'], createdAt: new Date() }
+        { id: '21', imageUrl: generatePlaceholderUrl(400, 300), title: 'Nordic Textiles', description: 'Traditional patterns reimagined', medium: 'Textile', year: '2023', tags: ['textile', 'nordic'], createdAt: new Date() },
+        { id: '22', imageUrl: generatePlaceholderUrl(400, 300), title: 'Nature Weavings', description: 'Organic textile forms', medium: 'Textile', year: '2023', tags: ['textile', 'nature'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-10',
@@ -357,13 +343,13 @@ export default function DiscoverPage() {
         website: 'https://ahmed-hassan-calligraphy.com'
       },
       portfolioImages: [
-        { id: '23', imageUrl: getDiscoverPlaceholder(), title: 'Sacred Script', description: 'Traditional Arabic calligraphy', medium: 'Ink on Paper', year: '2023', tags: ['calligraphy', 'traditional'], createdAt: new Date() },
-        { id: '24', imageUrl: getDiscoverPlaceholder(), title: 'Modern Verses', description: 'Contemporary calligraphic art', medium: 'Mixed Media', year: '2023', tags: ['calligraphy', 'contemporary'], createdAt: new Date() },
-        { id: '25', imageUrl: getDiscoverPlaceholder(), title: 'Cultural Bridge', description: 'East meets West in script', medium: 'Mixed Media', year: '2023', tags: ['calligraphy', 'cultural'], createdAt: new Date() }
+        { id: '23', imageUrl: generatePlaceholderUrl(400, 300), title: 'Sacred Script', description: 'Traditional Arabic calligraphy', medium: 'Ink on Paper', year: '2023', tags: ['calligraphy', 'traditional'], createdAt: new Date() },
+        { id: '24', imageUrl: generatePlaceholderUrl(400, 300), title: 'Modern Verses', description: 'Contemporary calligraphic art', medium: 'Mixed Media', year: '2023', tags: ['calligraphy', 'contemporary'], createdAt: new Date() },
+        { id: '25', imageUrl: generatePlaceholderUrl(400, 300), title: 'Cultural Bridge', description: 'East meets West in script', medium: 'Mixed Media', year: '2023', tags: ['calligraphy', 'cultural'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-11',
@@ -384,12 +370,12 @@ export default function DiscoverPage() {
         website: 'https://maria-santos-art.com'
       },
       portfolioImages: [
-        { id: '26', imageUrl: getDiscoverPlaceholder(), title: 'Community Mural', description: 'Vibrant street art celebrating unity', medium: 'Spray Paint', year: '2023', tags: ['street-art', 'community'], createdAt: new Date() },
-        { id: '27', imageUrl: getDiscoverPlaceholder(), title: 'Social Justice', description: 'Art for change and awareness', medium: 'Mixed Media', year: '2023', tags: ['street-art', 'social'], createdAt: new Date() }
+        { id: '26', imageUrl: generatePlaceholderUrl(400, 300), title: 'Community Mural', description: 'Vibrant street art celebrating unity', medium: 'Spray Paint', year: '2023', tags: ['street-art', 'community'], createdAt: new Date() },
+        { id: '27', imageUrl: generatePlaceholderUrl(400, 300), title: 'Social Justice', description: 'Art for change and awareness', medium: 'Mixed Media', year: '2023', tags: ['street-art', 'social'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-12',
@@ -410,13 +396,13 @@ export default function DiscoverPage() {
         website: 'https://oliver-wright-art.com'
       },
       portfolioImages: [
-        { id: '28', imageUrl: getDiscoverPlaceholder(), title: 'Outback Dreams', description: 'Vast Australian landscapes', medium: 'Oil on Canvas', year: '2023', tags: ['landscape', 'australia'], createdAt: new Date() },
-        { id: '29', imageUrl: getDiscoverPlaceholder(), title: 'Coastal Serenity', description: 'Peaceful beach scenes', medium: 'Oil on Canvas', year: '2023', tags: ['landscape', 'coastal'], createdAt: new Date() },
-        { id: '30', imageUrl: getDiscoverPlaceholder(), title: 'Desert Sunsets', description: 'Golden hour in the outback', medium: 'Oil on Canvas', year: '2023', tags: ['landscape', 'desert'], createdAt: new Date() }
+        { id: '28', imageUrl: generatePlaceholderUrl(400, 300), title: 'Outback Dreams', description: 'Vast Australian landscapes', medium: 'Oil on Canvas', year: '2023', tags: ['landscape', 'australia'], createdAt: new Date() },
+        { id: '29', imageUrl: generatePlaceholderUrl(400, 300), title: 'Coastal Serenity', description: 'Peaceful beach scenes', medium: 'Oil on Canvas', year: '2023', tags: ['landscape', 'coastal'], createdAt: new Date() },
+        { id: '30', imageUrl: generatePlaceholderUrl(400, 300), title: 'Desert Sunsets', description: 'Golden hour in the outback', medium: 'Oil on Canvas', year: '2023', tags: ['landscape', 'desert'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-13',
@@ -437,12 +423,12 @@ export default function DiscoverPage() {
         website: 'https://zara-khan-miniatures.com'
       },
       portfolioImages: [
-        { id: '31', imageUrl: getDiscoverPlaceholder(), title: 'Traditional Tales', description: 'Classic miniature storytelling', medium: 'Miniature Painting', year: '2023', tags: ['miniature', 'traditional'], createdAt: new Date() },
-        { id: '32', imageUrl: getDiscoverPlaceholder(), title: 'Modern Narratives', description: 'Contemporary themes in miniature', medium: 'Miniature Painting', year: '2023', tags: ['miniature', 'contemporary'], createdAt: new Date() }
+        { id: '31', imageUrl: generatePlaceholderUrl(400, 300), title: 'Traditional Tales', description: 'Classic miniature storytelling', medium: 'Miniature Painting', year: '2023', tags: ['miniature', 'traditional'], createdAt: new Date() },
+        { id: '32', imageUrl: generatePlaceholderUrl(400, 300), title: 'Modern Narratives', description: 'Contemporary themes in miniature', medium: 'Miniature Painting', year: '2023', tags: ['miniature', 'contemporary'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-14',
@@ -463,13 +449,13 @@ export default function DiscoverPage() {
         website: 'https://james-mitchell-sculpture.com'
       },
       portfolioImages: [
-        { id: '33', imageUrl: getDiscoverPlaceholder(), title: 'Reclaimed Beauty', description: 'Sculpture from salvaged wood', medium: 'Wood Sculpture', year: '2023', tags: ['sculpture', 'wood'], createdAt: new Date() },
-        { id: '34', imageUrl: getDiscoverPlaceholder(), title: 'Natural Forms', description: 'Organic shapes in wood', medium: 'Wood Sculpture', year: '2023', tags: ['sculpture', 'organic'], createdAt: new Date() },
-        { id: '35', imageUrl: getDiscoverPlaceholder(), title: 'Sustainable Art', description: 'Eco-conscious sculptural work', medium: 'Wood Sculpture', year: '2023', tags: ['sculpture', 'sustainable'], createdAt: new Date() }
+        { id: '33', imageUrl: generatePlaceholderUrl(400, 300), title: 'Reclaimed Beauty', description: 'Sculpture from salvaged wood', medium: 'Wood Sculpture', year: '2023', tags: ['sculpture', 'wood'], createdAt: new Date() },
+        { id: '34', imageUrl: generatePlaceholderUrl(400, 300), title: 'Natural Forms', description: 'Organic shapes in wood', medium: 'Wood Sculpture', year: '2023', tags: ['sculpture', 'organic'], createdAt: new Date() },
+        { id: '35', imageUrl: generatePlaceholderUrl(400, 300), title: 'Sustainable Art', description: 'Eco-conscious sculptural work', medium: 'Wood Sculpture', year: '2023', tags: ['sculpture', 'sustainable'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     },
     {
       id: 'artist-15',
@@ -490,12 +476,12 @@ export default function DiscoverPage() {
         website: 'https://yuki-nakamura-art.com'
       },
       portfolioImages: [
-        { id: '36', imageUrl: getDiscoverPlaceholder(), title: 'Paper Installations', description: 'Large-scale paper artworks', medium: 'Paper Installation', year: '2023', tags: ['paper', 'installation'], createdAt: new Date() },
-        { id: '37', imageUrl: getDiscoverPlaceholder(), title: 'Traditional Craft', description: 'Handmade paper techniques', medium: 'Handmade Paper', year: '2023', tags: ['paper', 'traditional'], createdAt: new Date() }
+        { id: '36', imageUrl: generatePlaceholderUrl(400, 300), title: 'Paper Installations', description: 'Large-scale paper artworks', medium: 'Paper Installation', year: '2023', tags: ['paper', 'installation'], createdAt: new Date() },
+        { id: '37', imageUrl: generatePlaceholderUrl(400, 300), title: 'Traditional Craft', description: 'Handmade paper techniques', medium: 'Handmade Paper', year: '2023', tags: ['paper', 'traditional'], createdAt: new Date() }
       ],
       events: [],
       courses: [],
-      discoverThumbnail: getDiscoverPlaceholder()
+      discoverThumbnail: generatePlaceholderUrl(400, 300)
     }
   ];
 
