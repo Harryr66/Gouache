@@ -63,6 +63,13 @@ export default function DiscoverPage() {
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { user } = useAuth();
   
+  // Debug theme detection
+  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  console.log('🔍 Discover theme detection:', { 
+    isDark, 
+    documentClass: typeof document !== 'undefined' ? document.documentElement.className : 'N/A' 
+  });
+  
   const [view, setView] = useState<'artworks' | 'artists'>('artworks');
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
