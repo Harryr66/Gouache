@@ -71,15 +71,30 @@ export const usePlaceholder = () => {
         `)}`;
       }
       
+      // More robust theme detection
       const currentTheme = resolvedTheme || theme || 'light';
       
-      console.log('🎨 Theme detection:', { theme, resolvedTheme, currentTheme, mounted });
+      // Additional check for system theme
+      const isSystemDark = typeof window !== 'undefined' && 
+        window.matchMedia && 
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
       
-      if (currentTheme === 'dark') {
-        console.log('🌙 Using DARK theme placeholder');
+      const finalTheme = currentTheme === 'system' ? (isSystemDark ? 'dark' : 'light') : currentTheme;
+      
+      console.log('🎨 Theme detection:', { 
+        theme, 
+        resolvedTheme, 
+        currentTheme, 
+        finalTheme, 
+        mounted,
+        isSystemDark 
+      });
+      
+      if (finalTheme === 'dark') {
+        console.log('🌙 Using DARK theme placeholder - #1e293b');
         return generateDarkThemePlaceholderUrl(width, height);
       } else {
-        console.log('☀️ Using LIGHT theme placeholder');
+        console.log('☀️ Using LIGHT theme placeholder - #fafafa');
         return generateLightThemePlaceholderUrl(width, height);
       }
     };
@@ -97,9 +112,17 @@ export const usePlaceholder = () => {
         `)}`;
       }
       
+      // More robust theme detection
       const currentTheme = resolvedTheme || theme || 'light';
       
-      if (currentTheme === 'dark') {
+      // Additional check for system theme
+      const isSystemDark = typeof window !== 'undefined' && 
+        window.matchMedia && 
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      const finalTheme = currentTheme === 'system' ? (isSystemDark ? 'dark' : 'light') : currentTheme;
+      
+      if (finalTheme === 'dark') {
         return generateDarkThemeAvatarPlaceholderUrl(width, height);
       } else {
         return generateLightThemeAvatarPlaceholderUrl(width, height);
