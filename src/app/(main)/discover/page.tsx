@@ -75,8 +75,38 @@ export default function DiscoverPage() {
     return () => clearTimeout(timer);
   }, []);
   
-  // Generate placeholder URL
-  const placeholderUrl = generatePlaceholderUrl(400, 300);
+  // Generate placeholder URL with forced theme detection
+  const getDiscoverPlaceholder = () => {
+    if (typeof document === 'undefined') {
+      return generatePlaceholderUrl(400, 300);
+    }
+    
+    // Force check document class directly
+    const isDark = document.documentElement.classList.contains('dark');
+    console.log('🎨 Discover theme check:', { 
+      isDark,
+      documentClass: document.documentElement.className,
+      isThemeLoading
+    });
+    
+    if (isDark) {
+      return `data:image/svg+xml;base64,${btoa(`
+        <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#0a0f1a" stroke="#1e293b" stroke-width="1"/>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
+        </svg>
+      `)}`;
+    } else {
+      return `data:image/svg+xml;base64,${btoa(`
+        <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#fafafa" stroke="#e5e5e5" stroke-width="1"/>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
+        </svg>
+      `)}`;
+    }
+  };
+  
+  const placeholderUrl = getDiscoverPlaceholder();
   
   
   const [view, setView] = useState<'artworks' | 'artists'>('artworks');
