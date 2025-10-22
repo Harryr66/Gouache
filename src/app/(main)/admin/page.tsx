@@ -2892,10 +2892,10 @@ export default function AdminPanel() {
                         <span className="text-sm">Instagram: {selectedRequest.socialLinks.instagram}</span>
                       </div>
                     )}
-                    {selectedRequest.socialLinks.twitter && (
+                    {selectedRequest.socialLinks.x && (
                       <div className="flex items-center gap-2">
                         <ExternalLink className="h-4 w-4" />
-                        <span className="text-sm">Twitter: {selectedRequest.socialLinks.twitter}</span>
+                        <span className="text-sm">X: {selectedRequest.socialLinks.x}</span>
                       </div>
                     )}
                     {selectedRequest.socialLinks.tiktok && (
