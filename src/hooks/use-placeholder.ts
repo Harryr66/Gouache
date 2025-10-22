@@ -4,11 +4,19 @@ import { useTheme } from 'next-themes';
 export const usePlaceholder = () => {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Ensure component is mounted before using theme
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Force refresh when theme changes
+  useEffect(() => {
+    if (mounted) {
+      setRefreshKey(prev => prev + 1);
+    }
+  }, [theme, resolvedTheme, mounted]);
 
   // SIMPLE DIRECT FUNCTIONS - NO COMPLEX THEME DETECTION
   const generateDarkPlaceholder = (width: number = 400, height: number = 600) => {
@@ -59,12 +67,13 @@ export const usePlaceholder = () => {
       
       console.log('🎨 SIMPLE Theme check:', { 
         isDark,
-        documentClass: typeof document !== 'undefined' ? document.documentElement.className : 'N/A'
+        documentClass: typeof document !== 'undefined' ? document.documentElement.className : 'N/A',
+        refreshKey
       });
       
       return isDark ? generateDarkPlaceholder(width, height) : generateLightPlaceholder(width, height);
     };
-  }, [mounted]);
+  }, [mounted, refreshKey]);
   
   const generateAvatarPlaceholderUrl = useMemo(() => {
     return (width: number = 150, height: number = 150) => {
@@ -77,7 +86,7 @@ export const usePlaceholder = () => {
       
       return isDark ? generateDarkAvatarPlaceholder(width, height) : generateLightAvatarPlaceholder(width, height);
     };
-  }, [mounted]);
+  }, [mounted, refreshKey]);
   
   return {
     generatePlaceholderUrl,
