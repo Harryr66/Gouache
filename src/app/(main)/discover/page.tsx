@@ -75,8 +75,8 @@ export default function DiscoverPage() {
     return () => clearTimeout(timer);
   }, []);
   
-  // Use EXACTLY the same pattern as marketplace page
-  const placeholderUrl = generatePlaceholderUrl(400, 300);
+  // Generate placeholder URL after theme is loaded
+  const placeholderUrl = isThemeLoading ? '' : generatePlaceholderUrl(400, 300);
   
   
   const [view, setView] = useState<'artworks' | 'artists'>('artworks');
