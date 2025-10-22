@@ -127,10 +127,10 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
 
   return (
     <>
-      <Card 
-        className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden" 
-        onClick={handleTileClick}
-      >
+    <Card 
+      className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0" 
+      onClick={handleTileClick}
+    >
         <div className="relative aspect-square overflow-hidden">
           <Image
             src={artwork.imageUrl}
@@ -282,7 +282,7 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
               <TabsContent value="portfolio" className="mt-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {Array.from({ length: 8 }, (_, i) => (
-                    <Card key={i} className="aspect-square overflow-hidden border-border">
+                    <Card key={i} className="aspect-square overflow-hidden border-0">
                       <Image
                         src={generatePlaceholderUrl(200, 200)}
                         alt={`Artwork ${i + 1}`}
