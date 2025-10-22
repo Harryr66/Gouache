@@ -806,7 +806,7 @@ export default function DiscoverPage() {
             </TabsList>
 
             <TabsContent value="portfolio" className="mt-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-px">
                 {artistArtworks.map((artwork) => (
                   <ArtworkTile key={artwork.id} artwork={artwork} />
                 ))}
@@ -1048,7 +1048,7 @@ export default function DiscoverPage() {
           </div>
         ) : (
           <div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-px">
               {sortedArtworks.map((artwork) => (
                 <ArtworkTile key={artwork.id} artwork={artwork} />
               ))}
