@@ -63,6 +63,18 @@ export default function DiscoverPage() {
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { user } = useAuth();
   
+  // Add loading state to ensure theme is properly loaded
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    // Give theme time to load and be detected
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000); // 1 second delay to ensure theme is loaded
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   // Use EXACTLY the same pattern as marketplace page
   const placeholderUrl = generatePlaceholderUrl(400, 300);
   
@@ -858,6 +870,11 @@ export default function DiscoverPage() {
         </div>
       </div>
     );
+  }
+
+  // Show loading screen while theme loads
+  if (isLoading) {
+    return <ThemeLoading />;
   }
 
   return (
