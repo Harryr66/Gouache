@@ -16,9 +16,47 @@ export interface Artist {
   countryOfResidence?: string;
   socialLinks?: {
     instagram?: string;
-    twitter?: string;
+    x?: string; // renamed from twitter
     website?: string;
   };
+  // Portfolio and content
+  portfolioImages?: Array<{
+    id: string;
+    imageUrl: string;
+    title: string;
+    description?: string;
+    medium?: string;
+    year?: string;
+    tags?: string[];
+    createdAt: Date;
+  }>;
+  events?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    date: Date;
+    endDate?: Date;
+    location: string;
+    venue?: string;
+    type: string;
+    bookingUrl?: string;
+    imageUrl?: string;
+    price?: string;
+    capacity?: number;
+    isEditable?: boolean;
+  }>;
+  courses?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    price: number;
+    thumbnailUrl?: string;
+    students?: number;
+    rating?: number;
+    createdAt: Date;
+  }>;
+  // Thumbnail for discover tile
+  discoverThumbnail?: string;
 }
 
 export interface ArtistRequest {
@@ -30,7 +68,7 @@ export interface ArtistRequest {
   experience: string;
   socialLinks?: {
     instagram?: string;
-    twitter?: string;
+    x?: string; // renamed from twitter
     website?: string;
     tiktok?: string;
   };
@@ -147,7 +185,7 @@ export interface Instructor {
   website?: string;
   socialLinks?: {
     instagram?: string;
-    twitter?: string;
+    x?: string; // renamed from twitter
     youtube?: string;
     facebook?: string;
     linkedin?: string;
@@ -580,7 +618,7 @@ export interface User {
   }>;
   socialLinks?: {
     instagram?: string;
-    twitter?: string;
+    x?: string; // renamed from twitter
     website?: string;
     tiktok?: string;
   };

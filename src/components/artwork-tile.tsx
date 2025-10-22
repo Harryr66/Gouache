@@ -17,7 +17,6 @@ import {
   UserPlus, 
   UserCheck, 
   Instagram, 
-  Twitter, 
   Globe, 
   Calendar, 
   MapPin, 
@@ -157,16 +156,24 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
             </div>
           )}
 
-          {/* Artist info overlay on hover */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-end">
-            <div className="p-3 w-full transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-              <div className="flex items-center gap-2 text-white">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(24, 24)} />
-                  <AvatarFallback className="text-xs">{artwork.artist.name.slice(0, 2)}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium truncate">{artwork.artist.name}</span>
-                {artwork.artist.isVerified && <CheckCircle className="h-3 w-3 text-blue-400" />}
+          {/* Artist banner at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm p-2">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(24, 24)} />
+                <AvatarFallback className="text-xs">{artwork.artist.name.slice(0, 2)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1">
+                  <span className="text-white text-sm font-medium truncate">{artwork.artist.name}</span>
+                  {artwork.artist.isVerified && <CheckCircle className="h-3 w-3 text-blue-400 flex-shrink-0" />}
+                </div>
+                {artwork.artist.location && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3 text-gray-300" />
+                    <span className="text-gray-300 text-xs truncate">{artwork.artist.location}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -256,11 +263,11 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
                         </a>
                       </Button>
                     )}
-                    {artwork.artist.socialLinks.twitter && (
+                    {artwork.artist.socialLinks.x && (
                       <Button variant="outline" size="sm" asChild>
-                        <a href={artwork.artist.socialLinks.twitter} target="_blank" rel="noopener noreferrer">
-                          <Twitter className="h-4 w-4 mr-2" />
-                          Twitter
+                        <a href={artwork.artist.socialLinks.x} target="_blank" rel="noopener noreferrer">
+                          <span className="h-4 w-4 mr-2 font-bold">𝕏</span>
+                          X
                         </a>
                       </Button>
                     )}
@@ -281,11 +288,11 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
 
               <TabsContent value="portfolio" className="mt-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {Array.from({ length: 8 }, (_, i) => (
-                    <Card key={i} className="aspect-square overflow-hidden border-0">
+                  {(artwork.artist.portfolioImages || []).map((portfolioItem, i) => (
+                    <Card key={portfolioItem.id || i} className="aspect-square overflow-hidden border-0">
                       <Image
-                        src={generatePlaceholderUrl(200, 200)}
-                        alt={`Artwork ${i + 1}`}
+                        src={portfolioItem.imageUrl}
+                        alt={portfolioItem.title}
                         width={200}
                         height={200}
                         className="w-full h-full object-cover"
@@ -298,13 +305,13 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
 
               <TabsContent value="events" className="mt-4">
                 <div className="space-y-4">
-                  {artistContent.events.map((event) => (
+                  {(artwork.artist.events || []).map((event) => (
                     <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                       <div className="flex flex-col md:flex-row">
                         {/* Event Image */}
                         <div className="md:w-1/3 h-48 md:h-auto">
                           <Image
-                            src={event.imageUrl}
+                            src={event.imageUrl || generatePlaceholderUrl(400, 200)}
                             alt={event.title}
                             width={400}
                             height={200}
@@ -382,7 +389,7 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
 
               <TabsContent value="courses" className="mt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {artistContent.courses.map((course) => (
+                  {(artwork.artist.courses || []).map((course) => (
                     <Card key={course.id} className="p-4 hover:shadow-md transition-shadow">
                       <div className="space-y-3">
                         <div className="flex items-start justify-between">

@@ -11,11 +11,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
-import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Twitter, Globe, Calendar, ExternalLink, MapPin, CheckCircle } from 'lucide-react';
+import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Globe, Calendar, ExternalLink, MapPin, CheckCircle } from 'lucide-react';
 import { Artwork, Artist } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { useFollow } from '@/providers/follow-provider';
 import { usePlaceholder } from '@/hooks/use-placeholder';
+import { useAuth } from '@/providers/auth-provider';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import Link from 'next/link';
 
 // Categories for filtering
@@ -49,163 +52,16 @@ const COUNTRIES = [
   'Argentina', 'Colombia', 'South Africa', 'Egypt', 'Morocco',
   'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland', 'Portugal',
   'Greece', 'Turkey', 'Israel', 'United Arab Emirates', 'Singapore',
-  'New Zealand', 'Ireland', 'Austria', 'Czech Republic', 'Russia'
-];
-
-// Mock artists data
-const mockArtists: Artist[] = [
-  {
-    id: 'artist-1',
-      name: 'Elena Vance',
-      handle: 'elena_vance',
-    bio: 'Abstract expressionist painter exploring the intersection of color and emotion. My work delves into the subconscious, bringing forth vivid emotional landscapes that challenge perception.',
-    followerCount: 12500,
-      followingCount: 89,
-      createdAt: new Date('2023-01-15'),
-    isVerified: true,
-      isProfessional: true,
-    location: 'New York, NY',
-    countryOfOrigin: 'United States',
-    countryOfResidence: 'United States',
-    socialLinks: {
-      instagram: 'https://instagram.com/elena_vance',
-      twitter: 'https://twitter.com/elena_vance',
-      website: 'https://elena-vance.com'
-    }
-  },
-  {
-    id: 'artist-2',
-      name: 'Marcus Chen',
-      handle: 'marcus_chen',
-    bio: 'Digital and traditional artist creating futuristic cityscapes and urban narratives. Specializing in mixed media that bridges the gap between physical and digital art.',
-    followerCount: 21000,
-      followingCount: 156,
-      createdAt: new Date('2022-11-20'),
-    isVerified: true,
-      isProfessional: true,
-    location: 'Los Angeles, CA',
-    countryOfOrigin: 'China',
-    countryOfResidence: 'United States',
-    socialLinks: {
-      instagram: 'https://instagram.com/marcus_chen',
-      twitter: 'https://twitter.com/marcuschen',
-      website: 'https://marcuschen.art'
-    }
-  },
-  {
-    id: 'artist-3',
-      name: 'Sophia Rodriguez',
-    handle: 'sophia_rodriguez',
-    bio: 'Contemporary sculptor working with bronze, stone, and mixed materials. My sculptures explore themes of identity, culture, and human connection.',
-    followerCount: 8900,
-      followingCount: 234,
-    createdAt: new Date('2021-06-10'),
-    isVerified: true,
-    isProfessional: true,
-    location: 'Barcelona, Spain',
-    countryOfOrigin: 'Spain',
-    countryOfResidence: 'Spain',
-    socialLinks: {
-      instagram: 'https://instagram.com/sophia_rodriguez_art',
-      website: 'https://sophiarodriguez.com'
-    }
-  },
-  {
-    id: 'artist-4',
-    name: 'Yuki Tanaka',
-    handle: 'yuki_tanaka',
-    bio: 'Japanese watercolor artist specializing in traditional techniques with modern subjects. Exploring the beauty of nature through delicate brushwork.',
-    followerCount: 15400,
-    followingCount: 92,
-    createdAt: new Date('2022-03-05'),
-    isVerified: true,
-    isProfessional: true,
-    location: 'Tokyo, Japan',
-    countryOfOrigin: 'Japan',
-    countryOfResidence: 'Japan',
-    socialLinks: {
-      instagram: 'https://instagram.com/yuki_tanaka_art',
-      website: 'https://yukitanaka.jp'
-    }
-  },
-  {
-    id: 'artist-5',
-    name: 'Amara Okafor',
-    handle: 'amara_okafor',
-    bio: 'Nigerian-British contemporary artist exploring identity, diaspora, and cultural heritage through mixed media and installation art.',
-    followerCount: 9800,
-    followingCount: 145,
-    createdAt: new Date('2021-09-12'),
-    isVerified: true,
-    isProfessional: true,
-    location: 'London, UK',
-    countryOfOrigin: 'Nigeria',
-    countryOfResidence: 'United Kingdom',
-    socialLinks: {
-      instagram: 'https://instagram.com/amara.okafor',
-      twitter: 'https://twitter.com/amaraokafor',
-      website: 'https://amaraokafor.com'
-    }
-  },
-  {
-    id: 'artist-6',
-    name: 'Lars Bergström',
-    handle: 'lars_bergstrom',
-    bio: 'Swedish minimalist painter creating serene landscapes inspired by Scandinavian nature and light. Working primarily with oils and acrylics.',
-    followerCount: 11200,
-    followingCount: 67,
-    createdAt: new Date('2020-11-30'),
-    isVerified: true,
-    isProfessional: true,
-    location: 'Stockholm, Sweden',
-    countryOfOrigin: 'Sweden',
-    countryOfResidence: 'Sweden',
-    socialLinks: {
-      instagram: 'https://instagram.com/lars.bergstrom.art',
-      website: 'https://larsbergstrom.se'
-    }
-  },
-  {
-    id: 'artist-7',
-    name: 'Isabella Costa',
-    handle: 'isabella_costa',
-    bio: 'Brazilian abstract expressionist bringing vibrant colors and rhythmic energy to canvas. Influenced by tropical landscapes and carnival culture.',
-    followerCount: 18700,
-    followingCount: 203,
-    createdAt: new Date('2021-02-18'),
-    isVerified: true,
-      isProfessional: true,
-    location: 'Rio de Janeiro, Brazil',
-    countryOfOrigin: 'Brazil',
-    countryOfResidence: 'Brazil',
-    socialLinks: {
-      instagram: 'https://instagram.com/isabella.costa.art',
-      website: 'https://isabellacosta.com.br'
-    }
-  },
-  {
-    id: 'artist-8',
-    name: 'Ahmed Hassan',
-    handle: 'ahmed_hassan',
-    bio: 'Egyptian calligraphy artist blending traditional Arabic script with contemporary design. Bridging ancient and modern visual languages.',
-    followerCount: 7600,
-    followingCount: 88,
-    createdAt: new Date('2022-07-22'),
-    isVerified: false,
-    isProfessional: true,
-    location: 'Cairo, Egypt',
-    countryOfOrigin: 'Egypt',
-    countryOfResidence: 'Egypt',
-    socialLinks: {
-      instagram: 'https://instagram.com/ahmed_hassan_calligraphy'
-    }
-  }
+  'New Zealand', 'Ireland', 'Austria', 'Czech Republic', 'Russia',
+  'Nigeria', 'Kenya', 'Ghana', 'Chile', 'Peru', 'Venezuela',
+  'Philippines', 'Thailand', 'Indonesia', 'Malaysia', 'Vietnam'
 ];
 
 export default function DiscoverPage() {
   const router = useRouter();
   const { followArtist, unfollowArtist, isFollowing } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
+  const { user } = useAuth();
   
   const [view, setView] = useState<'artworks' | 'artists'>('artworks');
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
@@ -217,59 +73,91 @@ export default function DiscoverPage() {
   const [selectedCountryOfOrigin, setSelectedCountryOfOrigin] = useState<string>('all');
   const [selectedCountryOfResidence, setSelectedCountryOfResidence] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [artists, setArtists] = useState<Artist[]>([]);
+  const [artworks, setArtworks] = useState<Artwork[]>([]);
 
-  // Generate mock artworks for each artist
-  const generateArtworksForArtist = (artist: Artist, count: number = 12) => {
-    const artworks: Artwork[] = [];
-    const categories = ['Abstract', 'Sculpture', 'Mixed Media', 'Oil Painting', 'Acrylic Painting', 'Watercolor'];
-    const mediums = ['Oil on Canvas', 'Acrylic', 'Bronze', 'Mixed Media', 'Watercolor', 'Ceramic'];
-    
-    for (let i = 0; i < count; i++) {
-      const category = categories[Math.floor(Math.random() * categories.length)];
-      const medium = mediums[Math.floor(Math.random() * mediums.length)];
-      
-      artworks.push({
-        id: `artwork-${artist.id}-${i}`,
-        artist,
-        title: `${category} ${i + 1}`,
-        description: `A beautiful ${category.toLowerCase()} piece by ${artist.name}`,
-        imageUrl: generatePlaceholderUrl(600, 600),
-        imageAiHint: `${category} artwork`,
-        discussionId: `discussion-${artist.id}-${i}`,
-        tags: [category.toLowerCase(), 'art'],
-        price: Math.floor(Math.random() * 5000) + 500,
-        currency: 'USD',
-        isForSale: Math.random() > 0.3,
-        category,
-        medium,
-        dimensions: { width: 24, height: 30, unit: 'in' },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        views: Math.floor(Math.random() * 5000),
-        likes: Math.floor(Math.random() * 500),
-      });
-    }
-    
-    return artworks;
-  };
+  // Fetch real artists from Firestore
+  useEffect(() => {
+    const fetchArtists = async () => {
+      try {
+        setIsLoading(true);
+        const artistsQuery = query(
+          collection(db, 'users'),
+          where('isProfessional', '==', true),
+          orderBy('createdAt', 'desc')
+        );
+        const snapshot = await getDocs(artistsQuery);
+        
+        const artistsData: Artist[] = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.displayName || data.username || 'Unknown Artist',
+            handle: data.username || `artist_${doc.id}`,
+            avatarUrl: data.avatarUrl || null,
+            bio: data.bio || '',
+            website: data.website || '',
+            followerCount: data.followerCount || 0,
+            followingCount: data.followingCount || 0,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            isVerified: data.isVerified || false,
+            isProfessional: data.isProfessional || false,
+            location: data.location || '',
+            countryOfOrigin: data.countryOfOrigin || '',
+            countryOfResidence: data.countryOfResidence || '',
+            socialLinks: {
+              instagram: data.socialLinks?.instagram || '',
+              x: data.socialLinks?.x || '',
+              website: data.socialLinks?.website || ''
+            },
+            portfolioImages: data.portfolio || [],
+            events: data.events || [],
+            courses: data.courses || [],
+            discoverThumbnail: data.discoverThumbnail || null
+          };
+        });
+        
+        setArtists(artistsData);
+        
+        // Generate artworks from artists' portfolios
+        const artworksData: Artwork[] = [];
+        artistsData.forEach(artist => {
+          if (artist.portfolioImages && artist.portfolioImages.length > 0) {
+            artist.portfolioImages.forEach((portfolioItem, index) => {
+              artworksData.push({
+                id: `artwork-${artist.id}-${index}`,
+                artist,
+                title: portfolioItem.title,
+                description: portfolioItem.description || '',
+                imageUrl: portfolioItem.imageUrl,
+                imageAiHint: portfolioItem.title,
+                discussionId: `discussion-${artist.id}-${index}`,
+                tags: portfolioItem.tags || [],
+                price: Math.floor(Math.random() * 5000) + 500,
+                currency: 'USD',
+                isForSale: Math.random() > 0.3,
+                category: portfolioItem.medium || 'Mixed Media',
+                medium: portfolioItem.medium || 'Mixed Media',
+                dimensions: { width: 24, height: 30, unit: 'in' },
+                createdAt: portfolioItem.createdAt,
+                updatedAt: portfolioItem.createdAt,
+                views: Math.floor(Math.random() * 5000),
+                likes: Math.floor(Math.random() * 500),
+              });
+            });
+          }
+        });
+        
+        setArtworks(artworksData);
+      } catch (error) {
+        console.error('Error fetching artists:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  // Mock events for artist
-  const generateEventsForArtist = (artist: Artist) => [
-    {
-      id: `event-${artist.id}-1`,
-      title: `${artist.name} - Gallery Opening`,
-      date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      location: artist.location || 'TBA',
-      type: 'Exhibition'
-    },
-    {
-      id: `event-${artist.id}-2`,
-      title: 'Live Art Workshop',
-      date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-      location: 'Virtual Event',
-      type: 'Workshop'
-    }
-  ];
+    fetchArtists();
+  }, []);
 
   const handleFollowToggle = (artist: Artist) => {
     if (isFollowing(artist.id)) {
@@ -279,7 +167,7 @@ export default function DiscoverPage() {
     }
   };
 
-  const filteredArtists = mockArtists.filter(artist => {
+  const filteredArtists = artists.filter(artist => {
     // Search term filter
     if (searchTerm) {
       const matchesSearch = artist.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -302,8 +190,8 @@ export default function DiscoverPage() {
   });
   
   // Get unique countries from artists for filter options
-  const availableOriginCountries = Array.from(new Set(mockArtists.map(a => a.countryOfOrigin).filter(Boolean))) as string[];
-  const availableResidenceCountries = Array.from(new Set(mockArtists.map(a => a.countryOfResidence).filter(Boolean))) as string[];
+  const availableOriginCountries = Array.from(new Set(artists.map(a => a.countryOfOrigin).filter(Boolean))) as string[];
+  const availableResidenceCountries = Array.from(new Set(artists.map(a => a.countryOfResidence).filter(Boolean))) as string[];
   
   // Clear filters function
   const clearFilters = () => {
@@ -321,8 +209,8 @@ export default function DiscoverPage() {
   ].filter(Boolean).length;
 
   if (selectedArtist) {
-    const artistArtworks = generateArtworksForArtist(selectedArtist);
-    const artistEvents = generateEventsForArtist(selectedArtist);
+    const artistArtworks = artworks.filter(artwork => artwork.artist.id === selectedArtist.id);
+    const artistEvents = selectedArtist.events || [];
     const following = isFollowing(selectedArtist.id);
 
     return (
@@ -391,7 +279,7 @@ export default function DiscoverPage() {
                   )}
                 </div>
 
-                {/* Social Links */}
+                {/* Social Links - Only show if provided */}
                 {selectedArtist.socialLinks && (
                   <div className="flex items-center gap-3 flex-wrap">
                     {selectedArtist.socialLinks.website && (
@@ -410,11 +298,11 @@ export default function DiscoverPage() {
                         </a>
                       </Button>
                     )}
-                    {selectedArtist.socialLinks.twitter && (
+                    {selectedArtist.socialLinks.x && (
                       <Button variant="outline" size="sm" asChild>
-                        <a href={selectedArtist.socialLinks.twitter} target="_blank" rel="noopener noreferrer">
-                          <Twitter className="h-4 w-4 mr-2" />
-                          Twitter
+                        <a href={selectedArtist.socialLinks.x} target="_blank" rel="noopener noreferrer">
+                          <span className="h-4 w-4 mr-2 font-bold">𝕏</span>
+                          X
                         </a>
                       </Button>
                     )}
@@ -488,24 +376,24 @@ export default function DiscoverPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card">
-    <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold mb-2">Discover</h1>
           <p className="text-muted-foreground">Explore artworks and artists from around the world</p>
         </div>
-        </div>
+      </div>
 
       {/* Search & Filters */}
       <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
+              <Input
                 placeholder="Search artists and artworks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
             <Tabs value={view} onValueChange={(v) => setView(v as 'artworks' | 'artists')} className="w-full sm:w-auto">
               <TabsList className="grid w-full grid-cols-2">
@@ -518,21 +406,21 @@ export default function DiscoverPage() {
           <div className="flex gap-3 mt-3 overflow-x-auto pb-2 flex-wrap">
             {view === 'artworks' && (
               <>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
                     {categories.map((cat) => (
                       <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={sortBy} onValueChange={setSortBy}>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
                     <SelectItem value="newest">Newest</SelectItem>
                     <SelectItem value="popular">Most Popular</SelectItem>
                     <SelectItem value="price-low">Price: Low to High</SelectItem>
@@ -563,9 +451,9 @@ export default function DiscoverPage() {
                     <SelectItem value="all">All Residences</SelectItem>
                     {availableResidenceCountries.map((country) => (
                       <SelectItem key={country} value={country}>{country}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {activeFiltersCount > 0 && (
                   <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap">
                     Clear Filters ({activeFiltersCount})
@@ -586,7 +474,11 @@ export default function DiscoverPage() {
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
-        {view === 'artists' ? (
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <ThemeLoading text="Loading artists..." size="lg" />
+          </div>
+        ) : view === 'artists' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredArtists.map((artist) => {
               const following = isFollowing(artist.id);
@@ -628,9 +520,9 @@ export default function DiscoverPage() {
                       <Separator />
 
                       <div className="flex items-center gap-2">
-          <Button
+                        <Button
                           variant={following ? "outline" : "default"}
-            size="sm"
+                          size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleFollowToggle(artist);
@@ -639,17 +531,17 @@ export default function DiscoverPage() {
                         >
                           {following ? <UserCheck className="h-3 w-3 mr-1" /> : <UserPlus className="h-3 w-3 mr-1" />}
                           {following ? 'Following' : 'Follow'}
-          </Button>
-          <Button
+                        </Button>
+                        <Button
                           variant="ghost"
-            size="sm"
+                          size="sm"
                           onClick={() => setSelectedArtist(artist)}
                         >
                           View Profile
-          </Button>
-        </div>
+                        </Button>
+                      </div>
                     </CardContent>
-          </div>
+                  </div>
                 </Card>
               );
             })}
@@ -660,7 +552,7 @@ export default function DiscoverPage() {
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-4">Featured Artists</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {mockArtists.slice(0, 3).map((artist) => {
+                {artists.slice(0, 3).map((artist) => {
                   const following = isFollowing(artist.id);
                   return (
                     <Card key={artist.id} className="group hover:shadow-lg transition-all cursor-pointer" onClick={() => setSelectedArtist(artist)}>
@@ -696,17 +588,17 @@ export default function DiscoverPage() {
                     </Card>
                   );
                 })}
-          </div>
+              </div>
             </div>
 
             {/* All Artworks Grid */}
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-2xl font-bold">All Artworks</h2>
               <span className="text-sm text-muted-foreground">Showing artworks from all artists</span>
-          </div>
+            </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-              {mockArtists.flatMap(artist => generateArtworksForArtist(artist, 6)).map((artwork) => (
+              {artworks.map((artwork) => (
                 <ArtworkTile key={artwork.id} artwork={artwork} />
               ))}
             </div>
@@ -714,8 +606,8 @@ export default function DiscoverPage() {
             {isLoading && (
               <div className="flex justify-center py-12">
                 <ThemeLoading text="Loading more artworks..." size="md" />
-          </div>
-        )}
+              </div>
+            )}
           </div>
         )}
       </div>
