@@ -23,8 +23,8 @@ export const usePlaceholder = () => {
   const generateLightPlaceholder = (width: number = 400, height: number = 600) => {
     return `data:image/svg+xml;base64,${btoa(`
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="#6b7280" stroke="#4b5563" stroke-width="1"/>
-        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
+        <rect width="100%" height="100%" fill="#fafafa" stroke="#e5e5e5" stroke-width="1"/>
+        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
       </svg>
     `)}`;
   };
@@ -41,8 +41,8 @@ export const usePlaceholder = () => {
   const generateLightAvatarPlaceholder = (width: number = 150, height: number = 150) => {
     return `data:image/svg+xml;base64,${btoa(`
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="#6b7280" stroke="#4b5563" stroke-width="1"/>
-        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
+        <rect width="100%" height="100%" fill="#fafafa" stroke="#e5e5e5" stroke-width="1"/>
+        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
       </svg>
     `)}`;
   };
