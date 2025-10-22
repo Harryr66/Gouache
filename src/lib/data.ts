@@ -14,7 +14,7 @@ export const artists: Artist[] = [
     location: 'New York, NY',
     socialLinks: {
       instagram: '@elena_vance',
-      twitter: '@elena_vance',
+      x: '@elena_vance',
       website: 'https://elena-vance.com'
     }
   },
@@ -31,7 +31,7 @@ export const artists: Artist[] = [
     location: 'San Francisco, CA',
     socialLinks: {
       instagram: '@marcus_chen',
-      twitter: '@marcus_chen',
+      x: '@marcus_chen',
       website: 'https://marcus-chen.com'
     }
   },
@@ -48,7 +48,7 @@ export const artists: Artist[] = [
     location: 'Los Angeles, CA',
     socialLinks: {
       instagram: '@sophia_art',
-      twitter: '@sophia_art'
+      x: '@sophia_art'
     }
   }
 ];
