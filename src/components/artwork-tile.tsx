@@ -264,7 +264,7 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
               </TabsList>
 
               <TabsContent value="portfolio" className="mt-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {Array.from({ length: 8 }, (_, i) => (
                     <Card key={i} className="aspect-square overflow-hidden">
                       <Image
@@ -297,8 +297,10 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
                             </div>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm">
-                          <ExternalLink className="h-4 w-4" />
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/discussion/${discussion.id}`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
                         </Button>
                       </div>
                     </Card>

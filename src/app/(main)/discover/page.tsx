@@ -434,7 +434,7 @@ export default function DiscoverPage() {
             </TabsList>
 
             <TabsContent value="portfolio" className="mt-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                 {artistArtworks.map((artwork) => (
                   <ArtworkTile key={artwork.id} artwork={artwork} />
                 ))}
@@ -705,7 +705,7 @@ export default function DiscoverPage() {
               <span className="text-sm text-muted-foreground">Showing artworks from all artists</span>
           </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
               {mockArtists.flatMap(artist => generateArtworksForArtist(artist, 6)).map((artwork) => (
                 <ArtworkTile key={artwork.id} artwork={artwork} />
               ))}

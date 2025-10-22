@@ -15,7 +15,7 @@ export const usePlaceholder = () => {
       let textColor: string;
       
       if (currentTheme === 'dark') {
-        backgroundColor = '#374151'; // darker grey for dark mode
+        backgroundColor = '#1f2937'; // darker slate grey for dark mode
         textColor = '#ffffff'; // white
         console.log('🌙 Using DARK mode colors:', backgroundColor, textColor);
       } else {
