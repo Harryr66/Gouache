@@ -852,55 +852,6 @@ export default function DiscoverPage() {
           </div>
         ) : (
           <div>
-            {/* Featured Artists Section */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4">Featured Artists</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {artists.slice(0, 3).map((artist) => {
-                  const following = isFollowing(artist.id);
-                  return (
-                    <Card key={artist.id} className="group hover:shadow-lg transition-all cursor-pointer" onClick={() => setSelectedArtist(artist)}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={artist.avatarUrl || generateAvatarPlaceholderUrl(48, 48)} alt={artist.name} />
-                            <AvatarFallback>{artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1">
-                              <CardTitle className="text-base truncate">{artist.name}</CardTitle>
-                              {artist.isVerified && <CheckCircle className="h-3 w-3 text-blue-500 fill-blue-500" />}
-                            </div>
-                            <CardDescription className="text-xs truncate">@{artist.handle}</CardDescription>
-                          </div>
-                          <Button
-                            variant={following ? "outline" : "ghost"}
-                            size="icon"
-                            className="h-8 w-8 flex-shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleFollowToggle(artist);
-                            }}
-                          >
-                            {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{artist.bio}</p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* All Artworks Grid */}
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold">All Artworks</h2>
-              <span className="text-sm text-muted-foreground">Showing artworks from all artists</span>
-            </div>
-            
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2">
               {artworks.map((artwork) => (
                 <ArtworkTile key={artwork.id} artwork={artwork} />
