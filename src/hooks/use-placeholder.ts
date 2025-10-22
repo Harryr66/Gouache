@@ -15,7 +15,7 @@ export const usePlaceholder = () => {
       let textColor: string;
       
       if (currentTheme === 'dark') {
-        backgroundColor = '#1f2937'; // darker slate grey for dark mode
+        backgroundColor = '#0f172a'; // darker slate grey with blue tint for dark mode
         textColor = '#ffffff'; // white
         console.log('🌙 Using DARK mode colors:', backgroundColor, textColor);
       } else {
@@ -27,7 +27,7 @@ export const usePlaceholder = () => {
       return `data:image/svg+xml;base64,${btoa(`
         <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
         </svg>
       `)}`;
     };
@@ -42,7 +42,7 @@ export const usePlaceholder = () => {
       let textColor: string;
       
       if (currentTheme === 'dark') {
-        backgroundColor = '#374151'; // darker grey (same as what was incorrectly used in light mode)
+        backgroundColor = '#0f172a'; // darker slate grey with blue tint for dark mode
         textColor = '#ffffff'; // white
       } else {
         backgroundColor = '#f5f5f5'; // slightly more off-white for better contrast
@@ -52,7 +52,7 @@ export const usePlaceholder = () => {
       return `data:image/svg+xml;base64,${btoa(`
         <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="24" font-weight="bold">SOMA</text>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
         </svg>
       `)}`;
     };
