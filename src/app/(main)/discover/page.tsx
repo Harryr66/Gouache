@@ -64,7 +64,7 @@ export default function DiscoverPage() {
   const { user } = useAuth();
   
   // Use the same approach as marketplace - generate once and reuse
-  const placeholderUrl = generatePlaceholderUrl(600, 600);
+  const placeholderUrl = generatePlaceholderUrl(400, 300);
   
   const [view, setView] = useState<'artworks' | 'artists'>('artworks');
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
