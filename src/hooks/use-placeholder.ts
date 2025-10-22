@@ -10,64 +10,87 @@ export const usePlaceholder = () => {
     setMounted(true);
   }, []);
 
-  // Helper function to get theme colors
-  const getThemeColors = (currentTheme: string) => {
-    // More robust theme detection
-    const isDarkMode = currentTheme === 'dark' || 
-                      (typeof document !== 'undefined' && document.documentElement.classList.contains('dark')) ||
-                      (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    
-    console.log('🎨 Theme detection:', { currentTheme, isDarkMode, documentClass: typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : 'N/A' });
-    
-    if (isDarkMode) {
-      return {
-        backgroundColor: '#0f172a', // darker slate grey with blue tint for dark mode
-        textColor: '#ffffff', // white
-        strokeColor: '#374151' // darker stroke for dark mode
-      };
-    } else {
-      return {
-        backgroundColor: '#6b7280', // grey for light mode
-        textColor: '#ffffff', // white text on grey background
-        strokeColor: '#4b5563' // darker grey stroke for light mode
-      };
-    }
-  };
-  
-  const generatePlaceholderUrl = useMemo(() => {
+  // SEPARATE LIGHT THEME PLACEHOLDER - COMPLETELY INDEPENDENT
+  const generateLightThemePlaceholderUrl = useMemo(() => {
     return (width: number = 400, height: number = 600) => {
-      // Determine the actual theme being used
-      const currentTheme = resolvedTheme || theme || 'light';
-      const colors = getThemeColors(currentTheme);
-      
-      console.log('🎨 Placeholder theme detection:', { theme, resolvedTheme, currentTheme, mounted, colors });
-      
       return `data:image/svg+xml;base64,${btoa(`
         <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="${colors.backgroundColor}" stroke="${colors.strokeColor}" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="${colors.textColor}" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
+          <rect width="100%" height="100%" fill="#6b7280" stroke="#4b5563" stroke-width="1"/>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
         </svg>
       `)}`;
     };
-  }, [theme, resolvedTheme, mounted]);
+  }, []);
+
+  // SEPARATE DARK THEME PLACEHOLDER - UNCHANGED
+  const generateDarkThemePlaceholderUrl = useMemo(() => {
+    return (width: number = 400, height: number = 600) => {
+      return `data:image/svg+xml;base64,${btoa(`
+        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#0f172a" stroke="#374151" stroke-width="1"/>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
+        </svg>
+      `)}`;
+    };
+  }, []);
+
+  // LIGHT THEME AVATAR PLACEHOLDER - SEPARATE
+  const generateLightThemeAvatarPlaceholderUrl = useMemo(() => {
+    return (width: number = 150, height: number = 150) => {
+      return `data:image/svg+xml;base64,${btoa(`
+        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#6b7280" stroke="#4b5563" stroke-width="1"/>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
+        </svg>
+      `)}`;
+    };
+  }, []);
+
+  // DARK THEME AVATAR PLACEHOLDER - UNCHANGED
+  const generateDarkThemeAvatarPlaceholderUrl = useMemo(() => {
+    return (width: number = 150, height: number = 150) => {
+      return `data:image/svg+xml;base64,${btoa(`
+        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#0f172a" stroke="#374151" stroke-width="1"/>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
+        </svg>
+      `)}`;
+    };
+  }, []);
+
+  // Main function that chooses the correct placeholder
+  const generatePlaceholderUrl = useMemo(() => {
+    return (width: number = 400, height: number = 600) => {
+      const currentTheme = resolvedTheme || theme || 'light';
+      
+      console.log('🎨 Theme detection:', { theme, resolvedTheme, currentTheme });
+      
+      if (currentTheme === 'dark') {
+        return generateDarkThemePlaceholderUrl(width, height);
+      } else {
+        return generateLightThemePlaceholderUrl(width, height);
+      }
+    };
+  }, [theme, resolvedTheme, generateLightThemePlaceholderUrl, generateDarkThemePlaceholderUrl]);
   
   const generateAvatarPlaceholderUrl = useMemo(() => {
     return (width: number = 150, height: number = 150) => {
-      // Determine the actual theme being used
       const currentTheme = resolvedTheme || theme || 'light';
-      const colors = getThemeColors(currentTheme);
       
-      return `data:image/svg+xml;base64,${btoa(`
-        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="${colors.backgroundColor}" stroke="${colors.strokeColor}" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="${colors.textColor}" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SOMA</text>
-        </svg>
-      `)}`;
+      if (currentTheme === 'dark') {
+        return generateDarkThemeAvatarPlaceholderUrl(width, height);
+      } else {
+        return generateLightThemeAvatarPlaceholderUrl(width, height);
+      }
     };
-  }, [theme, resolvedTheme, mounted]);
+  }, [theme, resolvedTheme, generateLightThemeAvatarPlaceholderUrl, generateDarkThemeAvatarPlaceholderUrl]);
   
   return {
     generatePlaceholderUrl,
-    generateAvatarPlaceholderUrl
+    generateAvatarPlaceholderUrl,
+    generateLightThemePlaceholderUrl,
+    generateDarkThemePlaceholderUrl,
+    generateLightThemeAvatarPlaceholderUrl,
+    generateDarkThemeAvatarPlaceholderUrl
   };
 };

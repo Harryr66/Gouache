@@ -41,6 +41,7 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
   const [showArtistPreview, setShowArtistPreview] = useState(false);
+  const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
 
   const handleTileClick = () => {
     setShowArtistPreview(true);
@@ -305,7 +306,11 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
               <TabsContent value="portfolio" className="mt-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {(artwork.artist.portfolioImages || []).map((portfolioItem, i) => (
-                    <Card key={portfolioItem.id || i} className="aspect-square overflow-hidden border-0">
+                    <Card 
+                      key={portfolioItem.id || i} 
+                      className="aspect-square overflow-hidden border-0 cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => setSelectedPortfolioItem(portfolioItem)}
+                    >
                       <Image
                         src={portfolioItem.imageUrl}
                         alt={portfolioItem.title}
@@ -435,6 +440,119 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Portfolio Item Expanded View */}
+      {selectedPortfolioItem && (
+        <Dialog open={!!selectedPortfolioItem} onOpenChange={() => setSelectedPortfolioItem(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="sr-only">Portfolio Item</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Image */}
+              <div className="relative">
+                <Image
+                  src={selectedPortfolioItem.imageUrl}
+                  alt={selectedPortfolioItem.title}
+                  width={800}
+                  height={600}
+                  className="w-full h-auto rounded-lg"
+                />
+              </div>
+
+              {/* Details */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-2xl font-bold">{selectedPortfolioItem.title}</h3>
+                  {selectedPortfolioItem.description && (
+                    <p className="text-muted-foreground mt-2">{selectedPortfolioItem.description}</p>
+                  )}
+                </div>
+
+                {/* Metadata */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  {selectedPortfolioItem.medium && (
+                    <div>
+                      <span className="font-medium">Medium:</span>
+                      <p className="text-muted-foreground">{selectedPortfolioItem.medium}</p>
+                    </div>
+                  )}
+                  {selectedPortfolioItem.year && (
+                    <div>
+                      <span className="font-medium">Year:</span>
+                      <p className="text-muted-foreground">{selectedPortfolioItem.year}</p>
+                    </div>
+                  )}
+                  {selectedPortfolioItem.tags && selectedPortfolioItem.tags.length > 0 && (
+                    <div className="col-span-2">
+                      <span className="font-medium">Tags:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedPortfolioItem.tags.map((tag: string, index: number) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Discussion Section */}
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold">Discussion</h4>
+                  <div className="space-y-3">
+                    {/* Mock discussion comments */}
+                    <div className="bg-muted/50 p-4 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={generateAvatarPlaceholderUrl(32, 32)} />
+                          <AvatarFallback className="text-xs">JD</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">John Doe</span>
+                            <span className="text-xs text-muted-foreground">2 hours ago</span>
+                          </div>
+                          <p className="text-sm">This piece really captures the emotion beautifully. The use of color is incredible!</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-muted/50 p-4 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={generateAvatarPlaceholderUrl(32, 32)} />
+                          <AvatarFallback className="text-xs">SM</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">Sarah Miller</span>
+                            <span className="text-xs text-muted-foreground">1 day ago</span>
+                          </div>
+                          <p className="text-sm">Amazing technique! What inspired this particular composition?</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Add Comment */}
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Add a comment..."
+                      className="resize-none"
+                      rows={3}
+                    />
+                    <div className="flex justify-end">
+                      <Button size="sm">Post Comment</Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
