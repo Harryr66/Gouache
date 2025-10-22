@@ -415,4 +415,3 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
     </>
   );
 }
-}
