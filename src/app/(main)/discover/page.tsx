@@ -85,7 +85,7 @@ export default function DiscoverPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [activeArtFilter, setActiveArtFilter] = useState('all');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(false);
   const [selectedCountryOfOrigin, setSelectedCountryOfOrigin] = useState<string>('all');
   const [selectedCountryOfResidence, setSelectedCountryOfResidence] = useState<string>('all');
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
@@ -995,7 +995,7 @@ export default function DiscoverPage() {
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
-        {isLoading ? (
+        {isDataLoading ? (
           <div className="flex justify-center py-12">
             <ThemeLoading text="Loading artists..." size="lg" />
           </div>
@@ -1075,7 +1075,7 @@ export default function DiscoverPage() {
               ))}
             </div>
 
-            {isLoading && (
+            {isDataLoading && (
               <div className="flex justify-center py-12">
                 <ThemeLoading text="Loading more artworks..." size="md" />
           </div>
