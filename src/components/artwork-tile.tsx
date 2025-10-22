@@ -350,10 +350,10 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
                                   {event.date.toLocaleTimeString('en-US', { 
                                     hour: '2-digit', 
                                     minute: '2-digit' 
-                                  })} - {event.endDate.toLocaleTimeString('en-US', { 
+                                  })} - {event.endDate ? event.endDate.toLocaleTimeString('en-US', { 
                                     hour: '2-digit', 
                                     minute: '2-digit' 
-                                  })}
+                                  }) : 'TBD'}
                                 </div>
                               </div>
                             </div>
