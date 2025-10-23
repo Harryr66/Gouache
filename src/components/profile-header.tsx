@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { TipDialog } from './tip-dialog';
 import { SuggestionsDialog } from './suggestions-dialog';
+import { CountryFlag } from './country-flag';
 
 interface ProfileHeaderProps {
   user: {
@@ -237,7 +238,10 @@ export function ProfileHeader({
                         <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="font-medium text-sm text-muted-foreground mb-1">Country of Origin</p>
-                          <p className="text-foreground">{user.countryOfOrigin}</p>
+                          <div className="flex items-center gap-2">
+                            <CountryFlag country={user.countryOfOrigin} size="sm" />
+                            <p className="text-foreground">{user.countryOfOrigin}</p>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -246,7 +250,10 @@ export function ProfileHeader({
                         <Globe className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="font-medium text-sm text-muted-foreground mb-1">Currently Based In</p>
-                          <p className="text-foreground">{user.countryOfResidence}</p>
+                          <div className="flex items-center gap-2">
+                            <CountryFlag country={user.countryOfResidence} size="sm" />
+                            <p className="text-foreground">{user.countryOfResidence}</p>
+                          </div>
                         </div>
                       </div>
                     )}
