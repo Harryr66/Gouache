@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, Calendar, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain, MapPin, MessageCircle, Circle } from 'lucide-react';
+import { Plus, Upload, Users, Calendar, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain, MapPin, MessageCircle, Circle, Image as ImageIcon, X } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { ProductCard } from './shop/product-card';
 import { EventCard } from './event-card';
@@ -31,9 +31,40 @@ interface ProfileTabsProps {
 
 export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange }: ProfileTabsProps) {
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
+  const [communityMessage, setCommunityMessage] = useState('');
+  const [communityImages, setCommunityImages] = useState<File[]>([]);
+  const [bubbleMessage, setBubbleMessage] = useState('');
+  const [bubbleImages, setBubbleImages] = useState<File[]>([]);
   const { watchlist, watchHistory, getContinueWatching, isInWatchlist, getWatchProgress } = useWatchlist();
   const { followedArtists, unfollowArtist } = useFollow();
   const { courses, isLoading: coursesLoading } = useCourses();
+  
+  // Image handling functions
+  const handleImageUpload = (files: FileList | null, setImages: (images: File[]) => void) => {
+    if (!files) return;
+    const newImages = Array.from(files).slice(0, 4); // Max 4 images
+    setImages(prev => [...prev, ...newImages].slice(0, 4)); // Keep max 4 total
+  };
+
+  const removeImage = (index: number, setImages: (images: File[]) => void) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSendMessage = async (message: string, images: File[], isBubble: boolean = false) => {
+    if (!message.trim() && images.length === 0) return;
+    
+    // TODO: Implement actual message sending to Firestore
+    console.log('Sending message:', { message, images, isBubble });
+    
+    // Clear inputs
+    if (isBubble) {
+      setBubbleMessage('');
+      setBubbleImages([]);
+    } else {
+      setCommunityMessage('');
+      setCommunityImages([]);
+    }
+  };
   
   // Get courses by this instructor
   const instructorCourses = courses.filter(course => course.instructor.userId === userId);
@@ -241,28 +272,82 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
                 {/* TODO: Replace with actual community data */}
               </div>
 
-              <Card className="p-8 text-center">
-                <CardContent>
-                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <CardTitle className="mb-2">No community yet</CardTitle>
-                  <CardDescription className="mb-4">
-                    {isOwnProfile 
-                      ? "Create a community to connect with your followers and fans."
-                      : "This artist hasn't created a community yet."
-                    }
-                  </CardDescription>
-                  {isOwnProfile && (
-                    <Button 
-                      variant="gradient"
-                      onClick={() => setShowCreateCommunity(true)}
+              {/* Community Chat Interface */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Community Chat</CardTitle>
+                  <CardDescription>Share messages and images with the community</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Message Input */}
+                  <div className="space-y-3">
+                    <textarea
+                      value={communityMessage}
+                      onChange={(e) => setCommunityMessage(e.target.value)}
+                      placeholder="Share something with the community..."
+                      className="w-full p-3 border rounded-lg resize-none"
+                      rows={3}
+                    />
+                    
+                    {/* Image Upload */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => handleImageUpload(e.target.files, setCommunityImages)}
+                          className="hidden"
+                          id="community-image-upload"
+                        />
+                        <label htmlFor="community-image-upload">
+                          <Button variant="outline" size="sm" asChild>
+                            <span>
+                              <ImageIcon className="h-4 w-4 mr-2" />
+                              Add Images
+                            </span>
+                          </Button>
+                        </label>
+                        <span className="text-sm text-muted-foreground">
+                          {communityImages.length}/4 images
+                        </span>
+                      </div>
+                      
+                      {/* Preview Images */}
+                      {communityImages.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {communityImages.map((image, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={URL.createObjectURL(image)}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-20 object-cover rounded border"
+                              />
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                                onClick={() => removeImage(index, setCommunityImages)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Button
+                      onClick={() => handleSendMessage(communityMessage, communityImages, false)}
+                      disabled={!communityMessage.trim() && communityImages.length === 0}
+                      className="w-full"
                     >
-                      <Users className="h-4 w-4 mr-2" />
-                      Start Community
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Send Message
                     </Button>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
-            </TabsContent>
 
             {/* Events Sub-tab */}
             <TabsContent value="events" className="space-y-4">
@@ -298,12 +383,92 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
             <TabsContent value="bubbles" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Active Bubbles</h3>
+                {isOwnProfile && (
+                  <Button variant="gradient">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Bubble
+                  </Button>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* TODO: Replace with actual bubble data */}
-              </div>
+              {/* Bubble Chat Interface */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Bubble Chat</CardTitle>
+                  <CardDescription>Share messages and images in discussion bubbles</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Message Input */}
+                  <div className="space-y-3">
+                    <textarea
+                      value={bubbleMessage}
+                      onChange={(e) => setBubbleMessage(e.target.value)}
+                      placeholder="Share something in the bubble..."
+                      className="w-full p-3 border rounded-lg resize-none"
+                      rows={3}
+                    />
+                    
+                    {/* Image Upload */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => handleImageUpload(e.target.files, setBubbleImages)}
+                          className="hidden"
+                          id="bubble-image-upload"
+                        />
+                        <label htmlFor="bubble-image-upload">
+                          <Button variant="outline" size="sm" asChild>
+                            <span>
+                              <ImageIcon className="h-4 w-4 mr-2" />
+                              Add Images
+                            </span>
+                          </Button>
+                        </label>
+                        <span className="text-sm text-muted-foreground">
+                          {bubbleImages.length}/4 images
+                        </span>
+                      </div>
+                      
+                      {/* Preview Images */}
+                      {bubbleImages.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {bubbleImages.map((image, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={URL.createObjectURL(image)}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-20 object-cover rounded border"
+                              />
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                                onClick={() => removeImage(index, setBubbleImages)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Button
+                      onClick={() => handleSendMessage(bubbleMessage, bubbleImages, true)}
+                      disabled={!bubbleMessage.trim() && bubbleImages.length === 0}
+                      className="w-full"
+                    >
+                      <Circle className="h-4 w-4 mr-2" />
+                      Send to Bubble
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
+              {/* Empty State */}
               <Card className="p-8 text-center">
                 <CardContent>
                   <Circle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -314,12 +479,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
                       : "This artist hasn't created any discussion bubbles yet."
                     }
                   </CardDescription>
-                  {isOwnProfile && (
-                    <Button variant="gradient">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Bubble
-                    </Button>
-                  )}
                 </CardContent>
               </Card>
             </TabsContent>
