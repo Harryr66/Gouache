@@ -23,6 +23,29 @@ import {
 } from 'lucide-react';
 import { usePlaceholder } from '@/hooks/use-placeholder';
 
+// Type definitions
+interface Message {
+  id: number;
+  user: string;
+  content: string;
+  timestamp: string;
+  avatar: string;
+}
+
+interface Bubble {
+  id: number;
+  name: string;
+  description: string;
+  members: number;
+  topic: string;
+  isActive: boolean;
+  lastMessage: string;
+  level: string;
+  messages: Message[];
+  host: string;
+  membersList: string[];
+}
+
 // Mock community data
 const mockCommunityData = {
   bubbles: [
@@ -94,8 +117,8 @@ export default function CommunityPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   
   // Bubble management states
-  const [bubbles, setBubbles] = useState(mockCommunityData.bubbles);
-  const [selectedBubble, setSelectedBubble] = useState(null);
+  const [bubbles, setBubbles] = useState<Bubble[]>(mockCommunityData.bubbles);
+  const [selectedBubble, setSelectedBubble] = useState<Bubble | null>(null);
   const [newBubbleName, setNewBubbleName] = useState('');
   const [newBubbleDescription, setNewBubbleDescription] = useState('');
   const [newMessage, setNewMessage] = useState('');
