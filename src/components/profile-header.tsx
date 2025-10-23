@@ -19,6 +19,7 @@ interface ProfileHeaderProps {
     displayName: string;
     username: string;
     avatarUrl?: string;
+    bannerImageUrl?: string;
     bio?: string;
     location?: string;
     countryOfOrigin?: string;
