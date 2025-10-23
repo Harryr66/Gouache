@@ -136,8 +136,8 @@ export default function ProfileEditPage() {
     countryOfOrigin: '',
     countryOfResidence: '',
     isProfessional: false,
-    tipJarEnabled: false,
-    suggestionsEnabled: false,
+    tipJarEnabled: true,
+    suggestionsEnabled: true,
     hideLocation: false,
     hideFlags: false,
   });
@@ -172,8 +172,8 @@ export default function ProfileEditPage() {
             countryOfOrigin: changes.countryOfOrigin || user.countryOfOrigin || '',
             countryOfResidence: changes.countryOfResidence || user.countryOfResidence || '',
             isProfessional: changes.isProfessional || user.isProfessional || false,
-            tipJarEnabled: changes.tipJarEnabled || user.tipJarEnabled || false,
-            suggestionsEnabled: changes.suggestionsEnabled || user.suggestionsEnabled || false,
+            tipJarEnabled: changes.tipJarEnabled !== undefined ? changes.tipJarEnabled : (user.tipJarEnabled !== undefined ? user.tipJarEnabled : true),
+            suggestionsEnabled: changes.suggestionsEnabled !== undefined ? changes.suggestionsEnabled : (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true),
             hideLocation: changes.hideLocation || user.hideLocation || false,
             hideFlags: changes.hideFlags || user.hideFlags || false,
           });
@@ -196,8 +196,8 @@ export default function ProfileEditPage() {
           countryOfOrigin: user.countryOfOrigin || '',
           countryOfResidence: user.countryOfResidence || '',
           isProfessional: user.isProfessional || false,
-          tipJarEnabled: user.tipJarEnabled || false,
-          suggestionsEnabled: user.suggestionsEnabled || false,
+          tipJarEnabled: user.tipJarEnabled !== undefined ? user.tipJarEnabled : true,
+          suggestionsEnabled: user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true,
           hideLocation: user.hideLocation || false,
           hideFlags: user.hideFlags || false,
         });

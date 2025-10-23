@@ -171,8 +171,8 @@ export function ProfileHeader({
                 </Button>
               )}
               
-              {/* Tip Jar Button - Show for all professional artists with tip jar enabled */}
-              {user.isProfessional && user.tipJarEnabled && (
+              {/* Tip Jar Button - Show for all professional artists with tip jar enabled (default true) */}
+              {user.isProfessional && (user.tipJarEnabled !== false) && (
                 <Button 
                   variant="outline"
                   size="icon"
@@ -183,8 +183,8 @@ export function ProfileHeader({
                 </Button>
               )}
               
-              {/* Suggestions Button - Show for all professional artists with suggestions enabled */}
-              {user.isProfessional && user.suggestionsEnabled && (
+              {/* Suggestions Button - Show for all professional artists with suggestions enabled (default true) */}
+              {user.isProfessional && (user.suggestionsEnabled !== false) && (
                 <Button 
                   variant="outline"
                   size="icon"
