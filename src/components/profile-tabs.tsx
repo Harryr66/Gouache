@@ -52,10 +52,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
             <PortfolioManager />
           ) : (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Artwork Portfolio</h3>
-              </div>
-              
               {/* TODO: Display other user's portfolio */}
               <Card className="p-8 text-center">
                 <CardContent>
@@ -90,10 +86,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
 
             {/* Products Sub-tab */}
             <TabsContent value="products" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Products for Sale</h3>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* TODO: Replace with actual product data */}
               </div>
@@ -123,17 +115,16 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
 
             {/* Learn/Courses Sub-tab */}
             <TabsContent value="courses" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Courses & Learning</h3>
-                {isOwnProfile && (
+              {isOwnProfile && (
+                <div className="flex justify-end">
                   <Button variant="gradient" asChild>
                     <a href="/learn/submit">
                       <Plus className="h-4 w-4 mr-2" />
                       Create Course
                     </a>
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
 
               {coursesLoading ? (
                 <div className="flex justify-center py-12">
@@ -211,10 +202,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
 
             {/* Events Sub-tab */}
             <TabsContent value="events" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Hosted Events</h3>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* TODO: Replace with actual event data */}
               </div>
@@ -243,10 +230,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
 
         {/* Community Tab */}
         <TabsContent value="community" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Community</h3>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* TODO: Replace with actual community data */}
           </div>
@@ -288,11 +271,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
 
       {/* Watchlist Tab - Continue Watching + Bookmarks */}
       <TabsContent value="watchlist" className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">Continue Watching</h3>
-        </div>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {getContinueWatching().map((episode) => (
             episode && (
@@ -325,11 +303,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
         )}
 
         {/* Bookmarks moved under Watchlist */}
-        <div className="flex items-center gap-2 pt-4">
-          <Bookmark className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">Bookmarked Episodes</h3>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {watchlist.map((item) => (
             item.docuseries && (
@@ -363,10 +336,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
       {/* Learn Tab - Purchased Courses & Subscribed Communities */}
       <TabsContent value="learn" className="space-y-6">
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            <h3 className="text-lg font-semibold">Your Courses</h3>
-          </div>
           <Card className="p-6 text-center">
             <CardContent>
               <CardTitle className="mb-2">No courses yet</CardTitle>
@@ -379,10 +348,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            <h3 className="text-lg font-semibold">Communities</h3>
-          </div>
           <Card className="p-6 text-center">
             <CardContent>
               <CardTitle className="mb-2">No communities yet</CardTitle>
@@ -397,12 +362,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
 
       {/* Following Tab - Followed Artists */}
       <TabsContent value="following" className="space-y-4">
-        <div className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">Following Artists</h3>
-          <Badge variant="secondary">{followedArtists.length}</Badge>
-        </div>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {followedArtists.map((artist) => (
             <Card key={artist.id} className="overflow-hidden">
