@@ -214,19 +214,6 @@ export function PortfolioManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Portfolio</h2>
-          <p className="text-muted-foreground">Manage your artwork portfolio</p>
-        </div>
-        <Button
-          onClick={() => setShowAddForm(true)}
-          disabled={isUploading}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Artwork
-        </Button>
-      </div>
 
       {/* Add New Artwork Form */}
       {showAddForm && (
@@ -331,7 +318,10 @@ export function PortfolioManager() {
             <p className="text-muted-foreground mb-4">
               Start building your portfolio by adding your first artwork.
             </p>
-            <Button onClick={() => setShowAddForm(true)}>
+            <Button 
+              variant="gradient"
+              onClick={() => setShowAddForm(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Your First Artwork
             </Button>
