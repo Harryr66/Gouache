@@ -84,10 +84,122 @@ export default function CommunityPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   
+  // Bubble management states
+  const [bubbles, setBubbles] = useState(mockCommunityData.bubbles);
+  const [selectedBubble, setSelectedBubble] = useState(null);
+  const [newBubbleName, setNewBubbleName] = useState('');
+  const [newBubbleDescription, setNewBubbleDescription] = useState('');
+  const [newMessage, setNewMessage] = useState('');
+  const [isHost, setIsHost] = useState(true); // Mock: user is community host
+  
+  // Challenge management states
+  const [challenges, setChallenges] = useState(mockCommunityData.challenges);
+  const [showCreateChallenge, setShowCreateChallenge] = useState(false);
+  const [newChallenge, setNewChallenge] = useState({
+    title: '',
+    description: '',
+    category: 'General',
+    difficulty: 'Beginner',
+    duration: 30
+  });
+  
   const { generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generateAvatarPlaceholderUrl(60, 60);
 
   const categories = ['all', 'Painting', 'Drawing', 'Sculpture', 'Pottery & Ceramics', 'Books'];
+
+  // Bubble management functions
+  const handleCreateBubble = () => {
+    if (newBubbleName.trim() && newBubbleDescription.trim()) {
+      const newBubble = {
+        id: bubbles.length + 1,
+        name: newBubbleName,
+        description: newBubbleDescription,
+        members: 1,
+        topic: 'General',
+        isActive: true,
+        lastMessage: 'Just now',
+        level: 'All Levels',
+        messages: [],
+        host: 'You',
+        membersList: ['You']
+      };
+      setBubbles([...bubbles, newBubble]);
+      setNewBubbleName('');
+      setNewBubbleDescription('');
+    }
+  };
+
+  const handleJoinBubble = (bubbleId) => {
+    setBubbles(bubbles.map(bubble => 
+      bubble.id === bubbleId 
+        ? { ...bubble, members: bubble.members + 1, membersList: [...(bubble.membersList || []), 'You'] }
+        : bubble
+    ));
+  };
+
+  const handleLeaveBubble = (bubbleId) => {
+    setBubbles(bubbles.map(bubble => 
+      bubble.id === bubbleId 
+        ? { ...bubble, members: Math.max(0, bubble.members - 1), membersList: (bubble.membersList || []).filter(member => member !== 'You') }
+        : bubble
+    ));
+  };
+
+  const handleSendMessage = (bubbleId) => {
+    if (newMessage.trim()) {
+      const message = {
+        id: Date.now(),
+        user: 'You',
+        content: newMessage,
+        timestamp: new Date().toLocaleTimeString(),
+        avatar: ''
+      };
+      
+      setBubbles(bubbles.map(bubble => 
+        bubble.id === bubbleId 
+          ? { 
+              ...bubble, 
+              messages: [...(bubble.messages || []), message],
+              lastMessage: 'Just now'
+            }
+          : bubble
+      ));
+      setNewMessage('');
+    }
+  };
+
+  const handleRemoveUser = (bubbleId, username) => {
+    setBubbles(bubbles.map(bubble => 
+      bubble.id === bubbleId 
+        ? { 
+            ...bubble, 
+            members: Math.max(0, bubble.members - 1),
+            membersList: (bubble.membersList || []).filter(member => member !== username)
+          }
+        : bubble
+    ));
+  };
+
+  // Challenge management functions
+  const handleCreateChallenge = () => {
+    if (newChallenge.title.trim() && newChallenge.description.trim()) {
+      const challenge = {
+        id: challenges.length + 1,
+        title: newChallenge.title,
+        description: newChallenge.description,
+        participants: 0,
+        daysLeft: newChallenge.duration,
+        category: newChallenge.category,
+        difficulty: newChallenge.difficulty,
+        createdBy: 'You',
+        createdAt: new Date().toLocaleDateString()
+      };
+      setChallenges([...challenges, challenge]);
+      setNewChallenge({ title: '', description: '', category: 'General', difficulty: 'Beginner', duration: 30 });
+      setShowCreateChallenge(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -166,17 +278,27 @@ export default function CommunityPage() {
                     <div className="space-y-4">
                       <div>
                         <label className="text-sm font-medium mb-2 block">Bubble Name</label>
-                        <Input placeholder="e.g., Watercolor Techniques Discussion" />
+                        <Input 
+                          placeholder="e.g., Watercolor Techniques Discussion" 
+                          value={newBubbleName}
+                          onChange={(e) => setNewBubbleName(e.target.value)}
+                        />
                       </div>
                       <div>
                         <label className="text-sm font-medium mb-2 block">Description</label>
                         <Textarea 
                           placeholder="Describe what this bubble will discuss..."
                           rows={3}
+                          value={newBubbleDescription}
+                          onChange={(e) => setNewBubbleDescription(e.target.value)}
                         />
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="gradient" className="flex-1">
+                        <Button 
+                          variant="gradient" 
+                          className="flex-1"
+                          onClick={handleCreateBubble}
+                        >
                           <Plus className="h-4 w-4 mr-2" />
                           Create Bubble
                         </Button>
@@ -189,59 +311,191 @@ export default function CommunityPage() {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Active Bubbles</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {mockCommunityData.bubbles.map((bubble) => (
-                      <Card key={bubble.id} className="hover:shadow-md transition-shadow">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg">{bubble.name}</CardTitle>
-                            <Badge variant={bubble.isActive ? "default" : "secondary"}>
-                              {bubble.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-muted-foreground mb-4">{bubble.description}</p>
-                          <div className="space-y-2 mb-4">
-                            <div className="flex justify-between">
-                              <span className="text-sm text-muted-foreground">Members</span>
-                              <span className="text-sm font-medium">{bubble.members}</span>
+                    {bubbles.map((bubble) => {
+                      const isJoined = bubble.membersList?.includes('You') || false;
+                      const isHost = bubble.host === 'You';
+                      
+                      return (
+                        <Card key={bubble.id} className="hover:shadow-md transition-shadow">
+                          <CardHeader>
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-lg">{bubble.name}</CardTitle>
+                              <div className="flex gap-2">
+                                <Badge variant={bubble.isActive ? "default" : "secondary"}>
+                                  {bubble.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                                {isHost && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Host
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-muted-foreground">Topic</span>
-                              <Badge variant="outline" className="text-xs">
-                                {bubble.topic}
-                              </Badge>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-muted-foreground mb-4">{bubble.description}</p>
+                            <div className="space-y-2 mb-4">
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Members</span>
+                                <span className="text-sm font-medium">{bubble.members}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Topic</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {bubble.topic}
+                                </Badge>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Last Message</span>
+                                <span className="text-sm font-medium">{bubble.lastMessage}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Level</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {bubble.level}
+                                </Badge>
+                              </div>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-muted-foreground">Last Message</span>
-                              <span className="text-sm font-medium">{bubble.lastMessage}</span>
+                            <div className="flex gap-2">
+                              {isJoined ? (
+                                <>
+                                  <Button 
+                                    className="flex-1 gradient-button"
+                                    onClick={() => setSelectedBubble(bubble)}
+                                  >
+                                    <MessageCircle className="h-4 w-4 mr-2" />
+                                    Open Chat
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleLeaveBubble(bubble.id)}
+                                  >
+                                    Leave
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button 
+                                  className="flex-1 gradient-button"
+                                  onClick={() => handleJoinBubble(bubble.id)}
+                                >
+                                  <MessageCircle className="h-4 w-4 mr-2" />
+                                  Join Bubble
+                                </Button>
+                              )}
+                              <Button variant="outline" size="sm">
+                                <Users className="h-4 w-4" />
+                              </Button>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-muted-foreground">Level</span>
-                              <Badge variant="outline" className="text-xs">
-                                {bubble.level}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button className="flex-1 gradient-button">
-                              <MessageCircle className="h-4 w-4 mr-2" />
-                              Join Bubble
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Users className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="challenges" className="space-y-4">
+                {/* Host Controls */}
+                {isHost && (
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Zap className="h-5 w-5" />
+                          Host Controls
+                        </CardTitle>
+                        <Button 
+                          variant="gradient"
+                          onClick={() => setShowCreateChallenge(!showCreateChallenge)}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Challenge
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    {showCreateChallenge && (
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Challenge Title</label>
+                            <Input 
+                              placeholder="e.g., 30-Day Drawing Challenge"
+                              value={newChallenge.title}
+                              onChange={(e) => setNewChallenge({...newChallenge, title: e.target.value})}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Description</label>
+                            <Textarea 
+                              placeholder="Describe the challenge..."
+                              rows={3}
+                              value={newChallenge.description}
+                              onChange={(e) => setNewChallenge({...newChallenge, description: e.target.value})}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">Category</label>
+                              <select 
+                                value={newChallenge.category}
+                                onChange={(e) => setNewChallenge({...newChallenge, category: e.target.value})}
+                                className="w-full px-3 py-2 border rounded-md bg-background"
+                              >
+                                <option value="General">General</option>
+                                <option value="Painting">Painting</option>
+                                <option value="Drawing">Drawing</option>
+                                <option value="Sculpture">Sculpture</option>
+                                <option value="Digital Art">Digital Art</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">Difficulty</label>
+                              <select 
+                                value={newChallenge.difficulty}
+                                onChange={(e) => setNewChallenge({...newChallenge, difficulty: e.target.value})}
+                                className="w-full px-3 py-2 border rounded-md bg-background"
+                              >
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Duration (days)</label>
+                            <Input 
+                              type="number"
+                              placeholder="30"
+                              value={newChallenge.duration}
+                              onChange={(e) => setNewChallenge({...newChallenge, duration: parseInt(e.target.value) || 30})}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="gradient" 
+                              className="flex-1"
+                              onClick={handleCreateChallenge}
+                            >
+                              <Zap className="h-4 w-4 mr-2" />
+                              Create Challenge
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              onClick={() => setShowCreateChallenge(false)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                )}
+
+                {/* Challenges List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {mockCommunityData.challenges.map((challenge) => (
+                  {challenges.map((challenge) => (
                     <Card key={challenge.id} className="hover:shadow-md transition-shadow">
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -272,10 +526,24 @@ export default function CommunityPage() {
                               {challenge.difficulty}
                             </Badge>
                           </div>
+                          {challenge.createdBy && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Created by</span>
+                              <span className="text-sm font-medium">{challenge.createdBy}</span>
+                            </div>
+                          )}
                         </div>
-                        <Button className="w-full gradient-button">
-                          Join Challenge
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button className="flex-1 gradient-button">
+                            <Star className="h-4 w-4 mr-2" />
+                            Join Challenge
+                          </Button>
+                          {isHost && challenge.createdBy === 'You' && (
+                            <Button variant="outline" size="sm">
+                              <Calendar className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -297,6 +565,81 @@ export default function CommunityPage() {
               </TabsContent>
             </Tabs>
           </div>
+
+          {/* Bubble Chat Modal */}
+          {selectedBubble && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <Card className="w-full max-w-4xl h-[80vh] flex flex-col">
+                <CardHeader className="flex-shrink-0">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{selectedBubble.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{selectedBubble.members} members</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {isHost && (
+                        <Button variant="outline" size="sm">
+                          <Users className="h-4 w-4 mr-2" />
+                          Manage Members
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedBubble(null)}
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col overflow-hidden">
+                  {/* Chat Messages */}
+                  <div className="flex-1 overflow-y-auto space-y-4 mb-4 p-4 border rounded-lg bg-muted/20">
+                    {selectedBubble.messages?.length > 0 ? (
+                      selectedBubble.messages.map((message) => (
+                        <div key={message.id} className="flex gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={placeholderUrl} alt={message.user} />
+                            <AvatarFallback>{message.user[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-sm">{message.user}</span>
+                              <span className="text-xs text-muted-foreground">{message.timestamp}</span>
+                            </div>
+                            <p className="text-sm">{message.content}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No messages yet. Start the conversation!</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Message Input */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Type your message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(selectedBubble.id)}
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={() => handleSendMessage(selectedBubble.id)}
+                      disabled={!newMessage.trim()}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Sidebar */}
           <div className="space-y-6">
