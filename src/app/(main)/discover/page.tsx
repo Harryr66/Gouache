@@ -47,9 +47,13 @@ const categories = [
   'Expressionism'
 ];
 
-// Countries for filtering
-const COUNTRIES = [
-  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 
+// Main western countries (most commonly used)
+const MAIN_COUNTRIES = [
+  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany'
+];
+
+// Additional countries
+const ADDITIONAL_COUNTRIES = [
   'France', 'Italy', 'Spain', 'Netherlands', 'Belgium', 'Switzerland',
   'Japan', 'South Korea', 'China', 'India', 'Brazil', 'Mexico', 
   'Argentina', 'Colombia', 'South Africa', 'Egypt', 'Morocco',
@@ -59,6 +63,9 @@ const COUNTRIES = [
   'Nigeria', 'Kenya', 'Ghana', 'Chile', 'Peru', 'Venezuela',
   'Philippines', 'Thailand', 'Indonesia', 'Malaysia', 'Vietnam'
 ];
+
+// Combined countries list
+const COUNTRIES = [...MAIN_COUNTRIES, ...ADDITIONAL_COUNTRIES];
 
 // Mediums for filtering
 const MEDIUMS = [
@@ -223,6 +230,7 @@ export default function DiscoverPage() {
   // Country and city filter states
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [showAllCountries, setShowAllCountries] = useState(false);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
 
@@ -952,6 +960,7 @@ export default function DiscoverPage() {
     setTagInput('');
     setSelectedCountries([]);
     setSelectedCities([]);
+    setShowAllCountries(false);
     setHideDigitalArt(false);
     setHideAIAssistedArt(false);
     setHideNFTs(false);
@@ -1481,7 +1490,7 @@ export default function DiscoverPage() {
                     </div>
                   )}
                   <div className="flex flex-wrap gap-1">
-                    {COUNTRIES.filter(country => country !== 'All').map((country) => (
+                    {(showAllCountries ? COUNTRIES : MAIN_COUNTRIES).filter(country => country !== 'All').map((country) => (
           <Button
                         key={country}
                         variant="outline"
@@ -1493,9 +1502,29 @@ export default function DiscoverPage() {
                         {country}
           </Button>
                     ))}
+                    {!showAllCountries && (
+          <Button
+                        variant="outline"
+            size="sm"
+                        onClick={() => setShowAllCountries(true)}
+                        className="text-xs bg-muted hover:bg-muted/80"
+          >
+                        Show More...
+          </Button>
+                    )}
+                    {showAllCountries && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAllCountries(false)}
+                        className="text-xs bg-muted hover:bg-muted/80"
+                      >
+                        Show Less
+                      </Button>
+                    )}
                   </div>
                 </div>
-              </div>
+        </div>
 
               {/* City Filter - Only show if countries are selected */}
               {selectedCountries.length > 0 && (
@@ -1518,7 +1547,7 @@ export default function DiscoverPage() {
                             </button>
                           </Badge>
                         ))}
-                      </div>
+          </div>
                     )}
                     <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
                       {selectedCountries.flatMap(country => 
