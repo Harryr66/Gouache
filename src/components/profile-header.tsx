@@ -20,6 +20,7 @@ interface ProfileHeaderProps {
     username: string;
     avatarUrl?: string;
     bio?: string;
+    location?: string;
     countryOfOrigin?: string;
     countryOfResidence?: string;
     followerCount: number;
@@ -254,7 +255,12 @@ export function ProfileHeader({
                           <p className="font-medium text-sm text-muted-foreground mb-1">Currently Based In</p>
                           <div className="flex items-center gap-2">
                             {!user.hideFlags && <CountryFlag country={user.countryOfResidence} size="sm" />}
-                            <p className="text-foreground">{user.countryOfResidence}</p>
+                            <p className="text-foreground">
+                              {user.location && user.countryOfResidence 
+                                ? `${user.location}, ${user.countryOfResidence}`
+                                : user.countryOfResidence
+                              }
+                            </p>
                           </div>
                         </div>
                       </div>
