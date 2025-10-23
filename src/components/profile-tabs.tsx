@@ -14,6 +14,7 @@ import { CreateCommunityDialog } from './community/create-community-dialog';
 import { EpisodeCard } from './episode-card';
 import { DocuseriesCard } from './docuseries-card';
 import { PortfolioManager } from './portfolio-manager';
+import { SuppliesList } from './supplies-list';
 import { useWatchlist } from '@/providers/watchlist-provider';
 import { useFollow } from '@/providers/follow-provider';
 import { useCourses } from '@/providers/course-provider';
@@ -82,9 +83,9 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
                 <Brain className="h-4 w-4" />
                 Learn
               </TabsTrigger>
-              <TabsTrigger value="events" className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Events
+              <TabsTrigger value="supplies" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Supplies
               </TabsTrigger>
             </TabsList>
 
@@ -209,10 +210,64 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
               )}
             </TabsContent>
 
+            {/* Supplies Sub-tab */}
+            <TabsContent value="supplies" className="space-y-4">
+              <SuppliesList isOwnProfile={isOwnProfile} />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* Community Tab */}
+        <TabsContent value="community" className="space-y-4">
+          <Tabs defaultValue="community-chat" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="community-chat" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Community Chat
+              </TabsTrigger>
+              <TabsTrigger value="events" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Events
+              </TabsTrigger>
+              <TabsTrigger value="bubbles" className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4" />
+                Bubbles
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Community Chat Sub-tab */}
+            <TabsContent value="community-chat" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* TODO: Replace with actual community data */}
+              </div>
+
+              <Card className="p-8 text-center">
+                <CardContent>
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <CardTitle className="mb-2">No community yet</CardTitle>
+                  <CardDescription className="mb-4">
+                    {isOwnProfile 
+                      ? "Create a community to connect with your followers and fans."
+                      : "This artist hasn't created a community yet."
+                    }
+                  </CardDescription>
+                  {isOwnProfile && (
+                    <Button 
+                      variant="gradient"
+                      onClick={() => setShowCreateCommunity(true)}
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      Start Community
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Events Sub-tab */}
             <TabsContent value="events" className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Hosted Events</h3>
+                <h3 className="text-lg font-semibold">Upcoming Events</h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -238,40 +293,37 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Bubbles Sub-tab */}
+            <TabsContent value="bubbles" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Active Bubbles</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* TODO: Replace with actual bubble data */}
+              </div>
+
+              <Card className="p-8 text-center">
+                <CardContent>
+                  <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <CardTitle className="mb-2">No bubbles yet</CardTitle>
+                  <CardDescription className="mb-4">
+                    {isOwnProfile 
+                      ? "Create discussion bubbles for your community."
+                      : "This artist hasn't created any discussion bubbles yet."
+                    }
+                  </CardDescription>
+                  {isOwnProfile && (
+                    <Button variant="gradient">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Bubble
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
-        </TabsContent>
-
-        {/* Community Tab */}
-        <TabsContent value="community" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Community</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* TODO: Replace with actual community data */}
-          </div>
-
-          <Card className="p-8 text-center">
-            <CardContent>
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <CardTitle className="mb-2">No community yet</CardTitle>
-              <CardDescription className="mb-4">
-                {isOwnProfile 
-                  ? "Create a community to connect with your followers and fans."
-                  : "This artist hasn't created a community yet."
-                }
-              </CardDescription>
-              {isOwnProfile && (
-                <Button 
-                  variant="gradient"
-                  onClick={() => setShowCreateCommunity(true)}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Start Community
-                </Button>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     );
