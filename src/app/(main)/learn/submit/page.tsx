@@ -760,6 +760,20 @@ export default function CourseSubmissionPage() {
                     <h3 className="text-lg font-semibold">Discoverability</h3>
                     <p className="text-sm text-muted-foreground">Help students find your course by optimizing search and adding relevant tags.</p>
                     
+                    {/* Course Description - Acts as prompt for AI tags */}
+                    <div className="space-y-2">
+                      <Label>Course Description</Label>
+                      <Textarea 
+                        value={formData.description} 
+                        onChange={(e)=>handleInputChange('description', e.target.value)} 
+                        placeholder="Describe your course in detail. This description will be used to generate relevant tags automatically." 
+                        rows={4} 
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        A detailed description helps our AI generate better tag suggestions for your course.
+                      </p>
+                    </div>
+                    
                     {/* Tags Section */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -769,7 +783,7 @@ export default function CourseSubmissionPage() {
                           variant="outline" 
                           size="sm"
                           onClick={generateAITags}
-                          disabled={isGeneratingTags}
+                          disabled={isGeneratingTags || !formData.description.trim()}
                         >
                           {isGeneratingTags ? 'Generating...' : 'Generate AI Tags'}
                         </Button>
