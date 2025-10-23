@@ -178,7 +178,7 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
                   <span className="text-white text-sm font-medium truncate">{artwork.artist.name}</span>
-                  {artwork.artist.isVerified && <CheckCircle className={`h-3 w-3 flex-shrink-0 ${
+                  {artwork.artist.isVerified && <CheckCircle className={`h-3 w-3 flex-shrink-0 fill-current ${
                     (resolvedTheme || theme) === 'dark' 
                       ? 'text-blue-400' 
                       : 'text-white'
@@ -223,7 +223,7 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
                       {artwork.artist.isVerified && (
-                        <CheckCircle className="h-5 w-5 text-blue-500 fill-blue-500" />
+                        <CheckCircle className="h-5 w-5 text-blue-500 fill-current" />
                       )}
                     </div>
                     <p className="text-muted-foreground">@{artwork.artist.handle}</p>

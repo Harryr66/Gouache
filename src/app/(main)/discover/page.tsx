@@ -1016,7 +1016,7 @@ export default function DiscoverPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h1 className="text-3xl font-bold">{selectedArtist.name}</h1>
                       {selectedArtist.isVerified && (
-                        <CheckCircle className="h-6 w-6 text-blue-500 fill-blue-500" />
+                        <CheckCircle className="h-6 w-6 text-blue-500 fill-current" />
                       )}
                     </div>
                     <p className="text-muted-foreground">@{selectedArtist.handle}</p>
@@ -1296,7 +1296,7 @@ export default function DiscoverPage() {
                   onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
                   className="whitespace-nowrap"
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <CheckCircle className="h-4 w-4 mr-2 text-blue-500 fill-current" />
                   Verified Only
           </Button>
                 
@@ -1332,7 +1332,7 @@ export default function DiscoverPage() {
                   onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
                   className="whitespace-nowrap"
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <CheckCircle className="h-4 w-4 mr-2 text-blue-500 fill-current" />
                   Verified Only
           </Button>
           <Button
@@ -1650,7 +1650,7 @@ export default function DiscoverPage() {
                           <div className="flex items-center gap-2">
                             <CardTitle className="text-lg truncate">{artist.name}</CardTitle>
                             {artist.isVerified && (
-                              <CheckCircle className="h-4 w-4 text-blue-500 fill-blue-500 flex-shrink-0" />
+                              <CheckCircle className="h-4 w-4 text-blue-500 fill-current flex-shrink-0" />
                             )}
         </div>
                           <CardDescription className="truncate">@{artist.handle}</CardDescription>
