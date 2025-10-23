@@ -23,6 +23,12 @@ service firebase.storage {
       allow read, write: if true; // Allow profile picture uploads
     }
     
+    // Allow uploads to banners folder (for profile banner images)
+    match /banners/{allPaths=**} {
+      allow read: if true; // Allow public read access
+      allow write: if request.auth != null; // Allow authenticated users to upload banner images
+    }
+    
     // Allow uploads to portfolio folder (for artist portfolio images)
     match /portfolio/{allPaths=**} {
       allow read: if true; // Allow public read access
