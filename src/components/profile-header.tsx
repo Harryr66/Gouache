@@ -169,22 +169,24 @@ export function ProfileHeader({
               {/* Tip Jar Button - Show for all professional artists with tip jar enabled */}
               {user.isProfessional && user.tipJarEnabled && (
                 <Button 
-                  variant="gradient"
+                  variant="outline"
+                  size="icon"
                   onClick={() => setShowTipDialog(true)}
+                  className="hover:gradient-border"
                 >
-                  <Coffee className="h-4 w-4 mr-2" />
-                  Tip Jar
+                  <Coffee className="h-4 w-4" />
                 </Button>
               )}
               
               {/* Suggestions Button - Show for all professional artists with suggestions enabled */}
               {user.isProfessional && user.suggestionsEnabled && (
                 <Button 
-                  variant="gradient"
+                  variant="outline"
+                  size="icon"
                   onClick={() => setShowSuggestionsDialog(true)}
+                  className="hover:gradient-border"
                 >
-                  <Lightbulb className="h-4 w-4 mr-2" />
-                  Suggestions
+                  <Lightbulb className="h-4 w-4" />
                 </Button>
               )}
             </div>
