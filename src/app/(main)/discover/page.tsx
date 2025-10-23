@@ -149,6 +149,8 @@ export default function DiscoverPage() {
   const [hideDigitalArt, setHideDigitalArt] = useState(false);
   const [hideAIAssistedArt, setHideAIAssistedArt] = useState(false);
   const [hideNFTs, setHideNFTs] = useState(false);
+  const [showCoursesAvailable, setShowCoursesAvailable] = useState(false);
+  const [showUpcomingEvents, setShowUpcomingEvents] = useState(false);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
 
@@ -647,11 +649,11 @@ export default function DiscoverPage() {
                 discussionId: `discussion-${artist.id}-${index}`,
                 tags: portfolioItem.tags || [],
                 price: Math.floor(Math.random() * 5000) + 500,
-                currency: 'USD',
+        currency: 'USD',
                 isForSale: Math.random() > 0.3,
                 category: portfolioItem.medium || 'Mixed Media',
                 medium: portfolioItem.medium || 'Mixed Media',
-                dimensions: { width: 24, height: 30, unit: 'in' },
+        dimensions: { width: 24, height: 30, unit: 'in' },
                 createdAt: portfolioItem.createdAt,
                 updatedAt: portfolioItem.createdAt,
                 views: Math.floor(Math.random() * 5000),
@@ -760,6 +762,18 @@ export default function DiscoverPage() {
       if (!artist.isVerified || !artist.isProfessional) return false;
     }
     
+    // Filter by artists with courses available
+    if (showCoursesAvailable) {
+      // Check if artist has any courses
+      if (!artist.courses || artist.courses.length === 0) return false;
+    }
+    
+    // Filter by artists with upcoming events
+    if (showUpcomingEvents) {
+      // Check if artist has any events
+      if (!artist.events || artist.events.length === 0) return false;
+    }
+    
     return true;
   });
   
@@ -789,7 +803,7 @@ export default function DiscoverPage() {
     const artistEvents = selectedArtist.events || [];
     const following = isFollowing(selectedArtist.id);
 
-    return (
+  return (
       <div className="min-h-screen bg-background">
         {/* Back Button */}
         <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
@@ -802,7 +816,7 @@ export default function DiscoverPage() {
 
         {/* Artist Profile Header - Compact Layout */}
         <div className="border-b border-border bg-card">
-          <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Left: Avatar */}
               <div className="flex-shrink-0">
@@ -815,7 +829,7 @@ export default function DiscoverPage() {
               {/* Right: Info */}
               <div className="flex-1 space-y-3">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
+        <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h1 className="text-3xl font-bold">{selectedArtist.name}</h1>
                       {selectedArtist.isVerified && (
@@ -832,7 +846,7 @@ export default function DiscoverPage() {
                     {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
                     {following ? 'Following' : 'Follow'}
                   </Button>
-                </div>
+        </div>
 
                 {/* Bio */}
                 <p className="text-sm leading-relaxed">{selectedArtist.bio}</p>
@@ -1088,8 +1102,8 @@ export default function DiscoverPage() {
                     <SelectItem value="popular">Most Popular</SelectItem>
                     <SelectItem value="price-low">Price: Low to High</SelectItem>
                     <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  </SelectContent>
-                </Select>
+            </SelectContent>
+          </Select>
                 <Button
                   variant={showVerifiedOnly ? "default" : "outline"}
                   onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
@@ -1101,30 +1115,30 @@ export default function DiscoverPage() {
                 
                 {/* Advanced Filters */}
                 <div className="flex items-center gap-2">
-                  <Button
+          <Button
                     variant={hideDigitalArt ? "default" : "outline"}
                     onClick={() => setHideDigitalArt(!hideDigitalArt)}
                     className="whitespace-nowrap"
-                    size="sm"
-                  >
+            size="sm"
+          >
                     Hide Digital Art
-                  </Button>
-                  <Button
+          </Button>
+          <Button
                     variant={hideAIAssistedArt ? "default" : "outline"}
                     onClick={() => setHideAIAssistedArt(!hideAIAssistedArt)}
                     className="whitespace-nowrap"
-                    size="sm"
-                  >
+            size="sm"
+          >
                     Hide AI Art
-                  </Button>
-                  <Button
+          </Button>
+          <Button
                     variant={hideNFTs ? "default" : "outline"}
                     onClick={() => setHideNFTs(!hideNFTs)}
                     className="whitespace-nowrap"
-                    size="sm"
-                  >
+            size="sm"
+          >
                     Hide NFTs
-                  </Button>
+          </Button>
                 </div>
               </>
             )}
@@ -1153,13 +1167,29 @@ export default function DiscoverPage() {
               ))}
             </SelectContent>
           </Select>
-                <Button
+          <Button
                   variant={showVerifiedOnly ? "default" : "outline"}
                   onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
                   className="whitespace-nowrap"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Verified Only
+          </Button>
+                <Button
+                  variant={showCoursesAvailable ? "default" : "outline"}
+                  onClick={() => setShowCoursesAvailable(!showCoursesAvailable)}
+                  className="whitespace-nowrap"
+                  size="sm"
+                >
+                  Courses Available
+                </Button>
+                <Button
+                  variant={showUpcomingEvents ? "default" : "outline"}
+                  onClick={() => setShowUpcomingEvents(!showUpcomingEvents)}
+                  className="whitespace-nowrap"
+                  size="sm"
+                >
+                  Upcoming Events
                 </Button>
                 {activeFiltersCount > 0 && (
                   <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap">
@@ -1177,7 +1207,7 @@ export default function DiscoverPage() {
             </Link>
           </div>
         </div>
-      </div>
+        </div>
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
@@ -1204,7 +1234,7 @@ export default function DiscoverPage() {
                             {artist.isVerified && (
                               <CheckCircle className="h-4 w-4 text-blue-500 fill-blue-500 flex-shrink-0" />
                             )}
-                          </div>
+        </div>
                           <CardDescription className="truncate">@{artist.handle}</CardDescription>
                         </div>
                       </div>
@@ -1215,13 +1245,13 @@ export default function DiscoverPage() {
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <div>
                           <span className="font-bold text-foreground">{artist.followerCount.toLocaleString()}</span> followers
-                        </div>
+          </div>
                         {artist.location && (
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
                             <span className="truncate">{artist.location}</span>
-                          </div>
-                        )}
+          </div>
+        )}
                       </div>
 
                       <Separator />
@@ -1246,7 +1276,7 @@ export default function DiscoverPage() {
                         >
                           View Profile
           </Button>
-        </div>
+            </div>
                     </CardContent>
           </div>
                 </Card>
