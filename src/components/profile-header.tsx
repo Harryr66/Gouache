@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Users, UserPlus, Edit, Upload, Plus, MapPin, Globe, Coffee, Lightbulb } from 'lucide-react';
+import { Heart, Users, UserPlus, Edit, Upload, Plus, MapPin, Globe, Coffee, Lightbulb, ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { TipDialog } from './tip-dialog';
@@ -199,8 +199,8 @@ export function ProfileHeader({
         </div>
       </Card>
 
-      {/* Biography Section */}
-      {(user.bio || user.countryOfOrigin || user.countryOfResidence) && (
+      {/* My Card Section */}
+      {(user.bio || user.countryOfOrigin || user.countryOfResidence || user.bannerImageUrl) && (
         <Card className="mt-6">
           <CardContent className="p-6">
             <div className="space-y-4">
@@ -220,6 +220,39 @@ export function ProfileHeader({
                     </Button>
                   )}
                 </div>
+                
+                {/* Banner Image */}
+                {user.bannerImageUrl && (
+                  <div className="mb-4">
+                    <div className="relative w-full h-32 md:h-40 rounded-lg overflow-hidden">
+                      <img
+                        src={user.bannerImageUrl}
+                        alt={`${user.displayName}'s banner`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Banner Image Placeholder */}
+                {!user.bannerImageUrl && isOwnProfile && (
+                  <div className="mb-4">
+                    <div className="relative w-full h-32 md:h-40 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-muted-foreground text-sm mb-2">
+                          Add a banner image to personalize your profile
+                        </div>
+                        <Button asChild variant="outline" size="sm">
+                          <Link href="/profile/edit">
+                            <ImageIcon className="h-4 w-4 mr-2" />
+                            Add Banner
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {user.bio && isBioExpanded && (
                   <div className="text-foreground leading-relaxed">
                     <p className="whitespace-pre-line text-base">{user.bio}</p>

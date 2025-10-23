@@ -590,6 +590,7 @@ export interface User {
   email: string;
   displayName: string;
   avatarUrl?: string;
+  bannerImageUrl?: string;
   bio?: string;
   website?: string;
   location?: string;

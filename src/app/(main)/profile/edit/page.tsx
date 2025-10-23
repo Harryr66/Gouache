@@ -123,6 +123,7 @@ export default function ProfileEditPage() {
   const [isCheckingHandle, setIsCheckingHandle] = useState(false);
   const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [bannerPreviewImage, setBannerPreviewImage] = useState<string | null>(null);
   const [showArtistRequest, setShowArtistRequest] = useState(false);
   const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
@@ -140,6 +141,7 @@ export default function ProfileEditPage() {
     suggestionsEnabled: true,
     hideLocation: false,
     hideFlags: false,
+    bannerImageUrl: '',
   });
 
   const [artistRequestData, setArtistRequestData] = useState({
@@ -176,10 +178,15 @@ export default function ProfileEditPage() {
             suggestionsEnabled: changes.suggestionsEnabled !== undefined ? changes.suggestionsEnabled : (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true),
             hideLocation: changes.hideLocation || user.hideLocation || false,
             hideFlags: changes.hideFlags || user.hideFlags || false,
+            bannerImageUrl: changes.bannerImageUrl || user.bannerImageUrl || '',
           });
           
           if (changes.avatarUrl && changes.avatarUrl !== user.avatarUrl) {
             setPreviewImage(changes.avatarUrl);
+          }
+          
+          if (changes.bannerImageUrl && changes.bannerImageUrl !== user.bannerImageUrl) {
+            setBannerPreviewImage(changes.bannerImageUrl);
           }
           
           console.log('Applied offline changes to form');
@@ -200,6 +207,7 @@ export default function ProfileEditPage() {
           suggestionsEnabled: user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true,
           hideLocation: user.hideLocation || false,
           hideFlags: user.hideFlags || false,
+          bannerImageUrl: user.bannerImageUrl || '',
         });
       }
     }
@@ -252,6 +260,16 @@ export default function ProfileEditPage() {
     setPreviewImage(previewUrl);
   };
 
+  const handleBannerImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Client-side compression for banner (wider aspect ratio)
+    const compressedFile = await compressBannerImage(file);
+    const previewUrl = URL.createObjectURL(compressedFile);
+    setBannerPreviewImage(previewUrl);
+  };
+
   const compressImage = (file: File): Promise<File> => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
@@ -290,8 +308,54 @@ export default function ProfileEditPage() {
     });
   };
 
+  const compressBannerImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        const maxWidth = 1200;
+        const maxHeight = 400;
+        let { width, height } = img;
+
+        // Maintain aspect ratio but prefer wider images for banners
+        const aspectRatio = width / height;
+        if (aspectRatio > 3) {
+          // Very wide image, crop to 3:1 ratio
+          width = maxWidth;
+          height = maxWidth / 3;
+        } else if (aspectRatio < 2) {
+          // Not wide enough, scale to fit height
+          height = maxHeight;
+          width = height * aspectRatio;
+        } else {
+          // Good aspect ratio, scale to fit width
+          width = maxWidth;
+          height = maxWidth / aspectRatio;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        ctx?.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+          }
+        }, 'image/jpeg', 0.8);
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const removeImage = () => {
     setPreviewImage(null);
+  };
+
+  const removeBannerImage = () => {
+    setBannerPreviewImage(null);
   };
 
   const handlePortfolioImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -574,6 +638,21 @@ export default function ProfileEditPage() {
         }
       }
 
+      let bannerImageUrl = user.bannerImageUrl;
+
+      // Upload new banner image if preview exists
+      if (bannerPreviewImage) {
+        const fileInput = document.getElementById('banner-upload') as HTMLInputElement;
+        const file = fileInput?.files?.[0];
+        
+        if (file) {
+          const compressedFile = await compressBannerImage(file);
+          const imageRef = ref(storage, `banners/${user.id}`);
+          await uploadBytes(imageRef, compressedFile);
+          bannerImageUrl = await getDownloadURL(imageRef);
+        }
+      }
+
       // Update user profile - filter out undefined values
       const userRef = doc(db, 'userProfiles', user.id);
       const updateData: any = {
@@ -595,6 +674,11 @@ export default function ProfileEditPage() {
       // Only include avatarUrl if it's not undefined
       if (avatarUrl !== undefined) {
         updateData.avatarUrl = avatarUrl;
+      }
+
+      // Only include bannerImageUrl if it's not undefined
+      if (bannerImageUrl !== undefined) {
+        updateData.bannerImageUrl = bannerImageUrl;
       }
 
       // Create or update user profile with timeout (setDoc with merge will create if doesn't exist)
@@ -637,6 +721,7 @@ export default function ProfileEditPage() {
           const offlineChanges = {
             ...formData,
             avatarUrl: previewImage || user.avatarUrl,
+            bannerImageUrl: bannerPreviewImage || user.bannerImageUrl,
             timestamp: new Date().toISOString()
           };
           localStorage.setItem(`profile_offline_changes_${user.id}`, JSON.stringify(offlineChanges));
@@ -748,6 +833,86 @@ export default function ProfileEditPage() {
                     onClick={removeImage}
                   >
                     Remove Picture
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Banner Image Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Banner Image</CardTitle>
+            <CardDescription>
+              Upload a banner image for your profile (recommended size: 1200x400px)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {bannerPreviewImage || user.bannerImageUrl ? (
+                <div className="relative">
+                  <div className="relative w-full h-32 md:h-40 rounded-lg overflow-hidden">
+                    <img
+                      src={bannerPreviewImage || user.bannerImageUrl}
+                      alt="Banner preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {bannerPreviewImage && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      className="absolute top-2 right-2 h-6 w-6 rounded-full p-0"
+                      onClick={removeBannerImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="relative w-full h-32 md:h-40 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-muted-foreground text-sm mb-2">
+                      No banner image uploaded
+                    </div>
+                    <Label htmlFor="banner-upload" className="cursor-pointer">
+                      <Button type="button" variant="outline" asChild>
+                        <span>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload Banner
+                        </span>
+                      </Button>
+                    </Label>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <Label htmlFor="banner-upload" className="cursor-pointer">
+                  <Button type="button" variant="outline" asChild>
+                    <span>
+                      <Upload className="h-4 w-4 mr-2" />
+                      {bannerPreviewImage || user.bannerImageUrl ? 'Change Banner' : 'Upload Banner'}
+                    </span>
+                  </Button>
+                </Label>
+                <input
+                  id="banner-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBannerImageUpload}
+                  className="hidden"
+                />
+                {(bannerPreviewImage || user.bannerImageUrl) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeBannerImage}
+                  >
+                    Remove Banner
                   </Button>
                 )}
               </div>

@@ -33,7 +33,6 @@ const budgetRanges = [
 
 export default function AdvertisePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionType, setSubmissionType] = useState<'advertising' | 'course-submission'>('advertising');
   const [formData, setFormData] = useState({
     companyName: '',
     contactName: '',
@@ -45,18 +44,7 @@ export default function AdvertisePage() {
     targetAudience: '',
     campaignGoals: '',
     message: '',
-    timeline: '',
-    // Course submission fields
-    courseTitle: '',
-    courseCategory: '',
-    courseSubcategory: '',
-    courseDescription: '',
-    courseDuration: '',
-    courseFormat: '',
-    instructorBio: '',
-    teachingExperience: '',
-    sampleWork: '',
-    courseGoals: ''
+    timeline: ''
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -66,15 +54,8 @@ export default function AdvertisePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields based on submission type
-    const requiredFields = ['companyName', 'contactName', 'email'];
-    if (submissionType === 'advertising') {
-      requiredFields.push('advertisingType');
-    }
-    if (submissionType === 'course-submission') {
-      requiredFields.push('courseTitle', 'courseCategory', 'courseSubcategory', 'courseDescription', 'instructorBio', 'teachingExperience');
-    }
-
+    // Validate required fields
+    const requiredFields = ['companyName', 'contactName', 'email', 'advertisingType'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     if (missingFields.length > 0) {
       toast({
@@ -87,59 +68,29 @@ export default function AdvertisePage() {
 
     setIsSubmitting(true);
     try {
-      // Submit advertising application if requested
-      if (submissionType === 'advertising') {
-        const adData = {
-          companyName: formData.companyName,
-          contactName: formData.contactName,
-          email: formData.email,
-          phone: formData.phone,
-          website: formData.website,
-          advertisingType: formData.advertisingType,
-          budget: formData.budget,
-          targetAudience: formData.targetAudience,
-          campaignGoals: formData.campaignGoals,
-          message: formData.message,
-          timeline: formData.timeline,
-          status: 'pending',
-          submittedAt: serverTimestamp(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        const adDocRef = await addDoc(collection(db, 'advertisingApplications'), adData);
-        console.log('✅ Advertising application submitted successfully:', adDocRef.id, adData);
-      }
+      const adData = {
+        companyName: formData.companyName,
+        contactName: formData.contactName,
+        email: formData.email,
+        phone: formData.phone,
+        website: formData.website,
+        advertisingType: formData.advertisingType,
+        budget: formData.budget,
+        targetAudience: formData.targetAudience,
+        campaignGoals: formData.campaignGoals,
+        message: formData.message,
+        timeline: formData.timeline,
+        status: 'pending',
+        submittedAt: serverTimestamp(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      const adDocRef = await addDoc(collection(db, 'advertisingApplications'), adData);
+      console.log('✅ Advertising application submitted successfully:', adDocRef.id, adData);
 
-      // Submit course submission request if requested
-      if (submissionType === 'course-submission') {
-        const courseData = {
-          companyName: formData.companyName,
-          contactName: formData.contactName,
-          email: formData.email,
-          phone: formData.phone,
-          website: formData.website,
-          courseTitle: formData.courseTitle,
-          courseCategory: formData.courseCategory,
-          courseSubcategory: formData.courseSubcategory,
-          courseDescription: formData.courseDescription,
-          courseDuration: formData.courseDuration,
-          courseFormat: formData.courseFormat,
-          instructorBio: formData.instructorBio,
-          teachingExperience: formData.teachingExperience,
-          sampleWork: formData.sampleWork,
-          courseGoals: formData.courseGoals,
-          message: formData.message,
-          status: 'pending',
-          submittedAt: serverTimestamp()
-        };
-        const courseDocRef = await addDoc(collection(db, 'courseSubmissionRequests'), courseData);
-        console.log('✅ Course submission request submitted successfully:', courseDocRef.id, courseData);
-      }
-
-      const submissionText = 'application has been';
       toast({
         title: "Application Submitted",
-        description: `Your ${submissionText} submitted successfully. We'll review it and get back to you within 2-3 business days.`,
+        description: "Your advertising application has been submitted successfully. We'll review it and get back to you within 2-3 business days.",
       });
 
       // Reset form
@@ -154,17 +105,7 @@ export default function AdvertisePage() {
         targetAudience: '',
         campaignGoals: '',
         message: '',
-        timeline: '',
-        courseTitle: '',
-        courseCategory: '',
-        courseSubcategory: '',
-        courseDescription: '',
-        courseDuration: '',
-        courseFormat: '',
-        instructorBio: '',
-        teachingExperience: '',
-        sampleWork: '',
-        courseGoals: ''
+        timeline: ''
       });
     } catch (error) {
       console.error('Error submitting application:', error);
@@ -222,42 +163,6 @@ export default function AdvertisePage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Submission Type Selection */}
-              <div className="space-y-2">
-                <Label>What are you interested in? *</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        id="advertising"
-                        type="radio"
-                        name="submissionType"
-                        value="advertising"
-                        checked={submissionType === 'advertising'}
-                        onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'course-submission')}
-                        className="rounded"
-                      />
-                      <Label htmlFor="advertising">Advertising Only</Label>
-                    </div>
-                    <p className="text-xs text-muted-foreground ml-6">Promote your brand through promoted ad placements</p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        id="course-submission"
-                        type="radio"
-                        name="submissionType"
-                        value="course-submission"
-                        checked={submissionType === 'course-submission'}
-                        onChange={(e) => setSubmissionType(e.target.value as 'advertising' | 'course-submission')}
-                        className="rounded"
-                      />
-                      <Label htmlFor="course-submission">Course Submission</Label>
-                    </div>
-                    <p className="text-xs text-muted-foreground ml-6">Request permission to submit a course to our art school</p>
-                  </div>
-                </div>
-              </div>
               {/* Company Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-foreground">Company Information</h3>
