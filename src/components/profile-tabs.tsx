@@ -109,7 +109,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
                     }
                   </CardDescription>
                   {isOwnProfile && (
-                    <Button variant="gradient">
+                    <Button 
+                      variant="gradient"
+                      onClick={() => window.location.href = '/marketplace/submit'}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       List an Item
                     </Button>
@@ -261,7 +264,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
               {isOwnProfile && (
                 <Button 
                   variant="gradient"
-                  onClick={() => setShowCommunity(true)}
+                  onClick={() => setShowCreateCommunity(true)}
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Start Community
@@ -458,7 +461,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
       {/* Create Community Dialog */}
       {showCreateCommunity && (
         <CreateCommunityDialog 
-          onClose={() => setShowCommunity(false)} 
+          onClose={() => setShowCreateCommunity(false)} 
         />
       )}
     </Tabs>
