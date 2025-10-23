@@ -605,6 +605,8 @@ export interface User {
   isActive: boolean;
   lastSeen?: Date;
   artistType?: string;
+  tipJarEnabled?: boolean;
+  suggestionsEnabled?: boolean;
   portfolio?: Array<{
     id: string;
     imageUrl: string;
