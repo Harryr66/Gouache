@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter } from 'next/navigation';
 import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Globe, Calendar, ExternalLink, MapPin, CheckCircle } from 'lucide-react';
 import { Artwork, Artist } from '@/lib/types';
@@ -145,6 +146,9 @@ export default function DiscoverPage() {
   const [selectedCountryOfResidence, setSelectedCountryOfResidence] = useState<string>('all');
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [hideDigitalArt, setHideDigitalArt] = useState(false);
+  const [hideAIAssistedArt, setHideAIAssistedArt] = useState(false);
+  const [hideNFTs, setHideNFTs] = useState(false);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
 
@@ -696,6 +700,23 @@ export default function DiscoverPage() {
       if (!artwork.artist.isVerified || !artwork.artist.isProfessional) return false;
     }
     
+    // Hide Digital Art filter
+    if (hideDigitalArt) {
+      if (artwork.category === 'Digital Art' || artwork.category === 'Digital Painting') return false;
+    }
+    
+    // Hide AI Assisted Art filter
+    if (hideAIAssistedArt) {
+      if (artwork.tags?.includes('AI assisted') || artwork.tags?.includes('AI-generated') || 
+          artwork.imageAiHint?.toLowerCase().includes('ai') || artwork.imageAiHint?.toLowerCase().includes('artificial intelligence')) return false;
+    }
+    
+    // Hide NFTs filter
+    if (hideNFTs) {
+      if (artwork.category === 'NFT' || artwork.tags?.includes('NFT') || 
+          artwork.tags?.includes('blockchain') || artwork.tags?.includes('crypto')) return false;
+    }
+    
     return true;
   });
 
@@ -1077,6 +1098,34 @@ export default function DiscoverPage() {
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Verified Only
                 </Button>
+                
+                {/* Advanced Filters */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={hideDigitalArt ? "default" : "outline"}
+                    onClick={() => setHideDigitalArt(!hideDigitalArt)}
+                    className="whitespace-nowrap"
+                    size="sm"
+                  >
+                    Hide Digital Art
+                  </Button>
+                  <Button
+                    variant={hideAIAssistedArt ? "default" : "outline"}
+                    onClick={() => setHideAIAssistedArt(!hideAIAssistedArt)}
+                    className="whitespace-nowrap"
+                    size="sm"
+                  >
+                    Hide AI Art
+                  </Button>
+                  <Button
+                    variant={hideNFTs ? "default" : "outline"}
+                    onClick={() => setHideNFTs(!hideNFTs)}
+                    className="whitespace-nowrap"
+                    size="sm"
+                  >
+                    Hide NFTs
+                  </Button>
+                </div>
               </>
             )}
             
