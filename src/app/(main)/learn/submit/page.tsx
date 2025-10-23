@@ -60,7 +60,7 @@ export default function CourseSubmissionPage() {
     { id: 'curriculum', label: 'Curriculum', icon: ListChecks },
     { id: 'media', label: 'Media', icon: ImageIcon },
     { id: 'pricing', label: 'Pricing & Offers', icon: DollarSign },
-    { id: 'seo', label: 'SEO', icon: Search },
+    { id: 'discoverability', label: 'Discoverability', icon: Search },
     { id: 'publish', label: 'Publish', icon: Rocket },
   ] as const;
   type StepId = typeof steps[number]['id'];
@@ -99,6 +99,10 @@ export default function CourseSubmissionPage() {
   const [newLessonTitle, setNewLessonTitle] = useState('');
   const [newLessonType, setNewLessonType] = useState<'video' | 'reading' | 'assignment'>('video');
   const [newLessonDuration, setNewLessonDuration] = useState('');
+  
+  // AI tag generation
+  const [isGeneratingTags, setIsGeneratingTags] = useState(false);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
 
   // Slug state & validation
   const [slug, setSlug] = useState('');
@@ -224,6 +228,57 @@ export default function CourseSubmissionPage() {
       ...prev,
       specialties: prev.specialties.filter(specialty => specialty !== specialtyToRemove)
     }));
+  };
+
+  // AI tag generation function
+  const generateAITags = async () => {
+    if (!formData.title || !formData.description) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide a course title and description to generate tags.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGeneratingTags(true);
+    try {
+      // Mock AI tag generation - in production, this would call an AI service
+      const mockTags = [
+        formData.category.toLowerCase(),
+        formData.subcategory.toLowerCase().replace(/\s+/g, '-'),
+        formData.difficulty.toLowerCase(),
+        ...formData.title.toLowerCase().split(' ').filter(word => word.length > 3),
+        ...formData.description.toLowerCase().split(' ').filter(word => 
+          word.length > 4 && 
+          !['this', 'that', 'with', 'from', 'they', 'have', 'been', 'were', 'said', 'each', 'which', 'their', 'time', 'will', 'about', 'there', 'could', 'other', 'after', 'first', 'well', 'also', 'where', 'much', 'some', 'these', 'would', 'into', 'has', 'more', 'very', 'what', 'know', 'just', 'like', 'over', 'also', 'back', 'here', 'through', 'when', 'much', 'before', 'right', 'should', 'because', 'each', 'which', 'their', 'said', 'them', 'want', 'been', 'good', 'much', 'some', 'time', 'very', 'when', 'come', 'here', 'just', 'like', 'long', 'make', 'many', 'over', 'such', 'take', 'than', 'them', 'well', 'were'].includes(word)
+        ).slice(0, 5)
+      ].filter((tag, index, arr) => arr.indexOf(tag) === index).slice(0, 10);
+
+      setSuggestedTags(mockTags);
+      
+      toast({
+        title: "Tags Generated",
+        description: `${mockTags.length} suggested tags generated based on your course content.`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate tags. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingTags(false);
+    }
+  };
+
+  const addSuggestedTag = (tag: string) => {
+    if (!formData.tags.includes(tag)) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tag]
+      }));
+    }
   };
 
   const addLesson = () => {
@@ -700,23 +755,108 @@ export default function CourseSubmissionPage() {
                   </div>
                 )}
 
-                {activeStep === 'seo' && (
+                {activeStep === 'discoverability' && (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">SEO</h3>
-                    <div className="space-y-2">
-                      <Label>Meta Title</Label>
-                      <Input value={formData.metaTitle} onChange={(e)=>handleInputChange('metaTitle', e.target.value)} placeholder="Title for search engines" />
+                    <h3 className="text-lg font-semibold">Discoverability</h3>
+                    <p className="text-sm text-muted-foreground">Help students find your course by optimizing search and adding relevant tags.</p>
+                    
+                    {/* Tags Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-base font-medium">Course Tags</Label>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={generateAITags}
+                          disabled={isGeneratingTags}
+                        >
+                          {isGeneratingTags ? 'Generating...' : 'Generate AI Tags'}
+                        </Button>
+                      </div>
+                      
+                      {/* Current Tags */}
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {formData.tags.map((tag) => (
+                            <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => removeTag(tag)}
+                                className="ml-1 hover:text-destructive"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Suggested Tags */}
+                      {suggestedTags.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Suggested Tags</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {suggestedTags.map((tag) => (
+                              <Badge 
+                                key={tag} 
+                                variant="outline" 
+                                className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                                onClick={() => addSuggestedTag(tag)}
+                              >
+                                + {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Manual Tag Input */}
+                      <div className="flex gap-2">
+                        <Input
+                          value={newTag}
+                          onChange={(e) => setNewTag(e.target.value)}
+                          placeholder="Add a custom tag"
+                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                        />
+                        <Button type="button" onClick={addTag} size="sm">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Meta Description</Label>
-                      <Textarea value={formData.metaDescription} onChange={(e)=>handleInputChange('metaDescription', e.target.value)} placeholder="One or two sentences that summarize your course" rows={3} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Course URL Slug</Label>
-                      <Input value={slug} onChange={(e)=>setSlug(e.target.value)} placeholder="e.g., mastering-oil-painting" />
-                      <p className={`text-xs ${isSlugUnique ? 'text-green-600' : 'text-destructive'}`}>
-                        {isSlugUnique ? 'Slug is available' : 'Slug is already in use'}
-                      </p>
+                    
+                    {/* SEO Fields */}
+                    <div className="space-y-4">
+                      <h4 className="text-base font-medium">Search Optimization</h4>
+                      <div className="space-y-2">
+                        <Label>Meta Title</Label>
+                        <Input 
+                          value={formData.metaTitle} 
+                          onChange={(e)=>handleInputChange('metaTitle', e.target.value)} 
+                          placeholder="Title for search engines" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Meta Description</Label>
+                        <Textarea 
+                          value={formData.metaDescription} 
+                          onChange={(e)=>handleInputChange('metaDescription', e.target.value)} 
+                          placeholder="One or two sentences that summarize your course" 
+                          rows={3} 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Course URL Slug</Label>
+                        <Input 
+                          value={slug} 
+                          onChange={(e)=>setSlug(e.target.value)} 
+                          placeholder="e.g., mastering-oil-painting" 
+                        />
+                        <p className={`text-xs ${isSlugUnique ? 'text-green-600' : 'text-destructive'}`}>
+                          {isSlugUnique ? 'Slug is available' : 'Slug is already in use'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -732,39 +872,11 @@ export default function CourseSubmissionPage() {
                   </div>
                 )}
 
-            {/* Tags and Skills */}
+            {/* Skills Section - Tags moved to Discoverability step */}
             {activeStep === 'basics' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Tags & Skills</h3>
+              <h3 className="text-lg font-semibold">Skills Students Will Learn</h3>
               
-              <div className="space-y-2">
-                <Label>Course Tags</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Add a tag"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  />
-                  <Button type="button" onClick={addTag} size="sm">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
 
               <div className="space-y-2">
                 <Label>Skills Students Will Learn</Label>
