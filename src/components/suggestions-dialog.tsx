@@ -94,21 +94,21 @@ export function SuggestionsDialog({ isOpen, onClose, artistName, artistId }: Sug
           </div>
 
           {/* Guidelines */}
-          <Card className="bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800">
+          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-orange-800 dark:text-orange-200 flex items-center gap-2">
+              <CardTitle className="text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
                 A Kind Reminder
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <ul className="text-xs text-orange-700 dark:text-orange-300 space-y-1">
+              <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
                 <li>• <strong>Be respectful and constructive</strong> - Everyone deserves respect</li>
                 <li>• <strong>Focus on requests, not criticism</strong> - What you'd like to see more of</li>
                 <li>• <strong>No hate speech, harassment, or negativity</strong> - This will not be tolerated</li>
                 <li>• <strong>Violations lead to platform removal</strong> - We protect our creators</li>
               </ul>
-              <p className="text-xs text-orange-700 dark:text-orange-300 mt-2 font-medium">
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 font-medium">
                 Please Keep All Suggestions Pleasant & Helpful Thank you
               </p>
             </CardContent>
