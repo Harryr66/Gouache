@@ -877,19 +877,24 @@ export default function ProfileEditPage() {
                     <div className="text-muted-foreground text-sm mb-2">
                       No banner image uploaded
                     </div>
-                    <Label htmlFor="banner-upload" className="cursor-pointer">
-                      <Button type="button" variant="outline" asChild>
-                        <span>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Banner
-                        </span>
-                      </Button>
-                    </Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="banner-upload" className="cursor-pointer">
+                        <Button type="button" variant="outline" asChild>
+                          <span>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload Banner
+                          </span>
+                        </Button>
+                      </Label>
+                      <div className="text-xs text-muted-foreground">
+                        Recommended: 1200x400px
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
               
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Label htmlFor="banner-upload" className="cursor-pointer">
                   <Button type="button" variant="outline" asChild>
                     <span>
@@ -898,6 +903,9 @@ export default function ProfileEditPage() {
                     </span>
                   </Button>
                 </Label>
+                <div className="text-xs text-muted-foreground">
+                  Recommended: 1200x400px
+                </div>
                 <input
                   id="banner-upload"
                   type="file"
