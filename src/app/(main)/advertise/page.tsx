@@ -153,12 +153,10 @@ export default function AdvertisePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              {submissionType === 'course-submission' ? 'Course Submission Request' : 
-               'Advertising Application'}
+              Advertising Application
             </CardTitle>
             <CardDescription>
-              {submissionType === 'course-submission' ? 'Request permission to submit a course to our art school platform. Our team will review your proposal and get back to you within 2-3 business days.' :
-               'Fill out the form below to submit your advertising application. Our team will review it and get back to you within 2-3 business days.'}
+              Fill out the form below to submit your advertising application. Our team will review it and get back to you within 2-3 business days.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -225,7 +223,6 @@ export default function AdvertisePage() {
               </div>
 
               {/* Campaign Details */}
-              {submissionType === 'advertising' && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">Campaign Details</h3>
                 
@@ -304,10 +301,9 @@ export default function AdvertisePage() {
                   />
                 </div>
               </div>
-              )}
 
-              {/* Course Submission Information */}
-              {submissionType === 'course-submission' && (
+              {/* Course Submission Information - Removed as courses are now auto-pulled from published courses */}
+              {false && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">Course Information</h3>
                   
@@ -487,9 +483,7 @@ export default function AdvertisePage() {
               )}
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting...' : 
-                 submissionType === 'course-submission' ? 'Submit Course Request' :
-                 'Submit Application'}
+                {isSubmitting ? 'Submitting...' : 'Submit Application'}
               </Button>
             </form>
           </CardContent>
