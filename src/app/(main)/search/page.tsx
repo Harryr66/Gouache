@@ -272,6 +272,11 @@ export default function SearchPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   
+  // Hide filters for Additional Filters section
+  const [hideDigitalArt, setHideDigitalArt] = useState(false);
+  const [hideAIAssistedArt, setHideAIAssistedArt] = useState(false);
+  const [hideNFTs, setHideNFTs] = useState(false);
+  
   const filteredArtworks = useMemo(() => {
     let filtered = mockArtworks.filter(artwork => {
       // Search query filter
@@ -313,9 +318,24 @@ export default function SearchPage() {
           artworkTag.toLowerCase().includes(tag.toLowerCase())
         ));
 
+      // Hide Digital Art filter
+      const matchesHideDigitalArt = !hideDigitalArt || 
+        (artwork.category !== 'Digital Art' && artwork.category !== 'Digital Painting');
+
+      // Hide AI Assisted Art filter
+      const matchesHideAIAssistedArt = !hideAIAssistedArt || 
+        !(artwork.tags?.includes('AI assisted') || artwork.tags?.includes('AI-generated') || 
+          artwork.imageAiHint?.toLowerCase().includes('ai') || artwork.imageAiHint?.toLowerCase().includes('artificial intelligence'));
+
+      // Hide NFTs filter
+      const matchesHideNFTs = !hideNFTs || 
+        !(artwork.category === 'NFT' || artwork.tags?.includes('NFT') || 
+          artwork.tags?.includes('blockchain') || artwork.tags?.includes('crypto'));
+
       return matchesSearch && matchesCategory && matchesMedium && matchesPrice && 
              matchesVerified && matchesForSale && matchesAI && 
-             matchesCountryOfOrigin && matchesCountryOfResidence && matchesTags;
+             matchesCountryOfOrigin && matchesCountryOfResidence && matchesTags &&
+             matchesHideDigitalArt && matchesHideAIAssistedArt && matchesHideNFTs;
     });
 
     // Sort results
@@ -339,7 +359,7 @@ export default function SearchPage() {
     });
 
     return filtered;
-  }, [searchQuery, selectedCategory, selectedMedium, priceRange, sortBy, showVerifiedOnly, showForSaleOnly, showAIOnly, selectedCountryOfOrigin, selectedCountryOfResidence, selectedTags]);
+  }, [searchQuery, selectedCategory, selectedMedium, priceRange, sortBy, showVerifiedOnly, showForSaleOnly, showAIOnly, selectedCountryOfOrigin, selectedCountryOfResidence, selectedTags, hideDigitalArt, hideAIAssistedArt, hideNFTs]);
 
   const addTag = (tag: string) => {
     if (tag.trim() && !selectedTags.includes(tag.trim())) {
@@ -372,6 +392,9 @@ export default function SearchPage() {
     setSelectedCountryOfResidence('All');
     setSelectedTags([]);
     setTagInput('');
+    setHideDigitalArt(false);
+    setHideAIAssistedArt(false);
+    setHideNFTs(false);
   };
 
   const activeFiltersCount = [
@@ -385,7 +408,10 @@ export default function SearchPage() {
     showAIOnly,
     selectedCountryOfOrigin !== 'All',
     selectedCountryOfResidence !== 'All',
-    selectedTags.length > 0
+    selectedTags.length > 0,
+    hideDigitalArt,
+    hideAIAssistedArt,
+    hideNFTs
   ].filter(Boolean).length;
 
   return (
@@ -546,6 +572,39 @@ export default function SearchPage() {
                     />
                     <label htmlFor="ai" className="text-sm">
                       AI-Assisted Art Only
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="hide-digital" 
+                      checked={hideDigitalArt}
+                      onCheckedChange={(checked) => setHideDigitalArt(checked as boolean)}
+                    />
+                    <label htmlFor="hide-digital" className="text-sm">
+                      Hide Digital Art
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="hide-ai" 
+                      checked={hideAIAssistedArt}
+                      onCheckedChange={(checked) => setHideAIAssistedArt(checked as boolean)}
+                    />
+                    <label htmlFor="hide-ai" className="text-sm">
+                      Hide AI-Assisted Art
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="hide-nft" 
+                      checked={hideNFTs}
+                      onCheckedChange={(checked) => setHideNFTs(checked as boolean)}
+                    />
+                    <label htmlFor="hide-nft" className="text-sm">
+                      Hide NFTs
                     </label>
                   </div>
                 </div>

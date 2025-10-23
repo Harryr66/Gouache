@@ -11,8 +11,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Slider } from '@/components/ui/slider';
 import { useRouter } from 'next/navigation';
-import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Globe, Calendar, ExternalLink, MapPin, CheckCircle } from 'lucide-react';
+import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Globe, Calendar, ExternalLink, MapPin, CheckCircle, Tag, DollarSign, Palette } from 'lucide-react';
 import { Artwork, Artist } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { useFollow } from '@/providers/follow-provider';
@@ -58,6 +59,54 @@ const COUNTRIES = [
   'New Zealand', 'Ireland', 'Austria', 'Czech Republic', 'Russia',
   'Nigeria', 'Kenya', 'Ghana', 'Chile', 'Peru', 'Venezuela',
   'Philippines', 'Thailand', 'Indonesia', 'Malaysia', 'Vietnam'
+];
+
+// Mediums for filtering
+const MEDIUMS = [
+  'All',
+  'Oil Painting',
+  'Acrylic',
+  'Watercolor',
+  'Charcoal',
+  'Pencil',
+  'Ink',
+  'Pastel',
+  'Gouache',
+  'Tempera',
+  'Fresco',
+  'Encaustic',
+  'Digital Art',
+  'Mixed Media',
+  'Sculpture',
+  'Ceramic',
+  'Wood',
+  'Metal',
+  'Stone',
+  'Glass'
+];
+
+// Common tags for filtering
+const COMMON_TAGS = [
+  'abstract',
+  'realism',
+  'impressionism',
+  'expressionism',
+  'surrealism',
+  'minimalism',
+  'contemporary',
+  'traditional',
+  'modern',
+  'classical',
+  'nature',
+  'portrait',
+  'landscape',
+  'still-life',
+  'figurative',
+  'geometric',
+  'colorful',
+  'monochrome',
+  'textured',
+  'smooth'
 ];
 
 export default function DiscoverPage() {
@@ -146,11 +195,18 @@ export default function DiscoverPage() {
   const [selectedCountryOfResidence, setSelectedCountryOfResidence] = useState<string>('all');
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showCoursesAvailable, setShowCoursesAvailable] = useState(false);
+  const [showUpcomingEvents, setShowUpcomingEvents] = useState(false);
+  
+  // Advanced search filter states
   const [hideDigitalArt, setHideDigitalArt] = useState(false);
   const [hideAIAssistedArt, setHideAIAssistedArt] = useState(false);
   const [hideNFTs, setHideNFTs] = useState(false);
-  const [showCoursesAvailable, setShowCoursesAvailable] = useState(false);
-  const [showUpcomingEvents, setShowUpcomingEvents] = useState(false);
+  const [selectedMedium, setSelectedMedium] = useState('All');
+  const [priceRange, setPriceRange] = useState([0, 1000]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
 
@@ -681,6 +737,25 @@ export default function DiscoverPage() {
     }
   };
 
+  // Tag management functions
+  const addTag = (tag: string) => {
+    if (tag.trim() && !selectedTags.includes(tag.trim())) {
+      setSelectedTags([...selectedTags, tag.trim()]);
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleTagInputKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag(tagInput);
+      setTagInput('');
+    }
+  };
+
   // Filter artworks based on search and filters
   const filteredArtworks = artworks.filter((artwork) => {
     // Search filter
@@ -700,6 +775,26 @@ export default function DiscoverPage() {
     // Verified professional artists filter
     if (showVerifiedOnly) {
       if (!artwork.artist.isVerified || !artwork.artist.isProfessional) return false;
+    }
+    
+    // Medium filter
+    if (selectedMedium !== 'All') {
+      if (artwork.medium !== selectedMedium) return false;
+    }
+    
+    // Price range filter
+    if (artwork.price && (artwork.price < priceRange[0] || artwork.price > priceRange[1])) {
+      return false;
+    }
+    
+    // Tags filter
+    if (selectedTags.length > 0) {
+      const hasMatchingTag = selectedTags.some(tag => 
+        artwork.tags?.some(artworkTag => 
+          artworkTag.toLowerCase().includes(tag.toLowerCase())
+        )
+      );
+      if (!hasMatchingTag) return false;
     }
     
     // Hide Digital Art filter
@@ -788,6 +883,13 @@ export default function DiscoverPage() {
     setSelectedCountryOfOrigin('all');
     setSelectedCountryOfResidence('all');
     setShowVerifiedOnly(false);
+    setSelectedMedium('All');
+    setPriceRange([0, 1000]);
+    setSelectedTags([]);
+    setTagInput('');
+    setHideDigitalArt(false);
+    setHideAIAssistedArt(false);
+    setHideNFTs(false);
   };
   
   // Count active filters
@@ -795,7 +897,13 @@ export default function DiscoverPage() {
     selectedCountryOfOrigin !== 'all',
     selectedCountryOfResidence !== 'all',
     selectedCategory !== 'All',
-    showVerifiedOnly
+    showVerifiedOnly,
+    selectedMedium !== 'All',
+    priceRange[0] > 0 || priceRange[1] < 1000,
+    selectedTags.length > 0,
+    hideDigitalArt,
+    hideAIAssistedArt,
+    hideNFTs
   ].filter(Boolean).length;
 
   if (selectedArtist) {
@@ -998,7 +1106,7 @@ export default function DiscoverPage() {
     const dotColors = getDotColors(isDark);
 
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-black' : 'bg-white'}`}>
+      <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
         <div className="text-center">
           {/* SOMA Logo */}
           <motion.div
@@ -1025,24 +1133,28 @@ export default function DiscoverPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="flex justify-center space-x-2"
+            className="flex items-center justify-center space-x-2"
           >
-            {dotColors.map((color, index) => (
+            <div className="flex space-x-1">
               <motion.div
-                key={index}
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: color }}
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.7, 1, 0.7],
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  delay: index * 0.2,
-                }}
+                style={{ backgroundColor: dotColors[0] }}
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
               />
-            ))}
+              <motion.div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: dotColors[1] }}
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+              />
+              <motion.div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: dotColors[2] }}
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+              />
+            </div>
           </motion.div>
         </div>
       </div>
@@ -1104,42 +1216,15 @@ export default function DiscoverPage() {
                     <SelectItem value="price-high">Price: High to Low</SelectItem>
             </SelectContent>
           </Select>
-                <Button
+          <Button
                   variant={showVerifiedOnly ? "default" : "outline"}
                   onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
                   className="whitespace-nowrap"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Verified Only
-                </Button>
+          </Button>
                 
-                {/* Advanced Filters */}
-                <div className="flex items-center gap-2">
-          <Button
-                    variant={hideDigitalArt ? "default" : "outline"}
-                    onClick={() => setHideDigitalArt(!hideDigitalArt)}
-                    className="whitespace-nowrap"
-            size="sm"
-          >
-                    Hide Digital Art
-          </Button>
-          <Button
-                    variant={hideAIAssistedArt ? "default" : "outline"}
-                    onClick={() => setHideAIAssistedArt(!hideAIAssistedArt)}
-                    className="whitespace-nowrap"
-            size="sm"
-          >
-                    Hide AI Art
-          </Button>
-          <Button
-                    variant={hideNFTs ? "default" : "outline"}
-                    onClick={() => setHideNFTs(!hideNFTs)}
-                    className="whitespace-nowrap"
-            size="sm"
-          >
-                    Hide NFTs
-          </Button>
-                </div>
               </>
             )}
             
@@ -1175,22 +1260,22 @@ export default function DiscoverPage() {
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Verified Only
           </Button>
-                <Button
+          <Button
                   variant={showCoursesAvailable ? "default" : "outline"}
                   onClick={() => setShowCoursesAvailable(!showCoursesAvailable)}
                   className="whitespace-nowrap"
-                  size="sm"
-                >
+            size="sm"
+          >
                   Courses Available
-                </Button>
-                <Button
+          </Button>
+          <Button
                   variant={showUpcomingEvents ? "default" : "outline"}
                   onClick={() => setShowUpcomingEvents(!showUpcomingEvents)}
                   className="whitespace-nowrap"
-                  size="sm"
-                >
+            size="sm"
+          >
                   Upcoming Events
-                </Button>
+          </Button>
                 {activeFiltersCount > 0 && (
                   <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap">
                     Clear Filters ({activeFiltersCount})
@@ -1199,15 +1284,168 @@ export default function DiscoverPage() {
               </>
             )}
             
-            <Link href="/search">
-              <Button variant="outline" className="whitespace-nowrap">
-                <Filter className="h-4 w-4 mr-2" />
-                Advanced Search
-              </Button>
-            </Link>
+          <Button
+              variant="outline" 
+              className="whitespace-nowrap"
+              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Advanced Search
+          </Button>
           </div>
         </div>
         </div>
+
+      {/* Advanced Search Panel */}
+      {showAdvancedSearch && (
+        <div className="border-b border-border bg-card">
+          <div className="container mx-auto px-4 py-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-2">Advanced Search Filters</h3>
+          <p className="text-sm text-muted-foreground">
+                Use these filters to refine your search results
+          </p>
+          </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Medium Filter */}
+              <div>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Medium
+                </label>
+                <Select value={selectedMedium} onValueChange={setSelectedMedium}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MEDIUMS.map((medium) => (
+                      <SelectItem key={medium} value={medium}>
+                        {medium}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+        </div>
+
+              {/* Price Range Filter */}
+              <div>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Price Range: ${priceRange[0]} - ${priceRange[1]}
+                </label>
+                <Slider
+                  value={priceRange}
+                  onValueChange={setPriceRange}
+                  max={1000}
+                  min={0}
+                  step={50}
+                  className="w-full"
+                />
+          </div>
+
+              {/* Tags Filter */}
+              <div>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  Tags
+                </label>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Add a tag..."
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyPress={handleTagInputKeyPress}
+                  />
+                  {selectedTags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                          {tag}
+                          <button
+                            onClick={() => removeTag(tag)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+            ))}
+          </div>
+        )}
+                  <div className="flex flex-wrap gap-1">
+                    {COMMON_TAGS.slice(0, 8).map((tag) => (
+                      <Button
+                        key={tag}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addTag(tag)}
+                        className="text-xs"
+                        disabled={selectedTags.includes(tag)}
+                      >
+                        {tag}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Filters */}
+              <div className="space-y-4">
+                <label className="text-sm font-medium block">Additional Filters</label>
+                
+            <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="hide-digital" 
+                    checked={hideDigitalArt}
+                    onCheckedChange={(checked) => setHideDigitalArt(checked as boolean)}
+                  />
+                  <label htmlFor="hide-digital" className="text-sm">
+                    Hide Digital Art
+                  </label>
+            </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="hide-ai" 
+                    checked={hideAIAssistedArt}
+                    onCheckedChange={(checked) => setHideAIAssistedArt(checked as boolean)}
+                  />
+                  <label htmlFor="hide-ai" className="text-sm">
+                    Hide AI-Assisted Art
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="hide-nft" 
+                    checked={hideNFTs}
+                    onCheckedChange={(checked) => setHideNFTs(checked as boolean)}
+                  />
+                  <label htmlFor="hide-nft" className="text-sm">
+                    Hide NFTs
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center mt-6">
+              <div className="text-sm text-muted-foreground">
+                {activeFiltersCount > 0 && (
+                  <span>{activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''} active</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear All Filters
+                </Button>
+                <Button variant="outline" onClick={() => setShowAdvancedSearch(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+          </div>
+        )}
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
@@ -1275,7 +1513,7 @@ export default function DiscoverPage() {
                           onClick={() => setSelectedArtist(artist)}
                         >
                           View Profile
-          </Button>
+            </Button>
             </div>
                     </CardContent>
           </div>

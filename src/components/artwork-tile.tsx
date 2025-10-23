@@ -168,7 +168,11 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
           }`}>
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
-                <AvatarImage src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(24, 24)} />
+                <AvatarImage 
+                  src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(24, 24)} 
+                  alt={artwork.artist.name}
+                  className="object-cover"
+                />
                 <AvatarFallback className="text-xs">{artwork.artist.name.slice(0, 2)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
@@ -204,7 +208,11 @@ export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-shrink-0">
                 <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-                  <AvatarImage src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(96, 96)} alt={artwork.artist.name} />
+                  <AvatarImage 
+                    src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(96, 96)} 
+                    alt={artwork.artist.name}
+                    className="object-cover"
+                  />
                   <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
               </div>
