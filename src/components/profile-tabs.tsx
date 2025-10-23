@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, Calendar, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain, MapPin, MessageCircle } from 'lucide-react';
+import { Plus, Upload, Users, Calendar, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain, MapPin, MessageCircle, Circle } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { ProductCard } from './shop/product-card';
 import { EventCard } from './event-card';
@@ -222,16 +222,16 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
           <Tabs defaultValue="community-chat" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="community-chat" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Community Chat
+                <MessageCircle className="h-4 w-4" />
+                Main Chat
+              </TabsTrigger>
+              <TabsTrigger value="bubbles" className="flex items-center gap-2">
+                <Circle className="h-4 w-4" />
+                Chat Bubbles
               </TabsTrigger>
               <TabsTrigger value="events" className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Events
-              </TabsTrigger>
-              <TabsTrigger value="bubbles" className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4" />
-                Bubbles
+                Upcoming Events
               </TabsTrigger>
             </TabsList>
 
