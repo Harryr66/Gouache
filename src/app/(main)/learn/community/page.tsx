@@ -97,7 +97,9 @@ const mockCommunityData = {
       participants: 156,
       daysLeft: 12,
       category: 'Drawing',
-      difficulty: 'Beginner'
+      difficulty: 'Beginner',
+      createdBy: 'Community Host',
+      createdAt: '2024-01-10'
     },
     {
       id: 2,
@@ -106,7 +108,9 @@ const mockCommunityData = {
       participants: 89,
       daysLeft: 8,
       category: 'Theory',
-      difficulty: 'Intermediate'
+      difficulty: 'Intermediate',
+      createdBy: 'Community Host',
+      createdAt: '2024-01-15'
     }
   ]
 };
