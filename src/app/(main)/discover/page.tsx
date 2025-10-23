@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter } from 'next/navigation';
 import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Globe, Calendar, ExternalLink, MapPin, CheckCircle, Tag, Palette } from 'lucide-react';
 import { Artwork, Artist } from '@/lib/types';
@@ -1573,37 +1572,33 @@ export default function DiscoverPage() {
               <div className="space-y-4">
                 <label className="text-sm font-medium block">Additional Filters</label>
                 
-            <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="hide-digital" 
-                    checked={hideDigitalArt}
-                    onCheckedChange={(checked) => setHideDigitalArt(checked as boolean)}
-                  />
-                  <label htmlFor="hide-digital" className="text-sm">
+                <div className="flex flex-wrap gap-1">
+                  <Button
+                    variant={hideDigitalArt ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setHideDigitalArt(!hideDigitalArt)}
+                    className="text-xs"
+                  >
                     Hide Digital Art
-                  </label>
-          </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="hide-ai" 
-                    checked={hideAIAssistedArt}
-                    onCheckedChange={(checked) => setHideAIAssistedArt(checked as boolean)}
-                  />
-                  <label htmlFor="hide-ai" className="text-sm">
+                  </Button>
+                  
+                  <Button
+                    variant={hideAIAssistedArt ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setHideAIAssistedArt(!hideAIAssistedArt)}
+                    className="text-xs"
+                  >
                     Hide AI-Assisted Art
-                  </label>
-          </div>
-
-            <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="hide-nft" 
-                    checked={hideNFTs}
-                    onCheckedChange={(checked) => setHideNFTs(checked as boolean)}
-                  />
-                  <label htmlFor="hide-nft" className="text-sm">
+                  </Button>
+                  
+                  <Button
+                    variant={hideNFTs ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setHideNFTs(!hideNFTs)}
+                    className="text-xs"
+                  >
                     Hide NFTs
-                  </label>
+                  </Button>
                 </div>
               </div>
             </div>
