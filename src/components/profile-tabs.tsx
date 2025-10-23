@@ -29,7 +29,7 @@ interface ProfileTabsProps {
 }
 
 export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange }: ProfileTabsProps) {
-  const [showCreateCommunity, setShowCommunity] = useState(false);
+  const [showCreateCommunity, setShowCreateCommunity] = useState(false);
   const { watchlist, watchHistory, getContinueWatching, isInWatchlist, getWatchProgress } = useWatchlist();
   const { followedArtists, unfollowArtist } = useFollow();
   const { courses, isLoading: coursesLoading } = useCourses();
