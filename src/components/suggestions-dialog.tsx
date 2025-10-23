@@ -103,16 +103,12 @@ export function SuggestionsDialog({ isOpen, onClose, artistName, artistId }: Sug
             </CardHeader>
             <CardContent className="pt-0">
               <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-                <li>• <strong>Be respectful and constructive</strong> - Everyone deserves respect</li>
-                <li>• <strong>Focus on requests, not criticism</strong> - What you'd like to see more of</li>
-                <li>• <strong>No hate speech, harassment, or negativity</strong> - This will not be tolerated</li>
-                <li>• <strong>Violations lead to platform removal</strong> - We protect our creators</li>
+                <li>• <strong>Be respectful</strong> - Focus on what you'd like to see more of</li>
+                <li>• <strong>No negativity</strong> - Hate speech and harassment aren't tolerated</li>
+                <li>• <strong>Keep it helpful</strong> - We protect our creators</li>
               </ul>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 font-medium">
-                Please Keep All Suggestions Pleasant & Helpful
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
-                Thank you
+                Thank you for keeping suggestions pleasant & helpful!
               </p>
             </CardContent>
           </Card>
