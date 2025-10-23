@@ -130,7 +130,7 @@ export default function CommunityPage() {
     }
   };
 
-  const handleJoinBubble = (bubbleId) => {
+  const handleJoinBubble = (bubbleId: number) => {
     setBubbles(bubbles.map(bubble => 
       bubble.id === bubbleId 
         ? { ...bubble, members: bubble.members + 1, membersList: [...(bubble.membersList || []), 'You'] }
@@ -138,7 +138,7 @@ export default function CommunityPage() {
     ));
   };
 
-  const handleLeaveBubble = (bubbleId) => {
+  const handleLeaveBubble = (bubbleId: number) => {
     setBubbles(bubbles.map(bubble => 
       bubble.id === bubbleId 
         ? { ...bubble, members: Math.max(0, bubble.members - 1), membersList: (bubble.membersList || []).filter(member => member !== 'You') }
@@ -146,7 +146,7 @@ export default function CommunityPage() {
     ));
   };
 
-  const handleSendMessage = (bubbleId) => {
+  const handleSendMessage = (bubbleId: number) => {
     if (newMessage.trim()) {
       const message = {
         id: Date.now(),
@@ -169,7 +169,7 @@ export default function CommunityPage() {
     }
   };
 
-  const handleRemoveUser = (bubbleId, username) => {
+  const handleRemoveUser = (bubbleId: number, username: string) => {
     setBubbles(bubbles.map(bubble => 
       bubble.id === bubbleId 
         ? { 
