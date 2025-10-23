@@ -93,10 +93,10 @@ export function TipDialog({ isOpen, onClose, artistName, artistId }: TipDialogPr
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-red-500" />
-            Send a Tip to {artistName}
+            A coffee on me!
           </DialogTitle>
           <DialogDescription>
-            Show your appreciation and support their creative work with a tip.
+            Support your favourite artists by buying them a coffee to brighten their day.
           </DialogDescription>
         </DialogHeader>
 
