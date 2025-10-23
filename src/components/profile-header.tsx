@@ -32,6 +32,7 @@ interface ProfileHeaderProps {
     suggestionsEnabled?: boolean;
     hideLocation?: boolean;
     hideFlags?: boolean;
+    hideCard?: boolean;
   };
   isOwnProfile: boolean;
   isFollowing?: boolean;
@@ -201,7 +202,7 @@ export function ProfileHeader({
       </Card>
 
       {/* My Card Section */}
-      {(user.bio || user.countryOfOrigin || user.countryOfResidence || user.bannerImageUrl) && (
+      {(user.bio || user.countryOfOrigin || user.countryOfResidence || user.bannerImageUrl) && !user.hideCard && (
         <Card className="mt-6">
           <CardContent className="p-6">
             <div className="space-y-4">

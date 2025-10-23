@@ -610,6 +610,7 @@ export interface User {
   suggestionsEnabled?: boolean;
   hideLocation?: boolean;
   hideFlags?: boolean;
+  hideCard?: boolean;
   portfolio?: Array<{
     id: string;
     imageUrl: string;

@@ -141,6 +141,7 @@ export default function ProfileEditPage() {
     suggestionsEnabled: true,
     hideLocation: false,
     hideFlags: false,
+    hideCard: false,
     bannerImageUrl: '',
   });
 
@@ -178,6 +179,7 @@ export default function ProfileEditPage() {
             suggestionsEnabled: changes.suggestionsEnabled !== undefined ? changes.suggestionsEnabled : (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true),
             hideLocation: changes.hideLocation || user.hideLocation || false,
             hideFlags: changes.hideFlags || user.hideFlags || false,
+            hideCard: changes.hideCard || user.hideCard || false,
             bannerImageUrl: changes.bannerImageUrl || user.bannerImageUrl || '',
           });
           
@@ -205,8 +207,9 @@ export default function ProfileEditPage() {
           isProfessional: user.isProfessional || false,
           tipJarEnabled: user.tipJarEnabled !== undefined ? user.tipJarEnabled : true,
           suggestionsEnabled: user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true,
-          hideLocation: user.hideLocation || false,
-          hideFlags: user.hideFlags || false,
+        hideLocation: user.hideLocation || false,
+        hideFlags: user.hideFlags || false,
+        hideCard: user.hideCard || false,
           bannerImageUrl: user.bannerImageUrl || '',
         });
       }
@@ -668,6 +671,7 @@ export default function ProfileEditPage() {
         suggestionsEnabled: formData.suggestionsEnabled,
         hideLocation: formData.hideLocation,
         hideFlags: formData.hideFlags,
+        hideCard: formData.hideCard,
         updatedAt: new Date()
       };
 
@@ -1082,6 +1086,19 @@ export default function ProfileEditPage() {
                 <Switch
                   checked={formData.hideFlags}
                   onCheckedChange={(checked) => handleInputChange('hideFlags', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Hide My Card</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Hide the entire "My Card" section from your public profile
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.hideCard}
+                  onCheckedChange={(checked) => handleInputChange('hideCard', checked)}
                 />
               </div>
             </div>
