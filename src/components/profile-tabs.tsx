@@ -125,7 +125,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
             {/* Learn/Courses Sub-tab */}
             <TabsContent value="courses" className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Courses & Learning</h3>
+                <h3 className="text-lg font-semibold">Learn</h3>
                 {isOwnProfile && (
                   <Button variant="gradient" asChild>
                     <a href="/learn/submit">
