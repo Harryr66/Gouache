@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
-import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Globe, Calendar, ExternalLink, MapPin, CheckCircle, Tag, Palette } from 'lucide-react';
+import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Globe, Calendar, ExternalLink, MapPin, BadgeCheck, Tag, Palette } from 'lucide-react';
 import { Artwork, Artist } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { useFollow } from '@/providers/follow-provider';
@@ -1015,7 +1015,7 @@ export default function DiscoverPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h1 className="text-3xl font-bold">{selectedArtist.name}</h1>
                       {selectedArtist.isVerified && (
-                        <CheckCircle className="h-6 w-6 text-blue-500 fill-current" />
+                        <BadgeCheck className="h-6 w-6 text-blue-500 fill-current" />
                       )}
                     </div>
                     <p className="text-muted-foreground">@{selectedArtist.handle}</p>
@@ -1295,7 +1295,7 @@ export default function DiscoverPage() {
                   onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
                   className="whitespace-nowrap"
                 >
-                  <CheckCircle className="h-4 w-4 mr-2 text-blue-500 fill-current" />
+                  <BadgeCheck className="h-4 w-4 mr-2 text-blue-500 fill-current" />
                   Verified Only
           </Button>
                 
@@ -1331,7 +1331,7 @@ export default function DiscoverPage() {
                   onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
                   className="whitespace-nowrap"
                 >
-                  <CheckCircle className="h-4 w-4 mr-2 text-blue-500 fill-current" />
+                  <BadgeCheck className="h-4 w-4 mr-2 text-blue-500 fill-current" />
                   Verified Only
           </Button>
           <Button
@@ -1521,8 +1521,8 @@ export default function DiscoverPage() {
                         Show Less
                       </Button>
                     )}
-                  </div>
-                </div>
+        </div>
+          </div>
         </div>
 
               {/* City Filter - Only show if countries are selected */}
@@ -1545,7 +1545,7 @@ export default function DiscoverPage() {
                               ×
                             </button>
                           </Badge>
-                        ))}
+            ))}
           </div>
                     )}
                     <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
@@ -1565,8 +1565,8 @@ export default function DiscoverPage() {
                       )}
         </div>
           </div>
-        </div>
-              )}
+          </div>
+        )}
 
               {/* Additional Filters */}
               <div className="space-y-4">
@@ -1645,7 +1645,7 @@ export default function DiscoverPage() {
                           <div className="flex items-center gap-2">
                             <CardTitle className="text-lg truncate">{artist.name}</CardTitle>
                             {artist.isVerified && (
-                              <CheckCircle className="h-4 w-4 text-blue-500 fill-current flex-shrink-0" />
+                              <BadgeCheck className="h-4 w-4 text-blue-500 fill-current flex-shrink-0" />
                             )}
         </div>
                           <CardDescription className="truncate">@{artist.handle}</CardDescription>
