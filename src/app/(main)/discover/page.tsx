@@ -20,6 +20,8 @@ import { useAuth } from '@/providers/auth-provider';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { useTheme } from 'next-themes';
 
 // Categories for filtering
 const categories = [
@@ -62,6 +64,7 @@ export default function DiscoverPage() {
   const { followArtist, unfollowArtist, isFollowing } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { user } = useAuth();
+  const { theme, resolvedTheme } = useTheme();
   
   // Add loading state to ensure theme is properly loaded
   const [isThemeLoading, setIsThemeLoading] = useState(true);
@@ -926,15 +929,86 @@ export default function DiscoverPage() {
 
   // Show loading screen while theme loads
   if (isThemeLoading) {
+    // Try multiple methods to detect theme
+    const currentTheme = resolvedTheme || theme || 'dark';
+    
+    // Fallback: Check DOM directly for theme class
+    let isDark = currentTheme === 'dark';
+    if (typeof window !== 'undefined') {
+      try {
+        const hasDarkClass = document.documentElement.classList.contains('dark');
+        const hasLightClass = document.documentElement.classList.contains('light');
+        
+        if (hasDarkClass) {
+          isDark = true;
+        } else if (hasLightClass) {
+          isDark = false;
+        }
+      } catch (error) {
+        // Keep current isDark value
+      }
+    }
+
+    // Define gradient colors for each theme
+    const getDotColors = (isDark: boolean) => {
+      if (isDark) {
+        // Dark theme gradient colors: #51C4D3, #77ACF1, #EF88AD
+        return ['#51C4D3', '#77ACF1', '#EF88AD'];
+      } else {
+        // Light theme gradient colors: #1e3a8a, #3b82f6, #60a5fa
+        return ['#1e3a8a', '#3b82f6', '#60a5fa'];
+      }
+    };
+
+    const dotColors = getDotColors(isDark);
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-black' : 'bg-white'}`}>
         <div className="text-center">
-          <div className="flex justify-center space-x-2 mb-4">
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-            <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-            <div className="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-          </div>
-          <p className="text-foreground text-lg">Loading...</p>
+          {/* SOMA Logo */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <h1 className={`text-2xl md:text-3xl font-bold drop-shadow-lg ${isDark ? 'text-white' : 'text-black'}`}
+                style={{
+                  textShadow: isDark 
+                    ? '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.1)'
+                    : '0 0 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 0, 0, 0.1)',
+                  filter: isDark 
+                    ? 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.2))'
+                    : 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.2))'
+                }}>
+              SOMA
+            </h1>
+          </motion.div>
+          
+          {/* Loading Animation */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="flex justify-center space-x-2"
+          >
+            {dotColors.map((color, index) => (
+              <motion.div
+                key={index}
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: color }}
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.7, 1, 0.7],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: index * 0.2,
+                }}
+              />
+            ))}
+          </motion.div>
         </div>
       </div>
     );
