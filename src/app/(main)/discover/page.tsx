@@ -108,6 +108,20 @@ const COMMON_TAGS = [
   'smooth'
 ];
 
+// Cities by country for filtering
+const CITIES_BY_COUNTRY: Record<string, string[]> = {
+  'United States': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville', 'Fort Worth', 'Columbus', 'Charlotte', 'San Francisco', 'Indianapolis', 'Seattle', 'Denver', 'Washington', 'Boston', 'El Paso', 'Nashville', 'Detroit', 'Oklahoma City', 'Portland', 'Las Vegas', 'Memphis', 'Louisville', 'Baltimore', 'Milwaukee'],
+  'United Kingdom': ['London', 'Birmingham', 'Manchester', 'Glasgow', 'Liverpool', 'Leeds', 'Sheffield', 'Edinburgh', 'Bristol', 'Leicester', 'Coventry', 'Cardiff', 'Belfast', 'Nottingham', 'Hull', 'Newcastle', 'Stoke-on-Trent', 'Southampton', 'Derby', 'Portsmouth'],
+  'Canada': ['Toronto', 'Montreal', 'Vancouver', 'Calgary', 'Edmonton', 'Ottawa', 'Winnipeg', 'Quebec City', 'Hamilton', 'Kitchener', 'London', 'Victoria', 'Halifax', 'Oshawa', 'Windsor', 'Saskatoon', 'Regina', 'Sherbrooke', 'Barrie', 'Kelowna'],
+  'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Gold Coast', 'Newcastle', 'Canberra', 'Sunshine Coast', 'Wollongong', 'Hobart', 'Geelong', 'Townsville', 'Cairns', 'Darwin', 'Toowoomba', 'Ballarat', 'Bendigo', 'Albury', 'Launceston'],
+  'Germany': ['Berlin', 'Hamburg', 'Munich', 'Cologne', 'Frankfurt', 'Stuttgart', 'Düsseldorf', 'Dortmund', 'Essen', 'Leipzig', 'Bremen', 'Dresden', 'Hannover', 'Nuremberg', 'Duisburg', 'Bochum', 'Wuppertal', 'Bielefeld', 'Bonn', 'Münster'],
+  'France': ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Montpellier', 'Bordeaux', 'Lille', 'Rennes', 'Reims', 'Le Havre', 'Saint-Étienne', 'Toulon', 'Grenoble', 'Dijon', 'Angers', 'Nîmes', 'Villeurbanne'],
+  'Italy': ['Rome', 'Milan', 'Naples', 'Turin', 'Palermo', 'Genoa', 'Bologna', 'Florence', 'Bari', 'Catania', 'Venice', 'Verona', 'Messina', 'Padua', 'Trieste', 'Brescia', 'Parma', 'Taranto', 'Prato', 'Modena'],
+  'Spain': ['Madrid', 'Barcelona', 'Valencia', 'Seville', 'Zaragoza', 'Málaga', 'Murcia', 'Palma', 'Las Palmas', 'Bilbao', 'Alicante', 'Córdoba', 'Valladolid', 'Vigo', 'Gijón', 'Hospitalet', 'Vitoria', 'A Coruña', 'Elche', 'Granada'],
+  'Japan': ['Tokyo', 'Yokohama', 'Osaka', 'Nagoya', 'Sapporo', 'Fukuoka', 'Kobe', 'Kawasaki', 'Kyoto', 'Saitama', 'Hiroshima', 'Sendai', 'Kitakyushu', 'Chiba', 'Sakai', 'Niigata', 'Hamamatsu', 'Okayama', 'Sagamihara', 'Shizuoka'],
+  'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza', 'Belo Horizonte', 'Manaus', 'Curitiba', 'Recife', 'Goiânia', 'Belém', 'Porto Alegre', 'Guarulhos', 'Campinas', 'São Luís', 'São Gonçalo', 'Maceió', 'Duque de Caxias', 'Natal', 'Teresina']
+};
+
 export default function DiscoverPage() {
   const router = useRouter();
   const { followArtist, unfollowArtist, isFollowing } = useFollow();
@@ -205,6 +219,10 @@ export default function DiscoverPage() {
   const [selectedMediums, setSelectedMediums] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  
+  // Country and city filter states
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
 
@@ -765,6 +783,30 @@ export default function DiscoverPage() {
     setSelectedMediums(selectedMediums.filter(medium => medium !== mediumToRemove));
   };
 
+  // Country and city management functions
+  const addCountry = (country: string) => {
+    if (country && !selectedCountries.includes(country)) {
+      setSelectedCountries([...selectedCountries, country]);
+    }
+  };
+
+  const removeCountry = (countryToRemove: string) => {
+    setSelectedCountries(selectedCountries.filter(country => country !== countryToRemove));
+    // Also remove cities from the removed country
+    const citiesToRemove = CITIES_BY_COUNTRY[countryToRemove] || [];
+    setSelectedCities(selectedCities.filter(city => !citiesToRemove.includes(city)));
+  };
+
+  const addCity = (city: string) => {
+    if (city && !selectedCities.includes(city)) {
+      setSelectedCities([...selectedCities, city]);
+    }
+  };
+
+  const removeCity = (cityToRemove: string) => {
+    setSelectedCities(selectedCities.filter(city => city !== cityToRemove));
+  };
+
   // Filter artworks based on search and filters
   const filteredArtworks = artworks.filter((artwork) => {
     // Search filter
@@ -789,6 +831,24 @@ export default function DiscoverPage() {
     // Medium filter
     if (selectedMediums.length > 0) {
       if (!artwork.medium || !selectedMediums.includes(artwork.medium)) return false;
+    }
+    
+    // Country filter
+    if (selectedCountries.length > 0) {
+      const artistCountry = artwork.artist.countryOfResidence || artwork.artist.countryOfOrigin;
+      if (!artistCountry || !selectedCountries.includes(artistCountry)) return false;
+    }
+    
+    // City filter
+    if (selectedCities.length > 0) {
+      const artistLocation = artwork.artist.location;
+      if (!artistLocation) return false;
+      
+      // Check if any selected city is in the artist's location
+      const hasMatchingCity = selectedCities.some(city => 
+        artistLocation.toLowerCase().includes(city.toLowerCase())
+      );
+      if (!hasMatchingCity) return false;
     }
     
     // Tags filter
@@ -890,6 +950,8 @@ export default function DiscoverPage() {
     setSelectedMediums([]);
     setSelectedTags([]);
     setTagInput('');
+    setSelectedCountries([]);
+    setSelectedCities([]);
     setHideDigitalArt(false);
     setHideAIAssistedArt(false);
     setHideNFTs(false);
@@ -903,6 +965,8 @@ export default function DiscoverPage() {
     showVerifiedOnly,
     selectedMediums.length > 0,
     selectedTags.length > 0,
+    selectedCountries.length > 0,
+    selectedCities.length > 0,
     hideDigitalArt,
     hideAIAssistedArt,
     hideNFTs
@@ -1240,9 +1304,9 @@ export default function DiscoverPage() {
                     <SelectItem value="all">All Origins</SelectItem>
                     {availableOriginCountries.map((country) => (
                       <SelectItem key={country} value={country}>{country}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              ))}
+            </SelectContent>
+          </Select>
                 <Select value={selectedCountryOfResidence} onValueChange={setSelectedCountryOfResidence}>
                   <SelectTrigger className="w-[200px]">
                     <SelectValue placeholder="Country of Residence" />
@@ -1318,7 +1382,7 @@ export default function DiscoverPage() {
                 </label>
                 <div className="space-y-2">
                   {selectedMediums.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
                       {selectedMediums.map((medium) => (
                         <Badge key={medium} variant="secondary" className="flex items-center gap-1">
                           {medium}
@@ -1334,16 +1398,16 @@ export default function DiscoverPage() {
                   )}
                   <div className="flex flex-wrap gap-1">
                     {MEDIUMS.filter(medium => medium !== 'All').map((medium) => (
-                      <Button
+          <Button
                         key={medium}
                         variant="outline"
-                        size="sm"
+            size="sm"
                         onClick={() => addMedium(medium)}
                         className="text-xs"
                         disabled={selectedMediums.includes(medium)}
-                      >
+          >
                         {medium}
-                      </Button>
+          </Button>
                     ))}
                   </div>
           </div>
@@ -1379,20 +1443,102 @@ export default function DiscoverPage() {
         )}
                   <div className="flex flex-wrap gap-1">
                     {COMMON_TAGS.slice(0, 8).map((tag) => (
-                      <Button
+          <Button
                         key={tag}
                         variant="outline"
-                        size="sm"
+            size="sm"
                         onClick={() => addTag(tag)}
                         className="text-xs"
                         disabled={selectedTags.includes(tag)}
-                      >
+          >
                         {tag}
-                      </Button>
+          </Button>
                     ))}
                   </div>
                 </div>
               </div>
+
+              {/* Country Filter */}
+              <div>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Country
+                </label>
+                <div className="space-y-2">
+                  {selectedCountries.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCountries.map((country) => (
+                        <Badge key={country} variant="secondary" className="flex items-center gap-1">
+                          {country}
+                          <button
+                            onClick={() => removeCountry(country)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1">
+                    {COUNTRIES.filter(country => country !== 'All').map((country) => (
+          <Button
+                        key={country}
+                        variant="outline"
+            size="sm"
+                        onClick={() => addCountry(country)}
+                        className="text-xs"
+                        disabled={selectedCountries.includes(country)}
+          >
+                        {country}
+          </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* City Filter - Only show if countries are selected */}
+              {selectedCountries.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    City
+                  </label>
+                  <div className="space-y-2">
+                    {selectedCities.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedCities.map((city) => (
+                          <Badge key={city} variant="secondary" className="flex items-center gap-1">
+                            {city}
+                            <button
+                              onClick={() => removeCity(city)}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                      {selectedCountries.flatMap(country => 
+                        (CITIES_BY_COUNTRY[country] || []).map(city => (
+          <Button
+                            key={`${country}-${city}`}
+                            variant="outline"
+            size="sm"
+                            onClick={() => addCity(city)}
+                            className="text-xs"
+                            disabled={selectedCities.includes(city)}
+          >
+                            {city}
+          </Button>
+                        ))
+                      )}
+        </div>
+          </div>
+        </div>
+              )}
 
               {/* Additional Filters */}
               <div className="space-y-4">
@@ -1407,7 +1553,7 @@ export default function DiscoverPage() {
                   <label htmlFor="hide-digital" className="text-sm">
                     Hide Digital Art
                   </label>
-            </div>
+          </div>
 
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -1418,9 +1564,9 @@ export default function DiscoverPage() {
                   <label htmlFor="hide-ai" className="text-sm">
                     Hide AI-Assisted Art
                   </label>
-                </div>
+          </div>
 
-                <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="hide-nft" 
                     checked={hideNFTs}
@@ -1448,7 +1594,7 @@ export default function DiscoverPage() {
                 </Button>
               </div>
             </div>
-          </div>
+            </div>
           </div>
         )}
 
