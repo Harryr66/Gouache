@@ -157,39 +157,37 @@ export function ProfileHeader({
                   {getDynamicButton()}
                 </>
               ) : (
-                <>
-                  <Button 
-                    variant="outline"
-                    onClick={onFollowToggle}
-                  >
-                    <Heart className="h-4 w-4 mr-2" />
-                    {isFollowing ? 'Following' : 'Follow'}
-                  </Button>
-                  
-                  {/* Tip Jar Button - Only show for professional artists with tip jar enabled */}
-                  {user.isProfessional && user.tipJarEnabled && (
-                    <Button 
-                      variant="outline"
-                      onClick={() => setShowTipDialog(true)}
-                      className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
-                    >
-                      <Coffee className="h-4 w-4 mr-2" />
-                      Tip Jar
-                    </Button>
-                  )}
-                  
-                  {/* Suggestions Button - Only show for professional artists with suggestions enabled */}
-                  {user.isProfessional && user.suggestionsEnabled && (
-                    <Button 
-                      variant="outline"
-                      onClick={() => setShowSuggestionsDialog(true)}
-                      className="text-yellow-600 hover:text-yellow-700 border-yellow-200 hover:border-yellow-300"
-                    >
-                      <Lightbulb className="h-4 w-4 mr-2" />
-                      Suggestions
-                    </Button>
-                  )}
-                </>
+                <Button 
+                  variant="outline"
+                  onClick={onFollowToggle}
+                >
+                  <Heart className="h-4 w-4 mr-2" />
+                  {isFollowing ? 'Following' : 'Follow'}
+                </Button>
+              )}
+              
+              {/* Tip Jar Button - Show for all professional artists with tip jar enabled */}
+              {user.isProfessional && user.tipJarEnabled && (
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowTipDialog(true)}
+                  className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
+                >
+                  <Coffee className="h-4 w-4 mr-2" />
+                  Tip Jar
+                </Button>
+              )}
+              
+              {/* Suggestions Button - Show for all professional artists with suggestions enabled */}
+              {user.isProfessional && user.suggestionsEnabled && (
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowSuggestionsDialog(true)}
+                  className="text-yellow-600 hover:text-yellow-700 border-yellow-200 hover:border-yellow-300"
+                >
+                  <Lightbulb className="h-4 w-4 mr-2" />
+                  Suggestions
+                </Button>
               )}
             </div>
           </div>
