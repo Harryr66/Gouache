@@ -222,7 +222,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
           <Tabs defaultValue="community-chat" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="community-chat" className="flex items-center gap-2">
-                <Circle className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4" />
                 Main Chat
               </TabsTrigger>
               <TabsTrigger value="bubbles" className="flex items-center gap-2">
@@ -306,7 +306,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
 
               <Card className="p-8 text-center">
                 <CardContent>
-                  <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <Circle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <CardTitle className="mb-2">No bubbles yet</CardTitle>
                   <CardDescription className="mb-4">
                     {isOwnProfile 
