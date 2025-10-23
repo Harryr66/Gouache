@@ -72,7 +72,7 @@ export function SuggestionsDialog({ isOpen, onClose, artistName, artistId }: Sug
             Send Suggestions to {artistName}
           </DialogTitle>
           <DialogDescription>
-            Share ideas for what you'd like to see more of in their portfolio.
+            Share what you like and what you want to see more of
           </DialogDescription>
         </DialogHeader>
 
@@ -109,7 +109,10 @@ export function SuggestionsDialog({ isOpen, onClose, artistName, artistId }: Sug
                 <li>• <strong>Violations lead to platform removal</strong> - We protect our creators</li>
               </ul>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 font-medium">
-                Please Keep All Suggestions Pleasant & Helpful Thank you
+                Please Keep All Suggestions Pleasant & Helpful
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
+                Thank you
               </p>
             </CardContent>
           </Card>
