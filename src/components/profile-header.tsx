@@ -28,6 +28,8 @@ interface ProfileHeaderProps {
     profileRingColor?: string;
     tipJarEnabled?: boolean;
     suggestionsEnabled?: boolean;
+    hideLocation?: boolean;
+    hideFlags?: boolean;
   };
   isOwnProfile: boolean;
   isFollowing?: boolean;
@@ -229,7 +231,7 @@ export function ProfileHeader({
                 )}
               </div>
 
-              {(user.countryOfOrigin || user.countryOfResidence) && (
+              {(user.countryOfOrigin || user.countryOfResidence) && !user.hideLocation && (
                 <>
                   <Separator />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -239,7 +241,7 @@ export function ProfileHeader({
                         <div>
                           <p className="font-medium text-sm text-muted-foreground mb-1">Country of Origin</p>
                           <div className="flex items-center gap-2">
-                            <CountryFlag country={user.countryOfOrigin} size="sm" />
+                            {!user.hideFlags && <CountryFlag country={user.countryOfOrigin} size="sm" />}
                             <p className="text-foreground">{user.countryOfOrigin}</p>
                           </div>
                         </div>
@@ -251,7 +253,7 @@ export function ProfileHeader({
                         <div>
                           <p className="font-medium text-sm text-muted-foreground mb-1">Currently Based In</p>
                           <div className="flex items-center gap-2">
-                            <CountryFlag country={user.countryOfResidence} size="sm" />
+                            {!user.hideFlags && <CountryFlag country={user.countryOfResidence} size="sm" />}
                             <p className="text-foreground">{user.countryOfResidence}</p>
                           </div>
                         </div>

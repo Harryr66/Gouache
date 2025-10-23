@@ -607,6 +607,8 @@ export interface User {
   artistType?: string;
   tipJarEnabled?: boolean;
   suggestionsEnabled?: boolean;
+  hideLocation?: boolean;
+  hideFlags?: boolean;
   portfolio?: Array<{
     id: string;
     imageUrl: string;

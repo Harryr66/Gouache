@@ -138,6 +138,8 @@ export default function ProfileEditPage() {
     isProfessional: false,
     tipJarEnabled: false,
     suggestionsEnabled: false,
+    hideLocation: false,
+    hideFlags: false,
   });
 
   const [artistRequestData, setArtistRequestData] = useState({
@@ -172,6 +174,8 @@ export default function ProfileEditPage() {
             isProfessional: changes.isProfessional || user.isProfessional || false,
             tipJarEnabled: changes.tipJarEnabled || user.tipJarEnabled || false,
             suggestionsEnabled: changes.suggestionsEnabled || user.suggestionsEnabled || false,
+            hideLocation: changes.hideLocation || user.hideLocation || false,
+            hideFlags: changes.hideFlags || user.hideFlags || false,
           });
           
           if (changes.avatarUrl && changes.avatarUrl !== user.avatarUrl) {
@@ -194,6 +198,8 @@ export default function ProfileEditPage() {
           isProfessional: user.isProfessional || false,
           tipJarEnabled: user.tipJarEnabled || false,
           suggestionsEnabled: user.suggestionsEnabled || false,
+          hideLocation: user.hideLocation || false,
+          hideFlags: user.hideFlags || false,
         });
       }
     }
@@ -581,6 +587,8 @@ export default function ProfileEditPage() {
         isProfessional: formData.isProfessional,
         tipJarEnabled: formData.tipJarEnabled,
         suggestionsEnabled: formData.suggestionsEnabled,
+        hideLocation: formData.hideLocation,
+        hideFlags: formData.hideFlags,
         updatedAt: new Date()
       };
 
@@ -872,6 +880,37 @@ export default function ProfileEditPage() {
                 onChange={(e) => handleInputChange('location', e.target.value)}
                 placeholder="City, State/Region"
               />
+            </div>
+
+            {/* Privacy Settings */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Privacy Settings</h3>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Hide Location Information</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Hide your country and location from your public profile
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.hideLocation}
+                  onCheckedChange={(checked) => handleInputChange('hideLocation', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Hide Country Flags</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Hide country flags while keeping location text visible
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.hideFlags}
+                  onCheckedChange={(checked) => handleInputChange('hideFlags', checked)}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
