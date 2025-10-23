@@ -11,9 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Slider } from '@/components/ui/slider';
 import { useRouter } from 'next/navigation';
-import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Globe, Calendar, ExternalLink, MapPin, CheckCircle, Tag, DollarSign, Palette } from 'lucide-react';
+import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Globe, Calendar, ExternalLink, MapPin, CheckCircle, Tag, Palette } from 'lucide-react';
 import { Artwork, Artist } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { useFollow } from '@/providers/follow-provider';
@@ -203,8 +202,7 @@ export default function DiscoverPage() {
   const [hideDigitalArt, setHideDigitalArt] = useState(false);
   const [hideAIAssistedArt, setHideAIAssistedArt] = useState(false);
   const [hideNFTs, setHideNFTs] = useState(false);
-  const [selectedMedium, setSelectedMedium] = useState('All');
-  const [priceRange, setPriceRange] = useState([0, 1000]);
+  const [selectedMediums, setSelectedMediums] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [artists, setArtists] = useState<Artist[]>([]);
@@ -756,6 +754,17 @@ export default function DiscoverPage() {
     }
   };
 
+  // Medium management functions
+  const addMedium = (medium: string) => {
+    if (medium && !selectedMediums.includes(medium)) {
+      setSelectedMediums([...selectedMediums, medium]);
+    }
+  };
+
+  const removeMedium = (mediumToRemove: string) => {
+    setSelectedMediums(selectedMediums.filter(medium => medium !== mediumToRemove));
+  };
+
   // Filter artworks based on search and filters
   const filteredArtworks = artworks.filter((artwork) => {
     // Search filter
@@ -778,13 +787,8 @@ export default function DiscoverPage() {
     }
     
     // Medium filter
-    if (selectedMedium !== 'All') {
-      if (artwork.medium !== selectedMedium) return false;
-    }
-    
-    // Price range filter
-    if (artwork.price && (artwork.price < priceRange[0] || artwork.price > priceRange[1])) {
-      return false;
+    if (selectedMediums.length > 0) {
+      if (!artwork.medium || !selectedMediums.includes(artwork.medium)) return false;
     }
     
     // Tags filter
@@ -883,8 +887,7 @@ export default function DiscoverPage() {
     setSelectedCountryOfOrigin('all');
     setSelectedCountryOfResidence('all');
     setShowVerifiedOnly(false);
-    setSelectedMedium('All');
-    setPriceRange([0, 1000]);
+    setSelectedMediums([]);
     setSelectedTags([]);
     setTagInput('');
     setHideDigitalArt(false);
@@ -898,8 +901,7 @@ export default function DiscoverPage() {
     selectedCountryOfResidence !== 'all',
     selectedCategory !== 'All',
     showVerifiedOnly,
-    selectedMedium !== 'All',
-    priceRange[0] > 0 || priceRange[1] < 1000,
+    selectedMediums.length > 0,
     selectedTags.length > 0,
     hideDigitalArt,
     hideAIAssistedArt,
@@ -1305,8 +1307,8 @@ export default function DiscoverPage() {
           <p className="text-sm text-muted-foreground">
                 Use these filters to refine your search results
           </p>
-          </div>
-            
+        </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Medium Filter */}
               <div>
@@ -1314,35 +1316,38 @@ export default function DiscoverPage() {
                   <Palette className="h-4 w-4" />
                   Medium
                 </label>
-                <Select value={selectedMedium} onValueChange={setSelectedMedium}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MEDIUMS.map((medium) => (
-                      <SelectItem key={medium} value={medium}>
-                        {medium}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-        </div>
-
-              {/* Price Range Filter */}
-              <div>
-                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Price Range: ${priceRange[0]} - ${priceRange[1]}
-                </label>
-                <Slider
-                  value={priceRange}
-                  onValueChange={setPriceRange}
-                  max={1000}
-                  min={0}
-                  step={50}
-                  className="w-full"
-                />
+                <div className="space-y-2">
+                  {selectedMediums.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedMediums.map((medium) => (
+                        <Badge key={medium} variant="secondary" className="flex items-center gap-1">
+                          {medium}
+                          <button
+                            onClick={() => removeMedium(medium)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
           </div>
+                  )}
+                  <div className="flex flex-wrap gap-1">
+                    {MEDIUMS.filter(medium => medium !== 'All').map((medium) => (
+                      <Button
+                        key={medium}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addMedium(medium)}
+                        className="text-xs"
+                        disabled={selectedMediums.includes(medium)}
+                      >
+                        {medium}
+                      </Button>
+                    ))}
+                  </div>
+          </div>
+              </div>
 
               {/* Tags Filter */}
               <div>
