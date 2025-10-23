@@ -80,7 +80,7 @@ const mockCommunityData = {
 };
 
 export default function CommunityPage() {
-  const [activeTab, setActiveTab] = useState('bubbles');
+  const [activeTab, setActiveTab] = useState('community-chat');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   
@@ -260,10 +260,104 @@ export default function CommunityPage() {
           <div className="lg:col-span-3">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="community-chat">Community Chat</TabsTrigger>
                 <TabsTrigger value="bubbles">Bubbles</TabsTrigger>
                 <TabsTrigger value="challenges">Challenges</TabsTrigger>
-                <TabsTrigger value="showcase">Showcase</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="community-chat" className="space-y-4">
+                {/* Main Community Chat */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <MessageCircle className="h-5 w-5" />
+                      Community Chat
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Join the main community discussion and connect with fellow artists
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Chat Messages */}
+                      <div className="h-96 overflow-y-auto space-y-4 p-4 border rounded-lg bg-muted/20">
+                        <div className="flex gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={placeholderUrl} alt="Alex Thompson" />
+                            <AvatarFallback>AT</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-sm">Alex Thompson</span>
+                              <span className="text-xs text-muted-foreground">2 hours ago</span>
+                            </div>
+                            <p className="text-sm">Welcome everyone! Excited to see all the amazing artwork being shared here. 🎨</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={placeholderUrl} alt="Sarah Chen" />
+                            <AvatarFallback>SC</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-sm">Sarah Chen</span>
+                              <span className="text-xs text-muted-foreground">1 hour ago</span>
+                            </div>
+                            <p className="text-sm">Just finished my first watercolor painting! Any tips for beginners?</p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={placeholderUrl} alt="Mike Rodriguez" />
+                            <AvatarFallback>MR</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-sm">Mike Rodriguez</span>
+                              <span className="text-xs text-muted-foreground">30 minutes ago</span>
+                            </div>
+                            <p className="text-sm">@Sarah Chen Great work! Try using less water initially and build up layers gradually. Practice makes perfect! 💪</p>
+                          </div>
+                        </div>
+
+                        <div className="text-center text-muted-foreground py-4">
+                          <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">More messages will appear here as the community grows...</p>
+                        </div>
+                      </div>
+                      
+                      {/* Message Input */}
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Share your thoughts with the community..."
+                          className="flex-1"
+                        />
+                        <Button>
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Community Guidelines */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Community Guidelines</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p>• Be respectful and supportive of fellow artists</p>
+                      <p>• Share constructive feedback and encouragement</p>
+                      <p>• Keep discussions relevant to art and creativity</p>
+                      <p>• Report any inappropriate behavior to community hosts</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
               <TabsContent value="bubbles" className="space-y-4">
                 {/* Create New Bubble */}
@@ -550,19 +644,6 @@ export default function CommunityPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="showcase" className="space-y-4">
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🎨</div>
-                  <h3 className="text-xl font-semibold mb-2">Art Showcase</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Share your artwork with the community and get feedback from fellow artists.
-                  </p>
-                  <Button className="gradient-button">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Share Your Art
-                  </Button>
-                </div>
-              </TabsContent>
             </Tabs>
           </div>
 
