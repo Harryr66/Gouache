@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Users, UserPlus, Edit, Upload, Plus, MapPin, Globe } from 'lucide-react';
+import { Heart, Users, UserPlus, Edit, Upload, Plus, MapPin, Globe, Coffee, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { TipDialog } from './tip-dialog';
+import { SuggestionsDialog } from './suggestions-dialog';
 
 interface ProfileHeaderProps {
   user: {
@@ -23,6 +25,8 @@ interface ProfileHeaderProps {
     followingCount: number;
     isProfessional: boolean;
     profileRingColor?: string;
+    tipJarEnabled?: boolean;
+    suggestionsEnabled?: boolean;
   };
   isOwnProfile: boolean;
   isFollowing?: boolean;
@@ -37,6 +41,8 @@ export function ProfileHeader({
   onFollowToggle,
   currentTab
 }: ProfileHeaderProps) {
+  const [showTipDialog, setShowTipDialog] = useState(false);
+  const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
 
   // Early return if user is not properly loaded
   if (!user) {
@@ -151,13 +157,39 @@ export function ProfileHeader({
                   {getDynamicButton()}
                 </>
               ) : (
-                <Button 
-                  variant="outline"
-                  onClick={onFollowToggle}
-                >
-                  <Heart className="h-4 w-4 mr-2" />
-                  {isFollowing ? 'Following' : 'Follow'}
-                </Button>
+                <>
+                  <Button 
+                    variant="outline"
+                    onClick={onFollowToggle}
+                  >
+                    <Heart className="h-4 w-4 mr-2" />
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </Button>
+                  
+                  {/* Tip Jar Button - Only show for professional artists with tip jar enabled */}
+                  {user.isProfessional && user.tipJarEnabled && (
+                    <Button 
+                      variant="outline"
+                      onClick={() => setShowTipDialog(true)}
+                      className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
+                    >
+                      <Coffee className="h-4 w-4 mr-2" />
+                      Tip Jar
+                    </Button>
+                  )}
+                  
+                  {/* Suggestions Button - Only show for professional artists with suggestions enabled */}
+                  {user.isProfessional && user.suggestionsEnabled && (
+                    <Button 
+                      variant="outline"
+                      onClick={() => setShowSuggestionsDialog(true)}
+                      className="text-yellow-600 hover:text-yellow-700 border-yellow-200 hover:border-yellow-300"
+                    >
+                      <Lightbulb className="h-4 w-4 mr-2" />
+                      Suggestions
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -229,6 +261,22 @@ export function ProfileHeader({
           </CardContent>
         </Card>
       )}
+
+      {/* Tip Jar Dialog */}
+      <TipDialog
+        isOpen={showTipDialog}
+        onClose={() => setShowTipDialog(false)}
+        artistName={user.displayName || user.username}
+        artistId={user.id}
+      />
+
+      {/* Suggestions Dialog */}
+      <SuggestionsDialog
+        isOpen={showSuggestionsDialog}
+        onClose={() => setShowSuggestionsDialog(false)}
+        artistName={user.displayName || user.username}
+        artistId={user.id}
+      />
 
     </>
   );

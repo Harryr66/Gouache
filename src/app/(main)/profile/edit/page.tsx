@@ -128,14 +128,16 @@ export default function ProfileEditPage() {
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
 
   const [formData, setFormData] = useState({
-      name: '',
-      handle: '',
+    name: '',
+    handle: '',
     bio: '',
-      artistType: '',
+    artistType: '',
     location: '',
     countryOfOrigin: '',
     countryOfResidence: '',
     isProfessional: false,
+    tipJarEnabled: false,
+    suggestionsEnabled: false,
   });
 
   const [artistRequestData, setArtistRequestData] = useState({
@@ -168,6 +170,8 @@ export default function ProfileEditPage() {
             countryOfOrigin: changes.countryOfOrigin || user.countryOfOrigin || '',
             countryOfResidence: changes.countryOfResidence || user.countryOfResidence || '',
             isProfessional: changes.isProfessional || user.isProfessional || false,
+            tipJarEnabled: changes.tipJarEnabled || user.tipJarEnabled || false,
+            suggestionsEnabled: changes.suggestionsEnabled || user.suggestionsEnabled || false,
           });
           
           if (changes.avatarUrl && changes.avatarUrl !== user.avatarUrl) {
@@ -188,6 +192,8 @@ export default function ProfileEditPage() {
           countryOfOrigin: user.countryOfOrigin || '',
           countryOfResidence: user.countryOfResidence || '',
           isProfessional: user.isProfessional || false,
+          tipJarEnabled: user.tipJarEnabled || false,
+          suggestionsEnabled: user.suggestionsEnabled || false,
         });
       }
     }
@@ -573,6 +579,8 @@ export default function ProfileEditPage() {
         countryOfOrigin: formData.countryOfOrigin,
         countryOfResidence: formData.countryOfResidence,
         isProfessional: formData.isProfessional,
+        tipJarEnabled: formData.tipJarEnabled,
+        suggestionsEnabled: formData.suggestionsEnabled,
         updatedAt: new Date()
       };
 
@@ -887,6 +895,38 @@ export default function ProfileEditPage() {
                 onCheckedChange={(checked) => handleInputChange('isProfessional', checked)}
               />
             </div>
+
+            {/* Tip Jar Setting - Only for professional artists */}
+            {formData.isProfessional && (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Tip Jar</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Allow fans to send you tips to support your work
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.tipJarEnabled}
+                  onCheckedChange={(checked) => handleInputChange('tipJarEnabled', checked)}
+                />
+              </div>
+            )}
+
+            {/* Suggestions Setting - Only for professional artists */}
+            {formData.isProfessional && (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Fan Suggestions</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Allow fans to send you suggestions for future artwork
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.suggestionsEnabled}
+                  onCheckedChange={(checked) => handleInputChange('suggestionsEnabled', checked)}
+                />
+              </div>
+            )}
 
             {/* Verified Professional Artist Status */}
             {formData.isProfessional && (
