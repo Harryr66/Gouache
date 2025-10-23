@@ -34,7 +34,10 @@ const mockCommunityData = {
       topic: 'Painting',
       isActive: true,
       lastMessage: '2 hours ago',
-      level: 'Intermediate'
+      level: 'Intermediate',
+      messages: [],
+      host: 'Community Host',
+      membersList: ['Community Host', 'Alex Thompson', 'Sarah Chen']
     },
     {
       id: 2,
@@ -44,7 +47,10 @@ const mockCommunityData = {
       topic: 'Digital Art',
       isActive: true,
       lastMessage: '5 minutes ago',
-      level: 'All Levels'
+      level: 'All Levels',
+      messages: [],
+      host: 'Community Host',
+      membersList: ['Community Host', 'Mike Rodriguez', 'Emma Wilson']
     },
     {
       id: 3,
@@ -54,7 +60,10 @@ const mockCommunityData = {
       topic: 'Events',
       isActive: true,
       lastMessage: '1 hour ago',
-      level: 'All Levels'
+      level: 'All Levels',
+      messages: [],
+      host: 'Community Host',
+      membersList: ['Community Host', 'David Kim', 'Lisa Park']
     },
   ],
   challenges: [
