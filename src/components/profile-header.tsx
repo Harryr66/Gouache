@@ -43,6 +43,7 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
+  const [isBioExpanded, setIsBioExpanded] = useState(false);
 
   // Early return if user is not properly loaded
   if (!user) {
@@ -200,11 +201,22 @@ export function ProfileHeader({
           <CardContent className="p-6">
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  Biography
-                </h2>
-                {user.bio && (
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    Biography
+                  </h2>
+                  {user.bio && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsBioExpanded(!isBioExpanded)}
+                    >
+                      {isBioExpanded ? 'Close Bio' : 'Read Bio'}
+                    </Button>
+                  )}
+                </div>
+                {user.bio && isBioExpanded && (
                   <div className="text-foreground leading-relaxed">
                     <p className="whitespace-pre-line text-base">{user.bio}</p>
                   </div>
