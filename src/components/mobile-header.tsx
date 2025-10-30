@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Send, Bell, Settings, Search } from 'lucide-react';
+import { Bell, Settings, Search } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 export function MobileHeader() {
@@ -30,17 +30,6 @@ export function MobileHeader() {
               <Link href="/search">
                   <Search className="h-5 w-5" />
                   <span className="sr-only">Search</span>
-              </Link>
-            </Button>
-           <Button 
-              variant="ghost"
-              size="icon" 
-              className="h-9 w-9 rounded-lg"
-              asChild
-            >
-              <Link href="/messages">
-                  <Send className="h-5 w-5" />
-                  <span className="sr-only">Share</span>
               </Link>
             </Button>
             <Button 

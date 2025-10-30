@@ -28,7 +28,7 @@ const COUNTRIES = [
   'Japan', 'South Korea', 'China', 'India', 'Brazil', 'Mexico', 
   'Argentina', 'Colombia', 'South Africa', 'Egypt', 'Morocco',
   'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland', 'Portugal',
-  'Greece', 'Turkey', 'Israel', 'United Arab Emirates', 'Singapore',
+  'Greece', 'Turkey', 'Israel', 'United Arab Emirates', 'Singapore', 'Belarus',
   'New Zealand', 'Ireland', 'Austria', 'Czech Republic', 'Russia',
   'Nigeria', 'Kenya', 'Ghana', 'Chile', 'Peru', 'Venezuela',
   'Philippines', 'Thailand', 'Indonesia', 'Malaysia', 'Vietnam'

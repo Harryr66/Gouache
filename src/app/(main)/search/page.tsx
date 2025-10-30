@@ -225,6 +225,7 @@ const COUNTRIES = [
   'India',
   'China',
   'Russia',
+  'Belarus',
   'South Africa',
   'Nigeria',
   'Egypt',

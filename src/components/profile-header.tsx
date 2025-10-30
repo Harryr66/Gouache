@@ -95,7 +95,7 @@ export function ProfileHeader({
         <div className="flex flex-col md:flex-row gap-6">
           {/* Avatar Section */}
           <div className="flex-shrink-0">
-            <div className="relative h-32 w-32 rounded-full overflow-hidden flex items-center justify-center border-4 border-muted">
+            <div className="relative h-40 w-40 md:h-48 md:w-48 rounded-full overflow-hidden flex items-center justify-center border-4 border-muted">
               <Avatar className="h-full w-full">
                 <AvatarImage 
                   src={user.avatarUrl} 
