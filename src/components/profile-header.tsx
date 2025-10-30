@@ -116,6 +116,12 @@ export function ProfileHeader({
                 {user.displayName || 'User'}
               </h1>
               <p className="text-muted-foreground text-lg">@{user.username}</p>
+              {user.location && !user.hideLocation && (
+                <div className="mt-1 flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  <span className="text-sm">{user.location}</span>
+                </div>
+              )}
               
               {user.isProfessional && (
                 <Badge variant="secondary" className="mt-2">
@@ -201,7 +207,7 @@ export function ProfileHeader({
         </div>
       </Card>
 
-      {/* My Card Section */}
+      {/* Upcoming Events Section (repurposed from "My Card") */}
       {(user.bio || user.countryOfOrigin || user.countryOfResidence || user.bannerImageUrl) && !user.hideCard && (
         <Card className="mt-6">
           <CardContent className="p-6">
@@ -210,7 +216,7 @@ export function ProfileHeader({
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-semibold flex items-center gap-2">
                     <Users className="h-5 w-5 text-primary" />
-                    My Card
+                    Upcoming Events
                   </h2>
                   {user.bio && (
                     <Button
@@ -226,7 +232,7 @@ export function ProfileHeader({
                 {/* Banner Image */}
                 {user.bannerImageUrl && (
                   <div className="mb-4">
-                    <div className="relative w-full h-32 md:h-40 rounded-lg overflow-hidden">
+                    <div className="relative w-full h-48 md:h-64 rounded-lg overflow-hidden">
                       <img
                         src={user.bannerImageUrl}
                         alt={`${user.displayName}'s banner`}
@@ -239,15 +245,15 @@ export function ProfileHeader({
                 {/* Banner Image Placeholder */}
                 {!user.bannerImageUrl && isOwnProfile && (
                   <div className="mb-4">
-                    <div className="relative w-full h-32 md:h-40 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center">
+                    <div className="relative w-full h-48 md:h-64 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center">
                       <div className="text-center">
                         <div className="text-muted-foreground text-sm mb-2">
-                          Add a banner image to personalize your profile
+                          Add an event banner image (taller rectangle works best)
                         </div>
                         <Button asChild variant="outline" size="sm">
                           <Link href="/profile/edit">
                             <ImageIcon className="h-4 w-4 mr-2" />
-                            Add Banner
+                            Add Event Banner
                           </Link>
                         </Button>
                       </div>

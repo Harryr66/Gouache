@@ -1091,9 +1091,9 @@ export default function ProfileEditPage() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Hide My Card</Label>
+                  <Label>Hide Upcoming Events</Label>
                   <p className="text-sm text-muted-foreground">
-                    Hide the entire "My Card" section from your public profile
+                    Hide the entire "Upcoming Events" section from your public profile
                   </p>
                 </div>
                 <Switch

@@ -12,12 +12,12 @@ export function EventCard({ event, onClick }: EventCardProps) {
   return (
     <Card className="overflow-hidden group flex flex-col h-full cursor-pointer" onClick={onClick}>
         <CardContent className="p-0 relative">
-            <div className="aspect-video w-full overflow-hidden">
+            <div className="aspect-[4/3] w-full overflow-hidden">
                 <Image
                     src={event.imageUrl}
                     alt={event.title}
                     width={600}
-                    height={338}
+                    height={450}
                     className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                     data-ai-hint={event.imageAiHint}
                 />
