@@ -611,6 +611,9 @@ export interface User {
   hideLocation?: boolean;
   hideFlags?: boolean;
   hideCard?: boolean;
+  eventCity?: string;
+  eventCountry?: string;
+  eventDate?: string;
   portfolio?: Array<{
     id: string;
     imageUrl: string;
