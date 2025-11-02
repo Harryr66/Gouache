@@ -43,15 +43,6 @@ export function SiteHeader() {
           <Link href="/feed" className="mr-6 flex items-center space-x-2">
             <span className="text-2xl font-headline font-bold dark:text-white">SOMA</span>
           </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link
-              href="/discover"
-              className="transition-colors hover:text-foreground/80 text-muted-foreground flex items-center gap-2"
-            >
-              <Eye className="h-4 w-4" />
-              Discover
-            </Link>
-          </nav>
         </div>
         
         {/* Mobile Header */}
@@ -68,7 +59,6 @@ export function SiteHeader() {
                         <span className="text-2xl font-headline font-bold dark:text-white">SOMA</span>
                     </Link>
                     <nav className="flex flex-col space-y-6 text-lg font-medium">
-                         <Link href="/discover" className="transition-colors hover:text-foreground/80 text-muted-foreground">Discover</Link>
                     </nav>
                     <div className="absolute bottom-6 left-6 right-6 flex flex-col space-y-2">
                       {user ? (
