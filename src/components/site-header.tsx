@@ -93,12 +93,6 @@ export function SiteHeader() {
 
 
         <div className="flex flex-1 items-center justify-end space-x-4">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Search artists, artwork..." className="pl-10 w-full md:w-64 rounded-full placeholder:text-muted-foreground" />
-            </div>
-          </div>
           <nav className="hidden md:flex items-center gap-2">
             {user ? (
                <DropdownMenu>
