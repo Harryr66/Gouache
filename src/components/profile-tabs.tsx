@@ -1,16 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, Calendar, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain, MapPin } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { ProductCard } from './shop/product-card';
-import { EventCard } from './event-card';
-import { CommunityCard } from './community/community-card';
-import { CreateCommunityDialog } from './community/create-community-dialog';
 import { EpisodeCard } from './episode-card';
 import { DocuseriesCard } from './docuseries-card';
 import { PortfolioManager } from './portfolio-manager';
@@ -29,7 +26,6 @@ interface ProfileTabsProps {
 }
 
 export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange }: ProfileTabsProps) {
-  const [showCreateCommunity, setShowCreateCommunity] = useState(false);
   const { watchlist, watchHistory, getContinueWatching, isInWatchlist, getWatchProgress } = useWatchlist();
   const { followedArtists, unfollowArtist } = useFollow();
   const { courses, isLoading: coursesLoading } = useCourses();
@@ -42,8 +38,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
       <Tabs defaultValue="portfolio" className="w-full" onValueChange={onTabChange}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-          <TabsTrigger value="marketplace">Shop</TabsTrigger>
-          <TabsTrigger value="community">Community</TabsTrigger>
+          <TabsTrigger value="shop">Shop</TabsTrigger>
+          <TabsTrigger value="learn">Learn</TabsTrigger>
         </TabsList>
 
         {/* Portfolio Tab */}
@@ -67,37 +63,37 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
         </TabsContent>
 
         {/* Shop Tab */}
-        <TabsContent value="marketplace" className="space-y-4">
-          <Tabs defaultValue="products" className="w-full">
+        <TabsContent value="shop" className="space-y-4">
+          <Tabs defaultValue="prints" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="products" className="flex items-center gap-2">
+              <TabsTrigger value="prints" className="flex items-center gap-2">
                 <ShoppingBag className="h-4 w-4" />
-                Products
+                Prints
               </TabsTrigger>
-              <TabsTrigger value="courses" className="flex items-center gap-2">
-                <Brain className="h-4 w-4" />
-                Learn
+              <TabsTrigger value="originals" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Originals
               </TabsTrigger>
-              <TabsTrigger value="events" className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Events
+              <TabsTrigger value="books" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Books
               </TabsTrigger>
             </TabsList>
 
-            {/* Products Sub-tab */}
-            <TabsContent value="products" className="space-y-4">
+            {/* Prints Sub-tab */}
+            <TabsContent value="prints" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* TODO: Replace with actual product data */}
+                {/* TODO: Replace with actual prints data */}
               </div>
 
               <Card className="p-8 text-center">
                 <CardContent>
-                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <CardTitle className="mb-2">No products yet</CardTitle>
+                  <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <CardTitle className="mb-2">No prints yet</CardTitle>
                   <CardDescription className="mb-4">
                     {isOwnProfile 
-                      ? "Start selling your artwork by listing your first product."
-                      : "This artist doesn't have any products for sale yet."
+                      ? "Start selling prints of your artwork by listing your first print."
+                      : "This artist doesn't have any prints for sale yet."
                     }
                   </CardDescription>
                   {isOwnProfile && (
@@ -106,120 +102,65 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
                       onClick={() => window.location.href = '/marketplace/submit'}
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      List an Item
+                      List a Print
                     </Button>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Learn/Courses Sub-tab */}
-            <TabsContent value="courses" className="space-y-4">
-              {isOwnProfile && (
-                <div className="flex justify-end">
-                  <Button variant="gradient" asChild>
-                    <a href="/learn/submit">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Course
-                    </a>
-                  </Button>
-                </div>
-              )}
-
-              {coursesLoading ? (
-                <div className="flex justify-center py-12">
-                  <ThemeLoading text="Loading courses..." size="md" />
-                </div>
-              ) : instructorCourses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {instructorCourses.map((course) => (
-                    <Card key={course.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                      <div className="relative">
-                        <img
-                          src={course.thumbnail}
-                          alt={course.title}
-                          className="w-full h-32 object-cover"
-                        />
-                        <div className="absolute top-2 right-2">
-                          <Badge variant="secondary" className="text-xs">
-                            ${course.price}
-                          </Badge>
-                        </div>
-                      </div>
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold mb-2 line-clamp-2">{course.title}</h4>
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                          {course.description}
-                        </p>
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4" />
-                            <span>{course.lessons} lessons</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-yellow-500">★</span>
-                            <span>{course.rating.toFixed(1)}</span>
-                            <span>({course.reviewCount})</span>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex items-center justify-between">
-                          <Badge variant="outline" className="text-xs">
-                            {course.difficulty}
-                          </Badge>
-                          <Button size="sm" variant="outline" asChild>
-                            <a href={`/learn/${course.id}`}>
-                              View Course
-                            </a>
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <Card className="p-8 text-center">
-                  <CardContent>
-                    <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <CardTitle className="mb-2">No courses yet</CardTitle>
-                    <CardDescription className="mb-4">
-                      {isOwnProfile 
-                        ? "Share your knowledge by creating your first course."
-                        : "This instructor hasn't created any courses yet."
-                      }
-                    </CardDescription>
-                    {isOwnProfile && (
-                      <Button variant="gradient" asChild>
-                        <a href="/learn/submit">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create Your First Course
-                        </a>
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            {/* Events Sub-tab */}
-            <TabsContent value="events" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* TODO: Replace with actual event data */}
+            {/* Originals Sub-tab */}
+            <TabsContent value="originals" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* TODO: Replace with actual originals data */}
               </div>
 
               <Card className="p-8 text-center">
                 <CardContent>
-                  <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <CardTitle className="mb-2">No events yet</CardTitle>
+                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <CardTitle className="mb-2">No originals yet</CardTitle>
                   <CardDescription className="mb-4">
                     {isOwnProfile 
-                      ? "Host your first event to connect with your community."
-                      : "This artist hasn't hosted any events yet."
+                      ? "Start selling original artwork by listing your first piece."
+                      : "This artist doesn't have any original artwork for sale yet."
                     }
                   </CardDescription>
                   {isOwnProfile && (
-                    <Button variant="gradient">
+                    <Button 
+                      variant="gradient"
+                      onClick={() => window.location.href = '/marketplace/submit'}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Event
+                      List an Original
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Books Sub-tab */}
+            <TabsContent value="books" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* TODO: Replace with actual books data */}
+              </div>
+
+              <Card className="p-8 text-center">
+                <CardContent>
+                  <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <CardTitle className="mb-2">No books yet</CardTitle>
+                  <CardDescription className="mb-4">
+                    {isOwnProfile 
+                      ? "Start selling books by listing your first book."
+                      : "This artist doesn't have any books for sale yet."
+                    }
+                  </CardDescription>
+                  {isOwnProfile && (
+                    <Button 
+                      variant="gradient"
+                      onClick={() => window.location.href = '/marketplace/submit'}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      List a Book
                     </Button>
                   )}
                 </CardContent>
@@ -228,33 +169,91 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
           </Tabs>
         </TabsContent>
 
-        {/* Community Tab */}
-        <TabsContent value="community" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* TODO: Replace with actual community data */}
-          </div>
+        {/* Learn Tab */}
+        <TabsContent value="learn" className="space-y-4">
+          {isOwnProfile && (
+            <div className="flex justify-end">
+              <Button variant="gradient" asChild>
+                <a href="/learn/submit">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Course
+                </a>
+              </Button>
+            </div>
+          )}
 
-          <Card className="p-8 text-center">
-            <CardContent>
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <CardTitle className="mb-2">No community yet</CardTitle>
-              <CardDescription className="mb-4">
-                {isOwnProfile 
-                  ? "Create a community to connect with your followers and fans."
-                  : "This artist hasn't created a community yet."
-                }
-              </CardDescription>
-              {isOwnProfile && (
-                <Button 
-                  variant="gradient"
-                  onClick={() => setShowCreateCommunity(true)}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Start Community
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          {coursesLoading ? (
+            <div className="flex justify-center py-12">
+              <ThemeLoading text="Loading courses..." size="md" />
+            </div>
+          ) : instructorCourses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {instructorCourses.map((course) => (
+                <Card key={course.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
+                  <div className="relative">
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="w-full h-32 object-cover"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="secondary" className="text-xs">
+                        ${course.price}
+                      </Badge>
+                    </div>
+                  </div>
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold mb-2 line-clamp-2">{course.title}</h4>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                      {course.description}
+                    </p>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        <span>{course.lessons} lessons</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-yellow-500">★</span>
+                        <span>{course.rating.toFixed(1)}</span>
+                        <span>({course.reviewCount})</span>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <Badge variant="outline" className="text-xs">
+                        {course.difficulty}
+                      </Badge>
+                      <Button size="sm" variant="outline" asChild>
+                        <a href={`/learn/${course.id}`}>
+                          View Course
+                        </a>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="p-8 text-center">
+              <CardContent>
+                <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <CardTitle className="mb-2">No courses yet</CardTitle>
+                <CardDescription className="mb-4">
+                  {isOwnProfile 
+                    ? "Share your knowledge by creating your first course."
+                    : "This instructor hasn't created any courses yet."
+                  }
+                </CardDescription>
+                {isOwnProfile && (
+                  <Button variant="gradient" asChild>
+                    <a href="/learn/submit">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Course
+                    </a>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     );
@@ -416,13 +415,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
           </Card>
         )}
       </TabsContent>
-
-      {/* Create Community Dialog */}
-      {showCreateCommunity && (
-        <CreateCommunityDialog 
-          onClose={() => setShowCreateCommunity(false)} 
-        />
-      )}
     </Tabs>
   );
 }

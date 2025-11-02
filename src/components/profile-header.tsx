@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Users, UserPlus, Edit, Upload, Plus, MapPin, Globe, Coffee, Lightbulb, ImageIcon, Calendar } from 'lucide-react';
+import { Heart, Users, UserPlus, Edit, Upload, Plus, MapPin, Globe, Coffee, Lightbulb, ImageIcon, Calendar, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { TipDialog } from './tip-dialog';
@@ -78,14 +78,16 @@ export function ProfileHeader({
             List an Item
           </Button>
         );
-      case 'community':
+      case 'learn':
         return (
           <Button 
             variant="gradient"
-            onClick={() => {/* TODO: Add community creation logic */}}
+            asChild
           >
-            <Users className="h-4 w-4 mr-2" />
-            Start Community
+            <a href="/learn/submit">
+              <Brain className="h-4 w-4 mr-2" />
+              Create Course
+            </a>
           </Button>
         );
       default:
