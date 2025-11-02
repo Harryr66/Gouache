@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain, Palette } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain, Palette, Grid3x3 } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { ProductCard } from './shop/product-card';
 import { EpisodeCard } from './episode-card';
@@ -37,9 +37,18 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
     return (
       <Tabs defaultValue="portfolio" className="w-full" onValueChange={onTabChange}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-          <TabsTrigger value="shop">Shop</TabsTrigger>
-          <TabsTrigger value="learn">Learn</TabsTrigger>
+          <TabsTrigger value="portfolio" className="flex items-center gap-2">
+            <Grid3x3 className="h-4 w-4" />
+            Portfolio
+          </TabsTrigger>
+          <TabsTrigger value="shop" className="flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4" />
+            Shop
+          </TabsTrigger>
+          <TabsTrigger value="learn" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Learn
+          </TabsTrigger>
         </TabsList>
 
         {/* Portfolio Tab */}
