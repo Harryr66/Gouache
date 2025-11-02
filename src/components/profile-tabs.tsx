@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain, Palette } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { ProductCard } from './shop/product-card';
 import { EpisodeCard } from './episode-card';
@@ -71,7 +71,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
                 Prints
               </TabsTrigger>
               <TabsTrigger value="originals" className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
+                <Palette className="h-4 w-4" />
                 Originals
               </TabsTrigger>
               <TabsTrigger value="books" className="flex items-center gap-2">
@@ -117,7 +117,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
 
               <Card className="p-8 text-center">
                 <CardContent>
-                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <Palette className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <CardTitle className="mb-2">No originals yet</CardTitle>
                   <CardDescription className="mb-4">
                     {isOwnProfile 
