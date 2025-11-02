@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Users, UserPlus, Edit, Upload, Plus, MapPin, Globe, Coffee, Lightbulb, ImageIcon } from 'lucide-react';
+import { Heart, Users, UserPlus, Edit, Upload, Plus, MapPin, Globe, Coffee, Lightbulb, ImageIcon, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { TipDialog } from './tip-dialog';
