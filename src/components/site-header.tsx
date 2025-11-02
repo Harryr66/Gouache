@@ -51,20 +51,6 @@ export function SiteHeader() {
               <Eye className="h-4 w-4" />
               Discover
             </Link>
-            <Link
-              href="/artists"
-              className="transition-colors hover:text-foreground/80 text-muted-foreground flex items-center gap-2"
-            >
-              <Users className="h-4 w-4" />
-              Artists
-            </Link>
-            <Link
-              href="/auctions"
-              className="transition-colors hover:text-foreground/80 text-muted-foreground flex items-center gap-2"
-            >
-              <Gavel className="h-4 w-4" />
-              Auctions
-            </Link>
           </nav>
         </div>
         
@@ -83,8 +69,6 @@ export function SiteHeader() {
                     </Link>
                     <nav className="flex flex-col space-y-6 text-lg font-medium">
                          <Link href="/discover" className="transition-colors hover:text-foreground/80 text-muted-foreground">Discover</Link>
-                         <Link href="/artists" className="transition-colors hover:text-foreground/80 text-muted-foreground">Artists</Link>
-                         <Link href="/auctions" className="transition-colors hover:text-foreground/80 text-muted-foreground">Auctions</Link>
                     </nav>
                     <div className="absolute bottom-6 left-6 right-6 flex flex-col space-y-2">
                       {user ? (

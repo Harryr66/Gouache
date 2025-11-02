@@ -33,6 +33,10 @@ interface ProfileHeaderProps {
     hideLocation?: boolean;
     hideFlags?: boolean;
     hideCard?: boolean;
+    // Upcoming event fields
+    eventCity?: string;
+    eventCountry?: string;
+    eventDate?: string;
   };
   isOwnProfile: boolean;
   isFollowing?: boolean;
@@ -115,7 +119,7 @@ export function ProfileHeader({
               <h1 className="text-3xl font-headline font-bold text-foreground">
                 {user.displayName || 'User'}
               </h1>
-              <p className="text-muted-foreground text-lg">@{user.username}</p>
+              <p className="text-muted-foreground text-lg">{user.username}</p>
               {user.location && !user.hideLocation && (
                 <div className="mt-1 flex items-center gap-2 text-muted-foreground">
                   <MapPin className="h-4 w-4" />
@@ -203,12 +207,47 @@ export function ProfileHeader({
                 </Button>
               )}
             </div>
+
+            {/* Artist Location (moved from Upcoming Events) */}
+            {(user.countryOfOrigin || user.countryOfResidence) && !user.hideLocation && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                {user.countryOfOrigin && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-sm text-muted-foreground mb-1">Country of Origin</p>
+                      <div className="flex items-center gap-2">
+                        {!user.hideFlags && <CountryFlag country={user.countryOfOrigin} size="sm" />}
+                        <p className="text-foreground">{user.countryOfOrigin}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {user.countryOfResidence && (
+                  <div className="flex items-start gap-3">
+                    <Globe className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-sm text-muted-foreground mb-1">Currently Based In</p>
+                      <div className="flex items-center gap-2">
+                        {!user.hideFlags && <CountryFlag country={user.countryOfResidence} size="sm" />}
+                        <p className="text-foreground">
+                          {user.location && user.countryOfResidence 
+                            ? `${user.location}, ${user.countryOfResidence}`
+                            : user.countryOfResidence
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </Card>
 
-      {/* Upcoming Events Section (repurposed from "My Card") */}
-      {(user.bio || user.countryOfOrigin || user.countryOfResidence || user.bannerImageUrl) && !user.hideCard && (
+      {/* Upcoming Events Section */}
+      {(user.bio || user.bannerImageUrl) && !user.hideCard && (
         <Card className="mt-6">
           <CardContent className="p-6">
             <div className="space-y-4">
@@ -229,31 +268,31 @@ export function ProfileHeader({
                   )}
                 </div>
                 
-                {/* Banner Image */}
+                {/* Upcoming Event Banner */}
                 {user.bannerImageUrl && (
                   <div className="mb-4">
                     <div className="relative w-full h-48 md:h-64 rounded-lg overflow-hidden">
                       <img
                         src={user.bannerImageUrl}
-                        alt={`${user.displayName}'s banner`}
+                        alt={`${user.displayName}'s upcoming event banner`}
                         className="w-full h-full object-cover"
                       />
                     </div>
                   </div>
                 )}
                 
-                {/* Banner Image Placeholder */}
+                {/* Upcoming Event Banner Placeholder */}
                 {!user.bannerImageUrl && isOwnProfile && (
                   <div className="mb-4">
                     <div className="relative w-full h-48 md:h-64 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center">
                       <div className="text-center">
                         <div className="text-muted-foreground text-sm mb-2">
-                          Add an event banner image (taller rectangle works best)
+                          Add an upcoming event banner image (taller rectangle works best)
                         </div>
                         <Button asChild variant="outline" size="sm">
                           <Link href="/profile/edit">
                             <ImageIcon className="h-4 w-4 mr-2" />
-                            Add Event Banner
+                            Add Upcoming Event Banner
                           </Link>
                         </Button>
                       </div>
@@ -261,6 +300,32 @@ export function ProfileHeader({
                   </div>
                 )}
                 
+                {/* Upcoming Event Details (directly under banner) */}
+                {(user.eventDate || user.eventCity || user.eventCountry) ? (
+                  <div className="space-y-1.5 pt-3 text-sm text-muted-foreground">
+                    {(user.eventCity || user.eventCountry) && (
+                      <p className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        {[user.eventCity, user.eventCountry].filter(Boolean).join(', ')}
+                      </p>
+                    )}
+                    {user.eventDate && (
+                      <p className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        {user.eventDate}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  isOwnProfile && (
+                    <div className="pt-3">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href="/profile/edit#event-details">Set Upcoming Event Location</Link>
+                      </Button>
+                    </div>
+                  )
+                )}
+
                 {user.bio && isBioExpanded && (
                   <div className="text-foreground leading-relaxed">
                     <p className="whitespace-pre-line text-base">{user.bio}</p>
@@ -273,42 +338,7 @@ export function ProfileHeader({
                 )}
               </div>
 
-              {(user.countryOfOrigin || user.countryOfResidence) && !user.hideLocation && (
-                <>
-                  <Separator />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {user.countryOfOrigin && (
-                      <div className="flex items-start gap-3">
-                        <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-sm text-muted-foreground mb-1">Country of Origin</p>
-                          <div className="flex items-center gap-2">
-                            {!user.hideFlags && <CountryFlag country={user.countryOfOrigin} size="sm" />}
-                            <p className="text-foreground">{user.countryOfOrigin}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {user.countryOfResidence && (
-                      <div className="flex items-start gap-3">
-                        <Globe className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-sm text-muted-foreground mb-1">Currently Based In</p>
-                          <div className="flex items-center gap-2">
-                            {!user.hideFlags && <CountryFlag country={user.countryOfResidence} size="sm" />}
-                            <p className="text-foreground">
-                              {user.location && user.countryOfResidence 
-                                ? `${user.location}, ${user.countryOfResidence}`
-                                : user.countryOfResidence
-                              }
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+              {/* Future: Event details (date, city, country) can be rendered here */}
 
               {isOwnProfile && !user.countryOfOrigin && !user.countryOfResidence && (
                 <>
@@ -317,7 +347,7 @@ export function ProfileHeader({
                     <Button asChild variant="outline" size="sm">
                       <Link href="/profile/edit">
                         <MapPin className="h-4 w-4 mr-2" />
-                        Add Location Information
+                        Add Upcoming Event Details
                       </Link>
                     </Button>
                   </div>

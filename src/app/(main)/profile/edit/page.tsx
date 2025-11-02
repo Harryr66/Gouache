@@ -143,6 +143,10 @@ export default function ProfileEditPage() {
     hideFlags: false,
     hideCard: false,
     bannerImageUrl: '',
+    // Upcoming event fields
+    eventCity: '',
+    eventCountry: '',
+    eventDate: '',
   });
 
   const [artistRequestData, setArtistRequestData] = useState({
@@ -181,6 +185,9 @@ export default function ProfileEditPage() {
             hideFlags: changes.hideFlags || user.hideFlags || false,
             hideCard: changes.hideCard || user.hideCard || false,
             bannerImageUrl: changes.bannerImageUrl || user.bannerImageUrl || '',
+            eventCity: changes.eventCity || user.eventCity || '',
+            eventCountry: changes.eventCountry || user.eventCountry || '',
+            eventDate: changes.eventDate || user.eventDate || '',
           });
           
           if (changes.avatarUrl && changes.avatarUrl !== user.avatarUrl) {
@@ -211,6 +218,9 @@ export default function ProfileEditPage() {
         hideFlags: user.hideFlags || false,
         hideCard: user.hideCard || false,
           bannerImageUrl: user.bannerImageUrl || '',
+          eventCity: (user as any).eventCity || '',
+          eventCountry: (user as any).eventCountry || '',
+          eventDate: (user as any).eventDate || '',
         });
       }
     }
@@ -675,6 +685,11 @@ export default function ProfileEditPage() {
         updatedAt: new Date()
       };
 
+      // Upcoming event fields
+      if (formData.eventCity) updateData.eventCity = formData.eventCity;
+      if (formData.eventCountry) updateData.eventCountry = formData.eventCountry;
+      if (formData.eventDate) updateData.eventDate = formData.eventDate;
+
       // Only include avatarUrl if it's not undefined
       if (avatarUrl !== undefined) {
         updateData.avatarUrl = avatarUrl;
@@ -844,22 +859,22 @@ export default function ProfileEditPage() {
           </CardContent>
         </Card>
 
-        {/* Banner Image Section */}
+        {/* Upcoming Event Banner Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Banner Image</CardTitle>
+            <CardTitle>Upcoming Event Banner</CardTitle>
             <CardDescription>
-              Upload a banner image for your profile (recommended size: 1200x400px)
+              Upload a taller rectangular banner for your upcoming event (recommended ~1200x800)
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {bannerPreviewImage || user.bannerImageUrl ? (
                 <div className="relative">
-                  <div className="relative w-full h-32 md:h-40 rounded-lg overflow-hidden">
+                  <div className="relative w-full h-48 md:h-64 rounded-lg overflow-hidden">
                     <img
                       src={bannerPreviewImage || user.bannerImageUrl}
-                      alt="Banner preview"
+                      alt="Upcoming event banner preview"
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -879,19 +894,19 @@ export default function ProfileEditPage() {
                 <div className="relative w-full h-32 md:h-40 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-muted-foreground text-sm mb-2">
-                      No banner image uploaded
+                      No upcoming event banner uploaded
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="banner-upload" className="cursor-pointer">
                         <Button type="button" variant="outline" asChild>
                           <span>
                             <Upload className="h-4 w-4 mr-2" />
-                            Upload Banner
+                            Upload Upcoming Event Banner
                           </span>
                         </Button>
                       </Label>
                       <div className="text-xs text-muted-foreground">
-                        Recommended: 1200x400px
+                        Recommended: ~1200x800 (tall rectangle)
                       </div>
                     </div>
                   </div>
@@ -903,12 +918,12 @@ export default function ProfileEditPage() {
                   <Button type="button" variant="outline" asChild>
                     <span>
                       <Upload className="h-4 w-4 mr-2" />
-                      {bannerPreviewImage || user.bannerImageUrl ? 'Change Banner' : 'Upload Banner'}
+                      {bannerPreviewImage || user.bannerImageUrl ? 'Change Upcoming Event Banner' : 'Upload Upcoming Event Banner'}
                     </span>
                   </Button>
                 </Label>
                 <div className="text-xs text-muted-foreground">
-                  Recommended: 1200x400px
+                  Recommended: ~1200x800 (tall rectangle)
                 </div>
                 <input
                   id="banner-upload"
@@ -924,7 +939,7 @@ export default function ProfileEditPage() {
                     size="sm"
                     onClick={removeBannerImage}
                   >
-                    Remove Banner
+                    Remove Upcoming Event Banner
                   </Button>
                 )}
               </div>
@@ -1099,6 +1114,54 @@ export default function ProfileEditPage() {
                 <Switch
                   checked={formData.hideCard}
                   onCheckedChange={(checked) => handleInputChange('hideCard', checked)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Event Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Event Details</CardTitle>
+            <CardDescription>Set the date and location for your next event. This is separate from your personal location.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="eventDate">Event Date</Label>
+                <Input
+                  id="eventDate"
+                  type="date"
+                  value={formData.eventDate}
+                  onChange={(e) => handleInputChange('eventDate', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="eventCountry">Event Country</Label>
+                <Select 
+                  value={formData.eventCountry || ''} 
+                  onValueChange={(value) => handleInputChange('eventCountry', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select event country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="eventCity">Event City</Label>
+                <Input
+                  id="eventCity"
+                  value={formData.eventCity}
+                  onChange={(e) => handleInputChange('eventCity', e.target.value)}
+                  placeholder="City / Venue city"
                 />
               </div>
             </div>
