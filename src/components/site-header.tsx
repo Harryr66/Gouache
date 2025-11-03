@@ -40,7 +40,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <div className="mr-4 hidden md:flex">
-          <Link href="/feed" className="mr-6 flex items-center space-x-2">
+          <Link href="/discover" className="mr-6 flex items-center space-x-2">
             <span className="text-2xl font-headline font-bold dark:text-white">SOMA</span>
           </Link>
         </div>
@@ -55,7 +55,7 @@ export function SiteHeader() {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-full max-w-xs">
-                    <Link href="/feed" className="flex items-center space-x-2 mb-8">
+                    <Link href="/discover" className="flex items-center space-x-2 mb-8">
                         <span className="text-2xl font-headline font-bold dark:text-white">SOMA</span>
                     </Link>
                     <nav className="flex flex-col space-y-6 text-lg font-medium">

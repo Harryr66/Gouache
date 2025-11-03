@@ -33,9 +33,11 @@ export function DesktopHeader() {
 
   return (
     <div className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-        SOMA
-      </h1>
+      <Link href="/discover">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+          SOMA
+        </h1>
+      </Link>
       
       <nav className="hidden md:flex items-center space-x-6">
         {navigation.map((item) => {
