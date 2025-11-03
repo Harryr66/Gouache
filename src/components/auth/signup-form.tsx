@@ -87,8 +87,8 @@ export function SignUpForm() {
         description: `Welcome to SOMA, ${values.name}! Your account has been created successfully.`,
       });
       
-      // Redirect to feed
-      router.push('/feed');
+      // Redirect to discover
+      router.push('/discover');
       
     } catch (error: any) {
       console.error('Signup error:', error);

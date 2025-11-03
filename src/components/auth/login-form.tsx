@@ -51,8 +51,8 @@ export function LoginForm() {
         description: `Welcome back to SOMA, ${user.displayName || user.email}!`,
       });
       
-      // Redirect to feed
-      router.push('/feed');
+      // Redirect to discover
+      router.push('/discover');
       
     } catch (error: any) {
       console.error('Login error:', error);
