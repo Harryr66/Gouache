@@ -8,7 +8,9 @@ import { ProfileTabs } from '@/components/profile-tabs';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -44,9 +46,17 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
           <h1 className="text-2xl font-bold mb-4">Please log in to view your profile</h1>
-          <p className="text-muted-foreground">You need to be logged in to access this page.</p>
+          <p className="text-muted-foreground mb-6">You need to be logged in to access this page.</p>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button asChild variant="gradient" size="lg">
+              <Link href="/login">Log In</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/login?tab=signup">Sign Up</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
