@@ -859,16 +859,18 @@ export default function ProfileEditPage() {
           </CardContent>
         </Card>
 
-        {/* Upcoming Event Banner Section */}
+        {/* Upcoming Events Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Upcoming Event Banner</CardTitle>
+            <CardTitle>Upcoming Events</CardTitle>
             <CardDescription>
-              Upload a taller rectangular banner for your upcoming event (recommended ~1200x800)
+              Set up your upcoming event with a banner image, date, and location
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
+            {/* Banner Image */}
             <div className="space-y-4">
+              <Label>Event Banner Image</Label>
               {bannerPreviewImage || user.bannerImageUrl ? (
                 <div className="relative">
                   <div className="relative w-full h-48 md:h-64 rounded-lg overflow-hidden">
@@ -918,7 +920,7 @@ export default function ProfileEditPage() {
                   <Button type="button" variant="outline" asChild>
                     <span>
                       <Upload className="h-4 w-4 mr-2" />
-                      {bannerPreviewImage || user.bannerImageUrl ? 'Change Upcoming Event Banner' : 'Upload Upcoming Event Banner'}
+                      {bannerPreviewImage || user.bannerImageUrl ? 'Change Banner' : 'Upload Banner'}
                     </span>
                   </Button>
                 </Label>
@@ -939,9 +941,52 @@ export default function ProfileEditPage() {
                     size="sm"
                     onClick={removeBannerImage}
                   >
-                    Remove Upcoming Event Banner
+                    Remove Banner
                   </Button>
                 )}
+              </div>
+            </div>
+
+            {/* Event Date and Location */}
+            <div className="space-y-4 pt-4 border-t">
+              <Label>Event Date & Location</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="eventDate">Event Date</Label>
+                  <Input
+                    id="eventDate"
+                    type="date"
+                    value={formData.eventDate}
+                    onChange={(e) => handleInputChange('eventDate', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eventCountry">Event Country</Label>
+                  <Select 
+                    value={formData.eventCountry || ''} 
+                    onValueChange={(value) => handleInputChange('eventCountry', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select event country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eventCity">Event City</Label>
+                  <Input
+                    id="eventCity"
+                    value={formData.eventCity}
+                    onChange={(e) => handleInputChange('eventCity', e.target.value)}
+                    placeholder="City / Venue city"
+                  />
+                </div>
               </div>
             </div>
           </CardContent>
@@ -1120,53 +1165,6 @@ export default function ProfileEditPage() {
           </CardContent>
         </Card>
 
-        {/* Upcoming Event Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Event Details</CardTitle>
-            <CardDescription>Set the date and location for your next event. This is separate from your personal location.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="eventDate">Event Date</Label>
-                <Input
-                  id="eventDate"
-                  type="date"
-                  value={formData.eventDate}
-                  onChange={(e) => handleInputChange('eventDate', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="eventCountry">Event Country</Label>
-                <Select 
-                  value={formData.eventCountry || ''} 
-                  onValueChange={(value) => handleInputChange('eventCountry', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select event country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COUNTRIES.map((country) => (
-                      <SelectItem key={country} value={country}>
-                        {country}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="eventCity">Event City</Label>
-                <Input
-                  id="eventCity"
-                  value={formData.eventCity}
-                  onChange={(e) => handleInputChange('eventCity', e.target.value)}
-                  placeholder="City / Venue city"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
 
         {/* Account Settings */}
