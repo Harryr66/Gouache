@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Upload, X, Check, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { doc, updateDoc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
@@ -127,6 +127,9 @@ export default function ProfileEditPage() {
   const [showArtistRequest, setShowArtistRequest] = useState(false);
   const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const isInitialMount = useRef(true);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -223,6 +226,9 @@ export default function ProfileEditPage() {
           eventDate: (user as any).eventDate || '',
         });
       }
+      
+      // Mark initial mount as complete
+      isInitialMount.current = false;
     }
   }, [user]);
 
@@ -604,6 +610,107 @@ export default function ProfileEditPage() {
     }
   };
 
+  // Auto-save function (doesn't save images or handle changes)
+  const autoSave = async (skipDebounce = false) => {
+    if (!user || isInitialMount.current) return;
+    
+    // Don't auto-save if handle changed (needs validation)
+    if (formData.handle !== user.username) return;
+    
+    // Clear any existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    const performSave = async () => {
+      try {
+        setSaveStatus('saving');
+        
+        const userRef = doc(db, 'userProfiles', user.id);
+        const updateData: any = {
+          name: formData.name,
+          bio: formData.bio,
+          artistType: formData.artistType,
+          location: formData.location,
+          countryOfOrigin: formData.countryOfOrigin,
+          countryOfResidence: formData.countryOfResidence,
+          isProfessional: formData.isProfessional,
+          tipJarEnabled: formData.tipJarEnabled,
+          suggestionsEnabled: formData.suggestionsEnabled,
+          hideLocation: formData.hideLocation,
+          hideFlags: formData.hideFlags,
+          hideCard: formData.hideCard,
+          updatedAt: new Date()
+        };
+
+        // Upcoming event fields
+        if (formData.eventCity) updateData.eventCity = formData.eventCity;
+        if (formData.eventCountry) updateData.eventCountry = formData.eventCountry;
+        if (formData.eventDate) updateData.eventDate = formData.eventDate;
+
+        await withTimeout(setDoc(userRef, updateData, { merge: true }), 5000);
+        
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+        
+        // Clear offline changes after successful save
+        localStorage.removeItem(`profile_offline_changes_${user.id}`);
+      } catch (error) {
+        console.error('Auto-save error:', error);
+        setSaveStatus('error');
+        
+        // Store changes in localStorage for offline mode
+        try {
+          const offlineChanges = {
+            ...formData,
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem(`profile_offline_changes_${user.id}`, JSON.stringify(offlineChanges));
+        } catch (storageError) {
+          console.error('Error saving offline changes:', storageError);
+        }
+        
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
+    };
+    
+    if (skipDebounce) {
+      performSave();
+    } else {
+      autoSaveTimeoutRef.current = setTimeout(performSave, 1500); // 1.5 second debounce
+    }
+  };
+
+  // Auto-save when formData changes (excluding handle and images)
+  useEffect(() => {
+    if (isInitialMount.current) return;
+    
+    autoSave();
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [
+    formData.name,
+    formData.bio,
+    formData.artistType,
+    formData.location,
+    formData.countryOfOrigin,
+    formData.countryOfResidence,
+    formData.isProfessional,
+    formData.tipJarEnabled,
+    formData.suggestionsEnabled,
+    formData.hideLocation,
+    formData.hideFlags,
+    formData.hideCard,
+    formData.eventCity,
+    formData.eventCountry,
+    formData.eventDate,
+  ]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -792,6 +899,24 @@ export default function ProfileEditPage() {
           Back
         </Button>
         <h1 className="text-3xl font-bold">Edit Profile</h1>
+        {saveStatus === 'saving' && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Saving...</span>
+          </div>
+        )}
+        {saveStatus === 'saved' && (
+          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+            <Check className="h-4 w-4" />
+            <span>Saved</span>
+          </div>
+        )}
+        {saveStatus === 'error' && (
+          <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+            <AlertCircle className="h-4 w-4" />
+            <span>Save failed</span>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
