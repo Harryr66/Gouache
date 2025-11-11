@@ -49,8 +49,8 @@ export function SiteHeader() {
               width={140}
               height={30}
               priority
-              className="block h-7 w-auto dark:hidden sm:h-8"
-              sizes="(max-width: 768px) 120px, 140px"
+              className="block h-10 w-auto dark:hidden sm:h-14"
+              sizes="(max-width: 768px) 160px, 280px"
             />
             <Image
               src="/assets/gouache-logo-dark.png"
@@ -58,8 +58,8 @@ export function SiteHeader() {
               width={140}
               height={30}
               priority
-              className="hidden h-7 w-auto dark:block sm:h-8"
-              sizes="(max-width: 768px) 120px, 140px"
+              className="hidden h-10 w-auto dark:block sm:h-14"
+              sizes="(max-width: 768px) 160px, 280px"
             />
           </Link>
         </div>
@@ -81,16 +81,16 @@ export function SiteHeader() {
                           alt="Gouache"
                           width={140}
                           height={30}
-                          className="block h-7 w-auto dark:hidden"
-                          sizes="(max-width: 640px) 120px, 140px"
+                          className="block h-8 w-auto dark:hidden"
+                          sizes="(max-width: 640px) 160px, 220px"
                         />
                         <Image
                           src="/assets/gouache-logo-dark.png"
                           alt="Gouache"
                           width={140}
                           height={30}
-                          className="hidden h-7 w-auto dark:block"
-                          sizes="(max-width: 640px) 120px, 140px"
+                          className="hidden h-8 w-auto dark:block"
+                          sizes="(max-width: 640px) 160px, 220px"
                         />
                     </Link>
                     <nav className="flex flex-col space-y-6 text-lg font-medium">

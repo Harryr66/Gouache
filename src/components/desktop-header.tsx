@@ -42,8 +42,8 @@ export function DesktopHeader() {
           width={140}
           height={30}
           priority
-          className="block h-7 w-auto dark:hidden sm:h-8"
-          sizes="(max-width: 768px) 120px, 140px"
+          className="block h-10 w-auto dark:hidden sm:h-14"
+          sizes="(max-width: 768px) 160px, 280px"
         />
         <Image
           src="/assets/gouache-logo-dark.png"
@@ -51,8 +51,8 @@ export function DesktopHeader() {
           width={140}
           height={30}
           priority
-          className="hidden h-7 w-auto dark:block sm:h-8"
-          sizes="(max-width: 768px) 120px, 140px"
+          className="hidden h-10 w-auto dark:block sm:h-14"
+          sizes="(max-width: 768px) 160px, 280px"
         />
       </Link>
       

@@ -22,16 +22,16 @@ export function MobileHeader() {
               alt="Gouache"
               width={140}
               height={30}
-              className="block h-7 w-auto dark:hidden"
-              sizes="(max-width: 640px) 120px, 140px"
+              className="block h-9 w-auto dark:hidden"
+              sizes="(max-width: 640px) 160px, 220px"
             />
             <Image
               src="/assets/gouache-logo-dark.png"
               alt="Gouache"
               width={140}
               height={30}
-              className="hidden h-7 w-auto dark:block"
-              sizes="(max-width: 640px) 120px, 140px"
+              className="hidden h-9 w-auto dark:block"
+              sizes="(max-width: 640px) 160px, 220px"
             />
           </Link>
         </div>
