@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
+
+import logoLight from '@/../public/assets/gouache-logo-light-20241111.png';
+import logoDark from '@/../public/assets/gouache-logo-dark-20241111.png';
 
 export function LoadingTransition() {
   const { theme, resolvedTheme } = useTheme();
@@ -19,9 +23,12 @@ export function LoadingTransition() {
       <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
         <div className="text-center">
           <div className="mb-6">
-            <img
-              src="/assets/gouache-logo-dark-20241111.png?v=20241113"
+            <Image
+              src={logoDark}
               alt="Gouache"
+              priority
+              width={560}
+              height={120}
               className="mx-auto h-12 md:h-16 w-auto"
             />
             <span className="sr-only">Gouache</span>
@@ -90,13 +97,12 @@ export function LoadingTransition() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <img
-            src={
-              isDark
-                ? '/assets/gouache-logo-dark-20241111.png?v=20241113'
-                : '/assets/gouache-logo-light-20241111.png?v=20241113'
-            }
+          <Image
+            src={isDark ? logoDark : logoLight}
             alt="Gouache"
+            priority
+            width={560}
+            height={120}
             className="mx-auto h-12 md:h-16 w-auto drop-shadow-lg"
           />
           <span className="sr-only">Gouache</span>
