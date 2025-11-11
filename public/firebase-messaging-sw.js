@@ -25,8 +25,8 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || 'Gouache Notification';
   const notificationOptions = {
     body: payload.notification?.body || 'You have a new notification',
-      icon: '/favicon.ico?v=20241115',
-      badge: '/favicon.ico?v=20241115',
+      icon: '/favicon.ico?v=20241116',
+      badge: '/favicon.ico?v=20241116',
     data: payload.data,
     actions: [
       {

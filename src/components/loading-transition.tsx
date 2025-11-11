@@ -5,12 +5,12 @@ import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
 
-import logoLight from '@/../public/assets/gouache-logo-light-20241111.png'
-import logoDark from '@/../public/assets/gouache-logo-dark-20241111.png'
 import { Alice } from 'next/font/google'
 import { cn } from '@/lib/utils'
 
 const alice = Alice({ weight: '400', subsets: ['latin'], variable: '--font-alice' })
+const LIGHT_LOGO = '/assets/gouache-logo-light-20241111.png?v=20241116'
+const DARK_LOGO = '/assets/gouache-logo-dark-20241111.png?v=20241116'
 
 export function LoadingTransition() {
   const { theme, resolvedTheme } = useTheme()
@@ -32,7 +32,7 @@ export function LoadingTransition() {
             <div className="relative inline-flex items-center justify-center">
               {!darkLogoError && (
                 <Image
-                  src={logoDark}
+                  src={DARK_LOGO}
                   alt="Gouache"
                   priority
                   className={cn(
@@ -142,7 +142,7 @@ export function LoadingTransition() {
             {!logoErrored && (
               <Image
                 key={isDark ? 'dark' : 'light'}
-                src={isDark ? logoDark : logoLight}
+                src={isDark ? DARK_LOGO : LIGHT_LOGO}
                 alt="Gouache"
                 priority
                 className="mx-auto h-12 md:h-16 w-auto drop-shadow-lg transition-opacity duration-200"
