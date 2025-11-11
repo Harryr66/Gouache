@@ -1182,26 +1182,7 @@ export default function DiscoverPage() {
     return (
       <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
         <div className="text-center">
-          {/* Gouache Logo */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
-          >
-            <h1 className={`text-2xl md:text-3xl font-bold drop-shadow-lg ${isDark ? 'text-white' : 'text-black'}`}
-                style={{
-                  textShadow: isDark 
-                    ? '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.1)'
-                    : '0 0 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 0, 0, 0.1)',
-                  filter: isDark 
-                    ? 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.2))'
-                    : 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.2))'
-                }}>
-              Gouache
-            </h1>
-          </motion.div>
-          
+          <div className="mb-8" aria-hidden="true" />
           {/* Loading Animation */}
           <motion.div
             initial={{ opacity: 0 }}
