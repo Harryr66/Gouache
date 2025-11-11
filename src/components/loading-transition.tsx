@@ -5,9 +5,6 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 
-import logoLight from '@/../public/assets/gouache-logo-light-20241111.png';
-import logoDark from '@/../public/assets/gouache-logo-dark-20241111.png';
-
 export function LoadingTransition() {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -17,6 +14,9 @@ export function LoadingTransition() {
     setMounted(true);
   }, []);
 
+  const lightLogoSrc = '/assets/gouache-logo-light-20241111.png?v=20241115'
+  const darkLogoSrc = '/assets/gouache-logo-dark-20241111.png?v=20241115'
+
   // Don't render until mounted to prevent hydration issues
   if (!mounted) {
     return (
@@ -24,7 +24,7 @@ export function LoadingTransition() {
         <div className="text-center">
           <div className="mb-6">
             <Image
-              src={logoDark}
+              src={darkLogoSrc}
               alt="Gouache"
               priority
               width={560}
@@ -98,7 +98,8 @@ export function LoadingTransition() {
           className="mb-8"
         >
           <Image
-            src={isDark ? logoDark : logoLight}
+            key={isDark ? 'dark' : 'light'}
+            src={isDark ? darkLogoSrc : lightLogoSrc}
             alt="Gouache"
             priority
             width={560}
