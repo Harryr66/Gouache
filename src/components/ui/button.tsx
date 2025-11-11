@@ -19,7 +19,8 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-muted",
         link: "text-primary underline-offset-4 hover:underline",
-        gradient: "bg-background text-foreground gradient-border",
+        gradient:
+          "relative overflow-hidden bg-background text-foreground gradient-border [&::after]:absolute [&::after]:inset-[3px] [&::after]:rounded-[10px] [&::after]:bg-background [&::after]:content-[''] [&>span]:relative",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -49,7 +50,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
-      />
+      >
+        <span>{props.children}</span>
+      </Comp>
     )
   }
 )
