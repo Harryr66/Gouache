@@ -18,7 +18,7 @@ export function MobileHeader() {
           <Link href="/discover" className="flex items-center">
             <span className="sr-only">Gouache</span>
             <Image
-              src="/assets/gouache-logo-light.png"
+              src="/assets/gouache-logo-light.png?v=2"
               alt="Gouache"
               width={1750}
               height={375}
@@ -27,7 +27,7 @@ export function MobileHeader() {
               quality={100}
             />
             <Image
-              src="/assets/gouache-logo-dark.png"
+              src="/assets/gouache-logo-dark.png?v=2"
               alt="Gouache"
               width={1750}
               height={375}

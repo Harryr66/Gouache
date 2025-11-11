@@ -44,7 +44,7 @@ export function SiteHeader() {
           <Link href="/discover" className="mr-6 flex items-center space-x-2">
             <span className="sr-only">Gouache</span>
             <Image
-              src="/assets/gouache-logo-light.png"
+              src="/assets/gouache-logo-light.png?v=2"
               alt="Gouache"
               width={1750}
               height={375}
@@ -54,7 +54,7 @@ export function SiteHeader() {
               quality={100}
             />
             <Image
-              src="/assets/gouache-logo-dark.png"
+              src="/assets/gouache-logo-dark.png?v=2"
               alt="Gouache"
               width={1750}
               height={375}
@@ -79,7 +79,7 @@ export function SiteHeader() {
                     <Link href="/discover" className="flex items-center space-x-2 mb-8">
                         <span className="sr-only">Gouache</span>
                         <Image
-                          src="/assets/gouache-logo-light.png"
+                          src="/assets/gouache-logo-light.png?v=2"
                           alt="Gouache"
                           width={1750}
                           height={375}
@@ -88,7 +88,7 @@ export function SiteHeader() {
                           quality={100}
                         />
                         <Image
-                          src="/assets/gouache-logo-dark.png"
+                          src="/assets/gouache-logo-dark.png?v=2"
                           alt="Gouache"
                           width={1750}
                           height={375}
