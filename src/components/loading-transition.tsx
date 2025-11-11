@@ -28,9 +28,7 @@ export function LoadingTransition() {
       <div className={`${alice.variable} fixed inset-0 bg-black flex items-center justify-center z-50`}>
         <div className="text-center">
           <div className="mb-6">
-          <span className="alice-regular text-4xl font-normal tracking-wide uppercase text-white drop-shadow-lg">
-            GOUACHE
-          </span>
+          <span className="sr-only">Loading Gouache</span>
           </div>
           <div className="flex items-center justify-center space-x-2 mt-4">
             <div className="flex space-x-1">
@@ -102,14 +100,7 @@ export function LoadingTransition() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <span
-            className={cn(
-              'alice-regular text-4xl font-normal tracking-wide uppercase drop-shadow-lg',
-              isDark ? 'text-white' : 'text-slate-900'
-            )}
-          >
-            GOUACHE
-          </span>
+          <span className="sr-only">Loading Gouache</span>
         </motion.div>
         
         {/* Loading Animation */}
