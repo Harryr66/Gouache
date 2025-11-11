@@ -24,6 +24,10 @@ export const metadata: Metadata = {
   title: 'Gouache',
   description:
     'A social marketplace for artists and art lovers to connect, discover, and trade art.',
+  icons: {
+    icon: '/favicon-20241111.ico',
+    shortcut: '/favicon-20241111.ico',
+  },
 };
 
 export default function RootLayout({
