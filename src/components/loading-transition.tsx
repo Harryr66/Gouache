@@ -7,7 +7,12 @@ import { useTheme } from 'next-themes'
 import { Alice } from 'next/font/google'
 import { cn } from '@/lib/utils'
 
-const alice = Alice({ weight: '400', subsets: ['latin'], variable: '--font-alice' })
+const alice = Alice({
+  weight: ['400'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-alice',
+})
 
 export function LoadingTransition() {
   const { theme, resolvedTheme } = useTheme()
@@ -105,9 +110,10 @@ export function LoadingTransition() {
           <span
             className={cn(
               alice.className,
-              'alice-regular text-4xl font-normal tracking-wide drop-shadow-lg',
+              'alice-regular text-4xl font-normal tracking-[0.08em] drop-shadow-lg',
               isDark ? 'text-white' : 'text-slate-900'
             )}
+            style={{ fontFamily: '"Alice", serif' }}
           >
             Gouache
           </span>
