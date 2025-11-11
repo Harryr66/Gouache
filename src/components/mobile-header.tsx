@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Bell, Settings, Search } from 'lucide-react';
 import { usePathname } from 'next/navigation';
@@ -12,11 +13,27 @@ export function MobileHeader() {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
       <div className="container flex h-14 items-center">
-        {/* SOMA Logo */}
+        {/* Gouache Logo */}
         <div className="flex-shrink-0">
-          <h1 className="text-xl font-bold text-foreground">
-            SOMA
-          </h1>
+          <Link href="/discover" className="flex items-center">
+            <span className="sr-only">Gouache</span>
+            <Image
+              src="/assets/gouache-logo-light.png"
+              alt="Gouache"
+              width={140}
+              height={30}
+              className="block h-7 w-auto dark:hidden"
+              sizes="(max-width: 640px) 120px, 140px"
+            />
+            <Image
+              src="/assets/gouache-logo-dark.png"
+              alt="Gouache"
+              width={140}
+              height={30}
+              className="hidden h-7 w-auto dark:block"
+              sizes="(max-width: 640px) 120px, 140px"
+            />
+          </Link>
         </div>
         
         {/* Action Buttons */}

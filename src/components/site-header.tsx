@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, Users, Gavel, Search, User as UserIcon, LogOut, Menu } from 'lucide-react';
@@ -41,7 +42,25 @@ export function SiteHeader() {
       <div className="container flex h-16 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/discover" className="mr-6 flex items-center space-x-2">
-            <span className="text-2xl font-headline font-bold dark:text-white">SOMA</span>
+            <span className="sr-only">Gouache</span>
+            <Image
+              src="/assets/gouache-logo-light.png"
+              alt="Gouache"
+              width={140}
+              height={30}
+              priority
+              className="block h-7 w-auto dark:hidden sm:h-8"
+              sizes="(max-width: 768px) 120px, 140px"
+            />
+            <Image
+              src="/assets/gouache-logo-dark.png"
+              alt="Gouache"
+              width={140}
+              height={30}
+              priority
+              className="hidden h-7 w-auto dark:block sm:h-8"
+              sizes="(max-width: 768px) 120px, 140px"
+            />
           </Link>
         </div>
         
@@ -56,7 +75,23 @@ export function SiteHeader() {
                 </SheetTrigger>
                 <SheetContent side="left" className="w-full max-w-xs">
                     <Link href="/discover" className="flex items-center space-x-2 mb-8">
-                        <span className="text-2xl font-headline font-bold dark:text-white">SOMA</span>
+                        <span className="sr-only">Gouache</span>
+                        <Image
+                          src="/assets/gouache-logo-light.png"
+                          alt="Gouache"
+                          width={140}
+                          height={30}
+                          className="block h-7 w-auto dark:hidden"
+                          sizes="(max-width: 640px) 120px, 140px"
+                        />
+                        <Image
+                          src="/assets/gouache-logo-dark.png"
+                          alt="Gouache"
+                          width={140}
+                          height={30}
+                          className="hidden h-7 w-auto dark:block"
+                          sizes="(max-width: 640px) 120px, 140px"
+                        />
                     </Link>
                     <nav className="flex flex-col space-y-6 text-lg font-medium">
                     </nav>
