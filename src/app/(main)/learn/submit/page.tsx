@@ -470,7 +470,7 @@ export default function CourseSubmissionPage() {
                 {steps.find(s=>s.id===activeStep)?.label}
               </CardTitle>
               <CardDescription>
-                Share your knowledge and expertise with the SOMA Learn community.
+                Share your knowledge and expertise with the Gouache Learn community.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -882,7 +882,7 @@ export default function CourseSubmissionPage() {
                       <input id="publish-toggle" type="checkbox" checked={formData.isPublished} onChange={(e)=>handleInputChange('isPublished', e.target.checked)} />
                       <Label htmlFor="publish-toggle">Publish immediately after approval</Label>
                     </div>
-                    <p className="text-sm text-muted-foreground">Your course will be reviewed by SOMA. If approved, it will be published automatically if enabled.</p>
+                    <p className="text-sm text-muted-foreground">Your course will be reviewed by Gouache. If approved, it will be published automatically if enabled.</p>
                   </div>
                 )}
 

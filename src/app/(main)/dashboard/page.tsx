@@ -94,7 +94,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           <p className="text-muted-foreground">
-            Monitor and manage your SOMA platform
+            Monitor and manage your Gouache platform
           </p>
         </div>
 

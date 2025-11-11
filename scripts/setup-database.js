@@ -1,4 +1,4 @@
-// Database setup script for SOMA
+// Database setup script for Gouache
 // Run this script to initialize the Firestore database with required collections
 
 const { initializeApp } = require('firebase/app');
@@ -20,7 +20,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function setupDatabase() {
-  console.log('Setting up SOMA database...');
+  console.log('Setting up Gouache database...');
   
   try {
     const batch = writeBatch(db);

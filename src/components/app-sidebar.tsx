@@ -38,7 +38,7 @@ export function AppSidebar() {
     <div className="flex flex-col w-64 bg-card border-r h-full">
       <div className="p-6">
         <h1 className="text-2xl font-bold text-foreground">
-          SOMA
+          Gouache
         </h1>
       </div>
       

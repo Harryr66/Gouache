@@ -11,7 +11,7 @@ import { Heart, MessageCircle, Share2, ArrowLeft, ThumbsUp, ThumbsDown, Clock, P
 import { Artwork } from '@/lib/types';
 import Image from 'next/image';
 
-// Generate SOMA placeholder URLs
+// Generate Gouache placeholder URLs
 const generatePlaceholderUrl = (width: number = 800, height: number = 800) => {
   // Default to light mode colors, will be overridden by theme detection
   let backgroundColor = '#f8f9fa'; // very light gray
@@ -45,12 +45,12 @@ const generatePlaceholderUrl = (width: number = 800, height: number = 800) => {
   return `data:image/svg+xml;base64,${btoa(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
-      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">Gouache</text>
     </svg>
   `)}`;
 };
 
-// Generate SOMA avatar placeholder URLs
+// Generate Gouache avatar placeholder URLs
 const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
   // Check if we're in light mode by looking at the document's class or theme
   const isLightMode = typeof window !== 'undefined' && 
@@ -63,7 +63,7 @@ const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150)
   return `data:image/svg+xml;base64,${btoa(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="${backgroundColor}"/>
-      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="24" font-weight="bold">SOMA</text>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="24" font-weight="bold">Gouache</text>
     </svg>
   `)}`;
 };

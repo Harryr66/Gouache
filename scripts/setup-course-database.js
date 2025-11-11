@@ -491,7 +491,7 @@ const sampleCourses = [
 
 async function setupCourseDatabase() {
   try {
-    console.log('🚀 Setting up SOMA Learn database collections...');
+    console.log('🚀 Setting up Gouache Learn database collections...');
 
     // Create course categories document
     await setDoc(doc(db, 'courseCategories', 'categories'), {
@@ -528,7 +528,7 @@ async function setupCourseDatabase() {
     });
     console.log('✅ Course enrollments collection created');
 
-    console.log('🎉 SOMA Learn database setup completed successfully!');
+    console.log('🎉 Gouache Learn database setup completed successfully!');
     
   } catch (error) {
     console.error('❌ Error setting up course database:', error);

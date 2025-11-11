@@ -21,7 +21,7 @@ const fontBody = Alegreya({
 });
 
 export const metadata: Metadata = {
-  title: 'SOMA',
+  title: 'Gouache',
   description:
     'A social marketplace for artists and art lovers to connect, discover, and trade art.',
 };

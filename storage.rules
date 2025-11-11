@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Firebase Storage rules for SOMA
+// Firebase Storage rules for Gouache
 service firebase.storage {
   match /b/{bucket}/o {
     // Allow uploads to episodes folder (for admin video uploads)

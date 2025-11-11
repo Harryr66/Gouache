@@ -187,14 +187,14 @@ export default function DiscoverPage() {
       return `data:image/svg+xml;base64,${btoa(`
         <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="#0a0f1a" stroke="#1e293b" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="bold">Gouache</text>
         </svg>
       `)}`;
     } else {
       return `data:image/svg+xml;base64,${btoa(`
         <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="#fafafa" stroke="#e5e5e5" stroke-width="1"/>
-          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SOMA</text>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="20" font-weight="bold">Gouache</text>
         </svg>
       `)}`;
     }
@@ -1182,7 +1182,7 @@ export default function DiscoverPage() {
     return (
       <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
         <div className="text-center">
-          {/* SOMA Logo */}
+          {/* Gouache Logo */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1198,7 +1198,7 @@ export default function DiscoverPage() {
                     ? 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.2))'
                     : 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.2))'
                 }}>
-              SOMA
+              Gouache
             </h1>
           </motion.div>
           

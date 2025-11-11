@@ -81,7 +81,7 @@ export default function SettingsPage() {
               <span>Profile Completion</span>
             </CardTitle>
             <CardDescription>
-              Complete your profile to get the most out of SOMA
+              Complete your profile to get the most out of Gouache
             </CardDescription>
           </CardHeader>
           <CardContent>

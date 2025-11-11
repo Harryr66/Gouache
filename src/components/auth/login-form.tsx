@@ -48,7 +48,7 @@ export function LoginForm() {
       
       toast({
         title: "Login Successful!",
-        description: `Welcome back to SOMA, ${user.displayName || user.email}!`,
+        description: `Welcome back to Gouache, ${user.displayName || user.email}!`,
       });
       
       // Redirect to discover

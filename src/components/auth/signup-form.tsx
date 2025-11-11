@@ -84,7 +84,7 @@ export function SignUpForm() {
       
       toast({
         title: "Account Created!",
-        description: `Welcome to SOMA, ${values.name}! Your account has been created successfully.`,
+        description: `Welcome to Gouache, ${values.name}! Your account has been created successfully.`,
       });
       
       // Redirect to discover

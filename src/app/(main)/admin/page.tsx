@@ -274,7 +274,7 @@ export default function AdminPanel() {
     
     try {
       // Simple password check - in production, this should be more secure
-      const correctPassword = 'SOMA_ADMIN_2024'; // You can change this password
+      const correctPassword = 'GOUACHE_ADMIN_2024'; // You can change this password
       
       if (adminPassword === correctPassword) {
         setIsAuthenticated(true);
@@ -632,7 +632,7 @@ export default function AdminPanel() {
         }
       } else {
         // Generate a thumbnail from the video (placeholder for now)
-        // Generate SOMA placeholder URLs
+        // Generate Gouache placeholder URLs
         const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
           // Default to light mode colors, will be overridden by theme detection
           let backgroundColor = '#f8f9fa'; // very light gray
@@ -666,7 +666,7 @@ export default function AdminPanel() {
           return `data:image/svg+xml;base64,${btoa(`
             <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
               <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
-              <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+              <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">Gouache</text>
             </svg>
           `)}`;
         };
@@ -700,7 +700,7 @@ export default function AdminPanel() {
         updatedAt: new Date(),
         artist: {
           id: 'admin',
-          name: 'SOMA Admin',
+          name: 'Gouache Admin',
           handle: 'soma-admin',
           avatarUrl: '',
           isProfessional: true,
@@ -847,7 +847,7 @@ export default function AdminPanel() {
         subcategory: productSubcategory,
         images: uploadedImageUrls,
         sellerId: 'admin',
-        sellerName: 'SOMA Learn',
+        sellerName: 'Gouache Learn',
         isAffiliate: false,
         isActive: true,
         stock: parseInt(productStock),

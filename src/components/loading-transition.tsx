@@ -19,7 +19,7 @@ export function LoadingTransition() {
       <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
         <div className="text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">
-            SOMA
+            Gouache
           </h1>
           <div className="flex items-center justify-center space-x-2 mt-4">
             <div className="flex space-x-1">
@@ -78,7 +78,7 @@ export function LoadingTransition() {
   return (
     <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
       <div className="text-center">
-        {/* SOMA Logo */}
+        {/* Gouache Logo */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -94,7 +94,7 @@ export function LoadingTransition() {
                   ? 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.2))'
                   : 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.2))'
               }}>
-            SOMA
+            Gouache
           </h1>
         </motion.div>
         

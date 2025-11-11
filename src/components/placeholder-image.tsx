@@ -14,7 +14,7 @@ export function PlaceholderImage({
   width = 400, 
   height = 600, 
   className = '', 
-  alt = 'SOMA Placeholder' 
+  alt = 'Gouache Placeholder' 
 }: PlaceholderImageProps) {
   const { theme, resolvedTheme } = useTheme();
   const currentTheme = resolvedTheme || theme || 'light';
@@ -35,7 +35,7 @@ export function PlaceholderImage({
           className="text-2xl font-bold mb-2"
           style={{ color: isDark ? '#ffffff' : '#000000' }}
         >
-          SOMA
+          Gouache
         </h2>
         <p 
           className="text-sm"
@@ -82,7 +82,7 @@ export const generatePlaceholderUrl = (width: number = 400, height: number = 600
   return `data:image/svg+xml;base64,${btoa(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
-      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">SOMA</text>
+      <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">Gouache</text>
     </svg>
   `)}`;
 };

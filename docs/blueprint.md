@@ -1,4 +1,4 @@
-# **App Name**: SOMA: Art Social
+# **App Name**: Gouache: Art Social
 
 ## Core Features:
 

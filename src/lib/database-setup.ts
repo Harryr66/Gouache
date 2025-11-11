@@ -1,4 +1,4 @@
-// Database setup utilities for SOMA
+// Database setup utilities for Gouache
 import { db } from './firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
@@ -14,7 +14,7 @@ export interface DatabaseSetupResult {
  */
 export async function initializeDatabase(): Promise<DatabaseSetupResult> {
   try {
-    console.log('Initializing SOMA database...');
+    console.log('Initializing Gouache database...');
     
     // Test connection first
     const testDoc = doc(db, 'userProfiles', 'test');
@@ -24,7 +24,7 @@ export async function initializeDatabase(): Promise<DatabaseSetupResult> {
     
     return {
       success: true,
-      message: 'Database is ready! You can now use all SOMA features.',
+      message: 'Database is ready! You can now use all Gouache features.',
       collectionsCreated: [
         'userProfiles',
         'handles', 

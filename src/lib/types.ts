@@ -170,7 +170,7 @@ export interface AffiliateProductRequest {
   notes?: string;
 }
 
-// SOMA Learn Course System Types
+// Gouache Learn Course System Types
 export interface Instructor {
   id: string;
   userId: string;

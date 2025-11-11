@@ -8,14 +8,14 @@ export function SiteFooter() {
         <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
             <Link href="#" className="transition-colors hover:text-foreground">Terms of Service</Link>
             <Link href="#" className="transition-colors hover:text-foreground">Privacy Policy</Link>
-            <Link href="/advertise" className="transition-colors hover:text-foreground">Advertise with SOMA</Link>
+            <Link href="/advertise" className="transition-colors hover:text-foreground">Advertise with Gouache</Link>
             <Link href="/admin" className="font-medium transition-colors hover:text-foreground">
                 Admin
             </Link>
             <ThemeToggle />
         </nav>
         <p className="text-sm leading-loose text-muted-foreground">
-          © {new Date().getFullYear()} SOMA. All Rights Reserved.
+          © {new Date().getFullYear()} Gouache. All Rights Reserved.
         </p>
       </div>
     </footer>

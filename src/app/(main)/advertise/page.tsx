@@ -126,7 +126,7 @@ export default function AdvertisePage() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-4">
             <Megaphone className="h-12 w-12 text-primary mr-4" />
-            <h1 className="text-4xl font-bold text-foreground">Advertise with SOMA</h1>
+            <h1 className="text-4xl font-bold text-foreground">Advertise with Gouache</h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Reach the art community and connect with passionate artists, collectors, and art enthusiasts worldwide.

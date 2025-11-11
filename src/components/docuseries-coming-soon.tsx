@@ -23,7 +23,7 @@ export function DocuseriesComingSoon({ onUnlock }: DocuseriesComingSoonProps) {
     e.preventDefault();
     
     // Admin password - in production, this should be more secure
-    const adminPassword = 'SOMA2024Admin';
+    const adminPassword = 'GOUACHE2024Admin';
     
     if (password === adminPassword) {
       setIsAuthenticated(true);

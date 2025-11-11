@@ -246,7 +246,7 @@ export default function CommunityPage() {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
                 <Users className="h-8 w-8 text-primary" />
-                SOMA Community
+                Gouache Community
               </h1>
               <p className="text-muted-foreground mt-1">
                 Connect with fellow artists, share your work, and learn together

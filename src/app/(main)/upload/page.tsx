@@ -127,7 +127,7 @@ export default function UploadPage() {
           What would you like to upload?
         </h1>
         <p className="text-muted-foreground text-lg">
-          Choose the type of content you want to share with the SOMA community.
+          Choose the type of content you want to share with the Gouache community.
         </p>
       </header>
 

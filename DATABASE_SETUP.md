@@ -1,4 +1,4 @@
-# SOMA Database Setup Guide
+# Gouache Database Setup Guide
 
 ## Quick Setup Steps
 

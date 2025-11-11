@@ -50,7 +50,7 @@ This document outlines how applications flow from submission to the admin panel 
 ---
 
 ### 2️⃣ Advertising Applications
-**Submission Location:** `/advertise` (Advertise with SOMA page)
+**Submission Location:** `/advertise` (Advertise with Gouache page)
 **Collection:** `advertisingApplications`
 **Admin Panel View:** Advertising → Requests
 
@@ -108,7 +108,7 @@ This document outlines how applications flow from submission to the admin panel 
 ---
 
 ### 3️⃣ Affiliate/Marketplace Product Requests
-**Submission Location:** `/advertise` (Advertise with SOMA page)
+**Submission Location:** `/advertise` (Advertise with Gouache page)
 **Collection:** `affiliateRequests`
 **Admin Panel View:** Marketplace → Requests
 
