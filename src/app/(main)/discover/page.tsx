@@ -1186,21 +1186,7 @@ export default function DiscoverPage() {
         )}
       >
         <div className="text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
-          >
-            <span
-              className={cn(
-                'alice-regular text-4xl font-normal tracking-wide drop-shadow-lg capitalize',
-                isDarkTheme ? 'text-white' : 'text-slate-900'
-              )}
-            >
-              Gouache
-            </span>
-          </motion.div>
+          <div className="mb-8" aria-hidden="true" />
 
           {/* Loading Animation */}
           <motion.div
