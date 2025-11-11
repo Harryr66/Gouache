@@ -20,7 +20,7 @@ export function LoadingTransition() {
         <div className="text-center">
           <div className="mb-6">
             <img
-              src="/assets/gouache-logo-dark-20241111.png"
+              src="/assets/gouache-logo-dark-20241111.png?v=20241113"
               alt="Gouache"
               className="mx-auto h-12 md:h-16 w-auto"
             />
@@ -91,7 +91,11 @@ export function LoadingTransition() {
           className="mb-8"
         >
           <img
-            src={isDark ? '/assets/gouache-logo-dark-20241111.png' : '/assets/gouache-logo-light-20241111.png'}
+            src={
+              isDark
+                ? '/assets/gouache-logo-dark-20241111.png?v=20241113'
+                : '/assets/gouache-logo-light-20241111.png?v=20241113'
+            }
             alt="Gouache"
             className="mx-auto h-12 md:h-16 w-auto drop-shadow-lg"
           />
