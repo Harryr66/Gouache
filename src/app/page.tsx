@@ -27,11 +27,21 @@ export default function RootPage() {
             </span>
           </div>
           <div className="flex justify-center items-center gap-4">
-            <Button variant="gradient" size="lg" >
-              <Link href="/login?tab=signup" className="relative z-[2] px-8 py-3 block">Create a Free Account</Link>
+            <Button variant="gradient" size="lg">
+              <Link
+                href="/login?tab=signup"
+                className="relative z-[2] block rounded-[10px] px-8 py-3 text-foreground font-semibold"
+              >
+                Create a Free Account
+              </Link>
             </Button>
-            <Button variant="gradient" size="lg" >
-              <Link href="/login" className="relative z-[2] px-8 py-3 block">Login</Link>
+            <Button variant="gradient" size="lg">
+              <Link
+                href="/login"
+                className="relative z-[2] block rounded-[10px] px-8 py-3 text-foreground font-semibold"
+              >
+                Login
+              </Link>
             </Button>
           </div>
         </section>
