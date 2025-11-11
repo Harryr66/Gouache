@@ -47,19 +47,23 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const classes = cn(buttonVariants({ variant, size, className }))
 
     if (variant === "gradient") {
-      const content = React.isValidElement(children) ? (
-        React.cloneElement(children, {
+      let content: React.ReactNode
+
+      if (React.isValidElement(children)) {
+        const existing = (children.props as { className?: string }).className
+        content = React.cloneElement(children, {
           className: cn(
-            "relative z-[2] inline-flex items-center justify-center gap-2",
-            // @ts-ignore - allow merging existing className
-            children.props.className
+            existing,
+            "relative z-[2] inline-flex items-center justify-center gap-2"
           ),
         })
-      ) : (
-        <span className="relative z-[2] inline-flex items-center justify-center gap-2">
-          {children}
-        </span>
-      )
+      } else {
+        content = (
+          <span className="relative z-[2] inline-flex items-center justify-center gap-2">
+            {children}
+          </span>
+        )
+      }
 
       const Comp = asChild ? Slot : "button"
       return (
