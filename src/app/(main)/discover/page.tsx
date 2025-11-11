@@ -1182,7 +1182,21 @@ export default function DiscoverPage() {
     return (
       <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
         <div className="text-center">
-          <div className="mb-8" aria-hidden="true" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <span
+              className={`alice-regular text-4xl font-normal tracking-wide uppercase drop-shadow-lg ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}
+            >
+              GOUACHE
+            </span>
+          </motion.div>
+
           {/* Loading Animation */}
           <motion.div
             initial={{ opacity: 0 }}

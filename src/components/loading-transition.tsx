@@ -92,6 +92,22 @@ export function LoadingTransition() {
       )}
     >
       <div className="text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
+          <span
+            className={cn(
+              'alice-regular text-4xl font-normal tracking-wide uppercase drop-shadow-lg',
+              isDark ? 'text-white' : 'text-slate-900'
+            )}
+          >
+            GOUACHE
+          </span>
+        </motion.div>
+
         {/* Loading Animation */}
         <motion.div
           initial={{ opacity: 0 }}
