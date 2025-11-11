@@ -18,9 +18,14 @@ export function LoadingTransition() {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
         <div className="text-center">
-          <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">
-            Gouache
-          </h1>
+          <div className="mb-6">
+            <img
+              src="/assets/gouache-logo-dark-20241111.png"
+              alt="Gouache"
+              className="mx-auto h-12 md:h-16 w-auto"
+            />
+            <span className="sr-only">Gouache</span>
+          </div>
           <div className="flex items-center justify-center space-x-2 mt-4">
             <div className="flex space-x-1">
               <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
@@ -85,17 +90,12 @@ export function LoadingTransition() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h1 className={`text-2xl md:text-3xl font-bold drop-shadow-lg ${isDark ? 'text-white' : 'text-black'}`}
-              style={{
-                textShadow: isDark 
-                  ? '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.1)'
-                  : '0 0 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 0, 0, 0.1)',
-                filter: isDark 
-                  ? 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.2))'
-                  : 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.2))'
-              }}>
-            Gouache
-          </h1>
+          <img
+            src={isDark ? '/assets/gouache-logo-dark-20241111.png' : '/assets/gouache-logo-light-20241111.png'}
+            alt="Gouache"
+            className="mx-auto h-12 md:h-16 w-auto drop-shadow-lg"
+          />
+          <span className="sr-only">Gouache</span>
         </motion.div>
         
         {/* Loading Animation */}
