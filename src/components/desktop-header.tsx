@@ -39,8 +39,8 @@ export function DesktopHeader() {
         <Image
           src="/assets/gouache-logo-light.png"
           alt="Gouache"
-          width={140}
-          height={30}
+          width={560}
+          height={120}
           priority
           className="block h-10 w-auto dark:hidden sm:h-14"
           sizes="(max-width: 768px) 160px, 280px"
@@ -48,8 +48,8 @@ export function DesktopHeader() {
         <Image
           src="/assets/gouache-logo-dark.png"
           alt="Gouache"
-          width={140}
-          height={30}
+          width={560}
+          height={120}
           priority
           className="hidden h-10 w-auto dark:block sm:h-14"
           sizes="(max-width: 768px) 160px, 280px"
