@@ -2,14 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Alice&display=swap');
-
-.alice-regular {
-  font-family: "Alice", serif;
-  font-weight: 400;
-  font-style: normal;
-}
-
 /* Hide scrollbar for content rows */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
@@ -17,6 +9,12 @@
 }
 .scrollbar-hide::-webkit-scrollbar { 
   display: none;  /* Safari and Chrome */
+}
+
+.alice-regular {
+  font-family: var(--font-alice, "Alice"), serif;
+  font-weight: 400;
+  font-style: normal;
 }
 
 @layer base {

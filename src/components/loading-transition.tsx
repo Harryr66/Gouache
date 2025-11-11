@@ -1,26 +1,27 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { useTheme } from 'next-themes';
+import React, { useEffect, useState } from 'react'
+import Image from 'next/image'
+import { motion } from 'framer-motion'
+import { useTheme } from 'next-themes'
 
-import logoLight from '@/../public/assets/gouache-logo-light-20241111.png';
-import logoDark from '@/../public/assets/gouache-logo-dark-20241111.png';
-import { Alice } from 'next/font/google';
+import logoLight from '@/../public/assets/gouache-logo-light-20241111.png'
+import logoDark from '@/../public/assets/gouache-logo-dark-20241111.png'
+import { Alice } from 'next/font/google'
+import { cn } from '@/lib/utils'
 
-const alice = Alice({ weight: '400', subsets: ['latin'], variable: '--font-alice' });
+const alice = Alice({ weight: '400', subsets: ['latin'], variable: '--font-alice' })
 
 export function LoadingTransition() {
-  const { theme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [darkLogoError, setDarkLogoError] = useState(false);
-  const [lightLogoError, setLightLogoError] = useState(false);
+  const { theme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  const [darkLogoError, setDarkLogoError] = useState(false)
+  const [lightLogoError, setLightLogoError] = useState(false)
 
   // Prevent hydration mismatch by only rendering after mount
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
 
   // Don't render until mounted to prevent hydration issues
   if (!mounted) {
@@ -28,20 +29,33 @@ export function LoadingTransition() {
       <div className={`${alice.variable} fixed inset-0 bg-black flex items-center justify-center z-50`}>
         <div className="text-center">
           <div className="mb-6">
-            {!darkLogoError ? (
-              <Image
-                src={logoDark}
-                alt="Gouache"
-                priority
-                className="mx-auto h-12 md:h-16 w-auto"
-                onError={() => setDarkLogoError(true)}
-                onLoad={() => setDarkLogoError(false)}
-              />
-            ) : (
-              <span className={`${alice.className} alice-regular text-4xl font-normal text-white drop-shadow-lg`}>
+            <div className="relative inline-flex items-center justify-center">
+              {!darkLogoError && (
+                <Image
+                  src={logoDark}
+                  alt="Gouache"
+                  priority
+                  className={cn(
+                    'mx-auto h-12 w-auto transition-opacity duration-200',
+                    darkLogoError ? 'opacity-0' : 'opacity-100'
+                  )}
+                  onError={() => setDarkLogoError(true)}
+                  onLoad={() => setDarkLogoError(false)}
+                />
+              )}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  alice.className,
+                  'alice-regular pointer-events-none absolute inset-0 flex items-center justify-center text-4xl font-normal drop-shadow-lg transition-opacity duration-200',
+                  darkLogoError ? 'opacity-100' : 'opacity-0',
+                  'text-white'
+                )}
+                style={{ fontFamily: '"Alice", serif' }}
+              >
                 Gouache
               </span>
-            )}
+            </div>
             <span className="sr-only">Gouache</span>
           </div>
           <div className="flex items-center justify-center space-x-2 mt-4">
@@ -53,26 +67,26 @@ export function LoadingTransition() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   // Try multiple methods to detect theme
-  const currentTheme = resolvedTheme || theme || 'dark';
+  const currentTheme = resolvedTheme || theme || 'dark'
   
   // Fallback: Check DOM directly for theme class
-  let isDark = currentTheme === 'dark';
+  let isDark = currentTheme === 'dark'
   if (typeof window !== 'undefined') {
     try {
-      const hasDarkClass = document.documentElement.classList.contains('dark');
-      const hasLightClass = document.documentElement.classList.contains('light');
+      const hasDarkClass = document.documentElement.classList.contains('dark')
+      const hasLightClass = document.documentElement.classList.contains('light')
       
       if (hasDarkClass) {
-        isDark = true;
+        isDark = true
       } else if (hasLightClass) {
-        isDark = false;
+        isDark = false
       }
     } catch (error) {
-      console.warn('Theme detection from DOM failed:', error);
+      console.warn('Theme detection from DOM failed:', error)
     }
   }
 
@@ -80,30 +94,30 @@ export function LoadingTransition() {
   const getDotColors = (isDark: boolean) => {
     if (isDark) {
       // Dark theme gradient colors: #51C4D3, #77ACF1, #EF88AD
-      return ['#51C4D3', '#77ACF1', '#EF88AD'];
+      return ['#51C4D3', '#77ACF1', '#EF88AD']
     } else {
       // Light theme gradient colors: #1e3a8a, #3b82f6, #60a5fa
-      return ['#1e3a8a', '#3b82f6', '#60a5fa'];
+      return ['#1e3a8a', '#3b82f6', '#60a5fa']
     }
-  };
+  }
 
-  const dotColors = getDotColors(isDark);
+  const dotColors = getDotColors(isDark)
 
-  const logoErrored = isDark ? darkLogoError : lightLogoError;
+  const logoErrored = isDark ? darkLogoError : lightLogoError
   const handleLogoError = () => {
     if (isDark) {
-      setDarkLogoError(true);
+      setDarkLogoError(true)
     } else {
-      setLightLogoError(true);
+      setLightLogoError(true)
     }
-  };
+  }
   const handleLogoLoad = () => {
     if (isDark) {
-      setDarkLogoError(false);
+      setDarkLogoError(false)
     } else {
-      setLightLogoError(false);
+      setLightLogoError(false)
     }
-  };
+  }
 
   console.log('🎨 LoadingTransition theme detection:', { 
     theme, 
@@ -112,7 +126,7 @@ export function LoadingTransition() {
     isDark,
     dotColors,
     domClasses: typeof window !== 'undefined' ? document.documentElement.className : 'N/A'
-  });
+  })
 
   return (
     <div className={`${alice.variable} fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
@@ -124,25 +138,31 @@ export function LoadingTransition() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          {!logoErrored ? (
-            <Image
-              key={isDark ? 'dark' : 'light'}
-              src={isDark ? logoDark : logoLight}
-              alt="Gouache"
-              priority
-              className="mx-auto h-12 md:h-16 w-auto drop-shadow-lg"
-              onError={handleLogoError}
-              onLoad={handleLogoLoad}
-            />
-          ) : (
+          <div className="relative inline-flex items-center justify-center">
+            {!logoErrored && (
+              <Image
+                key={isDark ? 'dark' : 'light'}
+                src={isDark ? logoDark : logoLight}
+                alt="Gouache"
+                priority
+                className="mx-auto h-12 md:h-16 w-auto drop-shadow-lg transition-opacity duration-200"
+                onError={handleLogoError}
+                onLoad={handleLogoLoad}
+              />
+            )}
             <span
-              className={`${alice.className} alice-regular text-4xl font-normal drop-shadow-lg ${
+              aria-hidden={!logoErrored}
+              className={cn(
+                alice.className,
+                'alice-regular pointer-events-none absolute inset-0 flex items-center justify-center text-4xl font-normal drop-shadow-lg transition-opacity duration-200',
+                logoErrored ? 'opacity-100' : 'opacity-0',
                 isDark ? 'text-white' : 'text-slate-900'
-              }`}
+              )}
+              style={{ fontFamily: '"Alice", serif' }}
             >
               Gouache
             </span>
-          )}
+          </div>
           <span className="sr-only">Gouache</span>
         </motion.div>
         
