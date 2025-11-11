@@ -25,8 +25,9 @@ export const metadata: Metadata = {
   description:
     'A social marketplace for artists and art lovers to connect, discover, and trade art.',
   icons: {
-    icon: '/favicon.ico?v=20241119',
-    shortcut: '/favicon.ico?v=20241119',
+    icon: '/gouache-favicon-20241119.ico?v=1',
+    shortcut: '/gouache-favicon-20241119.ico?v=1',
+    apple: '/gouache-favicon-20241119.ico?v=1',
   },
 };
 
