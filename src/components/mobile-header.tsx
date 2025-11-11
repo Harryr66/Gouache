@@ -24,6 +24,7 @@ export function MobileHeader() {
               height={120}
               className="block h-9 w-auto dark:hidden"
               sizes="(max-width: 640px) 160px, 220px"
+              quality={100}
             />
             <Image
               src="/assets/gouache-logo-dark.png"
@@ -32,6 +33,7 @@ export function MobileHeader() {
               height={120}
               className="hidden h-9 w-auto dark:block"
               sizes="(max-width: 640px) 160px, 220px"
+              quality={100}
             />
           </Link>
         </div>
