@@ -20,7 +20,7 @@ const buttonVariants = cva(
         ghost: "hover:bg-muted",
         link: "text-primary underline-offset-4 hover:underline",
         gradient:
-          "relative overflow-hidden text-foreground gradient-border [&::before]:content-[''] [&::before]:absolute [&::before]:inset-[3px] [&::before]:rounded-[10px] [&::before]:bg-background [&::before]:z-[1] [&>*]:relative [&>*]:z-[2]",
+          "relative overflow-hidden text-foreground gradient-border [&::before]:content-[''] [&::before]:absolute [&::before]:inset-[3px] [&::before]:rounded-[10px] [&::before]:bg-background [&::before]:z-[1]",
       },
       size: {
         default: "h-10 px-4 py-2",
