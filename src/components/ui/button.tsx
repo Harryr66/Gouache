@@ -50,12 +50,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       let content: React.ReactNode
 
       if (React.isValidElement(children)) {
-        const element = children as React.ReactElement<{ className?: string }>
+        const element = children as React.ReactElement<{
+          className?: string
+          children?: React.ReactNode
+        }>
         const existing = element.props.className
         content = React.cloneElement(element, {
           className: cn(
             existing,
-            "relative z-[2] inline-flex items-center justify-center gap-2"
+            "relative inline-flex items-center justify-center gap-2"
+          ),
+          children: (
+            <span className="relative z-[2] inline-flex items-center justify-center gap-2">
+              {element.props.children}
+            </span>
           ),
         })
       } else {
