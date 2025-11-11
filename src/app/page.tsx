@@ -9,8 +9,8 @@ export default function RootPage() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main className="flex-1">
-        <section className="container flex flex-col items-center text-center gap-6 pt-10 md:pt-14 pb-6 md:pb-20 px-6">
-          <div className="w-full max-w-xl md:max-w-3xl mx-auto">
+        <section className="container flex flex-col items-center text-center gap-5 pt-10 md:pt-14 pb-4 md:pb-16 px-6">
+          <div className="w-full max-w-[320px] md:max-w-2xl mx-auto">
             <img
               src="/assets/welcome-hero-light-20241111.png"
               alt="Welcome to Gouache"
@@ -26,11 +26,11 @@ export default function RootPage() {
               collection.
             </span>
           </div>
-          <div className="flex justify-center items-center gap-4">
+          <div className="w-full max-w-[320px] md:max-w-xl flex flex-col md:flex-row justify-center items-center gap-4">
             <Button variant="gradient" size="lg">
               <Link
                 href="/login?tab=signup"
-                className="relative z-[2] block rounded-[10px] px-8 py-3 text-foreground font-semibold"
+                className="relative z-[2] block rounded-[10px] px-6 py-2 text-foreground font-semibold text-base md:text-lg"
               >
                 Create a Free Account
               </Link>
@@ -38,7 +38,7 @@ export default function RootPage() {
             <Button variant="gradient" size="lg">
               <Link
                 href="/login"
-                className="relative z-[2] block rounded-[10px] px-8 py-3 text-foreground font-semibold"
+                className="relative z-[2] block rounded-[10px] px-6 py-2 text-foreground font-semibold text-base md:text-lg"
               >
                 Login
               </Link>
