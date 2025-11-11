@@ -9,8 +9,8 @@ export default function RootPage() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main className="flex-1">
-        <section className="container flex flex-col items-center justify-center text-center py-24 md:py-32">
-          <div className="w-full max-w-3xl mx-auto">
+        <section className="container flex flex-col items-center justify-center text-center py-24 md:py-32 px-6">
+          <div className="w-full max-w-xl md:max-w-3xl mx-auto">
             <img
               src="/assets/welcome-hero-light-20241111.png"
               alt="Welcome to Gouache"
