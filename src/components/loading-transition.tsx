@@ -61,18 +61,13 @@ export function LoadingTransition() {
     }
   }
 
-  // Define gradient colors for each theme
-  const getDotColors = (isDark: boolean) => {
-    if (isDark) {
-      // Dark theme gradient colors: #51C4D3, #77ACF1, #EF88AD
-      return ['#51C4D3', '#77ACF1', '#EF88AD']
-    } else {
-      // Light theme gradient colors: #1e3a8a, #3b82f6, #60a5fa
-      return ['#1e3a8a', '#3b82f6', '#60a5fa']
-    }
-  }
-
-  const dotColors = getDotColors(isDark)
+  const dotColors = React.useMemo(
+    () =>
+      isDark
+        ? ['#51C4D3', '#77ACF1', '#EF88AD']
+        : ['#1e3a8a', '#3b82f6', '#60a5fa'],
+    [isDark]
+  )
 
   console.log('🎨 LoadingTransition theme detection:', { 
     theme, 
