@@ -9,7 +9,7 @@ export default function RootPage() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main className="flex-1">
-        <section className="container flex flex-col items-center justify-center text-center pt-10 md:pt-14 pb-12 md:pb-24 px-6">
+        <section className="container flex flex-col items-center justify-center text-center pt-10 md:pt-14 pb-8 md:pb-24 px-6">
           <div className="w-full max-w-xl md:max-w-3xl mx-auto">
             <img
               src="/assets/welcome-hero-light-20241111.png"
