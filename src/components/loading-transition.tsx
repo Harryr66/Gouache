@@ -7,10 +7,15 @@ import { useTheme } from 'next-themes';
 
 import logoLight from '@/../public/assets/gouache-logo-light-20241111.png';
 import logoDark from '@/../public/assets/gouache-logo-dark-20241111.png';
+import { Alice } from 'next/font/google';
+
+const alice = Alice({ weight: '400', subsets: ['latin'], variable: '--font-alice' });
 
 export function LoadingTransition() {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [darkLogoError, setDarkLogoError] = useState(false);
+  const [lightLogoError, setLightLogoError] = useState(false);
 
   // Prevent hydration mismatch by only rendering after mount
   useEffect(() => {
@@ -20,15 +25,23 @@ export function LoadingTransition() {
   // Don't render until mounted to prevent hydration issues
   if (!mounted) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+      <div className={`${alice.variable} fixed inset-0 bg-black flex items-center justify-center z-50`}>
         <div className="text-center">
           <div className="mb-6">
-            <Image
-              src={logoDark}
-              alt="Gouache"
-              priority
-              className="mx-auto h-12 md:h-16 w-auto"
-            />
+            {!darkLogoError ? (
+              <Image
+                src={logoDark}
+                alt="Gouache"
+                priority
+                className="mx-auto h-12 md:h-16 w-auto"
+                onError={() => setDarkLogoError(true)}
+                onLoad={() => setDarkLogoError(false)}
+              />
+            ) : (
+              <span className={`${alice.className} alice-regular text-4xl font-normal text-white drop-shadow-lg`}>
+                Gouache
+              </span>
+            )}
             <span className="sr-only">Gouache</span>
           </div>
           <div className="flex items-center justify-center space-x-2 mt-4">
@@ -76,6 +89,22 @@ export function LoadingTransition() {
 
   const dotColors = getDotColors(isDark);
 
+  const logoErrored = isDark ? darkLogoError : lightLogoError;
+  const handleLogoError = () => {
+    if (isDark) {
+      setDarkLogoError(true);
+    } else {
+      setLightLogoError(true);
+    }
+  };
+  const handleLogoLoad = () => {
+    if (isDark) {
+      setDarkLogoError(false);
+    } else {
+      setLightLogoError(false);
+    }
+  };
+
   console.log('🎨 LoadingTransition theme detection:', { 
     theme, 
     resolvedTheme, 
@@ -86,7 +115,7 @@ export function LoadingTransition() {
   });
 
   return (
-    <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
+    <div className={`${alice.variable} fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
       <div className="text-center">
         {/* Gouache Logo */}
         <motion.div
@@ -95,13 +124,25 @@ export function LoadingTransition() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <Image
-            key={isDark ? 'dark' : 'light'}
-            src={isDark ? logoDark : logoLight}
-            alt="Gouache"
-            priority
-            className="mx-auto h-12 md:h-16 w-auto drop-shadow-lg"
-          />
+          {!logoErrored ? (
+            <Image
+              key={isDark ? 'dark' : 'light'}
+              src={isDark ? logoDark : logoLight}
+              alt="Gouache"
+              priority
+              className="mx-auto h-12 md:h-16 w-auto drop-shadow-lg"
+              onError={handleLogoError}
+              onLoad={handleLogoLoad}
+            />
+          ) : (
+            <span
+              className={`${alice.className} alice-regular text-4xl font-normal drop-shadow-lg ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}
+            >
+              Gouache
+            </span>
+          )}
           <span className="sr-only">Gouache</span>
         </motion.div>
         
