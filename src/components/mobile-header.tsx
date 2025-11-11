@@ -2,7 +2,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Bell, Settings, Search } from 'lucide-react';
 import { usePathname } from 'next/navigation';
@@ -17,23 +16,19 @@ export function MobileHeader() {
         <div className="flex-shrink-0">
           <Link href="/discover" className="flex items-center">
             <span className="sr-only">Gouache</span>
-            <Image
+            <img
               src="/assets/gouache-logo-light.png?v=3"
               alt="Gouache"
               width={1750}
               height={375}
               className="block h-9 w-auto dark:hidden"
-              sizes="(max-width: 640px) 360px, 420px"
-              quality={100}
             />
-            <Image
+            <img
               src="/assets/gouache-logo-dark.png?v=3"
               alt="Gouache"
               width={1750}
               height={375}
               className="hidden h-9 w-auto dark:block"
-              sizes="(max-width: 640px) 360px, 420px"
-              quality={100}
             />
           </Link>
         </div>

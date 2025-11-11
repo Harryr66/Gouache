@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { 
@@ -36,25 +35,19 @@ export function DesktopHeader() {
     <div className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6">
       <Link href="/discover" className="flex items-center">
         <span className="sr-only">Gouache</span>
-        <Image
+        <img
           src="/assets/gouache-logo-light.png?v=3"
           alt="Gouache"
           width={1750}
           height={375}
-          priority
           className="block h-10 w-auto dark:hidden sm:h-14"
-          sizes="(max-width: 768px) 440px, 560px"
-          quality={100}
         />
-        <Image
+        <img
           src="/assets/gouache-logo-dark.png?v=3"
           alt="Gouache"
           width={1750}
           height={375}
-          priority
           className="hidden h-10 w-auto dark:block sm:h-14"
-          sizes="(max-width: 768px) 440px, 560px"
-          quality={100}
         />
       </Link>
       
