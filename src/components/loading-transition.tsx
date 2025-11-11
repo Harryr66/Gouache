@@ -110,10 +110,9 @@ export function LoadingTransition() {
           <span
             className={cn(
               alice.className,
-              'alice-regular text-4xl font-normal tracking-[0.08em] drop-shadow-lg',
+              'alice-regular text-4xl font-normal tracking-wide drop-shadow-lg',
               isDark ? 'text-white' : 'text-slate-900'
             )}
-            style={{ fontFamily: '"Alice", serif' }}
           >
             Gouache
           </span>

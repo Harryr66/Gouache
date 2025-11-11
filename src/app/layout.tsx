@@ -25,8 +25,8 @@ export const metadata: Metadata = {
   description:
     'A social marketplace for artists and art lovers to connect, discover, and trade art.',
   icons: {
-    icon: '/favicon.ico?v=20241118',
-    shortcut: '/favicon.ico?v=20241118',
+    icon: '/favicon.ico?v=20241119',
+    shortcut: '/favicon.ico?v=20241119',
   },
 };
 
