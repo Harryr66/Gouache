@@ -44,19 +44,31 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, children, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
     const classes = cn(buttonVariants({ variant, size, className }))
 
     if (variant === "gradient") {
+      const content = (
+        <span className="relative z-[2] inline-flex items-center justify-center gap-2">
+          {children}
+        </span>
+      )
+
+      if (asChild) {
+        return (
+          <Slot ref={ref} className={classes} {...props}>
+            {content}
+          </Slot>
+        )
+      }
+
       return (
-        <Comp ref={ref} className={classes} {...props}>
-          <span className="relative z-[2] inline-flex items-center justify-center gap-2">
-            {children}
-          </span>
-        </Comp>
+        <button ref={ref} className={classes} {...props}>
+          {content}
+        </button>
       )
     }
 
+    const Comp = asChild ? Slot : "button"
     return (
       <Comp ref={ref} className={classes} {...props}>
         {children}
