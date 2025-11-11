@@ -46,21 +46,21 @@ export function SiteHeader() {
             <Image
               src="/assets/gouache-logo-light.png"
               alt="Gouache"
-              width={560}
-              height={120}
+              width={1750}
+              height={375}
               priority
               className="block h-10 w-auto dark:hidden sm:h-14"
-              sizes="(max-width: 768px) 160px, 280px"
+              sizes="(max-width: 768px) 220px, 320px"
               quality={100}
             />
             <Image
               src="/assets/gouache-logo-dark.png"
               alt="Gouache"
-              width={560}
-              height={120}
+              width={1750}
+              height={375}
               priority
               className="hidden h-10 w-auto dark:block sm:h-14"
-              sizes="(max-width: 768px) 160px, 280px"
+              sizes="(max-width: 768px) 220px, 320px"
               quality={100}
             />
           </Link>
@@ -81,19 +81,19 @@ export function SiteHeader() {
                         <Image
                           src="/assets/gouache-logo-light.png"
                           alt="Gouache"
-                          width={560}
-                          height={120}
+                          width={1750}
+                          height={375}
                           className="block h-8 w-auto dark:hidden"
-                          sizes="(max-width: 640px) 160px, 220px"
+                          sizes="(max-width: 640px) 200px, 260px"
                           quality={100}
                         />
                         <Image
                           src="/assets/gouache-logo-dark.png"
                           alt="Gouache"
-                          width={560}
-                          height={120}
+                          width={1750}
+                          height={375}
                           className="hidden h-8 w-auto dark:block"
-                          sizes="(max-width: 640px) 160px, 220px"
+                          sizes="(max-width: 640px) 200px, 260px"
                           quality={100}
                         />
                     </Link>
