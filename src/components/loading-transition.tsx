@@ -17,49 +17,39 @@ const alice = Alice({
 export function LoadingTransition() {
   const { theme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  // Prevent hydration mismatch by only rendering after mount
+  const [mode, setMode] = useState<'light' | 'dark'>('light')
+
+  // Track mount so we can safely reference theme values
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Don't render until mounted to prevent hydration issues
-  if (!mounted) {
-    return (
-      <div className={`${alice.variable} fixed inset-0 bg-black flex items-center justify-center z-50`}>
-        <div className="text-center">
-          <div className="mb-6">
-          </div>
-          <div className="flex items-center justify-center space-x-2 mt-4">
-            <div className="flex space-x-1">
-              <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
-              <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
-              <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // Update mode whenever next-themes values change
+  useEffect(() => {
+    const resolved = resolvedTheme ?? theme ?? 'light'
+    setMode(resolved === 'dark' ? 'dark' : 'light')
+  }, [theme, resolvedTheme])
 
-  // Try multiple methods to detect theme
-  const currentTheme = resolvedTheme || theme || 'dark'
-  
-  // Fallback: Check DOM directly for theme class
-  let isDark = currentTheme === 'dark'
-  if (typeof window !== 'undefined') {
-    try {
-      const hasDarkClass = document.documentElement.classList.contains('dark')
-      const hasLightClass = document.documentElement.classList.contains('light')
-      
-      if (hasDarkClass) {
-        isDark = true
-      } else if (hasLightClass) {
-        isDark = false
+  // Observe the html class list so toggles applied outside next-themes still update us
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const root = document.documentElement
+
+    const updateFromDom = () => {
+      if (root.classList.contains('dark')) {
+        setMode('dark')
+      } else if (root.classList.contains('light')) {
+        setMode('light')
       }
-    } catch (error) {
-      console.warn('Theme detection from DOM failed:', error)
     }
-  }
+
+    updateFromDom()
+    const observer = new MutationObserver(updateFromDom)
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
+
+  const isDark = mode === 'dark'
 
   const dotColors = React.useMemo(
     () =>
@@ -69,14 +59,32 @@ export function LoadingTransition() {
     [isDark]
   )
 
-  console.log('🎨 LoadingTransition theme detection:', { 
-    theme, 
-    resolvedTheme, 
-    currentTheme, 
-    isDark,
-    dotColors,
-    domClasses: typeof window !== 'undefined' ? document.documentElement.className : 'N/A'
-  })
+  if (!mounted) {
+    return (
+      <div
+        className={cn(
+          alice.variable,
+          'fixed inset-0 flex items-center justify-center z-50',
+          isDark ? 'bg-black' : 'bg-white'
+        )}
+      >
+        <div className="text-center">
+          <div className="mb-6" aria-hidden="true" />
+          <div className="flex items-center justify-center space-x-2 mt-4">
+            <div className="flex space-x-1">
+              {dotColors.map((color, index) => (
+                <div
+                  key={color}
+                  className="w-3 h-3 rounded-full animate-pulse"
+                  style={{ backgroundColor: color, animationDelay: `${index * 0.1}s` }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div

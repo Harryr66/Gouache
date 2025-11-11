@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ArtworkTile } from '@/components/artwork-tile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
 
 // Categories for filtering
 const categories = [
@@ -134,6 +135,7 @@ export default function DiscoverPage() {
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { user } = useAuth();
   const { theme, resolvedTheme } = useTheme();
+  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
   
   // Add loading state to ensure theme is properly loaded
   const [isThemeLoading, setIsThemeLoading] = useState(true);
@@ -146,6 +148,36 @@ export default function DiscoverPage() {
     
     return () => clearTimeout(timer);
   }, []);
+  
+  useEffect(() => {
+    const resolved = resolvedTheme ?? theme ?? 'light';
+    setThemeMode(resolved === 'dark' ? 'dark' : 'light');
+  }, [theme, resolvedTheme]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const root = document.documentElement;
+    const updateFromDom = () => {
+      if (root.classList.contains('dark')) {
+        setThemeMode('dark');
+      } else if (root.classList.contains('light')) {
+        setThemeMode('light');
+      }
+    };
+    updateFromDom();
+    const observer = new MutationObserver(updateFromDom);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const isDarkTheme = themeMode === 'dark';
+  const loadingDotColors = useMemo(
+    () =>
+      isDarkTheme
+        ? ['#51C4D3', '#77ACF1', '#EF88AD']
+        : ['#1e3a8a', '#3b82f6', '#60a5fa'],
+    [isDarkTheme]
+  );
   
   // Generate placeholder URL with robust theme detection - ONLY after theme is loaded
   const getDiscoverPlaceholder = () => {
@@ -1146,32 +1178,13 @@ export default function DiscoverPage() {
 
   // Show loading screen while theme loads
   if (isThemeLoading) {
-    // Try multiple methods to detect theme
-    const currentTheme = resolvedTheme || theme || 'dark';
-    
-    // Fallback: Check DOM directly for theme class
-    let isDark = currentTheme === 'dark';
-    if (typeof window !== 'undefined') {
-      try {
-        const hasDarkClass = document.documentElement.classList.contains('dark');
-        const hasLightClass = document.documentElement.classList.contains('light');
-        
-        if (hasDarkClass) {
-          isDark = true;
-        } else if (hasLightClass) {
-          isDark = false;
-        }
-      } catch (error) {
-        // Keep current isDark value
-      }
-    }
-
-    const dotColors = isDark
-      ? ['#51C4D3', '#77ACF1', '#EF88AD']
-      : ['#1e3a8a', '#3b82f6', '#60a5fa'];
-
     return (
-      <div className={`fixed inset-0 flex items-center justify-center z-50 ${isDark ? 'bg-black' : 'bg-white'}`}>
+      <div
+        className={cn(
+          'fixed inset-0 flex items-center justify-center z-50',
+          isDarkTheme ? 'bg-black' : 'bg-white'
+        )}
+      >
         <div className="text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -1180,9 +1193,10 @@ export default function DiscoverPage() {
             className="mb-8"
           >
             <span
-              className={`alice-regular text-4xl font-normal tracking-wide drop-shadow-lg capitalize ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
+              className={cn(
+                'alice-regular text-4xl font-normal tracking-wide drop-shadow-lg capitalize',
+                isDarkTheme ? 'text-white' : 'text-slate-900'
+              )}
             >
               Gouache
             </span>
@@ -1198,19 +1212,19 @@ export default function DiscoverPage() {
             <div className="flex space-x-1">
               <motion.div
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: dotColors[0] }}
+                style={{ backgroundColor: loadingDotColors[0] }}
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
               />
               <motion.div
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: dotColors[1] }}
+                style={{ backgroundColor: loadingDotColors[1] }}
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
               />
               <motion.div
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: dotColors[2] }}
+                style={{ backgroundColor: loadingDotColors[2] }}
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
               />
