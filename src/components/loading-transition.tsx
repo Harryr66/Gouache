@@ -100,11 +100,11 @@ export function LoadingTransition() {
         >
           <span
             className={cn(
-              'alice-regular text-4xl font-normal tracking-wide uppercase drop-shadow-lg',
+              'alice-regular text-4xl font-normal tracking-wide drop-shadow-lg capitalize',
               isDark ? 'text-white' : 'text-slate-900'
             )}
           >
-            GOUACHE
+            Gouache
           </span>
         </motion.div>
 

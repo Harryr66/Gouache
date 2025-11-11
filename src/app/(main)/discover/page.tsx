@@ -1189,11 +1189,11 @@ export default function DiscoverPage() {
             className="mb-8"
           >
             <span
-              className={`alice-regular text-4xl font-normal tracking-wide uppercase drop-shadow-lg ${
+              className={`alice-regular text-4xl font-normal tracking-wide drop-shadow-lg capitalize ${
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              GOUACHE
+              Gouache
             </span>
           </motion.div>
 
