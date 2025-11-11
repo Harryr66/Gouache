@@ -28,7 +28,6 @@ export function LoadingTransition() {
       <div className={`${alice.variable} fixed inset-0 bg-black flex items-center justify-center z-50`}>
         <div className="text-center">
           <div className="mb-6">
-          <span className="sr-only">Loading Gouache</span>
           </div>
           <div className="flex items-center justify-center space-x-2 mt-4">
             <div className="flex space-x-1">
@@ -93,16 +92,6 @@ export function LoadingTransition() {
       )}
     >
       <div className="text-center">
-        {/* Gouache Logo */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
-          <span className="sr-only">Loading Gouache</span>
-        </motion.div>
-        
         {/* Loading Animation */}
         <motion.div
           initial={{ opacity: 0 }}
