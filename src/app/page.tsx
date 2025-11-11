@@ -9,7 +9,7 @@ export default function RootPage() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main className="flex-1">
-        <section className="container flex flex-col items-center justify-center text-center pt-10 md:pt-14 pb-16 md:pb-24 px-6">
+        <section className="container flex flex-col items-center justify-center text-center pt-10 md:pt-14 pb-12 md:pb-24 px-6">
           <div className="w-full max-w-xl md:max-w-3xl mx-auto">
             <img
               src="/assets/welcome-hero-light-20241111.png"
@@ -26,7 +26,7 @@ export default function RootPage() {
               collection.
             </span>
           </div>
-          <div className="mt-8 flex justify-center items-center gap-4">
+          <div className="mt-4 md:mt-8 flex justify-center items-center gap-4">
             <Button asChild variant="gradient" size="lg">
               <Link href="/login?tab=signup">Create a Free Account</Link>
             </Button>
