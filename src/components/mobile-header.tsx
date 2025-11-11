@@ -18,21 +18,21 @@ export function MobileHeader() {
           <Link href="/discover" className="flex items-center">
             <span className="sr-only">Gouache</span>
             <Image
-              src="/assets/gouache-logo-light.png?v=2"
+              src="/assets/gouache-logo-light.png?v=3"
               alt="Gouache"
               width={1750}
               height={375}
               className="block h-9 w-auto dark:hidden"
-              sizes="(max-width: 640px) 200px, 260px"
+              sizes="(max-width: 640px) 360px, 420px"
               quality={100}
             />
             <Image
-              src="/assets/gouache-logo-dark.png?v=2"
+              src="/assets/gouache-logo-dark.png?v=3"
               alt="Gouache"
               width={1750}
               height={375}
               className="hidden h-9 w-auto dark:block"
-              sizes="(max-width: 640px) 200px, 260px"
+              sizes="(max-width: 640px) 360px, 420px"
               quality={100}
             />
           </Link>

@@ -37,23 +37,23 @@ export function DesktopHeader() {
       <Link href="/discover" className="flex items-center">
         <span className="sr-only">Gouache</span>
         <Image
-          src="/assets/gouache-logo-light.png?v=2"
+          src="/assets/gouache-logo-light.png?v=3"
           alt="Gouache"
           width={1750}
           height={375}
           priority
           className="block h-10 w-auto dark:hidden sm:h-14"
-          sizes="(max-width: 768px) 220px, 320px"
+          sizes="(max-width: 768px) 440px, 560px"
           quality={100}
         />
         <Image
-          src="/assets/gouache-logo-dark.png?v=2"
+          src="/assets/gouache-logo-dark.png?v=3"
           alt="Gouache"
           width={1750}
           height={375}
           priority
           className="hidden h-10 w-auto dark:block sm:h-14"
-          sizes="(max-width: 768px) 220px, 320px"
+          sizes="(max-width: 768px) 440px, 560px"
           quality={100}
         />
       </Link>
