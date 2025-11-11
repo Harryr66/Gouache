@@ -4,10 +4,9 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Eye, Users, Gavel, Search, User as UserIcon, LogOut, Menu } from 'lucide-react';
+import { Eye, Users, Gavel, Search, User as UserIcon, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 
 
 export function SiteHeader() {
@@ -39,7 +38,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <div className="mr-4 hidden md:flex">
+        <div className="mr-4 flex">
           <Link href="/discover" className="mr-6 flex items-center space-x-2">
             <span className="sr-only">Gouache</span>
             <img
@@ -58,67 +57,6 @@ export function SiteHeader() {
             />
           </Link>
         </div>
-        
-        {/* Mobile Header */}
-        <div className="flex items-center md:hidden">
-            <Sheet>
-                <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                        <Menu className="h-6 w-6" />
-                        <span className="sr-only">Toggle Menu</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-full max-w-xs">
-                    <Link href="/discover" className="flex items-center space-x-2 mb-8">
-                        <span className="sr-only">Gouache</span>
-                        <img
-                          src="/assets/gouache-logo-light-20241111.png"
-                          alt="Gouache"
-                          width={1750}
-                          height={375}
-                          className="block h-8 w-auto dark:hidden"
-                        />
-                        <img
-                          src="/assets/gouache-logo-dark-20241111.png"
-                          alt="Gouache"
-                          width={1750}
-                          height={375}
-                          className="hidden h-8 w-auto dark:block"
-                        />
-                    </Link>
-                    <nav className="flex flex-col space-y-6 text-lg font-medium">
-                    </nav>
-                    <div className="absolute bottom-6 left-6 right-6 flex flex-col space-y-2">
-                      {user ? (
-                           <>
-                           <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="flex items-center justify-start gap-3 h-12">
-                                      {userAvatar("h-8 w-8")}
-                                      <div className="text-left">
-                                          <p className="text-sm font-medium leading-none">{user.displayName || "User"}</p>
-                                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                                      </div>
-                                  </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent className="w-56" align="end" forceMount>
-                                  <DropdownMenuItem asChild><Link href="/profile"><UserIcon className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-4 w-4" />Log out</DropdownMenuItem>
-                              </DropdownMenuContent>
-                          </DropdownMenu>
-                          </>
-                      ) : (
-                          <>
-                              <Button variant="outline" asChild><Link href="/login">Log In</Link></Button>
-                              <Button asChild><Link href="/login?tab=signup">Sign Up</Link></Button>
-                          </>
-                      )}
-                    </div>
-                </SheetContent>
-            </Sheet>
-        </div>
-
 
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="hidden md:flex items-center gap-2">
