@@ -28,8 +28,8 @@ export function LoadingTransition() {
       <div className={`${alice.variable} fixed inset-0 bg-black flex items-center justify-center z-50`}>
         <div className="text-center">
           <div className="mb-6">
-          <span className="alice-regular text-4xl font-normal tracking-wide text-white drop-shadow-lg">
-            Gouache
+          <span className="alice-regular text-4xl font-normal tracking-wide uppercase text-white drop-shadow-lg">
+            GOUACHE
           </span>
           </div>
           <div className="flex items-center justify-center space-x-2 mt-4">
@@ -104,11 +104,11 @@ export function LoadingTransition() {
         >
           <span
             className={cn(
-              'alice-regular text-4xl font-normal tracking-wide drop-shadow-lg',
+              'alice-regular text-4xl font-normal tracking-wide uppercase drop-shadow-lg',
               isDark ? 'text-white' : 'text-slate-900'
             )}
           >
-            Gouache
+            GOUACHE
           </span>
         </motion.div>
         
