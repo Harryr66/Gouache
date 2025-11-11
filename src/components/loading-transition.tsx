@@ -8,7 +8,7 @@ import { Alice } from 'next/font/google'
 import { cn } from '@/lib/utils'
 
 const alice = Alice({
-  weight: ['400'],
+  weight: '400',
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-alice',
@@ -28,14 +28,9 @@ export function LoadingTransition() {
       <div className={`${alice.variable} fixed inset-0 bg-black flex items-center justify-center z-50`}>
         <div className="text-center">
           <div className="mb-6">
-            <span
-              className={cn(
-                alice.className,
-                'alice-regular text-4xl font-normal tracking-wide text-white drop-shadow-lg'
-              )}
-            >
-              Gouache
-            </span>
+          <span className="alice-regular text-4xl font-normal tracking-wide text-white drop-shadow-lg">
+            Gouache
+          </span>
           </div>
           <div className="flex items-center justify-center space-x-2 mt-4">
             <div className="flex space-x-1">
@@ -109,7 +104,6 @@ export function LoadingTransition() {
         >
           <span
             className={cn(
-              alice.className,
               'alice-regular text-4xl font-normal tracking-wide drop-shadow-lg',
               isDark ? 'text-white' : 'text-slate-900'
             )}
