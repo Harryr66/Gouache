@@ -148,6 +148,9 @@ const generateArtistContent = (artist: Artist) => ({
   const artistContent = generateArtistContent(artwork.artist);
   const following = isFollowing(artwork.artist.id);
 
+  const router = useRouter();
+  const profileSlug = artwork.artist.handle?.replace(/^@/, '') || artwork.artist.id;
+
   return (
     <>
     <Card 
@@ -289,11 +292,16 @@ const generateArtistContent = (artist: Artist) => ({
                     {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
                     {following ? 'Following' : 'Follow'}
                   </Button>
-                  <Button variant="gradient" asChild className="flex items-center gap-2">
-                    <Link href={`/profile/${artwork.artist.handle}`}>
-                      <ExternalLink className="h-4 w-4" />
-                      View Profile
-                    </Link>
+                  <Button
+                    variant="gradient"
+                    className="flex items-center gap-2"
+                    onClick={() => {
+                      setShowArtistPreview(false);
+                      router.push(`/profile/${profileSlug}`);
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Profile
                   </Button>
                 </div>
               </div>
