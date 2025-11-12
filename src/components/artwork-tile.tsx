@@ -149,7 +149,15 @@ const generateArtistContent = (artist: Artist) => ({
   const following = isFollowing(artwork.artist.id);
 
   const router = useRouter();
-  const profileSlug = artwork.artist.handle?.replace(/^@/, '') || artwork.artist.id;
+  const profileSlug = artwork.artist.id ?? artwork.artist.handle?.replace(/^@/, '');
+  const handleViewProfile = () => {
+    setShowArtistPreview(false);
+    if (profileSlug && !profileSlug.startsWith('artist-')) {
+      router.push(`/profile/${profileSlug}`);
+    } else {
+      router.push('/profile');
+    }
+  };
 
   return (
     <>
@@ -295,10 +303,7 @@ const generateArtistContent = (artist: Artist) => ({
                   <Button
                     variant="gradient"
                     className="flex items-center gap-2"
-                    onClick={() => {
-                      setShowArtistPreview(false);
-                      router.push(`/profile/${profileSlug}`);
-                    }}
+                    onClick={handleViewProfile}
                   >
                     <ExternalLink className="h-4 w-4" />
                     View Profile
