@@ -24,13 +24,12 @@ export default function RootPage() {
       <SiteHeader />
       <main className="flex-1">
         <section className="container flex flex-col items-center text-center gap-5 pt-10 md:pt-14 pb-4 md:pb-16 px-6">
-          <div className="relative w-full max-w-[320px] md:max-w-2xl mx-auto">
-            <div
-              className={cn(
-                'absolute inset-0 rounded-3xl bg-gradient-to-br from-muted to-muted-foreground/20 transition-opacity duration-500',
-                showSkeleton ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              )}
-            />
+          <div
+            className={cn(
+              'relative w-full max-w-[320px] md:max-w-2xl mx-auto rounded-3xl transition-colors duration-500',
+              showSkeleton ? 'bg-muted/15 animate-pulse' : ''
+            )}
+          >
             <Image
               src="/assets/welcome-hero-light-20241111.png"
               alt="Welcome to Gouache"
@@ -38,8 +37,8 @@ export default function RootPage() {
               height={720}
               priority
               className={cn(
-                'block w-full h-auto rounded-3xl shadow-xl transition-opacity duration-500 dark:hidden',
-                lightLoaded ? 'opacity-100' : 'opacity-0'
+                'block w-full h-auto rounded-3xl shadow-xl transition-all duration-500 dark:hidden',
+                lightLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.02]'
               )}
               onLoadingComplete={() => setLightLoaded(true)}
             />
@@ -50,8 +49,8 @@ export default function RootPage() {
               height={720}
               priority
               className={cn(
-                'hidden w-full h-auto rounded-3xl shadow-xl transition-opacity duration-500 dark:block',
-                darkLoaded ? 'opacity-100' : 'opacity-0'
+                'hidden w-full h-auto rounded-3xl shadow-xl transition-all duration-500 dark:block',
+                darkLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.02]'
               )}
               onLoadingComplete={() => setDarkLoaded(true)}
             />
