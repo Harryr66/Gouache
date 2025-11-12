@@ -177,27 +177,13 @@ const generateArtistContent = (artist: Artist) => ({
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        <div className="absolute top-2 left-2 flex gap-2">
-          {artwork.isForSale && artwork.price && (
+        {artwork.isForSale && artwork.price && (
+          <div className="absolute top-2 left-2">
             <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
               ${artwork.price.toLocaleString()}
             </Badge>
-          )}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleLike(artwork.id);
-            }}
-            disabled={likesLoading}
-            className={`flex items-center justify-center rounded-full border border-white/40 bg-black/60 p-1.5 text-white transition ${
-              liked ? 'text-red-400 border-red-400 bg-black/80' : 'hover:bg-black/80'
-            }`}
-            aria-label={liked ? 'Unlike artwork' : 'Like artwork'}
-          >
-            <HeartIcon className={`h-4 w-4 ${liked ? 'fill-current' : 'fill-transparent'}`} />
-          </button>
-        </div>
+          </div>
+        )}
 
         {/* AI badge */}
         {artwork.isAI && (
@@ -307,7 +293,21 @@ const generateArtistContent = (artist: Artist) => ({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 justify-end">
+                <div className="flex flex-wrap gap-2 justify-end items-center">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleLike(artwork.id);
+                    }}
+                    disabled={likesLoading}
+                    className={`border transition ${
+                      liked ? 'border-red-500 text-red-500' : ''
+                    }`}
+                  >
+                    <HeartIcon className={`h-4 w-4 ${liked ? 'fill-current' : 'fill-none'}`} />
+                  </Button>
                   <Button variant="outline" size="icon">
                     <Share2 className="h-4 w-4" />
                   </Button>
