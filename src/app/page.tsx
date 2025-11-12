@@ -40,8 +40,10 @@ export default function RootPage() {
               height={720}
               priority
               className={cn(
-                'block w-full h-auto rounded-3xl shadow-xl transition-all duration-500 dark:hidden',
-                lightLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.02]'
+                'block w-full h-auto rounded-3xl transition-all duration-500 dark:hidden',
+                lightLoaded
+                  ? 'opacity-100 scale-100 shadow-xl'
+                  : 'opacity-0 scale-[1.02] shadow-none'
               )}
               onLoadingComplete={() => setLightLoaded(true)}
             />
@@ -52,8 +54,10 @@ export default function RootPage() {
               height={720}
               priority
               className={cn(
-                'hidden w-full h-auto rounded-3xl shadow-xl transition-all duration-500 dark:block',
-                darkLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.02]'
+                'hidden w-full h-auto rounded-3xl transition-all duration-500 dark:block',
+                darkLoaded
+                  ? 'opacity-100 scale-100 shadow-xl'
+                  : 'opacity-0 scale-[1.02] shadow-none'
               )}
               onLoadingComplete={() => setDarkLoaded(true)}
             />
