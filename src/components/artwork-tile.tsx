@@ -238,11 +238,10 @@ const generateArtistContent = (artist: Artist) => ({
             </div>
 
             {/* Details */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-card">
-              {/* Artist Header */}
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="flex-shrink-0">
-                  <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+            <div className="flex-1 overflow-y-auto bg-card">
+              <div className="px-6 py-5 border-t border-border flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
                     <AvatarImage 
                       src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(96, 96)} 
                       alt={artwork.artist.name}
@@ -250,196 +249,54 @@ const generateArtistContent = (artist: Artist) => ({
                     />
                     <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
+                      {artwork.artist.isVerified && (
+                        <BadgeCheck className="h-5 w-5 text-blue-500 fill-current" />
+                      )}
+                    </div>
+                    <p className="text-muted-foreground">@{artwork.artist.handle}</p>
+                    <p className="text-sm text-muted-foreground max-w-2xl">{artwork.artist.bio}</p>
+                    <div className="flex items-center gap-6 flex-wrap text-sm">
+                      <div>
+                        <span className="font-bold">{artwork.artist.followerCount.toLocaleString()}</span>
+                        <span className="text-muted-foreground ml-1">followers</span>
+                      </div>
+                      <div>
+                        <span className="font-bold">{artwork.artist.followingCount.toLocaleString()}</span>
+                        <span className="text-muted-foreground ml-1">following</span>
+                      </div>
+                      {artwork.artist.location && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          {artwork.artist.location}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex-1 space-y-3">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
-                        {artwork.artist.isVerified && (
-                          <BadgeCheck className="h-5 w-5 text-blue-500 fill-current" />
-                        )}
-                      </div>
-                      <p className="text-muted-foreground">@{artwork.artist.handle}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" size="icon">
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant={following ? "outline" : "secondary"}
-                        onClick={handleFollowToggle}
-                        className="flex items-center gap-2"
-                      >
-                        {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-                        {following ? 'Following' : 'Follow'}
-                      </Button>
-                      <Button
-                        variant="default"
-                        asChild
-                        className="flex items-center gap-2"
-                      >
-                        <Link href={`/profile/${artwork.artist.handle}`}>
-                          <ExternalLink className="h-4 w-4" />
-                          View Profile
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Bio */}
-                  <p className="text-sm leading-relaxed">{artwork.artist.bio}</p>
-
-                  {/* Stats */}
-                  <div className="flex items-center gap-6 flex-wrap text-sm">
-                    <div>
-                      <span className="font-bold">{artwork.artist.followerCount.toLocaleString()}</span>
-                      <span className="text-muted-foreground ml-1">followers</span>
-                    </div>
-                    <div>
-                      <span className="font-bold">{artwork.artist.followingCount.toLocaleString()}</span>
-                      <span className="text-muted-foreground ml-1">following</span>
-                    </div>
-                    {artwork.artist.location && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        {artwork.artist.location}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Social Links */}
-                  {artwork.artist.socialLinks && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {artwork.artist.socialLinks.website && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={artwork.artist.socialLinks.website} target="_blank" rel="noopener noreferrer">
-                            <Globe className="h-4 w-4 mr-2" />
-                            Website
-                          </a>
-                        </Button>
-                      )}
-                      {artwork.artist.socialLinks.instagram && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={artwork.artist.socialLinks.instagram} target="_blank" rel="noopener noreferrer">
-                            <Instagram className="h-4 w-4 mr-2" />
-                            Instagram
-                          </a>
-                        </Button>
-                      )}
-                      {artwork.artist.socialLinks.x && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={artwork.artist.socialLinks.x} target="_blank" rel="noopener noreferrer">
-                            <span className="h-4 w-4 mr-2 font-bold">𝕏</span>
-                            X
-                          </a>
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                <div className="flex flex-wrap gap-2 justify-end">
+                  <Button variant="outline" size="icon">
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={following ? "outline" : "secondary"}
+                    onClick={handleFollowToggle}
+                    className="flex items-center gap-2"
+                  >
+                    {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                    {following ? 'Following' : 'Follow'}
+                  </Button>
+                  <Button variant="gradient" asChild className="flex items-center gap-2">
+                    <Link href={`/profile/${artwork.artist.handle}`}>
+                      <ExternalLink className="h-4 w-4" />
+                      View Profile
+                    </Link>
+                  </Button>
                 </div>
               </div>
-
-              <Separator />
-
-              {/* Content Tabs */}
-              <Tabs defaultValue="portfolio" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-                  <TabsTrigger value="shop">Shop</TabsTrigger>
-                  <TabsTrigger value="courses">Courses</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="portfolio" className="mt-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                    {(artwork.artist.portfolioImages || []).map((portfolioItem, i) => (
-                      <Card 
-                        key={portfolioItem.id || i} 
-                        className="aspect-square overflow-hidden border-0 cursor-pointer hover:shadow-lg transition-shadow"
-                        onClick={() => setSelectedPortfolioItem(portfolioItem)}
-                      >
-                        <Image
-                          src={portfolioItem.imageUrl}
-                          alt={portfolioItem.title}
-                          width={200}
-                          height={200}
-                          className="w-full h-full object-cover"
-                        />
-                      </Card>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="shop" className="mt-4">
-                  <div className="space-y-4">
-                    {artistContent.shopItems.map((item) => (
-                      <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                        <div className="flex flex-col md:flex-row">
-                          <div className="md:w-1/3 h-52 md:h-auto bg-muted">
-                            <Image
-                              src={item.imageUrl}
-                              alt={item.title}
-                              width={480}
-                              height={320}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="md:w-2/3 p-4 space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="font-semibold text-lg">{item.title}</h4>
-                                <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-xl font-bold text-green-600">${item.price.toLocaleString()}</div>
-                                <div className="text-xs text-muted-foreground">{item.available} available</div>
-                              </div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">{item.shipping}</div>
-                            <div className="flex gap-2 pt-2">
-                              <Button className="flex-1">
-                                <ExternalLink className="h-4 w-4 mr-2" />
-                                Purchase
-                              </Button>
-                              <Button variant="outline">Enquire</Button>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="courses" className="mt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {(artwork.artist.courses || []).map((course) => (
-                      <Card key={course.id} className="p-4 hover:shadow-md transition-shadow">
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between">
-                            <h4 className="font-medium">{course.title}</h4>
-                            <Badge className="bg-green-600">${course.price}</Badge>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              {course.students} students
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Heart className="h-4 w-4" />
-                              {(course.rating ?? 0).toFixed(1)} ⭐
-                            </div>
-                          </div>
-                          <Button className="w-full">
-                            <Play className="h-4 w-4 mr-2" />
-                            View Course
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
             </div>
           </div>
         </DialogContent>
