@@ -225,14 +225,16 @@ const generateArtistContent = (artist: Artist) => ({
 
           <div className="flex flex-col max-h-[90vh]">
             {/* Hero Artwork */}
-            <div className="relative w-full aspect-[4/3] bg-muted">
-              <Image
-                src={artwork.imageUrl}
-                alt={artwork.title || artwork.imageAiHint}
-                fill
-                priority
-                className="object-contain md:object-cover"
-              />
+            <div className="w-full bg-muted">
+              <div className="relative w-full aspect-[4/3] lg:aspect-[16/9] max-h-[60vh] mx-auto">
+                <Image
+                  src={artwork.imageUrl}
+                  alt={artwork.title || artwork.imageAiHint}
+                  fill
+                  priority
+                  className="object-contain lg:object-cover"
+                />
+              </div>
             </div>
 
             {/* Details */}
