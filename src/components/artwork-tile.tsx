@@ -265,69 +265,72 @@ const generateArtistContent = (artist: Artist) => ({
                     />
                     <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <div className="space-y-2">
+                <div className="space-y-2">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
                       {artwork.artist.isVerified && (
                         <BadgeCheck className="h-5 w-5 text-blue-500 fill-current" />
                       )}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleLike(artwork.id);
+                        }}
+                        disabled={likesLoading}
+                        className={`h-10 w-10 border transition ${
+                          liked ? 'border-red-500 text-red-500' : ''
+                        }`}
+                      >
+                        <HeartIcon className={`h-5 w-5 ${liked ? 'fill-current' : 'fill-none'}`} />
+                      </Button>
                     </div>
-                    <p className="text-muted-foreground">@{artwork.artist.handle}</p>
-                    <p className="text-sm text-muted-foreground max-w-2xl">{artwork.artist.bio}</p>
-                    <div className="flex items-center gap-6 flex-wrap text-sm">
-                      <div>
-                        <span className="font-bold">{artwork.artist.followerCount.toLocaleString()}</span>
-                        <span className="text-muted-foreground ml-1">followers</span>
-                      </div>
-                      <div>
-                        <span className="font-bold">{artwork.artist.followingCount.toLocaleString()}</span>
-                        <span className="text-muted-foreground ml-1">following</span>
-                      </div>
-                      {artwork.artist.location && (
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
-                          {artwork.artist.location}
-                        </div>
-                      )}
+                    <div className="flex flex-wrap gap-2 justify-end">
+                      <Button variant="outline" size="icon">
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={following ? "outline" : "secondary"}
+                        onClick={handleFollowToggle}
+                        className="flex items-center gap-2"
+                      >
+                        {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                        {following ? 'Following' : 'Follow'}
+                      </Button>
+                      <Button
+                        variant="gradient"
+                        className="flex items-center gap-2"
+                        onClick={handleViewProfile}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        View Profile
+                      </Button>
                     </div>
                   </div>
+                  <p className="text-muted-foreground">@{artwork.artist.handle}</p>
+                  <p className="text-sm text-muted-foreground max-w-2xl">
+                    {artwork.artist.bio}
+                  </p>
+                  <div className="flex items-center gap-6 flex-wrap text-sm">
+                    <div>
+                      <span className="font-bold">{artwork.artist.followerCount.toLocaleString()}</span>
+                      <span className="text-muted-foreground ml-1">followers</span>
+                    </div>
+                    <div>
+                      <span className="font-bold">{artwork.artist.followingCount.toLocaleString()}</span>
+                      <span className="text-muted-foreground ml-1">following</span>
+                    </div>
+                    {artwork.artist.location && (
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        {artwork.artist.location}
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                <div className="flex flex-wrap gap-2 justify-end items-center">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleLike(artwork.id);
-                    }}
-                    disabled={likesLoading}
-                    className={`border transition ${
-                      liked ? 'border-red-500 text-red-500' : ''
-                    }`}
-                  >
-                    <HeartIcon className={`h-4 w-4 ${liked ? 'fill-current' : 'fill-none'}`} />
-                  </Button>
-                  <Button variant="outline" size="icon">
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={following ? "outline" : "secondary"}
-                    onClick={handleFollowToggle}
-                    className="flex items-center gap-2"
-                  >
-                    {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-                    {following ? 'Following' : 'Follow'}
-                  </Button>
-                  <Button
-                    variant="gradient"
-                    className="flex items-center gap-2"
-                    onClick={handleViewProfile}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    View Profile
-                  </Button>
-                </div>
+              </div>
               </div>
             </div>
           </div>
