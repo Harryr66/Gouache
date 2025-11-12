@@ -16,6 +16,7 @@ import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useLikes } from '@/providers/likes-provider';
 import { 
   UserPlus, 
   UserCheck, 
@@ -30,7 +31,8 @@ import {
   ExternalLink,
   BookOpen,
   Users,
-  Play
+  Play,
+  Heart as HeartIcon
 } from 'lucide-react';
 
 interface ArtworkTileProps {
@@ -150,6 +152,8 @@ const generateArtistContent = (artist: Artist) => ({
   const following = isFollowing(artwork.artist.id);
 
   const router = useRouter();
+  const { toggleLike, isLiked, loading: likesLoading } = useLikes();
+  const liked = isLiked(artwork.id);
   const profileSlug = artwork.artist.id ?? artwork.artist.handle?.replace(/^@/, '');
   const handleViewProfile = () => {
     setShowArtistPreview(false);
@@ -162,10 +166,10 @@ const generateArtistContent = (artist: Artist) => ({
 
   return (
     <>
-    <Card 
-      className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0" 
-      onClick={handleTileClick}
-    >
+      <Card
+        className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0"
+        onClick={handleTileClick}
+      >
       <div className="relative aspect-square overflow-hidden">
         <Image
           src={artwork.imageUrl}
@@ -173,15 +177,27 @@ const generateArtistContent = (artist: Artist) => ({
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        
-        {/* Price badge */}
-        {artwork.isForSale && artwork.price && (
-          <div className="absolute top-2 right-2">
-            <Badge className="bg-green-600 hover:bg-green-700 text-xs">
+        <div className="absolute top-2 left-2 flex gap-2">
+          {artwork.isForSale && artwork.price && (
+            <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
               ${artwork.price.toLocaleString()}
             </Badge>
-          </div>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleLike(artwork.id);
+            }}
+            disabled={likesLoading}
+            className={`flex items-center justify-center rounded-full border border-white/40 bg-black/60 p-1.5 text-white transition ${
+              liked ? 'text-red-400 border-red-400 bg-black/80' : 'hover:bg-black/80'
+            }`}
+            aria-label={liked ? 'Unlike artwork' : 'Like artwork'}
+          >
+            <HeartIcon className={`h-4 w-4 ${liked ? 'fill-current' : 'fill-transparent'}`} />
+          </button>
+        </div>
 
         {/* AI badge */}
         {artwork.isAI && (
@@ -193,11 +209,11 @@ const generateArtistContent = (artist: Artist) => ({
         )}
 
           {/* Artist banner at bottom */}
-          <div className={`absolute bottom-0 left-0 right-0 backdrop-blur-sm p-2 ${
-            (resolvedTheme || theme) === 'dark' 
-              ? 'bg-gray-900/90' 
-              : 'bg-red-600'
-          }`}>
+          <div
+            className={`absolute bottom-0 left-0 right-0 backdrop-blur-sm p-2 ${
+              (resolvedTheme || theme) === 'dark' ? 'bg-gray-900/90' : 'bg-white/90'
+            }`}
+          >
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
                 <AvatarImage 
@@ -209,17 +225,19 @@ const generateArtistContent = (artist: Artist) => ({
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
-                  <span className="text-white text-sm font-medium truncate">{artwork.artist.name}</span>
+                  <span className="text-sm font-medium truncate">
+                    {artwork.artist.name}
+                  </span>
                   {artwork.artist.isVerified && <BadgeCheck className={`h-3 w-3 flex-shrink-0 fill-current ${
                     (resolvedTheme || theme) === 'dark' 
                       ? 'text-blue-400' 
-                      : 'text-white'
+                      : 'text-blue-500'
                   }`} />}
                 </div>
                 {artwork.artist.location && (
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3 text-gray-300" />
-                    <span className="text-gray-300 text-xs truncate">{artwork.artist.location}</span>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    <span className="truncate">{artwork.artist.location}</span>
                   </div>
                 )}
               </div>

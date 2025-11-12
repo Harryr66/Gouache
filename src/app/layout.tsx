@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/providers/theme-provider';
 import { AuthProvider } from '@/providers/auth-provider';
 import { CourseProvider } from '@/providers/course-provider';
 import { DiscoverSettingsProvider } from '@/providers/discover-settings-provider';
+import { LikesProvider } from '@/providers/likes-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
@@ -37,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+  <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
           'min-h-screen bg-background font-body antialiased',
@@ -52,12 +53,14 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <CourseProvider>
-              <DiscoverSettingsProvider>
-                {children}
-                <Toaster />
-              </DiscoverSettingsProvider>
-            </CourseProvider>
+            <LikesProvider>
+              <CourseProvider>
+                <DiscoverSettingsProvider>
+                  {children}
+                  <Toaster />
+                </DiscoverSettingsProvider>
+              </CourseProvider>
+            </LikesProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
