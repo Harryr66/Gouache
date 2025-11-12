@@ -54,7 +54,7 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
       const profileRef = doc(db, 'userProfiles', user.uid);
       const snapshot = await getDoc(profileRef);
       const currentlyLiked = snapshot.exists()
-        ? new Set(snapshot.data()?.likedArtworks ?? [])
+        ? new Set<string>(snapshot.data()?.likedArtworks ?? [])
         : new Set<string>();
 
       const alreadyLiked = currentlyLiked.has(artworkId);
