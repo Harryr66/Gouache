@@ -24,12 +24,15 @@ export default function RootPage() {
       <SiteHeader />
       <main className="flex-1">
         <section className="container flex flex-col items-center text-center gap-5 pt-10 md:pt-14 pb-4 md:pb-16 px-6">
-          <div
-            className={cn(
-              'relative w-full max-w-[320px] md:max-w-2xl mx-auto rounded-3xl transition-colors duration-500',
-              showSkeleton ? 'bg-muted/15 animate-pulse' : ''
+          <div className="relative w-full max-w-[320px] md:max-w-2xl mx-auto rounded-3xl">
+            {mode === 'dark' && (
+              <div
+                className={cn(
+                  'absolute inset-0 rounded-3xl transition-opacity duration-500 pointer-events-none',
+                  showSkeleton ? 'bg-muted/15 animate-pulse opacity-100' : 'opacity-0'
+                )}
+              />
             )}
-          >
             <Image
               src="/assets/welcome-hero-light-20241111.png"
               alt="Welcome to Gouache"
