@@ -42,8 +42,8 @@ export default function RootPage() {
               className={cn(
                 'block w-full h-auto rounded-3xl transition-all duration-500 dark:hidden',
                 lightLoaded
-                  ? 'opacity-100 scale-100 shadow-xl'
-                  : 'opacity-0 scale-[1.02] shadow-none'
+                  ? 'opacity-100 scale-100'
+                  : 'opacity-0 scale-[1.02]'
               )}
               onLoadingComplete={() => setLightLoaded(true)}
             />
