@@ -15,6 +15,7 @@ import { usePlaceholder } from '@/hooks/use-placeholder';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   UserPlus, 
   UserCheck, 
