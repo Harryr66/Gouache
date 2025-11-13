@@ -1789,37 +1789,27 @@ export default function AdminPanel() {
               {approvedRequests.map((request) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-4">
                         <Avatar className="h-12 w-12">
                           <AvatarImage src={request.user.avatarUrl || ''} />
-                          <AvatarFallback>
-                            {request.user.displayName?.charAt(0) || 'U'}
-                          </AvatarFallback>
+                          <AvatarFallback>{request.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
                             <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
                             <Badge variant="default" className="bg-green-600">Approved</Badge>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                            <p><strong>Email:</strong> {request.user.email}</p>
+                            <p><strong>Reviewed:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                            <p><strong>Reviewed by:</strong> {request.reviewedBy || 'admin'}</p>
+                          </div>
                         </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                            <div>
-                              <p><strong>Email:</strong> {request.user.email}</p>
-                              <p><strong>Reviewed:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
-                      </div>
-                      <div>
-                              <p><strong>Reviewed by:</strong> {request.reviewedBy || 'admin'}</p>
-                      </div>
-                    </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedRequest(request)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View Details
+                        <Button variant="outline" size="sm" onClick={() => setSelectedRequest(request)}>
+                          <Eye className="h-4 w-4 mr-1" /> View Details
                         </Button>
                         <Button
                           variant="outline"
@@ -1827,95 +1817,12 @@ export default function AdminPanel() {
                           onClick={() => handleSuspendArtist(request)}
                           disabled={isProcessing}
                         >
-                          Suspend Account
+                          Suspend
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="destructive" size="sm" disabled={isProcessing}>
-                              Remove Account
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Remove artist account?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will delete the artist's profile and revoke their access. This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleRemoveArtist(request)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Remove
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
-          )
-        )}
-
-        {selectedView === 'artist-suspended' && (
-          suspendedRequests.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Clock className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No suspended artists</h3>
-                <p className="text-muted-foreground text-center">
-                  Suspended artist accounts will appear here for review or reinstatement.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Suspended Artists</h2>
-              {suspendedRequests.map((request) => (
-                <Card key={request.id} className="hover:shadow-lg transition-shadow border-amber-200">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.user.avatarUrl || ''} />
-                          <AvatarFallback>
-                            {request.user.displayName?.charAt(0) || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
-                            <Badge variant="secondary" className="bg-amber-500 text-black">Suspended</Badge>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                            <div>
-                              <p><strong>Email:</strong> {request.user.email}</p>
-                              <p><strong>Suspended:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
-                            </div>
-                            <div>
-                              <p><strong>Suspended by:</strong> {request.reviewedBy || 'admin'}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleReinstateArtist(request)}
-                          disabled={isProcessing}
-                        >
-                          Reinstate
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" disabled={isProcessing}>
-                              Remove Account
+                              Remove
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -1945,90 +1852,151 @@ export default function AdminPanel() {
           )
         )}
 
-        {/* Artist Account - Rejected */}
+        {selectedView === 'artist-suspended' && (
+          suspendedRequests.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No suspended artists</h3>
+                <p className="text-muted-foreground text-center">
+                  Suspended artist accounts will appear here for review or reinstatement.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Suspended Artists</h2>
+              {suspendedRequests.map((request) => (
+                <Card key={request.id} className="hover:shadow-lg transition-shadow border-amber-200">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={request.user.avatarUrl || ''} />
+                          <AvatarFallback>{request.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
+                            <Badge variant="secondary" className="bg-amber-500 text-black">Suspended</Badge>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                            <p><strong>Email:</strong> {request.user.email}</p>
+                            <p><strong>Suspended:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                            <p><strong>Suspended by:</strong> {request.reviewedBy || 'admin'}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReinstateArtist(request)}
+                          disabled={isProcessing}
+                        >
+                          Reinstate
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" disabled={isProcessing}>
+                              Remove
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove artist account?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will delete the artist's profile and revoke their access. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleRemoveArtist(request)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remove
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
         {selectedView === 'artist-rejected' && (
           rejectedRequests.length === 0 ? (
-              <Card>
+            <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <X className="h-12 w-12 text-red-500 mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No rejected requests</h3>
                 <p className="text-muted-foreground text-center">
                   No artist requests have been rejected yet.
                 </p>
-                </CardContent>
-              </Card>
-            ) : (
+              </CardContent>
+            </Card>
+          ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Rejected Professional Verification Requests</h2>
               {rejectedRequests.map((request) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-4">
                         <Avatar className="h-12 w-12">
                           <AvatarImage src={request.user.avatarUrl || ''} />
-                          <AvatarFallback>
-                            {request.user.displayName?.charAt(0) || 'U'}
-                          </AvatarFallback>
+                          <AvatarFallback>{request.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
                             <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
                             <Badge variant="destructive">Rejected</Badge>
-                        </div>
-                          <div className="text-sm text-muted-foreground mb-2">
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
                             <p><strong>Reason:</strong> {request.rejectionReason || 'No reason provided'}</p>
                             <p><strong>Rejected:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
-                      </div>
+                          </div>
                         </div>
                       </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedRequest(request)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View Details
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSuspendArtist(request)}
-                            disabled={isProcessing}
-                          >
-                            Suspend Account
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm" disabled={isProcessing}>
-                                Remove Account
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Remove artist account?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will delete the artist's profile and revoke their access. This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleRemoveArtist(request)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Remove
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setSelectedRequest(request)}>
+                          <Eye className="h-4 w-4 mr-1" /> View Details
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" disabled={isProcessing}>
+                              Remove
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove artist account?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will delete the artist's profile and revoke their access. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleRemoveArtist(request)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remove
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
-                    </div>
+            </div>
           )
         )}
 
