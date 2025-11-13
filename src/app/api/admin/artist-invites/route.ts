@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
 const resendApiKey = process.env.RESEND_API_KEY;
-const defaultFromAddress = process.env.ARTIST_INVITE_FROM_EMAIL || 'Gouache Invitations <no-reply@gouache.art>';
+const defaultFromAddress =
+  process.env.ARTIST_INVITE_FROM_EMAIL || 'Gouache Invitations <no-reply@gouache.art>';
+const inviteTemplateId = process.env.ARTIST_INVITE_TEMPLATE_ID;
+const inviteTemplateAlias = process.env.ARTIST_INVITE_TEMPLATE_ALIAS;
 
 export async function POST(request: Request) {
   try {
@@ -34,34 +37,52 @@ export async function POST(request: Request) {
       message ||
       "We've created an artist onboarding link for you on Gouache. Click below to start setting up your profile.";
 
-    const html = `
-      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #111827;">
-        <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">You're invited to join Gouache</h1>
-        <p style="font-size: 16px; line-height: 1.5;">Hi ${recipientName},</p>
-        <p style="font-size: 16px; line-height: 1.5; margin-top: 16px;">${inviteMessage}</p>
-        <p style="margin: 24px 0;">
-          <a
-            href="${inviteUrl}"
-            style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 20px; border-radius: 999px; font-weight: 600; text-decoration: none;"
-          >
-            Start Artist Onboarding
-          </a>
-        </p>
-        <p style="font-size: 14px; line-height: 1.6; color: #6b7280;">
-          If the button above does not work, copy and paste this link into your browser:<br />
-          <a href="${inviteUrl}" style="color: #2563eb;">${inviteUrl}</a>
-        </p>
-        <p style="font-size: 16px; line-height: 1.5; margin-top: 32px;">We’re excited to see your work!</p>
-        <p style="font-size: 16px; font-weight: 600;">Team Gouache</p>
-      </div>
-    `;
-
-    await resend.emails.send({
+    const payloadBase = {
       from: defaultFromAddress,
       to: email,
-      subject: 'Your Gouache artist onboarding invitation',
-      html
-    });
+      subject: 'Your Gouache artist onboarding invitation'
+    } as const;
+
+    if (inviteTemplateId || inviteTemplateAlias) {
+      await resend.emails.send({
+        ...payloadBase,
+        ...(inviteTemplateId ? { template_id: inviteTemplateId } : {}),
+        ...(inviteTemplateAlias ? { template_alias: inviteTemplateAlias } : {}),
+        data: {
+          invite_url: inviteUrl,
+          artist_name: name ?? '',
+          custom_message: message ?? '',
+          greeting_name: recipientName
+        }
+      });
+    } else {
+      const html = `
+        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #111827;">
+          <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">You're invited to join Gouache</h1>
+          <p style="font-size: 16px; line-height: 1.5;">Hi ${recipientName},</p>
+          <p style="font-size: 16px; line-height: 1.5; margin-top: 16px;">${inviteMessage}</p>
+          <p style="margin: 24px 0;">
+            <a
+              href="${inviteUrl}"
+              style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 20px; border-radius: 999px; font-weight: 600; text-decoration: none;"
+            >
+              Start Artist Onboarding
+            </a>
+          </p>
+          <p style="font-size: 14px; line-height: 1.6; color: #6b7280;">
+            If the button above does not work, copy and paste this link into your browser:<br />
+            <a href="${inviteUrl}" style="color: #2563eb;">${inviteUrl}</a>
+          </p>
+          <p style="font-size: 16px; line-height: 1.5; margin-top: 32px;">We’re excited to see your work!</p>
+          <p style="font-size: 16px; font-weight: 600;">Team Gouache</p>
+        </div>
+      `;
+
+      await resend.emails.send({
+        ...payloadBase,
+        html
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
