@@ -260,7 +260,7 @@ const generateArtistContent = (artist: Artist) => ({
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 border-t border-border bg-background/90 px-4 py-3">
+              <div className="flex items-center justify-start gap-3 border-t border-border bg-background/90 px-4 py-3">
                 <Button
                   variant="outline"
                   size="icon"
@@ -291,39 +291,37 @@ const generateArtistContent = (artist: Artist) => ({
               <div className="h-full flex flex-col">
                 <div className="p-6 space-y-6">
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-16 w-16 border-4 border-background shadow-lg">
-                          <AvatarImage
-                            src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(96, 96)}
-                            alt={artwork.artist.name}
-                            className="object-cover"
-                          />
-                          <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
-                            {artwork.artist.isVerified && (
-                              <BadgeCheck className="h-5 w-5 text-blue-500 fill-current" />
-                            )}
-                          </div>
-                          <p className="text-muted-foreground">@{artwork.artist.handle}</p>
+                    <div className="flex items-start gap-3 flex-wrap">
+                      <Avatar className="h-16 w-16 border-4 border-background shadow-lg">
+                        <AvatarImage
+                          src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(96, 96)}
+                          alt={artwork.artist.name}
+                          className="object-cover"
+                        />
+                        <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
+                          {artwork.artist.isVerified && (
+                            <BadgeCheck className="h-5 w-5 text-blue-500 fill-current" />
+                          )}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-auto">
-                        <Button
-                          variant={following ? 'outline' : 'secondary'}
-                          onClick={handleFollowToggle}
-                          className="flex items-center gap-2"
-                        >
-                          {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-                          {following ? 'Following' : 'Follow'}
-                        </Button>
-                        <Button variant="gradient" className="flex items-center gap-2" onClick={handleViewProfile}>
-                          <ExternalLink className="h-4 w-4" />
-                          View Profile
-                        </Button>
+                        <p className="text-muted-foreground">@{artwork.artist.handle}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Button
+                            variant={following ? 'outline' : 'secondary'}
+                            onClick={handleFollowToggle}
+                            className="flex items-center gap-2"
+                          >
+                            {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                            {following ? 'Following' : 'Follow'}
+                          </Button>
+                          <Button variant="gradient" className="flex items-center gap-2" onClick={handleViewProfile}>
+                            <ExternalLink className="h-4 w-4" />
+                            View Profile
+                          </Button>
+                        </div>
                       </div>
                     </div>
 
