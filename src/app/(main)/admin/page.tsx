@@ -15,7 +15,7 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
 import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission } from '@/lib/types';
-import { Check, X, Eye, Clock, User, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3 } from 'lucide-react';
+import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
 import { useAuth } from '@/providers/auth-provider';
@@ -96,6 +96,22 @@ export default function AdminPanel() {
   const [isProductOnSale, setIsProductOnSale] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedView, setSelectedView] = useState<string>('artist-pending');
+  
+  const formatDate = (value: unknown) => {
+    if (!value) return 'N/A';
+    if (value instanceof Date) {
+      return value.toLocaleDateString();
+    }
+    if (typeof value === 'object' && value !== null && 'toDate' in (value as Record<string, unknown>)) {
+      try {
+        const dateValue = (value as { toDate: () => Date }).toDate();
+        return dateValue.toLocaleDateString();
+      } catch {
+        return 'N/A';
+      }
+    }
+    return 'N/A';
+  };
   
   
   // Advertising states
@@ -1444,6 +1460,20 @@ export default function AdminPanel() {
           </CardHeader>
           <CardContent className="space-y-2">
             <button
+              onClick={() => setSelectedView('artist-management')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'artist-management' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm">
+                <Users className="h-4 w-4" />
+                Manage Artists
+              </span>
+              <Badge variant={selectedView === 'artist-management' ? 'secondary' : 'outline'}>
+                ({approvedRequests.length})
+              </Badge>
+            </button>
+            <button
               onClick={() => setSelectedView('artist-pending')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
                 selectedView === 'artist-pending' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
@@ -1681,6 +1711,189 @@ export default function AdminPanel() {
 
       {/* Main Content Area */}
       <div className="space-y-6">
+        {selectedView === 'artist-management' && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Active Artists</CardTitle>
+                <CardDescription>
+                  Review verified artist accounts and suspend or remove them when necessary.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {approvedRequests.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No verified artists have been approved yet.
+                  </p>
+                ) : (
+                  approvedRequests.map((request) => (
+                    <div
+                      key={request.id}
+                      className="rounded-lg border border-border/60 p-4 transition hover:bg-muted/50"
+                    >
+                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-start gap-4">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={request.user.avatarUrl || ''} alt={request.user.displayName} />
+                            <AvatarFallback>{request.user.displayName?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
+                          </Avatar>
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-semibold leading-snug">
+                                {request.user.displayName || request.user.username || request.user.email}
+                              </h3>
+                              <Badge variant="default" className="bg-emerald-600 text-emerald-50">
+                                Approved
+                              </Badge>
+                            </div>
+                            {request.user.username && (
+                              <p className="text-sm text-muted-foreground">@{request.user.username}</p>
+                            )}
+                            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+                              <span>Email: {request.user.email}</span>
+                              <span>Reviewed: {formatDate(request.reviewedAt)}</span>
+                              {request.reviewedBy && <span>Reviewed by: {request.reviewedBy}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/profile/${request.user.username || request.userId}`)}
+                          >
+                            <ExternalLink className="mr-1 h-4 w-4" />
+                            View Profile
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSuspendArtist(request)}
+                            disabled={isProcessing}
+                          >
+                            Suspend
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm" disabled={isProcessing}>
+                                Remove
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remove artist account?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will delete the artist&apos;s profile and revoke their access. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRemoveArtist(request)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Confirm removal
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Suspended Artists</CardTitle>
+                <CardDescription>
+                  Reinstate suspended accounts or escalate to permanent removal.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {suspendedRequests.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No artists are currently suspended.</p>
+                ) : (
+                  suspendedRequests.map((request) => (
+                    <div
+                      key={request.id}
+                      className="rounded-lg border border-border/60 p-4 transition hover:bg-muted/50"
+                    >
+                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-start gap-4">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={request.user.avatarUrl || ''} alt={request.user.displayName} />
+                            <AvatarFallback>{request.user.displayName?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
+                          </Avatar>
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-semibold leading-snug">
+                                {request.user.displayName || request.user.username || request.user.email}
+                              </h3>
+                              <Badge variant="destructive">Suspended</Badge>
+                            </div>
+                            {request.user.username && (
+                              <p className="text-sm text-muted-foreground">@{request.user.username}</p>
+                            )}
+                            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+                              <span>Email: {request.user.email}</span>
+                              <span>Suspended: {formatDate(request.reviewedAt)}</span>
+                              {request.reviewedBy && <span>By: {request.reviewedBy}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/profile/${request.user.username || request.userId}`)}
+                          >
+                            <ExternalLink className="mr-1 h-4 w-4" />
+                            View Profile
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleReinstateArtist(request)}
+                            disabled={isProcessing}
+                          >
+                            Reinstate
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm" disabled={isProcessing}>
+                                Remove
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remove artist account?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will delete the artist&apos;s profile and revoke their access permanently.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRemoveArtist(request)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Confirm removal
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Artist Account - Pending */}
         {selectedView === 'artist-invites' && (
           <div className="space-y-6">
