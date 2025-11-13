@@ -1,22 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Play, Bookmark, UserPlus, Clock, Heart, ShoppingBag, Brain, Palette, Grid3x3 } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3 } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
-import { ProductCard } from './shop/product-card';
-import { EpisodeCard } from './episode-card';
-import { DocuseriesCard } from './docuseries-card';
 import { PortfolioManager } from './portfolio-manager';
-import { useWatchlist } from '@/providers/watchlist-provider';
-import { useFollow } from '@/providers/follow-provider';
 import { useCourses } from '@/providers/course-provider';
-import { mockDocuseries, mockEpisodes } from '@/lib/streaming-data';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { ThemeLoading } from './theme-loading';
+import { useLikes } from '@/providers/likes-provider';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { Artwork, Course } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
 interface ProfileTabsProps {
   userId: string;
@@ -26,12 +24,89 @@ interface ProfileTabsProps {
 }
 
 export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange }: ProfileTabsProps) {
-  const { watchlist, watchHistory, getContinueWatching, isInWatchlist, getWatchProgress } = useWatchlist();
-  const { followedArtists, unfollowArtist } = useFollow();
-  const { courses, isLoading: coursesLoading } = useCourses();
+  const { courses, courseEnrollments, isLoading: coursesLoading } = useCourses();
+  const { likedArtworkIds, loading: likesLoading } = useLikes();
+  const [likedArtworks, setLikedArtworks] = useState<Artwork[]>([]);
+  const [likedFetchLoading, setLikedFetchLoading] = useState(false);
+  const router = useRouter();
   
   // Get courses by this instructor
   const instructorCourses = courses.filter(course => course.instructor.userId === userId);
+  const likedIds = useMemo(() => Array.from(likedArtworkIds), [likedArtworkIds]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadLikedArtworks = async () => {
+      if (likesLoading) return;
+
+      if (likedIds.length === 0) {
+        if (isMounted) {
+          setLikedArtworks([]);
+        }
+        return;
+      }
+
+      setLikedFetchLoading(true);
+      try {
+        const results: Artwork[] = [];
+        for (const artworkId of likedIds) {
+          try {
+            const artworkRef = doc(db, 'artworks', artworkId);
+            const snapshot = await getDoc(artworkRef);
+            if (!snapshot.exists()) continue;
+            const data = snapshot.data() as any;
+            const artwork: Artwork = {
+              id: snapshot.id,
+              artist: data.artist,
+              title: data.title || 'Untitled',
+              description: data.description,
+              imageUrl: data.imageUrl,
+              imageAiHint: data.imageAiHint || data.title || 'Artwork',
+              tags: data.tags || [],
+              price: data.price,
+              currency: data.currency,
+              isForSale: data.isForSale,
+              isAuction: data.isAuction,
+              auctionId: data.auctionId,
+              category: data.category,
+              medium: data.medium,
+              dimensions: data.dimensions,
+              createdAt: data.createdAt?.toDate?.() || new Date(),
+              updatedAt: data.updatedAt?.toDate?.() || new Date(),
+              views: data.views,
+              likes: data.likes,
+              commentsCount: data.commentsCount,
+              isAI: data.isAI,
+              aiAssistance: data.aiAssistance,
+              processExplanation: data.processExplanation,
+              materialsList: data.materialsList,
+              supportingImages: data.supportingImages,
+              supportingVideos: data.supportingVideos,
+              statement: data.statement,
+            };
+            results.push(artwork);
+          } catch (error) {
+            console.error('Failed to load liked artwork', artworkId, error);
+          }
+        }
+
+        if (isMounted) {
+          setLikedArtworks(results);
+        }
+      } finally {
+        if (isMounted) {
+          setLikedFetchLoading(false);
+        }
+      }
+    };
+
+    loadLikedArtworks();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [likesLoading, likedIds]);
 
   if (isProfessional) {
     return (
@@ -270,158 +345,104 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
 
   // Regular user tabs
   return (
-    <Tabs defaultValue="watchlist" className="w-full" onValueChange={onTabChange}>
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
-        <TabsTrigger value="learn">Learn</TabsTrigger>
-        <TabsTrigger value="following">Following</TabsTrigger>
+    <Tabs defaultValue="liked" className="w-full" onValueChange={onTabChange}>
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="liked" className="flex items-center gap-2">
+          <Heart className="h-4 w-4" />
+          Liked
+        </TabsTrigger>
+        <TabsTrigger value="learn" className="flex items-center gap-2">
+          <Brain className="h-4 w-4" />
+          Learn
+        </TabsTrigger>
       </TabsList>
 
-      {/* Watchlist Tab - Continue Watching + Bookmarks */}
-      <TabsContent value="watchlist" className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {getContinueWatching().map((episode) => (
-            episode && (
-              <EpisodeCard
-                key={episode.id}
-                episode={episode}
-                docuseries={mockDocuseries.find(ds => ds.id === episode.docuseriesId)}
-                variant="default"
-                showProgress={true}
-                progress={getWatchProgress(episode.id)}
-                onPlay={() => console.log('Play episode:', episode.title)}
-              />
-            )
-          ))}
-        </div>
+      {/* Liked Tab */}
+      <TabsContent value="liked" className="space-y-4">
+        {(likesLoading || likedFetchLoading) && (
+          <div className="flex justify-center py-12">
+            <ThemeLoading text="Loading liked artworks..." size="md" />
+          </div>
+        )}
 
-        {getContinueWatching().length === 0 && (
+        {!likesLoading && !likedFetchLoading && likedArtworks.length === 0 && (
           <Card className="p-8 text-center">
             <CardContent>
-              <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <CardTitle className="mb-2">No watch history yet</CardTitle>
+              <CardTitle className="mb-2">No liked artworks yet</CardTitle>
               <CardDescription className="mb-4">
-                Start watching docuseries to see your continue watching list here.
+                Tap the heart icon on artworks you love. They’ll show up here.
               </CardDescription>
               <Button asChild variant="gradient">
-                <a href="/feed">Start Watching</a>
+                <a href="/discover">Browse Artists</a>
               </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Bookmarks moved under Watchlist */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {watchlist.map((item) => (
-            item.docuseries && (
-              <DocuseriesCard
-                key={item.id}
-                docuseries={item.docuseries}
-                variant="default"
-                onPlay={() => console.log('Play docuseries:', item.docuseries.title)}
-                onAddToWatchlist={() => console.log('Already in watchlist')}
+        {likedArtworks.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {likedArtworks.map((artwork) => (
+              <ArtworkCard
+                key={artwork.id}
+                artwork={artwork}
+                onClick={() => router.push(`/artwork/${artwork.id}`)}
               />
-            )
-          ))}
-        </div>
-
-        {watchlist.length === 0 && (
-          <Card className="p-8 text-center">
-            <CardContent>
-              <Bookmark className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <CardTitle className="mb-2">No bookmarks yet</CardTitle>
-              <CardDescription className="mb-4">
-                Save docuseries you want to watch later by adding them to your watchlist.
-              </CardDescription>
-              <Button asChild variant="gradient">
-                <a href="/feed">Browse Content</a>
-              </Button>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
         )}
       </TabsContent>
 
       {/* Learn Tab - Purchased Courses & Subscribed Communities */}
       <TabsContent value="learn" className="space-y-6">
-        <div className="space-y-2">
-          <Card className="p-6 text-center">
+        {coursesLoading ? (
+          <div className="flex justify-center py-12">
+            <ThemeLoading text="Loading courses..." size="md" />
+          </div>
+        ) : null}
+
+        {!coursesLoading && courseEnrollments.length === 0 && (
+          <Card className="p-8 text-center">
             <CardContent>
               <CardTitle className="mb-2">No courses yet</CardTitle>
               <CardDescription className="mb-4">When you enroll in courses, they will appear here.</CardDescription>
               <Button asChild variant="gradient">
-                <a href="/marketplace">Explore Courses</a>
+                <a href="/learn">Explore Courses</a>
               </Button>
             </CardContent>
           </Card>
-        </div>
+        )}
 
-        <div className="space-y-2">
-          <Card className="p-6 text-center">
-            <CardContent>
-              <CardTitle className="mb-2">No communities yet</CardTitle>
-              <CardDescription className="mb-4">Subscribed communities (free or paid) will show here.</CardDescription>
-              <Button asChild variant="outline">
-                <a href="/learn/community">Browse Communities</a>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </TabsContent>
-
-      {/* Following Tab - Followed Artists */}
-      <TabsContent value="following" className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {followedArtists.map((artist) => (
-            <Card key={artist.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={artist.avatarUrl || undefined} alt={artist.name} />
-                    <AvatarFallback>{artist.name.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold truncate">{artist.name}</h4>
-                      {artist.isVerified && (
-                        <Badge variant="secondary" className="text-xs">Verified</Badge>
+        {courseEnrollments.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {courseEnrollments.map((enrollment) => {
+              const course = courses.find((c) => c.id === enrollment.courseId) as Course | undefined;
+              if (!course) return null;
+              return (
+                <Card key={enrollment.id} className="p-6 space-y-4">
+                  <CardHeader className="p-0">
+                    <CardTitle className="text-lg">{course.title}</CardTitle>
+                    <CardDescription>
+                      Progress: {Math.round(enrollment.progress)}%
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0 space-y-3">
+                    <p className="text-sm text-muted-foreground line-clamp-3">{course.description}</p>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{course.category}</span>
+                      {enrollment.completedAt ? (
+                        <Badge variant="secondary">Completed</Badge>
+                      ) : (
+                        <Badge variant="outline">In progress</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">@{artist.handle}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {artist.followerCount.toLocaleString()} followers
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => unfollowArtist(artist.id)}
-                  >
-                    Unfollow
-                  </Button>
-                </div>
-                {artist.bio && (
-                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                    {artist.bio}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {followedArtists.length === 0 && (
-          <Card className="p-8 text-center">
-            <CardContent>
-              <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <CardTitle className="mb-2">Not following anyone yet</CardTitle>
-              <CardDescription className="mb-4">
-                Follow artists you love to see their latest content and updates.
-              </CardDescription>
-              <Button asChild variant="gradient">
-                <a href="/discover">Gouache Discover</a>
-              </Button>
-            </CardContent>
-          </Card>
+                    <Button variant="outline" onClick={() => router.push(`/learn/course/${course.id}`)}>
+                      Continue Course
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         )}
       </TabsContent>
     </Tabs>

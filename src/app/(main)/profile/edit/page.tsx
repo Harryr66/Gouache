@@ -37,6 +37,7 @@ const COUNTRIES = [
 export default function ProfileEditPage() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
+  const isArtistAccount = Boolean(user?.isProfessional);
 
   // Test Firebase connectivity
   const testFirebaseConnection = async () => {
@@ -173,7 +174,7 @@ export default function ProfileEditPage() {
       if (offlineChanges) {
         try {
           const changes = JSON.parse(offlineChanges);
-          setFormData({
+          const nextFormData = {
             name: changes.name || user.displayName || '',
             handle: changes.handle || user.username || '',
             bio: changes.bio || user.bio || '',
@@ -181,23 +182,35 @@ export default function ProfileEditPage() {
             location: changes.location || user.location || '',
             countryOfOrigin: changes.countryOfOrigin || user.countryOfOrigin || '',
             countryOfResidence: changes.countryOfResidence || user.countryOfResidence || '',
-            isProfessional: changes.isProfessional || user.isProfessional || false,
-            tipJarEnabled: changes.tipJarEnabled !== undefined ? changes.tipJarEnabled : (user.tipJarEnabled !== undefined ? user.tipJarEnabled : true),
-            suggestionsEnabled: changes.suggestionsEnabled !== undefined ? changes.suggestionsEnabled : (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true),
+            isProfessional: user.isProfessional || false,
+            tipJarEnabled: user.isProfessional
+              ? (changes.tipJarEnabled !== undefined
+                ? changes.tipJarEnabled
+                : (user.tipJarEnabled !== undefined ? user.tipJarEnabled : true))
+              : false,
+            suggestionsEnabled: user.isProfessional
+              ? (changes.suggestionsEnabled !== undefined
+                ? changes.suggestionsEnabled
+                : (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true))
+              : false,
             hideLocation: changes.hideLocation || user.hideLocation || false,
             hideFlags: changes.hideFlags || user.hideFlags || false,
-            hideCard: changes.hideCard || user.hideCard || false,
-            bannerImageUrl: changes.bannerImageUrl || user.bannerImageUrl || '',
-            eventCity: changes.eventCity || user.eventCity || '',
-            eventCountry: changes.eventCountry || user.eventCountry || '',
-            eventDate: changes.eventDate || user.eventDate || '',
-          });
+            hideCard: user.isProfessional ? (changes.hideCard || user.hideCard || false) : false,
+            bannerImageUrl: user.isProfessional ? (changes.bannerImageUrl || user.bannerImageUrl || '') : '',
+            eventCity: user.isProfessional ? (changes.eventCity || user.eventCity || '') : '',
+            eventCountry: user.isProfessional ? (changes.eventCountry || user.eventCountry || '') : '',
+            eventDate: user.isProfessional ? (changes.eventDate || user.eventDate || '') : '',
+          };
+          setFormData(nextFormData);
+          if (!user.isProfessional) {
+            setBannerPreviewImage(null);
+          }
           
           if (changes.avatarUrl && changes.avatarUrl !== user.avatarUrl) {
             setPreviewImage(changes.avatarUrl);
           }
           
-          if (changes.bannerImageUrl && changes.bannerImageUrl !== user.bannerImageUrl) {
+          if (user.isProfessional && changes.bannerImageUrl && changes.bannerImageUrl !== user.bannerImageUrl) {
             setBannerPreviewImage(changes.bannerImageUrl);
           }
           
@@ -206,7 +219,7 @@ export default function ProfileEditPage() {
           console.error('Error applying offline changes:', error);
         }
       } else {
-        setFormData({
+        const nextFormData = {
           name: user.displayName || '',
           handle: user.username || '',
           bio: user.bio || '',
@@ -215,16 +228,31 @@ export default function ProfileEditPage() {
           countryOfOrigin: user.countryOfOrigin || '',
           countryOfResidence: user.countryOfResidence || '',
           isProfessional: user.isProfessional || false,
-          tipJarEnabled: user.tipJarEnabled !== undefined ? user.tipJarEnabled : true,
-          suggestionsEnabled: user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true,
-        hideLocation: user.hideLocation || false,
-        hideFlags: user.hideFlags || false,
-        hideCard: user.hideCard || false,
-          bannerImageUrl: user.bannerImageUrl || '',
-          eventCity: (user as any).eventCity || '',
-          eventCountry: (user as any).eventCountry || '',
-          eventDate: (user as any).eventDate || '',
-        });
+          tipJarEnabled: user.isProfessional
+            ? (user.tipJarEnabled !== undefined ? user.tipJarEnabled : true)
+            : false,
+          suggestionsEnabled: user.isProfessional
+            ? (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true)
+            : false,
+          hideLocation: user.hideLocation || false,
+          hideFlags: user.hideFlags || false,
+          hideCard: user.isProfessional ? (user.hideCard || false) : false,
+          bannerImageUrl: user.isProfessional ? (user.bannerImageUrl || '') : '',
+          eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
+          eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
+          eventDate: user.isProfessional ? ((user as any).eventDate || '') : '',
+        };
+        setFormData(nextFormData);
+
+        if (user.avatarUrl) {
+          setPreviewImage(user.avatarUrl);
+        }
+
+        if (user.isProfessional && user.bannerImageUrl) {
+          setBannerPreviewImage(user.bannerImageUrl);
+        } else if (!user.isProfessional) {
+          setBannerPreviewImage(null);
+        }
       }
       
       // Mark initial mount as complete
@@ -627,26 +655,37 @@ export default function ProfileEditPage() {
         setSaveStatus('saving');
         
         const userRef = doc(db, 'userProfiles', user.id);
+        const allowArtistFields = Boolean(user.isProfessional);
         const updateData: any = {
           name: formData.name,
           bio: formData.bio,
-          artistType: formData.artistType,
           location: formData.location,
           countryOfOrigin: formData.countryOfOrigin,
           countryOfResidence: formData.countryOfResidence,
-          isProfessional: formData.isProfessional,
-          tipJarEnabled: formData.tipJarEnabled,
-          suggestionsEnabled: formData.suggestionsEnabled,
           hideLocation: formData.hideLocation,
           hideFlags: formData.hideFlags,
-          hideCard: formData.hideCard,
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          isProfessional: allowArtistFields,
         };
 
-        // Upcoming event fields
-        if (formData.eventCity) updateData.eventCity = formData.eventCity;
-        if (formData.eventCountry) updateData.eventCountry = formData.eventCountry;
-        if (formData.eventDate) updateData.eventDate = formData.eventDate;
+        if (allowArtistFields) {
+          updateData.artistType = formData.artistType;
+          updateData.tipJarEnabled = formData.tipJarEnabled;
+          updateData.suggestionsEnabled = formData.suggestionsEnabled;
+          updateData.hideCard = formData.hideCard;
+          updateData.eventCity = formData.eventCity || null;
+          updateData.eventCountry = formData.eventCountry || null;
+          updateData.eventDate = formData.eventDate || null;
+        } else {
+          updateData.artistType = '';
+          updateData.tipJarEnabled = false;
+          updateData.suggestionsEnabled = false;
+          updateData.hideCard = false;
+          updateData.eventCity = null;
+          updateData.eventCountry = null;
+          updateData.eventDate = null;
+          updateData.bannerImageUrl = null;
+        }
 
         await withTimeout(setDoc(userRef, updateData, { merge: true }), 5000);
         
@@ -775,36 +814,50 @@ export default function ProfileEditPage() {
 
       // Update user profile - filter out undefined values
       const userRef = doc(db, 'userProfiles', user.id);
+      const allowArtistFields = Boolean(user.isProfessional);
       const updateData: any = {
         name: formData.name,
         handle: formData.handle,
         bio: formData.bio,
-        artistType: formData.artistType,
         location: formData.location,
         countryOfOrigin: formData.countryOfOrigin,
         countryOfResidence: formData.countryOfResidence,
-        isProfessional: formData.isProfessional,
-        tipJarEnabled: formData.tipJarEnabled,
-        suggestionsEnabled: formData.suggestionsEnabled,
         hideLocation: formData.hideLocation,
         hideFlags: formData.hideFlags,
-        hideCard: formData.hideCard,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        isProfessional: allowArtistFields,
       };
 
-      // Upcoming event fields
-      if (formData.eventCity) updateData.eventCity = formData.eventCity;
-      if (formData.eventCountry) updateData.eventCountry = formData.eventCountry;
-      if (formData.eventDate) updateData.eventDate = formData.eventDate;
+      if (allowArtistFields) {
+        updateData.artistType = formData.artistType;
+        updateData.tipJarEnabled = formData.tipJarEnabled;
+        updateData.suggestionsEnabled = formData.suggestionsEnabled;
+        updateData.hideCard = formData.hideCard;
+        updateData.eventCity = formData.eventCity || null;
+        updateData.eventCountry = formData.eventCountry || null;
+        updateData.eventDate = formData.eventDate || null;
+      } else {
+        updateData.artistType = '';
+        updateData.tipJarEnabled = false;
+        updateData.suggestionsEnabled = false;
+        updateData.hideCard = false;
+        updateData.eventCity = null;
+        updateData.eventCountry = null;
+        updateData.eventDate = null;
+        updateData.bannerImageUrl = null;
+      }
 
       // Only include avatarUrl if it's not undefined
       if (avatarUrl !== undefined) {
         updateData.avatarUrl = avatarUrl;
       }
 
-      // Only include bannerImageUrl if it's not undefined
-      if (bannerImageUrl !== undefined) {
-        updateData.bannerImageUrl = bannerImageUrl;
+      if (allowArtistFields) {
+        if (bannerImageUrl !== undefined) {
+          updateData.bannerImageUrl = bannerImageUrl;
+        }
+      } else {
+        updateData.bannerImageUrl = null;
       }
 
       // Create or update user profile with timeout (setDoc with merge will create if doesn't exist)
@@ -985,6 +1038,7 @@ export default function ProfileEditPage() {
         </Card>
 
         {/* Upcoming Events Section */}
+        {isArtistAccount && (
         <Card>
           <CardHeader>
             <CardTitle>Upcoming Events</CardTitle>
@@ -1116,6 +1170,7 @@ export default function ProfileEditPage() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Basic Information */}
         <Card>
@@ -1293,6 +1348,7 @@ export default function ProfileEditPage() {
 
 
         {/* Account Settings */}
+        {isArtistAccount && (
         <Card>
           <CardHeader>
             <CardTitle>Account Settings</CardTitle>
@@ -1382,9 +1438,10 @@ export default function ProfileEditPage() {
 
           </CardContent>
         </Card>
+        )}
 
         {/* Artist Account Request */}
-        {formData.isProfessional && !user?.isVerified && (
+        {!isArtistAccount && !user?.isVerified && (
           <Card>
             <CardHeader>
               <CardTitle>Request Professional Verification</CardTitle>
