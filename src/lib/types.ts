@@ -72,7 +72,7 @@ export interface ArtistRequest {
     website?: string;
     tiktok?: string;
   };
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'suspended' | 'removed';
   submittedAt: Date;
   reviewedAt?: Date;
   reviewedBy?: string;
