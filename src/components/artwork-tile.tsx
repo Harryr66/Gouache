@@ -241,22 +241,48 @@ const generateArtistContent = (artist: Artist) => ({
 
           <div className="flex flex-col md:flex-row max-h-[90vh]">
             {/* Hero Artwork */}
-            <div className="w-full md:w-3/5 bg-muted flex items-center justify-center p-4 md:p-6">
-              <div className="relative w-full aspect-[4/3] lg:aspect-[16/9] max-h-[70vh] rounded-2xl overflow-hidden">
-                <Image
-                  src={artwork.imageUrl}
-                  alt={artwork.title || artwork.imageAiHint}
-                  fill
-                  priority
-                  className="object-contain md:object-cover"
-                />
-                {artwork.isForSale && artwork.price && (
-                  <div className="absolute top-3 left-3">
-                    <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
-                      ${artwork.price.toLocaleString()}
-                    </Badge>
-                  </div>
-                )}
+            <div className="relative w-full md:w-3/5 bg-muted flex flex-col">
+              <div className="flex-1 flex items-center justify-center p-4 md:p-6">
+                <div className="relative w-full aspect-[4/3] lg:aspect-[16/9] max-h-[70vh] rounded-2xl overflow-hidden">
+                  <Image
+                    src={artwork.imageUrl}
+                    alt={artwork.title || artwork.imageAiHint}
+                    fill
+                    priority
+                    className="object-contain md:object-cover"
+                  />
+                  {artwork.isForSale && artwork.price && (
+                    <div className="absolute top-3 left-3">
+                      <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
+                        ${artwork.price.toLocaleString()}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-3 border-t border-border bg-background/90 px-4 py-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleLike(artwork.id);
+                  }}
+                  disabled={likesLoading}
+                  className={`h-12 w-12 rounded-xl border-2 transition ${
+                    liked ? 'border-red-500 text-red-500 bg-red-500/10' : ''
+                  }`}
+                >
+                  <HeartIcon className={`h-6 w-6 ${liked ? 'fill-current' : 'fill-none'}`} />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 rounded-xl border-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
@@ -286,23 +312,6 @@ const generateArtistContent = (artist: Artist) => ({
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-auto">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleLike(artwork.id);
-                          }}
-                          disabled={likesLoading}
-                          className={`h-12 w-12 border-2 transition ${
-                            liked ? 'border-red-500 text-red-500 bg-red-500/10' : ''
-                          }`}
-                        >
-                          <HeartIcon className={`h-6 w-6 ${liked ? 'fill-current' : 'fill-none'}`} />
-                        </Button>
-                        <Button variant="outline" size="icon">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
                         <Button
                           variant={following ? 'outline' : 'secondary'}
                           onClick={handleFollowToggle}
