@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
-import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Loader2, Plus, Trash2 } from 'lucide-react';
 
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/providers/auth-provider';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInvite } from '@/lib/types';
@@ -15,19 +15,54 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
-const STEPS = ['Welcome', 'Profile basics', 'Artist details', 'Review & launch'];
+const STEPS = [
+  'Welcome',
+  'Personal details',
+  'Portfolio',
+  'Events',
+  'Products & Books',
+  'Courses',
+  'Review & launch'
+];
 
 interface FormState {
   displayName: string;
   handle: string;
   bio: string;
-  artistStatement: string;
   location: string;
   website: string;
   instagram: string;
   x: string;
   tiktok: string;
+}
+
+interface PortfolioImage {
+  url: string;
+  storagePath: string;
+}
+
+interface EventDraft {
+  title: string;
+  date: string;
+  city: string;
+  country: string;
+  description: string;
+}
+
+interface ListingDraft {
+  title: string;
+  description: string;
+  price?: string;
+  url?: string;
+}
+
+interface CourseDraft {
+  title: string;
+  description: string;
+  url?: string;
+  price?: string;
 }
 
 export default function ArtistOnboardingPage() {
@@ -42,18 +77,41 @@ export default function ArtistOnboardingPage() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingPortfolio, setIsUploadingPortfolio] = useState(false);
 
   const [formData, setFormData] = useState<FormState>({
     displayName: '',
     handle: '',
     bio: '',
-    artistStatement: '',
     location: '',
     website: '',
     instagram: '',
     x: '',
     tiktok: ''
   });
+  const [portfolioImages, setPortfolioImages] = useState<PortfolioImage[]>([]);
+  const [pendingEvent, setPendingEvent] = useState<EventDraft>({
+    title: '',
+    date: '',
+    city: '',
+    country: '',
+    description: ''
+  });
+  const [events, setEvents] = useState<EventDraft[]>([]);
+  const [pendingProduct, setPendingProduct] = useState<ListingDraft>({
+    title: '',
+    description: '',
+    price: '',
+    url: ''
+  });
+  const [products, setProducts] = useState<ListingDraft[]>([]);
+  const [pendingCourse, setPendingCourse] = useState<CourseDraft>({
+    title: '',
+    description: '',
+    url: '',
+    price: ''
+  });
+  const [courses, setCourses] = useState<CourseDraft[]>([]);
 
   useEffect(() => {
     const fetchInvite = async () => {
@@ -172,9 +230,8 @@ export default function ArtistOnboardingPage() {
       return;
     }
 
-    if (currentStep === 2) {
-      setCurrentStep(3);
-      return;
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
@@ -182,6 +239,97 @@ export default function ArtistOnboardingPage() {
     if (currentStep > 0) {
       setCurrentStep((step) => step - 1);
     }
+  };
+
+  const handleSkipStep = () => {
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep((step) => step + 1);
+    }
+  };
+
+  const handlePortfolioUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !user) return;
+    setIsUploadingPortfolio(true);
+
+    try {
+      const uploads: PortfolioImage[] = [];
+      for (const file of Array.from(files)) {
+        const storagePath = `onboarding/${user.id}/portfolio/${Date.now()}-${file.name}`;
+        const imageRef = ref(storage, storagePath);
+        await uploadBytes(imageRef, file);
+        const url = await getDownloadURL(imageRef);
+        uploads.push({ url, storagePath });
+      }
+      setPortfolioImages((prev) => [...prev, ...uploads]);
+      toast({
+        title: 'Portfolio updated',
+        description: `${uploads.length} image${uploads.length > 1 ? 's' : ''} uploaded.`
+      });
+    } catch (error) {
+      console.error('Failed to upload portfolio', error);
+      toast({
+        title: 'Upload failed',
+        description: 'We could not upload your images. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUploadingPortfolio(false);
+      if (event.target) {
+        event.target.value = '';
+      }
+    }
+  };
+
+  const handleRemovePortfolioImage = async (index: number) => {
+    const image = portfolioImages[index];
+    setPortfolioImages((prev) => prev.filter((_, i) => i !== index));
+    try {
+      if (image?.storagePath) {
+        await deleteObject(ref(storage, image.storagePath));
+      }
+    } catch (error) {
+      console.warn('Failed to delete image from storage', error);
+    }
+  };
+
+  const handleAddEvent = () => {
+    if (!pendingEvent.title.trim() && !pendingEvent.date && !pendingEvent.city.trim() && !pendingEvent.country.trim()) {
+      toast({
+        title: 'Nothing to add',
+        description: 'Fill in at least one event field or skip this step.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    setEvents((prev) => [...prev, pendingEvent]);
+    setPendingEvent({ title: '', date: '', city: '', country: '', description: '' });
+  };
+
+  const handleAddProduct = () => {
+    if (!pendingProduct.title.trim() && !pendingProduct.description.trim()) {
+      toast({
+        title: 'Nothing to add',
+        description: 'Provide at least a title or description, or skip this step.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    setProducts((prev) => [...prev, pendingProduct]);
+    setPendingProduct({ title: '', description: '', price: '', url: '' });
+  };
+
+  const handleAddCourse = () => {
+    if (!pendingCourse.title.trim() && !pendingCourse.description.trim()) {
+      toast({
+        title: 'Nothing to add',
+        description: 'Provide at least a title or description, or skip this step.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    setCourses((prev) => [...prev, pendingCourse]);
+    setPendingCourse({ title: '', description: '', url: '', price: '' });
   };
 
   const handleCompleteOnboarding = async () => {
@@ -212,6 +360,16 @@ export default function ArtistOnboardingPage() {
       return;
     }
 
+    if (!formData.displayName.trim() || !formData.handle.trim()) {
+      toast({
+        title: 'Add your name and handle',
+        description: 'We need both a display name and handle before publishing your profile.',
+        variant: 'destructive'
+      });
+      setCurrentStep(1);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -222,8 +380,7 @@ export default function ArtistOnboardingPage() {
           name: formData.displayName.trim(),
           displayName: formData.displayName.trim(),
           handle: formData.handle.trim(),
-          bio: formData.bio.trim(),
-          artistStatement: formData.artistStatement.trim() || null,
+          bio: formData.bio.trim() || null,
           location: formData.location.trim() || null,
           website: formData.website.trim() || null,
           socialLinks: {
@@ -233,16 +390,47 @@ export default function ArtistOnboardingPage() {
           },
           accountRole: 'artist',
           isProfessional: true,
+          tipJarEnabled: true,
+          suggestionsEnabled: true,
+          hideCard: false,
           artistInviteToken: invite.token,
           artistOnboarding: {
             completed: true,
             version: 1,
             completedAt: serverTimestamp()
           },
+          portfolioImages: portfolioImages.map((image) => image.url),
+          events: events.map((event) => ({
+            title: event.title || null,
+            date: event.date || null,
+            city: event.city || null,
+            country: event.country || null,
+            description: event.description || null
+          })),
+          products: products.map((product) => ({
+            title: product.title || null,
+            description: product.description || null,
+            price: product.price || null,
+            url: product.url || null
+          })),
+          courses: courses.map((course) => ({
+            title: course.title || null,
+            description: course.description || null,
+            url: course.url || null,
+            price: course.price || null
+          })),
           updatedAt: serverTimestamp()
         },
         { merge: true }
       );
+
+      if (formData.handle.trim() && formData.handle.trim() !== user.username) {
+        await setDoc(
+          doc(db, 'handles', formData.handle.trim()),
+          { userId: user.id },
+          { merge: true }
+        );
+      }
 
       await updateDoc(doc(db, 'artistInvites', invite.id), {
         status: 'redeemed',
@@ -392,7 +580,9 @@ export default function ArtistOnboardingPage() {
         <div>
           <Badge variant="outline" className="mb-2">Invite for {invite.email}</Badge>
           <h1 className="text-3xl font-semibold tracking-tight">Artist onboarding</h1>
-          <p className="text-sm text-muted-foreground">Step {currentStep + 1} of {STEPS.length} • {currentStepLabel}</p>
+          <p className="text-sm text-muted-foreground">
+            Step {currentStep + 1} of {STEPS.length} • {currentStepLabel}
+          </p>
         </div>
         <div className="text-right text-sm text-muted-foreground">
           <p className="font-medium text-foreground">Need help?</p>
@@ -409,9 +599,12 @@ export default function ArtistOnboardingPage() {
           <CardTitle>{currentStepLabel}</CardTitle>
           <CardDescription>
             {currentStep === 0 && 'Welcome to Gouache! We’ll capture a few essentials to launch your artist presence.'}
-            {currentStep === 1 && 'Tell us how you want your name and handle to appear across Gouache.'}
-            {currentStep === 2 && 'Share a snapshot of your practice so collectors and fans know what you create.'}
-            {currentStep === 3 && 'Review everything at a glance before publishing your artist profile.'}
+            {currentStep === 1 && 'Tell us how you want your personal details to appear across Gouache.'}
+            {currentStep === 2 && 'Upload highlight pieces for your portfolio. You can skip this now and add more later.'}
+            {currentStep === 3 && 'Share any upcoming events. This step is optional and can be skipped.'}
+            {currentStep === 4 && 'List products or books you sell. Optional—skip if not relevant right now.'}
+            {currentStep === 5 && 'Share any courses you currently offer. Optional—skip if not available.'}
+            {currentStep === 6 && 'Review everything at a glance before publishing your artist profile.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -428,7 +621,7 @@ export default function ArtistOnboardingPage() {
                   <ul className="mt-2 list-disc space-y-1 pl-4">
                     <li>Your preferred artist name and public handle.</li>
                     <li>A short introduction or artist statement.</li>
-                    <li>Links you want to share, like portfolio or social profiles.</li>
+                    <li>Decide if you want to upload portfolio images or events now.</li>
                   </ul>
                 </div>
                 <div>
@@ -465,27 +658,12 @@ export default function ArtistOnboardingPage() {
                 <p className="text-xs text-muted-foreground">We recommend something short and memorable. You can change it later.</p>
               </div>
               <div className="grid gap-2">
-                <label className="text-sm font-medium text-foreground" htmlFor="bio">Short bio (optional)</label>
+                <label className="text-sm font-medium text-foreground" htmlFor="bio">Short bio</label>
                 <Textarea
                   id="bio"
-                  placeholder="Abstract expressionist painter exploring emotion through colour..."
+                  placeholder="Share what drives your practice, recurring themes, or the mediums you work with."
                   value={formData.bio}
                   onChange={(event) => setFormData((previous) => ({ ...previous, bio: event.target.value }))}
-                  rows={5}
-                />
-              </div>
-            </div>
-          )}
-
-          {currentStep === 2 && (
-            <div className="grid gap-6">
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-foreground" htmlFor="artistStatement">Artist statement</label>
-                <Textarea
-                  id="artistStatement"
-                  placeholder="Share what drives your practice, recurring themes, or the mediums you work with."
-                  value={formData.artistStatement}
-                  onChange={(event) => setFormData((previous) => ({ ...previous, artistStatement: event.target.value }))}
                   rows={6}
                 />
               </div>
@@ -539,8 +717,299 @@ export default function ArtistOnboardingPage() {
             </div>
           )}
 
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Upload up to 10 highlight images. You can add more later from your dashboard.
+                </p>
+                <div className="mt-4 flex flex-col gap-4">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handlePortfolioUpload}
+                    disabled={isUploadingPortfolio}
+                  />
+                  {isUploadingPortfolio && (
+                    <p className="text-xs text-muted-foreground">Uploading images...</p>
+                  )}
+                  {portfolioImages.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {portfolioImages.map((image, index) => (
+                        <div key={image.storagePath} className="relative group">
+                          <img
+                            src={image.url}
+                            alt={`Portfolio ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleRemovePortfolioImage(index)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {currentStep === 3 && (
             <div className="space-y-5">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-foreground">Event details</h3>
+                <p className="text-sm text-muted-foreground">
+                  Add events you have planned. This step is optional—skip if you don’t have anything coming up.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input
+                    placeholder="Event name"
+                    value={pendingEvent.title}
+                    onChange={(event) =>
+                      setPendingEvent((prev) => ({ ...prev, title: event.target.value }))
+                    }
+                  />
+                  <Input
+                    type="date"
+                    value={pendingEvent.date}
+                    onChange={(event) =>
+                      setPendingEvent((prev) => ({ ...prev, date: event.target.value }))
+                    }
+                  />
+                  <Input
+                    placeholder="City / Venue city"
+                    value={pendingEvent.city}
+                    onChange={(event) =>
+                      setPendingEvent((prev) => ({ ...prev, city: event.target.value }))
+                    }
+                  />
+                  <Input
+                    placeholder="Country"
+                    value={pendingEvent.country}
+                    onChange={(event) =>
+                      setPendingEvent((prev) => ({ ...prev, country: event.target.value }))
+                    }
+                  />
+                  <Textarea
+                    placeholder="Event description (optional)"
+                    className="sm:col-span-2"
+                    value={pendingEvent.description}
+                    onChange={(event) =>
+                      setPendingEvent((prev) => ({ ...prev, description: event.target.value }))
+                    }
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={handleAddEvent}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add event
+                  </Button>
+                </div>
+              </div>
+              {events.length > 0 && (
+                <div className="space-y-3">
+                  {events.map((event, index) => (
+                    <div key={`${event.title}-${index}`} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-sm text-foreground">
+                            {event.title || 'Untitled event'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {[event.city, event.country].filter(Boolean).join(', ') || 'Location TBD'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {event.date || 'Date TBD'}
+                          </p>
+                          {event.description && (
+                            <p className="text-xs text-muted-foreground mt-2">{event.description}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEvents((prev) => prev.filter((_, i) => i !== index))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {currentStep === 4 && (
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Products & Books</h3>
+                <p className="text-sm text-muted-foreground">
+                  List any products, prints, or books subscribers can purchase. Optional—skip if you don’t have any yet.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Input
+                  placeholder="Title"
+                  value={pendingProduct.title}
+                  onChange={(event) =>
+                    setPendingProduct((prev) => ({ ...prev, title: event.target.value }))
+                  }
+                />
+                <Textarea
+                  placeholder="Description"
+                  value={pendingProduct.description}
+                  onChange={(event) =>
+                    setPendingProduct((prev) => ({ ...prev, description: event.target.value }))
+                  }
+                  rows={3}
+                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input
+                    placeholder="Price (optional)"
+                    value={pendingProduct.price}
+                    onChange={(event) =>
+                      setPendingProduct((prev) => ({ ...prev, price: event.target.value }))
+                    }
+                  />
+                  <Input
+                    placeholder="Product URL (optional)"
+                    value={pendingProduct.url}
+                    onChange={(event) =>
+                      setPendingProduct((prev) => ({ ...prev, url: event.target.value }))
+                    }
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={handleAddProduct}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add product
+                  </Button>
+                </div>
+              </div>
+              {products.length > 0 && (
+                <div className="space-y-3">
+                  {products.map((product, index) => (
+                    <div key={`${product.title}-${index}`} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-sm text-foreground">
+                            {product.title || 'Untitled product'}
+                          </p>
+                          {product.price && (
+                            <p className="text-xs text-muted-foreground">Price: {product.price}</p>
+                          )}
+                          {product.description && (
+                            <p className="text-xs text-muted-foreground mt-2">{product.description}</p>
+                          )}
+                          {product.url && (
+                            <p className="text-xs text-muted-foreground mt-1 break-all">{product.url}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setProducts((prev) => prev.filter((_, i) => i !== index))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {currentStep === 5 && (
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Courses</h3>
+                <p className="text-sm text-muted-foreground">
+                  Add any courses or workshops you currently offer. Optional—skip if you don’t have any courses yet.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Input
+                  placeholder="Course title"
+                  value={pendingCourse.title}
+                  onChange={(event) =>
+                    setPendingCourse((prev) => ({ ...prev, title: event.target.value }))
+                  }
+                />
+                <Textarea
+                  placeholder="Course description"
+                  value={pendingCourse.description}
+                  onChange={(event) =>
+                    setPendingCourse((prev) => ({ ...prev, description: event.target.value }))
+                  }
+                  rows={3}
+                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input
+                    placeholder="Course URL (optional)"
+                    value={pendingCourse.url}
+                    onChange={(event) =>
+                      setPendingCourse((prev) => ({ ...prev, url: event.target.value }))
+                    }
+                  />
+                  <Input
+                    placeholder="Price (optional)"
+                    value={pendingCourse.price}
+                    onChange={(event) =>
+                      setPendingCourse((prev) => ({ ...prev, price: event.target.value }))
+                    }
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={handleAddCourse}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add course
+                  </Button>
+                </div>
+              </div>
+              {courses.length > 0 && (
+                <div className="space-y-3">
+                  {courses.map((course, index) => (
+                    <div key={`${course.title}-${index}`} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-sm text-foreground">
+                            {course.title || 'Untitled course'}
+                          </p>
+                          {course.price && (
+                            <p className="text-xs text-muted-foreground">Price: {course.price}</p>
+                          )}
+                          {course.description && (
+                            <p className="text-xs text-muted-foreground mt-2">{course.description}</p>
+                          )}
+                          {course.url && (
+                            <p className="text-xs text-muted-foreground mt-1 break-all">{course.url}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setCourses((prev) => prev.filter((_, i) => i !== index))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {currentStep === 6 && (
+            <div className="space-y-6">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Artist profile</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -555,18 +1024,60 @@ export default function ArtistOnboardingPage() {
               </div>
               <Separator />
               <div>
-                <h3 className="text-sm font-semibold text-foreground">Practice overview</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-line">
-                  {formData.artistStatement || 'Add an artist statement later if you prefer.'}
-                </p>
+                <h3 className="text-sm font-semibold text-foreground">Portfolio</h3>
+                {portfolioImages.length > 0 ? (
+                  <p className="text-sm text-muted-foreground">{portfolioImages.length} images uploaded</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No images uploaded yet</p>
+                )}
               </div>
               <Separator />
-              <div className="grid gap-2 text-sm text-muted-foreground">
-                <p>Location: <span className="text-foreground">{formData.location || '—'}</span></p>
-                <p>Website: <span className="text-foreground">{formData.website || '—'}</span></p>
-                <p>Instagram: <span className="text-foreground">{formData.instagram || '—'}</span></p>
-                <p>X / Twitter: <span className="text-foreground">{formData.x || '—'}</span></p>
-                <p>TikTok: <span className="text-foreground">{formData.tiktok || '—'}</span></p>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Events</h3>
+                {events.length > 0 ? (
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    {events.map((event, index) => (
+                      <p key={`event-${index}`}>
+                        <Check className="inline h-3 w-3 mr-2 text-primary" />
+                        {event.title || 'Untitled event'}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No events added</p>
+                )}
+              </div>
+              <Separator />
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Products & Books</h3>
+                {products.length > 0 ? (
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    {products.map((product, index) => (
+                      <p key={`product-${index}`}>
+                        <Check className="inline h-3 w-3 mr-2 text-primary" />
+                        {product.title || 'Untitled product'}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No products added</p>
+                )}
+              </div>
+              <Separator />
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Courses</h3>
+                {courses.length > 0 ? (
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    {courses.map((course, index) => (
+                      <p key={`course-${index}`}>
+                        <Check className="inline h-3 w-3 mr-2 text-primary" />
+                        {course.title || 'Untitled course'}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No courses added</p>
+                )}
               </div>
               <Separator />
               <p className="text-xs text-muted-foreground">
@@ -587,6 +1098,11 @@ export default function ArtistOnboardingPage() {
           )}
         </div>
         <div className="flex gap-2">
+          {currentStep >= 2 && currentStep < STEPS.length - 1 && (
+            <Button variant="outline" onClick={handleSkipStep}>
+              Skip this step
+            </Button>
+          )}
           {currentStep < STEPS.length - 1 && (
             <Button variant="gradient" onClick={handleNextStep}>
               Continue <ArrowRight className="ml-2 h-4 w-4" />
