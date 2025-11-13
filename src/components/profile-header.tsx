@@ -2,16 +2,44 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Users, UserPlus, Edit, Upload, Plus, MapPin, Globe, Coffee, Lightbulb, ImageIcon, Calendar, Brain } from 'lucide-react';
+import {
+  Heart,
+  Users,
+  UserPlus,
+  Edit,
+  Upload,
+  Plus,
+  MapPin,
+  Globe,
+  Coffee,
+  Lightbulb,
+  ImageIcon,
+  Calendar,
+  Brain,
+  Settings,
+  LogOut
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { TipDialog } from './tip-dialog';
 import { SuggestionsDialog } from './suggestions-dialog';
 import { CountryFlag } from './country-flag';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { signOut as firebaseSignOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProfileHeaderProps {
   user: {
@@ -54,6 +82,30 @@ export function ProfileHeader({
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await firebaseSignOut(auth);
+      toast({
+        title: 'Signed out',
+        description: 'You have been signed out successfully.'
+      });
+      router.push('/login');
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+      toast({
+        title: 'Sign out failed',
+        description: 'Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   // Early return if user is not properly loaded
   if (!user) {
@@ -174,6 +226,34 @@ export function ProfileHeader({
                   )}
                   
                   {getDynamicButton()}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label="Open general settings"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>General</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          if (!isSigningOut) {
+                            handleSignOut();
+                          }
+                        }}
+                        disabled={isSigningOut}
+                        className="cursor-pointer"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        {isSigningOut ? 'Signing out…' : 'Log Out'}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </>
               ) : (
                 <Button 
