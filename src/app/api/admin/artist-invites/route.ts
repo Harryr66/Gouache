@@ -65,12 +65,27 @@ export async function POST(request: Request) {
       </div>
     `;
 
-    await resend.emails.send({
+    const sendResult = await resend.emails.send({
       ...payloadBase,
       html
     });
 
-    return NextResponse.json({ success: true });
+    if (!sendResult || sendResult.error) {
+      const message =
+        sendResult?.error?.message ?? 'Unknown error while sending invite email.';
+      console.error('Resend email send error:', message, sendResult?.error);
+      return NextResponse.json(
+        {
+          error: 'Failed to send artist invite email.',
+          details: message
+        },
+        { status: 502 }
+      );
+    }
+
+    console.log('Artist invite email queued:', sendResult.data?.id);
+
+    return NextResponse.json({ success: true, emailId: sendResult.data?.id ?? null });
   } catch (error) {
     console.error('Failed to send artist invite email:', error);
     return NextResponse.json(
