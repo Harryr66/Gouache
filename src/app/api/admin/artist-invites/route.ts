@@ -43,46 +43,32 @@ export async function POST(request: Request) {
       subject: 'Your Gouache artist onboarding invitation'
     } as const;
 
-    if (inviteTemplateId || inviteTemplateAlias) {
-      await resend.emails.send({
-        ...payloadBase,
-        ...(inviteTemplateId ? { template_id: inviteTemplateId } : {}),
-        ...(inviteTemplateAlias ? { template_alias: inviteTemplateAlias } : {}),
-        data: {
-          invite_url: inviteUrl,
-          artist_name: name ?? '',
-          custom_message: message ?? '',
-          greeting_name: recipientName
-        }
-      } as any);
-    } else {
-      const html = `
-        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #111827;">
-          <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">You're invited to join Gouache</h1>
-          <p style="font-size: 16px; line-height: 1.5;">Hi ${recipientName},</p>
-          <p style="font-size: 16px; line-height: 1.5; margin-top: 16px;">${inviteMessage}</p>
-          <p style="margin: 24px 0;">
-            <a
-              href="${inviteUrl}"
-              style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 20px; border-radius: 999px; font-weight: 600; text-decoration: none;"
-            >
-              Start Artist Onboarding
-            </a>
-          </p>
-          <p style="font-size: 14px; line-height: 1.6; color: #6b7280;">
-            If the button above does not work, copy and paste this link into your browser:<br />
-            <a href="${inviteUrl}" style="color: #2563eb;">${inviteUrl}</a>
-          </p>
-          <p style="font-size: 16px; line-height: 1.5; margin-top: 32px;">We’re excited to see your work!</p>
-          <p style="font-size: 16px; font-weight: 600;">Team Gouache</p>
-        </div>
-      `;
+    const html = `
+      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #111827;">
+        <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">You're invited to join Gouache</h1>
+        <p style="font-size: 16px; line-height: 1.5;">Hi ${recipientName},</p>
+        <p style="font-size: 16px; line-height: 1.5; margin-top: 16px;">${inviteMessage}</p>
+        <p style="margin: 24px 0;">
+          <a
+            href="${inviteUrl}"
+            style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 20px; border-radius: 999px; font-weight: 600; text-decoration: none;"
+          >
+            Start Artist Onboarding
+          </a>
+        </p>
+        <p style="font-size: 14px; line-height: 1.6; color: #6b7280;">
+          If the button above does not work, copy and paste this link into your browser:<br />
+          <a href="${inviteUrl}" style="color: #2563eb;">${inviteUrl}</a>
+        </p>
+        <p style="font-size: 16px; line-height: 1.5; margin-top: 32px;">We’re excited to see your work!</p>
+        <p style="font-size: 16px; font-weight: 600;">Team Gouache</p>
+      </div>
+    `;
 
-      await resend.emails.send({
-        ...payloadBase,
-        html
-      });
-    }
+    await resend.emails.send({
+      ...payloadBase,
+      html
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
