@@ -193,7 +193,7 @@ export default function ArtistOnboardingPage() {
       ...previous,
       displayName: user.displayName || previous.displayName,
       handle: user.username || previous.handle,
-      bio: user.bio || previous.bio,
+      bio: previous.bio,
       location: user.location || previous.location,
       website: user.website || previous.website,
       instagram: user.socialLinks?.instagram || previous.instagram,
@@ -586,7 +586,7 @@ export default function ArtistOnboardingPage() {
         </div>
         <div className="text-right text-sm text-muted-foreground">
           <p className="font-medium text-foreground">Need help?</p>
-          <p>Email <a href="mailto:hello@gouachediscovery.com" className="underline">hello@gouachediscovery.com</a></p>
+          <p>Email <a href="mailto:invite@gouachediscovery.com" className="underline">invite@gouachediscovery.com</a></p>
         </div>
       </div>
 
@@ -598,7 +598,7 @@ export default function ArtistOnboardingPage() {
         <CardHeader className="border-b bg-muted/50">
           <CardTitle>{currentStepLabel}</CardTitle>
           <CardDescription>
-            {currentStep === 0 && 'Welcome to Gouache! We’ll capture a few essentials to launch your artist presence.'}
+            {currentStep === 0 && 'Welcome to Gouache! Let’s launch your profile in just a few quick steps.'}
             {currentStep === 1 && 'Tell us how you want your personal details to appear across Gouache.'}
             {currentStep === 2 && 'Upload highlight pieces for your portfolio. You can skip this now and add more later.'}
             {currentStep === 3 && 'Share any upcoming events. This step is optional and can be skipped.'}
@@ -611,28 +611,10 @@ export default function ArtistOnboardingPage() {
           {currentStep === 0 && (
             <div className="space-y-4 text-sm text-muted-foreground">
               <p>
-                Gouache connects emerging artists with collectors, curators, and creative collaborators. We’ll walk you
-                through the essentials now—plan for about five minutes.
+                Thanks for joining Gouache. We’ll gather the essentials to get your profile live. Each step is quick,
+                and you can skip anything you’re not ready to share yet.
               </p>
-              <Separator />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">What you’ll need</h3>
-                  <ul className="mt-2 list-disc space-y-1 pl-4">
-                    <li>Your preferred artist name and public handle.</li>
-                    <li>A short introduction or artist statement.</li>
-                    <li>Decide if you want to upload portfolio images or events now.</li>
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">After onboarding</h3>
-                  <ul className="mt-2 list-disc space-y-1 pl-4">
-                    <li>Upload hero imagery and portfolio pieces.</li>
-                    <li>Publish upcoming events and releases.</li>
-                    <li>Unlock Gouache discovery features and artist analytics.</li>
-                  </ul>
-                </div>
-              </div>
+              <p className="font-medium text-foreground">Select continue to get started.</p>
             </div>
           )}
 
