@@ -805,10 +805,7 @@ export default function ArtistOnboardingPage() {
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-3 text-slate-800">
               <h2 className="text-xl font-semibold text-slate-900">Welcome</h2>
               <p className="leading-relaxed">
-                We’ll capture the essentials to launch your artist presence. Each step is quick, and you can skip anything you’re not ready to share.
-              </p>
-              <p className="text-sm text-slate-600">
-                Have visuals ready? Upload portfolio highlights, product shots, event posters, and course thumbnails along the way.
+                We’ll capture the essentials to launch your artist profile. Each step is quick, and you can skip anything you’re not ready to share.
               </p>
             </div>
           )}
