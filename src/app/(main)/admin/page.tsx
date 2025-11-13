@@ -17,6 +17,7 @@ import { db, storage } from '@/lib/firebase';
 import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission } from '@/lib/types';
 import { Check, X, Eye, Clock, User, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
 
 const ART_MEDIUM_CATEGORIES = [
   'Oil Painting',
@@ -1395,6 +1396,15 @@ export default function AdminPanel() {
               <span className="text-sm">Rejected</span>
               <Badge variant={selectedView === 'artist-rejected' ? 'secondary' : 'outline'}>({rejectedRequests.length})</Badge>
             </button>
+            <button
+              onClick={() => setSelectedView('artist-invites')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'artist-invites' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Invite Console</span>
+              <Badge variant={selectedView === 'artist-invites' ? 'secondary' : 'outline'}>New</Badge>
+            </button>
           </CardContent>
         </Card>
 
@@ -1589,6 +1599,12 @@ export default function AdminPanel() {
       {/* Main Content Area */}
       <div className="space-y-6">
         {/* Artist Account - Pending */}
+        {selectedView === 'artist-invites' && (
+          <div className="space-y-6">
+            <ArtistInviteConsole />
+          </div>
+        )}
+
         {selectedView === 'artist-pending' && (
           pendingRequests.length === 0 ? (
             <Card>

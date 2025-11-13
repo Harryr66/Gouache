@@ -31,6 +31,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true; // Allow users to submit artist requests
     }
+
+    // Allow access to artist invites (admin moderation required in production)
+    match /artistInvites/{inviteId} {
+      allow read: if true;
+      allow write: if true;
+    }
     
     // Allow public read access to advertising applications
     match /advertisingApplications/{applicationId} {

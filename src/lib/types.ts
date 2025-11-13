@@ -80,6 +80,24 @@ export interface ArtistRequest {
   notes?: string;
 }
 
+export interface ArtistInvite {
+  id: string;
+  email: string;
+  name?: string;
+  token: string;
+  status: 'pending' | 'redeemed' | 'revoked' | 'expired';
+  createdAt: Date;
+  createdBy?: string;
+  createdByName?: string;
+  lastSentAt?: Date;
+  redeemedAt?: Date;
+  redeemedBy?: string;
+  lastAccessedAt?: Date;
+  lastError?: string;
+  revokedAt?: Date;
+  message?: string | null;
+}
+
 export interface AdvertisingApplication {
   id: string;
   companyName: string;
@@ -614,6 +632,13 @@ export interface User {
   eventCity?: string;
   eventCountry?: string;
   eventDate?: string;
+  accountRole?: 'user' | 'artist' | 'admin';
+  artistInviteToken?: string;
+  artistOnboarding?: {
+    completed: boolean;
+    version?: number;
+    completedAt?: Date;
+  };
   portfolio?: Array<{
     id: string;
     imageUrl: string;
