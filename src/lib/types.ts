@@ -624,6 +624,7 @@ export interface User {
   isActive: boolean;
   lastSeen?: Date;
   artistType?: string;
+  isAdmin?: boolean;
   tipJarEnabled?: boolean;
   suggestionsEnabled?: boolean;
   hideLocation?: boolean;

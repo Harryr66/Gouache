@@ -55,6 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           isActive: true,
           lastSeen: new Date(),
           artistType: '',
+          isAdmin: false,
           socialLinks: {},
           preferences: {
             notifications: {
@@ -101,6 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               isActive: userData.isActive !== false,
               lastSeen: userData.lastSeen?.toDate(),
               artistType: userData.artistType || '',
+              isAdmin: userData.isAdmin || false,
               socialLinks: userData.socialLinks || {},
               preferences: userData.preferences || immediateUser.preferences
             };
@@ -147,6 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isActive: userData.isActive !== false,
             lastSeen: userData.lastSeen?.toDate(),
             artistType: userData.artistType || '',
+            isAdmin: userData.isAdmin || false,
             socialLinks: userData.socialLinks || {},
             preferences: userData.preferences || {
               notifications: {

@@ -13,11 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { db, storage, auth } from '@/lib/firebase';
 import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission } from '@/lib/types';
 import { Check, X, Eye, Clock, User, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
+import { useAuth } from '@/providers/auth-provider';
+import { signOut as firebaseSignOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 const ART_MEDIUM_CATEGORIES = [
   'Oil Painting',
@@ -61,11 +64,8 @@ export default function AdminPanel() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  // Admin authentication state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   
   // Video upload states
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -268,37 +268,21 @@ export default function AdminPanel() {
     fetchData();
   }, []);
 
-  // Admin authentication function
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsPasswordLoading(true);
-    
+  const handleSignOut = async () => {
     try {
-      // Simple password check - in production, this should be more secure
-      const correctPassword = 'GOUACHE_ADMIN_2024'; // You can change this password
-      
-      if (adminPassword === correctPassword) {
-        setIsAuthenticated(true);
-        toast({
-          title: "Access Granted",
-          description: "Welcome to the admin panel.",
-        });
-      } else {
-        toast({
-          title: "Access Denied",
-          description: "Invalid admin password.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Admin login error:', error);
+      await firebaseSignOut(auth);
       toast({
-        title: "Error",
-        description: "Failed to authenticate. Please try again.",
-        variant: "destructive",
+        title: 'Signed out',
+        description: 'You have been signed out.'
       });
-    } finally {
-      setIsPasswordLoading(false);
+      router.push('/login');
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+      toast({
+        title: 'Sign out failed',
+        description: 'Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -1282,48 +1266,49 @@ export default function AdminPanel() {
   const pendingRequests = artistRequests.filter(req => req.status === 'pending');
   const approvedRequests = artistRequests.filter(req => req.status === 'approved');
   const rejectedRequests = artistRequests.filter(req => req.status === 'rejected');
-  
 
-  // Password gate - show login form if not authenticated
-  if (!isAuthenticated) {
+  if (authLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Admin Access</CardTitle>
+            <CardTitle className="text-2xl font-bold">Sign in required</CardTitle>
+            <CardDescription>Log in with your admin account to continue.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => router.push('/login')}>
+              Go to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!user.isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-lg text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">Admin access required</CardTitle>
             <CardDescription>
-              Enter the admin password to access the panel
+              This area is limited to Gouache admin accounts. If you need access, contact the team.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleAdminLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="admin-password">Admin Password</Label>
-                <Input
-                  id="admin-password"
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="Enter admin password"
-                  required
-                  disabled={isPasswordLoading}
-                />
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isPasswordLoading || !adminPassword.trim()}
-              >
-                {isPasswordLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Authenticating...
-                  </>
-                ) : (
-                  'Access Admin Panel'
-                )}
-              </Button>
-            </form>
+            <Button variant="outline" onClick={() => router.push('/discover')}>
+              Return to Discover
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -1344,18 +1329,7 @@ export default function AdminPanel() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-        <Button 
-          variant="outline" 
-          onClick={() => {
-            setIsAuthenticated(false);
-            setAdminPassword('');
-            toast({
-              title: "Logged Out",
-              description: "You have been logged out of the admin panel.",
-            });
-          }}
-          className="flex items-center gap-2"
-        >
+        <Button variant="outline" onClick={handleSignOut} className="flex items-center gap-2">
           <X className="h-4 w-4" />
           Logout
         </Button>
