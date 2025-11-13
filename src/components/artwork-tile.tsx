@@ -260,7 +260,7 @@ const generateArtistContent = (artist: Artist) => ({
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-center gap-3 border-t border-border bg-background/90 px-4 py-3">
+              <div className="flex items-center justify-end gap-3 border-t border-border bg-background/90 px-4 py-3">
                 <Button
                   variant="outline"
                   size="icon"
@@ -270,7 +270,7 @@ const generateArtistContent = (artist: Artist) => ({
                   }}
                   disabled={likesLoading}
                   className={`h-12 w-12 rounded-xl border-2 transition ${
-                    liked ? 'border-red-500 text-red-500 bg-red-500/10' : ''
+                    liked ? 'border-red-500 text-red-500' : ''
                   }`}
                 >
                   <HeartIcon className={`h-6 w-6 ${liked ? 'fill-current' : 'fill-none'}`} />
