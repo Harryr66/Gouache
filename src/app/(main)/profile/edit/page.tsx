@@ -1444,7 +1444,7 @@ export default function ProfileEditPage() {
         {!isArtistAccount && !user?.isVerified && (
           <Card>
             <CardHeader>
-              <CardTitle>Request Professional Verification</CardTitle>
+              <CardTitle>Request Professional Artist Account</CardTitle>
               <CardDescription>
                 Submit your portfolio and credentials to become a verified professional artist with enhanced features and credibility.
               </CardDescription>
@@ -1456,7 +1456,7 @@ export default function ProfileEditPage() {
                   className="w-full"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Request Professional Verification
+                  Request Professional Artist Account
                 </Button>
               ) : (
                 <div className="space-y-6">

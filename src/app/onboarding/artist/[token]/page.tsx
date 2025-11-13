@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Loader2, Plus, Trash2 } from 'lucide-react';
@@ -49,6 +49,8 @@ interface EventDraft {
   city: string;
   country: string;
   description: string;
+  imageUrl?: string | null;
+  imageStoragePath?: string | null;
 }
 
 interface ListingDraft {
@@ -56,6 +58,8 @@ interface ListingDraft {
   description: string;
   price?: string;
   url?: string;
+  imageUrl?: string | null;
+  imageStoragePath?: string | null;
 }
 
 interface CourseDraft {
@@ -63,6 +67,8 @@ interface CourseDraft {
   description: string;
   url?: string;
   price?: string;
+  imageUrl?: string | null;
+  imageStoragePath?: string | null;
 }
 
 export default function ArtistOnboardingPage() {
@@ -112,6 +118,9 @@ export default function ArtistOnboardingPage() {
     price: ''
   });
   const [courses, setCourses] = useState<CourseDraft[]>([]);
+  const [isUploadingEventImage, setIsUploadingEventImage] = useState(false);
+  const [isUploadingProductImage, setIsUploadingProductImage] = useState(false);
+  const [isUploadingCourseImage, setIsUploadingCourseImage] = useState(false);
 
   useEffect(() => {
     const fetchInvite = async () => {
@@ -293,6 +302,171 @@ export default function ArtistOnboardingPage() {
     }
   };
 
+  const uploadSingleImage = async (file: File, folder: string) => {
+    const fileName = file.name.replace(/\s+/g, '-').toLowerCase();
+    const storagePath = `${folder}/${Date.now()}_${fileName}`;
+    const imageRef = ref(storage, storagePath);
+    await uploadBytes(imageRef, file);
+    const url = await getDownloadURL(imageRef);
+    return { url, storagePath };
+  };
+
+  const handlePendingEventImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    setIsUploadingEventImage(true);
+    try {
+      if (pendingEvent.imageStoragePath) {
+        await deleteObject(ref(storage, pendingEvent.imageStoragePath));
+      }
+      const { url, storagePath } = await uploadSingleImage(file, 'events');
+      setPendingEvent((prev) => ({ ...prev, imageUrl: url, imageStoragePath: storagePath }));
+      toast({
+        title: 'Event image added',
+        description: 'We’ll use this as the thumbnail for your event.'
+      });
+    } catch (error) {
+      console.error('Failed to upload event image', error);
+      toast({
+        title: 'Upload failed',
+        description: 'We could not upload that image. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUploadingEventImage(false);
+      event.target.value = '';
+    }
+  };
+
+  const clearPendingEventImage = async () => {
+    if (pendingEvent.imageStoragePath) {
+      try {
+        await deleteObject(ref(storage, pendingEvent.imageStoragePath));
+      } catch (error) {
+        console.warn('Failed to delete pending event image', error);
+      }
+    }
+    setPendingEvent((prev) => ({ ...prev, imageUrl: undefined, imageStoragePath: undefined }));
+  };
+
+  const handlePendingProductImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    setIsUploadingProductImage(true);
+    try {
+      if (pendingProduct.imageStoragePath) {
+        await deleteObject(ref(storage, pendingProduct.imageStoragePath));
+      }
+      const { url, storagePath } = await uploadSingleImage(file, 'products');
+      setPendingProduct((prev) => ({ ...prev, imageUrl: url, imageStoragePath: storagePath }));
+      toast({
+        title: 'Product image added',
+        description: 'We’ll feature this image alongside your listing.'
+      });
+    } catch (error) {
+      console.error('Failed to upload product image', error);
+      toast({
+        title: 'Upload failed',
+        description: 'We could not upload that image. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUploadingProductImage(false);
+      event.target.value = '';
+    }
+  };
+
+  const clearPendingProductImage = async () => {
+    if (pendingProduct.imageStoragePath) {
+      try {
+        await deleteObject(ref(storage, pendingProduct.imageStoragePath));
+      } catch (error) {
+        console.warn('Failed to delete pending product image', error);
+      }
+    }
+    setPendingProduct((prev) => ({ ...prev, imageUrl: undefined, imageStoragePath: undefined }));
+  };
+
+  const handlePendingCourseImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    setIsUploadingCourseImage(true);
+    try {
+      if (pendingCourse.imageStoragePath) {
+        await deleteObject(ref(storage, pendingCourse.imageStoragePath));
+      }
+      const { url, storagePath } = await uploadSingleImage(file, 'courses');
+      setPendingCourse((prev) => ({ ...prev, imageUrl: url, imageStoragePath: storagePath }));
+      toast({
+        title: 'Course image added',
+        description: 'We’ll use this as the course thumbnail.'
+      });
+    } catch (error) {
+      console.error('Failed to upload course image', error);
+      toast({
+        title: 'Upload failed',
+        description: 'We could not upload that image. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUploadingCourseImage(false);
+      event.target.value = '';
+    }
+  };
+
+  const clearPendingCourseImage = async () => {
+    if (pendingCourse.imageStoragePath) {
+      try {
+        await deleteObject(ref(storage, pendingCourse.imageStoragePath));
+      } catch (error) {
+        console.warn('Failed to delete pending course image', error);
+      }
+    }
+    setPendingCourse((prev) => ({ ...prev, imageUrl: undefined, imageStoragePath: undefined }));
+  };
+
+  const handleRemoveEvent = async (index: number) => {
+    const eventToRemove = events[index];
+    setEvents((prev) => prev.filter((_, i) => i !== index));
+    if (eventToRemove?.imageStoragePath) {
+      try {
+        await deleteObject(ref(storage, eventToRemove.imageStoragePath));
+      } catch (error) {
+        console.warn('Failed to delete event image from storage', error);
+      }
+    }
+  };
+
+  const handleRemoveProduct = async (index: number) => {
+    const productToRemove = products[index];
+    setProducts((prev) => prev.filter((_, i) => i !== index));
+    if (productToRemove?.imageStoragePath) {
+      try {
+        await deleteObject(ref(storage, productToRemove.imageStoragePath));
+      } catch (error) {
+        console.warn('Failed to delete product image from storage', error);
+      }
+    }
+  };
+
+  const handleRemoveCourse = async (index: number) => {
+    const courseToRemove = courses[index];
+    setCourses((prev) => prev.filter((_, i) => i !== index));
+    if (courseToRemove?.imageStoragePath) {
+      try {
+        await deleteObject(ref(storage, courseToRemove.imageStoragePath));
+      } catch (error) {
+        console.warn('Failed to delete course image from storage', error);
+      }
+    }
+  };
+
   const handleAddEvent = () => {
     if (!pendingEvent.title.trim() && !pendingEvent.date && !pendingEvent.city.trim() && !pendingEvent.country.trim()) {
       toast({
@@ -302,8 +476,13 @@ export default function ArtistOnboardingPage() {
       });
       return;
     }
-    setEvents((prev) => [...prev, pendingEvent]);
+    const eventToAdd: EventDraft = { ...pendingEvent };
+    setEvents((prev) => [...prev, eventToAdd]);
     setPendingEvent({ title: '', date: '', city: '', country: '', description: '' });
+    toast({
+      title: 'Event added',
+      description: 'Your event has been saved to the onboarding summary.'
+    });
   };
 
   const handleAddProduct = () => {
@@ -315,8 +494,13 @@ export default function ArtistOnboardingPage() {
       });
       return;
     }
-    setProducts((prev) => [...prev, pendingProduct]);
+    const productToAdd: ListingDraft = { ...pendingProduct };
+    setProducts((prev) => [...prev, productToAdd]);
     setPendingProduct({ title: '', description: '', price: '', url: '' });
+    toast({
+      title: 'Product added',
+      description: 'We’ll feature this in your shop once you publish.'
+    });
   };
 
   const handleAddCourse = () => {
@@ -328,8 +512,13 @@ export default function ArtistOnboardingPage() {
       });
       return;
     }
-    setCourses((prev) => [...prev, pendingCourse]);
+    const courseToAdd: CourseDraft = { ...pendingCourse };
+    setCourses((prev) => [...prev, courseToAdd]);
     setPendingCourse({ title: '', description: '', url: '', price: '' });
+    toast({
+      title: 'Course added',
+      description: 'Your course will appear with the chosen thumbnail.'
+    });
   };
 
   const handleCompleteOnboarding = async () => {
@@ -405,19 +594,22 @@ export default function ArtistOnboardingPage() {
             date: event.date || null,
             city: event.city || null,
             country: event.country || null,
-            description: event.description || null
+            description: event.description || null,
+            imageUrl: event.imageUrl || null
           })),
           products: products.map((product) => ({
             title: product.title || null,
             description: product.description || null,
             price: product.price || null,
-            url: product.url || null
+            url: product.url || null,
+            imageUrl: product.imageUrl || null
           })),
           courses: courses.map((course) => ({
             title: course.title || null,
             description: course.description || null,
             url: course.url || null,
-            price: course.price || null
+            price: course.price || null,
+            imageUrl: course.imageUrl || null
           })),
           updatedAt: serverTimestamp()
         },
@@ -575,8 +767,9 @@ export default function ArtistOnboardingPage() {
   const stepProgress = ((currentStep + 1) / STEPS.length) * 100;
 
   return (
-    <div className="container max-w-4xl py-12">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+    <div className="min-h-screen bg-slate-50">
+      <div className="container max-w-4xl py-12 text-slate-900">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div>
           <Badge variant="outline" className="mb-2">Invite for {invite.email}</Badge>
           <h1 className="text-3xl font-semibold tracking-tight">Artist onboarding</h1>
@@ -590,14 +783,14 @@ export default function ArtistOnboardingPage() {
         </div>
       </div>
 
-      <div className="relative mb-8 h-2 rounded-full bg-muted">
-        <span className="absolute inset-y-0 left-0 rounded-full bg-foreground transition-all" style={{ width: `${stepProgress}%` }} />
+        <div className="relative mb-8 h-2 rounded-full bg-slate-200">
+          <span className="absolute inset-y-0 left-0 rounded-full bg-slate-900 transition-all" style={{ width: `${stepProgress}%` }} />
       </div>
 
-      <Card className="shadow-sm">
-        <CardHeader className="border-b bg-muted/50">
-          <CardTitle>{currentStepLabel}</CardTitle>
-          <CardDescription>
+        <Card className="shadow-lg border border-slate-200 bg-white">
+          <CardHeader className="border-b border-slate-200 bg-white px-6 py-6">
+            <CardTitle className="text-2xl font-semibold text-slate-900">{currentStepLabel}</CardTitle>
+            <CardDescription className="text-slate-600">
             {currentStep === 0 && 'Welcome to Gouache! Let’s launch your profile in just a few quick steps.'}
             {currentStep === 1 && 'Tell us how you want your personal details to appear across Gouache.'}
             {currentStep === 2 && 'Upload highlight pieces for your portfolio. You can skip this now and add more later.'}
@@ -605,16 +798,18 @@ export default function ArtistOnboardingPage() {
             {currentStep === 4 && 'List products or books you sell. Optional—skip if not relevant right now.'}
             {currentStep === 5 && 'Share any courses you currently offer. Optional—skip if not available.'}
             {currentStep === 6 && 'Review everything at a glance before publishing your artist profile.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 px-6 py-8 text-slate-700">
           {currentStep === 0 && (
-            <div className="space-y-4 text-sm text-muted-foreground">
-              <p>
-                Thanks for joining Gouache. We’ll gather the essentials to get your profile live. Each step is quick,
-                and you can skip anything you’re not ready to share yet.
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-3 text-slate-800">
+              <h2 className="text-xl font-semibold text-slate-900">Welcome</h2>
+              <p className="leading-relaxed">
+                We’ll capture the essentials to launch your artist presence. Each step is quick, and you can skip anything you’re not ready to share.
               </p>
-              <p className="font-medium text-foreground">Select continue to get started.</p>
+              <p className="text-sm text-slate-600">
+                Have visuals ready? Upload portfolio highlights, product shots, event posters, and course thumbnails along the way.
+              </p>
             </div>
           )}
 
@@ -786,6 +981,31 @@ export default function ArtistOnboardingPage() {
                       setPendingEvent((prev) => ({ ...prev, description: event.target.value }))
                     }
                   />
+                  <div className="sm:col-span-2 space-y-2">
+                    <p className="text-xs font-medium text-foreground">Event image (optional)</p>
+                    {pendingEvent.imageUrl ? (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={pendingEvent.imageUrl}
+                          alt="Event preview"
+                          className="h-20 w-20 rounded-lg border border-slate-200 object-cover"
+                        />
+                        <Button variant="ghost" size="sm" onClick={() => void clearPendingEventImage()}>
+                          Remove image
+                        </Button>
+                      </div>
+                    ) : (
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploadingEventImage}
+                        onChange={handlePendingEventImageChange}
+                      />
+                    )}
+                    {isUploadingEventImage && (
+                      <p className="text-xs text-muted-foreground">Uploading image…</p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-end">
                   <Button variant="outline" size="sm" onClick={handleAddEvent}>
@@ -798,28 +1018,39 @@ export default function ArtistOnboardingPage() {
                 <div className="space-y-3">
                   {events.map((event, index) => (
                     <div key={`${event.title}-${index}`} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-sm text-foreground">
-                            {event.title || 'Untitled event'}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {[event.city, event.country].filter(Boolean).join(', ') || 'Location TBD'}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {event.date || 'Date TBD'}
-                          </p>
-                          {event.description && (
-                            <p className="text-xs text-muted-foreground mt-2">{event.description}</p>
-                          )}
+                      <div className="flex items-start gap-4">
+                        {event.imageUrl && (
+                          <img
+                            src={event.imageUrl}
+                            alt={event.title || 'Event image'}
+                            className="h-16 w-16 rounded-md border border-slate-200 object-cover"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-semibold text-sm text-foreground">
+                                {event.title || 'Untitled event'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {[event.city, event.country].filter(Boolean).join(', ') || 'Location TBD'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {event.date || 'Date TBD'}
+                              </p>
+                              {event.description && (
+                                <p className="text-xs text-muted-foreground mt-2">{event.description}</p>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => void handleRemoveEvent(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setEvents((prev) => prev.filter((_, i) => i !== index))}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -868,6 +1099,31 @@ export default function ArtistOnboardingPage() {
                     }
                   />
                 </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-foreground">Product image (optional)</p>
+                  {pendingProduct.imageUrl ? (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={pendingProduct.imageUrl}
+                        alt="Product preview"
+                        className="h-20 w-20 rounded-lg border border-slate-200 object-cover"
+                      />
+                      <Button variant="ghost" size="sm" onClick={() => void clearPendingProductImage()}>
+                        Remove image
+                      </Button>
+                    </div>
+                  ) : (
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingProductImage}
+                      onChange={handlePendingProductImageChange}
+                    />
+                  )}
+                  {isUploadingProductImage && (
+                    <p className="text-xs text-muted-foreground">Uploading image…</p>
+                  )}
+                </div>
                 <div className="flex justify-end">
                   <Button variant="outline" size="sm" onClick={handleAddProduct}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -879,28 +1135,39 @@ export default function ArtistOnboardingPage() {
                 <div className="space-y-3">
                   {products.map((product, index) => (
                     <div key={`${product.title}-${index}`} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-sm text-foreground">
-                            {product.title || 'Untitled product'}
-                          </p>
-                          {product.price && (
-                            <p className="text-xs text-muted-foreground">Price: {product.price}</p>
-                          )}
-                          {product.description && (
-                            <p className="text-xs text-muted-foreground mt-2">{product.description}</p>
-                          )}
-                          {product.url && (
-                            <p className="text-xs text-muted-foreground mt-1 break-all">{product.url}</p>
-                          )}
+                      <div className="flex items-start gap-4">
+                        {product.imageUrl && (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.title || 'Product image'}
+                            className="h-16 w-16 rounded-md border border-slate-200 object-cover"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-semibold text-sm text-foreground">
+                                {product.title || 'Untitled product'}
+                              </p>
+                              {product.price && (
+                                <p className="text-xs text-muted-foreground">Price: {product.price}</p>
+                              )}
+                              {product.description && (
+                                <p className="text-xs text-muted-foreground mt-2">{product.description}</p>
+                              )}
+                              {product.url && (
+                                <p className="text-xs text-muted-foreground mt-1 break-all">{product.url}</p>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => void handleRemoveProduct(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setProducts((prev) => prev.filter((_, i) => i !== index))}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -949,6 +1216,31 @@ export default function ArtistOnboardingPage() {
                     }
                   />
                 </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-foreground">Course image (optional)</p>
+                  {pendingCourse.imageUrl ? (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={pendingCourse.imageUrl}
+                        alt="Course preview"
+                        className="h-20 w-20 rounded-lg border border-slate-200 object-cover"
+                      />
+                      <Button variant="ghost" size="sm" onClick={() => void clearPendingCourseImage()}>
+                        Remove image
+                      </Button>
+                    </div>
+                  ) : (
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingCourseImage}
+                      onChange={handlePendingCourseImageChange}
+                    />
+                  )}
+                  {isUploadingCourseImage && (
+                    <p className="text-xs text-muted-foreground">Uploading image…</p>
+                  )}
+                </div>
                 <div className="flex justify-end">
                   <Button variant="outline" size="sm" onClick={handleAddCourse}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -960,28 +1252,39 @@ export default function ArtistOnboardingPage() {
                 <div className="space-y-3">
                   {courses.map((course, index) => (
                     <div key={`${course.title}-${index}`} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-sm text-foreground">
-                            {course.title || 'Untitled course'}
-                          </p>
-                          {course.price && (
-                            <p className="text-xs text-muted-foreground">Price: {course.price}</p>
-                          )}
-                          {course.description && (
-                            <p className="text-xs text-muted-foreground mt-2">{course.description}</p>
-                          )}
-                          {course.url && (
-                            <p className="text-xs text-muted-foreground mt-1 break-all">{course.url}</p>
-                          )}
+                      <div className="flex items-start gap-4">
+                        {course.imageUrl && (
+                          <img
+                            src={course.imageUrl}
+                            alt={course.title || 'Course image'}
+                            className="h-16 w-16 rounded-md border border-slate-200 object-cover"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-semibold text-sm text-foreground">
+                                {course.title || 'Untitled course'}
+                              </p>
+                              {course.price && (
+                                <p className="text-xs text-muted-foreground">Price: {course.price}</p>
+                              )}
+                              {course.description && (
+                                <p className="text-xs text-muted-foreground mt-2">{course.description}</p>
+                              )}
+                              {course.url && (
+                                <p className="text-xs text-muted-foreground mt-1 break-all">{course.url}</p>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => void handleRemoveCourse(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setCourses((prev) => prev.filter((_, i) => i !== index))}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -1068,39 +1371,50 @@ export default function ArtistOnboardingPage() {
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <div className="mt-6 flex flex-col-reverse items-center justify-between gap-3 sm:flex-row">
-        <div className="flex gap-2">
-          {currentStep > 0 && (
-            <Button variant="ghost" onClick={handlePreviousStep}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
-            </Button>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {currentStep >= 2 && currentStep < STEPS.length - 1 && (
-            <Button variant="outline" onClick={handleSkipStep}>
-              Skip this step
-            </Button>
-          )}
-          {currentStep < STEPS.length - 1 && (
-            <Button variant="gradient" onClick={handleNextStep}>
-              Continue <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          )}
-          {currentStep === STEPS.length - 1 && (
-            <Button variant="gradient" onClick={handleCompleteOnboarding} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Publishing…
-                </>
-              ) : (
-                'Publish my profile'
-              )}
-            </Button>
-          )}
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm text-slate-600">
+            {currentStep < STEPS.length - 1
+              ? 'You can skip optional steps now and finish them later from your artist dashboard.'
+              : 'Give everything a quick review—you can still edit details after publishing.'}
+          </div>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+            {currentStep > 0 && (
+              <Button variant="ghost" onClick={handlePreviousStep} className="justify-center">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+            )}
+            {currentStep >= 2 && currentStep < STEPS.length - 1 && (
+              <Button variant="outline" onClick={handleSkipStep} className="justify-center">
+                Skip this step
+              </Button>
+            )}
+            {currentStep < STEPS.length - 1 ? (
+              <Button variant="gradient" onClick={handleNextStep} className="justify-center">
+                Continue
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="gradient"
+                onClick={handleCompleteOnboarding}
+                disabled={isSubmitting}
+                className="justify-center"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Publishing…
+                  </>
+                ) : (
+                  'Publish my profile'
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
