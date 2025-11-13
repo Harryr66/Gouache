@@ -48,17 +48,13 @@ export async function POST(request: Request) {
         ...payloadBase,
         ...(inviteTemplateId ? { template_id: inviteTemplateId } : {}),
         ...(inviteTemplateAlias ? { template_alias: inviteTemplateAlias } : {}),
-        personalizations: [
-          {
-            data: {
-              invite_url: inviteUrl,
-              artist_name: name ?? '',
-              custom_message: message ?? '',
-              greeting_name: recipientName
-            }
-          }
-        ]
-      });
+        data: {
+          invite_url: inviteUrl,
+          artist_name: name ?? '',
+          custom_message: message ?? '',
+          greeting_name: recipientName
+        }
+      } as any);
     } else {
       const html = `
         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #111827;">
