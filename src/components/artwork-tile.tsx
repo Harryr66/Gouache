@@ -166,10 +166,10 @@ const generateArtistContent = (artist: Artist) => ({
 
   return (
     <>
-      <Card
+    <Card 
         className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0"
         onClick={handleTileClick}
-      >
+    >
       <div className="relative aspect-square overflow-hidden">
         <Image
           src={artwork.imageUrl}
@@ -229,8 +229,8 @@ const generateArtistContent = (artist: Artist) => ({
               </div>
             </div>
           </div>
-        </div>
-      </Card>
+      </div>
+    </Card>
 
       {/* Artist Preview Dialog */}
       <Dialog open={showArtistPreview} onOpenChange={setShowArtistPreview}>
@@ -239,98 +239,129 @@ const generateArtistContent = (artist: Artist) => ({
             <DialogTitle>Artist Profile</DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col max-h-[90vh]">
+          <div className="flex flex-col md:flex-row max-h-[90vh]">
             {/* Hero Artwork */}
-            <div className="w-full bg-muted">
-              <div className="relative w-full aspect-[4/3] lg:aspect-[16/9] max-h-[60vh] mx-auto">
+            <div className="w-full md:w-3/5 bg-muted flex items-center justify-center p-4 md:p-6">
+              <div className="relative w-full aspect-[4/3] lg:aspect-[16/9] max-h-[70vh] rounded-2xl overflow-hidden">
                 <Image
                   src={artwork.imageUrl}
                   alt={artwork.title || artwork.imageAiHint}
                   fill
                   priority
-                  className="object-contain lg:object-cover"
+                  className="object-contain md:object-cover"
                 />
+                {artwork.isForSale && artwork.price && (
+                  <div className="absolute top-3 left-3">
+                    <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
+                      ${artwork.price.toLocaleString()}
+                    </Badge>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Details */}
-            <div className="flex-1 overflow-y-auto bg-card">
-              <div className="px-6 py-5 border-t border-border flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
-                    <AvatarImage 
-                      src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(96, 96)} 
-                      alt={artwork.artist.name}
-                      className="object-cover"
-                    />
-                    <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                <div className="space-y-2">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
-                      {artwork.artist.isVerified && (
-                        <BadgeCheck className="h-5 w-5 text-blue-500 fill-current" />
-                      )}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleLike(artwork.id);
-                        }}
-                        disabled={likesLoading}
-                        className={`h-10 w-10 border transition ${
-                          liked ? 'border-red-500 text-red-500' : ''
-                        }`}
-                      >
-                        <HeartIcon className={`h-5 w-5 ${liked ? 'fill-current' : 'fill-none'}`} />
-                      </Button>
+            <div className="w-full md:w-2/5 bg-card border-t md:border-t-0 md:border-l border-border overflow-y-auto">
+              <div className="h-full flex flex-col">
+                <div className="p-6 space-y-6">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-16 w-16 border-4 border-background shadow-lg">
+                          <AvatarImage
+                            src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(96, 96)}
+                            alt={artwork.artist.name}
+                            className="object-cover"
+                          />
+                          <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
+                            {artwork.artist.isVerified && (
+                              <BadgeCheck className="h-5 w-5 text-blue-500 fill-current" />
+                            )}
+                          </div>
+                          <p className="text-muted-foreground">@{artwork.artist.handle}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-auto">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleLike(artwork.id);
+                          }}
+                          disabled={likesLoading}
+                          className={`h-12 w-12 border-2 transition ${
+                            liked ? 'border-red-500 text-red-500 bg-red-500/10' : ''
+                          }`}
+                        >
+                          <HeartIcon className={`h-6 w-6 ${liked ? 'fill-current' : 'fill-none'}`} />
+                        </Button>
+                        <Button variant="outline" size="icon">
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={following ? 'outline' : 'secondary'}
+                          onClick={handleFollowToggle}
+                          className="flex items-center gap-2"
+                        >
+                          {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                          {following ? 'Following' : 'Follow'}
+                        </Button>
+                        <Button variant="gradient" className="flex items-center gap-2" onClick={handleViewProfile}>
+                          <ExternalLink className="h-4 w-4" />
+                          View Profile
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 justify-end">
-                      <Button variant="outline" size="icon">
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant={following ? "outline" : "secondary"}
-                        onClick={handleFollowToggle}
-                        className="flex items-center gap-2"
-                      >
-                        {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-                        {following ? 'Following' : 'Follow'}
-                      </Button>
-                      <Button
-                        variant="gradient"
-                        className="flex items-center gap-2"
-                        onClick={handleViewProfile}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        View Profile
-                      </Button>
+
+                    <p className="text-sm text-muted-foreground leading-relaxed">{artwork.artist.bio}</p>
+
+                    <div className="flex items-center gap-5 flex-wrap text-sm">
+                      <div>
+                        <span className="font-bold">{artwork.artist.followerCount.toLocaleString()}</span>
+                        <span className="text-muted-foreground ml-1">followers</span>
+                      </div>
+                      <div>
+                        <span className="font-bold">{artwork.artist.followingCount.toLocaleString()}</span>
+                        <span className="text-muted-foreground ml-1">following</span>
+                      </div>
+                      {artwork.artist.location && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          {artwork.artist.location}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <p className="text-muted-foreground">@{artwork.artist.handle}</p>
-                  <p className="text-sm text-muted-foreground max-w-2xl">
-                    {artwork.artist.bio}
-                  </p>
-                  <div className="flex items-center gap-6 flex-wrap text-sm">
-                    <div>
-                      <span className="font-bold">{artwork.artist.followerCount.toLocaleString()}</span>
-                      <span className="text-muted-foreground ml-1">followers</span>
-                    </div>
-                    <div>
-                      <span className="font-bold">{artwork.artist.followingCount.toLocaleString()}</span>
-                      <span className="text-muted-foreground ml-1">following</span>
-                    </div>
-                    {artwork.artist.location && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        {artwork.artist.location}
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Artwork Details
+                    </h3>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      {artwork.title && <p className="text-base font-medium text-foreground">{artwork.title}</p>}
+                      {artwork.description && <p>{artwork.description}</p>}
+                      <div className="flex flex-wrap gap-3">
+                        {artwork.medium && (
+                          <Badge variant="outline" className="capitalize">
+                            {artwork.medium}
+                          </Badge>
+                        )}
+                        {artwork.tags?.slice(0, 4).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="capitalize">
+                            #{tag}
+                          </Badge>
+                        ))}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
-              </div>
               </div>
             </div>
           </div>
