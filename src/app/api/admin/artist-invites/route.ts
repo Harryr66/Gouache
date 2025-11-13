@@ -48,12 +48,16 @@ export async function POST(request: Request) {
         ...payloadBase,
         ...(inviteTemplateId ? { template_id: inviteTemplateId } : {}),
         ...(inviteTemplateAlias ? { template_alias: inviteTemplateAlias } : {}),
-        data: {
-          invite_url: inviteUrl,
-          artist_name: name ?? '',
-          custom_message: message ?? '',
-          greeting_name: recipientName
-        }
+        personalizations: [
+          {
+            data: {
+              invite_url: inviteUrl,
+              artist_name: name ?? '',
+              custom_message: message ?? '',
+              greeting_name: recipientName
+            }
+          }
+        ]
       });
     } else {
       const html = `
