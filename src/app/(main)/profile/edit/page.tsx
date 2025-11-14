@@ -689,21 +689,37 @@ export default function ProfileEditPage() {
           : serverTimestamp()
       };
 
-      const artistRequest: Omit<ArtistRequest, 'id'> = {
+      // Build socialLinks object only with defined values
+      const socialLinks: any = {};
+      if (artistRequestData.socialLinks.instagram?.trim()) {
+        socialLinks.instagram = artistRequestData.socialLinks.instagram.trim();
+      }
+      if (artistRequestData.socialLinks.x?.trim()) {
+        socialLinks.x = artistRequestData.socialLinks.x.trim();
+      }
+      if (artistRequestData.socialLinks.website?.trim()) {
+        socialLinks.website = artistRequestData.socialLinks.website.trim();
+      }
+      if (artistRequestData.socialLinks.tiktok?.trim()) {
+        socialLinks.tiktok = artistRequestData.socialLinks.tiktok.trim();
+      }
+
+      const artistRequest: any = {
         userId: user.id,
-        user: cleanUser as any,
+        user: cleanUser,
         portfolioImages,
-        artistStatement: artistRequestData.artistStatement || undefined,
         experience: artistRequestData.experience,
-        socialLinks: {
-          ...(artistRequestData.socialLinks.instagram && { instagram: artistRequestData.socialLinks.instagram }),
-          ...(artistRequestData.socialLinks.x && { x: artistRequestData.socialLinks.x }),
-          ...(artistRequestData.socialLinks.website && { website: artistRequestData.socialLinks.website }),
-          ...(artistRequestData.socialLinks.tiktok && { tiktok: artistRequestData.socialLinks.tiktok }),
-        },
         status: 'pending',
-        submittedAt: serverTimestamp() as any
+        submittedAt: serverTimestamp()
       };
+
+      // Only include optional fields if they have values (Firestore doesn't allow undefined)
+      if (artistRequestData.artistStatement?.trim()) {
+        artistRequest.artistStatement = artistRequestData.artistStatement.trim();
+      }
+      if (Object.keys(socialLinks).length > 0) {
+        artistRequest.socialLinks = socialLinks;
+      }
 
       const docRef = await addDoc(collection(db, 'artistRequests'), artistRequest);
       console.log('✅ Artist request submitted successfully:', docRef.id, artistRequest);
