@@ -4,28 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Eye, User } from 'lucide-react';
-
-// Custom UFO icon
-const UfoIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    {/* UFO body (dark ellipse) */}
-    <ellipse cx="12" cy="14" rx="8" ry="3" fill="currentColor" />
-    {/* UFO dome (outlined semi-circle above) */}
-    <path d="M 4 14 Q 12 8 20 14" fill="none" stroke="currentColor" strokeWidth="1.5" />
-  </svg>
-);
+import { Eye, User, Globe } from 'lucide-react';
 
 const navigation = [
-  { name: 'Mothership', href: '/news', icon: UfoIcon },
+  { name: 'News', href: '/news', icon: Globe },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Profile', href: '/profile', icon: User },
 ];

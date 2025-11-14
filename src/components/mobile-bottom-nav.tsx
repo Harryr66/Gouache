@@ -3,42 +3,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Eye, User } from 'lucide-react';
+import { Eye, User, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
-// Custom rounded triangle play icon
-const RoundedPlayIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    stroke="none"
-  >
-    <polygon points="7,5 7,19 17,12" />
-  </svg>
-);
-
-// Custom UFO icon
-const UfoIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    {/* UFO body (dark ellipse) */}
-    <ellipse cx="12" cy="14" rx="8" ry="3" fill="currentColor" />
-    {/* UFO dome (outlined semi-circle above) */}
-    <path d="M 4 14 Q 12 8 20 14" fill="none" stroke="currentColor" strokeWidth="1.5" />
-  </svg>
-);
-
 const mobileNavItems = [
-  { href: '/news', icon: UfoIcon, label: 'Mothership' },
+  { href: '/news', icon: Globe, label: 'News' },
   { href: '/discover', icon: Eye, label: 'Discover' },
   { href: '/profile', icon: User, label: 'Profile' },
 ];
