@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { NewsArticle } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { NewsTile } from '@/components/news-tile';
+import { NewsletterSignup } from '@/components/newsletter-signup';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -269,6 +270,11 @@ export default function NewsPage() {
           </div>
         </>
       )}
+    </div>
+    
+    {/* Newsletter Signup - Bottom with Standard Theme Colors */}
+    <div className="container max-w-6xl pt-12 pb-16 border-t">
+      <NewsletterSignup />
     </div>
     </>
   );
