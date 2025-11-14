@@ -681,18 +681,30 @@ export default function DiscoverPage() {
           const data = doc.data();
           
           // Convert portfolio items from Firestore format (with Timestamps) to proper format
-          const portfolio = (data.portfolio || []).map((item: any) => ({
-            ...item,
-            id: item.id || `portfolio-${Date.now()}`,
-            title: item.title || 'Untitled Artwork',
-            description: item.description || '',
-            medium: item.medium || '',
-            dimensions: item.dimensions || '',
-            year: item.year || '',
-            tags: item.tags || [],
-            createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date()),
-            imageUrl: item.imageUrl || ''
-          }));
+          const portfolio = (data.portfolio || []).map((item: any) => {
+            // Handle createdAt - could be Date, Firestore Timestamp, or undefined
+            let createdAt: Date;
+            if (item.createdAt instanceof Date) {
+              createdAt = item.createdAt;
+            } else if (item.createdAt && typeof item.createdAt.toDate === 'function') {
+              createdAt = item.createdAt.toDate();
+            } else {
+              createdAt = new Date();
+            }
+            
+            return {
+              ...item,
+              id: item.id || `portfolio-${Date.now()}`,
+              title: item.title || 'Untitled Artwork',
+              description: item.description || '',
+              medium: item.medium || '',
+              dimensions: item.dimensions || '',
+              year: item.year || '',
+              tags: item.tags || [],
+              createdAt: createdAt,
+              imageUrl: item.imageUrl || ''
+            };
+          });
           
           return {
             id: doc.id,
@@ -730,10 +742,10 @@ export default function DiscoverPage() {
         finalArtists.forEach(artist => {
           if (artist.portfolioImages && artist.portfolioImages.length > 0) {
             artist.portfolioImages.forEach((portfolioItem, index) => {
-              // Ensure createdAt is a Date object
+              // Ensure createdAt is a Date object (already converted in portfolio mapping above)
               const createdAt = portfolioItem.createdAt instanceof Date 
                 ? portfolioItem.createdAt 
-                : (portfolioItem.createdAt?.toDate?.() || new Date());
+                : new Date();
               
               artworksData.push({
                 id: `artwork-${artist.id}-${portfolioItem.id || index}`,
