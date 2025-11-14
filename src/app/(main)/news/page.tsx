@@ -171,6 +171,7 @@ export default function NewsPage() {
   }, [articles, filteredCategory, searchTerm]);
 
   return (
+    <>
     <div className="container max-w-6xl py-12 space-y-10">
       <header className="space-y-6">
         <div className="space-y-2">
@@ -234,16 +235,15 @@ export default function NewsPage() {
               <NewsTile key={article.id} article={article} />
             ))}
           </div>
-          
-          {/* Newsletter Signup */}
-          <div className="pt-12 border-t">
-            <div className="max-w-2xl mx-auto">
-              <NewsletterSignup />
-            </div>
-          </div>
         </>
       )}
     </div>
+    
+    {/* Newsletter Signup - Full Width */}
+    <div className="w-full pt-12 border-t px-4 sm:px-6 lg:px-8">
+      <NewsletterSignup />
+    </div>
+    </>
   );
 }
 
