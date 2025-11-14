@@ -173,6 +173,11 @@ export default function NewsPage() {
   return (
     <>
     <div className="container max-w-6xl py-12 space-y-10">
+      {/* Newsletter Signup - At Top */}
+      <div className="container max-w-6xl pb-8 border-b">
+        <NewsletterSignup />
+      </div>
+
       <header className="space-y-6">
         <div className="space-y-2">
           <Badge variant="outline" className="uppercase tracking-widest">
@@ -230,18 +235,13 @@ export default function NewsPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredArticles.slice(0, 12).map((article) => (
               <NewsTile key={article.id} article={article} />
             ))}
           </div>
         </>
       )}
-    </div>
-    
-    {/* Newsletter Signup - Full Width */}
-    <div className="container max-w-6xl pt-12 pb-16 border-t">
-      <NewsletterSignup />
     </div>
     </>
   );
