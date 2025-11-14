@@ -1027,8 +1027,7 @@ export default function ArtistOnboardingPage() {
     );
   }
 
-
-  if (!inviteEmailMatchesUser) {
+  if (user && !inviteEmailMatchesUser) {
     return (
       <div className="container max-w-2xl py-16">
         <Card className="border-amber-200 bg-amber-50/60">
@@ -1113,7 +1112,7 @@ export default function ArtistOnboardingPage() {
             <CardTitle className="text-2xl font-semibold text-slate-900">{currentStepLabel}</CardTitle>
             <CardDescription className="text-slate-600">
             {currentStep === 0 && 'Create your artist account to begin. This invite is reserved for your email address.'}
-            {currentStep === 1 && 'Welcome to Gouache! Let's launch your profile in just a few quick steps.'}
+            {currentStep === 1 && "Welcome to Gouache! Let's launch your profile in just a few quick steps."}
             {currentStep === 2 && 'Tell us how you want your personal details to appear across Gouache.'}
             {currentStep === 3 && 'Upload highlight pieces for your portfolio. You can skip this now and add more later.'}
             {currentStep === 4 && 'Share any upcoming events. This step is optional and can be skipped.'}
@@ -1310,7 +1309,7 @@ export default function ArtistOnboardingPage() {
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-3 text-slate-800">
               <h2 className="text-xl font-semibold text-slate-900">Welcome</h2>
               <p className="leading-relaxed">
-                We'll capture the essentials to launch your artist profile. Each step is quick, and you can skip anything you're not ready to share.
+                We&apos;ll capture the essentials to launch your artist profile. Each step is quick, and you can skip anything you&apos;re not ready to share.
               </p>
             </div>
           )}
@@ -1615,7 +1614,7 @@ export default function ArtistOnboardingPage() {
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Products & Books</h3>
                 <p className="text-sm text-muted-foreground">
-                  List any products, prints, or books subscribers can purchase. Optional—skip if you don't have any yet.
+                  List any products, prints, or books subscribers can purchase. Optional—skip if you don&apos;t have any yet.
                 </p>
               </div>
               <div className="space-y-3">
