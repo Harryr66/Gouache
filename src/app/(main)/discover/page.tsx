@@ -1367,7 +1367,7 @@ export default function DiscoverPage() {
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
-                    <SelectItem value="random">Random</SelectItem>
+                    <SelectItem value="random">Shuffle</SelectItem>
                     <SelectItem value="newest">Newest</SelectItem>
                     <SelectItem value="popular">Most Popular</SelectItem>
                     <SelectItem value="price-low">Price: Low to High</SelectItem>
