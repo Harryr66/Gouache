@@ -17,13 +17,10 @@ const UfoIcon = ({ className }: { className?: string }) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    {/* UFO body (flying saucer) */}
-    <ellipse cx="12" cy="10" rx="8" ry="3" fill="currentColor" />
-    <ellipse cx="12" cy="10" rx="6" ry="2" fill="none" stroke="currentColor" />
-    {/* UFO dome */}
-    <ellipse cx="12" cy="10" rx="4" ry="2.5" fill="currentColor" opacity="0.3" />
-    {/* Light beam (optional) */}
-    <path d="M8 13 L12 16 L16 13" stroke="currentColor" fill="none" strokeWidth="1" opacity="0.5" />
+    {/* UFO body (dark ellipse) */}
+    <ellipse cx="12" cy="14" rx="8" ry="3" fill="currentColor" />
+    {/* UFO dome (outlined semi-circle above) */}
+    <path d="M 4 14 Q 12 8 20 14" fill="none" stroke="currentColor" strokeWidth="1.5" />
   </svg>
 );
 
