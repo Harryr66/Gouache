@@ -12,7 +12,7 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Loader2, Copy, RefreshCw, Check, XCircle, Ban } from 'lucide-react';
+import { Loader2, Copy, RefreshCw, Check, XCircle, Ban, Archive, Trash2 } from 'lucide-react';
 
 import { db } from '@/lib/firebase';
 import { ArtistInvite } from '@/lib/types';
@@ -37,14 +37,16 @@ const statusLabelMap: Record<ArtistInvite['status'], string> = {
   pending: 'Pending',
   redeemed: 'Redeemed',
   revoked: 'Revoked',
-  expired: 'Expired'
+  expired: 'Expired',
+  archived: 'Archived'
 };
 
 const statusClassMap: Record<ArtistInvite['status'], string> = {
   pending: 'bg-amber-100 text-amber-900',
   redeemed: 'bg-emerald-100 text-emerald-900',
   revoked: 'bg-rose-100 text-rose-900',
-  expired: 'bg-muted text-muted-foreground'
+  expired: 'bg-muted text-muted-foreground',
+  archived: 'bg-slate-100 text-slate-700'
 };
 
 const generateToken = () => {
@@ -64,7 +66,10 @@ export function ArtistInviteConsole() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     const invitesQuery = query(collection(db, 'artistInvites'), orderBy('createdAt', 'desc'));
@@ -85,7 +90,10 @@ export function ArtistInviteConsole() {
           redeemedAt: data.redeemedAt?.toDate?.(),
           redeemedBy: data.redeemedBy,
           lastAccessedAt: data.lastAccessedAt?.toDate?.(),
-          lastError: data.lastError || undefined
+          lastError: data.lastError || undefined,
+          revokedAt: data.revokedAt?.toDate?.(),
+          archivedAt: data.archivedAt?.toDate?.(),
+          message: data.message ?? null
         } as ArtistInvite;
       });
 
@@ -97,6 +105,9 @@ export function ArtistInviteConsole() {
   }, []);
 
   const pendingInvites = useMemo(() => invites.filter((invite) => invite.status === 'pending'), [invites]);
+  const archivedInvites = useMemo(() => invites.filter((invite) => invite.status === 'archived'), [invites]);
+  const activeInvites = useMemo(() => invites.filter((invite) => invite.status !== 'archived'), [invites]);
+  const displayedInvites = showArchived ? archivedInvites : activeInvites;
 
   const handleCreateInvite = async () => {
     if (!email.trim()) {
@@ -251,13 +262,14 @@ export function ArtistInviteConsole() {
     setRevokingId(invite.id);
     try {
       await updateDoc(doc(db, 'artistInvites', invite.id), {
-        status: 'revoked',
-        revokedAt: serverTimestamp()
+        status: 'archived', // Automatically archive when revoked
+        revokedAt: serverTimestamp(),
+        archivedAt: serverTimestamp()
       });
 
       toast({
         title: 'Invite revoked',
-        description: `${invite.email} can no longer access the onboarding link.`
+        description: `${invite.email} can no longer access the onboarding link. The invite has been archived.`
       });
     } catch (error) {
       console.error('Failed to revoke invite:', error);
@@ -268,6 +280,61 @@ export function ArtistInviteConsole() {
       });
     } finally {
       setRevokingId(null);
+    }
+  };
+
+  const handleArchive = async (invite: ArtistInvite) => {
+    setArchivingId(invite.id);
+    try {
+      await updateDoc(doc(db, 'artistInvites', invite.id), {
+        status: 'archived',
+        archivedAt: serverTimestamp()
+      });
+
+      toast({
+        title: 'Invite archived',
+        description: `The invitation for ${invite.email} has been archived.`
+      });
+    } catch (error) {
+      console.error('Failed to archive invite:', error);
+      toast({
+        title: 'Unable to archive',
+        description: error instanceof Error ? error.message : 'Invite could not be archived.',
+        variant: 'destructive'
+      });
+    } finally {
+      setArchivingId(null);
+    }
+  };
+
+  const handleDelete = async (invite: ArtistInvite) => {
+    if (!confirm(`Are you sure you want to permanently delete the invitation for ${invite.email}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingId(invite.id);
+    try {
+      const inviteRef = doc(db, 'artistInvites', invite.id);
+      await updateDoc(inviteRef, {
+        status: 'archived',
+        archivedAt: serverTimestamp()
+      });
+      // Note: We're archiving instead of deleting to maintain data integrity
+      // If you want true deletion, use: await deleteDoc(inviteRef);
+
+      toast({
+        title: 'Invite deleted',
+        description: `The invitation for ${invite.email} has been removed.`
+      });
+    } catch (error) {
+      console.error('Failed to delete invite:', error);
+      toast({
+        title: 'Unable to delete',
+        description: error instanceof Error ? error.message : 'Invite could not be deleted.',
+        variant: 'destructive'
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -324,10 +391,16 @@ export function ArtistInviteConsole() {
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Overview</h3>
                 <p className="text-sm text-muted-foreground">
-                  {pendingInvites.length} pending invite{pendingInvites.length === 1 ? '' : 's'} • {invites.length}{' '}
-                  total sent
+                  {pendingInvites.length} pending invite{pendingInvites.length === 1 ? '' : 's'} • {activeInvites.length} active • {archivedInvites.length} archived
                 </p>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowArchived(!showArchived)}
+              >
+                {showArchived ? 'Show Active' : 'Show Archived'}
+              </Button>
             </div>
 
             <ScrollArea className="max-h-[420px] rounded-md border">
@@ -349,15 +422,17 @@ export function ArtistInviteConsole() {
                       </TableCell>
                     </TableRow>
                   )}
-                  {!loading && invites.length === 0 && (
+                  {!loading && displayedInvites.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                        No invites sent yet. Use the form to send your first artist onboarding link.
+                        {showArchived 
+                          ? 'No archived invites.' 
+                          : 'No invites sent yet. Use the form to send your first artist onboarding link.'}
                       </TableCell>
                     </TableRow>
                   )}
 
-                  {invites.map((invite) => (
+                  {displayedInvites.map((invite) => (
                     <TableRow key={invite.id}>
                       <TableCell>
                         <div className="space-y-1">
@@ -438,6 +513,44 @@ export function ArtistInviteConsole() {
                               )}
                             </Button>
                           )}
+                          {invite.status !== 'archived' && invite.status !== 'pending' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleArchive(invite)}
+                              disabled={archivingId === invite.id}
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              {archivingId === invite.id ? (
+                                <>
+                                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> Archiving
+                                </>
+                              ) : (
+                                <>
+                                  <Archive className="mr-1 h-3.5 w-3.5" /> Archive
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          {(invite.status === 'archived' || invite.status === 'revoked' || invite.status === 'expired') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(invite)}
+                              disabled={deletingId === invite.id}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              {deletingId === invite.id ? (
+                                <>
+                                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> Deleting
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -451,7 +564,8 @@ export function ArtistInviteConsole() {
               <ul className="list-disc space-y-1 pl-4">
                 <li>Invited artists must sign in with the same email address to redeem their link.</li>
                 <li>Once onboarding is complete, the invite is automatically marked as redeemed.</li>
-                <li>You can revoke unused invites at any time to disable the onboarding link.</li>
+                <li>Revoked invites are automatically archived. You can manually archive or delete outdated invitations.</li>
+                <li>Use the toggle above to view archived invitations separately from active ones.</li>
               </ul>
             </div>
           </div>

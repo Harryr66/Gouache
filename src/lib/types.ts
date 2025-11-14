@@ -86,7 +86,7 @@ export interface ArtistInvite {
   email: string;
   name?: string;
   token: string;
-  status: 'pending' | 'redeemed' | 'revoked' | 'expired';
+  status: 'pending' | 'redeemed' | 'revoked' | 'expired' | 'archived';
   createdAt: Date;
   createdBy?: string;
   createdByName?: string;
@@ -96,6 +96,7 @@ export interface ArtistInvite {
   lastAccessedAt?: Date;
   lastError?: string;
   revokedAt?: Date;
+  archivedAt?: Date;
   message?: string | null;
 }
 
