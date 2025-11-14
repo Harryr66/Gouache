@@ -146,7 +146,7 @@ export default function AdminPanel() {
   const [newArticle, setNewArticle] = useState({
     title: '',
     summary: '',
-    category: 'Headlines',
+    category: 'Stories',
     author: '',
     imageUrl: '',
     externalUrl: '',
@@ -311,7 +311,7 @@ export default function AdminPanel() {
             id: doc.id,
             title: data.title ?? 'Untitled story',
             summary: data.summary ?? '',
-            category: data.category ?? 'Headlines',
+            category: data.category ?? 'Stories',
             author: data.author ?? '',
             imageUrl: data.imageUrl ?? DEFAULT_ARTICLE_IMAGE,
             publishedAt: data.publishedAt?.toDate?.() ?? new Date(),
@@ -1485,7 +1485,7 @@ export default function AdminPanel() {
       const docRef = await addDoc(collection(db, 'newsArticles'), {
         title: newArticle.title.trim(),
         summary: newArticle.summary.trim(),
-        category: newArticle.category || 'Headlines',
+        category: newArticle.category || 'Stories',
         author: newArticle.author?.trim() || '',
         imageUrl,
         externalUrl: newArticle.externalUrl?.trim() || '',
@@ -1504,7 +1504,7 @@ export default function AdminPanel() {
           id: docRef.id,
           title: newArticle.title.trim(),
           summary: newArticle.summary.trim(),
-          category: newArticle.category || 'Headlines',
+          category: newArticle.category || 'Stories',
           author: newArticle.author?.trim() || '',
           imageUrl,
           externalUrl: newArticle.externalUrl?.trim() || '',
@@ -1526,7 +1526,7 @@ export default function AdminPanel() {
       setNewArticle({
         title: '',
         summary: '',
-        category: 'Headlines',
+        category: 'Stories',
         author: '',
         imageUrl: '',
         externalUrl: '',
@@ -2563,13 +2563,21 @@ export default function AdminPanel() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="news-category">Category</Label>
-                    <Input
-                      id="news-category"
-                      placeholder="Headlines"
-                      value={newArticle.category}
-                      onChange={(event) => setNewArticle((prev) => ({ ...prev, category: event.target.value }))}
-                    />
+                    <Label htmlFor="news-category">Category *</Label>
+                    <Select
+                      value={newArticle.category || 'Stories'}
+                      onValueChange={(value) => setNewArticle((prev) => ({ ...prev, category: value }))}
+                    >
+                      <SelectTrigger id="news-category">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Stories">Stories</SelectItem>
+                        <SelectItem value="Events">Events</SelectItem>
+                        <SelectItem value="News">News</SelectItem>
+                        <SelectItem value="Partners">Partners</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="news-author">Author</Label>

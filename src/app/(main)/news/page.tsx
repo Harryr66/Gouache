@@ -141,15 +141,7 @@ export default function NewsPage() {
     };
   }, []);
 
-  const categories = useMemo(() => {
-    const unique = new Set<string>(['All']);
-    articles.forEach((article) => unique.add(article.category ?? 'General'));
-    // Add placeholder categories if no real articles
-    if (articles.length === 0) {
-      PLACEHOLDER_ARTICLES.forEach((article) => unique.add(article.category));
-    }
-    return Array.from(unique);
-  }, [articles]);
+  const categories = ['All', 'Stories', 'Events', 'News', 'Partners'];
 
   const filteredArticles = useMemo(() => {
     const realArticles = articles.filter((article) => {
@@ -252,7 +244,7 @@ export default function NewsPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="flex gap-3">
             {categories.map((category) => (
               <Button
@@ -264,17 +256,6 @@ export default function NewsPage() {
                 {category}
               </Button>
             ))}
-          </div>
-          <div className="flex gap-2 items-center">
-            <Input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search news, trends, or artists…"
-              className="w-full sm:w-48 text-sm"
-            />
-            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => { setSearchTerm(''); setFilteredCategory('All'); }}>
-              <RefreshCcw className="h-3.5 w-3.5" />
-            </Button>
           </div>
         </div>
       </header>
