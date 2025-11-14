@@ -23,7 +23,7 @@ const PLACEHOLDER_ARTICLE: NewsArticle = {
   title: 'Coming Soon',
   summary: 'New stories and insights from the art world will appear here.',
   category: 'Stories',
-  imageUrl: '/assets/gouache-logo-light-20241111.png',
+  imageUrl: '/assets/gouache-logo-dark-20241111.png',
   author: 'Gouache Editorial',
   publishedAt: new Date(),
   tags: [],
@@ -204,7 +204,7 @@ export default function NewsPage() {
       </header>
 
       {/* Newsletter Signup - Accent Banner */}
-      <div className="bg-red-600 dark:bg-slate-700 rounded-lg py-4 px-6">
+      <div className="bg-red-600 dark:bg-slate-900 rounded-lg py-4 px-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-shrink-0">
             <h3 className="text-lg font-semibold text-white uppercase">
@@ -227,7 +227,7 @@ export default function NewsPage() {
               type="submit"
               disabled={isNewsletterSubmitting || isNewsletterSuccess}
               variant="secondary"
-              className="bg-white dark:bg-slate-900 text-foreground hover:bg-white/90 dark:hover:bg-slate-900/90 shrink-0"
+              className="bg-white dark:bg-slate-700 text-foreground hover:bg-white/90 dark:hover:bg-slate-700/90 shrink-0"
             >
               {isNewsletterSubmitting ? (
                 <>

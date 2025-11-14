@@ -25,7 +25,7 @@ export function NewsTile({ article }: NewsTileProps) {
             className={cn(
               "absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105",
               article.id?.startsWith('placeholder') 
-                ? "object-contain bg-muted" 
+                ? "object-contain bg-muted p-8 scale-90" 
                 : "object-cover"
             )}
           />
