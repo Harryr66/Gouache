@@ -671,7 +671,7 @@ export default function DiscoverPage() {
       try {
         setIsDataLoading(true);
         const artistsQuery = query(
-          collection(db, 'users'),
+          collection(db, 'userProfiles'),
           where('isProfessional', '==', true),
           orderBy('createdAt', 'desc')
         );
@@ -679,10 +679,25 @@ export default function DiscoverPage() {
         
         const artistsData: Artist[] = snapshot.docs.map(doc => {
           const data = doc.data();
+          
+          // Convert portfolio items from Firestore format (with Timestamps) to proper format
+          const portfolio = (data.portfolio || []).map((item: any) => ({
+            ...item,
+            id: item.id || `portfolio-${Date.now()}`,
+            title: item.title || 'Untitled Artwork',
+            description: item.description || '',
+            medium: item.medium || '',
+            dimensions: item.dimensions || '',
+            year: item.year || '',
+            tags: item.tags || [],
+            createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date()),
+            imageUrl: item.imageUrl || ''
+          }));
+          
           return {
             id: doc.id,
-            name: data.displayName || data.username || 'Unknown Artist',
-            handle: data.username || `artist_${doc.id}`,
+            name: data.name || data.displayName || data.handle || 'Unknown Artist',
+            handle: data.handle || data.username || `artist_${doc.id}`,
             avatarUrl: data.avatarUrl || null,
             bio: data.bio || '',
             website: data.website || '',
@@ -699,7 +714,7 @@ export default function DiscoverPage() {
               x: data.socialLinks?.x || '',
               website: data.socialLinks?.website || ''
             },
-            portfolioImages: data.portfolio || [],
+            portfolioImages: portfolio,
             events: data.events || [],
             courses: data.courses || [],
             discoverThumbnail: data.discoverThumbnail || null
@@ -715,23 +730,28 @@ export default function DiscoverPage() {
         finalArtists.forEach(artist => {
           if (artist.portfolioImages && artist.portfolioImages.length > 0) {
             artist.portfolioImages.forEach((portfolioItem, index) => {
+              // Ensure createdAt is a Date object
+              const createdAt = portfolioItem.createdAt instanceof Date 
+                ? portfolioItem.createdAt 
+                : (portfolioItem.createdAt?.toDate?.() || new Date());
+              
               artworksData.push({
-                id: `artwork-${artist.id}-${index}`,
+                id: `artwork-${artist.id}-${portfolioItem.id || index}`,
                 artist,
-                title: portfolioItem.title,
+                title: portfolioItem.title || 'Untitled Artwork',
                 description: portfolioItem.description || '',
                 imageUrl: portfolioItem.imageUrl,
-                imageAiHint: portfolioItem.title,
-                discussionId: `discussion-${artist.id}-${index}`,
+                imageAiHint: portfolioItem.title || 'Untitled Artwork',
+                discussionId: `discussion-${artist.id}-${portfolioItem.id || index}`,
                 tags: portfolioItem.tags || [],
                 price: Math.floor(Math.random() * 5000) + 500,
-        currency: 'USD',
+                currency: 'USD',
                 isForSale: Math.random() > 0.3,
                 category: portfolioItem.medium || 'Mixed Media',
                 medium: portfolioItem.medium || 'Mixed Media',
-        dimensions: { width: 24, height: 30, unit: 'in' },
-                createdAt: portfolioItem.createdAt,
-                updatedAt: portfolioItem.createdAt,
+                dimensions: { width: 24, height: 30, unit: 'in' },
+                createdAt: createdAt,
+                updatedAt: createdAt,
                 views: Math.floor(Math.random() * 5000),
                 likes: Math.floor(Math.random() * 500),
               });
