@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Upload, X, Check, Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
-import { doc, updateDoc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, setDoc, collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { updateEmail, verifyBeforeUpdateEmail } from 'firebase/auth';
 import { db, storage, auth } from '@/lib/firebase';
@@ -666,11 +666,12 @@ export default function ProfileEditPage() {
     setIsSubmittingRequest(true);
     try {
       // Create a clean user object without undefined values
+      // Convert Date objects to Firestore Timestamps
       const cleanUser = {
         id: user.id,
-        username: user.username,
-        email: user.email,
-        displayName: user.displayName,
+        username: user.username || '',
+        email: user.email || '',
+        displayName: user.displayName || '',
         ...(user.avatarUrl && { avatarUrl: user.avatarUrl }),
         ...(user.bio && { bio: user.bio }),
         ...(user.location && { location: user.location }),
@@ -680,24 +681,28 @@ export default function ProfileEditPage() {
         postCount: user.postCount || 0,
         isVerified: user.isVerified || false,
         isProfessional: user.isProfessional || false,
-        createdAt: user.createdAt || new Date(),
-        updatedAt: user.updatedAt || new Date()
+        createdAt: user.createdAt 
+          ? (user.createdAt instanceof Date ? Timestamp.fromDate(user.createdAt) : user.createdAt)
+          : serverTimestamp(),
+        updatedAt: user.updatedAt 
+          ? (user.updatedAt instanceof Date ? Timestamp.fromDate(user.updatedAt) : user.updatedAt)
+          : serverTimestamp()
       };
 
       const artistRequest: Omit<ArtistRequest, 'id'> = {
         userId: user.id,
         user: cleanUser as any,
         portfolioImages,
-        artistStatement: artistRequestData.artistStatement,
+        artistStatement: artistRequestData.artistStatement || undefined,
         experience: artistRequestData.experience,
         socialLinks: {
-          instagram: artistRequestData.socialLinks.instagram || undefined,
-          x: artistRequestData.socialLinks.x || undefined,
-          website: artistRequestData.socialLinks.website || undefined,
-          tiktok: artistRequestData.socialLinks.tiktok || undefined,
+          ...(artistRequestData.socialLinks.instagram && { instagram: artistRequestData.socialLinks.instagram }),
+          ...(artistRequestData.socialLinks.x && { x: artistRequestData.socialLinks.x }),
+          ...(artistRequestData.socialLinks.website && { website: artistRequestData.socialLinks.website }),
+          ...(artistRequestData.socialLinks.tiktok && { tiktok: artistRequestData.socialLinks.tiktok }),
         },
         status: 'pending',
-        submittedAt: new Date()
+        submittedAt: serverTimestamp() as any
       };
 
       const docRef = await addDoc(collection(db, 'artistRequests'), artistRequest);
@@ -720,9 +725,16 @@ export default function ProfileEditPage() {
       });
     } catch (error) {
       console.error('Error submitting artist request:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Error details:', {
+        error,
+        user: user ? { id: user.id, email: user.email, username: user.username } : 'No user',
+        portfolioImagesCount: portfolioImages.length,
+        artistRequestData
+      });
       toast({
         title: "Submission failed",
-        description: "Failed to submit verification request. Please try again.",
+        description: errorMessage || "Failed to submit verification request. Please try again.",
         variant: "destructive"
       });
     } finally {
