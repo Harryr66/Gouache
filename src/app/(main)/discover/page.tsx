@@ -778,16 +778,21 @@ export default function DiscoverPage() {
                 imageAiHint: portfolioItem.title || 'Untitled Artwork',
                 discussionId: `discussion-${artist.id}-${portfolioItem.id || index}`,
                 tags: portfolioItem.tags || [],
-                price: Math.floor(Math.random() * 5000) + 500,
-                currency: 'USD',
-                isForSale: Math.random() > 0.3,
+                // Don't add price or isForSale - portfolio items are for display, not sale
+                price: undefined,
+                currency: undefined,
+                isForSale: false,
                 category: portfolioItem.medium || 'Mixed Media',
                 medium: portfolioItem.medium || 'Mixed Media',
-                dimensions: { width: 24, height: 30, unit: 'in' },
+                dimensions: portfolioItem.dimensions ? { 
+                  width: parseFloat(portfolioItem.dimensions.split('x')[0]?.trim() || '24'),
+                  height: parseFloat(portfolioItem.dimensions.split('x')[1]?.trim() || '30'),
+                  unit: 'in'
+                } : { width: 24, height: 30, unit: 'in' },
                 createdAt: createdAt,
                 updatedAt: createdAt,
-                views: Math.floor(Math.random() * 5000),
-                likes: Math.floor(Math.random() * 500),
+                views: 0,
+                likes: 0,
               });
             });
           } else {
@@ -825,16 +830,21 @@ export default function DiscoverPage() {
                 imageAiHint: portfolioItem.title,
                 discussionId: `discussion-${artist.id}-${index}`,
                 tags: portfolioItem.tags || [],
-                price: Math.floor(Math.random() * 5000) + 500,
-        currency: 'USD',
-                isForSale: Math.random() > 0.3,
+                // Don't add price or isForSale - portfolio items are for display, not sale
+                price: undefined,
+                currency: undefined,
+                isForSale: false,
                 category: portfolioItem.medium || 'Mixed Media',
                 medium: portfolioItem.medium || 'Mixed Media',
-        dimensions: { width: 24, height: 30, unit: 'in' },
+                dimensions: portfolioItem.dimensions ? { 
+                  width: parseFloat(portfolioItem.dimensions.split('x')[0]?.trim() || '24'),
+                  height: parseFloat(portfolioItem.dimensions.split('x')[1]?.trim() || '30'),
+                  unit: 'in'
+                } : { width: 24, height: 30, unit: 'in' },
                 createdAt: portfolioItem.createdAt,
                 updatedAt: portfolioItem.createdAt,
-                views: Math.floor(Math.random() * 5000),
-                likes: Math.floor(Math.random() * 500),
+                views: 0,
+                likes: 0,
               });
             });
           }
