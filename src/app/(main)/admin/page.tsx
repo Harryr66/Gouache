@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
-import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, NewsAd } from '@/lib/types';
+import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle } from '@/lib/types';
 import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
@@ -51,9 +51,6 @@ const ART_MEDIUM_CATEGORIES = [
 
 const DEFAULT_ARTICLE_IMAGE =
   'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80';
-const DEFAULT_AD_IMAGE =
-  'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80';
-
 export default function AdminPanel() {
   const [artistRequests, setArtistRequests] = useState<ArtistRequest[]>([]);
   const [advertisingApplications, setAdvertisingApplications] = useState<AdvertisingApplication[]>([]);
@@ -144,7 +141,7 @@ export default function AdminPanel() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedCourseSubmission, setSelectedCourseSubmission] = useState<CourseSubmission | null>(null);
   const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
-  const [newsAds, setNewsAds] = useState<NewsAd[]>([]);
+  const [showArchivedNews, setShowArchivedNews] = useState(false);
   const [newArticle, setNewArticle] = useState({
     title: '',
     summary: '',
@@ -158,16 +155,7 @@ export default function AdminPanel() {
   const [newArticleContent, setNewArticleContent] = useState('');
   const [newArticleImageFile, setNewArticleImageFile] = useState<File | null>(null);
   const [newArticleImagePreview, setNewArticleImagePreview] = useState<string | null>(null);
-  const [newAd, setNewAd] = useState({
-    advertiserName: '',
-    title: '',
-    imageUrl: '',
-    ctaText: 'Learn more',
-    ctaUrl: '',
-    tagline: ''
-  });
   const [isPublishingArticle, setIsPublishingArticle] = useState(false);
-  const [isPublishingNewsAd, setIsPublishingNewsAd] = useState(false);
 
   useEffect(() => {
     const artistRequestsQuery = query(
@@ -211,7 +199,6 @@ export default function AdminPanel() {
     );
     const courseSubmissionsQuery = query(collection(db, 'courseSubmissions'), orderBy('submittedAt', 'desc'));
     const newsArticlesQuery = query(collection(db, 'newsArticles'), orderBy('publishedAt', 'desc'));
-    const newsAdsQuery = query(collection(db, 'newsAds'), orderBy('createdAt', 'desc'));
 
     const fetchData = async () => {
       try {
@@ -226,8 +213,7 @@ export default function AdminPanel() {
           analyticsSnapshot,
           coursesSnapshot,
           courseSubmissionsSnapshot,
-          newsArticlesSnapshot,
-          newsAdsSnapshot
+          newsArticlesSnapshot
         ] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
@@ -238,8 +224,7 @@ export default function AdminPanel() {
           getDocs(advertisementAnalyticsQuery),
           getDocs(coursesQuery),
           getDocs(courseSubmissionsQuery),
-          getDocs(newsArticlesQuery),
-          getDocs(newsAdsQuery)
+          getDocs(newsArticlesQuery)
         ]);
 
         const requests = artistSnapshot.docs.map(doc => ({
@@ -330,28 +315,13 @@ export default function AdminPanel() {
             tags: data.tags ?? [],
             externalUrl: data.externalUrl ?? '',
             featured: data.featured ?? false,
-            content: data.content ?? ''
+            content: data.content ?? '',
+            archived: data.archived ?? false,
+            archivedAt: data.archivedAt?.toDate?.()
           } as NewsArticle;
         });
         setNewsArticles(newsroomArticles);
         console.log(`✅ Loaded ${newsroomArticles.length} newsroom articles`);
-
-        const newsroomAds = newsAdsSnapshot.docs.map(doc => {
-          const data = doc.data() as any;
-          return {
-            id: doc.id,
-            advertiserName: data.advertiserName ?? 'Advertiser',
-            title: data.title ?? 'Sponsored highlight',
-            imageUrl: data.imageUrl ?? DEFAULT_AD_IMAGE,
-            ctaText: data.ctaText ?? 'Learn more',
-            ctaUrl: data.ctaUrl ?? '#',
-            tagline: data.tagline ?? '',
-            createdAt: data.createdAt?.toDate?.() ?? new Date(),
-            active: data.active ?? true
-          } as NewsAd;
-        });
-        setNewsAds(newsroomAds);
-        console.log(`✅ Loaded ${newsroomAds.length} newsroom ads`);
 
         setLoading(false);
         console.log('✅ Admin Panel: All data loaded successfully');
@@ -1500,6 +1470,8 @@ export default function AdminPanel() {
         tags,
         content: newArticleContent,
         publishedAt: publishedAtDate,
+        archived: false,
+        archivedAt: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
@@ -1517,7 +1489,8 @@ export default function AdminPanel() {
           tags,
           content: newArticleContent,
           publishedAt: publishedAtDate,
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          archived: false
         },
         ...prev
       ]);
@@ -1567,6 +1540,41 @@ export default function AdminPanel() {
     setNewArticle((prev) => ({ ...prev, imageUrl: '' }));
   };
 
+  const handleArchiveNewsArticle = async (article: NewsArticle, archive: boolean) => {
+    try {
+      await updateDoc(doc(db, 'newsArticles', article.id), {
+        archived: archive,
+        archivedAt: archive ? serverTimestamp() : null,
+        updatedAt: serverTimestamp()
+      });
+
+      setNewsArticles((prev) =>
+        prev.map((item) =>
+          item.id === article.id
+            ? {
+                ...item,
+                archived: archive,
+                archivedAt: archive ? new Date() : undefined,
+                updatedAt: new Date()
+              }
+            : item
+        )
+      );
+
+      toast({
+        title: archive ? 'Article archived' : 'Article restored',
+        description: `"${article.title}" has been ${archive ? 'archived' : 'restored'}.`
+      });
+    } catch (error) {
+      console.error('Failed to update article archive state:', error);
+      toast({
+        title: 'Update failed',
+        description: 'We could not update that article. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const handleDeleteNewsArticle = async (article: NewsArticle) => {
     try {
       await deleteDoc(doc(db, 'newsArticles', article.id));
@@ -1585,91 +1593,13 @@ export default function AdminPanel() {
     }
   };
 
-  const handleCreateNewsAd = async () => {
-    if (!newAd.advertiserName.trim() || !newAd.title.trim() || !newAd.ctaUrl.trim()) {
-      toast({
-        title: 'Missing information',
-        description: 'Please provide advertiser name, ad title, and a destination URL.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsPublishingNewsAd(true);
-    try {
-      const docRef = await addDoc(collection(db, 'newsAds'), {
-        advertiserName: newAd.advertiserName.trim(),
-        title: newAd.title.trim(),
-        imageUrl: newAd.imageUrl || DEFAULT_AD_IMAGE,
-        ctaText: newAd.ctaText?.trim() || 'Learn more',
-        ctaUrl: newAd.ctaUrl.trim(),
-        tagline: newAd.tagline?.trim() || '',
-        active: true,
-        createdAt: serverTimestamp()
-      });
-
-      setNewsAds((prev) => [
-        {
-          id: docRef.id,
-          advertiserName: newAd.advertiserName.trim(),
-          title: newAd.title.trim(),
-          imageUrl: newAd.imageUrl || DEFAULT_AD_IMAGE,
-          ctaText: newAd.ctaText?.trim() || 'Learn more',
-          ctaUrl: newAd.ctaUrl.trim(),
-          tagline: newAd.tagline?.trim() || '',
-          createdAt: new Date(),
-          active: true
-        },
-        ...prev
-      ]);
-
-      toast({
-        title: 'Sponsored tile added',
-        description: `The placement for ${newAd.advertiserName} is now live.`
-      });
-
-      setNewAd({
-        advertiserName: '',
-        title: '',
-        imageUrl: '',
-        ctaText: 'Learn more',
-        ctaUrl: '',
-        tagline: ''
-      });
-    } catch (error) {
-      console.error('Failed to create news ad:', error);
-      toast({
-        title: 'Ad creation failed',
-        description: 'We could not add that sponsored tile. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsPublishingNewsAd(false);
-    }
-  };
-
-  const handleDeleteNewsAd = async (ad: NewsAd) => {
-    try {
-      await deleteDoc(doc(db, 'newsAds', ad.id));
-      setNewsAds((prev) => prev.filter((item) => item.id !== ad.id));
-      toast({
-        title: 'Sponsored tile removed',
-        description: `The placement for ${ad.advertiserName} has been removed.`
-      });
-    } catch (error) {
-      console.error('Failed to delete news ad:', error);
-      toast({
-        title: 'Delete failed',
-        description: 'We could not remove that sponsored tile. Please try again.',
-        variant: 'destructive'
-      });
-    }
-  };
-
   const pendingRequests = artistRequests.filter(req => req.status === 'pending');
   const approvedRequests = artistRequests.filter(req => req.status === 'approved');
   const rejectedRequests = artistRequests.filter(req => req.status === 'rejected');
   const suspendedRequests = artistRequests.filter(req => req.status === 'suspended');
+  const activeNewsArticles = newsArticles.filter((article) => !article.archived);
+  const archivedNewsArticles = newsArticles.filter((article) => article.archived);
+  const visibleNewsArticles = showArchivedNews ? archivedNewsArticles : activeNewsArticles;
 
   if (authLoading) {
     return (
@@ -1826,18 +1756,7 @@ export default function AdminPanel() {
             >
               <span className="text-sm">Articles</span>
               <Badge variant={selectedView === 'news-articles' ? 'secondary' : 'outline'}>
-                ({newsArticles.length})
-              </Badge>
-            </button>
-            <button
-              onClick={() => setSelectedView('news-ads')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'news-ads' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Sponsored tiles</span>
-              <Badge variant={selectedView === 'news-ads' ? 'secondary' : 'outline'}>
-                ({newsAds.length})
+                ({activeNewsArticles.length})
               </Badge>
             </button>
           </CardContent>
@@ -2663,154 +2582,103 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {newsArticles.map((article) => (
-                <Card key={article.id} className="flex flex-col overflow-hidden">
-                  <div className="relative w-full pt-[60%]">
-                    <img
-                      src={article.imageUrl}
-                      alt={article.title}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                    <Badge className="absolute top-3 left-3" variant="secondary">
-                      {article.category}
-                    </Badge>
-                  </div>
-                  <CardContent className="flex-1 p-5 space-y-3">
-                    <div className="space-y-1">
-                      <h3 className="font-semibold text-lg leading-tight">{article.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-3">{article.summary}</p>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>
-                        {article.author ? `${article.author} • ` : ''}
-                        {article.publishedAt.toLocaleDateString()}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive"
-                        onClick={() => handleDeleteNewsArticle(article)}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {selectedView === 'news-ads' && (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create sponsored tile</CardTitle>
-                <CardDescription>
-                  Sponsored tiles sit alongside articles with the same styling. Make sure imagery and copy are brand-safe.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="news-advertiser">Advertiser *</Label>
-                    <Input
-                      id="news-advertiser"
-                      placeholder="Brand or gallery name"
-                      value={newAd.advertiserName}
-                      onChange={(event) => setNewAd((prev) => ({ ...prev, advertiserName: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="news-ad-title">Headline *</Label>
-                    <Input
-                      id="news-ad-title"
-                      placeholder="e.g. Discover the new residency program"
-                      value={newAd.title}
-                      onChange={(event) => setNewAd((prev) => ({ ...prev, title: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="news-ad-image">Image URL</Label>
-                    <Input
-                      id="news-ad-image"
-                      placeholder="https://"
-                      value={newAd.imageUrl}
-                      onChange={(event) => setNewAd((prev) => ({ ...prev, imageUrl: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="news-ad-cta-text">CTA text</Label>
-                    <Input
-                      id="news-ad-cta-text"
-                      placeholder="Learn more"
-                      value={newAd.ctaText}
-                      onChange={(event) => setNewAd((prev) => ({ ...prev, ctaText: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="news-ad-cta-url">Destination URL *</Label>
-                    <Input
-                      id="news-ad-cta-url"
-                      placeholder="https://"
-                      value={newAd.ctaUrl}
-                      onChange={(event) => setNewAd((prev) => ({ ...prev, ctaUrl: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="news-ad-tagline">Support copy</Label>
-                    <Textarea
-                      id="news-ad-tagline"
-                      rows={3}
-                      placeholder="Optional supporting line."
-                      value={newAd.tagline}
-                      onChange={(event) => setNewAd((prev) => ({ ...prev, tagline: event.target.value }))}
-                    />
-                  </div>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">
+                    {showArchivedNews ? 'Archived articles' : 'Published articles'}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {showArchivedNews
+                      ? 'Review past stories and restore any that should return to the feed.'
+                      : 'Manage everything currently live in the newsroom feed.'}
+                  </p>
                 </div>
-                <div className="flex justify-end">
-                  <Button onClick={handleCreateNewsAd} disabled={isPublishingNewsAd}>
-                    {isPublishingNewsAd ? 'Saving…' : 'Add sponsored tile'}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={showArchivedNews ? 'outline' : 'secondary'}
+                    onClick={() => setShowArchivedNews(false)}
+                  >
+                    Published ({activeNewsArticles.length})
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={showArchivedNews ? 'secondary' : 'outline'}
+                    onClick={() => setShowArchivedNews(true)}
+                  >
+                    Archived ({archivedNewsArticles.length})
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {newsAds.map((ad) => (
-                <Card key={ad.id} className="flex flex-col overflow-hidden border-primary/20">
-                  <div className="relative w-full pt-[60%]">
-                    <img
-                      src={ad.imageUrl}
-                      alt={ad.title}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                    <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground">
-                      Sponsored
-                    </Badge>
-                  </div>
-                  <CardContent className="flex-1 p-5 space-y-3">
-                    <div className="space-y-1">
-                      <h3 className="font-semibold text-lg leading-tight">{ad.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {ad.tagline || `Presented by ${ad.advertiserName}`}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{ad.advertiserName}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive"
-                        onClick={() => handleDeleteNewsAd(ad)}
-                      >
-                        Remove
-                      </Button>
-                    </div>
+              {visibleNewsArticles.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center space-y-2">
+                    <h3 className="text-lg font-semibold">
+                      {showArchivedNews ? 'No archived stories yet' : 'No stories published yet'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                      {showArchivedNews
+                        ? 'When you archive a story, it will move here so you can restore or permanently delete it later.'
+                        : 'Publish your first story to populate the newsroom feed.'}
+                    </p>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {visibleNewsArticles.map((article) => (
+                    <Card key={article.id} className="flex flex-col overflow-hidden">
+                      <div className="relative w-full pt-[60%]">
+                        <img
+                          src={article.imageUrl}
+                          alt={article.title}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                        <Badge className="absolute top-3 left-3" variant="secondary">
+                          {article.category}
+                        </Badge>
+                        {article.archived && (
+                          <Badge className="absolute top-3 right-3" variant="destructive">
+                            Archived
+                          </Badge>
+                        )}
+                      </div>
+                      <CardContent className="flex-1 p-5 space-y-3">
+                        <div className="space-y-1">
+                          <h3 className="font-semibold text-lg leading-tight line-clamp-2">{article.title}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-3">{article.summary}</p>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>
+                            {article.author ? `${article.author} • ` : ''}
+                            {article.publishedAt.toLocaleDateString()}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleArchiveNewsArticle(article, !article.archived)}
+                            >
+                              {article.archived ? 'Restore' : 'Archive'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive"
+                              onClick={() => handleDeleteNewsArticle(article)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -487,18 +487,8 @@ export interface NewsArticle {
   externalUrl?: string;
   featured?: boolean;
   content?: string;
-}
-
-export interface NewsAd {
-  id: string;
-  advertiserName: string;
-  title: string;
-  imageUrl: string;
-  ctaText: string;
-  ctaUrl: string;
-  tagline?: string;
-  createdAt: Date;
-  active?: boolean;
+  archived?: boolean;
+  archivedAt?: Date;
 }
 
 export interface Comment {

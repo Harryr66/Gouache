@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { NewsAd, NewsArticle } from '@/lib/types';
+import { NewsArticle } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { NewsTile } from '@/components/news-tile';
 import { Badge } from '@/components/ui/badge';
@@ -11,19 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Filter, RefreshCcw } from 'lucide-react';
 
-type FeedTile = { type: 'article'; data: NewsArticle } | { type: 'ad'; data: NewsAd };
-
 const ARTICLE_COLLECTION = 'newsArticles';
-const AD_COLLECTION = 'newsAds';
 
 const DEFAULT_ARTICLE_IMAGE =
   'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80';
-const DEFAULT_AD_IMAGE =
-  'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80';
 
 export default function NewsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [ads, setAds] = useState<NewsAd[]>([]);
   const [filteredCategory, setFilteredCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -47,29 +41,14 @@ export default function NewsPage() {
             tags: data.tags ?? [],
             externalUrl: data.externalUrl ?? '',
             featured: data.featured ?? false,
-            content: data.content ?? ''
+            content: data.content ?? '',
+            archived: data.archived ?? false,
+            archivedAt: data.archivedAt?.toDate?.()
           };
         });
 
-        const adSnapshot = await getDocs(query(collection(db, AD_COLLECTION), orderBy('createdAt', 'desc')));
-        const loadedAds: NewsAd[] = adSnapshot.docs.map((doc) => {
-          const data = doc.data() as any;
-          return {
-            id: doc.id,
-            advertiserName: data.advertiserName ?? 'Advertiser',
-            title: data.title ?? 'Sponsored highlight',
-            imageUrl: data.imageUrl ?? DEFAULT_AD_IMAGE,
-            ctaText: data.ctaText ?? 'Learn more',
-            ctaUrl: data.ctaUrl ?? '#',
-            tagline: data.tagline ?? '',
-            createdAt: data.createdAt?.toDate?.() ?? new Date(),
-            active: data.active ?? true
-          };
-        }).filter((ad) => ad.active !== false);
-
         if (!isMounted) return;
         setArticles(loadedArticles);
-        setAds(loadedAds);
       } catch (error) {
         console.error('Failed to load newsroom content:', error);
       } finally {
@@ -91,6 +70,9 @@ export default function NewsPage() {
 
   const filteredArticles = useMemo(() => {
     return articles.filter((article) => {
+      if (article.archived) {
+        return false;
+      }
       const matchesCategory = filteredCategory === 'All' || article.category === filteredCategory;
       const matchesSearch =
         !searchTerm ||
@@ -100,28 +82,6 @@ export default function NewsPage() {
       return matchesCategory && matchesSearch;
     });
   }, [articles, filteredCategory, searchTerm]);
-
-  const feed: FeedTile[] = useMemo(() => {
-    if (filteredArticles.length === 0) return [];
-
-    const tiles: FeedTile[] = [];
-    const adQueue = [...ads];
-
-    filteredArticles.forEach((article, index) => {
-      tiles.push({ type: 'article', data: article });
-
-      if (adQueue.length > 0 && (index + 1) % 4 === 0) {
-        const ad = adQueue.shift();
-        if (ad) {
-          tiles.push({ type: 'ad', data: ad });
-        }
-      }
-    });
-
-    // Append remaining ads at end
-    adQueue.forEach((ad) => tiles.push({ type: 'ad', data: ad }));
-    return tiles;
-  }, [filteredArticles, ads]);
 
   return (
     <div className="container max-w-6xl py-12 space-y-10">
@@ -135,7 +95,7 @@ export default function NewsPage() {
           </h1>
           <p className="text-muted-foreground max-w-3xl">
             Follow the latest movements across galleries, fairs, studios, and creative communities.
-            We feature headline news, trend pieces, and sponsored spotlights from partners that support artists.
+            We feature headline news, trend pieces, and opportunities that support artists.
           </p>
         </div>
 
@@ -170,23 +130,18 @@ export default function NewsPage() {
         <div className="flex justify-center py-20">
           <ThemeLoading text="Curating today’s headlines…" size="lg" />
         </div>
-      ) : feed.length === 0 ? (
+      ) : filteredArticles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
           <Filter className="h-10 w-10 text-muted-foreground" />
           <h2 className="text-xl font-semibold">No stories yet</h2>
           <p className="text-muted-foreground text-center max-w-md">
-            Check back soon as we expand our newsroom coverage with reports, interviews, and partner spotlights.
+            Check back soon as we expand our newsroom coverage with reports, interviews, and features.
           </p>
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {feed.map((tile, index) => (
-            <NewsTile
-              key={`${tile.type}-${tile.data.id}`}
-              article={tile.type === 'article' ? tile.data : undefined}
-              ad={tile.type === 'ad' ? tile.data : undefined}
-              index={index}
-            />
+          {filteredArticles.map((article) => (
+            <NewsTile key={article.id} article={article} />
           ))}
         </div>
       )}
