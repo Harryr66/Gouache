@@ -343,11 +343,6 @@ export default function ArtistOnboardingPage() {
     }
   };
 
-  const handleSkipStep = () => {
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep((step) => step + 1);
-    }
-  };
 
   const handlePortfolioUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -1113,11 +1108,11 @@ export default function ArtistOnboardingPage() {
             <CardDescription className="text-slate-600">
             {currentStep === 0 && 'Create your artist account to begin. This invite is reserved for your email address.'}
             {currentStep === 1 && "Welcome to Gouache! Let's launch your profile in just a few quick steps."}
-            {currentStep === 2 && 'Tell us how you want your personal details to appear across Gouache.'}
-            {currentStep === 3 && 'Upload highlight pieces for your portfolio. You can skip this now and add more later.'}
-            {currentStep === 4 && 'Share any upcoming events. This step is optional and can be skipped.'}
-            {currentStep === 5 && 'List products or books you sell. Optional—skip if not relevant right now.'}
-            {currentStep === 6 && 'Share any courses you currently offer. Optional—skip if not available.'}
+            {currentStep === 2 && 'Tell us how you want your personal details to appear across Gouache. Name and handle are required.'}
+            {currentStep === 3 && 'Upload highlight pieces for your portfolio. You can add images now or update your profile later.'}
+            {currentStep === 4 && 'Share any upcoming events. You can leave this empty and add events later from your profile.'}
+            {currentStep === 5 && 'List products or books you sell. You can leave this empty and add products later from your profile.'}
+            {currentStep === 6 && 'Share any courses you currently offer. You can leave this empty and add courses later from your profile.'}
             {currentStep === 7 && 'Review everything at a glance before publishing your artist profile.'}
             </CardDescription>
           </CardHeader>
@@ -1941,11 +1936,6 @@ export default function ArtistOnboardingPage() {
         </Card>
 
         <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-slate-600">
-            {currentStep < STEPS.length - 1
-              ? 'You can skip optional steps now and finish them later from your artist dashboard.'
-              : 'Give everything a quick review—you can still edit details after publishing.'}
-          </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
             {currentStep > 0 && (
               <Button variant="ghost" onClick={handlePreviousStep} className="justify-center">
@@ -1973,22 +1963,19 @@ export default function ArtistOnboardingPage() {
                 )}
               </Button>
             )}
-            {currentStep >= 3 && currentStep < STEPS.length - 1 && (
-              <Button variant="outline" onClick={handleSkipStep} className="justify-center">
-                Skip this step
+            {currentStep === 0 && user && (
+              <Button variant="gradient" onClick={handleNextStep} className="justify-center">
+                Continue
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}
-            {currentStep > 0 && currentStep < STEPS.length - 1 ? (
+            {currentStep > 0 && currentStep < STEPS.length - 1 && (
               <Button variant="gradient" onClick={handleNextStep} className="justify-center">
                 Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            ) : currentStep === 0 && user ? (
-              <Button variant="gradient" onClick={handleNextStep} className="justify-center">
-                Continue
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
+            )}
+            {currentStep === STEPS.length - 1 && (
               <Button
                 variant="gradient"
                 onClick={handleCompleteOnboarding}
