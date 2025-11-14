@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { doc, updateDoc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { updateEmail } from 'firebase/auth';
+import { updateEmail, verifyBeforeUpdateEmail } from 'firebase/auth';
 import { db, storage, auth } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { ArtistRequest, ShowcaseLocation } from '@/lib/types';
@@ -927,24 +927,41 @@ export default function ProfileEditPage() {
       };
 
       // Update email in Firebase Auth if it has changed
+      // Use verifyBeforeUpdateEmail to send verification email to the new address
+      // This is required by Firebase Auth for security
       if (auth.currentUser && formData.email && formData.email !== auth.currentUser.email) {
         try {
-          await updateEmail(auth.currentUser, formData.email);
-          console.log('✅ Firebase Auth email updated successfully');
+          // verifyBeforeUpdateEmail sends a verification email to the new address
+          // The email will be updated after the user clicks the verification link
+          await verifyBeforeUpdateEmail(auth.currentUser, formData.email);
+          console.log('✅ Verification email sent to new email address');
+          toast({
+            title: "Verification email sent",
+            description: `A verification email has been sent to ${formData.email}. Please check your inbox and click the verification link to complete the email change.`,
+            variant: "default"
+          });
         } catch (error: any) {
-          console.error('Error updating Firebase Auth email:', error);
-          // If re-authentication is required, we'll still save to Firestore
-          // The user can update Firebase Auth email later if needed
+          console.error('Error sending verification email:', error);
+          // Handle specific error cases
           if (error.code === 'auth/requires-recent-login') {
+            // User needs to re-authenticate - email still saved to Firestore
             toast({
               title: "Email saved to profile",
-              description: "Email updated in profile. Please sign out and sign back in to update your login email.",
+              description: "Email updated in profile. Please sign out and sign back in, then try updating your email again.",
+              variant: "default"
+            });
+          } else if (error.code === 'auth/operation-not-allowed') {
+            // Email verification not allowed - email still saved to Firestore
+            toast({
+              title: "Email saved to profile",
+              description: "Email updated in profile. Email verification is not enabled for your account. The email is saved and can be used for username login.",
               variant: "default"
             });
           } else {
+            // Other errors - email still saved to Firestore
             toast({
               title: "Email saved to profile",
-              description: "Email updated in profile. There was an issue updating your login email.",
+              description: "Email updated in profile. There was an issue sending the verification email, but the email is saved and can be used for username login.",
               variant: "default"
             });
           }
