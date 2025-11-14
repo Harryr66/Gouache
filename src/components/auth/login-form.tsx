@@ -8,8 +8,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -36,10 +37,89 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      // Real Firebase authentication
+      let emailToUse = values.usernameOrEmail.trim();
+      
+      // Check if input is an email (contains @) or a username
+      const isEmail = emailToUse.includes('@');
+      
+      if (!isEmail) {
+        // It's a username - look up the user's email from Firestore
+        const username = emailToUse.toLowerCase();
+        
+        // Query userProfiles collection by handle
+        const usersQuery = query(
+          collection(db, 'userProfiles'),
+          where('handle', '==', username),
+          limit(1)
+        );
+        
+        const querySnapshot = await getDocs(usersQuery);
+        
+        if (querySnapshot.empty) {
+          // Also try querying by username field (for backwards compatibility)
+          const usernameQuery = query(
+            collection(db, 'userProfiles'),
+            where('username', '==', username),
+            limit(1)
+          );
+          const usernameSnapshot = await getDocs(usernameQuery);
+          
+          if (usernameSnapshot.empty) {
+            toast({
+              title: "Login Failed",
+              description: "No account found with this username.",
+              variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+          }
+          
+          // Get email from the found user document
+          const userDoc = usernameSnapshot.docs[0];
+          const userData = userDoc.data();
+          
+          // Try to get email from userData, or use Firebase Auth email lookup
+          // Note: We need the email from Firebase Auth, not Firestore
+          // Since we have the uid, we can't directly get email without admin SDK
+          // So we'll need to store email in Firestore or use a different approach
+          
+          // For now, let's check if email is stored in userProfiles
+          if (userData.email) {
+            emailToUse = userData.email;
+          } else {
+            // If email not in Firestore, we need to get it from Firebase Auth
+            // This requires the user to use their email instead
+            toast({
+              title: "Login Failed",
+              description: "Please use your email address to log in. Username login requires email to be stored in profile.",
+              variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          // Get email from the found user document
+          const userDoc = querySnapshot.docs[0];
+          const userData = userDoc.data();
+          
+          if (userData.email) {
+            emailToUse = userData.email;
+          } else {
+            toast({
+              title: "Login Failed",
+              description: "Please use your email address to log in. Username login requires email to be stored in profile.",
+              variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+      
+      // Authenticate with Firebase using the email
       const userCredential = await signInWithEmailAndPassword(
         auth, 
-        values.usernameOrEmail, 
+        emailToUse, 
         values.password
       );
       
@@ -60,7 +140,7 @@ export function LoginForm() {
       let errorMessage = "An error occurred during login. Please try again.";
       
       if (error.code === 'auth/user-not-found') {
-        errorMessage = "No account found with this email address.";
+        errorMessage = "No account found with this email address or username.";
       } else if (error.code === 'auth/wrong-password') {
         errorMessage = "Incorrect password. Please try again.";
       } else if (error.code === 'auth/invalid-email') {

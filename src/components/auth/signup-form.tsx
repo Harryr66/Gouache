@@ -74,7 +74,11 @@ export function SignUpForm() {
       // Try to save user data to Firestore (with offline handling)
       try {
         await setDoc(doc(db, 'users', values.handle), userData);
-        await setDoc(doc(db, 'userProfiles', user.uid), userData);
+        // Store email in userProfiles for username login support
+        await setDoc(doc(db, 'userProfiles', user.uid), {
+          ...userData,
+          email: values.email, // Store email for username login lookup
+        });
       } catch (firestoreError) {
         console.warn('Firestore save failed (user still created):', firestoreError);
         // User is still created in Firebase Auth, just Firestore save failed
