@@ -177,7 +177,7 @@ export default function ProfileEditPage() {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && isInitialMount.current) {
       // Test Firebase connection when user is available
       testFirebaseConnection();
       
@@ -235,28 +235,32 @@ export default function ProfileEditPage() {
           console.error('Error applying offline changes:', error);
         }
       } else {
-        // Fetch email from Firestore if not in user object
+        // Fetch email from Firestore first (source of truth), then fallback to Firebase Auth
         const loadUserData = async () => {
-          let userEmail = user.email || '';
-          if (!userEmail && auth.currentUser) {
-            try {
-              const userProfileDoc = await getDoc(doc(db, 'userProfiles', user.id));
-              if (userProfileDoc.exists()) {
-                const profileData = userProfileDoc.data();
-                userEmail = profileData.email || auth.currentUser.email || '';
-              } else {
-                userEmail = auth.currentUser.email || '';
-              }
-            } catch (error) {
-              console.error('Error fetching email from Firestore:', error);
-              userEmail = auth.currentUser?.email || '';
+          let userEmail = '';
+          try {
+            const userProfileDoc = await getDoc(doc(db, 'userProfiles', user.id));
+            if (userProfileDoc.exists()) {
+              const profileData = userProfileDoc.data();
+              // Prioritize Firestore email (our source of truth for profile)
+              userEmail = profileData.email || auth.currentUser?.email || user.email || '';
+            } else {
+              // If no Firestore doc, use Firebase Auth email
+              userEmail = auth.currentUser?.email || user.email || '';
             }
+          } catch (error) {
+            console.error('Error fetching email from Firestore:', error);
+            // Fallback to Firebase Auth email on error
+            userEmail = auth.currentUser?.email || user.email || '';
           }
+          
+          // Don't overwrite email if it's already been set in formData (user might have just edited it)
+          const currentEmail = formData.email || userEmail;
           
           const nextFormData = {
             name: user.displayName || '',
             handle: user.username || '',
-            email: userEmail,
+            email: currentEmail,
             bio: user.bio || '',
             artistType: user.artistType || '',
             location: user.location || '',
