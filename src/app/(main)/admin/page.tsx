@@ -391,7 +391,7 @@ export default function AdminPanel() {
       const portfolioItems = request.portfolioImages.map((imageUrl, index) => ({
         id: `portfolio-${Date.now()}-${index}`,
         imageUrl,
-        title: `Portfolio Image ${index + 1}`,
+        title: 'Untitled Artwork',
         description: '',
         medium: '',
         dimensions: '',
@@ -436,7 +436,7 @@ export default function AdminPanel() {
       const portfolioItems = request.portfolioImages.map((imageUrl, index) => ({
         id: `portfolio-${Date.now()}-${index}`,
         imageUrl,
-        title: `Portfolio Image ${index + 1}`,
+        title: 'Untitled Artwork',
         description: '',
         medium: '',
         dimensions: '',

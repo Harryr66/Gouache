@@ -97,6 +97,18 @@ export function PortfolioManager() {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
+    // Require title before uploading
+    if (!newItem.title.trim()) {
+      toast({
+        title: "Title required",
+        description: "Please enter an artwork title before uploading.",
+        variant: "destructive"
+      });
+      // Reset the file input
+      event.target.value = '';
+      return;
+    }
+
     setIsUploading(true);
     try {
       const compressedFile = await compressImage(file);
@@ -107,7 +119,7 @@ export function PortfolioManager() {
       const portfolioItem: PortfolioItem = {
         id: Date.now().toString(),
         imageUrl,
-        title: newItem.title || 'Untitled',
+        title: newItem.title.trim(),
         description: newItem.description,
         medium: newItem.medium,
         dimensions: newItem.dimensions,
@@ -146,6 +158,8 @@ export function PortfolioManager() {
       });
     } finally {
       setIsUploading(false);
+      // Reset the file input
+      event.target.value = '';
     }
   };
 
@@ -223,28 +237,15 @@ export function PortfolioManager() {
             <CardDescription>Upload a new piece to your portfolio</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="portfolio-image">Artwork Image *</Label>
-              <Input
-                id="portfolio-image"
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={isUploading}
-              />
-              {isUploading && (
-                <p className="text-sm text-muted-foreground">Uploading image...</p>
-              )}
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="title">Artwork Title *</Label>
                 <Input
                   id="title"
                   value={newItem.title}
                   onChange={(e) => setNewItem(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Artwork title"
+                  placeholder="Enter artwork title"
+                  required
                 />
               </div>
               <div className="space-y-2">
@@ -256,6 +257,26 @@ export function PortfolioManager() {
                   placeholder="Oil on canvas, Digital, etc."
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="portfolio-image">Artwork Image *</Label>
+              <Input
+                id="portfolio-image"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={isUploading || !newItem.title.trim()}
+              />
+              {!newItem.title.trim() && (
+                <p className="text-sm text-muted-foreground">Please enter an artwork title before uploading an image.</p>
+              )}
+              {isUploading && (
+                <p className="text-sm text-muted-foreground">Uploading image...</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="dimensions">Dimensions</Label>
                 <Input
