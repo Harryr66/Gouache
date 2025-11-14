@@ -20,8 +20,8 @@ const RoundedPlayIcon = ({ className }: { className?: string }) => (
 );
 
 const mobileNavItems = [
-  { href: '/discover', icon: Eye, label: 'Discover' },
   { href: '/news', icon: Newspaper, label: 'News' },
+  { href: '/discover', icon: Eye, label: 'Discover' },
   { href: '/profile', icon: User, label: 'Profile' },
 ];
 
