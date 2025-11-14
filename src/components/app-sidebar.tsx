@@ -8,8 +8,7 @@ import {
   Eye,
   Upload,
   User,
-  Brain,
-  Home
+  Brain
 } from 'lucide-react';
 
 // Custom rounded triangle play icon
@@ -24,9 +23,30 @@ const RoundedPlayIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+// Custom UFO icon
+const UfoIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* UFO body (flying saucer) */}
+    <ellipse cx="12" cy="10" rx="8" ry="3" fill="currentColor" />
+    <ellipse cx="12" cy="10" rx="6" ry="2" fill="none" stroke="currentColor" />
+    {/* UFO dome */}
+    <ellipse cx="12" cy="10" rx="4" ry="2.5" fill="currentColor" opacity="0.3" />
+    {/* Light beam (optional) */}
+    <path d="M8 13 L12 16 L16 13" stroke="currentColor" fill="none" strokeWidth="1" opacity="0.5" />
+  </svg>
+);
+
 const navigation = [
   { name: 'Docuseries', href: '/feed', icon: RoundedPlayIcon },
-  { name: 'Home', href: '/news', icon: Home },
+  { name: 'Mothership', href: '/news', icon: UfoIcon },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Learn', href: '/marketplace', icon: Brain },
   { name: 'Upload Profile', href: '/upload', icon: Upload },

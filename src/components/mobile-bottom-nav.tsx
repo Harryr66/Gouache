@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Eye, User, Home } from 'lucide-react';
+import { Eye, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
@@ -19,8 +19,29 @@ const RoundedPlayIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+// Custom UFO icon
+const UfoIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* UFO body (flying saucer) */}
+    <ellipse cx="12" cy="10" rx="8" ry="3" fill="currentColor" />
+    <ellipse cx="12" cy="10" rx="6" ry="2" fill="none" stroke="currentColor" />
+    {/* UFO dome */}
+    <ellipse cx="12" cy="10" rx="4" ry="2.5" fill="currentColor" opacity="0.3" />
+    {/* Light beam (optional) */}
+    <path d="M8 13 L12 16 L16 13" stroke="currentColor" fill="none" strokeWidth="1" opacity="0.5" />
+  </svg>
+);
+
 const mobileNavItems = [
-  { href: '/news', icon: Home, label: 'Home' },
+  { href: '/news', icon: UfoIcon, label: 'Mothership' },
   { href: '/discover', icon: Eye, label: 'Discover' },
   { href: '/profile', icon: User, label: 'Profile' },
 ];

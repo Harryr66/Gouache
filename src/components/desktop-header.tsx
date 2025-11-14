@@ -4,22 +4,31 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Eye, User, Home } from 'lucide-react';
+import { Eye, User } from 'lucide-react';
 
-// Custom rounded triangle play icon
-const RoundedPlayIcon = ({ className }: { className?: string }) => (
+// Custom UFO icon
+const UfoIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     viewBox="0 0 24 24"
     fill="currentColor"
-    stroke="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   >
-    <polygon points="7,5 7,19 17,12" />
+    {/* UFO body (flying saucer) */}
+    <ellipse cx="12" cy="10" rx="8" ry="3" fill="currentColor" />
+    <ellipse cx="12" cy="10" rx="6" ry="2" fill="none" stroke="currentColor" />
+    {/* UFO dome */}
+    <ellipse cx="12" cy="10" rx="4" ry="2.5" fill="currentColor" opacity="0.3" />
+    {/* Light beam (optional) */}
+    <path d="M8 13 L12 16 L16 13" stroke="currentColor" fill="none" strokeWidth="1" opacity="0.5" />
   </svg>
 );
 
 const navigation = [
-  { name: 'Home', href: '/news', icon: Home },
+  { name: 'Mothership', href: '/news', icon: UfoIcon },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Profile', href: '/profile', icon: User },
 ];
