@@ -22,7 +22,7 @@ const PLACEHOLDER_ARTICLE: NewsArticle = {
   title: 'Coming Soon',
   summary: 'New stories and insights from the art world will appear here.',
   category: 'Stories',
-  imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=1200&q=80',
+  imageUrl: '/assets/gouache-logo-light-20241111.png',
   author: 'Gouache Editorial',
   publishedAt: new Date(),
   tags: [],
