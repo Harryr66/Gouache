@@ -758,6 +758,12 @@ export default function DiscoverPage() {
         finalArtists.forEach(artist => {
           if (artist.portfolioImages && artist.portfolioImages.length > 0) {
             artist.portfolioImages.forEach((portfolioItem, index) => {
+              // Skip items without imageUrl
+              if (!portfolioItem.imageUrl) {
+                console.warn(`⚠️ Skipping portfolio item without imageUrl: ${portfolioItem.title || 'Untitled'}`);
+                return;
+              }
+              
               // Ensure createdAt is a Date object (already converted in portfolio mapping above)
               const createdAt = portfolioItem.createdAt instanceof Date 
                 ? portfolioItem.createdAt 
@@ -784,6 +790,8 @@ export default function DiscoverPage() {
                 likes: Math.floor(Math.random() * 500),
               });
             });
+          } else {
+            console.log(`ℹ️ Artist ${artist.name} has no portfolio images`);
           }
         });
         
