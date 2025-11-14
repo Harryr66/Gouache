@@ -386,16 +386,31 @@ export default function AdminPanel() {
         notes: adminNotes
       });
 
+      // Convert portfolio image URLs to portfolio items format
+      const portfolioItems = request.portfolioImages.map((imageUrl, index) => ({
+        id: `portfolio-${Date.now()}-${index}`,
+        imageUrl,
+        title: `Portfolio Image ${index + 1}`,
+        description: '',
+        medium: '',
+        dimensions: '',
+        year: '',
+        tags: [],
+        createdAt: new Date()
+      }));
+
       // Update the user's profile to make them a verified professional artist
+      // Transfer portfolio images from the request to the user profile
       await updateDoc(doc(db, 'userProfiles', request.userId), {
         isProfessional: true,
         isVerified: true,
+        portfolio: portfolioItems,
         updatedAt: serverTimestamp()
       });
 
       toast({
         title: "Verification approved",
-        description: `${request.user.displayName} is now a verified professional artist.`,
+        description: `${request.user.displayName} is now a verified professional artist. Portfolio images have been transferred.`,
       });
 
       setSelectedRequest(null);
