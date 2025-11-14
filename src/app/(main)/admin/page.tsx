@@ -427,6 +427,54 @@ export default function AdminPanel() {
     }
   };
 
+  const handleTransferPortfolio = async (request: ArtistRequest) => {
+    setIsProcessing(true);
+    try {
+      // Convert portfolio image URLs to portfolio items format
+      const portfolioItems = request.portfolioImages.map((imageUrl, index) => ({
+        id: `portfolio-${Date.now()}-${index}`,
+        imageUrl,
+        title: `Portfolio Image ${index + 1}`,
+        description: '',
+        medium: '',
+        dimensions: '',
+        year: '',
+        tags: [],
+        createdAt: new Date()
+      }));
+
+      // Get current user profile to merge with existing portfolio if any
+      const userProfileRef = doc(db, 'userProfiles', request.userId);
+      const userProfileSnap = await getDoc(userProfileRef);
+      const existingPortfolio = userProfileSnap.data()?.portfolio || [];
+
+      // Merge existing portfolio with new portfolio images (avoid duplicates)
+      const existingUrls = new Set(existingPortfolio.map((item: any) => item.imageUrl));
+      const newItems = portfolioItems.filter(item => !existingUrls.has(item.imageUrl));
+      const mergedPortfolio = [...existingPortfolio, ...newItems];
+
+      // Update the user's profile with portfolio images
+      await updateDoc(userProfileRef, {
+        portfolio: mergedPortfolio,
+        updatedAt: serverTimestamp()
+      });
+
+      toast({
+        title: "Portfolio images transferred",
+        description: `${newItems.length} portfolio image(s) have been transferred to ${request.user.displayName}'s profile.`,
+      });
+    } catch (error) {
+      console.error('Error transferring portfolio images:', error);
+      toast({
+        title: "Transfer failed",
+        description: "Failed to transfer portfolio images. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleReject = async (request: ArtistRequest) => {
     if (!rejectionReason.trim()) {
       toast({
@@ -2368,6 +2416,17 @@ export default function AdminPanel() {
                         <Button variant="outline" size="sm" onClick={() => setSelectedRequest(request)}>
                           <Eye className="h-4 w-4 mr-1" /> View Details
                         </Button>
+                        {request.portfolioImages && request.portfolioImages.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTransferPortfolio(request)}
+                            disabled={isProcessing}
+                            className="text-blue-600 hover:text-blue-700 border-blue-200"
+                          >
+                            <Upload className="h-4 w-4 mr-1" /> Transfer Portfolio
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
@@ -4105,6 +4164,18 @@ export default function AdminPanel() {
                     {isProcessing ? 'Approving...' : 'Approve'}
                   </AlertDialogAction>
                 </>
+              )}
+              {selectedRequest.status === 'approved' && selectedRequest.portfolioImages && selectedRequest.portfolioImages.length > 0 && (
+                <AlertDialogAction
+                  onClick={() => {
+                    handleTransferPortfolio(selectedRequest);
+                    setSelectedRequest(null);
+                  }}
+                  disabled={isProcessing}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isProcessing ? 'Transferring...' : 'Transfer Portfolio Images'}
+                </AlertDialogAction>
               )}
             </AlertDialogFooter>
           </AlertDialogContent>
