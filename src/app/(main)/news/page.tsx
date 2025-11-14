@@ -9,7 +9,7 @@ import { NewsTile } from '@/components/news-tile';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Filter, RefreshCcw, Loader2, Check } from 'lucide-react';
+import { Filter, Loader2, Check } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const ARTICLE_COLLECTION = 'newsArticles';
@@ -95,7 +95,6 @@ const PLACEHOLDER_ARTICLES: NewsArticle[] = [
 export default function NewsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [filteredCategory, setFilteredCategory] = useState<string>('All');
-  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isNewsletterSubmitting, setIsNewsletterSubmitting] = useState(false);
@@ -149,21 +148,16 @@ export default function NewsPage() {
         return false;
       }
       const matchesCategory = filteredCategory === 'All' || article.category === filteredCategory;
-      const matchesSearch =
-        !searchTerm ||
-        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.tags?.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-      return matchesCategory && matchesSearch;
+      return matchesCategory;
     });
 
-    // Show placeholders only when there are no real articles and no search/filter applied
-    if (realArticles.length === 0 && articles.length === 0 && !searchTerm && filteredCategory === 'All') {
+    // Show placeholders only when there are no real articles and no filter applied
+    if (realArticles.length === 0 && articles.length === 0 && filteredCategory === 'All') {
       return PLACEHOLDER_ARTICLES;
     }
 
     return realArticles;
-  }, [articles, filteredCategory, searchTerm]);
+  }, [articles, filteredCategory]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -308,13 +302,13 @@ export default function NewsPage() {
         <div className="flex justify-center py-20">
           <ThemeLoading text="Curating today's headlines…" size="lg" />
         </div>
-      ) : filteredArticles.length === 0 && (searchTerm || filteredCategory !== 'All' || articles.length > 0) ? (
+      ) : filteredArticles.length === 0 && (filteredCategory !== 'All' || articles.length > 0) ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
           <Filter className="h-10 w-10 text-muted-foreground" />
           <h2 className="text-xl font-semibold">No stories found</h2>
           <p className="text-muted-foreground text-center max-w-md">
-            {searchTerm || filteredCategory !== 'All'
-              ? 'Try adjusting your search or filter to find more stories.'
+            {filteredCategory !== 'All'
+              ? 'Try adjusting your filter to find more stories.'
               : 'Check back soon as we expand our newsroom coverage with reports, interviews, and features.'}
           </p>
         </div>
