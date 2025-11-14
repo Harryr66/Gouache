@@ -230,8 +230,8 @@ export default function NewsPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredArticles.map((article) => (
+          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {filteredArticles.slice(0, 12).map((article) => (
               <NewsTile key={article.id} article={article} />
             ))}
           </div>
@@ -240,7 +240,7 @@ export default function NewsPage() {
     </div>
     
     {/* Newsletter Signup - Full Width */}
-    <div className="container max-w-6xl pt-12 border-t">
+    <div className="container max-w-6xl pt-12 pb-16 border-t">
       <NewsletterSignup />
     </div>
     </>
