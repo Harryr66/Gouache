@@ -1349,11 +1349,11 @@ export default function DiscoverPage() {
             </Tabs>
           </div>
           
-          <div className="flex gap-3 mt-3 overflow-x-auto pb-2 flex-wrap">
+          <div className="flex flex-wrap gap-3 mt-3 pb-2 min-w-0">
             {view === 'artworks' && (
               <>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[180px] shrink-0">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
@@ -1363,7 +1363,7 @@ export default function DiscoverPage() {
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-[140px] shrink-0">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -1377,7 +1377,7 @@ export default function DiscoverPage() {
           <Button
                   variant={showVerifiedOnly ? "default" : "outline"}
                   onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap shrink-0"
                 >
                   <BadgeCheck className="h-4 w-4 mr-2 text-blue-500 fill-current" />
                   Verified Only
@@ -1389,7 +1389,7 @@ export default function DiscoverPage() {
             {view === 'artists' && (
               <>
                 <Select value={selectedCountryOfOrigin} onValueChange={setSelectedCountryOfOrigin}>
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-[200px] shrink-0">
                     <SelectValue placeholder="Country of Origin" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1400,7 +1400,7 @@ export default function DiscoverPage() {
             </SelectContent>
           </Select>
                 <Select value={selectedCountryOfResidence} onValueChange={setSelectedCountryOfResidence}>
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-[200px] shrink-0">
                     <SelectValue placeholder="Country of Residence" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1413,7 +1413,7 @@ export default function DiscoverPage() {
           <Button
                   variant={showVerifiedOnly ? "default" : "outline"}
                   onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap shrink-0"
                 >
                   <BadgeCheck className="h-4 w-4 mr-2 text-blue-500 fill-current" />
                   Verified Only
@@ -1421,7 +1421,7 @@ export default function DiscoverPage() {
           <Button
                   variant={showCoursesAvailable ? "default" : "outline"}
                   onClick={() => setShowCoursesAvailable(!showCoursesAvailable)}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap shrink-0"
             size="sm"
           >
                   Courses Available
@@ -1429,13 +1429,13 @@ export default function DiscoverPage() {
           <Button
                   variant={showUpcomingEvents ? "default" : "outline"}
                   onClick={() => setShowUpcomingEvents(!showUpcomingEvents)}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap shrink-0"
             size="sm"
           >
                   Upcoming Events
           </Button>
                 {activeFiltersCount > 0 && (
-                  <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap">
+                  <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap shrink-0">
                     Clear Filters ({activeFiltersCount})
                   </Button>
                 )}
@@ -1444,7 +1444,7 @@ export default function DiscoverPage() {
             
           <Button
               variant="outline" 
-              className="whitespace-nowrap"
+              className="whitespace-nowrap shrink-0"
               onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
             >
               <Filter className="h-4 w-4 mr-2" />
