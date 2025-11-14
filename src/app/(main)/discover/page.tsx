@@ -670,12 +670,28 @@ export default function DiscoverPage() {
     const fetchArtists = async () => {
       try {
         setIsDataLoading(true);
-        const artistsQuery = query(
-          collection(db, 'userProfiles'),
-          where('isProfessional', '==', true),
-          orderBy('createdAt', 'desc')
-        );
-        const snapshot = await getDocs(artistsQuery);
+        // Try query with orderBy first, fall back to simple query if index missing
+        let snapshot;
+        try {
+          const artistsQuery = query(
+            collection(db, 'userProfiles'),
+            where('isProfessional', '==', true),
+            orderBy('createdAt', 'desc')
+          );
+          snapshot = await getDocs(artistsQuery);
+        } catch (indexError: any) {
+          // If index error, try without orderBy
+          if (indexError?.code === 'failed-precondition' || indexError?.message?.includes('index')) {
+            console.warn('⚠️ Composite index missing, querying without orderBy');
+            const simpleQuery = query(
+              collection(db, 'userProfiles'),
+              where('isProfessional', '==', true)
+            );
+            snapshot = await getDocs(simpleQuery);
+          } else {
+            throw indexError;
+          }
+        }
         
         const artistsData: Artist[] = snapshot.docs.map(doc => {
           const data = doc.data();
@@ -774,8 +790,18 @@ export default function DiscoverPage() {
         setArtworks(artworksData);
         console.log('🎨 Discover: Loaded', finalArtists.length, 'artists and', artworksData.length, 'artworks');
         console.log('📊 Artwork breakdown:', finalArtists.map(a => `${a.name}: ${a.portfolioImages?.length || 0} pieces`));
+        console.log('📋 Portfolio details:', finalArtists.map(a => ({
+          name: a.name,
+          portfolioCount: a.portfolioImages?.length || 0,
+          portfolioItems: a.portfolioImages?.map((p: any) => ({ title: p.title, imageUrl: p.imageUrl ? 'has image' : 'no image' })) || []
+        })));
       } catch (error) {
-        console.error('Error fetching artists:', error);
+        console.error('❌ Error fetching artists:', error);
+        console.error('Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: (error as any)?.code,
+          stack: error instanceof Error ? error.stack : undefined
+        });
         // Fall back to mock data on error
         setArtists(mockArtists);
         const mockArtworks: Artwork[] = [];
