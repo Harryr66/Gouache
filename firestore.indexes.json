@@ -99,6 +99,24 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "isProfessional",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "userProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "countryOfResidence",
           "order": "ASCENDING"
         },
