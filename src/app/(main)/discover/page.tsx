@@ -239,7 +239,7 @@ export default function DiscoverPage() {
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState('random');
   const [activeArtFilter, setActiveArtFilter] = useState('all');
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [selectedCountryOfOrigin, setSelectedCountryOfOrigin] = useState<string>('all');
@@ -913,7 +913,8 @@ export default function DiscoverPage() {
   };
 
   // Filter artworks based on search and filters
-  const filteredArtworks = artworks.filter((artwork) => {
+  const filteredArtworks = useMemo(() => {
+    return artworks.filter((artwork) => {
     // Search filter
     if (searchTerm) {
       const matchesSearch = artwork.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -984,23 +985,43 @@ export default function DiscoverPage() {
     }
     
     return true;
-  });
-
-    // Sort artworks
-  const sortedArtworks = [...filteredArtworks].sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case 'popular':
-          return (b.likes || 0) - (a.likes || 0);
-        case 'price-low':
-          return (a.price || 0) - (b.price || 0);
-        case 'price-high':
-          return (b.price || 0) - (a.price || 0);
-        default:
-          return 0;
-      }
     });
+  }, [artworks, searchTerm, selectedCategory, showVerifiedOnly, selectedMediums, selectedCountries, selectedCities, selectedTags, hideDigitalArt, hideAIAssistedArt, hideNFTs]);
+
+    // Shuffle function for randomizing array
+    const shuffleArray = <T,>(array: T[]): T[] => {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    };
+
+    // Sort artworks based on user selection, or randomize by default
+    const sortedArtworks = useMemo(() => {
+      if (sortBy === 'newest') {
+        return [...filteredArtworks].sort((a, b) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+      } else if (sortBy === 'popular') {
+        return [...filteredArtworks].sort((a, b) => {
+          return (b.likes || 0) - (a.likes || 0);
+        });
+      } else if (sortBy === 'price-low') {
+        return [...filteredArtworks].sort((a, b) => {
+          return (a.price || 0) - (b.price || 0);
+        });
+      } else if (sortBy === 'price-high') {
+        return [...filteredArtworks].sort((a, b) => {
+          return (b.price || 0) - (a.price || 0);
+        });
+      } else {
+        // Default: randomize the order to avoid chronological clustering
+        // This will re-randomize whenever filteredArtworks changes (e.g., when filters change)
+        return shuffleArray(filteredArtworks);
+      }
+    }, [filteredArtworks, sortBy]);
 
   const filteredArtists = artists.filter(artist => {
     // Search term filter
@@ -1336,6 +1357,7 @@ export default function DiscoverPage() {
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
+                    <SelectItem value="random">Random</SelectItem>
                     <SelectItem value="newest">Newest</SelectItem>
                     <SelectItem value="popular">Most Popular</SelectItem>
                     <SelectItem value="price-low">Price: Low to High</SelectItem>
