@@ -156,6 +156,8 @@ export default function AdminPanel() {
     tags: ''
   });
   const [newArticleContent, setNewArticleContent] = useState('');
+  const [newArticleImageFile, setNewArticleImageFile] = useState<File | null>(null);
+  const [newArticleImagePreview, setNewArticleImagePreview] = useState<string | null>(null);
   const [newAd, setNewAd] = useState({
     advertiserName: '',
     title: '',
@@ -1472,13 +1474,27 @@ export default function AdminPanel() {
       const tags = newArticle.tags
         ? newArticle.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
         : [];
+      let imageUrl = newArticle.imageUrl || DEFAULT_ARTICLE_IMAGE;
+
+      if (newArticleImageFile) {
+        try {
+          const fileName = `${Date.now()}_${newArticleImageFile.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/articles/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, newArticleImageFile);
+          imageUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+          console.error('Failed to upload newsroom article image:', error);
+          throw new Error('Could not upload the article image. Please try again.');
+        }
+      }
 
       const docRef = await addDoc(collection(db, 'newsArticles'), {
         title: newArticle.title.trim(),
         summary: newArticle.summary.trim(),
         category: newArticle.category || 'Headlines',
         author: newArticle.author?.trim() || '',
-        imageUrl: newArticle.imageUrl || DEFAULT_ARTICLE_IMAGE,
+        imageUrl,
         externalUrl: newArticle.externalUrl?.trim() || '',
         featured: false,
         tags,
@@ -1495,7 +1511,7 @@ export default function AdminPanel() {
           summary: newArticle.summary.trim(),
           category: newArticle.category || 'Headlines',
           author: newArticle.author?.trim() || '',
-          imageUrl: newArticle.imageUrl || DEFAULT_ARTICLE_IMAGE,
+          imageUrl,
           externalUrl: newArticle.externalUrl?.trim() || '',
           featured: false,
           tags,
@@ -1522,6 +1538,8 @@ export default function AdminPanel() {
         tags: ''
       });
       setNewArticleContent('');
+      setNewArticleImageFile(null);
+      setNewArticleImagePreview(null);
     } catch (error) {
       console.error('Failed to create news article:', error);
       toast({
@@ -1532,6 +1550,21 @@ export default function AdminPanel() {
     } finally {
       setIsPublishingArticle(false);
     }
+  };
+
+  const handleNewsArticleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setNewArticleImageFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setNewArticleImagePreview(previewUrl);
+  };
+
+  const clearNewsArticleImage = () => {
+    setNewArticleImageFile(null);
+    setNewArticleImagePreview(null);
+    setNewArticle((prev) => ({ ...prev, imageUrl: '' }));
   };
 
   const handleDeleteNewsArticle = async (article: NewsArticle) => {
@@ -2550,7 +2583,7 @@ export default function AdminPanel() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="news-image">Hero image URL</Label>
+                    <Label htmlFor="news-image">Hero image URL (optional)</Label>
                     <Input
                       id="news-image"
                       placeholder="https://"
@@ -2586,6 +2619,31 @@ export default function AdminPanel() {
                       value={newArticleContent}
                       onChange={(event) => setNewArticleContent(event.target.value)}
                     />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="news-image-upload">Upload hero image</Label>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <Input
+                        id="news-image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleNewsArticleImageChange}
+                      />
+                      {(newArticleImagePreview || newArticle.imageUrl) && (
+                        <Button variant="ghost" size="sm" type="button" onClick={clearNewsArticleImage}>
+                          Remove image
+                        </Button>
+                      )}
+                    </div>
+                    {(newArticleImagePreview || newArticle.imageUrl) && (
+                      <div className="mt-2">
+                        <img
+                          src={newArticleImagePreview || newArticle.imageUrl}
+                          alt="Article preview"
+                          className="h-32 w-full max-w-sm rounded-lg border object-cover"
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="news-tags">Tags</Label>
