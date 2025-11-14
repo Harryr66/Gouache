@@ -284,7 +284,7 @@ export default function NewsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-shrink-0">
             <h3 className="text-lg font-semibold text-white uppercase">
-              Join our discovery newsletter <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">discover the best artists you&apos;re missing out on!</span>
+              Join our discovery newsletter <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Discover the artists you&apos;re missing out on!</span>
             </h3>
           </div>
           <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3 flex-1 sm:max-w-md sm:ml-auto">
