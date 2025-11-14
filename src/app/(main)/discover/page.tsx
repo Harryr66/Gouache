@@ -784,11 +784,11 @@ export default function DiscoverPage() {
                 isForSale: false,
                 category: portfolioItem.medium || 'Mixed Media',
                 medium: portfolioItem.medium || 'Mixed Media',
-                dimensions: portfolioItem.dimensions ? { 
-                  width: parseFloat(portfolioItem.dimensions.split('x')[0]?.trim() || '24'),
-                  height: parseFloat(portfolioItem.dimensions.split('x')[1]?.trim() || '30'),
-                  unit: 'in'
-                } : { width: 24, height: 30, unit: 'in' },
+                dimensions: (portfolioItem as any).dimensions ? { 
+                  width: parseFloat((portfolioItem as any).dimensions.split('x')[0]?.trim() || '24'),
+                  height: parseFloat((portfolioItem as any).dimensions.split('x')[1]?.trim() || '30'),
+                  unit: 'in' as const
+                } : { width: 24, height: 30, unit: 'in' as const },
                 createdAt: createdAt,
                 updatedAt: createdAt,
                 views: 0,
@@ -836,11 +836,11 @@ export default function DiscoverPage() {
                 isForSale: false,
                 category: portfolioItem.medium || 'Mixed Media',
                 medium: portfolioItem.medium || 'Mixed Media',
-                dimensions: portfolioItem.dimensions ? { 
-                  width: parseFloat(portfolioItem.dimensions.split('x')[0]?.trim() || '24'),
-                  height: parseFloat(portfolioItem.dimensions.split('x')[1]?.trim() || '30'),
-                  unit: 'in'
-                } : { width: 24, height: 30, unit: 'in' },
+                dimensions: (portfolioItem as any).dimensions ? { 
+                  width: parseFloat((portfolioItem as any).dimensions.split('x')[0]?.trim() || '24'),
+                  height: parseFloat((portfolioItem as any).dimensions.split('x')[1]?.trim() || '30'),
+                  unit: 'in' as const
+                } : { width: 24, height: 30, unit: 'in' as const },
                 createdAt: portfolioItem.createdAt,
                 updatedAt: portfolioItem.createdAt,
                 views: 0,
