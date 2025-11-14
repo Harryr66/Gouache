@@ -34,7 +34,7 @@ const STEPS = [
 // Extract email address from "Name <email@domain.com>" or "email@domain.com" format
 const getSupportEmail = (): string => {
   const fromEmail = process.env.NEXT_PUBLIC_ARTIST_INVITE_FROM_EMAIL || process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
-  if (!fromEmail) return 'invite@example.com';
+  if (!fromEmail) return 'Invite@gouache.art';
   
   // Extract email from "Name <email@domain.com>" format
   const match = fromEmail.match(/<(.+?)>/) || fromEmail.match(/([\w.-]+@[\w.-]+\.\w+)/);
