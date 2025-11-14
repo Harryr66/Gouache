@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { doc, updateDoc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { updateEmail } from 'firebase/auth';
 import { db, storage, auth } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { ArtistRequest, ShowcaseLocation } from '@/lib/types';
@@ -144,6 +145,7 @@ export default function ProfileEditPage() {
   const [formData, setFormData] = useState({
     name: '',
     handle: '',
+    email: '',
     bio: '',
     artistType: '',
     location: '',
@@ -187,6 +189,7 @@ export default function ProfileEditPage() {
           const nextFormData = {
             name: changes.name || user.displayName || '',
             handle: changes.handle || user.username || '',
+            email: changes.email || user.email || '',
             bio: changes.bio || user.bio || '',
             artistType: changes.artistType || user.artistType || '',
             location: changes.location || user.location || '',
@@ -232,15 +235,34 @@ export default function ProfileEditPage() {
           console.error('Error applying offline changes:', error);
         }
       } else {
-        const nextFormData = {
-          name: user.displayName || '',
-          handle: user.username || '',
-          bio: user.bio || '',
-          artistType: user.artistType || '',
-          location: user.location || '',
-          countryOfOrigin: user.countryOfOrigin || '',
-          countryOfResidence: user.countryOfResidence || '',
-          isProfessional: user.isProfessional || false,
+        // Fetch email from Firestore if not in user object
+        const loadUserData = async () => {
+          let userEmail = user.email || '';
+          if (!userEmail && auth.currentUser) {
+            try {
+              const userProfileDoc = await getDoc(doc(db, 'userProfiles', user.id));
+              if (userProfileDoc.exists()) {
+                const profileData = userProfileDoc.data();
+                userEmail = profileData.email || auth.currentUser.email || '';
+              } else {
+                userEmail = auth.currentUser.email || '';
+              }
+            } catch (error) {
+              console.error('Error fetching email from Firestore:', error);
+              userEmail = auth.currentUser?.email || '';
+            }
+          }
+          
+          const nextFormData = {
+            name: user.displayName || '',
+            handle: user.username || '',
+            email: userEmail,
+            bio: user.bio || '',
+            artistType: user.artistType || '',
+            location: user.location || '',
+            countryOfOrigin: user.countryOfOrigin || '',
+            countryOfResidence: user.countryOfResidence || '',
+            isProfessional: user.isProfessional || false,
           tipJarEnabled: user.isProfessional
             ? (user.tipJarEnabled !== undefined ? user.tipJarEnabled : true)
             : false,
@@ -255,18 +277,21 @@ export default function ProfileEditPage() {
           eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
           eventDate: user.isProfessional ? ((user as any).eventDate || '') : '',
           showcaseLocations: user.isProfessional ? (user.showcaseLocations || []) : [],
+          };
+          setFormData(nextFormData);
+
+          if (user.avatarUrl) {
+            setPreviewImage(user.avatarUrl);
+          }
+
+          if (user.isProfessional && user.bannerImageUrl) {
+            setBannerPreviewImage(user.bannerImageUrl);
+          } else if (!user.isProfessional) {
+            setBannerPreviewImage(null);
+          }
         };
-        setFormData(nextFormData);
-
-        if (user.avatarUrl) {
-          setPreviewImage(user.avatarUrl);
-        }
-
-        if (user.isProfessional && user.bannerImageUrl) {
-          setBannerPreviewImage(user.bannerImageUrl);
-        } else if (!user.isProfessional) {
-          setBannerPreviewImage(null);
-        }
+        
+        loadUserData();
       }
       
       // Mark initial mount as complete
@@ -721,6 +746,7 @@ export default function ProfileEditPage() {
         const allowArtistFields = Boolean(user.isProfessional);
         const updateData: any = {
           name: formData.name,
+          email: formData.email, // Save email to Firestore for username login support
           bio: formData.bio,
           location: formData.location,
           countryOfOrigin: formData.countryOfOrigin,
@@ -799,6 +825,7 @@ export default function ProfileEditPage() {
     };
   }, [
     formData.name,
+    formData.email,
     formData.bio,
     formData.artistType,
     formData.location,
@@ -884,6 +911,7 @@ export default function ProfileEditPage() {
       const updateData: any = {
         name: formData.name,
         handle: formData.handle,
+        email: formData.email, // Save email to Firestore for username login support
         bio: formData.bio,
         location: formData.location,
         countryOfOrigin: formData.countryOfOrigin,
@@ -893,6 +921,31 @@ export default function ProfileEditPage() {
         updatedAt: new Date(),
         isProfessional: allowArtistFields,
       };
+
+      // Update email in Firebase Auth if it has changed
+      if (auth.currentUser && formData.email && formData.email !== auth.currentUser.email) {
+        try {
+          await updateEmail(auth.currentUser, formData.email);
+          console.log('✅ Firebase Auth email updated successfully');
+        } catch (error: any) {
+          console.error('Error updating Firebase Auth email:', error);
+          // If re-authentication is required, we'll still save to Firestore
+          // The user can update Firebase Auth email later if needed
+          if (error.code === 'auth/requires-recent-login') {
+            toast({
+              title: "Email saved to profile",
+              description: "Email updated in profile. Please sign out and sign back in to update your login email.",
+              variant: "default"
+            });
+          } else {
+            toast({
+              title: "Email saved to profile",
+              description: "Email updated in profile. There was an issue updating your login email.",
+              variant: "default"
+            });
+          }
+        }
+      }
 
       if (allowArtistFields) {
         updateData.artistType = formData.artistType;
@@ -1283,6 +1336,21 @@ export default function ProfileEditPage() {
                   <p className="text-sm text-red-500">This handle is already taken</p>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="your@email.com"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Update your email address. This will be used for login and notifications.
+              </p>
             </div>
 
             <div className="space-y-2">
