@@ -21,6 +21,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email and inviteUrl are required.' }, { status: 400 });
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: 'Invalid email format.' }, { status: 400 });
+    }
+
     if (!resendApiKey) {
       console.error('Missing RESEND_API_KEY environment variable.');
       return NextResponse.json(
@@ -29,6 +35,11 @@ export async function POST(request: Request) {
         },
         { status: 500 }
       );
+    }
+
+    // Validate from address format
+    if (!defaultFromAddress || defaultFromAddress === 'Gouache Invitations <invite@example.com>') {
+      console.warn('Using default/placeholder from address. Set ARTIST_INVITE_FROM_EMAIL environment variable.');
     }
 
     const resend = new Resend(resendApiKey);
@@ -65,19 +76,44 @@ export async function POST(request: Request) {
       </div>
     `;
 
-    const sendResult = await resend.emails.send({
-      ...payloadBase,
-      html
-    });
-
-    if (!sendResult || sendResult.error) {
-      const message =
-        sendResult?.error?.message ?? 'Unknown error while sending invite email.';
-      console.error('Resend email send error:', message, sendResult?.error);
+    let sendResult;
+    try {
+      sendResult = await resend.emails.send({
+        ...payloadBase,
+        html
+      });
+    } catch (resendError: any) {
+      console.error('Resend API call failed:', {
+        error: resendError,
+        message: resendError?.message,
+        code: resendError?.code,
+        statusCode: resendError?.statusCode,
+        response: resendError?.response
+      });
       return NextResponse.json(
         {
           error: 'Failed to send artist invite email.',
-          details: message
+          details: resendError?.message || resendError?.toString() || 'Resend API call failed',
+          code: resendError?.code,
+          statusCode: resendError?.statusCode
+        },
+        { status: 502 }
+      );
+    }
+
+    if (!sendResult || sendResult.error) {
+      const errorDetails = sendResult?.error;
+      const message = errorDetails?.message ?? 'Unknown error while sending invite email.';
+      console.error('Resend email send error:', {
+        error: errorDetails,
+        message,
+        fullResponse: sendResult
+      });
+      return NextResponse.json(
+        {
+          error: 'Failed to send artist invite email.',
+          details: message,
+          code: (errorDetails as any)?.name || (errorDetails as any)?.code
         },
         { status: 502 }
       );

@@ -152,8 +152,11 @@ export function ArtistInviteConsole() {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || 'Failed to send invite email.');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.details 
+          ? `${errorData.error}: ${errorData.details}`
+          : errorData.error || 'Failed to send invite email.';
+        throw new Error(errorMessage);
       }
 
       await updateDoc(inviteDocRef, {
@@ -216,8 +219,11 @@ export function ArtistInviteConsole() {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || 'Failed to resend invite.');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.details 
+          ? `${errorData.error}: ${errorData.details}`
+          : errorData.error || 'Failed to resend invite.';
+        throw new Error(errorMessage);
       }
 
       await updateDoc(doc(db, 'artistInvites', invite.id), {
