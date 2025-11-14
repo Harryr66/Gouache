@@ -14,7 +14,7 @@ export function MobileHeader() {
       <div className="container flex h-14 items-center">
         {/* Gouache Logo */}
         <div className="flex-shrink-0">
-          <Link href="/discover" className="flex items-center">
+          <Link href="/news" className="flex items-center">
             <span className="sr-only">Gouache</span>
             <img
               src="/assets/gouache-logo-light-20241111.png"

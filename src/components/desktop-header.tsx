@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Eye, User, Globe } from 'lucide-react';
+import { Eye, User, Home } from 'lucide-react';
 
 // Custom rounded triangle play icon
 const RoundedPlayIcon = ({ className }: { className?: string }) => (
@@ -19,7 +19,7 @@ const RoundedPlayIcon = ({ className }: { className?: string }) => (
 );
 
 const navigation = [
-  { name: 'News', href: '/news', icon: Globe },
+  { name: 'Home', href: '/news', icon: Home },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Profile', href: '/profile', icon: User },
 ];
@@ -29,7 +29,7 @@ export function DesktopHeader() {
 
   return (
     <div className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6">
-      <Link href="/discover" className="flex items-center">
+      <Link href="/news" className="flex items-center">
         <span className="sr-only">Gouache</span>
         <img
           src="/assets/gouache-logo-light-20241111.png"

@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Eye, User, Globe } from 'lucide-react';
+import { Eye, User, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
@@ -20,7 +20,7 @@ const RoundedPlayIcon = ({ className }: { className?: string }) => (
 );
 
 const mobileNavItems = [
-  { href: '/news', icon: Globe, label: 'News' },
+  { href: '/news', icon: Home, label: 'Home' },
   { href: '/discover', icon: Eye, label: 'Discover' },
   { href: '/profile', icon: User, label: 'Profile' },
 ];
