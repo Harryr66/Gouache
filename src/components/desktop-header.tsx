@@ -19,7 +19,7 @@ const RoundedPlayIcon = ({ className }: { className?: string }) => (
 );
 
 const navigation = [
-  { name: 'Newsroom', href: '/news', icon: Globe },
+  { name: 'News', href: '/news', icon: Globe },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Profile', href: '/profile', icon: User },
 ];
