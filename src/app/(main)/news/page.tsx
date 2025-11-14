@@ -6,11 +6,11 @@ import { db } from '@/lib/firebase';
 import { NewsArticle } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { NewsTile } from '@/components/news-tile';
-import { NewsletterSignup } from '@/components/newsletter-signup';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Filter, RefreshCcw } from 'lucide-react';
+import { Filter, RefreshCcw, Loader2, Check } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const ARTICLE_COLLECTION = 'newsArticles';
 
@@ -97,6 +97,9 @@ export default function NewsPage() {
   const [filteredCategory, setFilteredCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [isNewsletterSubmitting, setIsNewsletterSubmitting] = useState(false);
+  const [isNewsletterSuccess, setIsNewsletterSuccess] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -170,14 +173,71 @@ export default function NewsPage() {
     return realArticles;
   }, [articles, filteredCategory, searchTerm]);
 
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newsletterEmail.trim()) {
+      toast({
+        title: 'Email required',
+        description: 'Please enter your email address.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newsletterEmail)) {
+      toast({
+        title: 'Invalid email',
+        description: 'Please enter a valid email address.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsNewsletterSubmitting(true);
+
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: newsletterEmail.trim().toLowerCase() })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to subscribe to newsletter');
+      }
+
+      setIsNewsletterSuccess(true);
+      setNewsletterEmail('');
+      
+      toast({
+        title: 'Successfully subscribed!',
+        description: 'Thank you for subscribing to the Gouache newsletter.',
+      });
+
+      setTimeout(() => {
+        setIsNewsletterSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      toast({
+        title: 'Subscription failed',
+        description: error instanceof Error ? error.message : 'Unable to subscribe. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsNewsletterSubmitting(false);
+    }
+  };
+
   return (
     <>
     <div className="container max-w-6xl py-12 space-y-10">
-      {/* Newsletter Signup - At Top */}
-      <div className="container max-w-6xl pb-8 border-b">
-        <NewsletterSignup />
-      </div>
-
       <header className="space-y-6">
         <div className="space-y-2">
           <Badge variant="outline" className="uppercase tracking-widest">
@@ -192,7 +252,7 @@ export default function NewsPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="flex gap-3">
             {categories.map((category) => (
               <Button
@@ -205,19 +265,45 @@ export default function NewsPage() {
               </Button>
             ))}
           </div>
-          <div className="flex gap-2 items-center">
-            <Input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search news, trends, or artists…"
-              className="w-full sm:w-72"
-            />
-            <Button variant="outline" size="icon" onClick={() => { setSearchTerm(''); setFilteredCategory('All'); }}>
-              <RefreshCcw className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       </header>
+
+      {/* Newsletter Signup - Accent Banner */}
+      <div className="bg-red-500 dark:bg-slate-700 rounded-lg py-3 px-6">
+        <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3">
+          <div className="flex-1">
+            <Input
+              type="email"
+              placeholder="Enter your email"
+              value={newsletterEmail}
+              onChange={(e) => setNewsletterEmail(e.target.value)}
+              disabled={isNewsletterSubmitting || isNewsletterSuccess}
+              className="bg-white/90 dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground"
+              required
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={isNewsletterSubmitting || isNewsletterSuccess}
+            variant="secondary"
+            className="bg-white dark:bg-slate-900 text-foreground hover:bg-white/90 dark:hover:bg-slate-900/90 shrink-0"
+          >
+            {isNewsletterSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Subscribing...
+              </>
+            ) : isNewsletterSuccess ? (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Subscribed!
+              </>
+            ) : (
+              'Subscribe'
+            )}
+          </Button>
+        </form>
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center py-20">
