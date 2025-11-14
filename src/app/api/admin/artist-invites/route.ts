@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 
 const resendApiKey = process.env.RESEND_API_KEY;
 const defaultFromAddress =
-  process.env.ARTIST_INVITE_FROM_EMAIL || 'Gouache Invitations <no-reply@gouache.art>';
+  process.env.ARTIST_INVITE_FROM_EMAIL || 'Gouache Invitations <invite@example.com>';
 const inviteTemplateId = process.env.ARTIST_INVITE_TEMPLATE_ID;
 const inviteTemplateAlias = process.env.ARTIST_INVITE_TEMPLATE_ALIAS;
 

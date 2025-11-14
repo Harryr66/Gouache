@@ -27,6 +27,16 @@ const STEPS = [
   'Review & launch'
 ];
 
+// Extract email address from "Name <email@domain.com>" or "email@domain.com" format
+const getSupportEmail = (): string => {
+  const fromEmail = process.env.NEXT_PUBLIC_ARTIST_INVITE_FROM_EMAIL || process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
+  if (!fromEmail) return 'invite@example.com';
+  
+  // Extract email from "Name <email@domain.com>" format
+  const match = fromEmail.match(/<(.+?)>/) || fromEmail.match(/([\w.-]+@[\w.-]+\.\w+)/);
+  return match ? match[1] : fromEmail;
+};
+
 interface FormState {
   displayName: string;
   handle: string;
@@ -879,7 +889,12 @@ export default function ArtistOnboardingPage() {
         </div>
         <div className="text-right text-sm text-muted-foreground">
           <p className="font-medium text-foreground">Need help?</p>
-          <p>Email <a href="mailto:invite@gouachediscovery.com" className="underline">invite@gouachediscovery.com</a></p>
+          <p>
+            Email{' '}
+            <a href={`mailto:${getSupportEmail()}`} className="underline">
+              {getSupportEmail()}
+            </a>
+          </p>
         </div>
       </div>
 
