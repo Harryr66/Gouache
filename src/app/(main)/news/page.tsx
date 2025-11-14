@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { NewsArticle } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { NewsTile } from '@/components/news-tile';
+import { NewsletterSignup } from '@/components/newsletter-signup';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -62,6 +63,30 @@ const PLACEHOLDER_ARTICLES: NewsArticle[] = [
     author: 'Gouache Editorial',
     publishedAt: new Date(),
     tags: ['art market', 'investment', 'trends'],
+    featured: false,
+    archived: false
+  },
+  {
+    id: 'placeholder-5',
+    title: 'Museum Exhibitions: Must-See Shows This Year',
+    summary: 'Explore the most compelling museum exhibitions opening this season, from retrospectives to groundbreaking contemporary installations.',
+    category: 'Headlines',
+    imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80',
+    author: 'Gouache Editorial',
+    publishedAt: new Date(),
+    tags: ['museums', 'exhibitions', 'must-see'],
+    featured: false,
+    archived: false
+  },
+  {
+    id: 'placeholder-6',
+    title: 'Artist Residencies: Opportunities for Creatives',
+    summary: 'A comprehensive guide to artist residency programs around the world, offering time, space, and community for artistic development.',
+    category: 'Features',
+    imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80',
+    author: 'Gouache Editorial',
+    publishedAt: new Date(),
+    tags: ['residencies', 'opportunities', 'artists'],
     featured: false,
     archived: false
   }
@@ -203,11 +228,20 @@ export default function NewsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredArticles.map((article) => (
-            <NewsTile key={article.id} article={article} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredArticles.map((article) => (
+              <NewsTile key={article.id} article={article} />
+            ))}
+          </div>
+          
+          {/* Newsletter Signup */}
+          <div className="pt-12 border-t">
+            <div className="max-w-2xl mx-auto">
+              <NewsletterSignup />
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
