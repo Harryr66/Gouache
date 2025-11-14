@@ -22,7 +22,12 @@ export function NewsTile({ article }: NewsTileProps) {
           <img
             src={article.imageUrl}
             alt={article.title}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className={cn(
+              "absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105",
+              article.id?.startsWith('placeholder') 
+                ? "object-contain bg-muted" 
+                : "object-cover"
+            )}
           />
           <div className="absolute top-3 left-3">
             <Badge variant="secondary">{article.category}</Badge>
