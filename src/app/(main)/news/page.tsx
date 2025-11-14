@@ -12,32 +12,30 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Filter, Loader2, Check } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useTheme } from 'next-themes';
 
 const ARTICLE_COLLECTION = 'newsArticles';
 
 const DEFAULT_ARTICLE_IMAGE =
   'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80';
 
-const PLACEHOLDER_ARTICLE: NewsArticle = {
-  id: 'placeholder',
+const createPlaceholderArticle = (theme: string | undefined, id: string): NewsArticle => ({
+  id,
   title: 'Coming Soon',
   summary: 'New stories and insights from the art world will appear here.',
   category: 'Stories',
-  imageUrl: '/assets/gouache-logo-dark-20241111.png',
+  imageUrl: theme === 'dark' 
+    ? '/assets/gouache-logo-dark-20241111.png'
+    : '/assets/gouache-logo-light-20241111.png',
   author: 'Gouache Editorial',
   publishedAt: new Date(),
   tags: [],
   featured: false,
   archived: false
-};
-
-// Generate 12 placeholder articles
-const PLACEHOLDER_ARTICLES: NewsArticle[] = Array.from({ length: 12 }, (_, i) => ({
-  ...PLACEHOLDER_ARTICLE,
-  id: `placeholder-${i + 1}`
-}));
+});
 
 export default function NewsPage() {
+  const { theme } = useTheme();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [filteredCategory, setFilteredCategory] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
@@ -99,14 +97,13 @@ export default function NewsPage() {
     // Always show 12 tiles, fill with placeholders if needed
     const displayArticles = [...realArticles];
     while (displayArticles.length < 12) {
-      displayArticles.push({
-        ...PLACEHOLDER_ARTICLE,
-        id: `placeholder-${displayArticles.length + 1}`
-      });
+      displayArticles.push(
+        createPlaceholderArticle(theme, `placeholder-${displayArticles.length + 1}`)
+      );
     }
 
     return displayArticles.slice(0, 12);
-  }, [articles, filteredCategory]);
+  }, [articles, filteredCategory, theme]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
