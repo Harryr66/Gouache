@@ -387,6 +387,7 @@ export default function AdminPanel() {
       });
 
       // Convert portfolio image URLs to portfolio items format
+      // Use serverTimestamp() for createdAt to ensure consistency with Firestore
       const portfolioItems = request.portfolioImages.map((imageUrl, index) => ({
         id: `portfolio-${Date.now()}-${index}`,
         imageUrl,
@@ -396,7 +397,7 @@ export default function AdminPanel() {
         dimensions: '',
         year: '',
         tags: [],
-        createdAt: new Date()
+        createdAt: serverTimestamp() // Use serverTimestamp for consistency
       }));
 
       // Update the user's profile to make them a verified professional artist
@@ -431,6 +432,7 @@ export default function AdminPanel() {
     setIsProcessing(true);
     try {
       // Convert portfolio image URLs to portfolio items format
+      // Use serverTimestamp() for createdAt to ensure consistency with Firestore
       const portfolioItems = request.portfolioImages.map((imageUrl, index) => ({
         id: `portfolio-${Date.now()}-${index}`,
         imageUrl,
@@ -440,7 +442,7 @@ export default function AdminPanel() {
         dimensions: '',
         year: '',
         tags: [],
-        createdAt: new Date()
+        createdAt: serverTimestamp() // Use serverTimestamp for consistency
       }));
 
       // Get current user profile to merge with existing portfolio if any
@@ -461,7 +463,7 @@ export default function AdminPanel() {
 
       toast({
         title: "Portfolio images transferred",
-        description: `${newItems.length} portfolio image(s) have been transferred to ${request.user.displayName}'s profile.`,
+        description: `${newItems.length} portfolio image(s) have been transferred to ${request.user.displayName}'s profile. Please refresh the page to see them.`,
       });
     } catch (error) {
       console.error('Error transferring portfolio images:', error);

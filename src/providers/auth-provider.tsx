@@ -84,6 +84,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userDoc = await getDoc(doc(db, 'userProfiles', firebaseUser.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
+            
+            // Convert portfolio items from Firestore format (with Timestamps) to Date objects
+            const portfolio = userData.portfolio?.map((item: any) => ({
+              ...item,
+              createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
+            })) || [];
+            
             const detailedUser: User = {
               id: firebaseUser.uid,
               username: userData.handle || immediateUser.username,
@@ -106,6 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               isAdmin: userData.isAdmin || false,
               socialLinks: userData.socialLinks || {},
               showcaseLocations: userData.showcaseLocations || [],
+              portfolio: portfolio,
               preferences: userData.preferences || immediateUser.preferences
             };
             setUser(detailedUser);
@@ -132,6 +140,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userDoc = await getDoc(doc(db, 'userProfiles', firebaseUser.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
+          
+          // Convert portfolio items from Firestore format (with Timestamps) to Date objects
+          const portfolio = userData.portfolio?.map((item: any) => ({
+            ...item,
+            createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
+          })) || [];
+          
           const user: User = {
             id: firebaseUser.uid,
             username: userData.handle || '',
@@ -154,6 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isAdmin: userData.isAdmin || false,
             socialLinks: userData.socialLinks || {},
             showcaseLocations: userData.showcaseLocations || [],
+            portfolio: portfolio,
             preferences: userData.preferences || {
               notifications: {
                 likes: true,
