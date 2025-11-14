@@ -17,80 +17,24 @@ const ARTICLE_COLLECTION = 'newsArticles';
 const DEFAULT_ARTICLE_IMAGE =
   'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80';
 
-const PLACEHOLDER_ARTICLES: NewsArticle[] = [
-  {
-    id: 'placeholder-1',
-    title: 'Contemporary Art Fair Returns to New York',
-    summary: 'The annual contemporary art showcase brings together over 200 galleries from around the world, featuring emerging and established artists.',
-    category: 'Headlines',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=1200&q=80',
-    author: 'Gouache Editorial',
-    publishedAt: new Date(),
-    tags: ['art fair', 'contemporary art', 'galleries'],
-    featured: false,
-    archived: false
-  },
-  {
-    id: 'placeholder-2',
-    title: 'Rising Artist Spotlight: The Next Generation',
-    summary: 'Discover the emerging talents reshaping the art landscape with innovative techniques and bold perspectives.',
-    category: 'Features',
-    imageUrl: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=1200&q=80',
-    author: 'Gouache Editorial',
-    publishedAt: new Date(),
-    tags: ['emerging artists', 'spotlight', 'talent'],
-    featured: false,
-    archived: false
-  },
-  {
-    id: 'placeholder-3',
-    title: 'Gallery Openings: What to Watch This Season',
-    summary: 'A curated guide to the most anticipated gallery openings and exhibitions happening across major art capitals.',
-    category: 'Events',
-    imageUrl: 'https://images.unsplash.com/photo-1499781350541-7783f6c6a0c8?auto=format&fit=crop&w=1200&q=80',
-    author: 'Gouache Editorial',
-    publishedAt: new Date(),
-    tags: ['gallery openings', 'exhibitions', 'events'],
-    featured: false,
-    archived: false
-  },
-  {
-    id: 'placeholder-4',
-    title: 'Art Market Trends: Investment Insights',
-    summary: 'An analysis of current market movements, collector behavior, and investment opportunities in the contemporary art space.',
-    category: 'Market',
-    imageUrl: 'https://images.unsplash.com/photo-1579621970563-ebec7560e8f5?auto=format&fit=crop&w=1200&q=80',
-    author: 'Gouache Editorial',
-    publishedAt: new Date(),
-    tags: ['art market', 'investment', 'trends'],
-    featured: false,
-    archived: false
-  },
-  {
-    id: 'placeholder-5',
-    title: 'Museum Exhibitions: Must-See Shows This Year',
-    summary: 'Explore the most compelling museum exhibitions opening this season, from retrospectives to groundbreaking contemporary installations.',
-    category: 'Headlines',
-    imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80',
-    author: 'Gouache Editorial',
-    publishedAt: new Date(),
-    tags: ['museums', 'exhibitions', 'must-see'],
-    featured: false,
-    archived: false
-  },
-  {
-    id: 'placeholder-6',
-    title: 'Artist Residencies: Opportunities for Creatives',
-    summary: 'A comprehensive guide to artist residency programs around the world, offering time, space, and community for artistic development.',
-    category: 'Features',
-    imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80',
-    author: 'Gouache Editorial',
-    publishedAt: new Date(),
-    tags: ['residencies', 'opportunities', 'artists'],
-    featured: false,
-    archived: false
-  }
-];
+const PLACEHOLDER_ARTICLE: NewsArticle = {
+  id: 'placeholder',
+  title: 'Coming Soon',
+  summary: 'New stories and insights from the art world will appear here.',
+  category: 'Stories',
+  imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=1200&q=80',
+  author: 'Gouache Editorial',
+  publishedAt: new Date(),
+  tags: [],
+  featured: false,
+  archived: false
+};
+
+// Generate 12 placeholder articles
+const PLACEHOLDER_ARTICLES: NewsArticle[] = Array.from({ length: 12 }, (_, i) => ({
+  ...PLACEHOLDER_ARTICLE,
+  id: `placeholder-${i + 1}`
+}));
 
 export default function NewsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
@@ -151,12 +95,16 @@ export default function NewsPage() {
       return matchesCategory;
     });
 
-    // Show placeholders only when there are no real articles and no filter applied
-    if (realArticles.length === 0 && articles.length === 0 && filteredCategory === 'All') {
-      return PLACEHOLDER_ARTICLES;
+    // Always show 12 tiles, fill with placeholders if needed
+    const displayArticles = [...realArticles];
+    while (displayArticles.length < 12) {
+      displayArticles.push({
+        ...PLACEHOLDER_ARTICLE,
+        id: `placeholder-${displayArticles.length + 1}`
+      });
     }
 
-    return realArticles;
+    return displayArticles.slice(0, 12);
   }, [articles, filteredCategory]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -315,7 +263,7 @@ export default function NewsPage() {
       ) : (
         <>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredArticles.slice(0, 12).map((article) => (
+            {filteredArticles.map((article) => (
               <NewsTile key={article.id} article={article} />
             ))}
           </div>
