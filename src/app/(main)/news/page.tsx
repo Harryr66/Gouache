@@ -252,7 +252,7 @@ export default function NewsPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-3">
             {categories.map((category) => (
               <Button
@@ -265,44 +265,61 @@ export default function NewsPage() {
               </Button>
             ))}
           </div>
+          <div className="flex gap-2 items-center">
+            <Input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search news, trends, or artists…"
+              className="w-full sm:w-48 text-sm"
+            />
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => { setSearchTerm(''); setFilteredCategory('All'); }}>
+              <RefreshCcw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Newsletter Signup - Accent Banner */}
-      <div className="bg-red-500 dark:bg-slate-700 rounded-lg py-3 px-6">
-        <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3">
-          <div className="flex-1">
-            <Input
-              type="email"
-              placeholder="Enter your email"
-              value={newsletterEmail}
-              onChange={(e) => setNewsletterEmail(e.target.value)}
-              disabled={isNewsletterSubmitting || isNewsletterSuccess}
-              className="bg-white/90 dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground"
-              required
-            />
+      <div className="bg-red-600 dark:bg-slate-700 rounded-lg py-4 px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-shrink-0">
+            <h3 className="text-lg font-semibold text-white">Join our free discovery newsletter</h3>
+            <p className="text-sm text-white/90">Discover the best artists you&apos;re missing out on!</p>
           </div>
-          <Button
-            type="submit"
-            disabled={isNewsletterSubmitting || isNewsletterSuccess}
-            variant="secondary"
-            className="bg-white dark:bg-slate-900 text-foreground hover:bg-white/90 dark:hover:bg-slate-900/90 shrink-0"
-          >
-            {isNewsletterSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Subscribing...
-              </>
-            ) : isNewsletterSuccess ? (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Subscribed!
-              </>
-            ) : (
-              'Subscribe'
-            )}
-          </Button>
-        </form>
+          <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3 flex-1 sm:max-w-md sm:ml-auto">
+            <div className="flex-1">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                disabled={isNewsletterSubmitting || isNewsletterSuccess}
+                className="bg-white/90 dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground"
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={isNewsletterSubmitting || isNewsletterSuccess}
+              variant="secondary"
+              className="bg-white dark:bg-slate-900 text-foreground hover:bg-white/90 dark:hover:bg-slate-900/90 shrink-0"
+            >
+              {isNewsletterSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Subscribing...
+                </>
+              ) : isNewsletterSuccess ? (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Subscribed!
+                </>
+              ) : (
+                'Subscribe'
+              )}
+            </Button>
+          </form>
+        </div>
       </div>
 
       {isLoading ? (
