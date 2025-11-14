@@ -82,9 +82,9 @@ export function NewsletterSignup() {
         <div className="flex justify-center mb-2">
           <Mail className="h-8 w-8 text-primary" />
         </div>
-        <CardTitle className="text-2xl">Stay in the Loop</CardTitle>
+        <CardTitle className="text-2xl">Join our free discovery newsletter</CardTitle>
         <CardDescription className="text-base">
-          Get the latest art world news, artist spotlights, and exclusive content delivered to your inbox.
+          Discover the best artists your missing out on!
         </CardDescription>
       </CardHeader>
       <CardContent>
