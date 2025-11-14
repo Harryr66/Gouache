@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Loader2, Plus, Trash2 } from 'lucide-react';
 
-import { db, storage } from '@/lib/firebase';
+import { db, storage, auth } from '@/lib/firebase';
 import { useAuth } from '@/providers/auth-provider';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInvite } from '@/lib/types';
@@ -15,9 +15,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 const STEPS = [
+  'Account',
   'Welcome',
   'Personal details',
   'Portfolio',
@@ -102,7 +105,11 @@ export default function ArtistOnboardingPage() {
   const [invite, setInvite] = useState<ArtistInvite | null>(null);
   const [inviteStatus, setInviteStatus] = useState<'loading' | 'ready' | 'invalid' | 'completed'>('loading');
   const [inviteError, setInviteError] = useState<string | null>(null);
-  const [currentStep, setCurrentStep] = useState(0);
+  // Start at step 0 (Account) if no user, otherwise start at step 1 (Welcome)
+  const [currentStep, setCurrentStep] = useState(() => {
+    // This will be set properly after auth loads
+    return 0;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingPortfolio, setIsUploadingPortfolio] = useState(false);
 
@@ -154,6 +161,13 @@ export default function ArtistOnboardingPage() {
   });
   const [showcaseLocations, setShowcaseLocations] = useState<ShowcaseLocationDraft[]>([]);
   const [isUploadingShowcaseImage, setIsUploadingShowcaseImage] = useState(false);
+  const [authMode, setAuthMode] = useState<'signup' | 'signin'>('signup');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authHandle, setAuthHandle] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [waitingForAuth, setWaitingForAuth] = useState(false);
 
   useEffect(() => {
     const fetchInvite = async () => {
@@ -227,6 +241,35 @@ export default function ArtistOnboardingPage() {
   }, [token]);
 
   useEffect(() => {
+    if (invite?.email) {
+      setAuthEmail(invite.email);
+    }
+  }, [invite]);
+
+  // When user becomes available after account creation, refresh their data and move to next step
+  useEffect(() => {
+    if (user && waitingForAuth) {
+      setWaitingForAuth(false);
+      refreshUser().catch(console.error);
+      // Automatically move to welcome step after account creation
+      if (currentStep === 0) {
+        setCurrentStep(1);
+      }
+    }
+  }, [user, waitingForAuth, refreshUser, currentStep]);
+
+  // Set initial step based on user state
+  useEffect(() => {
+    if (user && invite && currentStep === 0) {
+      // If user is logged in and we're on the account step, move to welcome
+      setCurrentStep(1);
+    } else if (!user && invite && currentStep > 0) {
+      // If user logs out, go back to account step
+      setCurrentStep(0);
+    }
+  }, [user, invite, currentStep]);
+
+  useEffect(() => {
     if (!user || !invite) {
       return;
     }
@@ -254,12 +297,29 @@ export default function ArtistOnboardingPage() {
   const currentStepLabel = STEPS[currentStep] ?? 'Welcome';
 
   const handleNextStep = () => {
+    // Step 0 is account creation - handled separately
     if (currentStep === 0) {
+      // Should not reach here if no user, but just in case
+      if (!user) {
+        toast({
+          title: 'Account required',
+          description: 'Please create your account first.',
+          variant: 'destructive'
+        });
+        return;
+      }
       setCurrentStep(1);
       return;
     }
 
+    // Step 1 is Welcome
     if (currentStep === 1) {
+      setCurrentStep(2);
+      return;
+    }
+
+    // Step 2 is Personal details - validate required fields
+    if (currentStep === 2) {
       if (!formData.displayName.trim() || !formData.handle.trim()) {
         toast({
           title: 'Add your name and handle',
@@ -268,7 +328,7 @@ export default function ArtistOnboardingPage() {
         });
         return;
       }
-      setCurrentStep(2);
+      setCurrentStep(3);
       return;
     }
 
@@ -622,6 +682,174 @@ export default function ArtistOnboardingPage() {
     });
   };
 
+  const handleCreateAccount = async () => {
+    if (!authEmail.trim() || !authPassword.trim()) {
+      toast({
+        title: 'Missing information',
+        description: 'Please enter your email and password.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!authName.trim() || !authHandle.trim()) {
+      toast({
+        title: 'Missing information',
+        description: 'Please enter your name and handle.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (authEmail.toLowerCase() !== invite?.email?.toLowerCase()) {
+      toast({
+        title: 'Email mismatch',
+        description: `This invite is for ${invite?.email}. Please use that email address.`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsAuthLoading(true);
+
+    try {
+      // Create user with Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        authEmail.trim(),
+        authPassword
+      );
+
+      const user = userCredential.user;
+
+      // Update user profile with display name
+      await updateProfile(user, {
+        displayName: authName.trim(),
+      });
+
+      // Create user document in Firestore
+      try {
+        await setDoc(doc(db, 'userProfiles', user.uid), {
+          id: user.uid,
+          name: authName.trim(),
+          displayName: authName.trim(),
+          handle: authHandle.trim(),
+          username: authHandle.trim(),
+          email: authEmail.trim(),
+          avatarUrl: user.photoURL || undefined,
+          bio: '',
+          location: '',
+          website: '',
+          followerCount: 0,
+          followingCount: 0,
+          isProfessional: false,
+          createdAt: serverTimestamp(),
+        });
+
+        // Store handle mapping
+        await setDoc(
+          doc(db, 'handles', authHandle.trim()),
+          { userId: user.uid },
+          { merge: true }
+        );
+      } catch (firestoreError) {
+        console.warn('Firestore save failed:', firestoreError);
+      }
+
+      toast({
+        title: 'Account created!',
+        description: 'Welcome to Gouache! Continuing with onboarding...',
+      });
+
+      // Set flag to wait for auth state update
+      setWaitingForAuth(true);
+      
+      // The onAuthStateChanged listener will automatically update the user state
+      // Once user is available, we'll automatically move to the next step
+    } catch (error: any) {
+      console.error('Account creation error:', error);
+      
+      let errorMessage = 'Failed to create account. Please try again.';
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'An account with this email already exists. Please sign in instead.';
+        setAuthMode('signin');
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please choose a stronger password.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address format.';
+      }
+
+      toast({
+        title: 'Account creation failed',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+      setWaitingForAuth(false);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleSignIn = async () => {
+    if (!authEmail.trim() || !authPassword.trim()) {
+      toast({
+        title: 'Missing information',
+        description: 'Please enter your email and password.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (authEmail.toLowerCase() !== invite?.email?.toLowerCase()) {
+      toast({
+        title: 'Email mismatch',
+        description: `This invite is for ${invite?.email}. Please sign in with that email address.`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsAuthLoading(true);
+
+    try {
+      await signInWithEmailAndPassword(auth, authEmail.trim(), authPassword);
+      
+      toast({
+        title: 'Signed in!',
+        description: 'Continuing with onboarding...',
+      });
+
+      // Set flag to wait for auth state update
+      setWaitingForAuth(true);
+      
+      // The onAuthStateChanged listener will automatically update the user state
+      // Once user is available, we'll automatically move to the next step
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      
+      let errorMessage = 'Failed to sign in. Please try again.';
+      
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email. Please create an account instead.';
+        setAuthMode('signup');
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address format.';
+      }
+
+      toast({
+        title: 'Sign in failed',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+      setWaitingForAuth(false);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
   const handleCompleteOnboarding = async () => {
     if (!user) {
       toast({
@@ -760,13 +988,15 @@ export default function ArtistOnboardingPage() {
     }
   };
 
-  if (inviteStatus === 'loading' || authLoading) {
+  if (inviteStatus === 'loading' || authLoading || waitingForAuth) {
     return (
       <div className="container max-w-3xl py-16">
         <Card className="shadow-sm">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <Loader2 className="mb-4 h-10 w-10 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Preparing your artist onboarding experience…</p>
+            <p className="text-sm text-muted-foreground">
+              {waitingForAuth ? 'Setting up your account…' : 'Preparing your artist onboarding experience…'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -797,30 +1027,6 @@ export default function ArtistOnboardingPage() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="container max-w-2xl py-16">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold">Sign in to continue</CardTitle>
-            <CardDescription>
-              This invite is reserved for <span className="font-medium text-foreground">{invite.email}</span>. Sign in or
-              create an account using that email, then refresh this page to resume onboarding.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button variant="gradient" onClick={() => window.open('/login', '_blank')}
-              className="w-full">
-              Open login in a new tab
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              After you sign in, return to this tab and refresh to continue your onboarding steps.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   if (!inviteEmailMatchesUser) {
     return (
@@ -906,22 +1112,116 @@ export default function ArtistOnboardingPage() {
           <CardHeader className="border-b border-slate-200 bg-white px-6 py-6">
             <CardTitle className="text-2xl font-semibold text-slate-900">{currentStepLabel}</CardTitle>
             <CardDescription className="text-slate-600">
-            {currentStep === 0 && 'Welcome to Gouache! Let’s launch your profile in just a few quick steps.'}
-            {currentStep === 1 && 'Tell us how you want your personal details to appear across Gouache.'}
-            {currentStep === 2 && 'Upload highlight pieces for your portfolio. You can skip this now and add more later.'}
-            {currentStep === 3 && 'Share any upcoming events. This step is optional and can be skipped.'}
-            {currentStep === 4 && 'List products or books you sell. Optional—skip if not relevant right now.'}
-            {currentStep === 5 && 'Share any courses you currently offer. Optional—skip if not available.'}
-            {currentStep === 6 && 'Review everything at a glance before publishing your artist profile.'}
+            {currentStep === 0 && 'Create your artist account to begin. This invite is reserved for your email address.'}
+            {currentStep === 1 && 'Welcome to Gouache! Let's launch your profile in just a few quick steps.'}
+            {currentStep === 2 && 'Tell us how you want your personal details to appear across Gouache.'}
+            {currentStep === 3 && 'Upload highlight pieces for your portfolio. You can skip this now and add more later.'}
+            {currentStep === 4 && 'Share any upcoming events. This step is optional and can be skipped.'}
+            {currentStep === 5 && 'List products or books you sell. Optional—skip if not relevant right now.'}
+            {currentStep === 6 && 'Share any courses you currently offer. Optional—skip if not available.'}
+            {currentStep === 7 && 'Review everything at a glance before publishing your artist profile.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 px-6 py-8 text-slate-700">
-          {currentStep === 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-3 text-slate-800">
-              <h2 className="text-xl font-semibold text-slate-900">Welcome</h2>
-              <p className="leading-relaxed">
-                We’ll capture the essentials to launch your artist profile. Each step is quick, and you can skip anything you’re not ready to share.
-              </p>
+          {currentStep === 0 && !user && (
+            <div className="space-y-6">
+              <Tabs value={authMode} onValueChange={(v) => setAuthMode(v as 'signup' | 'signin')} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="signup">Create Account</TabsTrigger>
+                  <TabsTrigger value="signin">Sign In</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="signup" className="space-y-4 mt-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium" htmlFor="signup-email">Email</label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                        disabled={isAuthLoading || !!invite?.email}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {invite?.email ? 'This email is from your invite and cannot be changed.' : 'This must match the email address that received this invite.'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium" htmlFor="signup-name">Full Name</label>
+                      <Input
+                        id="signup-name"
+                        placeholder="Elena Vance"
+                        value={authName}
+                        onChange={(e) => setAuthName(e.target.value)}
+                        disabled={isAuthLoading}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium" htmlFor="signup-handle">Username</label>
+                      <Input
+                        id="signup-handle"
+                        placeholder="elena_vance"
+                        value={authHandle}
+                        onChange={(e) => setAuthHandle(e.target.value)}
+                        disabled={isAuthLoading}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        You can change this later. Letters, numbers, and underscores only.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium" htmlFor="signup-password">Password</label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        disabled={isAuthLoading}
+                        required
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="signin" className="space-y-4 mt-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium" htmlFor="signin-email">Email</label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                        disabled={isAuthLoading || !!invite?.email}
+                        required
+                      />
+                      {invite?.email && (
+                        <p className="text-xs text-muted-foreground">
+                          This email is from your invite and cannot be changed.
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium" htmlFor="signin-password">Password</label>
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        disabled={isAuthLoading}
+                        required
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           )}
 
@@ -1006,6 +1306,15 @@ export default function ArtistOnboardingPage() {
             </div>
           )}
 
+          {currentStep === 0 && user && (
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-3 text-slate-800">
+              <h2 className="text-xl font-semibold text-slate-900">Welcome</h2>
+              <p className="leading-relaxed">
+                We'll capture the essentials to launch your artist profile. Each step is quick, and you can skip anything you're not ready to share.
+              </p>
+            </div>
+          )}
+
           {currentStep === 2 && (
             <div className="space-y-6">
               <div>
@@ -1049,7 +1358,7 @@ export default function ArtistOnboardingPage() {
             </div>
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 4 && (
             <div className="space-y-5">
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-foreground">Event details</h3>
@@ -1301,12 +1610,12 @@ export default function ArtistOnboardingPage() {
             </div>
           )}
 
-          {currentStep === 4 && (
+          {currentStep === 5 && (
             <div className="space-y-5">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Products & Books</h3>
                 <p className="text-sm text-muted-foreground">
-                  List any products, prints, or books subscribers can purchase. Optional—skip if you don’t have any yet.
+                  List any products, prints, or books subscribers can purchase. Optional—skip if you don't have any yet.
                 </p>
               </div>
               <div className="space-y-3">
@@ -1418,7 +1727,7 @@ export default function ArtistOnboardingPage() {
             </div>
           )}
 
-          {currentStep === 5 && (
+          {currentStep === 6 && (
             <div className="space-y-5">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Courses</h3>
@@ -1535,7 +1844,7 @@ export default function ArtistOnboardingPage() {
             </div>
           )}
 
-          {currentStep === 6 && (
+          {currentStep === 7 && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Artist profile</h3>
@@ -1645,12 +1954,37 @@ export default function ArtistOnboardingPage() {
                 Back
               </Button>
             )}
-            {currentStep >= 2 && currentStep < STEPS.length - 1 && (
+            {currentStep === 0 && !user && (
+              <Button
+                variant="gradient"
+                onClick={authMode === 'signup' ? handleCreateAccount : handleSignIn}
+                disabled={isAuthLoading}
+                className="justify-center"
+              >
+                {isAuthLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {authMode === 'signup' ? 'Creating account...' : 'Signing in...'}
+                  </>
+                ) : (
+                  <>
+                    {authMode === 'signup' ? 'Create Account & Continue' : 'Sign In & Continue'}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            )}
+            {currentStep >= 3 && currentStep < STEPS.length - 1 && (
               <Button variant="outline" onClick={handleSkipStep} className="justify-center">
                 Skip this step
               </Button>
             )}
-            {currentStep < STEPS.length - 1 ? (
+            {currentStep > 0 && currentStep < STEPS.length - 1 ? (
+              <Button variant="gradient" onClick={handleNextStep} className="justify-center">
+                Continue
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : currentStep === 0 && user ? (
               <Button variant="gradient" onClick={handleNextStep} className="justify-center">
                 Continue
                 <ArrowRight className="ml-2 h-4 w-4" />

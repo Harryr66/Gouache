@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
-import { Resend } from 'resend';
 
-const resendApiKey = process.env.RESEND_API_KEY;
-const resendAudienceId = process.env.RESEND_AUDIENCE_ID; // Optional: Resend audience ID for newsletter
-const newsletterFromEmail = process.env.NEWSLETTER_FROM_EMAIL || process.env.ARTIST_INVITE_FROM_EMAIL || 'Gouache <newsletter@gouache.art>';
+const convertKitFormId = process.env.CONVERTKIT_FORM_ID;
+const convertKitApiKey = process.env.CONVERTKIT_API_KEY; // Form API key (public key) or Account API key
+const convertKitApiSecret = process.env.CONVERTKIT_API_SECRET; // Optional: Account API secret for server-side subscriptions
 
 export async function POST(request: Request) {
   try {
@@ -31,6 +30,52 @@ export async function POST(request: Request) {
     );
     const existingDocs = await getDocs(existingQuery);
 
+    let convertKitSubscribed = false;
+    let convertKitSubscriberId = null;
+
+    // Subscribe to ConvertKit if configured
+    if (convertKitFormId && convertKitApiKey) {
+      try {
+        const convertKitUrl = `https://api.convertkit.com/v3/forms/${convertKitFormId}/subscribe`;
+        const convertKitBody: any = {
+          email: trimmedEmail,
+          api_key: convertKitApiKey
+        };
+
+        // Add API secret if provided (for server-side subscriptions)
+        if (convertKitApiSecret) {
+          convertKitBody.api_secret = convertKitApiSecret;
+        }
+
+        const convertKitResponse = await fetch(convertKitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(convertKitBody)
+        });
+
+        if (!convertKitResponse.ok) {
+          const errorData = await convertKitResponse.json().catch(() => ({}));
+          // If email already exists in ConvertKit, that's okay - they're subscribed
+          if (convertKitResponse.status === 400 && errorData.message?.includes('already')) {
+            convertKitSubscribed = true;
+            console.log(`✅ Email ${trimmedEmail} already subscribed to ConvertKit`);
+          } else {
+            throw new Error(errorData.error || errorData.message || `ConvertKit API error: ${convertKitResponse.statusText}`);
+          }
+        } else {
+          const convertKitData = await convertKitResponse.json();
+          convertKitSubscribed = true;
+          convertKitSubscriberId = convertKitData.subscription?.subscriber?.id || null;
+          console.log(`✅ Subscribed ${trimmedEmail} to ConvertKit form ${convertKitFormId}`, convertKitData);
+        }
+      } catch (convertKitError: any) {
+        // Log but don't fail - subscription is saved to Firestore
+        console.warn('Failed to subscribe to ConvertKit (subscription still saved to Firestore):', convertKitError?.message);
+      }
+    }
+
     if (!existingDocs.empty) {
       // Email already exists - check if unsubscribed
       const existingDoc = existingDocs.docs[0];
@@ -43,7 +88,10 @@ export async function POST(request: Request) {
           subscribedAt: serverTimestamp(),
           unsubscribed: false,
           resubscribed: true,
-          previousUnsubscribeAt: existingData.unsubscribedAt
+          previousUnsubscribeAt: existingData.unsubscribedAt,
+          convertKitSubscribed,
+          convertKitSubscriberId,
+          convertKitFormId: convertKitFormId || null
         });
       } else {
         // Already subscribed
@@ -58,26 +106,11 @@ export async function POST(request: Request) {
         email: trimmedEmail,
         subscribedAt: serverTimestamp(),
         unsubscribed: false,
-        source: 'news-page'
+        source: 'news-page',
+        convertKitSubscribed,
+        convertKitSubscriberId,
+        convertKitFormId: convertKitFormId || null
       });
-    }
-
-    // Optionally add to Resend audience if API key and audience ID are configured
-    if (resendApiKey && resendAudienceId) {
-      try {
-        const resend = new Resend(resendApiKey);
-        await resend.contacts.create({
-          audience_id: resendAudienceId,
-          email: trimmedEmail,
-          unsubscribed: false
-        });
-        console.log(`✅ Added ${trimmedEmail} to Resend audience`);
-      } catch (resendError: any) {
-        // Log but don't fail - subscription is saved to Firestore
-        console.warn('Failed to add to Resend audience (subscription still saved):', resendError?.message);
-      }
-    } else if (resendApiKey && !resendAudienceId) {
-      console.log('Resend API key configured but no audience ID - skipping Resend integration');
     }
 
     return NextResponse.json({ 

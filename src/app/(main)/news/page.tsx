@@ -240,7 +240,7 @@ export default function NewsPage() {
     </div>
     
     {/* Newsletter Signup - Full Width */}
-    <div className="w-full pt-12 border-t px-4 sm:px-6 lg:px-8">
+    <div className="container max-w-6xl pt-12 border-t">
       <NewsletterSignup />
     </div>
     </>
