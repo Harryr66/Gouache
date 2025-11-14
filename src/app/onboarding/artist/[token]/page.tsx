@@ -4,6 +4,7 @@ import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Loader2, Plus, Trash2 } from 'lucide-react';
+import { ThemeLoading } from '@/components/theme-loading';
 
 import { db, storage, auth } from '@/lib/firebase';
 import { useAuth } from '@/providers/auth-provider';
@@ -988,10 +989,7 @@ export default function ArtistOnboardingPage() {
       <div className="container max-w-3xl py-16">
         <Card className="shadow-sm">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Loader2 className="mb-4 h-10 w-10 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              {waitingForAuth ? 'Setting up your account…' : 'Preparing your artist onboarding experience…'}
-            </p>
+            <ThemeLoading size="lg" text="" />
           </CardContent>
         </Card>
       </div>
