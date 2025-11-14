@@ -71,6 +71,17 @@ interface CourseDraft {
   imageStoragePath?: string | null;
 }
 
+interface ShowcaseLocationDraft {
+  name: string;
+  city?: string;
+  country?: string;
+  venue?: string;
+  website?: string;
+  notes?: string;
+  imageUrl?: string | null;
+  imageStoragePath?: string | null;
+}
+
 export default function ArtistOnboardingPage() {
   const router = useRouter();
   const params = useParams<{ token: string }>();
@@ -121,6 +132,18 @@ export default function ArtistOnboardingPage() {
   const [isUploadingEventImage, setIsUploadingEventImage] = useState(false);
   const [isUploadingProductImage, setIsUploadingProductImage] = useState(false);
   const [isUploadingCourseImage, setIsUploadingCourseImage] = useState(false);
+  const [pendingShowcase, setPendingShowcase] = useState<ShowcaseLocationDraft>({
+    name: '',
+    venue: '',
+    city: '',
+    country: '',
+    website: '',
+    notes: '',
+    imageUrl: undefined,
+    imageStoragePath: undefined
+  });
+  const [showcaseLocations, setShowcaseLocations] = useState<ShowcaseLocationDraft[]>([]);
+  const [isUploadingShowcaseImage, setIsUploadingShowcaseImage] = useState(false);
 
   useEffect(() => {
     const fetchInvite = async () => {
@@ -431,6 +454,74 @@ export default function ArtistOnboardingPage() {
     setPendingCourse((prev) => ({ ...prev, imageUrl: undefined, imageStoragePath: undefined }));
   };
 
+  const handlePendingShowcaseImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setIsUploadingShowcaseImage(true);
+    try {
+      if (pendingShowcase.imageStoragePath) {
+        await deleteObject(ref(storage, pendingShowcase.imageStoragePath));
+      }
+      const { url, storagePath } = await uploadSingleImage(file, 'showcases');
+      setPendingShowcase((prev) => ({ ...prev, imageUrl: url, imageStoragePath: storagePath }));
+      toast({
+        title: 'Showcase image added',
+        description: 'This will appear alongside the gallery listing.'
+      });
+    } catch (error) {
+      console.error('Failed to upload showcase image', error);
+      toast({
+        title: 'Upload failed',
+        description: 'We could not upload that image. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUploadingShowcaseImage(false);
+      event.target.value = '';
+    }
+  };
+
+  const clearPendingShowcaseImage = async () => {
+    if (pendingShowcase.imageStoragePath) {
+      try {
+        await deleteObject(ref(storage, pendingShowcase.imageStoragePath));
+      } catch (error) {
+        console.warn('Failed to delete pending showcase image', error);
+      }
+    }
+    setPendingShowcase((prev) => ({ ...prev, imageUrl: undefined, imageStoragePath: undefined }));
+  };
+
+  const handleAddShowcaseLocation = () => {
+    if (!pendingShowcase.name.trim() && !pendingShowcase.city?.trim() && !pendingShowcase.country?.trim()) {
+      toast({
+        title: 'Nothing to add',
+        description: 'Provide at least the gallery name or location, or skip this step.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    const showcaseToAdd: ShowcaseLocationDraft = { ...pendingShowcase };
+    setShowcaseLocations((prev) => [...prev, showcaseToAdd]);
+    setPendingShowcase({ name: '', city: '', country: '', notes: '' });
+    toast({
+      title: 'Location added',
+      description: 'This gallery will be shown under “Where to see my work”.'
+    });
+  };
+
+  const handleRemoveShowcaseLocation = async (index: number) => {
+    const location = showcaseLocations[index];
+    setShowcaseLocations((prev) => prev.filter((_, i) => i !== index));
+    if (location?.imageStoragePath) {
+      try {
+        await deleteObject(ref(storage, location.imageStoragePath));
+      } catch (error) {
+        console.warn('Failed to delete showcase image from storage', error);
+      }
+    }
+  };
+
   const handleRemoveEvent = async (index: number) => {
     const eventToRemove = events[index];
     setEvents((prev) => prev.filter((_, i) => i !== index));
@@ -478,7 +569,7 @@ export default function ArtistOnboardingPage() {
     }
     const eventToAdd: EventDraft = { ...pendingEvent };
     setEvents((prev) => [...prev, eventToAdd]);
-    setPendingEvent({ title: '', date: '', city: '', country: '', description: '' });
+    setPendingEvent({ title: '', date: '', city: '', country: '', description: '', imageUrl: undefined, imageStoragePath: undefined });
     toast({
       title: 'Event added',
       description: 'Your event has been saved to the onboarding summary.'
@@ -496,7 +587,7 @@ export default function ArtistOnboardingPage() {
     }
     const productToAdd: ListingDraft = { ...pendingProduct };
     setProducts((prev) => [...prev, productToAdd]);
-    setPendingProduct({ title: '', description: '', price: '', url: '' });
+    setPendingProduct({ title: '', description: '', price: '', url: '', imageUrl: undefined, imageStoragePath: undefined });
     toast({
       title: 'Product added',
       description: 'We’ll feature this in your shop once you publish.'
@@ -514,7 +605,7 @@ export default function ArtistOnboardingPage() {
     }
     const courseToAdd: CourseDraft = { ...pendingCourse };
     setCourses((prev) => [...prev, courseToAdd]);
-    setPendingCourse({ title: '', description: '', url: '', price: '' });
+    setPendingCourse({ title: '', description: '', url: '', price: '', imageUrl: undefined, imageStoragePath: undefined });
     toast({
       title: 'Course added',
       description: 'Your course will appear with the chosen thumbnail.'
@@ -610,6 +701,15 @@ export default function ArtistOnboardingPage() {
             url: course.url || null,
             price: course.price || null,
             imageUrl: course.imageUrl || null
+          })),
+          showcaseLocations: showcaseLocations.map((location) => ({
+            name: location.name || null,
+            venue: location.venue || null,
+            city: location.city || null,
+            country: location.country || null,
+            website: location.website || null,
+            notes: location.notes || null,
+            imageUrl: location.imageUrl || null
           })),
           updatedAt: serverTimestamp()
         },
@@ -1053,6 +1153,136 @@ export default function ArtistOnboardingPage() {
                   ))}
                 </div>
               )}
+
+              <Separator />
+
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-foreground">Where to see my work</h3>
+                <p className="text-sm text-muted-foreground">
+                  List galleries or spaces that are currently showing your work. These entries stay visible on your profile.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  placeholder="Gallery or space name"
+                  value={pendingShowcase.name}
+                  onChange={(event) =>
+                    setPendingShowcase((prev) => ({ ...prev, name: event.target.value }))
+                  }
+                />
+                <Input
+                  placeholder="Venue (optional)"
+                  value={pendingShowcase.venue}
+                  onChange={(event) =>
+                    setPendingShowcase((prev) => ({ ...prev, venue: event.target.value }))
+                  }
+                />
+                <Input
+                  placeholder="City"
+                  value={pendingShowcase.city}
+                  onChange={(event) =>
+                    setPendingShowcase((prev) => ({ ...prev, city: event.target.value }))
+                  }
+                />
+                <Input
+                  placeholder="Country"
+                  value={pendingShowcase.country}
+                  onChange={(event) =>
+                    setPendingShowcase((prev) => ({ ...prev, country: event.target.value }))
+                  }
+                />
+                <Input
+                  placeholder="Website or listing URL (optional)"
+                  value={pendingShowcase.website}
+                  onChange={(event) =>
+                    setPendingShowcase((prev) => ({ ...prev, website: event.target.value }))
+                  }
+                />
+                <Textarea
+                  placeholder="Notes (optional)"
+                  className="sm:col-span-2"
+                  value={pendingShowcase.notes}
+                  onChange={(event) =>
+                    setPendingShowcase((prev) => ({ ...prev, notes: event.target.value }))
+                  }
+                  rows={3}
+                />
+                <div className="sm:col-span-2 space-y-2">
+                  <p className="text-xs font-medium text-foreground">Gallery image (optional)</p>
+                  {pendingShowcase.imageUrl ? (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={pendingShowcase.imageUrl}
+                        alt="Gallery preview"
+                        className="h-20 w-20 rounded-lg border border-slate-200 object-cover"
+                      />
+                      <Button variant="ghost" size="sm" onClick={() => void clearPendingShowcaseImage()}>
+                        Remove image
+                      </Button>
+                    </div>
+                  ) : (
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingShowcaseImage}
+                      onChange={handlePendingShowcaseImageChange}
+                    />
+                  )}
+                  {isUploadingShowcaseImage && (
+                    <p className="text-xs text-muted-foreground">Uploading image…</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={handleAddShowcaseLocation}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add location
+                </Button>
+              </div>
+              {showcaseLocations.length > 0 && (
+                <div className="space-y-3">
+                  {showcaseLocations.map((location, index) => (
+                    <div key={`${location.name}-${index}`} className="border rounded-lg p-4">
+                      <div className="flex items-start gap-4">
+                        {location.imageUrl && (
+                          <img
+                            src={location.imageUrl}
+                            alt={location.name || 'Gallery image'}
+                            className="h-16 w-16 rounded-md border border-slate-200 object-cover"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <p className="font-semibold text-sm text-foreground">
+                                {location.name || 'Gallery'}
+                              </p>
+                              {(location.city || location.country) && (
+                                <p className="text-xs text-muted-foreground">
+                                  {[location.city, location.country].filter(Boolean).join(', ')}
+                                </p>
+                              )}
+                              {location.website && (
+                                <p className="text-xs text-muted-foreground break-all">{location.website}</p>
+                              )}
+                              {location.notes && (
+                                <p className="text-xs text-muted-foreground">{location.notes}</p>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => void handleRemoveShowcaseLocation(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1343,6 +1573,22 @@ export default function ArtistOnboardingPage() {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">No products added</p>
+                )}
+              </div>
+              <Separator />
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Where to See My Work</h3>
+                {showcaseLocations.length > 0 ? (
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    {showcaseLocations.map((location, index) => (
+                      <p key={`showcase-${index}`}>
+                        <Check className="inline h-3 w-3 mr-2 text-primary" />
+                        {location.name || 'Gallery'}{location.city ? ` — ${location.city}` : ''}{location.country ? `, ${location.country}` : ''}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No galleries listed yet</p>
                 )}
               </div>
               <Separator />

@@ -18,7 +18,7 @@ import { doc, updateDoc, getDoc, setDoc, collection, addDoc } from 'firebase/fir
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
-import { ArtistRequest } from '@/lib/types';
+import { ArtistRequest, ShowcaseLocation } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 
 // Countries list for dropdowns
@@ -131,6 +131,15 @@ export default function ProfileEditPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const isInitialMount = useRef(true);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [newShowcaseLocation, setNewShowcaseLocation] = useState({
+    name: '',
+    venue: '',
+    city: '',
+    country: '',
+    website: '',
+    notes: '',
+    imageUrl: ''
+  });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -151,6 +160,7 @@ export default function ProfileEditPage() {
     eventCity: '',
     eventCountry: '',
     eventDate: '',
+    showcaseLocations: [] as ShowcaseLocation[],
   });
 
   const [artistRequestData, setArtistRequestData] = useState({
@@ -200,6 +210,9 @@ export default function ProfileEditPage() {
             eventCity: user.isProfessional ? (changes.eventCity || user.eventCity || '') : '',
             eventCountry: user.isProfessional ? (changes.eventCountry || user.eventCountry || '') : '',
             eventDate: user.isProfessional ? (changes.eventDate || user.eventDate || '') : '',
+            showcaseLocations: user.isProfessional
+              ? (changes.showcaseLocations || user.showcaseLocations || [])
+              : [],
           };
           setFormData(nextFormData);
           if (!user.isProfessional) {
@@ -241,6 +254,7 @@ export default function ProfileEditPage() {
           eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
           eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
           eventDate: user.isProfessional ? ((user as any).eventDate || '') : '',
+          showcaseLocations: user.isProfessional ? (user.showcaseLocations || []) : [],
         };
         setFormData(nextFormData);
 
@@ -403,6 +417,55 @@ export default function ProfileEditPage() {
 
   const removeBannerImage = () => {
     setBannerPreviewImage(null);
+  };
+
+  const handleAddShowcaseLocation = () => {
+    if (!newShowcaseLocation.name.trim()) {
+      toast({
+        title: 'Add the gallery name',
+        description: 'Provide at least the name of the gallery or space.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      showcaseLocations: [
+        ...prev.showcaseLocations,
+        {
+          name: newShowcaseLocation.name.trim(),
+          venue: newShowcaseLocation.venue.trim() || undefined,
+          city: newShowcaseLocation.city.trim() || undefined,
+          country: newShowcaseLocation.country.trim() || undefined,
+          website: newShowcaseLocation.website.trim() || undefined,
+          notes: newShowcaseLocation.notes.trim() || undefined,
+          imageUrl: newShowcaseLocation.imageUrl.trim() || undefined
+        }
+      ]
+    }));
+
+    setNewShowcaseLocation({
+      name: '',
+      venue: '',
+      city: '',
+      country: '',
+      website: '',
+      notes: '',
+      imageUrl: ''
+    });
+
+    toast({
+      title: 'Location added',
+      description: 'Remember to publish your changes.'
+    });
+  };
+
+  const handleRemoveShowcaseLocation = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      showcaseLocations: prev.showcaseLocations.filter((_, i) => i !== index)
+    }));
   };
 
   const handlePortfolioImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -676,6 +739,7 @@ export default function ProfileEditPage() {
           updateData.eventCity = formData.eventCity || null;
           updateData.eventCountry = formData.eventCountry || null;
           updateData.eventDate = formData.eventDate || null;
+          updateData.showcaseLocations = formData.showcaseLocations || [];
         } else {
           updateData.artistType = '';
           updateData.tipJarEnabled = false;
@@ -685,6 +749,7 @@ export default function ProfileEditPage() {
           updateData.eventCountry = null;
           updateData.eventDate = null;
           updateData.bannerImageUrl = null;
+          updateData.showcaseLocations = [];
         }
 
         await withTimeout(setDoc(userRef, updateData, { merge: true }), 5000);
@@ -748,6 +813,7 @@ export default function ProfileEditPage() {
     formData.eventCity,
     formData.eventCountry,
     formData.eventDate,
+    JSON.stringify(formData.showcaseLocations),
   ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -836,6 +902,7 @@ export default function ProfileEditPage() {
         updateData.eventCity = formData.eventCity || null;
         updateData.eventCountry = formData.eventCountry || null;
         updateData.eventDate = formData.eventDate || null;
+        updateData.showcaseLocations = formData.showcaseLocations || [];
       } else {
         updateData.artistType = '';
         updateData.tipJarEnabled = false;
@@ -845,6 +912,7 @@ export default function ProfileEditPage() {
         updateData.eventCountry = null;
         updateData.eventDate = null;
         updateData.bannerImageUrl = null;
+        updateData.showcaseLocations = [];
       }
 
       // Only include avatarUrl if it's not undefined
@@ -1345,6 +1413,150 @@ export default function ProfileEditPage() {
           </CardContent>
         </Card>
 
+        {isArtistAccount && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Where to See My Work</CardTitle>
+              <CardDescription>
+                Showcase galleries or partner spaces currently exhibiting your work. These locations appear on your public profile.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="showcase-name">Gallery or space name *</Label>
+                  <Input
+                    id="showcase-name"
+                    placeholder="Gallery 302"
+                    value={newShowcaseLocation.name}
+                    onChange={(event) =>
+                      setNewShowcaseLocation((prev) => ({ ...prev, name: event.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="showcase-venue">Venue (optional)</Label>
+                  <Input
+                    id="showcase-venue"
+                    placeholder="Building, floor or room"
+                    value={newShowcaseLocation.venue}
+                    onChange={(event) =>
+                      setNewShowcaseLocation((prev) => ({ ...prev, venue: event.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="showcase-city">City</Label>
+                  <Input
+                    id="showcase-city"
+                    placeholder="Paris"
+                    value={newShowcaseLocation.city}
+                    onChange={(event) =>
+                      setNewShowcaseLocation((prev) => ({ ...prev, city: event.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="showcase-country">Country</Label>
+                  <Input
+                    id="showcase-country"
+                    placeholder="France"
+                    value={newShowcaseLocation.country}
+                    onChange={(event) =>
+                      setNewShowcaseLocation((prev) => ({ ...prev, country: event.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="showcase-link">Website or listing URL</Label>
+                  <Input
+                    id="showcase-link"
+                    placeholder="https://gallery302.com/exhibitions"
+                    value={newShowcaseLocation.website}
+                    onChange={(event) =>
+                      setNewShowcaseLocation((prev) => ({ ...prev, website: event.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="showcase-image">Image URL</Label>
+                  <Input
+                    id="showcase-image"
+                    placeholder="https://"
+                    value={newShowcaseLocation.imageUrl}
+                    onChange={(event) =>
+                      setNewShowcaseLocation((prev) => ({ ...prev, imageUrl: event.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="showcase-notes">Notes (optional)</Label>
+                  <Textarea
+                    id="showcase-notes"
+                    rows={3}
+                    placeholder="Add viewing hours, curator details, or what to look out for."
+                    value={newShowcaseLocation.notes}
+                    onChange={(event) =>
+                      setNewShowcaseLocation((prev) => ({ ...prev, notes: event.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" onClick={handleAddShowcaseLocation}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add location
+                </Button>
+              </div>
+              {formData.showcaseLocations.length > 0 ? (
+                <div className="grid gap-3">
+                  {formData.showcaseLocations.map((location, index) => (
+                    <div
+                      key={`${location.name}-${index}`}
+                      className="rounded-lg border border-muted bg-muted/20 p-4 flex flex-col md:flex-row md:items-start md:justify-between gap-3"
+                    >
+                      <div className="space-y-1 text-sm">
+                        <p className="font-semibold text-foreground">{location.name}</p>
+                        {(location.city || location.country) && (
+                          <p className="text-muted-foreground">
+                            {[location.city, location.country].filter(Boolean).join(', ')}
+                          </p>
+                        )}
+                        {location.website && (
+                          <a
+                            href={location.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline break-all"
+                          >
+                            {location.website}
+                          </a>
+                        )}
+                        {location.notes && (
+                          <p className="text-muted-foreground">{location.notes}</p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive self-start"
+                        onClick={() => handleRemoveShowcaseLocation(index)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No locations listed yet. Add galleries or partner spaces to highlight where to see your work in person.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
 
         {/* Account Settings */}

@@ -57,6 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           artistType: '',
           isAdmin: false,
           socialLinks: {},
+          showcaseLocations: [],
           preferences: {
             notifications: {
               likes: true,
@@ -104,6 +105,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               artistType: userData.artistType || '',
               isAdmin: userData.isAdmin || false,
               socialLinks: userData.socialLinks || {},
+              showcaseLocations: userData.showcaseLocations || [],
               preferences: userData.preferences || immediateUser.preferences
             };
             setUser(detailedUser);
@@ -151,6 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             artistType: userData.artistType || '',
             isAdmin: userData.isAdmin || false,
             socialLinks: userData.socialLinks || {},
+            showcaseLocations: userData.showcaseLocations || [],
             preferences: userData.preferences || {
               notifications: {
                 likes: true,

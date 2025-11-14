@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
-import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission } from '@/lib/types';
+import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, NewsAd } from '@/lib/types';
 import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
@@ -48,6 +48,11 @@ const ART_MEDIUM_CATEGORIES = [
   'Installation',
   'Performance Art'
 ];
+
+const DEFAULT_ARTICLE_IMAGE =
+  'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80';
+const DEFAULT_AD_IMAGE =
+  'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80';
 
 export default function AdminPanel() {
   const [artistRequests, setArtistRequests] = useState<ArtistRequest[]>([]);
@@ -138,6 +143,29 @@ export default function AdminPanel() {
   const [courseSubmissions, setCourseSubmissions] = useState<CourseSubmission[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedCourseSubmission, setSelectedCourseSubmission] = useState<CourseSubmission | null>(null);
+  const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
+  const [newsAds, setNewsAds] = useState<NewsAd[]>([]);
+  const [newArticle, setNewArticle] = useState({
+    title: '',
+    summary: '',
+    category: 'Headlines',
+    author: '',
+    imageUrl: '',
+    externalUrl: '',
+    publishedAt: '',
+    tags: ''
+  });
+  const [newArticleContent, setNewArticleContent] = useState('');
+  const [newAd, setNewAd] = useState({
+    advertiserName: '',
+    title: '',
+    imageUrl: '',
+    ctaText: 'Learn more',
+    ctaUrl: '',
+    tagline: ''
+  });
+  const [isPublishingArticle, setIsPublishingArticle] = useState(false);
+  const [isPublishingNewsAd, setIsPublishingNewsAd] = useState(false);
 
   useEffect(() => {
     const artistRequestsQuery = query(
@@ -179,15 +207,26 @@ export default function AdminPanel() {
       collection(db, 'courses'),
       orderBy('createdAt', 'desc')
     );
-    const courseSubmissionsQuery = query(
-      collection(db, 'courseSubmissions'),
-      orderBy('submittedAt', 'desc')
-    );
+    const courseSubmissionsQuery = query(collection(db, 'courseSubmissions'), orderBy('submittedAt', 'desc'));
+    const newsArticlesQuery = query(collection(db, 'newsArticles'), orderBy('publishedAt', 'desc'));
+    const newsAdsQuery = query(collection(db, 'newsAds'), orderBy('createdAt', 'desc'));
 
     const fetchData = async () => {
       try {
         console.log('🔄 Admin Panel: Fetching all data...');
-        const [artistSnapshot, advertisingSnapshot, episodesSnapshot, marketplaceSnapshot, affiliateSnapshot, advertisementsSnapshot, analyticsSnapshot, coursesSnapshot, courseSubmissionsSnapshot] = await Promise.all([
+        const [
+          artistSnapshot,
+          advertisingSnapshot,
+          episodesSnapshot,
+          marketplaceSnapshot,
+          affiliateSnapshot,
+          advertisementsSnapshot,
+          analyticsSnapshot,
+          coursesSnapshot,
+          courseSubmissionsSnapshot,
+          newsArticlesSnapshot,
+          newsAdsSnapshot
+        ] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
           getDocs(episodesQuery),
@@ -196,7 +235,9 @@ export default function AdminPanel() {
           getDocs(advertisementsQuery),
           getDocs(advertisementAnalyticsQuery),
           getDocs(coursesQuery),
-          getDocs(courseSubmissionsQuery)
+          getDocs(courseSubmissionsQuery),
+          getDocs(newsArticlesQuery),
+          getDocs(newsAdsQuery)
         ]);
 
         const requests = artistSnapshot.docs.map(doc => ({
@@ -272,6 +313,43 @@ export default function AdminPanel() {
         })) as CourseSubmission[];
         setCourseSubmissions(submissions);
         console.log(`✅ Loaded ${submissions.length} course submissions:`, submissions);
+
+        const newsroomArticles = newsArticlesSnapshot.docs.map(doc => {
+          const data = doc.data() as any;
+          return {
+            id: doc.id,
+            title: data.title ?? 'Untitled story',
+            summary: data.summary ?? '',
+            category: data.category ?? 'Headlines',
+            author: data.author ?? '',
+            imageUrl: data.imageUrl ?? DEFAULT_ARTICLE_IMAGE,
+            publishedAt: data.publishedAt?.toDate?.() ?? new Date(),
+            updatedAt: data.updatedAt?.toDate?.(),
+            tags: data.tags ?? [],
+            externalUrl: data.externalUrl ?? '',
+            featured: data.featured ?? false,
+            content: data.content ?? ''
+          } as NewsArticle;
+        });
+        setNewsArticles(newsroomArticles);
+        console.log(`✅ Loaded ${newsroomArticles.length} newsroom articles`);
+
+        const newsroomAds = newsAdsSnapshot.docs.map(doc => {
+          const data = doc.data() as any;
+          return {
+            id: doc.id,
+            advertiserName: data.advertiserName ?? 'Advertiser',
+            title: data.title ?? 'Sponsored highlight',
+            imageUrl: data.imageUrl ?? DEFAULT_AD_IMAGE,
+            ctaText: data.ctaText ?? 'Learn more',
+            ctaUrl: data.ctaUrl ?? '#',
+            tagline: data.tagline ?? '',
+            createdAt: data.createdAt?.toDate?.() ?? new Date(),
+            active: data.active ?? true
+          } as NewsAd;
+        });
+        setNewsAds(newsroomAds);
+        console.log(`✅ Loaded ${newsroomAds.length} newsroom ads`);
 
         setLoading(false);
         console.log('✅ Admin Panel: All data loaded successfully');
@@ -1378,6 +1456,183 @@ export default function AdminPanel() {
     }
   };
 
+  const handleCreateNewsArticle = async () => {
+    if (!newArticle.title.trim() || !newArticle.summary.trim()) {
+      toast({
+        title: 'Missing information',
+        description: 'Please provide at least a headline and summary for the article.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsPublishingArticle(true);
+    try {
+      const publishedAtDate = newArticle.publishedAt ? new Date(newArticle.publishedAt) : new Date();
+      const tags = newArticle.tags
+        ? newArticle.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
+        : [];
+
+      const docRef = await addDoc(collection(db, 'newsArticles'), {
+        title: newArticle.title.trim(),
+        summary: newArticle.summary.trim(),
+        category: newArticle.category || 'Headlines',
+        author: newArticle.author?.trim() || '',
+        imageUrl: newArticle.imageUrl || DEFAULT_ARTICLE_IMAGE,
+        externalUrl: newArticle.externalUrl?.trim() || '',
+        featured: false,
+        tags,
+        content: newArticleContent,
+        publishedAt: publishedAtDate,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      setNewsArticles((prev) => [
+        {
+          id: docRef.id,
+          title: newArticle.title.trim(),
+          summary: newArticle.summary.trim(),
+          category: newArticle.category || 'Headlines',
+          author: newArticle.author?.trim() || '',
+          imageUrl: newArticle.imageUrl || DEFAULT_ARTICLE_IMAGE,
+          externalUrl: newArticle.externalUrl?.trim() || '',
+          featured: false,
+          tags,
+          content: newArticleContent,
+          publishedAt: publishedAtDate,
+          updatedAt: new Date()
+        },
+        ...prev
+      ]);
+
+      toast({
+        title: 'Article published',
+        description: `"${newArticle.title}" is now live in the newsroom feed.`
+      });
+
+      setNewArticle({
+        title: '',
+        summary: '',
+        category: 'Headlines',
+        author: '',
+        imageUrl: '',
+        externalUrl: '',
+        publishedAt: '',
+        tags: ''
+      });
+      setNewArticleContent('');
+    } catch (error) {
+      console.error('Failed to create news article:', error);
+      toast({
+        title: 'Publish failed',
+        description: 'We could not publish that article. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsPublishingArticle(false);
+    }
+  };
+
+  const handleDeleteNewsArticle = async (article: NewsArticle) => {
+    try {
+      await deleteDoc(doc(db, 'newsArticles', article.id));
+      setNewsArticles((prev) => prev.filter((item) => item.id !== article.id));
+      toast({
+        title: 'Article removed',
+        description: `"${article.title}" has been removed from the newsroom feed.`
+      });
+    } catch (error) {
+      console.error('Failed to delete article:', error);
+      toast({
+        title: 'Delete failed',
+        description: 'We could not remove that article. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleCreateNewsAd = async () => {
+    if (!newAd.advertiserName.trim() || !newAd.title.trim() || !newAd.ctaUrl.trim()) {
+      toast({
+        title: 'Missing information',
+        description: 'Please provide advertiser name, ad title, and a destination URL.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsPublishingNewsAd(true);
+    try {
+      const docRef = await addDoc(collection(db, 'newsAds'), {
+        advertiserName: newAd.advertiserName.trim(),
+        title: newAd.title.trim(),
+        imageUrl: newAd.imageUrl || DEFAULT_AD_IMAGE,
+        ctaText: newAd.ctaText?.trim() || 'Learn more',
+        ctaUrl: newAd.ctaUrl.trim(),
+        tagline: newAd.tagline?.trim() || '',
+        active: true,
+        createdAt: serverTimestamp()
+      });
+
+      setNewsAds((prev) => [
+        {
+          id: docRef.id,
+          advertiserName: newAd.advertiserName.trim(),
+          title: newAd.title.trim(),
+          imageUrl: newAd.imageUrl || DEFAULT_AD_IMAGE,
+          ctaText: newAd.ctaText?.trim() || 'Learn more',
+          ctaUrl: newAd.ctaUrl.trim(),
+          tagline: newAd.tagline?.trim() || '',
+          createdAt: new Date(),
+          active: true
+        },
+        ...prev
+      ]);
+
+      toast({
+        title: 'Sponsored tile added',
+        description: `The placement for ${newAd.advertiserName} is now live.`
+      });
+
+      setNewAd({
+        advertiserName: '',
+        title: '',
+        imageUrl: '',
+        ctaText: 'Learn more',
+        ctaUrl: '',
+        tagline: ''
+      });
+    } catch (error) {
+      console.error('Failed to create news ad:', error);
+      toast({
+        title: 'Ad creation failed',
+        description: 'We could not add that sponsored tile. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsPublishingNewsAd(false);
+    }
+  };
+
+  const handleDeleteNewsAd = async (ad: NewsAd) => {
+    try {
+      await deleteDoc(doc(db, 'newsAds', ad.id));
+      setNewsAds((prev) => prev.filter((item) => item.id !== ad.id));
+      toast({
+        title: 'Sponsored tile removed',
+        description: `The placement for ${ad.advertiserName} has been removed.`
+      });
+    } catch (error) {
+      console.error('Failed to delete news ad:', error);
+      toast({
+        title: 'Delete failed',
+        description: 'We could not remove that sponsored tile. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const pendingRequests = artistRequests.filter(req => req.status === 'pending');
   const approvedRequests = artistRequests.filter(req => req.status === 'approved');
   const rejectedRequests = artistRequests.filter(req => req.status === 'rejected');
@@ -1452,7 +1707,7 @@ export default function AdminPanel() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {/* Professional Verification */}
         <Card>
           <CardHeader className="pb-3">
@@ -1517,6 +1772,40 @@ export default function AdminPanel() {
             >
               <span className="text-sm">Invite Console</span>
               <Badge variant={selectedView === 'artist-invites' ? 'secondary' : 'outline'}>New</Badge>
+            </button>
+          </CardContent>
+        </Card>
+
+        {/* Newsroom */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Megaphone className="h-4 w-4" />
+              Newsroom
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <button
+              onClick={() => setSelectedView('news-articles')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'news-articles' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Articles</span>
+              <Badge variant={selectedView === 'news-articles' ? 'secondary' : 'outline'}>
+                ({newsArticles.length})
+              </Badge>
+            </button>
+            <button
+              onClick={() => setSelectedView('news-ads')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'news-ads' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Sponsored tiles</span>
+              <Badge variant={selectedView === 'news-ads' ? 'secondary' : 'outline'}>
+                ({newsAds.length})
+              </Badge>
             </button>
           </CardContent>
         </Card>
@@ -2211,6 +2500,261 @@ export default function AdminPanel() {
               ))}
             </div>
           )
+        )}
+
+        {selectedView === 'news-articles' && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Create newsroom article</CardTitle>
+                <CardDescription>
+                  Publish Gouache editorial or link out to external coverage. Articles appear in the newsroom alongside sponsored tiles.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="news-title">Headline *</Label>
+                    <Input
+                      id="news-title"
+                      placeholder="e.g. Inside the Lagos Art Weekender"
+                      value={newArticle.title}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, title: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-category">Category</Label>
+                    <Input
+                      id="news-category"
+                      placeholder="Headlines"
+                      value={newArticle.category}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, category: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-author">Author</Label>
+                    <Input
+                      id="news-author"
+                      placeholder="Byline (optional)"
+                      value={newArticle.author}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, author: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-date">Publish date</Label>
+                    <Input
+                      id="news-date"
+                      type="datetime-local"
+                      value={newArticle.publishedAt}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, publishedAt: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-image">Hero image URL</Label>
+                    <Input
+                      id="news-image"
+                      placeholder="https://"
+                      value={newArticle.imageUrl}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, imageUrl: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-link">External link</Label>
+                    <Input
+                      id="news-link"
+                      placeholder="https://"
+                      value={newArticle.externalUrl}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, externalUrl: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="news-summary">Standfirst *</Label>
+                    <Textarea
+                      id="news-summary"
+                      rows={3}
+                      placeholder="One or two sentences summarising the story."
+                      value={newArticle.summary}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, summary: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="news-content">Body (optional)</Label>
+                    <Textarea
+                      id="news-content"
+                      rows={6}
+                      placeholder="Write or paste the full article content."
+                      value={newArticleContent}
+                      onChange={(event) => setNewArticleContent(event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="news-tags">Tags</Label>
+                    <Input
+                      id="news-tags"
+                      placeholder="Comma separated (e.g. art fair, investment, photography)"
+                      value={newArticle.tags}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, tags: event.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleCreateNewsArticle} disabled={isPublishingArticle}>
+                    {isPublishingArticle ? 'Publishing…' : 'Publish article'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {newsArticles.map((article) => (
+                <Card key={article.id} className="flex flex-col overflow-hidden">
+                  <div className="relative w-full pt-[60%]">
+                    <img
+                      src={article.imageUrl}
+                      alt={article.title}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <Badge className="absolute top-3 left-3" variant="secondary">
+                      {article.category}
+                    </Badge>
+                  </div>
+                  <CardContent className="flex-1 p-5 space-y-3">
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-lg leading-tight">{article.title}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-3">{article.summary}</p>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>
+                        {article.author ? `${article.author} • ` : ''}
+                        {article.publishedAt.toLocaleDateString()}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => handleDeleteNewsArticle(article)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedView === 'news-ads' && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Create sponsored tile</CardTitle>
+                <CardDescription>
+                  Sponsored tiles sit alongside articles with the same styling. Make sure imagery and copy are brand-safe.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="news-advertiser">Advertiser *</Label>
+                    <Input
+                      id="news-advertiser"
+                      placeholder="Brand or gallery name"
+                      value={newAd.advertiserName}
+                      onChange={(event) => setNewAd((prev) => ({ ...prev, advertiserName: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-ad-title">Headline *</Label>
+                    <Input
+                      id="news-ad-title"
+                      placeholder="e.g. Discover the new residency program"
+                      value={newAd.title}
+                      onChange={(event) => setNewAd((prev) => ({ ...prev, title: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-ad-image">Image URL</Label>
+                    <Input
+                      id="news-ad-image"
+                      placeholder="https://"
+                      value={newAd.imageUrl}
+                      onChange={(event) => setNewAd((prev) => ({ ...prev, imageUrl: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-ad-cta-text">CTA text</Label>
+                    <Input
+                      id="news-ad-cta-text"
+                      placeholder="Learn more"
+                      value={newAd.ctaText}
+                      onChange={(event) => setNewAd((prev) => ({ ...prev, ctaText: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="news-ad-cta-url">Destination URL *</Label>
+                    <Input
+                      id="news-ad-cta-url"
+                      placeholder="https://"
+                      value={newAd.ctaUrl}
+                      onChange={(event) => setNewAd((prev) => ({ ...prev, ctaUrl: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="news-ad-tagline">Support copy</Label>
+                    <Textarea
+                      id="news-ad-tagline"
+                      rows={3}
+                      placeholder="Optional supporting line."
+                      value={newAd.tagline}
+                      onChange={(event) => setNewAd((prev) => ({ ...prev, tagline: event.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleCreateNewsAd} disabled={isPublishingNewsAd}>
+                    {isPublishingNewsAd ? 'Saving…' : 'Add sponsored tile'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {newsAds.map((ad) => (
+                <Card key={ad.id} className="flex flex-col overflow-hidden border-primary/20">
+                  <div className="relative w-full pt-[60%]">
+                    <img
+                      src={ad.imageUrl}
+                      alt={ad.title}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground">
+                      Sponsored
+                    </Badge>
+                  </div>
+                  <CardContent className="flex-1 p-5 space-y-3">
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-lg leading-tight">{ad.title}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {ad.tagline || `Presented by ${ad.advertiserName}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{ad.advertiserName}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => handleDeleteNewsAd(ad)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Episodes - All */}

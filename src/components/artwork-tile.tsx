@@ -308,7 +308,7 @@ const generateArtistContent = (artist: Artist) => ({
                           )}
                         </div>
                         <p className="text-muted-foreground">@{artwork.artist.handle}</p>
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex flex-col gap-2 items-start">
                           <Button
                             variant={following ? 'outline' : 'secondary'}
                             onClick={handleFollowToggle}

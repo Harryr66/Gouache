@@ -22,13 +22,15 @@ import {
   Calendar,
   Brain,
   Settings,
-  LogOut
+  LogOut,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { TipDialog } from './tip-dialog';
 import { SuggestionsDialog } from './suggestions-dialog';
 import { CountryFlag } from './country-flag';
+import { ShowcaseLocation } from '@/lib/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,6 +67,7 @@ interface ProfileHeaderProps {
     eventCity?: string;
     eventCountry?: string;
     eventDate?: string;
+    showcaseLocations?: ShowcaseLocation[];
   };
   isOwnProfile: boolean;
   isFollowing?: boolean;
@@ -435,6 +438,64 @@ export function ProfileHeader({
                   </div>
                 </>
               )}
+
+            <Separator />
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  Where to see my work
+                </h3>
+                {isOwnProfile && (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/profile/edit#showcase-locations">Manage locations</Link>
+                  </Button>
+                )}
+              </div>
+              {user.showcaseLocations && user.showcaseLocations.length > 0 ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {user.showcaseLocations.map((location) => (
+                    <div key={`${location.name}-${location.website || location.city || ''}`} className="rounded-lg border border-muted bg-muted/20 p-3 flex gap-3">
+                      {location.imageUrl && (
+                        <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-muted">
+                          <img src={location.imageUrl} alt={location.name || 'Gallery'} className="h-full w-full object-cover" />
+                        </div>
+                      )}
+                      <div className="space-y-1 text-sm">
+                        <p className="font-semibold text-foreground">
+                          {location.name || 'Gallery'}
+                        </p>
+                        {(location.city || location.country) && (
+                          <p className="text-muted-foreground">
+                            {[location.city, location.country].filter(Boolean).join(', ')}
+                          </p>
+                        )}
+                        {location.website && (
+                          <a
+                            href={location.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline break-all"
+                          >
+                            {location.website}
+                          </a>
+                        )}
+                        {location.notes && (
+                          <p className="text-muted-foreground">{location.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {isOwnProfile
+                    ? 'Highlight galleries and spaces that are showing your work. Add them from your profile settings.'
+                    : 'This artist hasn’t listed any current gallery showings.'}
+                </p>
+              )}
+            </div>
             </div>
           </CardContent>
         </Card>

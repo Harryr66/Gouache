@@ -4,11 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { 
-  Eye, 
-  Upload, 
+import {
+  Eye,
+  Upload,
   User,
-  Brain
+  Brain,
+  Newspaper
 } from 'lucide-react';
 
 // Custom rounded triangle play icon
@@ -26,6 +27,7 @@ const RoundedPlayIcon = ({ className }: { className?: string }) => (
 const navigation = [
   { name: 'Docuseries', href: '/feed', icon: RoundedPlayIcon },
   { name: 'Discover', href: '/discover', icon: Eye },
+  { name: 'Newsroom', href: '/news', icon: Newspaper },
   { name: 'Learn', href: '/marketplace', icon: Brain },
   { name: 'Upload Profile', href: '/upload', icon: Upload },
   { name: 'Profile', href: '/profile', icon: User },

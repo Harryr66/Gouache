@@ -55,6 +55,7 @@ export interface Artist {
     rating?: number;
     createdAt: Date;
   }>;
+  showcaseLocations?: ShowcaseLocation[];
   // Thumbnail for discover tile
   discoverThumbnail?: string;
 }
@@ -462,6 +463,44 @@ export interface Event {
   currency?: string;
 }
 
+export interface ShowcaseLocation {
+  id?: string;
+  name: string;
+  venue?: string;
+  city?: string;
+  country?: string;
+  website?: string;
+  notes?: string;
+  imageUrl?: string;
+}
+
+export interface NewsArticle {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  imageUrl: string;
+  publishedAt: Date;
+  updatedAt?: Date;
+  author?: string;
+  tags?: string[];
+  externalUrl?: string;
+  featured?: boolean;
+  content?: string;
+}
+
+export interface NewsAd {
+  id: string;
+  advertiserName: string;
+  title: string;
+  imageUrl: string;
+  ctaText: string;
+  ctaUrl: string;
+  tagline?: string;
+  createdAt: Date;
+  active?: boolean;
+}
+
 export interface Comment {
   id: string;
   contentId: string;
@@ -671,6 +710,7 @@ export interface User {
       allowMessages: boolean;
     };
   };
+  showcaseLocations?: ShowcaseLocation[];
 }
 
 export interface Follow {
