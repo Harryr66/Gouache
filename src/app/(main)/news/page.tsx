@@ -16,6 +16,57 @@ const ARTICLE_COLLECTION = 'newsArticles';
 const DEFAULT_ARTICLE_IMAGE =
   'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80';
 
+const PLACEHOLDER_ARTICLES: NewsArticle[] = [
+  {
+    id: 'placeholder-1',
+    title: 'Contemporary Art Fair Returns to New York',
+    summary: 'The annual contemporary art showcase brings together over 200 galleries from around the world, featuring emerging and established artists.',
+    category: 'Headlines',
+    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=1200&q=80',
+    author: 'Gouache Editorial',
+    publishedAt: new Date(),
+    tags: ['art fair', 'contemporary art', 'galleries'],
+    featured: false,
+    archived: false
+  },
+  {
+    id: 'placeholder-2',
+    title: 'Rising Artist Spotlight: The Next Generation',
+    summary: 'Discover the emerging talents reshaping the art landscape with innovative techniques and bold perspectives.',
+    category: 'Features',
+    imageUrl: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=1200&q=80',
+    author: 'Gouache Editorial',
+    publishedAt: new Date(),
+    tags: ['emerging artists', 'spotlight', 'talent'],
+    featured: false,
+    archived: false
+  },
+  {
+    id: 'placeholder-3',
+    title: 'Gallery Openings: What to Watch This Season',
+    summary: 'A curated guide to the most anticipated gallery openings and exhibitions happening across major art capitals.',
+    category: 'Events',
+    imageUrl: 'https://images.unsplash.com/photo-1499781350541-7783f6c6a0c8?auto=format&fit=crop&w=1200&q=80',
+    author: 'Gouache Editorial',
+    publishedAt: new Date(),
+    tags: ['gallery openings', 'exhibitions', 'events'],
+    featured: false,
+    archived: false
+  },
+  {
+    id: 'placeholder-4',
+    title: 'Art Market Trends: Investment Insights',
+    summary: 'An analysis of current market movements, collector behavior, and investment opportunities in the contemporary art space.',
+    category: 'Market',
+    imageUrl: 'https://images.unsplash.com/photo-1579621970563-ebec7560e8f5?auto=format&fit=crop&w=1200&q=80',
+    author: 'Gouache Editorial',
+    publishedAt: new Date(),
+    tags: ['art market', 'investment', 'trends'],
+    featured: false,
+    archived: false
+  }
+];
+
 export default function NewsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [filteredCategory, setFilteredCategory] = useState<string>('All');
@@ -65,11 +116,15 @@ export default function NewsPage() {
   const categories = useMemo(() => {
     const unique = new Set<string>(['All']);
     articles.forEach((article) => unique.add(article.category ?? 'General'));
+    // Add placeholder categories if no real articles
+    if (articles.length === 0) {
+      PLACEHOLDER_ARTICLES.forEach((article) => unique.add(article.category));
+    }
     return Array.from(unique);
   }, [articles]);
 
   const filteredArticles = useMemo(() => {
-    return articles.filter((article) => {
+    const realArticles = articles.filter((article) => {
       if (article.archived) {
         return false;
       }
@@ -81,6 +136,13 @@ export default function NewsPage() {
         article.tags?.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
       return matchesCategory && matchesSearch;
     });
+
+    // Show placeholders only when there are no real articles and no search/filter applied
+    if (realArticles.length === 0 && articles.length === 0 && !searchTerm && filteredCategory === 'All') {
+      return PLACEHOLDER_ARTICLES;
+    }
+
+    return realArticles;
   }, [articles, filteredCategory, searchTerm]);
 
   return (
@@ -128,14 +190,16 @@ export default function NewsPage() {
 
       {isLoading ? (
         <div className="flex justify-center py-20">
-          <ThemeLoading text="Curating today’s headlines…" size="lg" />
+          <ThemeLoading text="Curating today's headlines…" size="lg" />
         </div>
-      ) : filteredArticles.length === 0 ? (
+      ) : filteredArticles.length === 0 && (searchTerm || filteredCategory !== 'All' || articles.length > 0) ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
           <Filter className="h-10 w-10 text-muted-foreground" />
-          <h2 className="text-xl font-semibold">No stories yet</h2>
+          <h2 className="text-xl font-semibold">No stories found</h2>
           <p className="text-muted-foreground text-center max-w-md">
-            Check back soon as we expand our newsroom coverage with reports, interviews, and features.
+            {searchTerm || filteredCategory !== 'All'
+              ? 'Try adjusting your search or filter to find more stories.'
+              : 'Check back soon as we expand our newsroom coverage with reports, interviews, and features.'}
           </p>
         </div>
       ) : (
