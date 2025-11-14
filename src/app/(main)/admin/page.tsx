@@ -14,8 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
-import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle } from '@/lib/types';
-import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3 } from 'lucide-react';
+import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport } from '@/lib/types';
+import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
 import { useAuth } from '@/providers/auth-provider';
@@ -142,6 +142,7 @@ export default function AdminPanel() {
   const [selectedCourseSubmission, setSelectedCourseSubmission] = useState<CourseSubmission | null>(null);
   const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
   const [showArchivedNews, setShowArchivedNews] = useState(false);
+  const [userReports, setUserReports] = useState<UserReport[]>([]);
   const [newArticle, setNewArticle] = useState({
     title: '',
     summary: '',
@@ -199,6 +200,7 @@ export default function AdminPanel() {
     );
     const courseSubmissionsQuery = query(collection(db, 'courseSubmissions'), orderBy('submittedAt', 'desc'));
     const newsArticlesQuery = query(collection(db, 'newsArticles'), orderBy('publishedAt', 'desc'));
+    const userReportsQuery = query(collection(db, 'userReports'), orderBy('submittedAt', 'desc'));
 
     const fetchData = async () => {
       try {
@@ -213,7 +215,8 @@ export default function AdminPanel() {
           analyticsSnapshot,
           coursesSnapshot,
           courseSubmissionsSnapshot,
-          newsArticlesSnapshot
+          newsArticlesSnapshot,
+          userReportsSnapshot
         ] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
@@ -224,7 +227,8 @@ export default function AdminPanel() {
           getDocs(advertisementAnalyticsQuery),
           getDocs(coursesQuery),
           getDocs(courseSubmissionsQuery),
-          getDocs(newsArticlesQuery)
+          getDocs(newsArticlesQuery),
+          getDocs(userReportsQuery)
         ]);
 
         const requests = artistSnapshot.docs.map(doc => ({
@@ -322,6 +326,25 @@ export default function AdminPanel() {
         });
         setNewsArticles(newsroomArticles);
         console.log(`✅ Loaded ${newsroomArticles.length} newsroom articles`);
+
+        const reports = userReportsSnapshot.docs.map(doc => {
+          const data = doc.data() as any;
+          return {
+            id: doc.id,
+            userId: data.userId ?? '',
+            userEmail: data.userEmail ?? '',
+            username: data.username ?? '',
+            displayName: data.displayName ?? '',
+            message: data.message ?? '',
+            status: data.status ?? 'pending',
+            submittedAt: data.submittedAt?.toDate?.() ?? new Date(),
+            reviewedBy: data.reviewedBy,
+            reviewedAt: data.reviewedAt?.toDate?.(),
+            adminNotes: data.adminNotes ?? ''
+          } as UserReport;
+        });
+        setUserReports(reports);
+        console.log(`✅ Loaded ${reports.length} user reports`);
 
         setLoading(false);
         console.log('✅ Admin Panel: All data loaded successfully');
@@ -1593,6 +1616,48 @@ export default function AdminPanel() {
     }
   };
 
+  const handleUpdateReportStatus = async (report: UserReport, status: 'pending' | 'reviewed' | 'resolved' | 'dismissed', adminNotes?: string) => {
+    if (!user) return;
+    
+    setIsProcessing(true);
+    try {
+      await updateDoc(doc(db, 'userReports', report.id), {
+        status,
+        reviewedAt: serverTimestamp(),
+        reviewedBy: user.id,
+        adminNotes: adminNotes || report.adminNotes || ''
+      });
+
+      setUserReports((prev) =>
+        prev.map((item) =>
+          item.id === report.id
+            ? {
+                ...item,
+                status,
+                reviewedAt: new Date(),
+                reviewedBy: user.id,
+                adminNotes: adminNotes || item.adminNotes || ''
+              }
+            : item
+        )
+      );
+
+      toast({
+        title: 'Report updated',
+        description: `Report status changed to ${status}.`
+      });
+    } catch (error) {
+      console.error('Failed to update report status:', error);
+      toast({
+        title: 'Update failed',
+        description: 'We could not update that report. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const pendingRequests = artistRequests.filter(req => req.status === 'pending');
   const approvedRequests = artistRequests.filter(req => req.status === 'approved');
   const rejectedRequests = artistRequests.filter(req => req.status === 'rejected');
@@ -1875,6 +1940,29 @@ export default function AdminPanel() {
             >
               <span className="text-sm">Course Requests</span>
               <Badge variant={selectedView === 'course-submissions' ? 'secondary' : 'outline'}>({courseSubmissions.filter(s => s.status === 'pending').length})</Badge>
+            </button>
+          </CardContent>
+        </Card>
+
+        {/* User Reports */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              User Reports
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <button
+              onClick={() => setSelectedView('user-reports')}
+              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+                selectedView === 'user-reports' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm">Reports</span>
+              <Badge variant={selectedView === 'user-reports' ? 'secondary' : 'outline'}>
+                ({userReports.filter(r => r.status === 'pending').length})
+              </Badge>
             </button>
           </CardContent>
         </Card>
@@ -2680,6 +2768,144 @@ export default function AdminPanel() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* User Reports */}
+        {selectedView === 'user-reports' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">User Reports</h2>
+                <p className="text-muted-foreground">
+                  Review reports submitted by users about issues, bugs, or concerns.
+                </p>
+              </div>
+              <Badge variant="outline">
+                {userReports.filter(r => r.status === 'pending').length} pending
+              </Badge>
+            </div>
+
+            {userReports.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No reports yet</h3>
+                  <p className="text-muted-foreground text-center">
+                    User reports will appear here when submitted.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {userReports.map((report) => (
+                  <Card key={report.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold">{report.displayName}</h3>
+                              <Badge
+                                variant={
+                                  report.status === 'pending'
+                                    ? 'default'
+                                    : report.status === 'resolved'
+                                    ? 'secondary'
+                                    : 'outline'
+                                }
+                              >
+                                {report.status}
+                              </Badge>
+                            </div>
+                            <div className="space-y-1 text-sm text-muted-foreground">
+                              <p>
+                                <span className="font-medium">Username:</span> {report.username}
+                              </p>
+                              <p>
+                                <span className="font-medium">Email:</span> {report.userEmail}
+                              </p>
+                              <p>
+                                <span className="font-medium">User ID:</span> {report.userId}
+                              </p>
+                              <p>
+                                <span className="font-medium">Submitted:</span>{' '}
+                                {report.submittedAt.toLocaleDateString()} at{' '}
+                                {report.submittedAt.toLocaleTimeString()}
+                              </p>
+                              {report.reviewedAt && (
+                                <p>
+                                  <span className="font-medium">Reviewed:</span>{' '}
+                                  {report.reviewedAt.toLocaleDateString()} at{' '}
+                                  {report.reviewedAt.toLocaleTimeString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t pt-4">
+                          <Label className="text-sm font-medium mb-2 block">Report Message</Label>
+                          <div className="p-4 bg-muted/50 rounded-lg">
+                            <p className="text-sm whitespace-pre-wrap">{report.message}</p>
+                          </div>
+                        </div>
+
+                        {report.adminNotes && (
+                          <div className="border-t pt-4">
+                            <Label className="text-sm font-medium mb-2 block">Admin Notes</Label>
+                            <div className="p-4 bg-muted/50 rounded-lg">
+                              <p className="text-sm whitespace-pre-wrap">{report.adminNotes}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 pt-4 border-t">
+                          {report.status === 'pending' && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleUpdateReportStatus(report, 'reviewed')}
+                                disabled={isProcessing}
+                              >
+                                Mark as Reviewed
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleUpdateReportStatus(report, 'resolved')}
+                                disabled={isProcessing}
+                              >
+                                Mark as Resolved
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleUpdateReportStatus(report, 'dismissed')}
+                                disabled={isProcessing}
+                              >
+                                Dismiss
+                              </Button>
+                            </>
+                          )}
+                          {report.status !== 'pending' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUpdateReportStatus(report, 'pending')}
+                              disabled={isProcessing}
+                            >
+                              Reopen
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

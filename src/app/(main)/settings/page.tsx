@@ -20,12 +20,22 @@ import {
   Trash2,
   CheckCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertCircle,
+  Send
 } from 'lucide-react';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
+import { useAuth } from '@/providers/auth-provider';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { toast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function SettingsPage() {
   const { settings: discoverSettings, updateSettings: updateDiscoverSettings } = useDiscoverSettings();
+  const { user } = useAuth();
+  const [reportMessage, setReportMessage] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   
   const [profileData, setProfileData] = useState({
     username: 'artist123',
@@ -60,6 +70,55 @@ export default function SettingsPage() {
   const handleSave = () => {
     // Save settings logic here
     console.log('Settings saved');
+  };
+
+  const handleSubmitReport = async () => {
+    if (!user) {
+      toast({
+        title: "Not signed in",
+        description: "Please sign in to submit a report.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!reportMessage.trim()) {
+      toast({
+        title: "Message required",
+        description: "Please describe the issue you're reporting.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmittingReport(true);
+    try {
+      await addDoc(collection(db, 'userReports'), {
+        userId: user.id,
+        userEmail: user.email || '',
+        username: user.username || '',
+        displayName: user.displayName || '',
+        message: reportMessage.trim(),
+        status: 'pending',
+        submittedAt: serverTimestamp(),
+      });
+
+      toast({
+        title: "Report submitted",
+        description: "Thank you for your report. We'll review it and get back to you if needed.",
+      });
+
+      setReportMessage('');
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      toast({
+        title: "Submission failed",
+        description: "Failed to submit your report. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   return (
@@ -118,6 +177,7 @@ export default function SettingsPage() {
             <TabsTrigger value="privacy">Privacy</TabsTrigger>
             <TabsTrigger value="discover">Discover</TabsTrigger>
             <TabsTrigger value="data">Data</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="mt-6">
@@ -386,6 +446,65 @@ export default function SettingsPage() {
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="support" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <AlertCircle className="h-5 w-5" />
+                  <span>Report an Issue</span>
+                </CardTitle>
+                <CardDescription>
+                  Found a bug or have a concern? Let us know and we'll look into it.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="report-message">Describe the issue *</Label>
+                  <Textarea
+                    id="report-message"
+                    value={reportMessage}
+                    onChange={(e) => setReportMessage(e.target.value)}
+                    placeholder="Please describe the issue, bug, or concern you'd like to report..."
+                    rows={6}
+                    className="resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Include as much detail as possible to help us understand and address the issue.
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleSubmitReport} 
+                  disabled={isSubmittingReport || !reportMessage.trim()}
+                  className="w-full"
+                >
+                  {isSubmittingReport ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Submit Report
+                    </>
+                  )}
+                </Button>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-start space-x-3">
+                    <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-sm">What happens next?</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Your report will be sent to our admin team for review. We'll investigate the issue and take appropriate action if needed. 
+                        You'll be able to see the status of your report in the admin panel if you have admin access.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

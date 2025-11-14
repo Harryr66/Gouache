@@ -629,6 +629,20 @@ export interface Report {
   reviewedAt?: Date;
 }
 
+export interface UserReport {
+  id: string;
+  userId: string;
+  userEmail: string;
+  username: string;
+  displayName: string;
+  message: string;
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
+  submittedAt: Date;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  adminNotes?: string;
+}
+
 // New types for production features
 
 export interface User {
