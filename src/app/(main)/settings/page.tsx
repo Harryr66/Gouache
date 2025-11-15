@@ -26,7 +26,6 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
 import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function SettingsPage() {
   const { settings: discoverSettings, updateSettings: updateDiscoverSettings } = useDiscoverSettings();
