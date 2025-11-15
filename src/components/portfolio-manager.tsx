@@ -152,10 +152,14 @@ export function PortfolioManager() {
 
     // Require title before uploading
     if (!newItem.title.trim()) {
-      console.log('⚠️ Upload cancelled - title required');
+      console.log('⚠️ Upload cancelled - title required', {
+        titleValue: newItem.title,
+        titleTrimmed: newItem.title.trim(),
+        hasFile: !!file
+      });
       toast({
         title: "Title required",
-        description: "Please enter an artwork title before uploading.",
+        description: "Please enter an artwork title before uploading. The file selection has been cancelled.",
         variant: "destructive"
       });
       // Reset the file input
