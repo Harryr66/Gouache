@@ -1103,9 +1103,15 @@ export default function ProfileEditPage() {
       // This prevents email mismatches
       if (auth.currentUser && formData.email && formData.email.trim().toLowerCase() !== auth.currentUser.email?.toLowerCase()) {
         try {
+          // Configure action code settings to redirect to our custom domain
+          const actionCodeSettings = {
+            url: `${typeof window !== 'undefined' ? window.location.origin : 'https://gouache.art'}/auth/verify-email?mode=verifyAndChangeEmail`,
+            handleCodeInApp: false, // Open in browser, not in-app
+          };
+          
           // verifyBeforeUpdateEmail sends a verification email to the new address
           // The email will be updated after the user clicks the verification link
-          await verifyBeforeUpdateEmail(auth.currentUser, formData.email.trim());
+          await verifyBeforeUpdateEmail(auth.currentUser, formData.email.trim(), actionCodeSettings);
           console.log('✅ Verification email sent to new email address');
           
           // IMPORTANT: Don't update Firestore email yet - wait for verification
