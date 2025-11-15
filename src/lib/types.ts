@@ -473,8 +473,10 @@ export interface ShowcaseLocation {
   website?: string;
   notes?: string;
   imageUrl?: string;
-  startDate?: string; // Optional start date (ISO string)
+  startDate?: string; // Optional start date (ISO string) - used to determine if event is current or upcoming
   endDate?: string; // Optional end date (ISO string) - if not set, remains indefinitely
+  pinned?: boolean; // Pin this event/location to the start of the carousel
+  type?: 'event' | 'location'; // Type: 'event' for events, 'location' for showcase locations
 }
 
 export interface NewsArticle {
@@ -676,7 +678,6 @@ export interface User {
   hideLocation?: boolean;
   hideFlags?: boolean;
   hideCard?: boolean;
-  hideUpcomingEvents?: boolean;
   hideShowcaseLocations?: boolean;
   hideShop?: boolean;
   hideLearn?: boolean;

@@ -33,7 +33,8 @@ import { TipDialog } from './tip-dialog';
 import { SuggestionsDialog } from './suggestions-dialog';
 import { CountryFlag } from './country-flag';
 import { ShowcaseLocation } from '@/lib/types';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pin } from 'lucide-react';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 interface ProfileHeaderProps {
   user: {
@@ -55,14 +56,14 @@ interface ProfileHeaderProps {
     hideLocation?: boolean;
     hideFlags?: boolean;
     hideCard?: boolean;
-    hideUpcomingEvents?: boolean;
     hideShowcaseLocations?: boolean;
-    // Upcoming event fields
+    // Legacy event fields (will be converted to showcaseLocations)
     eventCity?: string;
     eventCountry?: string;
     eventDate?: string;
     eventStartDate?: string;
     eventEndDate?: string;
+    bannerImageUrl?: string;
     showcaseLocations?: ShowcaseLocation[];
     newsletterLink?: string;
   };
@@ -83,7 +84,6 @@ export function ProfileHeader({
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [isEventsExpanded, setIsEventsExpanded] = useState(false);
-  const [isShowcaseExpanded, setIsShowcaseExpanded] = useState(false);
 
   // Early return if user is not properly loaded
   if (!user) {
@@ -338,132 +338,101 @@ export function ProfileHeader({
         </Card>
       )}
 
-      {/* Upcoming Events Section - Separate Card (Collapsible) */}
-      {/* Only show if there's actual event data and it's within the date range */}
-      {user.isProfessional && !user.hideUpcomingEvents && (() => {
-        // Check if there's any event data
-        if (!user.eventDate && !user.eventCity && !user.eventCountry && !user.bannerImageUrl) {
-          return false;
-        }
-        
-        // Check date range if set
+      {/* Combined Events & Locations Carousel */}
+      {user.isProfessional && !user.hideShowcaseLocations && (() => {
         const now = new Date();
-        if (user.eventStartDate) {
-          const startDate = new Date(user.eventStartDate);
-          if (now < startDate) return false; // Not started yet
-        }
-        if (user.eventEndDate) {
-          const endDate = new Date(user.eventEndDate);
-          if (now > endDate) return false; // Already ended
-        }
-        
-        return true; // Show event
-      })() && (
-        <Card className="mt-4 md:mt-6">
-          <CardContent className="p-4 md:p-6">
-            <Collapsible open={isEventsExpanded} onOpenChange={setIsEventsExpanded}>
-              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
-                    <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
-                      <Calendar className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                      Upcoming Events
-                    </h2>
-                    {isEventsExpanded ? (
-                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </CollapsibleTrigger>
-                {isOwnProfile && (
-                  <Button asChild variant="outline" size="sm" className="text-xs">
-                    <Link href="/profile/edit#upcoming-events">
-                      <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                      Edit
-                    </Link>
-                  </Button>
-                )}
-              </div>
-              <CollapsibleContent className="space-y-4">
-              
-              {/* Upcoming Event Banner */}
-              {user.bannerImageUrl && (
-                <div className="mb-4">
-                  <div className="relative w-full h-48 md:h-64 rounded-lg overflow-hidden">
-                    <img
-                      src={user.bannerImageUrl}
-                      alt={`${user.displayName}'s upcoming event banner`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {/* Upcoming Event Banner Placeholder */}
-              {!user.bannerImageUrl && isOwnProfile && (
-                <div className="mb-4">
-                  <div className="relative w-full h-48 md:h-64 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-muted-foreground text-sm mb-2">
-                        Add an upcoming event banner image (taller rectangle works best)
-                      </div>
-                      <Button asChild variant="outline" size="sm">
-                        <Link href="/profile/edit#upcoming-events">
-                          <ImageIcon className="h-4 w-4 mr-2" />
-                          Add Upcoming Event Banner
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Upcoming Event Details */}
-              <div className="space-y-2 pt-3">
-                {(user.eventCity || user.eventCountry) && (
-                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    {[user.eventCity, user.eventCountry].filter(Boolean).join(', ')}
-                  </p>
-                )}
-                {user.eventDate && (
-                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    {new Date(user.eventDate).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </p>
-                )}
-              </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </CardContent>
-        </Card>
-      )}
+        const allItems: (ShowcaseLocation & { status: 'current' | 'upcoming' })[] = [];
 
-      {/* Where to See My Work Section - Separate Card (Collapsible) */}
-      {user.isProfessional && !user.hideShowcaseLocations && (
-        <Card className="mt-4 md:mt-6">
-          <CardContent className="p-4 md:p-6">
-            <Collapsible open={isShowcaseExpanded} onOpenChange={setIsShowcaseExpanded}>
-              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
-                    <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
-                      <MapPin className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                      Where to See My Work
-                    </h2>
-                    {isShowcaseExpanded ? (
-                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </CollapsibleTrigger>
+        // Convert legacy event data to ShowcaseLocation format
+        if (user.eventDate || user.eventCity || user.eventCountry || user.bannerImageUrl) {
+          const eventStartDate = user.eventStartDate || user.eventDate;
+          const eventEndDate = user.eventEndDate;
+          
+          // Check if event should be shown (within date range)
+          let shouldShow = true;
+          if (eventStartDate) {
+            const startDate = new Date(eventStartDate);
+            if (now < startDate) {
+              // Event hasn't started yet - it's upcoming
+              shouldShow = true;
+            } else if (eventEndDate) {
+              const endDate = new Date(eventEndDate);
+              if (now > endDate) {
+                shouldShow = false; // Event has ended
+              }
+            }
+          }
+
+          if (shouldShow) {
+            const eventStart = eventStartDate ? new Date(eventStartDate) : null;
+            const status: 'current' | 'upcoming' = eventStart && now >= eventStart ? 'current' : 'upcoming';
+            
+            allItems.push({
+              id: 'legacy-event',
+              name: 'Event',
+              city: user.eventCity,
+              country: user.eventCountry,
+              imageUrl: user.bannerImageUrl,
+              startDate: eventStartDate || user.eventDate,
+              endDate: eventEndDate,
+              type: 'event',
+              pinned: false,
+              status,
+            });
+          }
+        }
+
+        // Add showcase locations
+        if (user.showcaseLocations && user.showcaseLocations.length > 0) {
+          user.showcaseLocations.forEach((location) => {
+            const startDate = location.startDate ? new Date(location.startDate) : null;
+            const endDate = location.endDate ? new Date(location.endDate) : null;
+            
+            // Check if location should be shown
+            let shouldShow = true;
+            if (startDate && now < startDate) {
+              shouldShow = false; // Not started yet
+            } else if (endDate && now > endDate) {
+              shouldShow = false; // Already ended
+            }
+
+            if (shouldShow) {
+              const status: 'current' | 'upcoming' = startDate && now >= startDate ? 'current' : 'upcoming';
+              allItems.push({
+                ...location,
+                type: location.type || 'location',
+                status,
+              });
+            }
+          });
+        }
+
+        // Sort: pinned first, then current events, then upcoming events
+        allItems.sort((a, b) => {
+          // Pinned items first
+          if (a.pinned && !b.pinned) return -1;
+          if (!a.pinned && b.pinned) return 1;
+          
+          // Then current events before upcoming
+          if (a.status === 'current' && b.status === 'upcoming') return -1;
+          if (a.status === 'upcoming' && b.status === 'current') return 1;
+          
+          // Within same status, sort by start date (earliest first)
+          const aDate = a.startDate ? new Date(a.startDate).getTime() : 0;
+          const bDate = b.startDate ? new Date(b.startDate).getTime() : 0;
+          return aDate - bDate;
+        });
+
+        if (allItems.length === 0) return null;
+
+        return (
+          <Card className="mt-4 md:mt-6">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
+                  <Calendar className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+                  Events & Locations
+                </h2>
                 {isOwnProfile && (
                   <Button asChild variant="outline" size="sm" className="text-xs">
                     <Link href="/profile/edit#showcase-locations">
@@ -473,54 +442,97 @@ export function ProfileHeader({
                   </Button>
                 )}
               </div>
-              <CollapsibleContent className="space-y-4">
-              {user.showcaseLocations && user.showcaseLocations.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {user.showcaseLocations.map((location, index) => (
-                    <div key={`${location.name}-${location.website || location.city || index}`} className="rounded-lg border border-muted bg-muted/20 p-3 flex gap-3">
-                      {location.imageUrl && (
-                        <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-muted">
-                          <img src={location.imageUrl} alt={location.name || 'Gallery'} className="h-full w-full object-cover" />
+
+              <Carousel className="w-full">
+                <CarouselContent className="-ml-2 md:-ml-4">
+                  {allItems.map((item, index) => {
+                    const isCurrent = item.status === 'current';
+                    return (
+                      <CarouselItem key={item.id || index} className="pl-2 md:pl-4 basis-full md:basis-1/2">
+                        <div className="relative rounded-lg border border-muted bg-muted/20 overflow-hidden group">
+                          {/* Image */}
+                          {item.imageUrl && (
+                            <div className="relative w-full h-48 md:h-64">
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                              {/* Status Badge */}
+                              <div className="absolute top-2 left-2">
+                                <Badge variant={isCurrent ? "default" : "secondary"} className="bg-background/80 backdrop-blur-sm">
+                                  {item.pinned && <Pin className="h-3 w-3 mr-1" />}
+                                  {isCurrent ? 'Current' : 'Upcoming'}
+                                </Badge>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Content */}
+                          <div className="p-4 space-y-2">
+                            {!item.imageUrl && (
+                              <div className="flex items-center justify-between mb-2">
+                                <Badge variant={isCurrent ? "default" : "secondary"}>
+                                  {item.pinned && <Pin className="h-3 w-3 mr-1" />}
+                                  {isCurrent ? 'Current' : 'Upcoming'}
+                                </Badge>
+                              </div>
+                            )}
+                            <h3 className="font-semibold text-lg">{item.name}</h3>
+                            {item.venue && (
+                              <p className="text-sm text-muted-foreground">{item.venue}</p>
+                            )}
+                            {(item.city || item.country) && (
+                              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <MapPin className="h-4 w-4" />
+                                {[item.city, item.country].filter(Boolean).join(', ')}
+                              </p>
+                            )}
+                            {item.startDate && (
+                              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Calendar className="h-4 w-4" />
+                                {new Date(item.startDate).toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                })}
+                                {item.endDate && ` - ${new Date(item.endDate).toLocaleDateString('en-US', { 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                })}`}
+                              </p>
+                            )}
+                            {item.website && (
+                              <a
+                                href={item.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline flex items-center gap-1 text-sm"
+                              >
+                                Visit Website
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                            {item.notes && (
+                              <p className="text-sm text-muted-foreground mt-2">{item.notes}</p>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      <div className="space-y-1 text-sm flex-1">
-                        <p className="font-semibold text-foreground">
-                          {location.name || 'Gallery'}
-                        </p>
-                        {location.venue && (
-                          <p className="text-muted-foreground text-xs">
-                            {location.venue}
-                          </p>
-                        )}
-                        {(location.city || location.country) && (
-                          <p className="text-muted-foreground">
-                            {[location.city, location.country].filter(Boolean).join(', ')}
-                          </p>
-                        )}
-                        {location.website && (
-                          <a
-                            href={location.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline break-all flex items-center gap-1"
-                          >
-                            Visit Website
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        )}
-                        {location.notes && (
-                          <p className="text-muted-foreground text-xs mt-1">{location.notes}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              </CollapsibleContent>
-            </Collapsible>
-          </CardContent>
-        </Card>
-      )}
+                      </CarouselItem>
+                    );
+                  })}
+                </CarouselContent>
+                {allItems.length > 1 && (
+                  <>
+                    <CarouselPrevious className="hidden md:flex -left-12" />
+                    <CarouselNext className="hidden md:flex -right-12" />
+                  </>
+                )}
+              </Carousel>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Tip Jar Dialog */}
       <TipDialog

@@ -161,7 +161,6 @@ export default function ProfileEditPage() {
     hideLocation: false,
     hideFlags: false,
     hideCard: false,
-    hideUpcomingEvents: false,
     hideShowcaseLocations: false,
     hideShop: false,
     hideLearn: false,
@@ -220,7 +219,6 @@ export default function ProfileEditPage() {
             hideLocation: changes.hideLocation || user.hideLocation || false,
             hideFlags: changes.hideFlags || user.hideFlags || false,
             hideCard: user.isProfessional ? (changes.hideCard || user.hideCard || false) : false,
-            hideUpcomingEvents: user.isProfessional ? (changes.hideUpcomingEvents || user.hideUpcomingEvents || false) : false,
             hideShowcaseLocations: user.isProfessional ? (changes.hideShowcaseLocations || user.hideShowcaseLocations || false) : false,
             hideShop: user.isProfessional ? (changes.hideShop || user.hideShop || false) : false,
             hideLearn: user.isProfessional ? (changes.hideLearn || user.hideLearn || false) : false,
@@ -303,7 +301,6 @@ export default function ProfileEditPage() {
           hideLocation: user.hideLocation || false,
           hideFlags: user.hideFlags || false,
           hideCard: user.isProfessional ? (user.hideCard || false) : false,
-          hideUpcomingEvents: user.isProfessional ? ((user as any).hideUpcomingEvents || false) : false,
           hideShowcaseLocations: user.isProfessional ? ((user as any).hideShowcaseLocations || false) : false,
           hideShop: user.isProfessional ? ((user as any).hideShop || false) : false,
           hideLearn: user.isProfessional ? ((user as any).hideLearn || false) : false,
@@ -917,7 +914,6 @@ export default function ProfileEditPage() {
         formData.suggestionsEnabled !== initialFormDataRef.current.suggestionsEnabled ||
         formData.hideLocation !== initialFormDataRef.current.hideLocation ||
         formData.hideFlags !== initialFormDataRef.current.hideFlags ||
-        formData.hideUpcomingEvents !== initialFormDataRef.current.hideUpcomingEvents ||
         formData.hideShowcaseLocations !== initialFormDataRef.current.hideShowcaseLocations ||
         formData.hideShop !== initialFormDataRef.current.hideShop ||
         formData.hideLearn !== initialFormDataRef.current.hideLearn ||
@@ -955,7 +951,6 @@ export default function ProfileEditPage() {
           countryOfResidence: formData.countryOfResidence,
           hideLocation: formData.hideLocation,
           hideFlags: formData.hideFlags,
-          hideUpcomingEvents: formData.hideUpcomingEvents,
           hideShowcaseLocations: formData.hideShowcaseLocations,
           hideShop: formData.hideShop,
           hideLearn: formData.hideLearn,
@@ -969,7 +964,6 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = formData.tipJarEnabled;
           updateData.suggestionsEnabled = formData.suggestionsEnabled;
           updateData.hideCard = formData.hideCard;
-          updateData.hideUpcomingEvents = formData.hideUpcomingEvents;
           updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
           updateData.hideShop = formData.hideShop;
           updateData.hideLearn = formData.hideLearn;
@@ -983,7 +977,6 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = false;
           updateData.suggestionsEnabled = false;
           updateData.hideCard = false;
-          updateData.hideUpcomingEvents = false;
           updateData.hideShowcaseLocations = false;
           updateData.hideShop = false;
           updateData.hideLearn = false;
@@ -1059,7 +1052,6 @@ export default function ProfileEditPage() {
     formData.hideLocation,
     formData.hideFlags,
     formData.hideCard,
-    formData.hideUpcomingEvents,
     formData.hideShowcaseLocations,
     formData.hideShop,
     formData.hideLearn,
@@ -1240,7 +1232,6 @@ export default function ProfileEditPage() {
         updateData.tipJarEnabled = formData.tipJarEnabled;
         updateData.suggestionsEnabled = formData.suggestionsEnabled;
         updateData.hideCard = formData.hideCard;
-        updateData.hideUpcomingEvents = formData.hideUpcomingEvents;
         updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
         updateData.newsletterLink = formData.newsletterLink || null;
         updateData.eventCity = formData.eventCity || null;
@@ -1254,7 +1245,6 @@ export default function ProfileEditPage() {
         updateData.tipJarEnabled = false;
         updateData.suggestionsEnabled = false;
         updateData.hideCard = false;
-        updateData.hideUpcomingEvents = false;
         updateData.hideShowcaseLocations = false;
         updateData.newsletterLink = null;
         updateData.eventCity = null;
@@ -1495,160 +1485,6 @@ export default function ProfileEditPage() {
         </Card>
         )}
 
-        {/* Upcoming Events Section */}
-        {isArtistAccount && (
-        <Card id="upcoming-events">
-          <CardHeader>
-            <CardTitle>Upcoming Events</CardTitle>
-            <CardDescription>
-              Set up your upcoming event with a banner image, date, and location
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Banner Image */}
-            <div className="space-y-4">
-              <Label>Event Banner Image</Label>
-              {bannerPreviewImage || user.bannerImageUrl ? (
-                <div className="relative">
-                  <div className="relative w-full h-48 md:h-64 rounded-lg overflow-hidden">
-                    <img
-                      src={bannerPreviewImage || user.bannerImageUrl}
-                      alt="Upcoming event banner preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {bannerPreviewImage && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      className="absolute top-2 right-2 h-6 w-6 rounded-full p-0"
-                      onClick={removeBannerImage}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="relative w-full h-32 md:h-40 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-muted-foreground text-sm mb-2">
-                      No upcoming event banner uploaded
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="banner-upload" className="cursor-pointer">
-                        <Button type="button" variant="outline" asChild>
-                          <span>
-                            <Upload className="h-4 w-4 mr-2" />
-                            Upload Upcoming Event Banner
-                          </span>
-                        </Button>
-                      </Label>
-                      <div className="text-xs text-muted-foreground">
-                        Recommended: ~1200x800 (tall rectangle)
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex gap-2 items-center">
-                <Label htmlFor="banner-upload" className="cursor-pointer">
-                  <Button type="button" variant="outline" asChild>
-                    <span>
-                      <Upload className="h-4 w-4 mr-2" />
-                      {bannerPreviewImage || user.bannerImageUrl ? 'Change Banner' : 'Upload Banner'}
-                    </span>
-                  </Button>
-                </Label>
-                <div className="text-xs text-muted-foreground">
-                  Recommended: ~1200x800 (tall rectangle)
-                </div>
-                <input
-                  id="banner-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleBannerImageUpload}
-                  className="hidden"
-                />
-                {(bannerPreviewImage || user.bannerImageUrl) && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={removeBannerImage}
-                  >
-                    Remove Banner
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Event Date and Location */}
-            <div className="space-y-4 pt-4 border-t">
-              <Label>Event Date & Location</Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="eventDate">Event Date</Label>
-                  <Input
-                    id="eventDate"
-                    type="date"
-                    value={formData.eventDate}
-                    onChange={(e) => handleInputChange('eventDate', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="eventStartDate">Start Date (Optional)</Label>
-                  <Input
-                    id="eventStartDate"
-                    type="date"
-                    value={formData.eventStartDate}
-                    onChange={(e) => handleInputChange('eventStartDate', e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">If not set, event shows immediately</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="eventEndDate">End Date (Optional)</Label>
-                  <Input
-                    id="eventEndDate"
-                    type="date"
-                    value={formData.eventEndDate}
-                    onChange={(e) => handleInputChange('eventEndDate', e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">If not set, event remains indefinitely</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="eventCountry">Event Country</Label>
-                  <Select 
-                    value={formData.eventCountry || ''} 
-                    onValueChange={(value) => handleInputChange('eventCountry', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select event country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country} value={country}>
-                          {country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="eventCity">Event City</Label>
-                  <Input
-                    id="eventCity"
-                    value={formData.eventCity}
-                    onChange={(e) => handleInputChange('eventCity', e.target.value)}
-                    placeholder="City / Venue city"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        )}
 
         {/* Basic Information */}
         <Card>
@@ -1826,22 +1662,9 @@ export default function ProfileEditPage() {
                 <>
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <Label>Hide Upcoming Events</Label>
+                      <Label>Hide Events & Locations</Label>
                       <p className="text-sm text-muted-foreground">
-                        Hide the "Upcoming Events" section from your public profile
-                      </p>
-                    </div>
-                    <Switch
-                      checked={formData.hideUpcomingEvents}
-                      onCheckedChange={(checked) => handleInputChange('hideUpcomingEvents', checked)}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label>Hide Where to See My Work</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Hide the "Where to See My Work" section from your public profile
+                        Hide the "Events & Locations" carousel from your public profile
                       </p>
                     </div>
                     <Switch
@@ -1884,18 +1707,35 @@ export default function ProfileEditPage() {
         {isArtistAccount && (
           <Card id="showcase-locations">
             <CardHeader>
-              <CardTitle>Where to See My Work</CardTitle>
+              <CardTitle>Events & Locations</CardTitle>
               <CardDescription>
-                Showcase galleries or partner spaces currently exhibiting your work. These locations appear on your public profile.
+                Add events and showcase locations. Events are labeled as "Current" if they've started, or "Upcoming" if they start in the future. You can pin items to appear first in the carousel.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="showcase-type">Type *</Label>
+                  <Select
+                    value={newShowcaseLocation.type || 'location'}
+                    onValueChange={(value: 'event' | 'location') =>
+                      setNewShowcaseLocation((prev) => ({ ...prev, type: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="event">Event</SelectItem>
+                      <SelectItem value="location">Location</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="showcase-name">Gallery or space name *</Label>
+                  <Label htmlFor="showcase-name">{newShowcaseLocation.type === 'event' ? 'Event name *' : 'Gallery or space name *'}</Label>
                   <Input
                     id="showcase-name"
-                    placeholder="Gallery 302"
+                    placeholder={newShowcaseLocation.type === 'event' ? 'Exhibition Opening' : 'Gallery 302'}
                     value={newShowcaseLocation.name}
                     onChange={(event) =>
                       setNewShowcaseLocation((prev) => ({ ...prev, name: event.target.value }))
@@ -1967,7 +1807,11 @@ export default function ProfileEditPage() {
                       setNewShowcaseLocation((prev) => ({ ...prev, startDate: event.target.value }))
                     }
                   />
-                  <p className="text-xs text-muted-foreground">If not set, location shows immediately</p>
+                  <p className="text-xs text-muted-foreground">
+                    {newShowcaseLocation.type === 'event' 
+                      ? 'Event date. If in the future, labeled "Upcoming". If today or past, labeled "Current".'
+                      : 'If not set, location shows immediately'}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="showcase-end-date">End Date (Optional)</Label>
@@ -1979,7 +1823,24 @@ export default function ProfileEditPage() {
                       setNewShowcaseLocation((prev) => ({ ...prev, endDate: event.target.value }))
                     }
                   />
-                  <p className="text-xs text-muted-foreground">If not set, location remains indefinitely</p>
+                  <p className="text-xs text-muted-foreground">If not set, {newShowcaseLocation.type === 'event' ? 'event' : 'location'} remains indefinitely</p>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="showcase-pinned"
+                      checked={newShowcaseLocation.pinned || false}
+                      onCheckedChange={(checked) =>
+                        setNewShowcaseLocation((prev) => ({ ...prev, pinned: checked }))
+                      }
+                    />
+                    <Label htmlFor="showcase-pinned" className="cursor-pointer">
+                      Pin to start of carousel
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-8">
+                    Pinned items appear first in the carousel, before current events
+                  </p>
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="showcase-notes">Notes (optional)</Label>
@@ -1997,53 +1858,106 @@ export default function ProfileEditPage() {
               <div className="flex justify-end">
                 <Button type="button" variant="outline" onClick={handleAddShowcaseLocation}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add location
+                  Add {newShowcaseLocation.type === 'event' ? 'Event' : 'Location'}
                 </Button>
               </div>
               {formData.showcaseLocations.length > 0 ? (
                 <div className="grid gap-3">
-                  {formData.showcaseLocations.map((location, index) => (
-                    <div
-                      key={`${location.name}-${index}`}
-                      className="rounded-lg border border-muted bg-muted/20 p-4 flex flex-col md:flex-row md:items-start md:justify-between gap-3"
-                    >
-                      <div className="space-y-1 text-sm">
-                        <p className="font-semibold text-foreground">{location.name}</p>
-                        {(location.city || location.country) && (
-                          <p className="text-muted-foreground">
-                            {[location.city, location.country].filter(Boolean).join(', ')}
-                          </p>
-                        )}
-                        {location.website && (
-                          <a
-                            href={location.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline break-all"
-                          >
-                            {location.website}
-                          </a>
-                        )}
-                        {location.notes && (
-                          <p className="text-muted-foreground">{location.notes}</p>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive self-start"
-                        onClick={() => handleRemoveShowcaseLocation(index)}
+                  {formData.showcaseLocations.map((location, index) => {
+                    const now = new Date();
+                    const startDate = location.startDate ? new Date(location.startDate) : null;
+                    const isCurrent = startDate && now >= startDate;
+                    const isUpcoming = startDate && now < startDate;
+                    
+                    return (
+                      <div
+                        key={`${location.name}-${index}`}
+                        className="rounded-lg border border-muted bg-muted/20 p-4 flex flex-col md:flex-row md:items-start md:justify-between gap-3"
                       >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="space-y-1 text-sm flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-foreground">{location.name}</p>
+                            <Badge variant="secondary" className="text-xs">
+                              {location.type === 'event' ? 'Event' : 'Location'}
+                            </Badge>
+                            {location.pinned && (
+                              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                <Pin className="h-3 w-3" />
+                                Pinned
+                              </Badge>
+                            )}
+                            {location.startDate && (
+                              <Badge variant={isCurrent ? "default" : "secondary"} className="text-xs">
+                                {isCurrent ? 'Current' : isUpcoming ? 'Upcoming' : 'Past'}
+                              </Badge>
+                            )}
+                          </div>
+                          {location.venue && (
+                            <p className="text-muted-foreground text-xs">{location.venue}</p>
+                          )}
+                          {(location.city || location.country) && (
+                            <p className="text-muted-foreground">
+                              {[location.city, location.country].filter(Boolean).join(', ')}
+                            </p>
+                          )}
+                          {location.startDate && (
+                            <p className="text-muted-foreground text-xs">
+                              {new Date(location.startDate).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              })}
+                              {location.endDate && ` - ${new Date(location.endDate).toLocaleDateString('en-US', { 
+                                month: 'long', 
+                                day: 'numeric' 
+                              })}`}
+                            </p>
+                          )}
+                          {location.website && (
+                            <a
+                              href={location.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline break-all"
+                            >
+                              {location.website}
+                            </a>
+                          )}
+                          {location.notes && (
+                            <p className="text-muted-foreground">{location.notes}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2 self-start">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const updated = [...formData.showcaseLocations];
+                              updated[index] = { ...updated[index], pinned: !updated[index].pinned };
+                              setFormData((prev) => ({ ...prev, showcaseLocations: updated }));
+                            }}
+                            title={location.pinned ? 'Unpin' : 'Pin to start'}
+                          >
+                            <Pin className={`h-4 w-4 ${location.pinned ? 'fill-current' : ''}`} />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive"
+                            onClick={() => handleRemoveShowcaseLocation(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  No locations listed yet. Add galleries or partner spaces to highlight where to see your work in person.
+                  No events or locations listed yet. Add events and showcase locations to display them in a carousel on your profile.
                 </p>
               )}
             </CardContent>
