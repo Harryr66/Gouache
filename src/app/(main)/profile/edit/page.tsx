@@ -261,8 +261,15 @@ export default function ProfileEditPage() {
             userEmail = auth.currentUser?.email || user.email || '';
           }
           
+          // Always use Firebase Auth email as source of truth, not Firestore email
+          // This prevents mismatches
+          const firebaseAuthEmail = auth.currentUser?.email || userEmail || '';
+          
           // Don't overwrite email if it's already been set in formData (user might have just edited it)
-          const currentEmail = formData.email || userEmail;
+          // But if formData email doesn't match Firebase Auth, use Firebase Auth email
+          const currentEmail = formData.email && formData.email.toLowerCase() === firebaseAuthEmail.toLowerCase()
+            ? formData.email
+            : firebaseAuthEmail;
           
           const nextFormData = {
             name: user.displayName || '',
@@ -1023,10 +1030,31 @@ export default function ProfileEditPage() {
       // Update user profile - filter out undefined values
       const userRef = doc(db, 'userProfiles', user.id);
       const allowArtistFields = Boolean(user.isProfessional);
+      
+      // CRITICAL: Email sync - Only update Firestore email if it matches Firebase Auth email
+      // Firebase Auth email is the source of truth for password reset and authentication
+      const firebaseAuthEmail = auth.currentUser?.email || '';
+      const formEmail = formData.email.trim();
+      
+      // If email in form doesn't match Firebase Auth, use Firebase Auth email
+      // This prevents mismatches when email verification hasn't completed
+      const emailToSave = (formEmail && formEmail.toLowerCase() === firebaseAuthEmail.toLowerCase()) 
+        ? formEmail 
+        : firebaseAuthEmail;
+      
+      if (formEmail && formEmail.toLowerCase() !== firebaseAuthEmail.toLowerCase()) {
+        console.warn('⚠️ Email mismatch detected in profile edit:', {
+          formEmail: formEmail,
+          firebaseAuthEmail: firebaseAuthEmail,
+          userId: user.id
+        });
+        console.warn('⚠️ Using Firebase Auth email to prevent mismatch');
+      }
+      
       const updateData: any = {
         name: formData.name,
         handle: formData.handle,
-        email: formData.email, // Save email to Firestore for username login support
+        email: emailToSave, // Always use Firebase Auth email or verified email
         bio: formData.bio,
         location: formData.location,
         countryOfOrigin: formData.countryOfOrigin,
@@ -1038,42 +1066,59 @@ export default function ProfileEditPage() {
       };
 
       // Update email in Firebase Auth if it has changed
-      // Use verifyBeforeUpdateEmail to send verification email to the new address
-      // This is required by Firebase Auth for security
-      if (auth.currentUser && formData.email && formData.email !== auth.currentUser.email) {
+      // IMPORTANT: Only update Firestore email AFTER Firebase Auth email is successfully updated
+      // This prevents email mismatches
+      if (auth.currentUser && formData.email && formData.email.trim().toLowerCase() !== auth.currentUser.email?.toLowerCase()) {
         try {
           // verifyBeforeUpdateEmail sends a verification email to the new address
           // The email will be updated after the user clicks the verification link
-          await verifyBeforeUpdateEmail(auth.currentUser, formData.email);
+          await verifyBeforeUpdateEmail(auth.currentUser, formData.email.trim());
           console.log('✅ Verification email sent to new email address');
+          
+          // IMPORTANT: Don't update Firestore email yet - wait for verification
+          // Firestore email will be synced automatically when Firebase Auth email changes
+          // The auth provider will detect the change and sync it
           toast({
             title: "Verification email sent",
-            description: `A verification email has been sent to ${formData.email}. Please check your inbox and click the verification link to complete the email change.`,
-            variant: "default"
+            description: `A verification email has been sent to ${formData.email}. Please check your inbox and click the verification link to complete the email change. Your profile will be updated automatically after you verify and refresh the page.`,
+            variant: "default",
+            duration: 10000
           });
+          
+          // Remove email from updateData - we'll sync it after verification
+          // This ensures Firestore email always matches Firebase Auth email
+          delete updateData.email;
+          
+          // Refresh user data after a short delay to check if email was updated
+          // This helps catch immediate updates
+          setTimeout(() => {
+            refreshUser().catch(console.error);
+          }, 2000);
         } catch (error: any) {
           console.error('Error sending verification email:', error);
+          
+          // If verification fails, don't update Firestore email
+          // This prevents mismatches
+          delete updateData.email;
+          
           // Handle specific error cases
           if (error.code === 'auth/requires-recent-login') {
-            // User needs to re-authenticate - email still saved to Firestore
             toast({
-              title: "Email saved to profile",
-              description: "Email updated in profile. Please sign out and sign back in, then try updating your email again.",
+              title: "Email update requires re-authentication",
+              description: "Please sign out and sign back in, then try updating your email again. Your current email will remain unchanged until verification is complete.",
               variant: "default"
             });
           } else if (error.code === 'auth/operation-not-allowed') {
-            // Email verification not allowed - email still saved to Firestore
             toast({
-              title: "Email saved to profile",
-              description: "Email updated in profile. Email verification is not enabled for your account. The email is saved and can be used for username login.",
+              title: "Email update not available",
+              description: "Email verification is not enabled for your account. Your current email will remain unchanged.",
               variant: "default"
             });
           } else {
-            // Other errors - email still saved to Firestore
             toast({
-              title: "Email saved to profile",
-              description: "Email updated in profile. There was an issue sending the verification email, but the email is saved and can be used for username login.",
-              variant: "default"
+              title: "Email update failed",
+              description: "There was an issue updating your email. Your current email will remain unchanged. Please try again later.",
+              variant: "destructive"
             });
           }
         }

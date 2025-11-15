@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { User } from '@/lib/types';
 
 interface AuthContextType {
@@ -31,15 +31,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    let previousEmail: string | null = null;
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setFirebaseUser(firebaseUser);
       
       if (firebaseUser) {
+        const currentEmail = firebaseUser.email || '';
+        
+        // CRITICAL: If email changed in Firebase Auth (e.g., after verification), sync to Firestore immediately
+        if (previousEmail && previousEmail !== currentEmail && currentEmail) {
+          console.log('📧 Email changed in Firebase Auth, syncing to Firestore:', {
+            previous: previousEmail,
+            current: currentEmail,
+            userId: firebaseUser.uid
+          });
+          
+          try {
+            await updateDoc(doc(db, 'userProfiles', firebaseUser.uid), {
+              email: currentEmail,
+              updatedAt: new Date()
+            });
+            console.log('✅ Email synced to Firestore after Firebase Auth change');
+          } catch (syncError) {
+            console.error('❌ Failed to sync email after Firebase Auth change:', syncError);
+          }
+        }
+        
+        // Update previous email for next check
+        previousEmail = currentEmail;
+        
         // Create immediate user object from Firebase Auth data for fast loading
         const immediateUser: User = {
           id: firebaseUser.uid,
           username: firebaseUser.displayName?.toLowerCase().replace(/\s+/g, '') || 'user',
-          email: firebaseUser.email || '',
+          email: currentEmail,
           displayName: firebaseUser.displayName || 'User',
           avatarUrl: firebaseUser.photoURL || undefined,
           bio: '',
@@ -85,6 +111,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (userDoc.exists()) {
             const userData = userDoc.data();
             
+            // CRITICAL: Sync email - Firebase Auth email is the source of truth
+            // If Firestore email doesn't match Firebase Auth email, update Firestore
+            const firebaseAuthEmail = firebaseUser.email || '';
+            const firestoreEmail = userData.email || '';
+            
+            if (firebaseAuthEmail && firestoreEmail && firebaseAuthEmail.toLowerCase() !== firestoreEmail.toLowerCase()) {
+              console.warn('⚠️ Email mismatch detected:', {
+                firebaseAuth: firebaseAuthEmail,
+                firestore: firestoreEmail,
+                userId: firebaseUser.uid
+              });
+              
+              // Auto-sync: Update Firestore to match Firebase Auth
+              try {
+                await updateDoc(doc(db, 'userProfiles', firebaseUser.uid), {
+                  email: firebaseAuthEmail,
+                  updatedAt: new Date()
+                });
+                console.log('✅ Email synced: Firestore updated to match Firebase Auth');
+              } catch (syncError) {
+                console.error('❌ Failed to sync email:', syncError);
+              }
+            }
+            
             // Convert portfolio items from Firestore format (with Timestamps) to Date objects
             const portfolio = userData.portfolio?.map((item: any) => ({
               ...item,
@@ -94,7 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const detailedUser: User = {
               id: firebaseUser.uid,
               username: userData.handle || immediateUser.username,
-              email: firebaseUser.email || '',
+              email: firebaseAuthEmail, // Always use Firebase Auth email as source of truth
               displayName: userData.name || userData.displayName || immediateUser.displayName,
               avatarUrl: userData.avatarUrl || immediateUser.avatarUrl,
               bio: userData.bio || '',
@@ -158,6 +208,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (userDoc.exists()) {
           const userData = userDoc.data();
           
+          // CRITICAL: Sync email - Firebase Auth email is the source of truth
+          // If Firestore email doesn't match Firebase Auth email, update Firestore
+          const firebaseAuthEmail = firebaseUser.email || '';
+          const firestoreEmail = userData.email || '';
+          
+          if (firebaseAuthEmail && firestoreEmail && firebaseAuthEmail.toLowerCase() !== firestoreEmail.toLowerCase()) {
+            console.warn('⚠️ Email mismatch detected during refresh:', {
+              firebaseAuth: firebaseAuthEmail,
+              firestore: firestoreEmail,
+              userId: firebaseUser.uid
+            });
+            
+            // Auto-sync: Update Firestore to match Firebase Auth
+            try {
+              await updateDoc(doc(db, 'userProfiles', firebaseUser.uid), {
+                email: firebaseAuthEmail,
+                updatedAt: new Date()
+              });
+              console.log('✅ Email synced during refresh: Firestore updated to match Firebase Auth');
+            } catch (syncError) {
+              console.error('❌ Failed to sync email during refresh:', syncError);
+            }
+          }
+          
           // Convert portfolio items from Firestore format (with Timestamps) to Date objects
           const portfolio = userData.portfolio?.map((item: any) => ({
             ...item,
@@ -167,7 +241,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const user: User = {
             id: firebaseUser.uid,
             username: userData.handle || '',
-            email: firebaseUser.email || '',
+            email: firebaseAuthEmail, // Always use Firebase Auth email as source of truth
             displayName: userData.name || userData.displayName || firebaseUser.displayName || '',
             avatarUrl: userData.avatarUrl || firebaseUser.photoURL || undefined,
             bio: userData.bio || '',
