@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,17 +32,6 @@ import { TipDialog } from './tip-dialog';
 import { SuggestionsDialog } from './suggestions-dialog';
 import { CountryFlag } from './country-flag';
 import { ShowcaseLocation } from '@/lib/types';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { useToast } from '@/hooks/use-toast';
 
 interface ProfileHeaderProps {
   user: {
@@ -90,30 +78,6 @@ export function ProfileHeader({
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
-
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    try {
-      await firebaseSignOut(auth);
-      toast({
-        title: 'Signed out',
-        description: 'You have been signed out successfully.'
-      });
-      router.push('/login');
-    } catch (error) {
-      console.error('Failed to sign out:', error);
-      toast({
-        title: 'Sign out failed',
-        description: 'Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
 
   // Early return if user is not properly loaded
   if (!user) {
@@ -522,7 +486,7 @@ export function ProfileHeader({
                   <p className="text-sm text-muted-foreground mb-3">
                     {isOwnProfile
                       ? 'Highlight galleries and spaces that are currently showing your work. Add locations to let visitors know where they can see your art in person.'
-                      : 'This artist hasn't listed any current gallery showings.'}
+                      : 'This artist hasn&apos;t listed any current gallery showings.'}
                   </p>
                   {isOwnProfile && (
                     <Button asChild variant="outline" size="sm">
