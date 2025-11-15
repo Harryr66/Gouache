@@ -10,19 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { 
-  User, 
-  Bell, 
-  Shield, 
-  Palette, 
-  Database, 
-  Download,
-  Upload,
-  Trash2,
-  CheckCircle,
   Eye,
   EyeOff,
   AlertCircle,
-  Send
+  Send,
+  Settings,
+  LogOut
 } from 'lucide-react';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { useAuth } from '@/providers/auth-provider';
