@@ -86,7 +86,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             description: data.description,
             price: data.price || 0,
             currency: data.currency || 'USD',
-            thumbnailUrl: data.thumbnailUrl,
+            thumbnailUrl: data.thumbnail || data.thumbnailUrl,
             isAvailable: data.isActive !== false,
             category: data.category,
             createdAt: data.createdAt?.toDate?.() || new Date(),
