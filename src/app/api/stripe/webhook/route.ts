@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
         await handleTransferCreated(event.data.object as Stripe.Transfer);
         break;
 
-      case 'transfer.paid':
-        await handleTransferPaid(event.data.object as Stripe.Transfer);
+      case 'transfer.updated':
+        // Handle transfer updates if needed
         break;
 
       case 'payout.paid':
@@ -212,18 +212,6 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
     });
   } catch (error) {
     console.error('Error handling transfer created:', error);
-  }
-}
-
-async function handleTransferPaid(transfer: Stripe.Transfer) {
-  try {
-    // Update transfer status
-    const transfersRef = collection(db, 'transfers');
-    // Note: In production, you'd query and update the specific transfer
-    // For now, we'll just log it
-    console.log(`✅ Transfer paid: ${transfer.id} - ${transfer.amount} ${transfer.currency}`);
-  } catch (error) {
-    console.error('Error handling transfer paid:', error);
   }
 }
 
