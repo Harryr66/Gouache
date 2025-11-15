@@ -678,6 +678,8 @@ export interface User {
   hideCard?: boolean;
   hideUpcomingEvents?: boolean;
   hideShowcaseLocations?: boolean;
+  hideShop?: boolean;
+  hideLearn?: boolean;
   eventCity?: string;
   eventCountry?: string;
   eventDate?: string;

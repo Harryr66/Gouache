@@ -56,6 +56,8 @@ export default function ArtistProfilePage() {
             hideCard: data.hideCard || false,
             hideUpcomingEvents: data.hideUpcomingEvents || false,
             hideShowcaseLocations: data.hideShowcaseLocations || false,
+            hideShop: data.hideShop || false,
+            hideLearn: data.hideLearn || false,
             eventCity: data.eventCity || undefined,
             eventCountry: data.eventCountry || undefined,
             eventDate: data.eventDate || undefined,
@@ -132,6 +134,8 @@ export default function ArtistProfilePage() {
           userId={artistId}
           isOwnProfile={isOwnProfile}
           isProfessional={profileUser.isProfessional || false}
+          hideShop={profileUser.hideShop || false}
+          hideLearn={profileUser.hideLearn || false}
         />
       </div>
     </div>

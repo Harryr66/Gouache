@@ -24,10 +24,12 @@ interface ProfileTabsProps {
   userId: string;
   isOwnProfile: boolean;
   isProfessional: boolean;
+  hideShop?: boolean;
+  hideLearn?: boolean;
   onTabChange?: (tab: string) => void;
 }
 
-export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange }: ProfileTabsProps) {
+export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = false, hideLearn = false, onTabChange }: ProfileTabsProps) {
   const { courses, courseEnrollments, isLoading: coursesLoading } = useCourses();
   const { likedArtworkIds, loading: likesLoading } = useLikes();
   const [likedArtworks, setLikedArtworks] = useState<Artwork[]>([]);
@@ -196,22 +198,28 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
   }
 
   if (isProfessional) {
-    // For professional artists, show tabs: Portfolio, Shop, Learn
+    // For professional artists, show tabs: Portfolio, Shop (if not hidden), Learn (if not hidden)
+    const visibleTabs = [
+      { value: 'portfolio', label: 'Portfolio', icon: Palette },
+      ...(hideShop ? [] : [{ value: 'shop', label: 'Shop', icon: ShoppingBag }]),
+      ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: Brain }]),
+    ];
+    
+    const defaultTab = visibleTabs[0]?.value || 'portfolio';
+    const gridCols = visibleTabs.length === 1 ? 'grid-cols-1' : visibleTabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
+    
     return (
-      <Tabs defaultValue="portfolio" className="w-full" onValueChange={onTabChange}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="portfolio" className="flex items-center gap-2">
-            <Palette className="h-4 w-4" />
-            Portfolio
-          </TabsTrigger>
-          <TabsTrigger value="shop" className="flex items-center gap-2">
-            <ShoppingBag className="h-4 w-4" />
-            Shop
-          </TabsTrigger>
-          <TabsTrigger value="learn" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Learn
-          </TabsTrigger>
+      <Tabs defaultValue={defaultTab} className="w-full" onValueChange={onTabChange}>
+        <TabsList className={`grid w-full ${gridCols}`}>
+          {visibleTabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
+                <Icon className="h-4 w-4" />
+                {tab.label}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         {/* Portfolio Tab */}
@@ -224,12 +232,15 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
         </TabsContent>
 
         {/* Shop Tab */}
-        <TabsContent value="shop" className="space-y-4">
-          <ShopDisplay userId={userId} isOwnProfile={isOwnProfile} />
-        </TabsContent>
+        {!hideShop && (
+          <TabsContent value="shop" className="space-y-4">
+            <ShopDisplay userId={userId} isOwnProfile={isOwnProfile} />
+          </TabsContent>
+        )}
 
         {/* Learn Tab */}
-        <TabsContent value="learn" className="space-y-4">
+        {!hideLearn && (
+          <TabsContent value="learn" className="space-y-4">
           {instructorCourses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {instructorCourses.map((course) => (
@@ -310,6 +321,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
             </Card>
           )}
         </TabsContent>
+        )}
       </Tabs>
     );
   }

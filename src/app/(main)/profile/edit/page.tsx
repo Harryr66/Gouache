@@ -163,6 +163,8 @@ export default function ProfileEditPage() {
     hideCard: false,
     hideUpcomingEvents: false,
     hideShowcaseLocations: false,
+    hideShop: false,
+    hideLearn: false,
     bannerImageUrl: '',
     // Upcoming event fields
     eventCity: '',
@@ -220,6 +222,8 @@ export default function ProfileEditPage() {
             hideCard: user.isProfessional ? (changes.hideCard || user.hideCard || false) : false,
             hideUpcomingEvents: user.isProfessional ? (changes.hideUpcomingEvents || user.hideUpcomingEvents || false) : false,
             hideShowcaseLocations: user.isProfessional ? (changes.hideShowcaseLocations || user.hideShowcaseLocations || false) : false,
+            hideShop: user.isProfessional ? (changes.hideShop || user.hideShop || false) : false,
+            hideLearn: user.isProfessional ? (changes.hideLearn || user.hideLearn || false) : false,
             bannerImageUrl: user.isProfessional ? (changes.bannerImageUrl || user.bannerImageUrl || '') : '',
             eventCity: user.isProfessional ? (changes.eventCity || user.eventCity || '') : '',
             eventCountry: user.isProfessional ? (changes.eventCountry || user.eventCountry || '') : '',
@@ -301,6 +305,8 @@ export default function ProfileEditPage() {
           hideCard: user.isProfessional ? (user.hideCard || false) : false,
           hideUpcomingEvents: user.isProfessional ? ((user as any).hideUpcomingEvents || false) : false,
           hideShowcaseLocations: user.isProfessional ? ((user as any).hideShowcaseLocations || false) : false,
+          hideShop: user.isProfessional ? ((user as any).hideShop || false) : false,
+          hideLearn: user.isProfessional ? ((user as any).hideLearn || false) : false,
           bannerImageUrl: user.isProfessional ? (user.bannerImageUrl || '') : '',
           eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
           eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
@@ -913,6 +919,8 @@ export default function ProfileEditPage() {
         formData.hideFlags !== initialFormDataRef.current.hideFlags ||
         formData.hideUpcomingEvents !== initialFormDataRef.current.hideUpcomingEvents ||
         formData.hideShowcaseLocations !== initialFormDataRef.current.hideShowcaseLocations ||
+        formData.hideShop !== initialFormDataRef.current.hideShop ||
+        formData.hideLearn !== initialFormDataRef.current.hideLearn ||
         formData.newsletterLink !== initialFormDataRef.current.newsletterLink ||
         formData.eventCity !== initialFormDataRef.current.eventCity ||
         formData.eventCountry !== initialFormDataRef.current.eventCountry ||
@@ -949,6 +957,8 @@ export default function ProfileEditPage() {
           hideFlags: formData.hideFlags,
           hideUpcomingEvents: formData.hideUpcomingEvents,
           hideShowcaseLocations: formData.hideShowcaseLocations,
+          hideShop: formData.hideShop,
+          hideLearn: formData.hideLearn,
           newsletterLink: formData.newsletterLink,
           updatedAt: new Date(),
           isProfessional: allowArtistFields,
@@ -961,6 +971,8 @@ export default function ProfileEditPage() {
           updateData.hideCard = formData.hideCard;
           updateData.hideUpcomingEvents = formData.hideUpcomingEvents;
           updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
+          updateData.hideShop = formData.hideShop;
+          updateData.hideLearn = formData.hideLearn;
           updateData.newsletterLink = formData.newsletterLink || null;
           updateData.eventCity = formData.eventCity || null;
           updateData.eventCountry = formData.eventCountry || null;
@@ -973,6 +985,8 @@ export default function ProfileEditPage() {
           updateData.hideCard = false;
           updateData.hideUpcomingEvents = false;
           updateData.hideShowcaseLocations = false;
+          updateData.hideShop = false;
+          updateData.hideLearn = false;
           updateData.newsletterLink = null;
           updateData.eventCity = null;
           updateData.eventCountry = null;
@@ -1047,6 +1061,8 @@ export default function ProfileEditPage() {
     formData.hideCard,
     formData.hideUpcomingEvents,
     formData.hideShowcaseLocations,
+    formData.hideShop,
+    formData.hideLearn,
     formData.newsletterLink,
     formData.eventCity,
     formData.eventCountry,
@@ -1831,6 +1847,32 @@ export default function ProfileEditPage() {
                     <Switch
                       checked={formData.hideShowcaseLocations}
                       onCheckedChange={(checked) => handleInputChange('hideShowcaseLocations', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label>Hide Shop Tab</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Hide the "Shop" tab from your public profile
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.hideShop}
+                      onCheckedChange={(checked) => handleInputChange('hideShop', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label>Hide Learn Tab</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Hide the "Learn" tab from your public profile
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.hideLearn}
+                      onCheckedChange={(checked) => handleInputChange('hideLearn', checked)}
                     />
                   </div>
                 </>
