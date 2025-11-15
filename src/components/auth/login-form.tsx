@@ -297,16 +297,20 @@ export function LoginForm() {
       
       if (!emailExistsInAuth) {
         console.error('❌ Email not found in Firebase Auth:', emailToUse);
+        console.error('⚠️ This means the email exists in Firestore but NOT in Firebase Auth');
+        console.error('⚠️ Firebase will not send emails to addresses that don\'t exist in Firebase Auth');
         toast({
           title: "Email not found in authentication system",
-          description: `The email ${emailToUse} is not registered in Firebase Authentication. This means the email in your profile (Firestore) doesn't match the email used to create your account. Please try using the exact email address you used to sign up, or contact support if you're unsure.`,
+          description: `The email ${emailToUse} exists in your profile but is not registered in Firebase Authentication. This means you signed up with a different email address. Please check Firebase Console → Authentication → Users to find your actual account email, or contact support.`,
           variant: "destructive",
         });
         setIsSendingReset(false);
         return;
       }
       
-      console.log('✅ Email verified in Firebase Auth, proceeding to send reset email...');
+      console.log('✅ Email verified in Firebase Auth');
+      console.log('✅ Email exists and is registered');
+      console.log('✅ Proceeding to send reset email...');
       
       // Send password reset email
       // Note: Firebase will only send email if the email exists in Firebase Auth
