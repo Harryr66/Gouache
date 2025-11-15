@@ -154,12 +154,15 @@ const generateArtistContent = (artist: Artist) => ({
   const router = useRouter();
   const { toggleLike, isLiked, loading: likesLoading } = useLikes();
   const liked = isLiked(artwork.id);
-  const profileSlug = artwork.artist.id ?? artwork.artist.handle?.replace(/^@/, '');
+  // Use artist ID for profile link - this should be the Firestore document ID
+  const profileSlug = artwork.artist.id;
   const handleViewProfile = () => {
     setShowArtistPreview(false);
-    if (profileSlug && !profileSlug.startsWith('artist-')) {
+    if (profileSlug) {
+      // Always use the artist ID (Firestore document ID) for profile links
       router.push(`/profile/${profileSlug}`);
     } else {
+      console.warn('⚠️ No artist ID found for profile link');
       router.push('/profile');
     }
   };

@@ -15,6 +15,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Artwork, Course } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 interface ProfileTabsProps {
   userId: string;
@@ -108,6 +109,80 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
     };
   }, [likesLoading, likedIds]);
 
+  // Component to display other user's portfolio
+  function PortfolioDisplay({ userId }: { userId: string }) {
+    const [portfolio, setPortfolio] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      const fetchPortfolio = async () => {
+        try {
+          const userDoc = await getDoc(doc(db, 'userProfiles', userId));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            const portfolioItems = (data.portfolio || []).map((item: any) => ({
+              ...item,
+              createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
+            }));
+            setPortfolio(portfolioItems);
+            console.log('📋 Portfolio loaded for user:', userId, portfolioItems.length, 'items');
+          }
+        } catch (error) {
+          console.error('Error fetching portfolio:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchPortfolio();
+    }, [userId]);
+
+    if (loading) {
+      return (
+        <div className="flex justify-center py-12">
+          <ThemeLoading text="Loading portfolio..." size="md" />
+        </div>
+      );
+    }
+
+    if (portfolio.length === 0) {
+      return (
+        <Card className="p-8 text-center">
+          <CardContent>
+            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <CardTitle className="mb-2">No artwork yet</CardTitle>
+            <CardDescription className="mb-4">
+              This artist hasn't uploaded any artwork yet.
+            </CardDescription>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {portfolio.map((item) => (
+          <Card key={item.id || `portfolio-${item.imageUrl}`} className="group hover:shadow-lg transition-shadow overflow-hidden">
+            <div className="relative aspect-square">
+              <Image
+                src={item.imageUrl}
+                alt={item.title || 'Artwork'}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <CardContent className="p-4">
+              <h4 className="font-semibold text-sm mb-1 line-clamp-1">{item.title || 'Untitled Artwork'}</h4>
+              {item.medium && (
+                <p className="text-xs text-muted-foreground line-clamp-1">{item.medium}</p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   if (isProfessional) {
     return (
       <Tabs defaultValue="portfolio" className="w-full" onValueChange={onTabChange}>
@@ -131,18 +206,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
           {isOwnProfile ? (
             <PortfolioManager />
           ) : (
-            <div className="space-y-4">
-              {/* TODO: Display other user's portfolio */}
-              <Card className="p-8 text-center">
-                <CardContent>
-                  <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <CardTitle className="mb-2">No artwork yet</CardTitle>
-                  <CardDescription className="mb-4">
-                    This artist hasn't uploaded any artwork yet.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            </div>
+            <PortfolioDisplay userId={userId} />
           )}
         </TabsContent>
 

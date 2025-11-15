@@ -746,8 +746,8 @@ export default function DiscoverPage() {
           
           return {
             id: doc.id,
-            name: data.name || data.displayName || data.handle || 'Unknown Artist',
-            handle: data.handle || data.username || `artist_${doc.id}`,
+            name: data.name || data.displayName || data.handle || 'User',
+            handle: data.handle || data.username || `user_${doc.id}`,
             avatarUrl: data.avatarUrl || null,
             bio: data.bio || '',
             website: data.website || '',

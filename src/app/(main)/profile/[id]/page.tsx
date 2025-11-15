@@ -26,8 +26,55 @@ export default function ArtistProfilePage() {
       try {
         const userDoc = await getDoc(doc(db, 'userProfiles', artistId));
         if (userDoc.exists()) {
-          setProfileUser({ id: userDoc.id, ...userDoc.data() });
+          const data = userDoc.data();
+          
+          // Convert portfolio items from Firestore format (with Timestamps) to Date objects
+          const portfolio = (data.portfolio || []).map((item: any) => ({
+            ...item,
+            createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
+          }));
+          
+          // Map Firestore data to ProfileHeader expected format
+          const profileData = {
+            id: userDoc.id,
+            displayName: data.name || data.displayName || 'User',
+            username: data.handle || data.username || `user_${userDoc.id}`,
+            avatarUrl: data.avatarUrl || undefined,
+            bannerImageUrl: data.bannerImageUrl || undefined,
+            bio: data.bio || '',
+            location: data.location || '',
+            countryOfOrigin: data.countryOfOrigin || '',
+            countryOfResidence: data.countryOfResidence || '',
+            followerCount: data.followerCount || 0,
+            followingCount: data.followingCount || 0,
+            isProfessional: data.isProfessional || false,
+            profileRingColor: data.profileRingColor || undefined,
+            tipJarEnabled: data.tipJarEnabled || false,
+            suggestionsEnabled: data.suggestionsEnabled || false,
+            hideLocation: data.hideLocation || false,
+            hideFlags: data.hideFlags || false,
+            hideCard: data.hideCard || false,
+            hideUpcomingEvents: data.hideUpcomingEvents || false,
+            hideShowcaseLocations: data.hideShowcaseLocations || false,
+            eventCity: data.eventCity || undefined,
+            eventCountry: data.eventCountry || undefined,
+            eventDate: data.eventDate || undefined,
+            showcaseLocations: data.showcaseLocations || [],
+            newsletterLink: data.newsletterLink || undefined,
+            portfolio: portfolio, // Include portfolio for ProfileTabs
+          };
+          
+          console.log('📋 Profile loaded:', {
+            id: profileData.id,
+            name: profileData.displayName,
+            username: profileData.username,
+            portfolioCount: portfolio.length,
+            isProfessional: profileData.isProfessional
+          });
+          
+          setProfileUser(profileData);
         } else {
+          console.error('❌ Profile not found:', artistId);
           notFound();
         }
       } catch (error) {
