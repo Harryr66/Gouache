@@ -136,11 +136,23 @@ export function PortfolioManager() {
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('🎬 handleImageUpload called:', {
+      hasFile: !!event.target.files?.[0],
+      hasUser: !!user,
+      userId: user?.id,
+      userName: user?.displayName || user?.username,
+      title: newItem.title.trim()
+    });
+    
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (!file || !user) {
+      console.warn('⚠️ Upload cancelled - missing file or user:', { hasFile: !!file, hasUser: !!user });
+      return;
+    }
 
     // Require title before uploading
     if (!newItem.title.trim()) {
+      console.log('⚠️ Upload cancelled - title required');
       toast({
         title: "Title required",
         description: "Please enter an artwork title before uploading.",
@@ -151,6 +163,7 @@ export function PortfolioManager() {
       return;
     }
 
+    console.log('✅ Starting upload process...');
     setIsUploading(true);
     try {
       const compressedFile = await compressImage(file);
