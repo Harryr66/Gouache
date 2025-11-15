@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
-export default function PurchaseSuccessPage() {
+function PurchaseSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const paymentIntentId = searchParams.get('payment_intent');
@@ -130,6 +130,26 @@ export default function PurchaseSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function PurchaseSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-12 max-w-2xl">
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+              <CardTitle className="mb-2">Loading...</CardTitle>
+              <CardDescription>Please wait...</CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
+      <PurchaseSuccessContent />
+    </Suspense>
   );
 }
 
