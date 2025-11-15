@@ -332,6 +332,67 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
         </CardContent>
       </Card>
 
+      {/* Sales History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Sales</CardTitle>
+          <CardDescription>
+            Your recent sales and commissions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {sales.length === 0 ? (
+            <div className="text-center py-8">
+              <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <CardTitle className="mb-2">No Sales Yet</CardTitle>
+              <CardDescription>
+                Your sales will appear here once customers make purchases.
+              </CardDescription>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sales.map((sale) => (
+                <div
+                  key={sale.id}
+                  className="border rounded-lg p-4 flex items-center justify-between"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Badge variant="default" className="bg-green-500">
+                        <CheckCircle2 className="h-3 w-3 mr-1" /> Sold
+                      </Badge>
+                      <span className="font-semibold">{sale.itemTitle || 'Untitled'}</span>
+                      <Badge variant="secondary">{sale.itemType}</Badge>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Sale Amount</p>
+                        <p className="font-semibold">{formatCurrency(sale.amount, sale.currency)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Platform Fee (10%)</p>
+                        <p className="font-semibold text-muted-foreground">
+                          -{formatCurrency(sale.platformCommission, sale.currency)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Your Payout</p>
+                        <p className="font-semibold text-green-600">
+                          {formatCurrency(sale.artistPayout, sale.currency)}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {sale.createdAt?.toDate ? sale.createdAt.toDate().toLocaleDateString() : 'Date unavailable'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Info Card */}
       <Card>
         <CardContent className="p-4">
