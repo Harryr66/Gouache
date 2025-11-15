@@ -11,7 +11,7 @@ First, make sure your application is deployed to Vercel (or your hosting platfor
 https://yourdomain.com/api/stripe/webhook
 ```
 
-Replace `yourdomain.com` with your actual domain (e.g., `soma-app.vercel.app` or your custom domain).
+Replace `yourdomain.com` with your actual domain (your Vercel deployment URL or custom domain).
 
 ## Step 2: Access Stripe Dashboard
 
@@ -31,7 +31,7 @@ Replace `yourdomain.com` with your actual domain (e.g., `soma-app.vercel.app` or
 3. Fill in the webhook details:
    - **Endpoint URL**: `https://yourdomain.com/api/stripe/webhook`
      - Replace `yourdomain.com` with your actual domain
-     - Example: `https://soma-app.vercel.app/api/stripe/webhook`
+     - Example: `https://your-app-name.vercel.app/api/stripe/webhook`
    
    - **Description** (optional): "SOMA Platform Payment Webhooks"
 
