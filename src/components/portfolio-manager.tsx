@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,7 @@ export function PortfolioManager() {
   const [isUploading, setIsUploading] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [newItem, setNewItem] = useState({
     title: '',
     description: '',
@@ -498,13 +499,29 @@ export function PortfolioManager() {
 
             <div className="space-y-2">
               <Label htmlFor="portfolio-image">Artwork Image *</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    console.log('🖼️ File picker button clicked');
+                    fileInputRef.current?.click();
+                  }}
+                  disabled={isUploading}
+                  className="flex-1"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {isUploading ? 'Uploading...' : 'Choose Image'}
+                </Button>
+              </div>
               <Input
+                ref={fileInputRef}
                 id="portfolio-image"
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
                 disabled={isUploading}
-                className="cursor-pointer"
+                className="hidden"
               />
               {!newItem.title.trim() && (
                 <p className="text-sm text-muted-foreground">Please enter an artwork title before uploading an image.</p>
