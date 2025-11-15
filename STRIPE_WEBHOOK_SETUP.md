@@ -11,7 +11,11 @@ First, make sure your application is deployed to Vercel (or your hosting platfor
 https://yourdomain.com/api/stripe/webhook
 ```
 
-Replace `yourdomain.com` with your actual domain (your Vercel deployment URL or custom domain).
+Replace `yourdomain.com` with your actual domain:
+- **Vercel default URL**: `https://your-project-name.vercel.app` (you can rename your Vercel project to change this)
+- **Custom domain**: `https://yourdomain.com` (if you've configured one)
+
+> **Note**: The Vercel URL is publicly accessible but typically only used for webhooks and API calls, not shown to end users. You can rename your Vercel project in Settings → General → Project Name to change the URL.
 
 ## Step 2: Access Stripe Dashboard
 
