@@ -317,7 +317,7 @@ export function LoginForm() {
       // The email must match exactly (case-insensitive) with the email used during signup
       try {
         const actionCodeSettings = {
-          url: `${typeof window !== 'undefined' ? window.location.origin : 'https://gouache.art'}/login`,
+          url: `${typeof window !== 'undefined' ? window.location.origin : 'https://gouache.art'}/auth/reset-password`,
           handleCodeInApp: false,
         };
         console.log('Action code settings:', actionCodeSettings);

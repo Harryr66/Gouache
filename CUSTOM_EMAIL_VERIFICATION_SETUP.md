@@ -1,11 +1,11 @@
-# Custom Email Verification Domain Setup
+# Custom Firebase Action Pages Setup
 
 ## Overview
-Email verification links now redirect to your custom domain (`gouache.art`) instead of Firebase's default page. This provides a better user experience and maintains your brand identity.
+All Firebase authentication action links (email verification, password reset, etc.) now redirect to your custom domain (`gouache.art`) instead of Firebase's default pages. This provides a better user experience and maintains your brand identity.
 
 ## What Was Changed
 
-### 1. Created Custom Verification Page
+### 1. Created Custom Email Verification Page
 - **Location**: `src/app/auth/verify-email/page.tsx`
 - **Purpose**: Handles email verification on your domain
 - **Features**:
@@ -13,11 +13,27 @@ Email verification links now redirect to your custom domain (`gouache.art`) inst
   - Handles email changes
   - Shows success/error states
   - Redirects to profile after verification
+- **URL**: `https://gouache.art/auth/verify-email`
 
-### 2. Updated Email Update Flow
+### 2. Created Custom Password Reset Page
+- **Location**: `src/app/auth/reset-password/page.tsx`
+- **Purpose**: Handles password reset on your domain
+- **Features**:
+  - Verifies reset link
+  - Allows user to set new password
+  - Shows success/error states
+  - Redirects to login after reset
+- **URL**: `https://gouache.art/auth/reset-password`
+
+### 3. Updated Email Update Flow
 - **Location**: `src/app/(main)/profile/edit/page.tsx`
 - **Change**: Added `actionCodeSettings` to redirect to your domain
 - **URL**: `https://gouache.art/auth/verify-email?mode=verifyAndChangeEmail`
+
+### 4. Updated Password Reset Flow
+- **Location**: `src/components/auth/login-form.tsx`
+- **Change**: Updated `actionCodeSettings` to redirect to your domain
+- **URL**: `https://gouache.art/auth/reset-password`
 
 ## Firebase Console Configuration
 
@@ -31,27 +47,37 @@ Email verification links now redirect to your custom domain (`gouache.art`) inst
 7. Enter: `gouache.art`
 8. Click **Add**
 
-### Step 2: Update Email Templates (Optional)
+### Step 2: Update Email Templates (Optional but Recommended)
 1. Still in **Authentication** → **Settings**
 2. Click **Email templates** tab
-3. Click on **Email address verification** template
-4. Update the **Action URL** to:
-   ```
-   https://gouache.art/auth/verify-email?mode=verifyEmail&oobCode=%LINK%
-   ```
-5. Click **Save**
 
-### Step 3: Update Email Change Template (Optional)
-1. Still in **Email templates**
-2. Click on **Email address change** template
-3. Update the **Action URL** to:
-   ```
-   https://gouache.art/auth/verify-email?mode=verifyAndChangeEmail&oobCode=%LINK%
-   ```
-4. Click **Save**
+3. **Email address verification** template:
+   - Click on **Email address verification**
+   - Update the **Action URL** to:
+     ```
+     https://gouache.art/auth/verify-email?mode=verifyEmail&oobCode=%LINK%
+     ```
+   - Click **Save**
+
+4. **Email address change** template:
+   - Click on **Email address change**
+   - Update the **Action URL** to:
+     ```
+     https://gouache.art/auth/verify-email?mode=verifyAndChangeEmail&oobCode=%LINK%
+     ```
+   - Click **Save**
+
+5. **Password reset** template:
+   - Click on **Password reset**
+   - Update the **Action URL** to:
+     ```
+     https://gouache.art/auth/reset-password?oobCode=%LINK%
+     ```
+   - Click **Save**
 
 ## How It Works
 
+### Email Verification Flow
 1. **User Updates Email**:
    - User changes email in profile edit
    - System sends verification email with link to `gouache.art/auth/verify-email`
@@ -70,6 +96,21 @@ Email verification links now redirect to your custom domain (`gouache.art`) inst
    - Auth provider detects email change
    - Automatically syncs Firestore email to match Firebase Auth
 
+### Password Reset Flow
+1. **User Requests Reset**:
+   - User clicks "Forgot password?" on login page
+   - System sends password reset email with link to `gouache.art/auth/reset-password`
+
+2. **User Clicks Link**:
+   - Link opens on your domain (not Firebase)
+   - Reset page verifies the action code
+
+3. **Password Reset Process**:
+   - User enters new password
+   - Page confirms password reset with Firebase
+   - Shows success message
+   - Redirects to login page
+
 ## Testing
 
 1. **Test Email Update**:
@@ -80,10 +121,20 @@ Email verification links now redirect to your custom domain (`gouache.art`) inst
    - Should redirect to `gouache.art/auth/verify-email`
    - Should show success and redirect to profile
 
-2. **Test Expired Link**:
-   - Use an old verification link (if you have one)
+2. **Test Password Reset**:
+   - Go to Login page
+   - Click "Forgot password?"
+   - Enter email address
+   - Check email inbox
+   - Click reset link
+   - Should redirect to `gouache.art/auth/reset-password`
+   - Enter new password
+   - Should show success and redirect to login
+
+3. **Test Expired Links**:
+   - Use an old verification/reset link (if you have one)
    - Should show "expired" message
-   - Should offer to request new verification email
+   - Should offer to request new link
 
 ## Troubleshooting
 
