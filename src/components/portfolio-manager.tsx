@@ -44,6 +44,13 @@ export function PortfolioManager() {
       isUploading
     });
   }, [showAddForm, user, portfolioItems.length, isUploading]);
+  
+  // Log when form becomes visible
+  useEffect(() => {
+    if (showAddForm) {
+      console.log('✅ Add New Artwork form is now visible');
+    }
+  }, [showAddForm]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newItem, setNewItem] = useState({
     title: '',
