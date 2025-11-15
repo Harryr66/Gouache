@@ -57,8 +57,17 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating Stripe account:', error);
+    console.error('Error details:', {
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      statusCode: error.statusCode,
+    });
     return NextResponse.json(
-      { error: error.message || 'Failed to create Stripe account' },
+      { 
+        error: error.message || 'Failed to create Stripe account',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

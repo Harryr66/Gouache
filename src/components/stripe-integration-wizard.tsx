@@ -94,7 +94,8 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to create Stripe account');
+        console.error('Stripe account creation error:', error);
+        throw new Error(error.error || error.message || 'Failed to create Stripe account');
       }
 
       const data = await response.json();
