@@ -61,6 +61,8 @@ interface ProfileHeaderProps {
     eventCity?: string;
     eventCountry?: string;
     eventDate?: string;
+    eventStartDate?: string;
+    eventEndDate?: string;
     showcaseLocations?: ShowcaseLocation[];
     newsletterLink?: string;
   };
@@ -337,7 +339,26 @@ export function ProfileHeader({
       )}
 
       {/* Upcoming Events Section - Separate Card (Collapsible) */}
-      {user.isProfessional && !user.hideUpcomingEvents && (
+      {/* Only show if there's actual event data and it's within the date range */}
+      {user.isProfessional && !user.hideUpcomingEvents && (() => {
+        // Check if there's any event data
+        if (!user.eventDate && !user.eventCity && !user.eventCountry && !user.bannerImageUrl) {
+          return false;
+        }
+        
+        // Check date range if set
+        const now = new Date();
+        if (user.eventStartDate) {
+          const startDate = new Date(user.eventStartDate);
+          if (now < startDate) return false; // Not started yet
+        }
+        if (user.eventEndDate) {
+          const endDate = new Date(user.eventEndDate);
+          if (now > endDate) return false; // Already ended
+        }
+        
+        return true; // Show event
+      })() && (
         <Card className="mt-4 md:mt-6">
           <CardContent className="p-4 md:p-6">
             <Collapsible open={isEventsExpanded} onOpenChange={setIsEventsExpanded}>
@@ -399,41 +420,25 @@ export function ProfileHeader({
               )}
               
               {/* Upcoming Event Details */}
-              {(user.eventDate || user.eventCity || user.eventCountry) ? (
-                <div className="space-y-2 pt-3">
-                  {(user.eventCity || user.eventCountry) && (
-                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="w-4 h-4" />
-                      {[user.eventCity, user.eventCountry].filter(Boolean).join(', ')}
-                    </p>
-                  )}
-                  {user.eventDate && (
-                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="w-4 h-4" />
-                      {new Date(user.eventDate).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                isOwnProfile && (
-                  <div className="pt-3">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      No upcoming events scheduled. Add an event to let visitors know about your next show or exhibition.
-                    </p>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/profile/edit#upcoming-events">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Upcoming Event
-                      </Link>
-                    </Button>
-                  </div>
-                )
-              )}
+              <div className="space-y-2 pt-3">
+                {(user.eventCity || user.eventCountry) && (
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    {[user.eventCity, user.eventCountry].filter(Boolean).join(', ')}
+                  </p>
+                )}
+                {user.eventDate && (
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    {new Date(user.eventDate).toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                )}
+              </div>
               </CollapsibleContent>
             </Collapsible>
           </CardContent>
@@ -510,23 +515,7 @@ export function ProfileHeader({
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {isOwnProfile
-                      ? 'Highlight galleries and spaces that are currently showing your work. Add locations to let visitors know where they can see your art in person.'
-                      : 'This artist hasn&apos;t listed any current gallery showings.'}
-                  </p>
-                  {isOwnProfile && (
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/profile/edit#showcase-locations">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Location
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              )}
+              ) : null}
               </CollapsibleContent>
             </Collapsible>
           </CardContent>

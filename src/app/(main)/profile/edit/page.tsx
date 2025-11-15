@@ -133,14 +133,16 @@ export default function ProfileEditPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const isInitialMount = useRef(true);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [newShowcaseLocation, setNewShowcaseLocation] = useState({
+  const [newShowcaseLocation, setNewShowcaseLocation] = useState<ShowcaseLocation>({
     name: '',
     venue: '',
     city: '',
     country: '',
     website: '',
     notes: '',
-    imageUrl: ''
+    imageUrl: '',
+    startDate: '',
+    endDate: ''
   });
 
   const [formData, setFormData] = useState({
@@ -165,6 +167,8 @@ export default function ProfileEditPage() {
     eventCity: '',
     eventCountry: '',
     eventDate: '',
+    eventStartDate: '',
+    eventEndDate: '',
     showcaseLocations: [] as ShowcaseLocation[],
     newsletterLink: '',
   });
@@ -298,6 +302,8 @@ export default function ProfileEditPage() {
           eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
           eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
           eventDate: user.isProfessional ? ((user as any).eventDate || '') : '',
+          eventStartDate: user.isProfessional ? ((user as any).eventStartDate || '') : '',
+          eventEndDate: user.isProfessional ? ((user as any).eventEndDate || '') : '',
           showcaseLocations: user.isProfessional ? (user.showcaseLocations || []) : [],
           newsletterLink: user.isProfessional ? ((user as any).newsletterLink || '') : '',
           };
@@ -584,7 +590,9 @@ export default function ProfileEditPage() {
           country: newShowcaseLocation.country.trim() || undefined,
           website: newShowcaseLocation.website.trim() || undefined,
           notes: newShowcaseLocation.notes.trim() || undefined,
-          imageUrl: newShowcaseLocation.imageUrl.trim() || undefined
+          imageUrl: newShowcaseLocation.imageUrl.trim() || undefined,
+          startDate: newShowcaseLocation.startDate || undefined,
+          endDate: newShowcaseLocation.endDate || undefined
         }
       ]
     }));
@@ -596,7 +604,9 @@ export default function ProfileEditPage() {
       country: '',
       website: '',
       notes: '',
-      imageUrl: ''
+      imageUrl: '',
+      startDate: '',
+      endDate: ''
     });
 
     toast({
@@ -904,6 +914,8 @@ export default function ProfileEditPage() {
         formData.eventCity !== initialFormDataRef.current.eventCity ||
         formData.eventCountry !== initialFormDataRef.current.eventCountry ||
         formData.eventDate !== initialFormDataRef.current.eventDate ||
+        formData.eventStartDate !== initialFormDataRef.current.eventStartDate ||
+        formData.eventEndDate !== initialFormDataRef.current.eventEndDate ||
         JSON.stringify(formData.showcaseLocations) !== JSON.stringify(initialFormDataRef.current.showcaseLocations);
       
       if (!hasChanges) {
@@ -962,6 +974,8 @@ export default function ProfileEditPage() {
           updateData.eventCity = null;
           updateData.eventCountry = null;
           updateData.eventDate = null;
+          updateData.eventStartDate = null;
+          updateData.eventEndDate = null;
           updateData.bannerImageUrl = null;
           updateData.showcaseLocations = [];
         }
@@ -1213,6 +1227,8 @@ export default function ProfileEditPage() {
         updateData.eventCity = formData.eventCity || null;
         updateData.eventCountry = formData.eventCountry || null;
         updateData.eventDate = formData.eventDate || null;
+        updateData.eventStartDate = formData.eventStartDate || null;
+        updateData.eventEndDate = formData.eventEndDate || null;
         updateData.showcaseLocations = formData.showcaseLocations || [];
       } else {
         updateData.artistType = '';
@@ -1225,6 +1241,8 @@ export default function ProfileEditPage() {
         updateData.eventCity = null;
         updateData.eventCountry = null;
         updateData.eventDate = null;
+        updateData.eventStartDate = null;
+        updateData.eventEndDate = null;
         updateData.bannerImageUrl = null;
         updateData.showcaseLocations = [];
       }
@@ -1559,6 +1577,26 @@ export default function ProfileEditPage() {
                     value={formData.eventDate}
                     onChange={(e) => handleInputChange('eventDate', e.target.value)}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eventStartDate">Start Date (Optional)</Label>
+                  <Input
+                    id="eventStartDate"
+                    type="date"
+                    value={formData.eventStartDate}
+                    onChange={(e) => handleInputChange('eventStartDate', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">If not set, event shows immediately</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eventEndDate">End Date (Optional)</Label>
+                  <Input
+                    id="eventEndDate"
+                    type="date"
+                    value={formData.eventEndDate}
+                    onChange={(e) => handleInputChange('eventEndDate', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">If not set, event remains indefinitely</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="eventCountry">Event Country</Label>

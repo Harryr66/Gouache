@@ -473,6 +473,8 @@ export interface ShowcaseLocation {
   website?: string;
   notes?: string;
   imageUrl?: string;
+  startDate?: string; // Optional start date (ISO string)
+  endDate?: string; // Optional end date (ISO string) - if not set, remains indefinitely
 }
 
 export interface NewsArticle {
@@ -679,6 +681,8 @@ export interface User {
   eventCity?: string;
   eventCountry?: string;
   eventDate?: string;
+  eventStartDate?: string; // Optional start date (ISO string)
+  eventEndDate?: string; // Optional end date (ISO string) - if not set, remains indefinitely
   newsletterLink?: string;
   accountRole?: 'user' | 'artist' | 'admin';
   artistInviteToken?: string;
