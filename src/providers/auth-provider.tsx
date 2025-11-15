@@ -183,7 +183,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               lastSeen: userData.lastSeen?.toDate(),
             artistType: userData.artistType || '',
             isAdmin: userData.isAdmin || false,
-            hideUpcomingEvents: userData.hideUpcomingEvents || false,
             hideShowcaseLocations: userData.hideShowcaseLocations || false,
             newsletterLink: userData.newsletterLink || '',
             socialLinks: userData.socialLinks || {},
