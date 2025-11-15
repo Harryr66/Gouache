@@ -587,12 +587,12 @@ export default function ProfileEditPage() {
         ...prev.showcaseLocations,
         {
           name: newShowcaseLocation.name.trim(),
-          venue: newShowcaseLocation.venue.trim() || undefined,
-          city: newShowcaseLocation.city.trim() || undefined,
-          country: newShowcaseLocation.country.trim() || undefined,
-          website: newShowcaseLocation.website.trim() || undefined,
-          notes: newShowcaseLocation.notes.trim() || undefined,
-          imageUrl: newShowcaseLocation.imageUrl.trim() || undefined,
+          venue: newShowcaseLocation.venue?.trim() || undefined,
+          city: newShowcaseLocation.city?.trim() || undefined,
+          country: newShowcaseLocation.country?.trim() || undefined,
+          website: newShowcaseLocation.website?.trim() || undefined,
+          notes: newShowcaseLocation.notes?.trim() || undefined,
+          imageUrl: newShowcaseLocation.imageUrl?.trim() || undefined,
           startDate: newShowcaseLocation.startDate || undefined,
           endDate: newShowcaseLocation.endDate || undefined
         }
