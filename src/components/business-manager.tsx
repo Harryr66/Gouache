@@ -18,6 +18,8 @@ import {
 import { useAuth } from '@/providers/auth-provider';
 import { toast } from '@/hooks/use-toast';
 import { ThemeLoading } from './theme-loading';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface Payout {
   id: string;
@@ -93,7 +95,7 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
         collection(db, 'sales'),
         where('artistId', '==', user.id),
         orderBy('createdAt', 'desc'),
-        firestoreLimit(50)
+        limit(50)
       );
       const salesSnapshot = await getDocs(salesQuery);
       const salesData = salesSnapshot.docs.map(doc => ({
