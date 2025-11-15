@@ -323,6 +323,39 @@ export default function ProfileEditPage() {
     }
   }, [user]);
 
+  // Sync email on page load - check if Firebase Auth email differs from Firestore
+  // This catches cases where email was verified but sync didn't happen yet
+  useEffect(() => {
+    if (!user || !auth.currentUser) return;
+    
+    const syncEmailOnLoad = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'userProfiles', user.id));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const firebaseAuthEmail = auth.currentUser?.email || '';
+          const firestoreEmail = userData.email || '';
+          
+          // If emails don't match, sync Firestore to match Firebase Auth
+          if (firebaseAuthEmail && firestoreEmail && firebaseAuthEmail.toLowerCase() !== firestoreEmail.toLowerCase()) {
+            console.log('📧 Email mismatch detected on profile edit page load, syncing...');
+            await updateDoc(doc(db, 'userProfiles', user.id), {
+              email: firebaseAuthEmail,
+              updatedAt: new Date()
+            });
+            console.log('✅ Email synced on profile edit page load');
+            // Refresh user data to reflect the change
+            await refreshUser();
+          }
+        }
+      } catch (error) {
+        console.error('Error syncing email on profile edit page load:', error);
+      }
+    };
+    
+    syncEmailOnLoad();
+  }, [user?.id, auth.currentUser?.email, refreshUser]);
+
   // Helper function to add timeout to Firestore operations
   const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> => {
     return Promise.race([
