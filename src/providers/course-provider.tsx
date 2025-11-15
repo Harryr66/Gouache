@@ -115,12 +115,11 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           };
         }) as Course[];
 
-        console.log('🎓 CourseProvider: Processed courses:', coursesData);
         setCourses(coursesData);
         setIsLoading(false);
       },
       (error) => {
-        console.error('🎓 CourseProvider: Error loading courses:', error);
+        console.error('CourseProvider: Error loading courses:', error);
         setIsLoading(false);
       }
     );
