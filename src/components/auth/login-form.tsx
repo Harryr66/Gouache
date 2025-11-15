@@ -184,6 +184,7 @@ export function LoginForm() {
       if (!isEmail) {
         // It's a username - look up the user's email from Firestore
         const username = emailToUse.toLowerCase();
+        console.log('Looking up username:', username);
         
         // Query userProfiles collection by handle
         const usersQuery = query(
@@ -216,13 +217,15 @@ export function LoginForm() {
           // Get email from the found user document
           const userDoc = usernameSnapshot.docs[0];
           const userData = userDoc.data();
+          console.log('Found user data:', userData);
           
           if (userData.email) {
             emailToUse = userData.email;
+            console.log('Using email from Firestore:', emailToUse);
           } else {
             toast({
               title: "Email not found",
-              description: "Please use your email address to reset your password.",
+              description: "Please use your email address to reset your password. Your username doesn't have an email associated with it in our system.",
               variant: "destructive",
             });
             setIsSendingReset(false);
@@ -232,13 +235,15 @@ export function LoginForm() {
           // Get email from the found user document
           const userDoc = querySnapshot.docs[0];
           const userData = userDoc.data();
+          console.log('Found user data:', userData);
           
           if (userData.email) {
             emailToUse = userData.email;
+            console.log('Using email from Firestore:', emailToUse);
           } else {
             toast({
               title: "Email not found",
-              description: "Please use your email address to reset your password.",
+              description: "Please use your email address to reset your password. Your username doesn't have an email associated with it in our system.",
               variant: "destructive",
             });
             setIsSendingReset(false);
@@ -247,31 +252,74 @@ export function LoginForm() {
         }
       }
       
+      // Validate email format
+      if (!emailToUse.includes('@') || !emailToUse.includes('.')) {
+        toast({
+          title: "Invalid email",
+          description: "Please enter a valid email address.",
+          variant: "destructive",
+        });
+        setIsSendingReset(false);
+        return;
+      }
+      
+      console.log('Sending password reset email to:', emailToUse);
+      
       // Send password reset email
-      await sendPasswordResetEmail(auth, emailToUse);
+      // Note: Firebase will only send email if the email exists in Firebase Auth
+      // The email must match exactly (case-insensitive) with the email used during signup
+      try {
+        await sendPasswordResetEmail(auth, emailToUse, {
+          url: `${typeof window !== 'undefined' ? window.location.origin : 'https://gouache.art'}/login`,
+          handleCodeInApp: false,
+        });
+      } catch (firebaseError: any) {
+        // If user-not-found, it means the email doesn't exist in Firebase Auth
+        // This could happen if:
+        // 1. The email in Firestore doesn't match the email in Firebase Auth
+        // 2. The user signed up with a different email
+        // 3. The account was created differently
+        if (firebaseError.code === 'auth/user-not-found') {
+          throw new Error(`No account found with email ${emailToUse}. Make sure you're using the exact email address you used to sign up.`);
+        }
+        throw firebaseError;
+      }
+      
+      console.log('Password reset email sent successfully');
       
       toast({
         title: "Password reset email sent",
-        description: `We've sent a password reset link to ${emailToUse}. Please check your inbox.`,
+        description: `We've sent a password reset link to ${emailToUse}. Please check your inbox (and spam folder). The link will expire in 1 hour.`,
       });
       
       setShowForgotPassword(false);
       setForgotPasswordEmail("");
     } catch (error: any) {
       console.error('Password reset error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       
       let errorMessage = "Failed to send password reset email. Please try again.";
+      let errorTitle = "Password reset failed";
       
       if (error.code === 'auth/user-not-found') {
-        errorMessage = "No account found with this email address.";
+        errorTitle = "Account not found";
+        errorMessage = "No account found with this email address. Make sure you're using the email address you signed up with.";
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email address format.";
+        errorTitle = "Invalid email";
+        errorMessage = "Invalid email address format. Please check and try again.";
       } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = "Too many requests. Please try again later.";
+        errorTitle = "Too many requests";
+        errorMessage = "Too many password reset requests. Please wait a few minutes and try again.";
+      } else if (error.code === 'auth/invalid-continue-uri') {
+        errorTitle = "Configuration error";
+        errorMessage = "There's a configuration issue. Please contact support.";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       toast({
-        title: "Password reset failed",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
       });
@@ -304,48 +352,18 @@ export function LoginForm() {
               <FormItem>
                 <div className="flex justify-between items-baseline">
                   <FormLabel>Password</FormLabel>
-                  <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
-                    <DialogTrigger asChild>
-                      <Button variant="link" type="button" className="p-0 h-auto text-xs text-foreground">
-                        Forgot password?
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Reset Password</DialogTitle>
-                        <DialogDescription>
-                          Enter your email address or username and we'll send you a link to reset your password.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="forgot-password-email">Email or Username</Label>
-                          <Input
-                            id="forgot-password-email"
-                            type="text"
-                            placeholder="elena_vance or you@example.com"
-                            value={forgotPasswordEmail}
-                            onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleForgotPassword();
-                              }
-                            }}
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={handleForgotPassword}
-                          disabled={isSendingReset}
-                          className="w-full"
-                        >
-                          {isSendingReset && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          Send Reset Link
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button
+                    variant="link"
+                    type="button"
+                    className="p-0 h-auto text-xs text-foreground"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowForgotPassword(true);
+                    }}
+                  >
+                    Forgot password?
+                  </Button>
                 </div>
                 <FormControl>
                   <Input type="password" placeholder="••••••••" {...field} />
@@ -360,6 +378,48 @@ export function LoginForm() {
           </Button>
         </form>
       </Form>
+      
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address or username and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="forgot-password-email">Email or Username</Label>
+              <Input
+                id="forgot-password-email"
+                type="text"
+                placeholder="elena_vance or you@example.com"
+                value={forgotPasswordEmail}
+                onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleForgotPassword();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={isSendingReset || !forgotPasswordEmail.trim()}
+              className="w-full"
+            >
+              {isSendingReset && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send Reset Link
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              Make sure you're using the email address associated with your account. Check your spam folder if you don't see the email.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
