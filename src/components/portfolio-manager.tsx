@@ -33,6 +33,17 @@ export function PortfolioManager() {
   const [isUploading, setIsUploading] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('📋 PortfolioManager state:', {
+      showAddForm,
+      hasUser: !!user,
+      userId: user?.id,
+      portfolioCount: portfolioItems.length,
+      isUploading
+    });
+  }, [showAddForm, user, portfolioItems.length, isUploading]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newItem, setNewItem] = useState({
     title: '',
@@ -596,7 +607,10 @@ export function PortfolioManager() {
             </p>
             <Button 
               variant="gradient"
-              onClick={() => setShowAddForm(true)}
+              onClick={() => {
+                console.log('➕ Add Your First Artwork button clicked');
+                setShowAddForm(true);
+              }}
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Your First Artwork
