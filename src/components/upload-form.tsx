@@ -111,7 +111,7 @@ export function UploadForm() {
       };
 
       await addContent(post, newArtwork);
-      router.push('/feed');
+      router.push('/profile');
     } catch (error) {
       console.error('Error uploading artwork:', error);
     } finally {
