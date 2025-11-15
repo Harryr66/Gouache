@@ -4,12 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Package, Book, GraduationCap, Image as ImageIcon, AlertCircle, Link2 } from 'lucide-react';
+import { Package, Book, GraduationCap, Image as ImageIcon, AlertCircle, Link2, CreditCard } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { ThemeLoading } from './theme-loading';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/providers/auth-provider';
 
 interface ShopDisplayProps {
   userId: string;
@@ -35,6 +36,13 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
   const [items, setItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { user } = useAuth();
+  
+  // Check if Stripe is integrated and ready
+  const isStripeIntegrated = user?.stripeAccountId && 
+    user?.stripeOnboardingStatus === 'complete' && 
+    user?.stripeChargesEnabled && 
+    user?.stripePayoutsEnabled;
 
   useEffect(() => {
     const fetchShopItems = async () => {
@@ -175,6 +183,32 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
   }
 
   if (items.length === 0) {
+    // If it's the user's own profile and Stripe is not integrated, show integration prompt
+    if (isOwnProfile && !isStripeIntegrated) {
+      return (
+        <Card className="p-8 text-center">
+          <CardContent>
+            <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <CardTitle className="mb-2">Connect Stripe to Start Selling</CardTitle>
+            <CardDescription className="mb-4">
+              Connect your Stripe account to enable sales of originals, prints, books, and courses. You'll receive payouts directly to your bank account.
+            </CardDescription>
+            <Button 
+              asChild 
+              variant="gradient"
+              onClick={() => router.push('/profile/edit#stripe-integration')}
+            >
+              <a href="/profile/edit#stripe-integration">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Connect Stripe Account
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    // If Stripe is integrated but no items, show upload options
     return (
       <Card className="p-8 text-center">
         <CardContent>
@@ -185,7 +219,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               ? "Start selling your work! Mark artworks as for sale, create courses, or add books to your shop."
               : "This artist hasn't listed any items for sale yet."}
           </CardDescription>
-          {isOwnProfile && (
+          {isOwnProfile && isStripeIntegrated && (
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button asChild variant="gradient">
                 <a href="/upload">
