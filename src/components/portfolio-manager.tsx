@@ -174,16 +174,32 @@ export function PortfolioManager() {
 
       console.log('📤 Uploading portfolio item:', {
         userId: user.id,
+        userName: user.displayName || user.username,
         itemId: portfolioItem.id,
         title: portfolioItem.title,
         imageUrl: portfolioItem.imageUrl ? 'has image' : 'no image',
+        imageUrlLength: portfolioItem.imageUrl?.length || 0,
         createdAt: portfolioItem.createdAt
       });
 
       // Read current portfolio from Firestore to ensure we have the latest data
       const userDocRef = doc(db, 'userProfiles', user.id);
+      console.log('🔍 Reading from Firestore document:', {
+        collection: 'userProfiles',
+        documentId: user.id,
+        userName: user.displayName || user.username
+      });
+      
       const userDoc = await getDoc(userDocRef);
       const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
+      
+      console.log('📖 Firestore document read result:', {
+        exists: userDoc.exists(),
+        documentId: userDoc.id,
+        hasPortfolio: !!userDoc.data()?.portfolio,
+        portfolioType: Array.isArray(userDoc.data()?.portfolio) ? 'array' : typeof userDoc.data()?.portfolio,
+        portfolioLength: currentPortfolio.length
+      });
       
       console.log('📖 Current portfolio from Firestore:', {
         exists: userDoc.exists(),
@@ -225,16 +241,36 @@ export function PortfolioManager() {
       });
 
       // Update user profile with the complete portfolio array
-      await updateDoc(userDocRef, {
-        portfolio: updatedPortfolio,
-        updatedAt: now
+      console.log('💾 Writing to Firestore:', {
+        documentId: user.id,
+        userName: user.displayName || user.username,
+        portfolioArrayLength: updatedPortfolio.length,
+        newItemId: portfolioItem.id,
+        newItemTitle: portfolioItem.title,
+        newItemImageUrl: portfolioItem.imageUrl ? 'has image' : 'MISSING'
       });
+      
+      try {
+        await updateDoc(userDocRef, {
+          portfolio: updatedPortfolio,
+          updatedAt: now
+        });
+        console.log('✅ Firestore updateDoc completed successfully');
+      } catch (updateError) {
+        console.error('❌ Firestore updateDoc failed:', updateError);
+        throw updateError;
+      }
 
       // Verify the write by reading back
+      console.log('🔍 Verifying write by reading back from Firestore...');
       const verifyDoc = await getDoc(userDocRef);
       const verifiedPortfolio = verifyDoc.exists() ? (verifyDoc.data().portfolio || []) : [];
+      
       console.log('✅ Portfolio saved and verified:', {
+        documentId: verifyDoc.id,
+        exists: verifyDoc.exists(),
         verifiedCount: verifiedPortfolio.length,
+        expectedCount: updatedPortfolio.length,
         verifiedItems: verifiedPortfolio.map((item: any) => ({
           id: item.id,
           title: item.title,
@@ -245,6 +281,17 @@ export function PortfolioManager() {
         })),
         fullPortfolioJSON: JSON.stringify(verifiedPortfolio, null, 2)
       });
+      
+      // Check if the new item is in the verified portfolio
+      const newItemFound = verifiedPortfolio.some((item: any) => item.id === portfolioItem.id);
+      if (!newItemFound) {
+        console.error('❌ CRITICAL: New portfolio item NOT found in verified portfolio!', {
+          expectedItemId: portfolioItem.id,
+          verifiedItemIds: verifiedPortfolio.map((item: any) => item.id)
+        });
+      } else {
+        console.log('✅ New portfolio item confirmed in Firestore');
+      }
 
       // Update local state immediately for instant feedback
       const localItem: PortfolioItem = {
