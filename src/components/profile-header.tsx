@@ -23,7 +23,9 @@ import {
   Brain,
   Settings,
   LogOut,
-  Building2
+  Building2,
+  Mail,
+  ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
