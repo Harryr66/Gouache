@@ -578,8 +578,8 @@ export default function ProfileEditPage() {
   const handleAddShowcaseLocation = () => {
     if (!newShowcaseLocation.name.trim()) {
       toast({
-        title: 'Add the gallery name',
-        description: 'Provide at least the name of the gallery or space.',
+        title: 'Name required',
+        description: `Provide at least the name of the ${newShowcaseLocation.type === 'event' ? 'event' : 'gallery or space'}.`,
         variant: 'destructive'
       });
       return;
@@ -598,7 +598,9 @@ export default function ProfileEditPage() {
           notes: newShowcaseLocation.notes?.trim() || undefined,
           imageUrl: newShowcaseLocation.imageUrl?.trim() || undefined,
           startDate: newShowcaseLocation.startDate || undefined,
-          endDate: newShowcaseLocation.endDate || undefined
+          endDate: newShowcaseLocation.endDate || undefined,
+          type: newShowcaseLocation.type || 'location',
+          pinned: newShowcaseLocation.pinned || false
         }
       ]
     }));
@@ -612,7 +614,9 @@ export default function ProfileEditPage() {
       notes: '',
       imageUrl: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      type: 'location',
+      pinned: false
     });
 
     toast({
