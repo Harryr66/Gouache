@@ -264,39 +264,75 @@ export function LoginForm() {
       }
       
       console.log('Sending password reset email to:', emailToUse);
+      console.log('Current origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A');
       
       // First, verify the email exists in Firebase Auth
       // This helps us catch cases where the email in Firestore doesn't match Firebase Auth
       let emailExistsInAuth = false;
+      let signInMethods: string[] = [];
       try {
-        const signInMethods = await fetchSignInMethodsForEmail(auth, emailToUse);
+        console.log('Checking if email exists in Firebase Auth...');
+        signInMethods = await fetchSignInMethodsForEmail(auth, emailToUse);
         emailExistsInAuth = signInMethods.length > 0;
-        console.log('Email exists in Firebase Auth:', emailExistsInAuth);
-        console.log('Sign-in methods for this email:', signInMethods);
+        console.log('✅ Email verification result:', {
+          email: emailToUse,
+          existsInAuth: emailExistsInAuth,
+          signInMethods: signInMethods,
+          methodCount: signInMethods.length
+        });
       } catch (checkError: any) {
-        console.warn('Could not check if email exists in Firebase Auth:', checkError);
-        // Continue anyway - sendPasswordResetEmail will handle the error
+        console.error('❌ Error checking if email exists in Firebase Auth:', checkError);
+        console.error('Error code:', checkError.code);
+        console.error('Error message:', checkError.message);
+        
+        // If it's a user-not-found error, the email doesn't exist
+        if (checkError.code === 'auth/user-not-found') {
+          emailExistsInAuth = false;
+          console.log('⚠️ Email does NOT exist in Firebase Auth');
+        } else {
+          // For other errors, log but continue - sendPasswordResetEmail will handle it
+          console.warn('⚠️ Could not verify email, but continuing with password reset...');
+        }
       }
       
       if (!emailExistsInAuth) {
+        console.error('❌ Email not found in Firebase Auth:', emailToUse);
         toast({
           title: "Email not found in authentication system",
-          description: `The email ${emailToUse} is not registered in our authentication system. This might mean you signed up with a different email address. Please try using the exact email you used to create your account, or contact support.`,
+          description: `The email ${emailToUse} is not registered in Firebase Authentication. This means the email in your profile (Firestore) doesn't match the email used to create your account. Please try using the exact email address you used to sign up, or contact support if you're unsure.`,
           variant: "destructive",
         });
         setIsSendingReset(false);
         return;
       }
       
+      console.log('✅ Email verified in Firebase Auth, proceeding to send reset email...');
+      
       // Send password reset email
       // Note: Firebase will only send email if the email exists in Firebase Auth
       // The email must match exactly (case-insensitive) with the email used during signup
       try {
-        await sendPasswordResetEmail(auth, emailToUse, {
+        const actionCodeSettings = {
           url: `${typeof window !== 'undefined' ? window.location.origin : 'https://gouache.art'}/login`,
           handleCodeInApp: false,
-        });
+        };
+        console.log('Action code settings:', actionCodeSettings);
+        console.log('Calling sendPasswordResetEmail...');
+        
+        await sendPasswordResetEmail(auth, emailToUse, actionCodeSettings);
+        
+        console.log('✅ sendPasswordResetEmail completed successfully');
+        console.log('📧 Password reset email should have been sent to:', emailToUse);
+        console.log('💡 If you don\'t see it, check:');
+        console.log('   1. Spam/junk folder');
+        console.log('   2. Firebase Console → Authentication → Email templates');
+        console.log('   3. Firebase Console → Authentication → Settings → Authorized domains');
       } catch (firebaseError: any) {
+        console.error('❌ Error sending password reset email:', firebaseError);
+        console.error('Error code:', firebaseError.code);
+        console.error('Error message:', firebaseError.message);
+        console.error('Full error:', firebaseError);
+        
         // If user-not-found, it means the email doesn't exist in Firebase Auth
         // This could happen if:
         // 1. The email in Firestore doesn't match the email in Firebase Auth
@@ -304,15 +340,26 @@ export function LoginForm() {
         // 3. The account was created differently
         if (firebaseError.code === 'auth/user-not-found') {
           throw new Error(`No account found with email ${emailToUse}. Make sure you're using the exact email address you used to sign up.`);
+        } else if (firebaseError.code === 'auth/invalid-continue-uri') {
+          throw new Error(`Invalid redirect URL. Please contact support. Error: ${firebaseError.message}`);
+        } else if (firebaseError.code === 'auth/unauthorized-continue-uri') {
+          throw new Error(`Unauthorized redirect URL. The domain ${typeof window !== 'undefined' ? window.location.origin : 'N/A'} is not authorized in Firebase Console. Please contact support.`);
         }
         throw firebaseError;
       }
       
-      console.log('Password reset email sent successfully');
+      console.log('✅ Password reset email sent successfully');
       
       toast({
         title: "Password reset email sent",
-        description: `We've sent a password reset link to ${emailToUse}. Please check your inbox (and spam/junk folder). The link will expire in 1 hour. If you don't see it within a few minutes, check your spam folder or contact support.`,
+        description: `We've sent a password reset link to ${emailToUse}. Please check your inbox AND spam/junk folder. The link will expire in 1 hour. 
+        
+        If you don't see the email within 5-10 minutes, please:
+        1. Check your spam/junk folder
+        2. Check that the email address is correct
+        3. Check Firebase Console email template settings
+        4. Contact support if the issue persists`,
+        duration: 10000, // Show for 10 seconds
       });
       
       setShowForgotPassword(false);
