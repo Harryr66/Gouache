@@ -21,8 +21,18 @@ export async function POST(request: NextRequest) {
     const { userId, email, name } = body;
 
     if (!userId || !email) {
+      console.error('Missing required fields:', { userId: !!userId, email: !!email });
       return NextResponse.json(
         { error: 'User ID and email are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
         { status: 400 }
       );
     }
