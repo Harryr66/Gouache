@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Plus, Trash2, Edit, Save, X, Upload } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { doc, updateDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/auth-provider';
@@ -180,13 +180,34 @@ export function PortfolioManager() {
         createdAt: portfolioItem.createdAt
       });
 
-      // Update user profile with new portfolio item
-      await updateDoc(doc(db, 'userProfiles', user.id), {
-        portfolio: arrayUnion(portfolioItem),
+      // Read current portfolio from Firestore to ensure we have the latest data
+      const userDocRef = doc(db, 'userProfiles', user.id);
+      const userDoc = await getDoc(userDocRef);
+      const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
+      
+      // Check if item with same ID already exists
+      const existingIndex = currentPortfolio.findIndex((item: any) => item.id === portfolioItem.id);
+      
+      // Add or update the portfolio item
+      let updatedPortfolio;
+      if (existingIndex >= 0) {
+        // Update existing item
+        updatedPortfolio = [...currentPortfolio];
+        updatedPortfolio[existingIndex] = portfolioItem;
+        console.log('📝 Updating existing portfolio item at index:', existingIndex);
+      } else {
+        // Add new item
+        updatedPortfolio = [...currentPortfolio, portfolioItem];
+        console.log('➕ Adding new portfolio item, total items:', updatedPortfolio.length);
+      }
+
+      // Update user profile with the complete portfolio array
+      await updateDoc(userDocRef, {
+        portfolio: updatedPortfolio,
         updatedAt: now
       });
 
-      console.log('✅ Portfolio item saved to Firestore');
+      console.log('✅ Portfolio item saved to Firestore, total items:', updatedPortfolio.length);
 
       // Update local state immediately for instant feedback
       const localItem: PortfolioItem = {
@@ -280,13 +301,34 @@ export function PortfolioManager() {
 
     try {
       // Delete image from storage
-      const imageRef = ref(storage, item.imageUrl);
-      await deleteObject(imageRef);
+      if (item.imageUrl) {
+        const imageRef = ref(storage, item.imageUrl);
+        try {
+          await deleteObject(imageRef);
+        } catch (error) {
+          console.error('Error deleting image from storage:', error);
+          // Continue even if storage delete fails
+        }
+      }
 
-      // Remove from user profile
-      await updateDoc(doc(db, 'userProfiles', user.id), {
-        portfolio: arrayRemove(item),
-        updatedAt: serverTimestamp()
+      // Read current portfolio from Firestore
+      const userDocRef = doc(db, 'userProfiles', user.id);
+      const userDoc = await getDoc(userDocRef);
+      const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
+      
+      // Remove item from portfolio array
+      const updatedPortfolio = currentPortfolio.filter((p: any) => p.id !== item.id);
+      
+      console.log('🗑️ Deleting portfolio item:', {
+        itemId: item.id,
+        beforeCount: currentPortfolio.length,
+        afterCount: updatedPortfolio.length
+      });
+
+      // Update Firestore with the filtered portfolio
+      await updateDoc(userDocRef, {
+        portfolio: updatedPortfolio,
+        updatedAt: new Date()
       });
 
       // Refresh user data to update the portfolio in the auth context
