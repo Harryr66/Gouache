@@ -1912,6 +1912,30 @@ export default function ProfileEditPage() {
                     }
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="showcase-start-date">Start Date (Optional)</Label>
+                  <Input
+                    id="showcase-start-date"
+                    type="date"
+                    value={newShowcaseLocation.startDate || ''}
+                    onChange={(event) =>
+                      setNewShowcaseLocation((prev) => ({ ...prev, startDate: event.target.value }))
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">If not set, location shows immediately</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="showcase-end-date">End Date (Optional)</Label>
+                  <Input
+                    id="showcase-end-date"
+                    type="date"
+                    value={newShowcaseLocation.endDate || ''}
+                    onChange={(event) =>
+                      setNewShowcaseLocation((prev) => ({ ...prev, endDate: event.target.value }))
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">If not set, location remains indefinitely</p>
+                </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="showcase-notes">Notes (optional)</Label>
                   <Textarea
