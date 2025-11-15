@@ -17,7 +17,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 
 export function UploadForm() {
-  const { user, avatarUrl } = useAuth();
+  const { user, avatarUrl, refreshUser } = useAuth();
   const { addContent } = useContent();
   const router = useRouter();
   
@@ -152,6 +152,16 @@ export function UploadForm() {
         updatedAt: new Date()
       });
       console.log('✅ UploadForm: Added to user portfolio');
+
+      // Refresh user data to sync with Firestore
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for Firestore to process
+        await refreshUser();
+        console.log('✅ UploadForm: User data refreshed, portfolio synced');
+      } catch (refreshError) {
+        console.error('⚠️ UploadForm: Error refreshing user data:', refreshError);
+        // Don't fail the upload if refresh fails
+      }
 
       router.push('/profile');
     } catch (error) {
