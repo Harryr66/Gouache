@@ -25,6 +25,8 @@ import { signOut as firebaseSignOut } from 'firebase/auth';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
+import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function SettingsPage() {
   const { settings: discoverSettings, updateSettings: updateDiscoverSettings } = useDiscoverSettings();
@@ -206,6 +208,9 @@ export default function SettingsPage() {
         <Tabs defaultValue="general" className="w-full">
           <TabsList>
             <TabsTrigger value="general">General</TabsTrigger>
+            {user?.isProfessional && (
+              <TabsTrigger value="payments">Payments</TabsTrigger>
+            )}
             <TabsTrigger value="discover">Discover</TabsTrigger>
             <TabsTrigger value="support">Support</TabsTrigger>
           </TabsList>
@@ -239,6 +244,12 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {user?.isProfessional && (
+            <TabsContent value="payments" className="mt-6">
+              <StripeIntegrationWizard />
+            </TabsContent>
+          )}
 
           <TabsContent value="discover" className="mt-6">
             <Card>

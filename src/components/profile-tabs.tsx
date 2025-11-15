@@ -186,18 +186,102 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
   }
 
   if (isProfessional) {
-    // For professional artists, show portfolio directly (no tabs since Shop and Learn are hidden)
+    // For professional artists, show tabs: Portfolio, Shop, Learn
     return (
-      <div className="w-full space-y-4">
-        {/* Portfolio Section - Always Visible */}
-        <div className="space-y-4">
+      <Tabs defaultValue="portfolio" className="w-full" onValueChange={onTabChange}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="portfolio" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Portfolio
+          </TabsTrigger>
+          <TabsTrigger value="shop" className="flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4" />
+            Shop
+          </TabsTrigger>
+          <TabsTrigger value="learn" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Learn
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Portfolio Tab */}
+        <TabsContent value="portfolio" className="space-y-4">
           {isOwnProfile ? (
             <PortfolioManager />
           ) : (
             <PortfolioDisplay userId={userId} />
           )}
-        </div>
-      </div>
+        </TabsContent>
+
+        {/* Shop Tab */}
+        <TabsContent value="shop" className="space-y-4">
+          <ShopDisplay userId={userId} isOwnProfile={isOwnProfile} />
+        </TabsContent>
+
+        {/* Learn Tab */}
+        <TabsContent value="learn" className="space-y-4">
+          {instructorCourses.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {instructorCourses.map((course) => (
+                <Card key={course.id} className="group hover:shadow-lg transition-shadow">
+                  <div className="relative aspect-video">
+                    {course.thumbnailUrl ? (
+                      <Image
+                        src={course.thumbnailUrl}
+                        alt={course.title}
+                        fill
+                        className="object-cover rounded-t-lg"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <BookOpen className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <CardContent className="p-4">
+                    <CardTitle className="text-lg mb-2">{course.title}</CardTitle>
+                    <CardDescription className="line-clamp-2 mb-4">
+                      {course.description}
+                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-lg">
+                        ${course.price.toFixed(2)}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/courses/${course.id}`)}
+                      >
+                        View Course
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="p-8 text-center">
+              <CardContent>
+                <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <CardTitle className="mb-2">No courses yet</CardTitle>
+                <CardDescription className="mb-4">
+                  {isOwnProfile
+                    ? "Create your first course to start teaching."
+                    : "This artist hasn't created any courses yet."}
+                </CardDescription>
+                {isOwnProfile && (
+                  <Button asChild variant="gradient">
+                    <a href="/learn/submit">
+                      <Brain className="h-4 w-4 mr-2" />
+                      Create Course
+                    </a>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     );
   }
 

@@ -734,6 +734,13 @@ export interface User {
     };
   };
   showcaseLocations?: ShowcaseLocation[];
+  // Stripe Connect fields
+  stripeAccountId?: string; // Stripe Connect account ID
+  stripeOnboardingStatus?: 'incomplete' | 'pending' | 'complete'; // Onboarding status
+  stripeOnboardingUrl?: string; // URL to complete onboarding
+  stripeChargesEnabled?: boolean; // Whether charges are enabled
+  stripePayoutsEnabled?: boolean; // Whether payouts are enabled
+  stripeAccountType?: 'express' | 'standard' | 'custom'; // Account type
 }
 
 export interface Follow {
