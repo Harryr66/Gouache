@@ -26,23 +26,34 @@ import {
 } from 'lucide-react';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { useAuth } from '@/providers/auth-provider';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { signOut as firebaseSignOut } from 'firebase/auth';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 
 export default function SettingsPage() {
   const { settings: discoverSettings, updateSettings: updateDiscoverSettings } = useDiscoverSettings();
   const { user, refreshUser } = useAuth();
+  const router = useRouter();
   const [reportMessage, setReportMessage] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [isSavingDiscoverSettings, setIsSavingDiscoverSettings] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   
   // Discover preferences state - load from user preferences
   const [discoverPrefs, setDiscoverPrefs] = useState({
     hideDigitalArt: user?.preferences?.discover?.hideDigitalArt || false,
     hideAIAssistedArt: user?.preferences?.discover?.hideAIAssistedArt || false,
     hideNFTs: user?.preferences?.discover?.hideNFTs || false,
+    hidePhotography: user?.preferences?.discover?.hidePhotography || false,
+    hideVideoArt: user?.preferences?.discover?.hideVideoArt || false,
+    hidePerformanceArt: user?.preferences?.discover?.hidePerformanceArt || false,
+    hideInstallationArt: user?.preferences?.discover?.hideInstallationArt || false,
+    hidePrintmaking: user?.preferences?.discover?.hidePrintmaking || false,
+    hideTextileArt: user?.preferences?.discover?.hideTextileArt || false,
   });
   
   // Load preferences from user when user changes
@@ -52,9 +63,36 @@ export default function SettingsPage() {
         hideDigitalArt: user.preferences.discover.hideDigitalArt || false,
         hideAIAssistedArt: user.preferences.discover.hideAIAssistedArt || false,
         hideNFTs: user.preferences.discover.hideNFTs || false,
+        hidePhotography: user.preferences.discover.hidePhotography || false,
+        hideVideoArt: user.preferences.discover.hideVideoArt || false,
+        hidePerformanceArt: user.preferences.discover.hidePerformanceArt || false,
+        hideInstallationArt: user.preferences.discover.hideInstallationArt || false,
+        hidePrintmaking: user.preferences.discover.hidePrintmaking || false,
+        hideTextileArt: user.preferences.discover.hideTextileArt || false,
       });
     }
   }, [user?.preferences?.discover]);
+  
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await firebaseSignOut(auth);
+      toast({
+        title: 'Signed out',
+        description: 'You have been signed out successfully.'
+      });
+      router.push('/login');
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+      toast({
+        title: 'Sign out failed',
+        description: 'Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
   
   const [profileData, setProfileData] = useState({
     username: 'artist123',
@@ -113,6 +151,12 @@ export default function SettingsPage() {
           hideDigitalArt: discoverPrefs.hideDigitalArt,
           hideAIAssistedArt: discoverPrefs.hideAIAssistedArt,
           hideNFTs: discoverPrefs.hideNFTs,
+          hidePhotography: discoverPrefs.hidePhotography,
+          hideVideoArt: discoverPrefs.hideVideoArt,
+          hidePerformanceArt: discoverPrefs.hidePerformanceArt,
+          hideInstallationArt: discoverPrefs.hideInstallationArt,
+          hidePrintmaking: discoverPrefs.hidePrintmaking,
+          hideTextileArt: discoverPrefs.hideTextileArt,
         }
       };
       
@@ -485,6 +529,90 @@ export default function SettingsPage() {
                   />
                 </div>
                 
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="hidePhotography">Hide Photography</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently hide photography artworks from your discover feed
+                    </p>
+                  </div>
+                  <Switch
+                    id="hidePhotography"
+                    checked={discoverPrefs.hidePhotography}
+                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hidePhotography: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="hideVideoArt">Hide Video Art</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently hide video art from your discover feed
+                    </p>
+                  </div>
+                  <Switch
+                    id="hideVideoArt"
+                    checked={discoverPrefs.hideVideoArt}
+                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideVideoArt: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="hidePerformanceArt">Hide Performance Art</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently hide performance art from your discover feed
+                    </p>
+                  </div>
+                  <Switch
+                    id="hidePerformanceArt"
+                    checked={discoverPrefs.hidePerformanceArt}
+                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hidePerformanceArt: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="hideInstallationArt">Hide Installation Art</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently hide installation art from your discover feed
+                    </p>
+                  </div>
+                  <Switch
+                    id="hideInstallationArt"
+                    checked={discoverPrefs.hideInstallationArt}
+                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideInstallationArt: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="hidePrintmaking">Hide Printmaking</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently hide printmaking artworks from your discover feed
+                    </p>
+                  </div>
+                  <Switch
+                    id="hidePrintmaking"
+                    checked={discoverPrefs.hidePrintmaking}
+                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hidePrintmaking: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="hideTextileArt">Hide Textile Art</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently hide textile art from your discover feed
+                    </p>
+                  </div>
+                  <Switch
+                    id="hideTextileArt"
+                    checked={discoverPrefs.hideTextileArt}
+                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideTextileArt: checked })}
+                  />
+                </div>
+                
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-start space-x-3">
                     <EyeOff className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -559,10 +687,10 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <AlertCircle className="h-5 w-5" />
-                  <span>Report an Issue</span>
+                  <span>Report Bug or System Problem</span>
                 </CardTitle>
                 <CardDescription>
-                  Found a bug or have a concern? Let us know and we'll look into it.
+                  Found a bug or experiencing a system problem? Report it to our admin team and we'll investigate.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -572,12 +700,12 @@ export default function SettingsPage() {
                     id="report-message"
                     value={reportMessage}
                     onChange={(e) => setReportMessage(e.target.value)}
-                    placeholder="Please describe the issue, bug, or concern you'd like to report..."
-                    rows={6}
+                    placeholder="Please describe the bug, system problem, or issue you're experiencing. Include steps to reproduce if possible..."
+                    rows={8}
                     className="resize-none"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Include as much detail as possible to help us understand and address the issue.
+                    Include as much detail as possible: what happened, when it occurred, what you were trying to do, and any error messages you saw. This helps us investigate and fix the issue quickly.
                   </p>
                 </div>
                 <Button 
@@ -603,8 +731,8 @@ export default function SettingsPage() {
                     <div>
                       <h4 className="font-medium text-sm">What happens next?</h4>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Your report will be sent to our admin team for review. We'll investigate the issue and take appropriate action if needed. 
-                        You'll be able to see the status of your report in the admin panel if you have admin access.
+                        Your report will be sent directly to our admin panel for review. Our team will investigate the issue and take appropriate action. 
+                        Reports are reviewed in the order they are received, and we'll work to resolve issues as quickly as possible.
                       </p>
                     </div>
                   </div>

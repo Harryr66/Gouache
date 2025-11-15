@@ -257,34 +257,16 @@ export function ProfileHeader({
                   )}
                   
                   {getDynamicButton()}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        aria-label="Open general settings"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>General</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onSelect={(event) => {
-                          event.preventDefault();
-                          if (!isSigningOut) {
-                            handleSignOut();
-                          }
-                        }}
-                        disabled={isSigningOut}
-                        className="cursor-pointer"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        {isSigningOut ? 'Signing out…' : 'Log Out'}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="icon"
+                    aria-label="Open general settings"
+                  >
+                    <Link href="/settings">
+                      <Settings className="h-4 w-4" />
+                    </Link>
+                  </Button>
                 </>
               ) : (
                 <Button 
