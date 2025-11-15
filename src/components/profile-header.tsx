@@ -428,15 +428,16 @@ export function ProfileHeader({
           <Card className="mt-4 md:mt-6">
             <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
-                  <Calendar className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                  Events & Locations
+                <h2 className="text-base md:text-lg lg:text-xl font-semibold flex items-center gap-2">
+                  <Calendar className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
+                  <span className="truncate">Events & Locations</span>
                 </h2>
                 {isOwnProfile && (
-                  <Button asChild variant="outline" size="sm" className="text-xs">
+                  <Button asChild variant="outline" size="sm" className="text-xs flex-shrink-0">
                     <Link href="/profile/edit#showcase-locations">
                       <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                      Manage
+                      <span className="hidden sm:inline">Manage</span>
+                      <span className="sm:hidden">Edit</span>
                     </Link>
                   </Button>
                 )}
@@ -448,10 +449,10 @@ export function ProfileHeader({
                     const isCurrent = item.status === 'current';
                     return (
                       <CarouselItem key={item.id || index} className="pl-2 md:pl-4 basis-full md:basis-1/2">
-                        <div className="relative rounded-lg border border-muted bg-muted/20 overflow-hidden group">
+                        <div className="relative rounded-lg border border-muted bg-muted/20 overflow-hidden group h-full">
                           {/* Image */}
                           {item.imageUrl && (
-                            <div className="relative w-full h-48 md:h-64">
+                            <div className="relative w-full h-40 sm:h-48 md:h-64">
                               <img
                                 src={item.imageUrl}
                                 alt={item.name}
@@ -468,16 +469,16 @@ export function ProfileHeader({
                           )}
                           
                           {/* Content */}
-                          <div className="p-4 space-y-2">
+                          <div className="p-3 md:p-4 space-y-2">
                             {!item.imageUrl && (
-                              <div className="flex items-center justify-between mb-2">
-                                <Badge variant={isCurrent ? "default" : "secondary"}>
+                              <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+                                <Badge variant={isCurrent ? "default" : "secondary"} className="text-xs">
                                   {item.pinned && <Pin className="h-3 w-3 mr-1" />}
                                   {isCurrent ? 'Current' : 'Upcoming'}
                                 </Badge>
                               </div>
                             )}
-                            <h3 className="font-semibold text-lg">{item.name}</h3>
+                            <h3 className="font-semibold text-base md:text-lg line-clamp-2">{item.name}</h3>
                             {item.venue && (
                               <p className="text-sm text-muted-foreground">{item.venue}</p>
                             )}
