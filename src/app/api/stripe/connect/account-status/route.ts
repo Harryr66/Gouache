@@ -9,23 +9,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const userId = searchParams.get('userId');
     const accountId = searchParams.get('accountId');
 
-    if (!userId && !accountId) {
-      return NextResponse.json(
-        { error: 'User ID or Account ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // If accountId is provided, use it directly
-    // Otherwise, we'd need to look it up from Firestore using userId
-    let stripeAccountId = accountId;
-
-    if (!stripeAccountId && userId) {
-      // In a real implementation, you'd fetch the accountId from Firestore
-      // For now, we'll require accountId to be passed
+    if (!accountId) {
       return NextResponse.json(
         { error: 'Account ID is required' },
         { status: 400 }
@@ -33,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Retrieve account details from Stripe
-    const account = await stripe.accounts.retrieve(stripeAccountId!);
+    const account = await stripe.accounts.retrieve(accountId);
 
     // Check onboarding status
     const detailsSubmitted = account.details_submitted;
