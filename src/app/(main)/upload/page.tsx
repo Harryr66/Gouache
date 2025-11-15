@@ -47,11 +47,10 @@ export default function UploadPage() {
         // If it's still undefined, wait a bit more
         if (user.isProfessional === undefined && !user.updatedAt) {
           // Still loading Firestore data, wait more
-          const retryTimer = setTimeout(() => {
+          setTimeout(() => {
             setInitialLoadComplete(true);
             setIsCheckingUser(false);
           }, 1000);
-          return () => clearTimeout(retryTimer);
         } else {
           setInitialLoadComplete(true);
           setIsCheckingUser(false);
