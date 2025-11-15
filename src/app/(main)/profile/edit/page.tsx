@@ -1792,9 +1792,9 @@ export default function ProfileEditPage() {
               />
             </div>
 
-            {/* Privacy Settings */}
+            {/* Edit Profile Features */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Privacy Settings</h3>
+              <h3 className="text-lg font-semibold">Edit Profile Features</h3>
               
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
