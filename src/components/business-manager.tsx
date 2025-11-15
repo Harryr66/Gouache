@@ -35,6 +35,21 @@ interface Balance {
   currency: string;
 }
 
+interface Sale {
+  id: string;
+  itemId: string;
+  itemType: string;
+  itemTitle: string;
+  buyerId: string;
+  amount: number;
+  currency: string;
+  platformCommission: number;
+  artistPayout: number;
+  status: string;
+  createdAt: any;
+  completedAt?: any;
+}
+
 interface BusinessManagerProps {
   onComplete?: () => void;
 }
@@ -44,6 +59,7 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
   const [loading, setLoading] = useState(false);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -53,7 +69,7 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
   }, [user?.stripeAccountId]);
 
   const loadPayoutData = async () => {
-    if (!user?.stripeAccountId) return;
+    if (!user?.stripeAccountId || !user?.id) return;
     
     setLoading(true);
     try {
@@ -71,6 +87,20 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
         const payoutsData = await payoutsResponse.json();
         setPayouts(payoutsData.payouts || []);
       }
+
+      // Load sales history
+      const salesQuery = query(
+        collection(db, 'sales'),
+        where('artistId', '==', user.id),
+        orderBy('createdAt', 'desc'),
+        firestoreLimit(50)
+      );
+      const salesSnapshot = await getDocs(salesQuery);
+      const salesData = salesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Sale[];
+      setSales(salesData);
     } catch (error) {
       console.error('Error loading payout data:', error);
       toast({
