@@ -174,19 +174,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             socialLinks: userData.socialLinks || {},
             showcaseLocations: userData.showcaseLocations || [],
             portfolio: portfolio,
-            preferences: userData.preferences || {
-              notifications: {
+            preferences: {
+              notifications: userData.preferences?.notifications || {
                 likes: true,
                 comments: true,
                 follows: true,
                 messages: true,
                 auctions: true
               },
-              privacy: {
+              privacy: userData.preferences?.privacy || {
                 showEmail: false,
                 showLocation: false,
                 allowMessages: true
-              }
+              },
+              discover: userData.preferences?.discover || {}
             }
           };
           setUser(user);
