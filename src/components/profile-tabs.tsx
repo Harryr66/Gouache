@@ -17,6 +17,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Artwork, Course } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth } from '@/providers/auth-provider';
+import { CreditCard } from 'lucide-react';
 
 interface ProfileTabsProps {
   userId: string;
@@ -31,10 +33,17 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
   const [likedArtworks, setLikedArtworks] = useState<Artwork[]>([]);
   const [likedFetchLoading, setLikedFetchLoading] = useState(false);
   const router = useRouter();
+  const { user } = useAuth();
   
   // Get courses by this instructor
   const instructorCourses = courses.filter(course => course.instructor.userId === userId);
   const likedIds = useMemo(() => Array.from(likedArtworkIds), [likedArtworkIds]);
+  
+  // Check if Stripe is integrated and ready
+  const isStripeIntegrated = user?.stripeAccountId && 
+    user?.stripeOnboardingStatus === 'complete' && 
+    user?.stripeChargesEnabled && 
+    user?.stripePayoutsEnabled;
 
   useEffect(() => {
     let isMounted = true;
@@ -263,20 +272,39 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
           ) : (
             <Card className="p-8 text-center">
               <CardContent>
-                <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <CardTitle className="mb-2">No courses yet</CardTitle>
-                <CardDescription className="mb-4">
-                  {isOwnProfile
-                    ? "Create your first course to start teaching."
-                    : "This artist hasn't created any courses yet."}
-                </CardDescription>
-                {isOwnProfile && (
-                  <Button asChild variant="gradient">
-                    <a href="/learn/submit">
-                      <Brain className="h-4 w-4 mr-2" />
-                      Create Course
-                    </a>
-                  </Button>
+                {isOwnProfile && !isStripeIntegrated ? (
+                  <>
+                    <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <CardTitle className="mb-2">Connect Stripe to Start Teaching</CardTitle>
+                    <CardDescription className="mb-4">
+                      Connect your Stripe account to enable course sales. You'll receive payouts directly to your bank account.
+                    </CardDescription>
+                    <Button 
+                      variant="gradient"
+                      onClick={() => router.push('/profile/edit#stripe-integration')}
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Connect Stripe Account
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <CardTitle className="mb-2">No courses yet</CardTitle>
+                    <CardDescription className="mb-4">
+                      {isOwnProfile
+                        ? "Create your first course to start teaching."
+                        : "This artist hasn't created any courses yet."}
+                    </CardDescription>
+                    {isOwnProfile && isStripeIntegrated && (
+                      <Button asChild variant="gradient">
+                        <a href="/learn/submit">
+                          <Brain className="h-4 w-4 mr-2" />
+                          Create Course
+                        </a>
+                      </Button>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
