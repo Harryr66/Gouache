@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { auth, db } from "@/lib/firebase";
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail, fetchSignInMethodsForEmail } from "firebase/auth";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -265,6 +265,29 @@ export function LoginForm() {
       
       console.log('Sending password reset email to:', emailToUse);
       
+      // First, verify the email exists in Firebase Auth
+      // This helps us catch cases where the email in Firestore doesn't match Firebase Auth
+      let emailExistsInAuth = false;
+      try {
+        const signInMethods = await fetchSignInMethodsForEmail(auth, emailToUse);
+        emailExistsInAuth = signInMethods.length > 0;
+        console.log('Email exists in Firebase Auth:', emailExistsInAuth);
+        console.log('Sign-in methods for this email:', signInMethods);
+      } catch (checkError: any) {
+        console.warn('Could not check if email exists in Firebase Auth:', checkError);
+        // Continue anyway - sendPasswordResetEmail will handle the error
+      }
+      
+      if (!emailExistsInAuth) {
+        toast({
+          title: "Email not found in authentication system",
+          description: `The email ${emailToUse} is not registered in our authentication system. This might mean you signed up with a different email address. Please try using the exact email you used to create your account, or contact support.`,
+          variant: "destructive",
+        });
+        setIsSendingReset(false);
+        return;
+      }
+      
       // Send password reset email
       // Note: Firebase will only send email if the email exists in Firebase Auth
       // The email must match exactly (case-insensitive) with the email used during signup
@@ -289,7 +312,7 @@ export function LoginForm() {
       
       toast({
         title: "Password reset email sent",
-        description: `We've sent a password reset link to ${emailToUse}. Please check your inbox (and spam folder). The link will expire in 1 hour.`,
+        description: `We've sent a password reset link to ${emailToUse}. Please check your inbox (and spam/junk folder). The link will expire in 1 hour. If you don't see it within a few minutes, check your spam folder or contact support.`,
       });
       
       setShowForgotPassword(false);
