@@ -26,44 +26,64 @@ export default function UploadPage() {
       setIsCheckingUser(true);
       setInitialLoadComplete(false);
       previousUserRef.current = null;
-    } else if (user) {
-      // Check if this is the first time we're seeing this user
-      const isFirstLoad = previousUserRef.current === null;
-      
-      if (isFirstLoad) {
-        // First load - set a minimum wait time to allow Firestore to load
-        previousUserRef.current = user;
-        const timer = setTimeout(() => {
-          setInitialLoadComplete(true);
-          setIsCheckingUser(false);
-        }, 2000); // 2 second minimum wait
-        return () => clearTimeout(timer);
-      } else if (previousUserRef.current) {
-        // User object has changed - check if it's been updated with Firestore data
-        const userChanged = previousUserRef.current.id !== user.id || 
-                           previousUserRef.current.isProfessional !== user.isProfessional ||
-                           previousUserRef.current.updatedAt?.getTime() !== user.updatedAt?.getTime() ||
-                           (user.portfolio && user.portfolio.length !== (previousUserRef.current.portfolio?.length || 0));
-        
-        if (userChanged) {
-          // User object has been updated (likely with Firestore data)
-          previousUserRef.current = user;
-          setInitialLoadComplete(true);
-          setIsCheckingUser(false);
-        } else if (initialLoadComplete) {
-          // Already completed initial load, no need to keep checking
-          setIsCheckingUser(false);
-        }
-      }
-    } else {
+      return;
+    }
+    
+    if (!user) {
       setIsCheckingUser(false);
       setInitialLoadComplete(false);
       previousUserRef.current = null;
+      return;
+    }
+
+    // Check if this is the first time we're seeing this user
+    const isFirstLoad = previousUserRef.current === null;
+    
+    if (isFirstLoad) {
+      // First load - set a minimum wait time to allow Firestore to load
+      previousUserRef.current = user;
+      const timer = setTimeout(() => {
+        // After minimum wait, check if isProfessional has been explicitly set
+        // If it's still undefined, wait a bit more
+        if (user.isProfessional === undefined && !user.updatedAt) {
+          // Still loading Firestore data, wait more
+          const retryTimer = setTimeout(() => {
+            setInitialLoadComplete(true);
+            setIsCheckingUser(false);
+          }, 1000);
+          return () => clearTimeout(retryTimer);
+        } else {
+          setInitialLoadComplete(true);
+          setIsCheckingUser(false);
+        }
+      }, 2000); // 2 second minimum wait
+      return () => clearTimeout(timer);
+    }
+    
+    // User object has changed - check if it's been updated with Firestore data
+    if (previousUserRef.current) {
+      const userChanged = previousUserRef.current.id !== user.id || 
+                         previousUserRef.current.isProfessional !== user.isProfessional ||
+                         previousUserRef.current.updatedAt?.getTime() !== user.updatedAt?.getTime() ||
+                         (user.portfolio && user.portfolio.length !== (previousUserRef.current.portfolio?.length || 0));
+      
+      if (userChanged) {
+        // User object has been updated (likely with Firestore data)
+        previousUserRef.current = user;
+        setInitialLoadComplete(true);
+        setIsCheckingUser(false);
+      } else if (initialLoadComplete) {
+        // Already completed initial load, no need to keep checking
+        setIsCheckingUser(false);
+      }
     }
   }, [loading, user, initialLoadComplete]);
 
   // Show loading animation while auth is loading, user data is not yet available, or we're checking user status
-  if (loading || !user || isCheckingUser) {
+  // Also show loading if isProfessional hasn't been explicitly loaded yet (could be undefined)
+  const isProfessionalLoaded = user?.isProfessional !== undefined || user?.updatedAt !== undefined;
+  
+  if (loading || !user || isCheckingUser || !isProfessionalLoaded) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <ThemeLoading size="lg" text="" />
@@ -72,7 +92,8 @@ export default function UploadPage() {
   }
 
   // Check if user is a professional artist
-  const isProfessional = user?.isProfessional || false;
+  // At this point, isProfessional should be explicitly true or false (not undefined)
+  const isProfessional = user.isProfessional === true;
 
   if (!isProfessional) {
     return (
