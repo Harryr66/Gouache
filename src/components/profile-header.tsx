@@ -125,11 +125,11 @@ export function ProfileHeader({
 
   return (
     <>
-      <Card className="p-6">
-        <div className="flex flex-col md:flex-row gap-6">
+      <Card className="p-4 md:p-6">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
           {/* Avatar Section */}
           <div className="flex-shrink-0">
-            <div className="relative h-40 w-40 md:h-48 md:w-48 rounded-full overflow-hidden flex items-center justify-center border-4 border-muted">
+            <div className="relative h-32 w-32 md:h-48 md:w-48 rounded-full overflow-hidden flex items-center justify-center border-4 border-muted mx-auto md:mx-0">
               <Avatar className="h-full w-full">
                 <AvatarImage 
                   src={user.avatarUrl} 
@@ -144,12 +144,12 @@ export function ProfileHeader({
           </div>
 
           {/* User Information */}
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 space-y-3 md:space-y-4">
             <div>
-              <h1 className="text-3xl font-headline font-bold text-foreground">
+              <h1 className="text-2xl md:text-3xl font-headline font-bold text-foreground">
                 {user.displayName || 'User'}
               </h1>
-              <p className="text-muted-foreground text-lg">{user.username}</p>
+              <p className="text-muted-foreground text-base md:text-lg">{user.username}</p>
               {user.location && !user.hideLocation && (
                 <div className="mt-1 flex items-center gap-2 text-muted-foreground">
                   <MapPin className="h-4 w-4" />
@@ -165,16 +165,16 @@ export function ProfileHeader({
             </div>
 
             {/* Stats */}
-            <div className="flex gap-6 text-sm">
+            <div className="flex gap-4 md:gap-6 text-xs md:text-sm">
               {user.isProfessional && (
                 <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
+                  <Users className="h-3 w-3 md:h-4 md:w-4" />
                   <span className="font-medium">{user.followerCount}</span>
                   <span className="text-muted-foreground">followers</span>
                 </div>
               )}
               <div className="flex items-center gap-1">
-                <UserPlus className="h-4 w-4" />
+                <UserPlus className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="font-medium">{user.followingCount}</span>
                 <span className="text-muted-foreground">following</span>
               </div>
@@ -186,17 +186,18 @@ export function ProfileHeader({
                 <Button 
                   asChild
                   variant="gradient"
-                  size="lg"
-                  className="font-semibold"
+                  size="sm"
+                  className="font-semibold text-xs md:text-sm md:size-lg"
                 >
                   <a 
                     href={user.newsletterLink} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1 md:gap-2"
                   >
-                    <Mail className="h-4 w-4" />
-                    Subscribe to Newsletter
+                    <Mail className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden sm:inline">Subscribe to Newsletter</span>
+                    <span className="sm:hidden">Newsletter</span>
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 </Button>
@@ -204,21 +205,21 @@ export function ProfileHeader({
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 md:gap-3">
               {isOwnProfile ? (
                 <>
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" size="sm" className="text-xs md:text-sm">
                     <Link href="/profile/edit">
-                      <Edit className="h-4 w-4 mr-2" />
+                      <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                       Edit Profile
                     </Link>
                   </Button>
                   
                   
                   {user.isProfessional && (
-                    <Button asChild variant="gradient">
+                    <Button asChild variant="gradient" size="sm" className="text-xs md:text-sm">
                       <a href="/upload">
-                        <Upload className="h-4 w-4 mr-2" />
+                        <Upload className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                         Upload
                       </a>
                     </Button>
@@ -229,19 +230,22 @@ export function ProfileHeader({
                     asChild
                     variant="outline"
                     size="icon"
+                    className="h-8 w-8 md:h-10 md:w-10"
                     aria-label="Open general settings"
                   >
                     <Link href="/settings">
-                      <Settings className="h-4 w-4" />
+                      <Settings className="h-3 w-3 md:h-4 md:w-4" />
                     </Link>
                   </Button>
                 </>
               ) : (
                 <Button 
                   variant="outline"
+                  size="sm"
+                  className="text-xs md:text-sm"
                   onClick={onFollowToggle}
                 >
-                  <Heart className="h-4 w-4 mr-2" />
+                  <Heart className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                   {isFollowing ? 'Following' : 'Follow'}
                 </Button>
               )}
@@ -251,10 +255,10 @@ export function ProfileHeader({
                 <Button 
                   variant="outline"
                   size="icon"
+                  className="h-8 w-8 md:h-10 md:w-10 hover:gradient-border"
                   onClick={() => setShowTipDialog(true)}
-                  className="hover:gradient-border"
                 >
-                  <Coffee className="h-4 w-4" />
+                  <Coffee className="h-3 w-3 md:h-4 md:w-4" />
                 </Button>
               )}
               
@@ -263,10 +267,10 @@ export function ProfileHeader({
                 <Button 
                   variant="outline"
                   size="icon"
+                  className="h-8 w-8 md:h-10 md:w-10 hover:gradient-border"
                   onClick={() => setShowSuggestionsDialog(true)}
-                  className="hover:gradient-border"
                 >
-                  <Lightbulb className="h-4 w-4" />
+                  <Lightbulb className="h-3 w-3 md:h-4 md:w-4" />
                 </Button>
               )}
             </div>
@@ -311,8 +315,8 @@ export function ProfileHeader({
 
       {/* Bio Section - Separate Card */}
       {user.bio && (
-        <Card className="mt-6">
-          <CardContent className="p-6">
+        <Card className="mt-4 md:mt-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-xl font-semibold">About</h2>
               <Button
@@ -334,14 +338,14 @@ export function ProfileHeader({
 
       {/* Upcoming Events Section - Separate Card (Collapsible) */}
       {user.isProfessional && !user.hideUpcomingEvents && (
-        <Card className="mt-6">
-          <CardContent className="p-6">
+        <Card className="mt-4 md:mt-6">
+          <CardContent className="p-4 md:p-6">
             <Collapsible open={isEventsExpanded} onOpenChange={setIsEventsExpanded}>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
-                    <h2 className="text-xl font-semibold flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
+                      <Calendar className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                       Upcoming Events
                     </h2>
                     {isEventsExpanded ? (
@@ -352,9 +356,9 @@ export function ProfileHeader({
                   </Button>
                 </CollapsibleTrigger>
                 {isOwnProfile && (
-                  <Button asChild variant="outline" size="sm">
+                  <Button asChild variant="outline" size="sm" className="text-xs">
                     <Link href="/profile/edit#upcoming-events">
-                      <Edit className="h-4 w-4 mr-2" />
+                      <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                       Edit
                     </Link>
                   </Button>
@@ -438,14 +442,14 @@ export function ProfileHeader({
 
       {/* Where to See My Work Section - Separate Card (Collapsible) */}
       {user.isProfessional && !user.hideShowcaseLocations && (
-        <Card className="mt-6">
-          <CardContent className="p-6">
+        <Card className="mt-4 md:mt-6">
+          <CardContent className="p-4 md:p-6">
             <Collapsible open={isShowcaseExpanded} onOpenChange={setIsShowcaseExpanded}>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
-                    <h2 className="text-xl font-semibold flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
+                      <MapPin className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                       Where to See My Work
                     </h2>
                     {isShowcaseExpanded ? (
@@ -456,9 +460,9 @@ export function ProfileHeader({
                   </Button>
                 </CollapsibleTrigger>
                 {isOwnProfile && (
-                  <Button asChild variant="outline" size="sm">
+                  <Button asChild variant="outline" size="sm" className="text-xs">
                     <Link href="/profile/edit#showcase-locations">
-                      <Edit className="h-4 w-4 mr-2" />
+                      <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                       Manage
                     </Link>
                   </Button>
