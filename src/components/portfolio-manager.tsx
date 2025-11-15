@@ -238,8 +238,12 @@ export function PortfolioManager() {
         verifiedItems: verifiedPortfolio.map((item: any) => ({
           id: item.id,
           title: item.title,
-          hasImage: !!item.imageUrl
-        }))
+          imageUrl: item.imageUrl || 'MISSING',
+          imageUrlType: typeof item.imageUrl,
+          hasImage: !!item.imageUrl,
+          allKeys: Object.keys(item || {})
+        })),
+        fullPortfolioJSON: JSON.stringify(verifiedPortfolio, null, 2)
       });
 
       // Update local state immediately for instant feedback
