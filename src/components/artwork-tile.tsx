@@ -237,7 +237,7 @@ const generateArtistContent = (artist: Artist) => ({
 
       {/* Artist Preview Dialog */}
       <Dialog open={showArtistPreview} onOpenChange={setShowArtistPreview}>
-        <DialogContent className="max-w-6xl w-full p-0 overflow-hidden border-border">
+        <DialogContent className="max-w-6xl w-full p-0 md:p-6 overflow-hidden border-border md:rounded-lg">
           <DialogHeader className="sr-only">
             <DialogTitle>Artist Profile</DialogTitle>
           </DialogHeader>
