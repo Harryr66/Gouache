@@ -711,7 +711,8 @@ export default function DiscoverPage() {
           
           // Convert portfolio items from Firestore format (with Timestamps) to proper format
           const rawPortfolio = data.portfolio || [];
-          console.log(`🔍 Processing portfolio for ${data.name || data.handle || doc.id}:`, {
+          const artistName = data.name || data.handle || doc.id;
+          console.log(`🔍 Processing portfolio for ${artistName}:`, {
             rawCount: rawPortfolio.length,
             rawType: Array.isArray(rawPortfolio) ? 'array' : typeof rawPortfolio,
             rawItems: rawPortfolio.map((item: any) => ({
@@ -721,13 +722,24 @@ export default function DiscoverPage() {
               imageUrl: item?.imageUrl ? 'has image' : 'no image'
             }))
           });
+          // Also log the full raw portfolio for debugging
+          console.log(`📦 Full raw portfolio for ${artistName}:`, JSON.stringify(rawPortfolio, null, 2));
           
-          const portfolio = rawPortfolio.map((item: any) => {
+          const portfolio = rawPortfolio.map((item: any, index: number) => {
             // Skip invalid items
             if (!item || typeof item !== 'object') {
-              console.warn('⚠️ Skipping invalid portfolio item:', item);
+              console.warn(`⚠️ [${artistName}] Skipping invalid portfolio item at index ${index}:`, item);
               return null;
             }
+            
+            // Log each item being processed
+            console.log(`🔎 [${artistName}] Processing item ${index}:`, {
+              id: item.id,
+              title: item.title,
+              imageUrl: item.imageUrl || 'MISSING',
+              hasImageUrl: !!item.imageUrl,
+              itemKeys: Object.keys(item)
+            });
             
             // Handle createdAt - could be Date, Firestore Timestamp, or undefined
             let createdAt: Date;
@@ -741,11 +753,15 @@ export default function DiscoverPage() {
             
             // Ensure imageUrl exists
             if (!item.imageUrl) {
-              console.warn(`⚠️ Portfolio item missing imageUrl: ${item.title || item.id || 'unknown'}`);
+              console.warn(`⚠️ [${artistName}] Portfolio item missing imageUrl at index ${index}:`, {
+                id: item.id,
+                title: item.title,
+                allKeys: Object.keys(item)
+              });
               return null; // Skip items without images
             }
             
-            return {
+            const processedItem = {
               ...item,
               id: item.id || `portfolio-${Date.now()}`,
               title: item.title || 'Untitled Artwork',
@@ -757,7 +773,25 @@ export default function DiscoverPage() {
               createdAt: createdAt,
               imageUrl: item.imageUrl
             };
+            
+            console.log(`✅ [${artistName}] Processed item ${index} successfully:`, {
+              id: processedItem.id,
+              title: processedItem.title,
+              hasImageUrl: !!processedItem.imageUrl
+            });
+            
+            return processedItem;
           }).filter((item: any) => item !== null); // Remove null items
+          
+          console.log(`📊 [${artistName}] Final portfolio after processing:`, {
+            rawCount: rawPortfolio.length,
+            processedCount: portfolio.length,
+            processedItems: portfolio.map((p: any) => ({
+              id: p.id,
+              title: p.title,
+              imageUrl: p.imageUrl ? 'has image' : 'MISSING'
+            }))
+          });
           
           return {
             id: doc.id,
