@@ -63,11 +63,14 @@ interface ProfileHeaderProps {
     hideLocation?: boolean;
     hideFlags?: boolean;
     hideCard?: boolean;
+    hideUpcomingEvents?: boolean;
+    hideShowcaseLocations?: boolean;
     // Upcoming event fields
     eventCity?: string;
     eventCountry?: string;
     eventDate?: string;
     showcaseLocations?: ShowcaseLocation[];
+    newsletterLink?: string;
   };
   isOwnProfile: boolean;
   isFollowing?: boolean;
@@ -207,6 +210,29 @@ export function ProfileHeader({
               </div>
             </div>
 
+            {/* Newsletter Link - Prominent Display */}
+            {user.newsletterLink && (
+              <div className="flex items-center gap-2">
+                <Button 
+                  asChild
+                  variant="gradient"
+                  size="lg"
+                  className="font-semibold"
+                >
+                  <a 
+                    href={user.newsletterLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Subscribe to Newsletter
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </Button>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3">
               {isOwnProfile ? (
@@ -331,141 +357,159 @@ export function ProfileHeader({
         </div>
       </Card>
 
-      {/* Upcoming Events Section */}
-      {(user.bio || user.bannerImageUrl) && !user.hideCard && (
+      {/* Bio Section - Separate Card */}
+      {user.bio && (
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-semibold">About</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsBioExpanded(!isBioExpanded)}
+              >
+                {isBioExpanded ? 'Close Bio' : 'Read Bio'}
+              </Button>
+            </div>
+            {isBioExpanded && (
+              <div className="text-foreground leading-relaxed">
+                <p className="whitespace-pre-line text-base">{user.bio}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Upcoming Events Section - Separate Card */}
+      {user.isProfessional && !user.hideUpcomingEvents && (
         <Card className="mt-6">
           <CardContent className="p-6">
             <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    Upcoming Events
-                  </h2>
-                  {user.bio && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsBioExpanded(!isBioExpanded)}
-                    >
-                      {isBioExpanded ? 'Close Bio' : 'Read Bio'}
-                    </Button>
-                  )}
-                </div>
-                
-                {/* Upcoming Event Banner */}
-                {user.bannerImageUrl && (
-                  <div className="mb-4">
-                    <div className="relative w-full h-48 md:h-64 rounded-lg overflow-hidden">
-                      <img
-                        src={user.bannerImageUrl}
-                        alt={`${user.displayName}'s upcoming event banner`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                {/* Upcoming Event Banner Placeholder */}
-                {!user.bannerImageUrl && isOwnProfile && (
-                  <div className="mb-4">
-                    <div className="relative w-full h-48 md:h-64 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-muted-foreground text-sm mb-2">
-                          Add an upcoming event banner image (taller rectangle works best)
-                        </div>
-                        <Button asChild variant="outline" size="sm">
-                          <Link href="/profile/edit">
-                            <ImageIcon className="h-4 w-4 mr-2" />
-                            Add Upcoming Event Banner
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Upcoming Event Details (directly under banner) */}
-                {(user.eventDate || user.eventCity || user.eventCountry) ? (
-                  <div className="space-y-1.5 pt-3 text-sm text-muted-foreground">
-                    {(user.eventCity || user.eventCountry) && (
-                      <p className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        {[user.eventCity, user.eventCountry].filter(Boolean).join(', ')}
-                      </p>
-                    )}
-                    {user.eventDate && (
-                      <p className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        {user.eventDate}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  isOwnProfile && (
-                    <div className="pt-3">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href="/profile/edit#event-details">Set Upcoming Event Location</Link>
-                      </Button>
-                    </div>
-                  )
-                )}
-
-                {user.bio && isBioExpanded && (
-                  <div className="text-foreground leading-relaxed">
-                    <p className="whitespace-pre-line text-base">{user.bio}</p>
-                  </div>
-                )}
-                {!user.bio && isOwnProfile && (
-                  <p className="text-muted-foreground italic">
-                    Add a biography to tell your story (up to 5 sentences)
-                  </p>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Upcoming Events
+                </h2>
+                {isOwnProfile && (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/profile/edit#upcoming-events">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Link>
+                  </Button>
                 )}
               </div>
-
-              {/* Future: Event details (date, city, country) can be rendered here */}
-
-              {isOwnProfile && !user.countryOfOrigin && !user.countryOfResidence && (
-                <>
-                  <Separator />
-                  <div className="text-center py-2">
+              
+              {/* Upcoming Event Banner */}
+              {user.bannerImageUrl && (
+                <div className="mb-4">
+                  <div className="relative w-full h-48 md:h-64 rounded-lg overflow-hidden">
+                    <img
+                      src={user.bannerImageUrl}
+                      alt={`${user.displayName}'s upcoming event banner`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Upcoming Event Banner Placeholder */}
+              {!user.bannerImageUrl && isOwnProfile && (
+                <div className="mb-4">
+                  <div className="relative w-full h-48 md:h-64 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-muted-foreground text-sm mb-2">
+                        Add an upcoming event banner image (taller rectangle works best)
+                      </div>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href="/profile/edit#upcoming-events">
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                          Add Upcoming Event Banner
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Upcoming Event Details */}
+              {(user.eventDate || user.eventCity || user.eventCountry) ? (
+                <div className="space-y-2 pt-3">
+                  {(user.eventCity || user.eventCountry) && (
+                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="w-4 h-4" />
+                      {[user.eventCity, user.eventCountry].filter(Boolean).join(', ')}
+                    </p>
+                  )}
+                  {user.eventDate && (
+                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="w-4 h-4" />
+                      {new Date(user.eventDate).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                isOwnProfile && (
+                  <div className="pt-3">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      No upcoming events scheduled. Add an event to let visitors know about your next show or exhibition.
+                    </p>
                     <Button asChild variant="outline" size="sm">
-                      <Link href="/profile/edit">
-                        <MapPin className="h-4 w-4 mr-2" />
-                        Add Upcoming Event Details
+                      <Link href="/profile/edit#upcoming-events">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Upcoming Event
                       </Link>
                     </Button>
                   </div>
-                </>
+                )
               )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-            <Separator />
-
-            <div className="space-y-3">
+      {/* Where to See My Work Section - Separate Card */}
+      {user.isProfessional && !user.hideShowcaseLocations && (
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-primary" />
-                  Where to see my work
-                </h3>
+                  Where to See My Work
+                </h2>
                 {isOwnProfile && (
                   <Button asChild variant="outline" size="sm">
-                    <Link href="/profile/edit#showcase-locations">Manage locations</Link>
+                    <Link href="/profile/edit#showcase-locations">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Manage
+                    </Link>
                   </Button>
                 )}
               </div>
               {user.showcaseLocations && user.showcaseLocations.length > 0 ? (
                 <div className="grid gap-3 md:grid-cols-2">
-                  {user.showcaseLocations.map((location) => (
-                    <div key={`${location.name}-${location.website || location.city || ''}`} className="rounded-lg border border-muted bg-muted/20 p-3 flex gap-3">
+                  {user.showcaseLocations.map((location, index) => (
+                    <div key={`${location.name}-${location.website || location.city || index}`} className="rounded-lg border border-muted bg-muted/20 p-3 flex gap-3">
                       {location.imageUrl && (
                         <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-muted">
                           <img src={location.imageUrl} alt={location.name || 'Gallery'} className="h-full w-full object-cover" />
                         </div>
                       )}
-                      <div className="space-y-1 text-sm">
+                      <div className="space-y-1 text-sm flex-1">
                         <p className="font-semibold text-foreground">
                           {location.name || 'Gallery'}
                         </p>
+                        {location.venue && (
+                          <p className="text-muted-foreground text-xs">
+                            {location.venue}
+                          </p>
+                        )}
                         {(location.city || location.country) && (
                           <p className="text-muted-foreground">
                             {[location.city, location.country].filter(Boolean).join(', ')}
@@ -476,26 +520,36 @@ export function ProfileHeader({
                             href={location.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-primary hover:underline break-all"
+                            className="text-primary hover:underline break-all flex items-center gap-1"
                           >
-                            {location.website}
+                            Visit Website
+                            <ExternalLink className="h-3 w-3" />
                           </a>
                         )}
                         {location.notes && (
-                          <p className="text-muted-foreground">{location.notes}</p>
+                          <p className="text-muted-foreground text-xs mt-1">{location.notes}</p>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  {isOwnProfile
-                    ? 'Highlight galleries and spaces that are showing your work. Add them from your profile settings.'
-                    : 'This artist hasn’t listed any current gallery showings.'}
-                </p>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {isOwnProfile
+                      ? 'Highlight galleries and spaces that are currently showing your work. Add locations to let visitors know where they can see your art in person.'
+                      : 'This artist hasn't listed any current gallery showings.'}
+                  </p>
+                  {isOwnProfile && (
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/profile/edit#showcase-locations">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Location
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               )}
-            </div>
             </div>
           </CardContent>
         </Card>

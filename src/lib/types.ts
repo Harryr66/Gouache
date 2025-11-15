@@ -674,9 +674,12 @@ export interface User {
   hideLocation?: boolean;
   hideFlags?: boolean;
   hideCard?: boolean;
+  hideUpcomingEvents?: boolean;
+  hideShowcaseLocations?: boolean;
   eventCity?: string;
   eventCountry?: string;
   eventDate?: string;
+  newsletterLink?: string;
   accountRole?: 'user' | 'artist' | 'admin';
   artistInviteToken?: string;
   artistOnboarding?: {

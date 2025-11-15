@@ -157,12 +157,15 @@ export default function ProfileEditPage() {
     hideLocation: false,
     hideFlags: false,
     hideCard: false,
+    hideUpcomingEvents: false,
+    hideShowcaseLocations: false,
     bannerImageUrl: '',
     // Upcoming event fields
     eventCity: '',
     eventCountry: '',
     eventDate: '',
     showcaseLocations: [] as ShowcaseLocation[],
+    newsletterLink: '',
   });
 
   const [artistRequestData, setArtistRequestData] = useState({
@@ -209,6 +212,8 @@ export default function ProfileEditPage() {
             hideLocation: changes.hideLocation || user.hideLocation || false,
             hideFlags: changes.hideFlags || user.hideFlags || false,
             hideCard: user.isProfessional ? (changes.hideCard || user.hideCard || false) : false,
+            hideUpcomingEvents: user.isProfessional ? (changes.hideUpcomingEvents || user.hideUpcomingEvents || false) : false,
+            hideShowcaseLocations: user.isProfessional ? (changes.hideShowcaseLocations || user.hideShowcaseLocations || false) : false,
             bannerImageUrl: user.isProfessional ? (changes.bannerImageUrl || user.bannerImageUrl || '') : '',
             eventCity: user.isProfessional ? (changes.eventCity || user.eventCity || '') : '',
             eventCountry: user.isProfessional ? (changes.eventCountry || user.eventCountry || '') : '',
@@ -216,6 +221,7 @@ export default function ProfileEditPage() {
             showcaseLocations: user.isProfessional
               ? (changes.showcaseLocations || user.showcaseLocations || [])
               : [],
+            newsletterLink: user.isProfessional ? (changes.newsletterLink || user.newsletterLink || '') : '',
           };
           setFormData(nextFormData);
           if (!user.isProfessional) {
@@ -276,11 +282,14 @@ export default function ProfileEditPage() {
           hideLocation: user.hideLocation || false,
           hideFlags: user.hideFlags || false,
           hideCard: user.isProfessional ? (user.hideCard || false) : false,
+          hideUpcomingEvents: user.isProfessional ? ((user as any).hideUpcomingEvents || false) : false,
+          hideShowcaseLocations: user.isProfessional ? ((user as any).hideShowcaseLocations || false) : false,
           bannerImageUrl: user.isProfessional ? (user.bannerImageUrl || '') : '',
           eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
           eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
           eventDate: user.isProfessional ? ((user as any).eventDate || '') : '',
           showcaseLocations: user.isProfessional ? (user.showcaseLocations || []) : [],
+          newsletterLink: user.isProfessional ? ((user as any).newsletterLink || '') : '',
           };
           setFormData(nextFormData);
 
@@ -785,6 +794,9 @@ export default function ProfileEditPage() {
           countryOfResidence: formData.countryOfResidence,
           hideLocation: formData.hideLocation,
           hideFlags: formData.hideFlags,
+          hideUpcomingEvents: formData.hideUpcomingEvents,
+          hideShowcaseLocations: formData.hideShowcaseLocations,
+          newsletterLink: formData.newsletterLink,
           updatedAt: new Date(),
           isProfessional: allowArtistFields,
         };
@@ -869,6 +881,9 @@ export default function ProfileEditPage() {
     formData.hideLocation,
     formData.hideFlags,
     formData.hideCard,
+    formData.hideUpcomingEvents,
+    formData.hideShowcaseLocations,
+    formData.newsletterLink,
     formData.eventCity,
     formData.eventCountry,
     formData.eventDate,
@@ -1514,24 +1529,41 @@ export default function ProfileEditPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Hide Upcoming Events</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Hide the entire "Upcoming Events" section from your public profile
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.hideCard}
-                  onCheckedChange={(checked) => handleInputChange('hideCard', checked)}
-                />
-              </div>
+              {isArtistAccount && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label>Hide Upcoming Events</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Hide the "Upcoming Events" section from your public profile
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.hideUpcomingEvents}
+                      onCheckedChange={(checked) => handleInputChange('hideUpcomingEvents', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label>Hide Where to See My Work</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Hide the "Where to See My Work" section from your public profile
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.hideShowcaseLocations}
+                      onCheckedChange={(checked) => handleInputChange('hideShowcaseLocations', checked)}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
 
         {isArtistAccount && (
-          <Card>
+          <Card id="showcase-locations">
             <CardHeader>
               <CardTitle>Where to See My Work</CardTitle>
               <CardDescription>
