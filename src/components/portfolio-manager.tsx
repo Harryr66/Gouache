@@ -347,11 +347,19 @@ export function PortfolioManager() {
         title: "Portfolio updated",
         description: "New artwork added to your portfolio.",
       });
-    } catch (error) {
-      console.error('Error uploading portfolio image:', error);
+    } catch (error: any) {
+      console.error('❌ Error uploading portfolio image:', {
+        error,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorStack: error.stack,
+        userId: user?.id,
+        userName: user?.displayName || user?.username,
+        fileName: file?.name
+      });
       toast({
         title: "Upload failed",
-        description: "Failed to upload artwork. Please try again.",
+        description: error.message || "Failed to upload artwork. Please try again.",
         variant: "destructive"
       });
     } finally {
