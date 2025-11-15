@@ -136,10 +136,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             
             // Convert portfolio items from Firestore format (with Timestamps) to Date objects
-            const portfolio = userData.portfolio?.map((item: any) => ({
-              ...item,
-              createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
-            })) || [];
+            const portfolio = userData.portfolio?.map((item: any) => {
+              // Handle createdAt - could be Firestore Timestamp, Date, or serverTimestamp placeholder
+              let createdAt: Date;
+              if (item.createdAt?.toDate) {
+                createdAt = item.createdAt.toDate();
+              } else if (item.createdAt instanceof Date) {
+                createdAt = item.createdAt;
+              } else {
+                createdAt = new Date();
+              }
+              
+              return {
+                ...item,
+                createdAt: createdAt
+              };
+            }) || [];
+            
+            console.log('📋 Auth Provider (initial load): Loaded portfolio:', {
+              userId: firebaseUser.uid,
+              portfolioCount: portfolio.length,
+              items: portfolio.map((item: any) => ({
+                id: item.id,
+                title: item.title,
+                imageUrl: item.imageUrl ? 'has image' : 'no image'
+              }))
+            });
             
             const detailedUser: User = {
               id: firebaseUser.uid,
@@ -233,10 +255,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           
           // Convert portfolio items from Firestore format (with Timestamps) to Date objects
-          const portfolio = userData.portfolio?.map((item: any) => ({
-            ...item,
-            createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
-          })) || [];
+          const portfolio = userData.portfolio?.map((item: any) => {
+            // Handle createdAt - could be Firestore Timestamp, Date, or serverTimestamp placeholder
+            let createdAt: Date;
+            if (item.createdAt?.toDate) {
+              createdAt = item.createdAt.toDate();
+            } else if (item.createdAt instanceof Date) {
+              createdAt = item.createdAt;
+            } else {
+              createdAt = new Date();
+            }
+            
+            return {
+              ...item,
+              createdAt: createdAt
+            };
+          }) || [];
+          
+          console.log('📋 Auth Provider: Loaded portfolio:', {
+            userId: firebaseUser.uid,
+            portfolioCount: portfolio.length,
+            items: portfolio.map((item: any) => ({
+              id: item.id,
+              title: item.title,
+              imageUrl: item.imageUrl ? 'has image' : 'no image',
+              createdAt: item.createdAt
+            }))
+          });
           
           const user: User = {
             id: firebaseUser.uid,

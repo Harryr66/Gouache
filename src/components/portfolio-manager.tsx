@@ -44,9 +44,20 @@ export function PortfolioManager() {
 
   useEffect(() => {
     if (user?.portfolio) {
+      console.log('📋 PortfolioManager: Loading portfolio items:', {
+        count: user.portfolio.length,
+        items: user.portfolio.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          imageUrl: item.imageUrl ? 'has image' : 'no image'
+        }))
+      });
       setPortfolioItems(user.portfolio);
+    } else {
+      console.log('📋 PortfolioManager: No portfolio found in user data');
+      setPortfolioItems([]);
     }
-  }, [user]);
+  }, [user?.portfolio]);
 
   const compressImage = (file: File): Promise<File> => {
     return new Promise((resolve) => {
@@ -128,16 +139,39 @@ export function PortfolioManager() {
         createdAt: serverTimestamp() // Use serverTimestamp for Firestore
       };
 
+      console.log('📤 Uploading portfolio item:', {
+        userId: user.id,
+        itemId: portfolioItem.id,
+        title: portfolioItem.title,
+        imageUrl: portfolioItem.imageUrl ? 'has image' : 'no image'
+      });
+
       // Update user profile with new portfolio item
       await updateDoc(doc(db, 'userProfiles', user.id), {
         portfolio: arrayUnion(portfolioItem),
         updatedAt: serverTimestamp()
       });
 
+      console.log('✅ Portfolio item saved to Firestore');
+
+      // Wait a moment for Firestore to process the update
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       // Refresh user data to update the portfolio in the auth context
       await refreshUser();
+      
+      console.log('✅ User data refreshed, portfolio should now be visible');
 
-      setPortfolioItems(prev => [...prev, portfolioItem]);
+      // Update local state with the item (convert serverTimestamp placeholder to Date for local display)
+      const localItem: PortfolioItem = {
+        ...portfolioItem,
+        createdAt: new Date() // Use current date for local state, will be replaced by Firestore value after refresh
+      };
+      setPortfolioItems(prev => {
+        // Check if item already exists to avoid duplicates
+        const exists = prev.some(p => p.id === localItem.id);
+        return exists ? prev : [...prev, localItem];
+      });
       setNewItem({
         title: '',
         description: '',

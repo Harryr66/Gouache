@@ -1,31 +1,80 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
+import { User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Image, Package, GraduationCap, Calendar, ArrowLeft } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
 import { UploadForm } from '@/components/upload-form';
+import { ThemeLoading } from '@/components/theme-loading';
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [selectedType, setSelectedType] = useState<'portfolio' | 'product' | 'course' | 'event' | null>(null);
+  const [isCheckingUser, setIsCheckingUser] = useState(true);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const previousUserRef = useRef<User | null>(null);
 
-  // Check if user is a professional artist
-  const isProfessional = user?.isProfessional || false;
+  // Wait for Firestore data to load after initial auth
+  // The auth provider sets loading=false immediately but loads Firestore data asynchronously
+  // We track when user object changes significantly to detect when Firestore data has loaded
+  useEffect(() => {
+    if (loading) {
+      setIsCheckingUser(true);
+      setInitialLoadComplete(false);
+      previousUserRef.current = null;
+    } else if (user) {
+      // Check if this is the first time we're seeing this user
+      const isFirstLoad = previousUserRef.current === null;
+      
+      if (isFirstLoad) {
+        // First load - set a minimum wait time to allow Firestore to load
+        previousUserRef.current = user;
+        const timer = setTimeout(() => {
+          setInitialLoadComplete(true);
+          setIsCheckingUser(false);
+        }, 2000); // 2 second minimum wait
+        return () => clearTimeout(timer);
+      } else if (previousUserRef.current) {
+        // User object has changed - check if it's been updated with Firestore data
+        const userChanged = previousUserRef.current.id !== user.id || 
+                           previousUserRef.current.isProfessional !== user.isProfessional ||
+                           previousUserRef.current.updatedAt?.getTime() !== user.updatedAt?.getTime() ||
+                           (user.portfolio && user.portfolio.length !== (previousUserRef.current.portfolio?.length || 0));
+        
+        if (userChanged) {
+          // User object has been updated (likely with Firestore data)
+          previousUserRef.current = user;
+          setInitialLoadComplete(true);
+          setIsCheckingUser(false);
+        } else if (initialLoadComplete) {
+          // Already completed initial load, no need to keep checking
+          setIsCheckingUser(false);
+        }
+      }
+    } else {
+      setIsCheckingUser(false);
+      setInitialLoadComplete(false);
+      previousUserRef.current = null;
+    }
+  }, [loading, user, initialLoadComplete]);
 
-  if (loading) {
+  // Show loading animation while auth is loading, user data is not yet available, or we're checking user status
+  if (loading || !user || isCheckingUser) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <ThemeLoading size="lg" text="" />
       </div>
     );
   }
 
-  if (!user || !isProfessional) {
+  // Check if user is a professional artist
+  const isProfessional = user?.isProfessional || false;
+
+  if (!isProfessional) {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <Card className="p-8 text-center">
