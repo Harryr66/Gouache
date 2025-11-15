@@ -65,12 +65,6 @@ export const usePlaceholder = () => {
       // SIMPLE CHECK - Just look at document class
       const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
       
-      console.log('🎨 SIMPLE Theme check:', { 
-        isDark,
-        documentClass: typeof document !== 'undefined' ? document.documentElement.className : 'N/A',
-        refreshKey
-      });
-      
       return isDark ? generateDarkPlaceholder(width, height) : generateLightPlaceholder(width, height);
     };
   }, [mounted, refreshKey]);

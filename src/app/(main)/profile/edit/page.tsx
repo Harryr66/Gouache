@@ -225,6 +225,8 @@ export default function ProfileEditPage() {
             newsletterLink: user.isProfessional ? (changes.newsletterLink || user.newsletterLink || '') : '',
           };
           setFormData(nextFormData);
+          // Store initial form data for change detection
+          initialFormDataRef.current = { ...nextFormData };
           if (!user.isProfessional) {
             setBannerPreviewImage(null);
           }
@@ -300,6 +302,8 @@ export default function ProfileEditPage() {
           newsletterLink: user.isProfessional ? ((user as any).newsletterLink || '') : '',
           };
           setFormData(nextFormData);
+          // Store initial form data for change detection
+          initialFormDataRef.current = { ...nextFormData };
 
           if (user.avatarUrl) {
             setPreviewImage(user.avatarUrl);
@@ -869,12 +873,44 @@ export default function ProfileEditPage() {
     }
   };
 
+  // Store initial form data to detect actual changes
+  const initialFormDataRef = useRef<any>(null);
+
   // Auto-save function (doesn't save images or handle changes)
   const autoSave = async (skipDebounce = false) => {
     if (!user || isInitialMount.current) return;
     
     // Don't auto-save if handle changed (needs validation)
     if (formData.handle !== user.username) return;
+    
+    // Check if there are actual changes from initial data
+    if (initialFormDataRef.current) {
+      const hasChanges = 
+        formData.name !== initialFormDataRef.current.name ||
+        formData.email !== initialFormDataRef.current.email ||
+        formData.bio !== initialFormDataRef.current.bio ||
+        formData.artistType !== initialFormDataRef.current.artistType ||
+        formData.location !== initialFormDataRef.current.location ||
+        formData.countryOfOrigin !== initialFormDataRef.current.countryOfOrigin ||
+        formData.countryOfResidence !== initialFormDataRef.current.countryOfResidence ||
+        formData.isProfessional !== initialFormDataRef.current.isProfessional ||
+        formData.tipJarEnabled !== initialFormDataRef.current.tipJarEnabled ||
+        formData.suggestionsEnabled !== initialFormDataRef.current.suggestionsEnabled ||
+        formData.hideLocation !== initialFormDataRef.current.hideLocation ||
+        formData.hideFlags !== initialFormDataRef.current.hideFlags ||
+        formData.hideUpcomingEvents !== initialFormDataRef.current.hideUpcomingEvents ||
+        formData.hideShowcaseLocations !== initialFormDataRef.current.hideShowcaseLocations ||
+        formData.newsletterLink !== initialFormDataRef.current.newsletterLink ||
+        formData.eventCity !== initialFormDataRef.current.eventCity ||
+        formData.eventCountry !== initialFormDataRef.current.eventCountry ||
+        formData.eventDate !== initialFormDataRef.current.eventDate ||
+        JSON.stringify(formData.showcaseLocations) !== JSON.stringify(initialFormDataRef.current.showcaseLocations);
+      
+      if (!hasChanges) {
+        // No actual changes, don't save
+        return;
+      }
+    }
     
     // Clear any existing timeout
     if (autoSaveTimeoutRef.current) {
@@ -931,6 +967,9 @@ export default function ProfileEditPage() {
         }
 
         await withTimeout(setDoc(userRef, updateData, { merge: true }), 5000);
+        
+        // Update initial form data ref to current values after successful save
+        initialFormDataRef.current = { ...formData };
         
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);

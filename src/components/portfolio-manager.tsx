@@ -28,7 +28,7 @@ interface PortfolioItem {
 }
 
 export function PortfolioManager() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
@@ -116,16 +116,16 @@ export function PortfolioManager() {
       await uploadBytes(imageRef, compressedFile);
       const imageUrl = await getDownloadURL(imageRef);
 
-      const portfolioItem: PortfolioItem = {
+      const portfolioItem: any = {
         id: Date.now().toString(),
         imageUrl,
         title: newItem.title.trim(),
-        description: newItem.description,
-        medium: newItem.medium,
-        dimensions: newItem.dimensions,
-        year: newItem.year,
+        description: newItem.description || '',
+        medium: newItem.medium || '',
+        dimensions: newItem.dimensions || '',
+        year: newItem.year || '',
         tags: newItem.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        createdAt: new Date()
+        createdAt: serverTimestamp() // Use serverTimestamp for Firestore
       };
 
       // Update user profile with new portfolio item
@@ -133,6 +133,9 @@ export function PortfolioManager() {
         portfolio: arrayUnion(portfolioItem),
         updatedAt: serverTimestamp()
       });
+
+      // Refresh user data to update the portfolio in the auth context
+      await refreshUser();
 
       setPortfolioItems(prev => [...prev, portfolioItem]);
       setNewItem({
@@ -175,6 +178,9 @@ export function PortfolioManager() {
         updatedAt: serverTimestamp()
       });
 
+      // Refresh user data to update the portfolio in the auth context
+      await refreshUser();
+
       setPortfolioItems(updatedItems);
       setEditingItem(null);
 
@@ -205,6 +211,9 @@ export function PortfolioManager() {
         portfolio: arrayRemove(item),
         updatedAt: serverTimestamp()
       });
+
+      // Refresh user data to update the portfolio in the auth context
+      await refreshUser();
 
       setPortfolioItems(prev => prev.filter(p => p.id !== item.id));
 

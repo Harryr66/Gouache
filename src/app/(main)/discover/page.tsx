@@ -222,15 +222,6 @@ export default function DiscoverPage() {
       isDark = prefersDark;
     }
     
-    console.log('🎨 Discover theme check (AFTER LOADING):', { 
-      hasDarkClass,
-      hasLightClass,
-      prefersDark,
-      isDark,
-      documentClass: document.documentElement.className,
-      isThemeLoading
-    });
-    
     if (isDark) {
       return `data:image/svg+xml;base64,${btoa(`
         <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">

@@ -303,7 +303,7 @@ const generateArtistContent = (artist: Artist) => ({
                         />
                         <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
-                      <div className="space-y-2">
+                      <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
                           {artwork.artist.isVerified && (
@@ -311,21 +311,21 @@ const generateArtistContent = (artist: Artist) => ({
                           )}
                         </div>
                         <p className="text-muted-foreground">@{artwork.artist.handle}</p>
-                        <div className="flex flex-col gap-2 items-start">
-                          <Button
-                            variant={following ? 'outline' : 'secondary'}
-                            onClick={handleFollowToggle}
-                            className="flex items-center gap-2"
-                          >
-                            {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-                            {following ? 'Following' : 'Follow'}
-                          </Button>
-                          <Button variant="gradient" className="flex items-center gap-2" onClick={handleViewProfile}>
-                            <ExternalLink className="h-4 w-4" />
-                            View Profile
-                          </Button>
-                        </div>
                       </div>
+                    </div>
+                    <div className="flex flex-col gap-2 w-full">
+                      <Button
+                        variant={following ? 'outline' : 'secondary'}
+                        onClick={handleFollowToggle}
+                        className="flex items-center gap-2 w-full sm:w-auto"
+                      >
+                        {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                        {following ? 'Following' : 'Follow'}
+                      </Button>
+                      <Button variant="gradient" className="flex items-center gap-2 w-full sm:w-auto" onClick={handleViewProfile}>
+                        <ExternalLink className="h-4 w-4" />
+                        View Profile
+                      </Button>
                     </div>
 
                     <p className="text-sm text-muted-foreground leading-relaxed">{artwork.artist.bio}</p>
