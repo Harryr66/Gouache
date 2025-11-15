@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3 } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { PortfolioManager } from './portfolio-manager';
+import { ShopDisplay } from './shop-display';
 import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from './theme-loading';
 import { useLikes } from '@/providers/likes-provider';
