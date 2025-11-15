@@ -54,10 +54,16 @@ export async function POST(request: NextRequest) {
     });
 
     // Create account link for onboarding
+    // Ensure HTTPS for live mode, allow HTTP only for localhost
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const isLocalhost = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+    const refreshUrl = isLocalhost ? baseUrl : baseUrl.replace(/^http:/, 'https:');
+    const returnUrl = isLocalhost ? baseUrl : baseUrl.replace(/^http:/, 'https:');
+    
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings?tab=payments&refresh=true`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings?tab=payments&success=true`,
+      refresh_url: `${refreshUrl}/settings?tab=payments&refresh=true`,
+      return_url: `${returnUrl}/settings?tab=payments&success=true`,
       type: 'account_onboarding',
     });
 
