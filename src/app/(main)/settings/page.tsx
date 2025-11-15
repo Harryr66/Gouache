@@ -26,6 +26,7 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
 import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
+import { BusinessManager } from '@/components/business-manager';
 
 export default function SettingsPage() {
   const { settings: discoverSettings, updateSettings: updateDiscoverSettings } = useDiscoverSettings();
@@ -208,7 +209,10 @@ export default function SettingsPage() {
           <TabsList>
             <TabsTrigger value="general">General</TabsTrigger>
             {user?.isProfessional && (
-              <TabsTrigger value="payments">Payments</TabsTrigger>
+              <>
+                <TabsTrigger value="business">Business Manager</TabsTrigger>
+                <TabsTrigger value="payments">Payments</TabsTrigger>
+              </>
             )}
             <TabsTrigger value="discover">Discover</TabsTrigger>
             <TabsTrigger value="support">Support</TabsTrigger>
@@ -245,9 +249,14 @@ export default function SettingsPage() {
           </TabsContent>
 
           {user?.isProfessional && (
-            <TabsContent value="payments" className="mt-6">
-              <StripeIntegrationWizard />
-            </TabsContent>
+            <>
+              <TabsContent value="business" className="mt-6">
+                <BusinessManager />
+              </TabsContent>
+              <TabsContent value="payments" className="mt-6">
+                <StripeIntegrationWizard />
+              </TabsContent>
+            </>
           )}
 
           <TabsContent value="discover" className="mt-6">

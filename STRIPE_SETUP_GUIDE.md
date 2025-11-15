@@ -72,8 +72,8 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...  # Your Stripe publishable key
 NEXT_PUBLIC_APP_URL=http://localhost:3000  # Development
 # NEXT_PUBLIC_APP_URL=https://yourdomain.com  # Production
 
-# Commission Rate (as decimal, e.g., 0.075 = 7.5%)
-STRIPE_PLATFORM_COMMISSION_RATE=0.075  # 7.5% platform commission
+# Commission Rate (as decimal, e.g., 0.10 = 10%)
+STRIPE_PLATFORM_COMMISSION_RATE=0.10  # 10% platform commission (includes credit card processing fees)
 STRIPE_APPLICATION_FEE_RATE=0.029  # 2.9% + $0.30 per transaction (Stripe's fee)
 ```
 
@@ -94,18 +94,18 @@ STRIPE_APPLICATION_FEE_RATE=0.029  # 2.9% + $0.30 per transaction (Stripe's fee)
 
 ### Recommended Commission Model
 
-**Platform Commission**: 7.5% of sale price
-**Stripe Processing Fee**: 2.9% + $0.30 per transaction (paid by platform)
-**Artist Receives**: ~89.6% of sale price (after platform commission)
+**Platform Commission**: 10% of sale price (includes credit card processing fees)
+**Stripe Processing Fee**: 2.9% + $0.30 per transaction (covered by platform commission)
+**Artist Receives**: 90% of sale price (after platform commission)
 
 ### Example Calculation
 
 For a $100 course sale:
 - **Sale Price**: $100.00
-- **Platform Commission (7.5%)**: $7.50
-- **Stripe Fee (2.9% + $0.30)**: $3.20
-- **Platform Net Revenue**: $7.50 - $3.20 = $4.30
-- **Artist Payout**: $100.00 - $7.50 = $92.50
+- **Platform Commission (10%)**: $10.00
+- **Stripe Fee (2.9% + $0.30)**: $3.20 (covered by platform)
+- **Platform Net Revenue**: $10.00 - $3.20 = $6.80
+- **Artist Payout**: $100.00 - $10.00 = $90.00
 
 ### Implementation
 
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
     }
 
     const commissionRate = parseFloat(
-      process.env.STRIPE_PLATFORM_COMMISSION_RATE || '0.075'
+      process.env.STRIPE_PLATFORM_COMMISSION_RATE || '0.10'
     );
     const applicationFeeAmount = Math.round(amount * commissionRate);
 
