@@ -503,7 +503,8 @@ export function PortfolioManager() {
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
-                disabled={isUploading || !newItem.title.trim()}
+                disabled={isUploading}
+                className="cursor-pointer"
               />
               {!newItem.title.trim() && (
                 <p className="text-sm text-muted-foreground">Please enter an artwork title before uploading an image.</p>
