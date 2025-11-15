@@ -226,9 +226,9 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
               {instructorCourses.map((course) => (
                 <Card key={course.id} className="group hover:shadow-lg transition-shadow">
                   <div className="relative aspect-video">
-                    {course.thumbnailUrl ? (
+                    {course.thumbnail ? (
                       <Image
-                        src={course.thumbnailUrl}
+                        src={course.thumbnail}
                         alt={course.title}
                         fill
                         className="object-cover rounded-t-lg"
