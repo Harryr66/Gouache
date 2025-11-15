@@ -3,13 +3,19 @@ import Stripe from 'stripe';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, collection, addDoc, increment } from 'firebase/firestore';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-10-29.clover',
-});
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-
 export async function POST(request: NextRequest) {
+  // Initialize Stripe inside the handler to avoid build-time initialization
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!stripeSecretKey) {
+    console.error('STRIPE_SECRET_KEY is not set');
+    return NextResponse.json(
+      { error: 'Stripe not configured' },
+      { status: 500 }
+    );
+  }
+
   if (!webhookSecret) {
     console.error('STRIPE_WEBHOOK_SECRET is not set');
     return NextResponse.json(
@@ -17,6 +23,10 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: '2025-10-29.clover',
+  });
 
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
