@@ -223,6 +223,8 @@ export default function ProfileEditPage() {
             eventCity: user.isProfessional ? (changes.eventCity || user.eventCity || '') : '',
             eventCountry: user.isProfessional ? (changes.eventCountry || user.eventCountry || '') : '',
             eventDate: user.isProfessional ? (changes.eventDate || user.eventDate || '') : '',
+            eventStartDate: user.isProfessional ? (changes.eventStartDate || (user as any).eventStartDate || '') : '',
+            eventEndDate: user.isProfessional ? (changes.eventEndDate || (user as any).eventEndDate || '') : '',
             showcaseLocations: user.isProfessional
               ? (changes.showcaseLocations || user.showcaseLocations || [])
               : [],
