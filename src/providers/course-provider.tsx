@@ -64,8 +64,6 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
   // Load courses
   useEffect(() => {
-    console.log('🎓 CourseProvider: Setting up courses listener...');
-    
     const coursesQuery = query(
       collection(db, 'courses'),
       where('isPublished', '==', true),
@@ -75,11 +73,8 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onSnapshot(
       coursesQuery, 
       (snapshot) => {
-        console.log(`🎓 CourseProvider: Received ${snapshot.docs.length} published courses`);
-        
         const coursesData = snapshot.docs.map(doc => {
           const data = doc.data();
-          console.log('🎓 Course data:', doc.id, data);
           
           return {
             id: doc.id,
