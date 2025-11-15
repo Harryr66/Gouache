@@ -43,18 +43,49 @@ export function PortfolioManager() {
   });
 
   useEffect(() => {
-    if (user?.portfolio) {
+    if (user?.portfolio && Array.isArray(user.portfolio)) {
+      // Map portfolio items and ensure all required fields are present
+      const mappedItems = user.portfolio.map((item: any) => {
+        // Convert createdAt from Firestore Timestamp to Date if needed
+        let createdAt: Date;
+        if (item.createdAt?.toDate) {
+          createdAt = item.createdAt.toDate();
+        } else if (item.createdAt instanceof Date) {
+          createdAt = item.createdAt;
+        } else {
+          createdAt = new Date();
+        }
+        
+        return {
+          id: item.id || `portfolio-${item.imageUrl}`,
+          imageUrl: item.imageUrl || '',
+          title: item.title || 'Untitled Artwork',
+          description: item.description || '',
+          medium: item.medium || '',
+          dimensions: item.dimensions || '',
+          year: item.year || '',
+          tags: Array.isArray(item.tags) ? item.tags : [],
+          createdAt: createdAt
+        };
+      }).filter(item => item.imageUrl); // Only include items with images
+      
       console.log('📋 PortfolioManager: Loading portfolio items:', {
-        count: user.portfolio.length,
-        items: user.portfolio.map((item: any) => ({
+        count: mappedItems.length,
+        totalInUser: user.portfolio.length,
+        items: mappedItems.map((item: any) => ({
           id: item.id,
           title: item.title,
           imageUrl: item.imageUrl ? 'has image' : 'no image'
         }))
       });
-      setPortfolioItems(user.portfolio);
+      
+      setPortfolioItems(mappedItems);
     } else {
-      console.log('📋 PortfolioManager: No portfolio found in user data');
+      console.log('📋 PortfolioManager: No portfolio found in user data', {
+        hasUser: !!user,
+        hasPortfolio: !!user?.portfolio,
+        portfolioType: typeof user?.portfolio
+      });
       setPortfolioItems([]);
     }
   }, [user?.portfolio]);

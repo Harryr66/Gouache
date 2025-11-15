@@ -186,18 +186,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
   if (isProfessional) {
     return (
       <Tabs defaultValue="portfolio" className="w-full" onValueChange={onTabChange}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1">
           <TabsTrigger value="portfolio" className="flex items-center gap-2">
             <Grid3x3 className="h-4 w-4" />
             Portfolio
-          </TabsTrigger>
-          <TabsTrigger value="shop" className="flex items-center gap-2">
-            <ShoppingBag className="h-4 w-4" />
-            Shop
-          </TabsTrigger>
-          <TabsTrigger value="learn" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Learn
           </TabsTrigger>
         </TabsList>
 
@@ -210,7 +202,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
           )}
         </TabsContent>
 
-        {/* Shop Tab */}
+        {/* Shop Tab - Hidden for MVP */}
+        {false && (
         <TabsContent value="shop" className="space-y-4">
           <Tabs defaultValue="prints" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
@@ -316,8 +309,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
             </TabsContent>
           </Tabs>
         </TabsContent>
+        )}
 
-        {/* Learn Tab */}
+        {/* Learn Tab - Hidden for MVP */}
+        {false && (
         <TabsContent value="learn" className="space-y-4">
           {isOwnProfile && (
             <div className="flex justify-end">
@@ -403,21 +398,18 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
             </Card>
           )}
         </TabsContent>
+        )}
       </Tabs>
     );
   }
 
-  // Regular user tabs
+  // Regular user tabs - Hide Learn for MVP
   return (
     <Tabs defaultValue="liked" className="w-full" onValueChange={onTabChange}>
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-1">
         <TabsTrigger value="liked" className="flex items-center gap-2">
           <Heart className="h-4 w-4" />
           Liked
-        </TabsTrigger>
-        <TabsTrigger value="learn" className="flex items-center gap-2">
-          <Brain className="h-4 w-4" />
-          Learn
         </TabsTrigger>
       </TabsList>
 
@@ -456,7 +448,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
         )}
       </TabsContent>
 
-      {/* Learn Tab - Purchased Courses & Subscribed Communities */}
+      {/* Learn Tab - Purchased Courses & Subscribed Communities - Hidden for MVP */}
+      {false && (
       <TabsContent value="learn" className="space-y-6">
         {coursesLoading ? (
           <div className="flex justify-center py-12">
@@ -509,6 +502,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
           </div>
         )}
       </TabsContent>
+      )}
     </Tabs>
   );
 }
