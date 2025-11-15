@@ -94,40 +94,6 @@ export default function SettingsPage() {
     }
   };
   
-  const [profileData, setProfileData] = useState({
-    username: 'artist123',
-    displayName: 'Artist Name',
-    bio: 'Digital artist passionate about creating unique pieces',
-    website: 'https://artistwebsite.com',
-    location: 'New York, NY'
-  });
-
-  const [notifications, setNotifications] = useState({
-    likes: true,
-    comments: true,
-    follows: true,
-    messages: true,
-    auctions: true
-  });
-
-  const [privacy, setPrivacy] = useState({
-    showEmail: false,
-    showLocation: true,
-    allowMessages: true
-  });
-
-  const [progress, setProgress] = useState(75);
-  const [remainingTasks] = useState([
-    'Complete your profile',
-    'Upload your first artwork',
-    'Join a community',
-    'Follow 5 artists'
-  ]);
-
-  const handleSave = () => {
-    // Save settings logic here
-    console.log('Settings saved');
-  };
   
   const handleSaveDiscoverSettings = async () => {
     if (!user) {
@@ -244,233 +210,40 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        {/* Profile Completion */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5" />
-              <span>Profile Completion</span>
-            </CardTitle>
-            <CardDescription>
-              Complete your profile to get the most out of Gouache
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Profile Progress</span>
-                <span>{progress}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-              {remainingTasks.length > 0 && (
-                <div className="pt-2 space-y-2">
-                   <p className="text-xs text-muted-foreground">
-                     Complete these tasks to improve your profile:
-                   </p>
-                   <ul className="space-y-1">
-                     {remainingTasks.map((task, index) => (
-                       <li key={index} className="text-xs text-muted-foreground flex items-center space-x-2">
-                         <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                         <span>{task}</span>
-                       </li>
-                     ))}
-                   </ul>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Settings Tabs */}
-        <Tabs defaultValue="profile" className="w-full">
+        <Tabs defaultValue="general" className="w-full">
           <TabsList>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="privacy">Privacy</TabsTrigger>
+            <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="discover">Discover</TabsTrigger>
-            <TabsTrigger value="data">Data</TabsTrigger>
             <TabsTrigger value="support">Support</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="profile" className="mt-6">
+          
+          <TabsContent value="general" className="mt-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <User className="h-5 w-5" />
-                  <span>Profile Information</span>
+                  <Settings className="h-5 w-5" />
+                  <span>General Settings</span>
                 </CardTitle>
                 <CardDescription>
-                  Update your public profile information
+                  Manage your account and preferences
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
-                    <Input
-                      id="username"
-                      value={profileData.username}
-                      onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="displayName">Display Name</Label>
-                    <Input
-                      id="displayName"
-                      value={profileData.displayName}
-                      onChange={(e) => setProfileData({ ...profileData, displayName: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Input
-                    id="bio"
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="website">Website</Label>
-                    <Input
-                      id="website"
-                      value={profileData.website}
-                      onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      value={profileData.location}
-                      onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <Button onClick={handleSave}>Save Changes</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="notifications" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Bell className="h-5 w-5" />
-                  <span>Notification Preferences</span>
-                </CardTitle>
-                <CardDescription>
-                  Choose what notifications you want to receive
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-4 border rounded-lg border-destructive/50">
                   <div>
-                    <Label htmlFor="likes">Likes</Label>
-                    <p className="text-sm text-muted-foreground">Get notified when someone likes your posts</p>
+                    <h4 className="font-medium">Sign Out</h4>
+                    <p className="text-sm text-muted-foreground">Sign out of your account</p>
                   </div>
-                  <Switch
-                    id="likes"
-                    checked={notifications.likes}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, likes: checked })}
-                  />
+                  <Button 
+                    variant="destructive"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    {isSigningOut ? 'Signing out…' : 'Sign Out'}
+                  </Button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="comments">Comments</Label>
-                    <p className="text-sm text-muted-foreground">Get notified when someone comments on your posts</p>
-                  </div>
-                  <Switch
-                    id="comments"
-                    checked={notifications.comments}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, comments: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="follows">Follows</Label>
-                    <p className="text-sm text-muted-foreground">Get notified when someone follows you</p>
-                  </div>
-                  <Switch
-                    id="follows"
-                    checked={notifications.follows}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, follows: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="messages">Messages</Label>
-                    <p className="text-sm text-muted-foreground">Get notified when you receive new messages</p>
-                  </div>
-                  <Switch
-                    id="messages"
-                    checked={notifications.messages}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, messages: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="auctions">Auctions</Label>
-                    <p className="text-sm text-muted-foreground">Get notified about auction updates</p>
-                  </div>
-                  <Switch
-                    id="auctions"
-                    checked={notifications.auctions}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, auctions: checked })}
-                  />
-                </div>
-                <Button onClick={handleSave}>Save Preferences</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="privacy" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Shield className="h-5 w-5" />
-                  <span>Privacy Settings</span>
-                </CardTitle>
-                <CardDescription>
-                  Control who can see your information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="showEmail">Show Email</Label>
-                    <p className="text-sm text-muted-foreground">Make your email visible to other users</p>
-                  </div>
-                  <Switch
-                    id="showEmail"
-                    checked={privacy.showEmail}
-                    onCheckedChange={(checked) => setPrivacy({ ...privacy, showEmail: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="showLocation">Show Location</Label>
-                    <p className="text-sm text-muted-foreground">Make your location visible to other users</p>
-                  </div>
-                  <Switch
-                    id="showLocation"
-                    checked={privacy.showLocation}
-                    onCheckedChange={(checked) => setPrivacy({ ...privacy, showLocation: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="allowMessages">Allow Messages</Label>
-                    <p className="text-sm text-muted-foreground">Allow other users to send you messages</p>
-                  </div>
-                  <Switch
-                    id="allowMessages"
-                    checked={privacy.allowMessages}
-                    onCheckedChange={(checked) => setPrivacy({ ...privacy, allowMessages: checked })}
-                  />
-                </div>
-                <Button onClick={handleSave}>Save Privacy Settings</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -632,52 +405,6 @@ export default function SettingsPage() {
                 >
                   {isSavingDiscoverSettings ? 'Saving...' : 'Save Discover Settings'}
                 </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="data" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Database className="h-5 w-5" />
-                  <span>Data Management</span>
-                </CardTitle>
-                <CardDescription>
-                  Manage your data and account
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h4 className="font-medium">Download Your Data</h4>
-                    <p className="text-sm text-muted-foreground">Get a copy of all your data</p>
-                  </div>
-                  <Button variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h4 className="font-medium">Upload Data</h4>
-                    <p className="text-sm text-muted-foreground">Import data from another platform</p>
-                  </div>
-                  <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between p-4 border rounded-lg border-destructive">
-                  <div>
-                    <h4 className="font-medium text-destructive">Delete Account</h4>
-                    <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
-                  </div>
-                  <Button variant="destructive">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
