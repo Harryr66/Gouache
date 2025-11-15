@@ -1016,6 +1016,9 @@ export default function ProfileEditPage() {
         updateData.tipJarEnabled = formData.tipJarEnabled;
         updateData.suggestionsEnabled = formData.suggestionsEnabled;
         updateData.hideCard = formData.hideCard;
+        updateData.hideUpcomingEvents = formData.hideUpcomingEvents;
+        updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
+        updateData.newsletterLink = formData.newsletterLink || null;
         updateData.eventCity = formData.eventCity || null;
         updateData.eventCountry = formData.eventCountry || null;
         updateData.eventDate = formData.eventDate || null;
@@ -1025,6 +1028,9 @@ export default function ProfileEditPage() {
         updateData.tipJarEnabled = false;
         updateData.suggestionsEnabled = false;
         updateData.hideCard = false;
+        updateData.hideUpcomingEvents = false;
+        updateData.hideShowcaseLocations = false;
+        updateData.newsletterLink = null;
         updateData.eventCity = null;
         updateData.eventCountry = null;
         updateData.eventDate = null;
@@ -1222,9 +1228,36 @@ export default function ProfileEditPage() {
           </CardContent>
         </Card>
 
+        {/* Newsletter Link Section */}
+        {isArtistAccount && (
+        <Card id="newsletter-link">
+          <CardHeader>
+            <CardTitle>Newsletter Link</CardTitle>
+            <CardDescription>
+              Add a publicly visible newsletter subscription link to your profile
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newsletterLink">Newsletter URL</Label>
+              <Input
+                id="newsletterLink"
+                type="url"
+                value={formData.newsletterLink}
+                onChange={(e) => handleInputChange('newsletterLink', e.target.value)}
+                placeholder="https://example.com/newsletter"
+              />
+              <p className="text-xs text-muted-foreground">
+                Add a link to your newsletter signup page. This will be displayed prominently on your profile as a gradient button.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        )}
+
         {/* Upcoming Events Section */}
         {isArtistAccount && (
-        <Card>
+        <Card id="upcoming-events">
           <CardHeader>
             <CardTitle>Upcoming Events</CardTitle>
             <CardDescription>
