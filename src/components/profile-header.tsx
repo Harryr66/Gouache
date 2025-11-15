@@ -63,7 +63,6 @@ interface ProfileHeaderProps {
     eventDate?: string;
     eventStartDate?: string;
     eventEndDate?: string;
-    bannerImageUrl?: string;
     showcaseLocations?: ShowcaseLocation[];
     newsletterLink?: string;
   };
