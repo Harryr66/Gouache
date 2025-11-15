@@ -21,6 +21,7 @@ import { db, storage, auth } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { ArtistRequest, ShowcaseLocation } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
+import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
 
 // Countries list for dropdowns
 const COUNTRIES = [
@@ -2007,6 +2008,20 @@ export default function ProfileEditPage() {
           </Card>
         )}
 
+        {/* Stripe Integration Section */}
+        {isArtistAccount && (
+          <Card id="stripe-integration">
+            <CardHeader>
+              <CardTitle>Payment Setup</CardTitle>
+              <CardDescription>
+                Connect your Stripe account to enable sales of originals, prints, books, and courses. You'll receive payouts directly to your bank account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <StripeIntegrationWizard />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Account Settings */}
         {isArtistAccount && (
