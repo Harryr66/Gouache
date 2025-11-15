@@ -806,6 +806,9 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = formData.tipJarEnabled;
           updateData.suggestionsEnabled = formData.suggestionsEnabled;
           updateData.hideCard = formData.hideCard;
+          updateData.hideUpcomingEvents = formData.hideUpcomingEvents;
+          updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
+          updateData.newsletterLink = formData.newsletterLink || null;
           updateData.eventCity = formData.eventCity || null;
           updateData.eventCountry = formData.eventCountry || null;
           updateData.eventDate = formData.eventDate || null;
@@ -815,6 +818,9 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = false;
           updateData.suggestionsEnabled = false;
           updateData.hideCard = false;
+          updateData.hideUpcomingEvents = false;
+          updateData.hideShowcaseLocations = false;
+          updateData.newsletterLink = null;
           updateData.eventCity = null;
           updateData.eventCountry = null;
           updateData.eventDate = null;
