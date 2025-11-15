@@ -126,6 +126,7 @@ export default function ProfileEditPage() {
   const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [bannerPreviewImage, setBannerPreviewImage] = useState<string | null>(null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
   const [showArtistRequest, setShowArtistRequest] = useState(false);
   const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
@@ -295,6 +296,9 @@ export default function ProfileEditPage() {
 
           if (user.avatarUrl) {
             setPreviewImage(user.avatarUrl);
+            setAvatarRemoved(false); // Reset removed flag when loading user data
+          } else {
+            setAvatarRemoved(false); // Reset removed flag if no avatar
           }
 
           if (user.isProfessional && user.bannerImageUrl) {
@@ -357,6 +361,7 @@ export default function ProfileEditPage() {
     const compressedFile = await compressImage(file);
     const previewUrl = URL.createObjectURL(compressedFile);
     setPreviewImage(previewUrl);
+    setAvatarRemoved(false); // Reset removed flag when uploading new image
   };
 
   const handleBannerImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -449,8 +454,65 @@ export default function ProfileEditPage() {
     });
   };
 
-  const removeImage = () => {
-    setPreviewImage(null);
+  const removeImage = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "User not found. Please refresh the page.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Mark that avatar should be removed
+      setAvatarRemoved(true);
+      
+      // Delete the image from Firebase Storage if it exists
+      if (user.avatarUrl) {
+        try {
+          // Extract the file path from the URL
+          // Firebase Storage URLs look like: https://firebasestorage.googleapis.com/v0/b/.../o/avatars%2FuserId?alt=media&token=...
+          const urlParts = user.avatarUrl.split('/o/');
+          if (urlParts.length > 1) {
+            const pathParts = urlParts[1].split('?');
+            const decodedPath = decodeURIComponent(pathParts[0]);
+            const imageRef = ref(storage, decodedPath);
+            await deleteObject(imageRef);
+            console.log('✅ Avatar image deleted from Storage');
+          }
+        } catch (storageError: any) {
+          // If the file doesn't exist in storage, that's okay - just log it
+          console.warn('Could not delete avatar from Storage:', storageError);
+        }
+      }
+      
+      // Clear the preview image
+      setPreviewImage(null);
+      
+      // Update Firestore to remove avatarUrl
+      const userRef = doc(db, 'userProfiles', user.id);
+      await updateDoc(userRef, {
+        avatarUrl: null,
+        updatedAt: new Date()
+      });
+      
+      // Refresh user data
+      await refreshUser();
+      
+      toast({
+        title: "Profile picture removed",
+        description: "Your profile picture has been removed successfully.",
+      });
+    } catch (error) {
+      console.error('Error removing profile picture:', error);
+      setAvatarRemoved(false); // Reset on error
+      toast({
+        title: "Remove failed",
+        description: "Failed to remove profile picture. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const removeBannerImage = () => {
@@ -1044,9 +1106,16 @@ export default function ProfileEditPage() {
         updateData.showcaseLocations = [];
       }
 
-      // Only include avatarUrl if it's not undefined
-      if (avatarUrl !== undefined) {
+      // Update avatarUrl - handle new uploads and removals
+      if (avatarRemoved) {
+        // Avatar was explicitly removed
+        updateData.avatarUrl = null;
+      } else if (avatarUrl !== undefined && avatarUrl !== user.avatarUrl) {
+        // New image uploaded
         updateData.avatarUrl = avatarUrl;
+      } else if (avatarUrl === null && !user.avatarUrl) {
+        // No avatar and no new upload
+        updateData.avatarUrl = null;
       }
 
       if (allowArtistFields) {
@@ -1059,6 +1128,11 @@ export default function ProfileEditPage() {
 
       // Create or update user profile with timeout (setDoc with merge will create if doesn't exist)
       await withTimeout(setDoc(userRef, updateData, { merge: true }), 10000);
+      
+      // Reset avatar removed flag after successful update
+      if (avatarRemoved) {
+        setAvatarRemoved(false);
+      }
 
       // Update handle mapping if changed
       if (formData.handle !== user.username) {
