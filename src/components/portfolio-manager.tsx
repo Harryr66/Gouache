@@ -158,6 +158,8 @@ export function PortfolioManager() {
       await uploadBytes(imageRef, compressedFile);
       const imageUrl = await getDownloadURL(imageRef);
 
+      // Use current timestamp instead of serverTimestamp to avoid placeholder issues
+      const now = new Date();
       const portfolioItem: any = {
         id: Date.now().toString(),
         imageUrl,
@@ -167,42 +169,52 @@ export function PortfolioManager() {
         dimensions: newItem.dimensions || '',
         year: newItem.year || '',
         tags: newItem.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        createdAt: serverTimestamp() // Use serverTimestamp for Firestore
+        createdAt: now // Use Date object instead of serverTimestamp to avoid placeholder issues
       };
 
       console.log('📤 Uploading portfolio item:', {
         userId: user.id,
         itemId: portfolioItem.id,
         title: portfolioItem.title,
-        imageUrl: portfolioItem.imageUrl ? 'has image' : 'no image'
+        imageUrl: portfolioItem.imageUrl ? 'has image' : 'no image',
+        createdAt: portfolioItem.createdAt
       });
 
       // Update user profile with new portfolio item
       await updateDoc(doc(db, 'userProfiles', user.id), {
         portfolio: arrayUnion(portfolioItem),
-        updatedAt: serverTimestamp()
+        updatedAt: now
       });
 
       console.log('✅ Portfolio item saved to Firestore');
 
-      // Wait a moment for Firestore to process the update
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Refresh user data to update the portfolio in the auth context
-      await refreshUser();
-      
-      console.log('✅ User data refreshed, portfolio should now be visible');
-
-      // Update local state with the item (convert serverTimestamp placeholder to Date for local display)
+      // Update local state immediately for instant feedback
       const localItem: PortfolioItem = {
         ...portfolioItem,
-        createdAt: new Date() // Use current date for local state, will be replaced by Firestore value after refresh
+        createdAt: now
       };
       setPortfolioItems(prev => {
         // Check if item already exists to avoid duplicates
         const exists = prev.some(p => p.id === localItem.id);
-        return exists ? prev : [...prev, localItem];
+        if (exists) {
+          console.log('⚠️ Item already in local state, skipping duplicate');
+          return prev;
+        }
+        console.log('✅ Adding item to local state:', localItem.id);
+        return [...prev, localItem];
       });
+
+      // Wait longer for Firestore to process and propagate the update
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Refresh user data to sync with Firestore
+      try {
+        await refreshUser();
+        console.log('✅ User data refreshed, portfolio synced with Firestore');
+      } catch (refreshError) {
+        console.error('⚠️ Error refreshing user data:', refreshError);
+        // Don't fail the upload if refresh fails - local state is already updated
+      }
       setNewItem({
         title: '',
         description: '',
