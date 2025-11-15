@@ -111,18 +111,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               lastSeen: userData.lastSeen?.toDate(),
               artistType: userData.artistType || '',
               isAdmin: userData.isAdmin || false,
-              socialLinks: userData.socialLinks || {},
-              showcaseLocations: userData.showcaseLocations || [],
-              portfolio: portfolio,
-              preferences: userData.preferences || immediateUser.preferences
-            };
-            setUser(detailedUser);
-            setAvatarUrl(detailedUser.avatarUrl || null);
-          }
-        } catch (error) {
-          console.error('Error fetching detailed user data:', error);
-          // Keep the immediate user data if Firestore fails
+            socialLinks: userData.socialLinks || {},
+            showcaseLocations: userData.showcaseLocations || [],
+            portfolio: portfolio,
+            preferences: {
+              notifications: userData.preferences?.notifications || immediateUser.preferences.notifications,
+              privacy: userData.preferences?.privacy || immediateUser.preferences.privacy,
+              discover: userData.preferences?.discover || {}
+            }
+          };
+          setUser(detailedUser);
+          setAvatarUrl(detailedUser.avatarUrl || null);
         }
+      } catch (error) {
+        console.error('Error fetching detailed user data:', error);
+        // Keep the immediate user data if Firestore fails
+      }
       } else {
         setUser(null);
         setAvatarUrl(null);

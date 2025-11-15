@@ -27,15 +27,34 @@ import {
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { useAuth } from '@/providers/auth-provider';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function SettingsPage() {
   const { settings: discoverSettings, updateSettings: updateDiscoverSettings } = useDiscoverSettings();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [reportMessage, setReportMessage] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [isSavingDiscoverSettings, setIsSavingDiscoverSettings] = useState(false);
+  
+  // Discover preferences state - load from user preferences
+  const [discoverPrefs, setDiscoverPrefs] = useState({
+    hideDigitalArt: user?.preferences?.discover?.hideDigitalArt || false,
+    hideAIAssistedArt: user?.preferences?.discover?.hideAIAssistedArt || false,
+    hideNFTs: user?.preferences?.discover?.hideNFTs || false,
+  });
+  
+  // Load preferences from user when user changes
+  useEffect(() => {
+    if (user?.preferences?.discover) {
+      setDiscoverPrefs({
+        hideDigitalArt: user.preferences.discover.hideDigitalArt || false,
+        hideAIAssistedArt: user.preferences.discover.hideAIAssistedArt || false,
+        hideNFTs: user.preferences.discover.hideNFTs || false,
+      });
+    }
+  }, [user?.preferences?.discover]);
   
   const [profileData, setProfileData] = useState({
     username: 'artist123',
@@ -70,6 +89,55 @@ export default function SettingsPage() {
   const handleSave = () => {
     // Save settings logic here
     console.log('Settings saved');
+  };
+  
+  const handleSaveDiscoverSettings = async () => {
+    if (!user) {
+      toast({
+        title: "Not signed in",
+        description: "Please sign in to save settings.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSavingDiscoverSettings(true);
+    try {
+      const userProfileRef = doc(db, 'userProfiles', user.id);
+      const userProfileSnap = await getDoc(userProfileRef);
+      
+      const currentPreferences = userProfileSnap.data()?.preferences || {};
+      const updatedPreferences = {
+        ...currentPreferences,
+        discover: {
+          hideDigitalArt: discoverPrefs.hideDigitalArt,
+          hideAIAssistedArt: discoverPrefs.hideAIAssistedArt,
+          hideNFTs: discoverPrefs.hideNFTs,
+        }
+      };
+      
+      await updateDoc(userProfileRef, {
+        preferences: updatedPreferences,
+        updatedAt: serverTimestamp()
+      });
+      
+      // Refresh user data to reflect changes
+      await refreshUser();
+      
+      toast({
+        title: "Settings saved",
+        description: "Your discover preferences have been saved and will apply to all future visits.",
+      });
+    } catch (error) {
+      console.error('Error saving discover settings:', error);
+      toast({
+        title: "Save failed",
+        description: "Failed to save discover settings. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSavingDiscoverSettings(false);
+    }
   };
 
   const handleSubmitReport = async () => {
@@ -371,36 +439,71 @@ export default function SettingsPage() {
                   <span>Discover Settings</span>
                 </CardTitle>
                 <CardDescription>
-                  Customize what content you see in the Discover section
+                  Customize what content you see in the Discover section. These preferences are permanent and will apply to all future visits.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
+                    <Label htmlFor="hideDigitalArt">Hide Digital Art</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently hide digital art and digital paintings from your discover feed
+                    </p>
+                  </div>
+                  <Switch
+                    id="hideDigitalArt"
+                    checked={discoverPrefs.hideDigitalArt}
+                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideDigitalArt: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
                     <Label htmlFor="hideAiAssistedArt">Hide AI-Assisted Art</Label>
                     <p className="text-sm text-muted-foreground">
-                      Hide artworks tagged with "AI assisted" to only see 100% human-made art
+                      Permanently hide AI-assisted and AI-generated artworks from your discover feed
                     </p>
                   </div>
                   <Switch
                     id="hideAiAssistedArt"
-                    checked={discoverSettings.hideAiAssistedArt}
-                    onCheckedChange={(checked) => updateDiscoverSettings({ hideAiAssistedArt: checked })}
+                    checked={discoverPrefs.hideAIAssistedArt}
+                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideAIAssistedArt: checked })}
                   />
                 </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="hideNFTs">Hide NFTs</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently hide NFT artworks from your discover feed
+                    </p>
+                  </div>
+                  <Switch
+                    id="hideNFTs"
+                    checked={discoverPrefs.hideNFTs}
+                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideNFTs: checked })}
+                  />
+                </div>
+                
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-start space-x-3">
                     <EyeOff className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
-                      <h4 className="font-medium text-sm">About AI-Assisted Art Filtering</h4>
+                      <h4 className="font-medium text-sm">About Content Filtering</h4>
                       <p className="text-sm text-muted-foreground mt-1">
-                        When enabled, artworks tagged with "AI assisted" will be hidden from your Discover feed. 
-                        This helps you focus on traditional, handcrafted artwork created entirely by human artists.
+                        These settings are permanent and will automatically filter content in your Discover feed. 
+                        You can override these filters temporarily using the Advanced Search panel on the Discover page, 
+                        but your permanent preferences will be restored when you refresh the page.
                       </p>
                     </div>
                   </div>
                 </div>
-                <Button onClick={handleSave}>Save Discover Settings</Button>
+                <Button 
+                  onClick={handleSaveDiscoverSettings}
+                  disabled={isSavingDiscoverSettings}
+                >
+                  {isSavingDiscoverSettings ? 'Saving...' : 'Save Discover Settings'}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

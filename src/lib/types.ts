@@ -714,6 +714,17 @@ export interface User {
       showLocation: boolean;
       allowMessages: boolean;
     };
+    discover?: {
+      hideDigitalArt?: boolean;
+      hideAIAssistedArt?: boolean;
+      hideNFTs?: boolean;
+      hidePhotography?: boolean;
+      hideVideoArt?: boolean;
+      hidePerformanceArt?: boolean;
+      hideInstallationArt?: boolean;
+      hidePrintmaking?: boolean;
+      hideTextileArt?: boolean;
+    };
   };
   showcaseLocations?: ShowcaseLocation[];
 }

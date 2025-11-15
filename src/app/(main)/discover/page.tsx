@@ -140,6 +140,22 @@ export default function DiscoverPage() {
   // Add loading state to ensure theme is properly loaded
   const [isThemeLoading, setIsThemeLoading] = useState(true);
   
+  // Load user's permanent discover preferences from Firestore
+  useEffect(() => {
+    if (user?.preferences?.discover) {
+      const discoverPrefs = user.preferences.discover;
+      if (discoverPrefs.hideDigitalArt !== undefined) setHideDigitalArt(discoverPrefs.hideDigitalArt);
+      if (discoverPrefs.hideAIAssistedArt !== undefined) setHideAIAssistedArt(discoverPrefs.hideAIAssistedArt);
+      if (discoverPrefs.hideNFTs !== undefined) setHideNFTs(discoverPrefs.hideNFTs);
+      if (discoverPrefs.hidePhotography !== undefined) setHidePhotography(discoverPrefs.hidePhotography);
+      if (discoverPrefs.hideVideoArt !== undefined) setHideVideoArt(discoverPrefs.hideVideoArt);
+      if (discoverPrefs.hidePerformanceArt !== undefined) setHidePerformanceArt(discoverPrefs.hidePerformanceArt);
+      if (discoverPrefs.hideInstallationArt !== undefined) setHideInstallationArt(discoverPrefs.hideInstallationArt);
+      if (discoverPrefs.hidePrintmaking !== undefined) setHidePrintmaking(discoverPrefs.hidePrintmaking);
+      if (discoverPrefs.hideTextileArt !== undefined) setHideTextileArt(discoverPrefs.hideTextileArt);
+    }
+  }, [user?.preferences?.discover]);
+  
   useEffect(() => {
     // Give theme time to load and be detected
     const timer = setTimeout(() => {
@@ -254,6 +270,12 @@ export default function DiscoverPage() {
   const [hideDigitalArt, setHideDigitalArt] = useState(false);
   const [hideAIAssistedArt, setHideAIAssistedArt] = useState(false);
   const [hideNFTs, setHideNFTs] = useState(false);
+  const [hidePhotography, setHidePhotography] = useState(false);
+  const [hideVideoArt, setHideVideoArt] = useState(false);
+  const [hidePerformanceArt, setHidePerformanceArt] = useState(false);
+  const [hideInstallationArt, setHideInstallationArt] = useState(false);
+  const [hidePrintmaking, setHidePrintmaking] = useState(false);
+  const [hideTextileArt, setHideTextileArt] = useState(false);
   const [selectedMediums, setSelectedMediums] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -979,24 +1001,62 @@ export default function DiscoverPage() {
     
     // Hide Digital Art filter
     if (hideDigitalArt) {
-      if (artwork.category === 'Digital Art' || artwork.category === 'Digital Painting') return false;
+      if (artwork.category === 'Digital Art' || artwork.category === 'Digital Painting' || 
+          artwork.medium?.toLowerCase().includes('digital')) return false;
     }
     
     // Hide AI Assisted Art filter
     if (hideAIAssistedArt) {
-      if (artwork.tags?.includes('AI assisted') || artwork.tags?.includes('AI-generated') || 
-          artwork.imageAiHint?.toLowerCase().includes('ai') || artwork.imageAiHint?.toLowerCase().includes('artificial intelligence')) return false;
+      if (artwork.tags?.some(tag => tag.toLowerCase().includes('ai') || tag.toLowerCase().includes('artificial')) || 
+          artwork.imageAiHint?.toLowerCase().includes('ai') || artwork.imageAiHint?.toLowerCase().includes('artificial intelligence') ||
+          artwork.isAI || artwork.aiAssistance) return false;
     }
     
     // Hide NFTs filter
     if (hideNFTs) {
-      if (artwork.category === 'NFT' || artwork.tags?.includes('NFT') || 
-          artwork.tags?.includes('blockchain') || artwork.tags?.includes('crypto')) return false;
+      if (artwork.category === 'NFT' || artwork.tags?.some(tag => 
+          tag.toLowerCase().includes('nft') || tag.toLowerCase().includes('blockchain') || tag.toLowerCase().includes('crypto'))) return false;
+    }
+    
+    // Hide Photography filter
+    if (hidePhotography) {
+      if (artwork.category === 'Photography' || artwork.medium?.toLowerCase().includes('photography') ||
+          artwork.tags?.some(tag => tag.toLowerCase().includes('photo'))) return false;
+    }
+    
+    // Hide Video Art filter
+    if (hideVideoArt) {
+      if (artwork.category === 'Video Art' || artwork.medium?.toLowerCase().includes('video') ||
+          artwork.tags?.some(tag => tag.toLowerCase().includes('video'))) return false;
+    }
+    
+    // Hide Performance Art filter
+    if (hidePerformanceArt) {
+      if (artwork.category === 'Performance Art' || artwork.medium?.toLowerCase().includes('performance') ||
+          artwork.tags?.some(tag => tag.toLowerCase().includes('performance'))) return false;
+    }
+    
+    // Hide Installation Art filter
+    if (hideInstallationArt) {
+      if (artwork.category === 'Installation' || artwork.medium?.toLowerCase().includes('installation') ||
+          artwork.tags?.some(tag => tag.toLowerCase().includes('installation'))) return false;
+    }
+    
+    // Hide Printmaking filter
+    if (hidePrintmaking) {
+      if (artwork.category === 'Printmaking' || artwork.medium?.toLowerCase().includes('print') ||
+          artwork.tags?.some(tag => tag.toLowerCase().includes('print'))) return false;
+    }
+    
+    // Hide Textile Art filter
+    if (hideTextileArt) {
+      if (artwork.category === 'Textile' || artwork.medium?.toLowerCase().includes('textile') ||
+          artwork.tags?.some(tag => tag.toLowerCase().includes('textile'))) return false;
     }
     
     return true;
     });
-  }, [artworks, searchTerm, selectedCategory, showVerifiedOnly, selectedMediums, selectedCountries, selectedCities, selectedTags, hideDigitalArt, hideAIAssistedArt, hideNFTs]);
+  }, [artworks, searchTerm, selectedCategory, showVerifiedOnly, selectedMediums, selectedCountries, selectedCities, selectedTags, hideDigitalArt, hideAIAssistedArt, hideNFTs, hidePhotography, hideVideoArt, hidePerformanceArt, hideInstallationArt, hidePrintmaking, hideTextileArt]);
 
     // Shuffle function for randomizing array
     const shuffleArray = <T,>(array: T[]): T[] => {
@@ -1106,7 +1166,13 @@ export default function DiscoverPage() {
     selectedCities.length > 0,
     hideDigitalArt,
     hideAIAssistedArt,
-    hideNFTs
+    hideNFTs,
+    hidePhotography,
+    hideVideoArt,
+    hidePerformanceArt,
+    hideInstallationArt,
+    hidePrintmaking,
+    hideTextileArt
   ].filter(Boolean).length;
 
   if (selectedArtist) {
@@ -1652,18 +1718,21 @@ export default function DiscoverPage() {
           </div>
         )}
 
-              {/* Additional Filters */}
+              {/* Additional Filters - Hide Art Types */}
               <div className="space-y-4">
-                <label className="text-sm font-medium block">Additional Filters</label>
+                <label className="text-sm font-medium block">Hide Art Types</label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Select art types to exclude from your discover feed. These filters help you focus on the types of art you&apos;re most interested in.
+                </p>
                 
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant={hideDigitalArt ? "default" : "outline"}
                     size="sm"
                     onClick={() => setHideDigitalArt(!hideDigitalArt)}
                     className="text-xs"
                   >
-                    Hide Digital Art
+                    Digital Art
                   </Button>
                   
                   <Button
@@ -1672,7 +1741,7 @@ export default function DiscoverPage() {
                     onClick={() => setHideAIAssistedArt(!hideAIAssistedArt)}
                     className="text-xs"
                   >
-                    Hide AI-Assisted Art
+                    AI-Assisted
                   </Button>
                   
                   <Button
@@ -1681,7 +1750,61 @@ export default function DiscoverPage() {
                     onClick={() => setHideNFTs(!hideNFTs)}
                     className="text-xs"
                   >
-                    Hide NFTs
+                    NFTs
+                  </Button>
+                  
+                  <Button
+                    variant={hidePhotography ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setHidePhotography(!hidePhotography)}
+                    className="text-xs"
+                  >
+                    Photography
+                  </Button>
+                  
+                  <Button
+                    variant={hideVideoArt ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setHideVideoArt(!hideVideoArt)}
+                    className="text-xs"
+                  >
+                    Video Art
+                  </Button>
+                  
+                  <Button
+                    variant={hidePerformanceArt ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setHidePerformanceArt(!hidePerformanceArt)}
+                    className="text-xs"
+                  >
+                    Performance
+                  </Button>
+                  
+                  <Button
+                    variant={hideInstallationArt ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setHideInstallationArt(!hideInstallationArt)}
+                    className="text-xs"
+                  >
+                    Installation
+                  </Button>
+                  
+                  <Button
+                    variant={hidePrintmaking ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setHidePrintmaking(!hidePrintmaking)}
+                    className="text-xs"
+                  >
+                    Printmaking
+                  </Button>
+                  
+                  <Button
+                    variant={hideTextileArt ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setHideTextileArt(!hideTextileArt)}
+                    className="text-xs"
+                  >
+                    Textile
                   </Button>
                 </div>
               </div>
