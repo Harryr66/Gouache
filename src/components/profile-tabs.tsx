@@ -123,7 +123,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
             const portfolioItems = (data.portfolio || []).map((item: any) => ({
               ...item,
               createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
-            }));
+            })).filter((item: any) => item.imageUrl); // Only show items with images
             setPortfolio(portfolioItems);
             console.log('📋 Portfolio loaded for user:', userId, portfolioItems.length, 'items');
           }
@@ -134,13 +134,15 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, onTabChange 
         }
       };
 
+      // Load immediately, no delay
       fetchPortfolio();
     }, [userId]);
 
+    // Show loading only briefly, then show empty state or portfolio
     if (loading) {
       return (
-        <div className="flex justify-center py-12">
-          <ThemeLoading text="Loading portfolio..." size="md" />
+        <div className="flex justify-center py-8">
+          <ThemeLoading text="" size="sm" />
         </div>
       );
     }

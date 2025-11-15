@@ -14,7 +14,7 @@ import Link from 'next/link';
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
-  const [currentTab, setCurrentTab] = useState('portfolio');
+  const [currentTab, setCurrentTab] = useState('portfolio'); // Portfolio is default tab
   const [hasPendingArtistRequest, setHasPendingArtistRequest] = useState(false);
 
   // Watch for pending artist request for this user

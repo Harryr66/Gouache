@@ -28,10 +28,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TipDialog } from './tip-dialog';
 import { SuggestionsDialog } from './suggestions-dialog';
 import { CountryFlag } from './country-flag';
 import { ShowcaseLocation } from '@/lib/types';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ProfileHeaderProps {
   user: {
@@ -78,6 +80,8 @@ export function ProfileHeader({
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
+  const [isEventsExpanded, setIsEventsExpanded] = useState(false);
+  const [isShowcaseExpanded, setIsShowcaseExpanded] = useState(false);
 
   // Early return if user is not properly loaded
   if (!user) {
@@ -328,16 +332,25 @@ export function ProfileHeader({
         </Card>
       )}
 
-      {/* Upcoming Events Section - Separate Card */}
+      {/* Upcoming Events Section - Separate Card (Collapsible) */}
       {user.isProfessional && !user.hideUpcomingEvents && (
         <Card className="mt-6">
           <CardContent className="p-6">
-            <div className="space-y-4">
+            <Collapsible open={isEventsExpanded} onOpenChange={setIsEventsExpanded}>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Upcoming Events
-                </h2>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
+                    <h2 className="text-xl font-semibold flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-primary" />
+                      Upcoming Events
+                    </h2>
+                    {isEventsExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
                 {isOwnProfile && (
                   <Button asChild variant="outline" size="sm">
                     <Link href="/profile/edit#upcoming-events">
@@ -347,6 +360,7 @@ export function ProfileHeader({
                   </Button>
                 )}
               </div>
+              <CollapsibleContent className="space-y-4">
               
               {/* Upcoming Event Banner */}
               {user.bannerImageUrl && (
@@ -416,21 +430,31 @@ export function ProfileHeader({
                   </div>
                 )
               )}
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           </CardContent>
         </Card>
       )}
 
-      {/* Where to See My Work Section - Separate Card */}
+      {/* Where to See My Work Section - Separate Card (Collapsible) */}
       {user.isProfessional && !user.hideShowcaseLocations && (
         <Card className="mt-6">
           <CardContent className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" />
-                  Where to See My Work
-                </h2>
+            <Collapsible open={isShowcaseExpanded} onOpenChange={setIsShowcaseExpanded}>
+              <div className="flex items-center justify-between mb-3">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
+                    <h2 className="text-xl font-semibold flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      Where to See My Work
+                    </h2>
+                    {isShowcaseExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
                 {isOwnProfile && (
                   <Button asChild variant="outline" size="sm">
                     <Link href="/profile/edit#showcase-locations">
@@ -440,6 +464,7 @@ export function ProfileHeader({
                   </Button>
                 )}
               </div>
+              <CollapsibleContent className="space-y-4">
               {user.showcaseLocations && user.showcaseLocations.length > 0 ? (
                 <div className="grid gap-3 md:grid-cols-2">
                   {user.showcaseLocations.map((location, index) => (
@@ -498,7 +523,8 @@ export function ProfileHeader({
                   )}
                 </div>
               )}
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           </CardContent>
         </Card>
       )}
