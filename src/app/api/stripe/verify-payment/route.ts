@@ -3,6 +3,8 @@ import Stripe from 'stripe';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     if (!process.env.STRIPE_SECRET_KEY) {
