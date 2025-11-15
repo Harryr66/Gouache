@@ -710,7 +710,25 @@ export default function DiscoverPage() {
           const data = doc.data();
           
           // Convert portfolio items from Firestore format (with Timestamps) to proper format
-          const portfolio = (data.portfolio || []).map((item: any) => {
+          const rawPortfolio = data.portfolio || [];
+          console.log(`🔍 Processing portfolio for ${data.name || data.handle || doc.id}:`, {
+            rawCount: rawPortfolio.length,
+            rawType: Array.isArray(rawPortfolio) ? 'array' : typeof rawPortfolio,
+            rawItems: rawPortfolio.map((item: any) => ({
+              id: item?.id,
+              title: item?.title,
+              hasImage: !!item?.imageUrl,
+              imageUrl: item?.imageUrl ? 'has image' : 'no image'
+            }))
+          });
+          
+          const portfolio = rawPortfolio.map((item: any) => {
+            // Skip invalid items
+            if (!item || typeof item !== 'object') {
+              console.warn('⚠️ Skipping invalid portfolio item:', item);
+              return null;
+            }
+            
             // Handle createdAt - could be Date, Firestore Timestamp, or undefined
             let createdAt: Date;
             if (item.createdAt instanceof Date) {
@@ -721,6 +739,12 @@ export default function DiscoverPage() {
               createdAt = new Date();
             }
             
+            // Ensure imageUrl exists
+            if (!item.imageUrl) {
+              console.warn(`⚠️ Portfolio item missing imageUrl: ${item.title || item.id || 'unknown'}`);
+              return null; // Skip items without images
+            }
+            
             return {
               ...item,
               id: item.id || `portfolio-${Date.now()}`,
@@ -729,11 +753,11 @@ export default function DiscoverPage() {
               medium: item.medium || '',
               dimensions: item.dimensions || '',
               year: item.year || '',
-              tags: item.tags || [],
+              tags: Array.isArray(item.tags) ? item.tags : (item.tags ? [item.tags] : []),
               createdAt: createdAt,
-              imageUrl: item.imageUrl || ''
+              imageUrl: item.imageUrl
             };
-          });
+          }).filter((item: any) => item !== null); // Remove null items
           
           return {
             id: doc.id,

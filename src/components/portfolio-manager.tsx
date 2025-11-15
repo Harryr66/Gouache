@@ -185,6 +185,16 @@ export function PortfolioManager() {
       const userDoc = await getDoc(userDocRef);
       const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
       
+      console.log('📖 Current portfolio from Firestore:', {
+        exists: userDoc.exists(),
+        currentCount: currentPortfolio.length,
+        currentItems: currentPortfolio.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          hasImage: !!item.imageUrl
+        }))
+      });
+      
       // Check if item with same ID already exists
       const existingIndex = currentPortfolio.findIndex((item: any) => item.id === portfolioItem.id);
       
@@ -201,13 +211,36 @@ export function PortfolioManager() {
         console.log('➕ Adding new portfolio item, total items:', updatedPortfolio.length);
       }
 
+      console.log('💾 Saving portfolio to Firestore:', {
+        userId: user.id,
+        itemId: portfolioItem.id,
+        itemTitle: portfolioItem.title,
+        totalItems: updatedPortfolio.length,
+        portfolioStructure: updatedPortfolio.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          imageUrl: item.imageUrl ? 'has image' : 'no image',
+          createdAt: item.createdAt ? (item.createdAt instanceof Date ? item.createdAt.toISOString() : 'not a date') : 'missing'
+        }))
+      });
+
       // Update user profile with the complete portfolio array
       await updateDoc(userDocRef, {
         portfolio: updatedPortfolio,
         updatedAt: now
       });
 
-      console.log('✅ Portfolio item saved to Firestore, total items:', updatedPortfolio.length);
+      // Verify the write by reading back
+      const verifyDoc = await getDoc(userDocRef);
+      const verifiedPortfolio = verifyDoc.exists() ? (verifyDoc.data().portfolio || []) : [];
+      console.log('✅ Portfolio saved and verified:', {
+        verifiedCount: verifiedPortfolio.length,
+        verifiedItems: verifiedPortfolio.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          hasImage: !!item.imageUrl
+        }))
+      });
 
       // Update local state immediately for instant feedback
       const localItem: PortfolioItem = {
