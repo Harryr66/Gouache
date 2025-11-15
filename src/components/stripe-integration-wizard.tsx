@@ -141,10 +141,12 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
   };
 
   const startStatusPolling = () => {
+    if (!stripeStatus.accountId) return;
+    
     // Poll every 5 seconds for status updates
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/stripe/connect/account-status?userId=${user?.id}`);
+        const response = await fetch(`/api/stripe/connect/account-status?accountId=${stripeStatus.accountId}`);
         if (response.ok) {
           const data = await response.json();
           
