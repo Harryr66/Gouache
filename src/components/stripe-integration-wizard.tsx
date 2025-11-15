@@ -88,7 +88,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
         body: JSON.stringify({
           userId: user.id,
           email: user.email,
-          name: user.displayName || user.name,
+          name: user.displayName || user.username || 'Artist',
         }),
       });
 
