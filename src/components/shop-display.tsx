@@ -194,14 +194,11 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               Connect your Stripe account to enable sales of originals, prints, books, and courses. You'll receive payouts directly to your bank account.
             </CardDescription>
             <Button 
-              asChild 
               variant="gradient"
               onClick={() => router.push('/profile/edit#stripe-integration')}
             >
-              <a href="/profile/edit#stripe-integration">
-                <CreditCard className="h-4 w-4 mr-2" />
-                Connect Stripe Account
-              </a>
+              <CreditCard className="h-4 w-4 mr-2" />
+              Connect Stripe Account
             </Button>
           </CardContent>
         </Card>
