@@ -201,11 +201,11 @@ export default function NewsPage() {
       </header>
 
       {/* Newsletter Signup - Accent Banner */}
-      <div className="bg-red-600 dark:bg-slate-900 rounded-lg py-4 px-6">
+      <div className="bg-red-600 dark:bg-slate-900 rounded-full py-5 px-8">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-shrink-0">
             <h3 className="text-lg font-semibold text-white uppercase">
-              Subscribe to Gouache Discovery News <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Discover New Artists Everyweek!</span>
+              Subscribe to Gouache Discovery <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Discover New Artists Weekly</span>
             </h3>
           </div>
           <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3 flex-1 sm:max-w-md sm:ml-auto">
@@ -260,10 +260,28 @@ export default function NewsPage() {
         </div>
       ) : (
         <>
-          {/* Limit to 9 articles, displayed as 3 rows of 3 tiles (total 9) */}
-          <div className="grid grid-cols-3 gap-6">
-            {filteredArticles.slice(0, 9).map((article) => (
-              <NewsTile key={article.id} article={article} />
+          {/* Responsive, editorial-style grid:
+              - Mobile: 1 column (one tile per row)
+              - md: 2 columns
+              - lg: 3 columns
+              - First article spans full width on lg for a hero feel
+              - Every 5th item spans 2 cols on lg to break uniformity
+              - Limit to 9 items total
+           */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredArticles.slice(0, 9).map((article, idx) => (
+              <div
+                key={article.id}
+                className={
+                  idx === 0
+                    ? 'lg:col-span-3 md:col-span-2'
+                    : idx % 5 === 0
+                    ? 'lg:col-span-2'
+                    : ''
+                }
+              >
+                <NewsTile article={article} />
+              </div>
             ))}
           </div>
         </>
