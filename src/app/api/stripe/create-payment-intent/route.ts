@@ -75,12 +75,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate commission (10% of sale price)
-    const commissionRate = parseFloat(
-      process.env.STRIPE_PLATFORM_COMMISSION_RATE || '0.10'
-    );
-    const applicationFeeAmount = Math.round(amountInCents * commissionRate);
-
     // Verify item exists and is available
     let itemDoc;
     let itemData;
@@ -139,29 +133,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create payment intent on the connected account
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
-      currency: currency.toLowerCase(),
-      application_fee_amount: applicationFeeAmount,
-      transfer_data: {
-        destination: stripeAccountId,
+    // Create payment intent directly on the artist's connected account
+    // No platform commission: funds go straight to the artist account
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: amountInCents,
+        currency: currency.toLowerCase(),
+        metadata: {
+          userId: buyerId,
+          artistId: artistId,
+          itemType: itemType,
+          itemId: itemId,
+          itemTitle: itemData.title || 'Untitled',
+          platform: 'gouache',
+        },
+        description: description || `Purchase: ${itemData.title || itemType}`,
+        automatic_payment_methods: {
+          enabled: true,
+        },
       },
-      metadata: {
-        userId: buyerId,
-        artistId: artistId,
-        itemType: itemType,
-        itemId: itemId,
-        itemTitle: itemData.title || 'Untitled',
-        platform: 'soma',
-      },
-      description: description || `Purchase: ${itemData.title || itemType}`,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    }, {
-      stripeAccount: stripeAccountId,
-    });
+      {
+        // Direct charge on the connected account
+        stripeAccount: stripeAccountId,
+      }
+    );
 
     // Return client secret for frontend
     return NextResponse.json({
@@ -169,7 +164,6 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
-      applicationFeeAmount: applicationFeeAmount,
     });
   } catch (error: any) {
     console.error('Error creating payment intent:', error);
