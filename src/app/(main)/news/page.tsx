@@ -24,9 +24,9 @@ const createPlaceholderArticle = (theme: string | undefined, id: string): NewsAr
   title: 'Coming Soon',
   summary: 'New stories and insights from the art world will appear here.',
   category: 'Stories',
-  imageUrl: theme === 'dark' 
-    ? '/assets/gouache-logo-dark.png'
-    : '/assets/gouache-logo-light.png',
+  imageUrl: theme === 'dark'
+    ? '/assets/placeholder-dark.png'
+    : '/assets/placeholder-light.png',
   author: 'Gouache Editorial',
   publishedAt: new Date(),
   tags: [],
