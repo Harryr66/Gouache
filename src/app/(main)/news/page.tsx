@@ -200,15 +200,15 @@ export default function NewsPage() {
         </div>
       </header>
 
-      {/* Newsletter Signup - Accent Banner (pill, mobile-friendly) */}
-      <div className="bg-red-600 dark:bg-slate-900 rounded-full px-5 py-5 sm:px-8 sm:py-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      {/* Newsletter Signup - Accent Banner (pill, slimmer) */}
+      <div className="bg-red-600 dark:bg-slate-900 rounded-full px-4 py-3 sm:px-6 sm:py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-shrink-0">
-            <h3 className="text-base sm:text-lg font-semibold text-white uppercase leading-snug">
+            <h3 className="text-sm sm:text-base font-semibold text-white uppercase leading-snug">
               Subscribe to Gouache Discovery <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Discover New Artists Weekly</span>
             </h3>
           </div>
-          <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3 flex-1 sm:max-w-md sm:ml-auto w-full">
+          <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-2 flex-1 sm:max-w-md sm:ml-auto w-full">
             <div className="flex-1">
               <Input
                 type="email"
@@ -216,7 +216,7 @@ export default function NewsPage() {
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 disabled={isNewsletterSubmitting || isNewsletterSuccess}
-                className="bg-white dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground"
+                className="bg-white dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground h-9"
                 required
               />
             </div>
@@ -224,7 +224,7 @@ export default function NewsPage() {
               type="submit"
               disabled={isNewsletterSubmitting || isNewsletterSuccess}
               variant="secondary"
-              className="bg-white dark:bg-slate-700 text-foreground hover:bg-white/90 dark:hover:bg-slate-700/90 shrink-0"
+              className="bg-white dark:bg-slate-700 text-foreground hover:bg-white/90 dark:hover:bg-slate-700/90 shrink-0 h-9 px-3"
             >
               {isNewsletterSubmitting ? (
                 <>
