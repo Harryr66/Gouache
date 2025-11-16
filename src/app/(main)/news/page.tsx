@@ -204,8 +204,14 @@ export default function NewsPage() {
       <div className="bg-red-600 dark:bg-slate-900 rounded-full px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-shrink-0">
-            <h3 className="text-sm sm:text-base font-semibold text-white uppercase leading-snug">
-              Subscribe to Gouache Discovery <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Discover New Artists Weekly</span>
+            <h3 className="text-xs sm:text-sm md:text-base font-semibold text-white sm:uppercase leading-snug text-center sm:text-left">
+              Subscribe to Gouache Discovery
+              <span className="hidden sm:inline font-normal normal-case">
+                {' '}— Discover New Artists Weekly
+              </span>
+              <span className="block sm:hidden font-normal normal-case">
+                Discover New Artists Weekly
+              </span>
             </h3>
           </div>
           <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-2 flex-1 sm:max-w-md sm:ml-auto w-full">
@@ -246,7 +252,7 @@ export default function NewsPage() {
 
       {isLoading ? (
         <div className="flex justify-center py-20">
-          <ThemeLoading text="Curating today\'s headlines…" size="lg" />
+          <ThemeLoading text="Loading today&apos;s headlines…" size="lg" />
         </div>
       ) : filteredArticles.length === 0 && (filteredCategory !== 'All' || articles.length > 0) ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
