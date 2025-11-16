@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { NewsArticle } from '@/lib/utils';
+import { NewsArticle } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 type NewsTileProps = {
@@ -54,7 +54,9 @@ export function NewsTile({ article }: NewsTileProps) {
               {(article as any).title}
             </h3>
             <p className="text-sm text-muted-foreground line-clamp-3">
-              {(article as any).summary}
+              {(article as any).summary
+                ? (article as any).summary
+                : 'Stay tuned for upcoming stories from the Gouache newsroom.'}
             </p>
           </div>
 
