@@ -205,7 +205,7 @@ export default function NewsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-shrink-0">
             <h3 className="text-lg font-semibold text-white uppercase">
-              Join our discovery newsletter <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Find out who you&apos;re missing out on!</span>
+              Subscribe to Gouache Discovery News <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Discover New Artists Everyweek!</span>
             </h3>
           </div>
           <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3 flex-1 sm:max-w-md sm:ml-auto">
