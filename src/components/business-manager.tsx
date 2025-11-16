@@ -136,7 +136,7 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
           </CardDescription>
           <Button 
             variant="gradient"
-            onClick={() => window.location.href = '/profile/edit#stripe-integration'}
+            onClick={() => window.location.href = '/settings?tab=payments'}
           >
             <CreditCard className="h-4 w-4 mr-2" />
             Connect Stripe Account

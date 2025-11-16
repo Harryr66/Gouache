@@ -260,8 +260,9 @@ export default function NewsPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredArticles.map((article) => (
+          {/* Limit to 6 articles, displayed as 3 rows of 2 tiles (total 6) */}
+          <div className="grid grid-cols-2 gap-6">
+            {filteredArticles.slice(0, 6).map((article) => (
               <NewsTile key={article.id} article={article} />
             ))}
           </div>

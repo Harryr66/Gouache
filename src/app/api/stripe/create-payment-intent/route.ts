@@ -133,12 +133,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create payment intent directly on the artist's connected account
-    // No platform commission: funds go straight to the artist account
+    // Calculate commission (default 10% of sale price)
+    const commissionRate = parseFloat(
+      process.env.STRIPE_PLATFORM_COMMISSION_RATE || '0.10'
+    );
+    const applicationFeeAmount = Math.round(amountInCents * commissionRate);
+
+    // Create payment intent on the connected account with application fee
+    // Artist receives amount minus platform commission
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: amountInCents,
         currency: currency.toLowerCase(),
+        application_fee_amount: applicationFeeAmount,
+        transfer_data: {
+          destination: stripeAccountId,
+        },
         metadata: {
           userId: buyerId,
           artistId: artistId,
@@ -153,7 +163,7 @@ export async function POST(request: NextRequest) {
         },
       },
       {
-        // Direct charge on the connected account
+        // Charge and transfer on the connected account
         stripeAccount: stripeAccountId,
       }
     );
@@ -164,6 +174,7 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
+      applicationFeeAmount,
     });
   } catch (error: any) {
     console.error('Error creating payment intent:', error);

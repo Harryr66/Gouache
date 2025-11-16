@@ -292,7 +292,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
                     </CardDescription>
                     <Button 
                       variant="gradient"
-                      onClick={() => router.push('/profile/edit#stripe-integration')}
+                      onClick={() => router.push('/settings?tab=payments')}
                     >
                       <CreditCard className="h-4 w-4 mr-2" />
                       Connect Stripe Account

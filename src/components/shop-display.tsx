@@ -195,7 +195,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             </CardDescription>
             <Button 
               variant="gradient"
-              onClick={() => router.push('/profile/edit#stripe-integration')}
+              onClick={() => router.push('/settings?tab=payments')}
             >
               <CreditCard className="h-4 w-4 mr-2" />
               Connect Stripe Account
