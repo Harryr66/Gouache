@@ -200,53 +200,55 @@ export default function NewsPage() {
         </div>
       </header>
 
-      {/* Newsletter Signup - Accent Banner */}
-      <div className="bg-red-600 dark:bg-slate-900 rounded-full py-5 px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex-shrink-0">
-            <h3 className="text-lg font-semibold text-white uppercase">
-              Subscribe to Gouache Discovery <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Discover New Artists Weekly</span>
-            </h3>
-          </div>
-          <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3 flex-1 sm:max-w-md sm:ml-auto">
-            <div className="flex-1">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                disabled={isNewsletterSubmitting || isNewsletterSuccess}
-                className="bg-white dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground"
-                required
-              />
+      {/* Newsletter Signup - Accent Banner as Semi-circle */}
+      <div className="relative">
+        <div className="mx-auto w-full max-w-4xl bg-red-600 dark:bg-slate-900 rounded-t-[9999px] rounded-b-none aspect-[2/1] overflow-hidden">
+          <div className="h-full w-full flex flex-col sm:flex-row sm:items-center gap-4 px-8 py-5">
+            <div className="flex-shrink-0">
+              <h3 className="text-lg font-semibold text-white uppercase">
+                Subscribe to Gouache Discovery <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Discover New Artists Weekly</span>
+              </h3>
             </div>
-            <Button
-              type="submit"
-              disabled={isNewsletterSubmitting || isNewsletterSuccess}
-              variant="secondary"
-              className="bg-white dark:bg-slate-700 text-foreground hover:bg-white/90 dark:hover:bg-slate-700/90 shrink-0"
-            >
-              {isNewsletterSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Subscribing...
-                </>
-              ) : isNewsletterSuccess ? (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  Subscribed!
-                </>
-              ) : (
-                'Subscribe'
-              )}
-            </Button>
-          </form>
+            <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3 flex-1 sm:max-w-md sm:ml-auto">
+              <div className="flex-1">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  disabled={isNewsletterSubmitting || isNewsletterSuccess}
+                  className="bg-white dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground"
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={isNewsletterSubmitting || isNewsletterSuccess}
+                variant="secondary"
+                className="bg-white dark:bg-slate-700 text-foreground hover:bg-white/90 dark:hover:bg-slate-700/90 shrink-0"
+              >
+                {isNewsletterSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Subscribing...
+                  </>
+                ) : isNewsletterSuccess ? (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    Subscribed!
+                  </>
+                ) : (
+                  'Subscribe'
+                )}
+              </Button>
+            </form>
+          </div>
         </div>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-20">
-          <ThemeLoading text="Curating today's headlines…" size="lg" />
+          <ThemeLoading text="Curating today\'s headlines…" size="lg" />
         </div>
       ) : filteredArticles.length === 0 && (filteredCategory !== 'All' || articles.length > 0) ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">

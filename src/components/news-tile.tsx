@@ -50,8 +50,10 @@ export function NewsTile({ article }: NewsTileProps) {
 
         <CardContent className="flex flex-col justify-between flex-1 p-5 space-y-4">
           <div className="space-y-2">
-            <h3 className="font-semibold text-lg leading-tight text-foreground group-hover:scale-105 transition-transform">
-              {(article as any).title}
+            <h3 className="font-semibold text-lg leading-tight text-foreground">
+              {(article as any).title
+                ? (article as any).title
+                : 'Coming Soon'}
             </h3>
             <p className="text-sm text-muted-foreground line-clamp-3">
               {(article as any).summary

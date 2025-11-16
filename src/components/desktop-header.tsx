@@ -4,10 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Eye, Fingerprint, Ear } from 'lucide-react';
+import { Eye, Fingerprint, Globe } from 'lucide-react';
 
 const navigation = [
-  { name: 'News', href: '/news', icon: Ear },
+  { name: 'News', href: '/news', icon: Globe },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Profile', href: '/profile', icon: Fingerprint },
 ];
