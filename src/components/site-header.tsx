@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Eye, Users, Gavel, Search, User as UserIcon, LogOut } from 'lucide-react';
+import { Eye, Users, Gavel, Search, User as UserIcon, LogOut, Fingerprint } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 
@@ -19,18 +19,8 @@ export function SiteHeader() {
   const userAvatar = (className: string) => (
     <Avatar className={className}>
       <AvatarImage src={avatarUrl || undefined} alt={user?.displayName || 'User'} data-ai-hint="artist portrait" />
-      <AvatarFallback>
-        <svg
-            role="img"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-full w-full text-muted-foreground"
-        >
-            <path
-            d="M12 2C9.243 2 7 4.243 7 7s2.243 5 5 5 5-2.243 5-5-2.243-5-5-5zm0 10c-3.309 0-6 2.691-6 6v2h12v-2c0-3.309-2.691-6-6-6z"
-            fill="currentColor"
-            />
-        </svg>
+      <AvatarFallback className="bg-muted">
+        <Fingerprint className="h-5 w-5 text-muted-foreground" />
       </AvatarFallback>
     </Avatar>
   );
