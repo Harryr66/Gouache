@@ -82,9 +82,9 @@ export function NewsletterSignup() {
         <div className="flex justify-center mb-2">
           <Mail className="h-8 w-8 text-primary" />
         </div>
-        <CardTitle className="text-2xl">Join our free discovery newsletter</CardTitle>
+        <CardTitle className="text-2xl">Subscribe to Gouache Discovery</CardTitle>
         <CardDescription className="text-base">
-          Discover the best artists your missing out on!
+          Discover new artists weekly — no spam, unsubscribe anytime.
         </CardDescription>
       </CardHeader>
       <CardContent>

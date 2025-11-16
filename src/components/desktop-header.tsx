@@ -4,10 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Eye, Fingerprint, Globe } from 'lucide-react';
+import { Eye, Fingerprint, Ear } from 'lucide-react';
 
 const navigation = [
-  { name: 'News', href: '/news', icon: Globe },
+  { name: 'News', href: '/news', icon: Ear },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Profile', href: '/profile', icon: Fingerprint },
 ];
@@ -20,14 +20,14 @@ export function DesktopHeader() {
       <Link href="/news" className="flex items-center">
         <span className="sr-only">Gouache</span>
         <img
-          src="/assets/gouache-logo-light.png"
+          src="/assets/gouache-logo-light-20241111.png"
           alt="Gouache"
           width={1750}
           height={375}
           className="block h-10 w-auto dark:hidden sm:h-14"
         />
         <img
-          src="/assets/gouache-logo-dark.png"
+          src="/assets/gouache-logo-dark-20241111.png"
           alt="Gouache"
           width={1750}
           height={375}

@@ -17,14 +17,14 @@ export function MobileHeader() {
           <Link href="/news" className="flex items-center">
             <span className="sr-only">Gouache</span>
             <img
-              src="/assets/gouache-logo-light.png"
+              src="/assets/gouache-logo-light-20241111.png"
               alt="Gouache"
               width={1750}
               height={375}
               className="block h-9 w-auto dark:hidden"
             />
             <img
-              src="/assets/gouache-logo-dark.png"
+              src="/assets/gouache-logo-dark-20241111.png"
               alt="Gouache"
               width={1750}
               height={375}
