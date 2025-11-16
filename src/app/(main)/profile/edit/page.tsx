@@ -162,8 +162,8 @@ export default function ProfileEditPage() {
     hideFlags: false,
     hideCard: false,
     hideShowcaseLocations: false,
-    hideShop: false,
-    hideLearn: false,
+    hideShop: true,   // Hidden by default until artist enables
+    hideLearn: true,  // Hidden by default until artist enables
     bannerImageUrl: '',
     // Upcoming event fields
     eventCity: '',
@@ -220,8 +220,9 @@ export default function ProfileEditPage() {
             hideFlags: changes.hideFlags || user.hideFlags || false,
             hideCard: user.isProfessional ? (changes.hideCard || user.hideCard || false) : false,
             hideShowcaseLocations: user.isProfessional ? (changes.hideShowcaseLocations || user.hideShowcaseLocations || false) : false,
-            hideShop: user.isProfessional ? (changes.hideShop || user.hideShop || false) : false,
-            hideLearn: user.isProfessional ? (changes.hideLearn || user.hideLearn || false) : false,
+            // If undefined, default to hidden (true) until artist explicitly disables
+            hideShop: user.isProfessional ? (changes.hideShop ?? (user.hideShop ?? true)) : false,
+            hideLearn: user.isProfessional ? (changes.hideLearn ?? (user.hideLearn ?? true)) : false,
             bannerImageUrl: user.isProfessional ? (changes.bannerImageUrl || user.bannerImageUrl || '') : '',
             eventCity: user.isProfessional ? (changes.eventCity || user.eventCity || '') : '',
             eventCountry: user.isProfessional ? (changes.eventCountry || user.eventCountry || '') : '',
@@ -302,8 +303,9 @@ export default function ProfileEditPage() {
           hideFlags: user.hideFlags || false,
           hideCard: user.isProfessional ? (user.hideCard || false) : false,
           hideShowcaseLocations: user.isProfessional ? ((user as any).hideShowcaseLocations || false) : false,
-          hideShop: user.isProfessional ? ((user as any).hideShop || false) : false,
-          hideLearn: user.isProfessional ? ((user as any).hideLearn || false) : false,
+          // Default to hidden (true) when field is undefined
+          hideShop: user.isProfessional ? (((user as any).hideShop ?? true)) : false,
+          hideLearn: user.isProfessional ? (((user as any).hideLearn ?? true)) : false,
           bannerImageUrl: user.isProfessional ? (user.bannerImageUrl || '') : '',
           eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
           eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
@@ -1686,7 +1688,15 @@ export default function ProfileEditPage() {
                     </div>
                     <Switch
                       checked={formData.hideShop}
-                      onCheckedChange={(checked) => handleInputChange('hideShop', checked)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          const confirmHide = window.confirm(
+                            'Are you sure you want to hide your Shop tab? Customers will no longer see your shop on your profile.'
+                          );
+                          if (!confirmHide) return;
+                        }
+                        handleInputChange('hideShop', checked);
+                      }}
                     />
                   </div>
 
@@ -1699,7 +1709,15 @@ export default function ProfileEditPage() {
                     </div>
                     <Switch
                       checked={formData.hideLearn}
-                      onCheckedChange={(checked) => handleInputChange('hideLearn', checked)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          const confirmHide = window.confirm(
+                            'Are you sure you want to hide your Learn tab? Students will no longer see your courses on your profile.'
+                          );
+                          if (!confirmHide) return;
+                        }
+                        handleInputChange('hideLearn', checked);
+                      }}
                     />
                   </div>
                 </>

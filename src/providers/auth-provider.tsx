@@ -82,6 +82,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           lastSeen: new Date(),
           artistType: '',
           isAdmin: false,
+          hideShop: true,   // Tabs hidden by default until artist activates
+          hideLearn: true,  // Tabs hidden by default until artist activates
           socialLinks: {},
           showcaseLocations: [],
           preferences: {
@@ -183,6 +185,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               lastSeen: userData.lastSeen?.toDate(),
             artistType: userData.artistType || '',
             isAdmin: userData.isAdmin || false,
+            // Tabs are hidden by default until explicitly enabled
+            hideShop: userData.hideShop ?? true,
+            hideLearn: userData.hideLearn ?? true,
             hideShowcaseLocations: userData.hideShowcaseLocations || false,
             newsletterLink: userData.newsletterLink || '',
             socialLinks: userData.socialLinks || {},
