@@ -156,8 +156,8 @@ export default function ProfileEditPage() {
     countryOfOrigin: '',
     countryOfResidence: '',
     isProfessional: false,
-    tipJarEnabled: true,
-    suggestionsEnabled: true,
+    tipJarEnabled: false,      // Tip jar disabled by default
+    suggestionsEnabled: false, // Suggestions disabled by default
     hideLocation: false,
     hideFlags: false,
     hideCard: false,
@@ -209,12 +209,12 @@ export default function ProfileEditPage() {
             tipJarEnabled: user.isProfessional
               ? (changes.tipJarEnabled !== undefined
                 ? changes.tipJarEnabled
-                : (user.tipJarEnabled !== undefined ? user.tipJarEnabled : true))
+                : (user.tipJarEnabled !== undefined ? user.tipJarEnabled : false))
               : false,
             suggestionsEnabled: user.isProfessional
               ? (changes.suggestionsEnabled !== undefined
                 ? changes.suggestionsEnabled
-                : (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true))
+                : (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : false))
               : false,
             hideLocation: changes.hideLocation || user.hideLocation || false,
             hideFlags: changes.hideFlags || user.hideFlags || false,
@@ -294,10 +294,10 @@ export default function ProfileEditPage() {
             countryOfResidence: user.countryOfResidence || '',
             isProfessional: user.isProfessional || false,
           tipJarEnabled: user.isProfessional
-            ? (user.tipJarEnabled !== undefined ? user.tipJarEnabled : true)
+            ? (user.tipJarEnabled !== undefined ? user.tipJarEnabled : false)
             : false,
           suggestionsEnabled: user.isProfessional
-            ? (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : true)
+            ? (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : false)
             : false,
           hideLocation: user.hideLocation || false,
           hideFlags: user.hideFlags || false,

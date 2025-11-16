@@ -82,6 +82,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           lastSeen: new Date(),
           artistType: '',
           isAdmin: false,
+          tipJarEnabled: false,        // Coffee/tips hidden by default
+          suggestionsEnabled: false,   // Suggestions hidden by default
           hideShop: true,   // Tabs hidden by default until artist activates
           hideLearn: true,  // Tabs hidden by default until artist activates
           socialLinks: {},
@@ -185,6 +187,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               lastSeen: userData.lastSeen?.toDate(),
             artistType: userData.artistType || '',
             isAdmin: userData.isAdmin || false,
+            // Tip jar & suggestions opt-in: default to disabled unless explicitly enabled
+            tipJarEnabled: userData.tipJarEnabled ?? false,
+            suggestionsEnabled: userData.suggestionsEnabled ?? false,
             // Tabs are hidden by default until explicitly enabled
             hideShop: userData.hideShop ?? true,
             hideLearn: userData.hideLearn ?? true,
