@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Eye, User, Globe } from 'lucide-react';
+import { Eye, User, Globe, Fingerprint } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
@@ -38,18 +38,8 @@ export function MobileBottomNav() {
               {item.href === '/profile' ? (
                 <Avatar className="h-7 w-7">
                    <AvatarImage src={avatarUrl || undefined} alt={user?.displayName || 'User'} data-ai-hint="artist portrait" />
-                   <AvatarFallback>
-                      <svg
-                          role="img"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-full w-full"
-                      >
-                          <path
-                          d="M12 2C9.243 2 7 4.243 7 7s2.243 5 5 5 5-2.243 5-5-2.243-5-5-5zm0 10c-3.309 0-6 2.691-6 6v2h12v-2c0-3.309-2.691-6-6-6z"
-                          fill="currentColor"
-                          />
-                      </svg>
+                   <AvatarFallback className="bg-muted">
+                      <Fingerprint className="h-5 w-5 text-muted-foreground" />
                    </AvatarFallback>
                 </Avatar>
               ) : (
