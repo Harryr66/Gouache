@@ -49,7 +49,7 @@ export function SiteHeader() {
               className="block h-10 w-auto dark:hidden sm:h-14"
             />
             <img
-              src="/assets/gouache-logo-light.png"
+              src="/assets/gouache-logo-dark.png"
               alt="Gouache"
               width={1750}
               height={375}

@@ -24,7 +24,7 @@ export function MobileHeader() {
               className="block h-9 w-auto dark:hidden"
             />
             <img
-              src="/assets/gouache-logo-light.png"
+              src="/assets/gouache-logo-dark.png"
               alt="Gouache"
               width={1750}
               height={375}
