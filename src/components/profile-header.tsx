@@ -206,27 +206,43 @@ export function ProfileHeader({
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-2 md:gap-3">
+            <div className="flex flex-col gap-2 md:flex-row md:flex-wrap">
+              {/* Primary actions row */}
+              <div className="flex flex-wrap gap-2 md:gap-3">
               {isOwnProfile ? (
                 <>
-                  <Button asChild variant="outline" size="sm" className="text-xs md:text-sm">
+                    <Button asChild variant="outline" size="sm" className="text-xs md:text-sm">
                     <Link href="/profile/edit">
-                      <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                        <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                       Edit Profile
                     </Link>
                   </Button>
-                  
-                  
                   {user.isProfessional && (
-                    <Button asChild variant="gradient" size="sm" className="text-xs md:text-sm">
+                      <Button asChild variant="gradient" size="sm" className="text-xs md:text-sm">
                       <a href="/upload">
-                        <Upload className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                          <Upload className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                         Upload
                       </a>
                     </Button>
                   )}
-                  
                   {getDynamicButton()}
+                </>
+              ) : (
+                <Button 
+                  variant="outline"
+                    size="sm"
+                    className="text-xs md:text-sm"
+                  onClick={onFollowToggle}
+                >
+                    <Heart className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  {isFollowing ? 'Following' : 'Follow'}
+                </Button>
+              )}
+              </div>
+
+              {/* Secondary actions row (mobile stacked) */}
+              <div className="flex flex-wrap gap-2 md:gap-3">
+                {isOwnProfile && (
                   <Button
                     asChild
                     variant="outline"
@@ -238,42 +254,30 @@ export function ProfileHeader({
                       <Settings className="h-3 w-3 md:h-4 md:w-4" />
                     </Link>
                   </Button>
-                </>
-              ) : (
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className="text-xs md:text-sm"
-                  onClick={onFollowToggle}
-                >
-                  <Heart className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                  {isFollowing ? 'Following' : 'Follow'}
-                </Button>
-              )}
-              
-              {/* Tip Jar Button - Show for all professional artists with tip jar enabled (default true) */}
+                )}
+
               {user.isProfessional && (user.tipJarEnabled !== false) && (
                 <Button 
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 md:h-10 md:w-10 hover:gradient-border"
+                    className="h-8 w-8 md:h-10 md:w-10 hover:gradient-border"
                   onClick={() => setShowTipDialog(true)}
                 >
-                  <Coffee className="h-3 w-3 md:h-4 md:w-4" />
+                    <Coffee className="h-3 w-3 md:h-4 md:w-4" />
                 </Button>
               )}
               
-              {/* Suggestions Button - Show for all professional artists with suggestions enabled (default true) */}
               {user.isProfessional && (user.suggestionsEnabled !== false) && (
                 <Button 
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 md:h-10 md:w-10 hover:gradient-border"
+                    className="h-8 w-8 md:h-10 md:w-10 hover:gradient-border"
                   onClick={() => setShowSuggestionsDialog(true)}
                 >
-                  <Lightbulb className="h-3 w-3 md:h-4 md:w-4" />
+                    <Lightbulb className="h-3 w-3 md:h-4 md:w-4" />
                 </Button>
               )}
+              </div>
             </div>
 
             {/* Artist Location (moved from Upcoming Events) */}
@@ -318,21 +322,21 @@ export function ProfileHeader({
       {user.bio && (
         <Card className="mt-4 md:mt-6">
           <CardContent className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-3">
               <h2 className="text-xl font-semibold">About</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsBioExpanded(!isBioExpanded)}
-              >
-                {isBioExpanded ? 'Close Bio' : 'Read Bio'}
-              </Button>
-            </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsBioExpanded(!isBioExpanded)}
+                    >
+                      {isBioExpanded ? 'Close Bio' : 'Read Bio'}
+                    </Button>
+                </div>
             {isBioExpanded && (
-              <div className="text-foreground leading-relaxed">
-                <p className="whitespace-pre-line text-base">{user.bio}</p>
-              </div>
-            )}
+                  <div className="text-foreground leading-relaxed">
+                    <p className="whitespace-pre-line text-base">{user.bio}</p>
+                  </div>
+                )}
           </CardContent>
         </Card>
       )}
@@ -476,8 +480,8 @@ export function ProfileHeader({
                                   {item.pinned && <Pin className="h-3 w-3 mr-1" />}
                                   {isCurrent ? 'Current' : 'Upcoming'}
                                 </Badge>
-                              </div>
-                            )}
+                        </div>
+                      )}
                             <h3 className="font-semibold text-base md:text-lg line-clamp-2">{item.name}</h3>
                             {item.venue && (
                               <p className="text-sm text-muted-foreground">{item.venue}</p>
@@ -500,24 +504,24 @@ export function ProfileHeader({
                                   month: 'long', 
                                   day: 'numeric' 
                                 })}`}
-                              </p>
-                            )}
+                          </p>
+                        )}
                             {item.website && (
-                              <a
+                          <a
                                 href={item.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            target="_blank"
+                            rel="noopener noreferrer"
                                 className="text-primary hover:underline flex items-center gap-1 text-sm"
-                              >
+                          >
                                 Visit Website
                                 <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
+                          </a>
+                        )}
                             {item.notes && (
                               <p className="text-sm text-muted-foreground mt-2">{item.notes}</p>
-                            )}
-                          </div>
-                        </div>
+                        )}
+                      </div>
+                    </div>
                       </CarouselItem>
                     );
                   })}
@@ -529,8 +533,8 @@ export function ProfileHeader({
                   </>
                 )}
               </Carousel>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
         );
       })()}
 

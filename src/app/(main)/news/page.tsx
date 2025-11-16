@@ -200,49 +200,47 @@ export default function NewsPage() {
         </div>
       </header>
 
-      {/* Newsletter Signup - Accent Banner as Semi-circle */}
-      <div className="relative">
-        <div className="mx-auto w-full max-w-4xl bg-red-600 dark:bg-slate-900 rounded-t-[9999px] rounded-b-none aspect-[2/1] overflow-hidden">
-          <div className="h-full w-full flex flex-col sm:flex-row sm:items-center gap-4 px-8 py-5">
-            <div className="flex-shrink-0">
-              <h3 className="text-lg font-semibold text-white uppercase">
-                Subscribe to Gouache Discovery <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Discover New Artists Weekly</span>
-              </h3>
-            </div>
-            <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3 flex-1 sm:max-w-md sm:ml-auto">
-              <div className="flex-1">
-                <Input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  disabled={isNewsletterSubmitting || isNewsletterSuccess}
-                  className="bg-white dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground"
-                  required
-                />
-              </div>
-              <Button
-                type="submit"
-                disabled={isNewsletterSubmitting || isNewsletterSuccess}
-                variant="secondary"
-                className="bg-white dark:bg-slate-700 text-foreground hover:bg-white/90 dark:hover:bg-slate-700/90 shrink-0"
-              >
-                {isNewsletterSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Subscribing...
-                  </>
-                ) : isNewsletterSuccess ? (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Subscribed!
-                  </>
-                ) : (
-                  'Subscribe'
-                )}
-              </Button>
-            </form>
+      {/* Newsletter Signup - Accent Banner (pill, mobile-friendly) */}
+      <div className="bg-red-600 dark:bg-slate-900 rounded-full px-5 py-5 sm:px-8 sm:py-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-shrink-0">
+            <h3 className="text-base sm:text-lg font-semibold text-white uppercase leading-snug">
+              Subscribe to Gouache Discovery <span className="font-normal normal-case">—</span> <span className="font-normal normal-case">Discover New Artists Weekly</span>
+            </h3>
           </div>
+          <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-3 flex-1 sm:max-w-md sm:ml-auto w-full">
+            <div className="flex-1">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                disabled={isNewsletterSubmitting || isNewsletterSuccess}
+                className="bg-white dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground"
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={isNewsletterSubmitting || isNewsletterSuccess}
+              variant="secondary"
+              className="bg-white dark:bg-slate-700 text-foreground hover:bg-white/90 dark:hover:bg-slate-700/90 shrink-0"
+            >
+              {isNewsletterSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Subscribing...
+                </>
+              ) : isNewsletterSuccess ? (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Subscribed!
+                </>
+              ) : (
+                'Subscribe'
+              )}
+            </Button>
+          </form>
         </div>
       </div>
 
@@ -262,14 +260,7 @@ export default function NewsPage() {
         </div>
       ) : (
         <>
-          {/* Responsive, editorial-style grid:
-              - Mobile: 1 column (one tile per row)
-              - md: 2 columns
-              - lg: 3 columns
-              - First article spans full width on lg for a hero feel
-              - Every 5th item spans 2 cols on lg to break uniformity
-              - Limit to 9 items total
-           */}
+          {/* Responsive, editorial-style grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredArticles.slice(0, 9).map((article, idx) => (
               <div
