@@ -9,13 +9,19 @@ type NewsTileProps = {
 };
 
 export function NewsTile({ article }: NewsTileProps) {
+  // Debug: Log article data
+  if (process.env.NODE_ENV === 'development') {
+    console.log('NewsTile article:', { id: article.id, title: article.title, externalUrl: article.externalUrl });
+  }
+  
   const isPlaceholder = Boolean(article?.id?.toString?.().startsWith('placeholder'));
   const hasExternalUrl = article.externalUrl && article.externalUrl.trim() !== '';
+  const articleId = article?.id;
   const href = isPlaceholder 
     ? '#' 
     : (hasExternalUrl 
         ? article.externalUrl 
-        : `/news/${article.id}`);
+        : articleId ? `/news/${articleId}` : '#');
 
   const handleClick = (e: React.MouseEvent) => {
     if (isPlaceholder) {
