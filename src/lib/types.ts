@@ -557,7 +557,7 @@ export interface ShowcaseLocation {
 
 export interface ArticleSection {
   id: string;
-  type: 'text' | 'image' | 'text-image';
+  type: 'headline' | 'subheadline' | 'intro' | 'body' | 'outro' | 'image' | 'text-image';
   content?: string; // Text content for text sections
   imageUrl?: string; // Image URL for image sections
   imagePosition?: 'above' | 'below' | 'left' | 'right'; // For text-image sections

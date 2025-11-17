@@ -192,27 +192,54 @@ export default function NewsArticlePage() {
                   .sort((a, b) => a.order - b.order)
                   .map((section) => (
                     <div key={section.id} className="article-section">
-                      {section.type === 'text' && section.content && (
-                        <div className="text-foreground whitespace-pre-wrap">
+                      {/* Structured Text Sections */}
+                      {section.type === 'headline' && section.content && (
+                        <h2 className="text-3xl md:text-4xl font-bold mb-6 text-foreground">
+                          {section.content}
+                        </h2>
+                      )}
+
+                      {section.type === 'subheadline' && section.content && (
+                        <h3 className="text-2xl md:text-3xl font-semibold mb-4 text-muted-foreground">
+                          {section.content}
+                        </h3>
+                      )}
+
+                      {section.type === 'intro' && section.content && (
+                        <div className="text-lg md:text-xl text-foreground mb-6 font-medium leading-relaxed whitespace-pre-wrap">
                           {section.content}
                         </div>
                       )}
 
+                      {section.type === 'body' && section.content && (
+                        <div className="text-base md:text-lg text-foreground mb-6 leading-relaxed whitespace-pre-wrap">
+                          {section.content}
+                        </div>
+                      )}
+
+                      {section.type === 'outro' && section.content && (
+                        <div className="text-base md:text-lg text-foreground mb-6 font-medium leading-relaxed whitespace-pre-wrap border-t pt-6">
+                          {section.content}
+                        </div>
+                      )}
+
+                      {/* Image Section */}
                       {section.type === 'image' && section.imageUrl && (
-                        <figure className="my-6">
+                        <figure className="my-8">
                           <img
                             src={section.imageUrl}
                             alt={section.caption || article.title}
                             className="w-full rounded-lg"
                           />
                           {section.caption && (
-                            <figcaption className="text-sm text-muted-foreground mt-2 text-center italic">
+                            <figcaption className="text-sm text-muted-foreground mt-3 text-center italic">
                               {section.caption}
                             </figcaption>
                           )}
                         </figure>
                       )}
 
+                      {/* Text + Image Section */}
                       {section.type === 'text-image' && (
                         <div className="space-y-4">
                           {section.imagePosition === 'above' && section.imageUrl && (

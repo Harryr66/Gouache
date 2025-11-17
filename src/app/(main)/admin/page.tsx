@@ -15,7 +15,7 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
 import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport, ArticleSection } from '@/lib/types';
-import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2 } from 'lucide-react';
+import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2, GripVertical, Type, ImageIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
@@ -162,12 +162,14 @@ export default function AdminPanel() {
   const [newArticleImagePreview, setNewArticleImagePreview] = useState<string | null>(null);
   const [isPublishingArticle, setIsPublishingArticle] = useState(false);
   const [articleSections, setArticleSections] = useState<ArticleSection[]>([]);
-  const [newSectionType, setNewSectionType] = useState<'text' | 'image' | 'text-image'>('text');
+  const [newSectionType, setNewSectionType] = useState<'headline' | 'subheadline' | 'intro' | 'body' | 'outro' | 'image' | 'text-image'>('headline');
   const [newSectionContent, setNewSectionContent] = useState('');
   const [newSectionImageFile, setNewSectionImageFile] = useState<File | null>(null);
   const [newSectionImagePreview, setNewSectionImagePreview] = useState<string | null>(null);
   const [newSectionImagePosition, setNewSectionImagePosition] = useState<'above' | 'below' | 'left' | 'right'>('above');
   const [newSectionCaption, setNewSectionCaption] = useState('');
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [showAiSection, setShowAiSection] = useState(false);
   // AI-assisted article structuring
   const [aiRawText, setAiRawText] = useState('');
   const [aiHeadlines, setAiHeadlines] = useState<string[]>([]);
@@ -1890,7 +1892,11 @@ export default function AdminPanel() {
     }
 
     // Validate section based on type
-    if (newSectionType === 'text' && !newSectionContent.trim()) {
+    const textSectionTypes = ['headline', 'subheadline', 'intro', 'body', 'outro'];
+    const requiresText = textSectionTypes.includes(newSectionType) || newSectionType === 'text-image';
+    const requiresImage = newSectionType === 'image' || newSectionType === 'text-image';
+
+    if (requiresText && !newSectionContent.trim()) {
       toast({
         title: 'Content required',
         description: 'Please add text content for this section.',
@@ -1899,7 +1905,7 @@ export default function AdminPanel() {
       return;
     }
 
-    if (newSectionType === 'image' && !imageUrl && !newSectionImageFile) {
+    if (requiresImage && !imageUrl && !newSectionImageFile) {
       toast({
         title: 'Image required',
         description: 'Please upload an image for this section.',
@@ -1920,7 +1926,7 @@ export default function AdminPanel() {
     const newSection: ArticleSection = {
       id: `section-${Date.now()}`,
       type: newSectionType,
-      content: newSectionType !== 'image' ? newSectionContent.trim() : undefined,
+      content: requiresText ? newSectionContent.trim() : undefined,
       imageUrl: imageUrl || undefined,
       imagePosition: newSectionType === 'text-image' ? newSectionImagePosition : undefined,
       caption: newSectionCaption.trim() || undefined,
@@ -1930,7 +1936,7 @@ export default function AdminPanel() {
     setArticleSections([...articleSections, newSection]);
     
     // Reset form
-    setNewSectionType('text');
+    setNewSectionType('body');
     setNewSectionContent('');
     setNewSectionImageFile(null);
     setNewSectionImagePreview(null);
@@ -1963,6 +1969,74 @@ export default function AdminPanel() {
     newSections[index].order = index;
     newSections[index + 1].order = index + 1;
     setArticleSections(newSections);
+  };
+
+  // Drag and drop handlers for images
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, insertIndex: number) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      try {
+        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
+        const storagePath = `news/sections/${fileName}`;
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, file);
+        const imageUrl = await getDownloadURL(storageRef);
+
+        const newSection: ArticleSection = {
+          id: `section-${Date.now()}-${Math.random()}`,
+          type: 'image',
+          imageUrl,
+          order: insertIndex,
+        };
+
+        // Insert at the specified index
+        const newSections = [...articleSections];
+        newSections.splice(insertIndex, 0, newSection);
+        // Reorder all sections
+        newSections.forEach((section, idx) => {
+          section.order = idx;
+        });
+        setArticleSections(newSections);
+
+        toast({
+          title: 'Image added',
+          description: 'Image has been added to your article.',
+        });
+      } catch (error) {
+        console.error('Failed to upload image:', error);
+        toast({
+          title: 'Upload failed',
+          description: 'Could not upload image. Please try again.',
+          variant: 'destructive'
+        });
+      }
+    }
+  };
+
+  const handleImageFileDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+    if (files.length === 0) return;
+
+    const file = files[0];
+    setNewSectionImageFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setNewSectionImagePreview(previewUrl);
+    setNewSectionType('image');
   };
 
   const handleArchiveNewsArticle = async (article: NewsArticle, archive: boolean) => {
@@ -2280,7 +2354,7 @@ export default function AdminPanel() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
-              Learn
+              Gallery
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -2319,7 +2393,7 @@ export default function AdminPanel() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Play className="h-4 w-4" />
-              Course Management
+              Learn
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -3466,18 +3540,30 @@ export default function AdminPanel() {
                       onChange={(event) => setNewArticle((prev) => ({ ...prev, summary: event.target.value }))}
                     />
                   </div>
-                  {/* AI-Assisted Article Structuring */}
+                  {/* AI-Assisted Article Structuring - Collapsible */}
                   <div className="space-y-4 md:col-span-2">
                     <Card className="border-primary/20 bg-primary/5">
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Sparkles className="h-5 w-5 text-primary" />
-                          AI-Assisted Article Structuring
-                        </CardTitle>
-                        <CardDescription>
-                          Paste your raw text, add headlines and images, and let AI structure your article automatically
-                        </CardDescription>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="flex items-center gap-2">
+                              <Sparkles className="h-5 w-5 text-primary" />
+                              AI-Assisted Article Structuring (Optional)
+                            </CardTitle>
+                            <CardDescription>
+                              Paste your raw text, add headlines and images, and let AI structure your article automatically
+                            </CardDescription>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAiSection(!showAiSection)}
+                          >
+                            {showAiSection ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+                        </div>
                       </CardHeader>
+                      {showAiSection && (
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
                           <Label>Raw Article Text *</Label>
@@ -3639,99 +3725,183 @@ export default function AdminPanel() {
                   {/* Article Sections Builder */}
                   <div className="space-y-4 md:col-span-2">
                     <div className="flex items-center justify-between">
-                      <Label>Article Content Sections</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Build your article with text and images (or use AI above)
-                      </p>
+                      <div>
+                        <Label className="text-lg font-semibold">Article Content Builder</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Build your article with structured sections. Drag and drop images anywhere between sections.
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Existing Sections */}
+                    {/* Existing Sections with Drag & Drop Zones */}
                     {articleSections.length > 0 && (
-                      <div className="space-y-3 border rounded-lg p-4">
+                      <div className="space-y-2 border rounded-lg p-4 bg-muted/20">
                         {articleSections
                           .sort((a, b) => a.order - b.order)
                           .map((section, index) => (
-                            <div key={section.id} className="border rounded-lg p-4 bg-muted/30">
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline">
-                                    {section.type === 'text' ? 'Text' : section.type === 'image' ? 'Image' : 'Text + Image'}
-                                  </Badge>
-                                  <span className="text-sm text-muted-foreground">Section {index + 1}</span>
+                            <div key={section.id}>
+                              {/* Drop zone before each section */}
+                              <div
+                                className={`h-4 border-2 border-dashed rounded transition-colors ${
+                                  dragOverIndex === index ? 'border-primary bg-primary/10' : 'border-transparent'
+                                }`}
+                                onDragOver={(e) => handleDragOver(e, index)}
+                                onDragLeave={handleDragLeave}
+                                onDrop={(e) => handleDrop(e, index)}
+                              />
+                              
+                              <div className="border rounded-lg p-4 bg-background">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                    <Badge variant="outline" className="capitalize">
+                                      {section.type === 'headline' && <Type className="h-3 w-3 mr-1" />}
+                                      {section.type === 'image' && <ImageIcon className="h-3 w-3 mr-1" />}
+                                      {section.type}
+                                    </Badge>
+                                    <span className="text-sm text-muted-foreground">#{index + 1}</span>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => moveSectionUp(index)}
+                                      disabled={index === 0}
+                                    >
+                                      <ChevronUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => moveSectionDown(index)}
+                                      disabled={index === articleSections.length - 1}
+                                    >
+                                      <ChevronDown className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-destructive"
+                                      onClick={() => removeArticleSection(section.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </div>
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    onClick={() => moveSectionUp(index)}
-                                    disabled={index === 0}
-                                  >
-                                    <ChevronUp className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    onClick={() => moveSectionDown(index)}
-                                    disabled={index === articleSections.length - 1}
-                                  >
-                                    <ChevronDown className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-destructive"
-                                    onClick={() => removeArticleSection(section.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                                
+                                {/* Section Content Display */}
+                                {(section.type === 'headline' || section.type === 'subheadline' || section.type === 'intro' || section.type === 'body' || section.type === 'outro') && section.content && (
+                                  <div className="space-y-1">
+                                    {section.type === 'headline' && (
+                                      <h3 className="text-xl font-bold">{section.content}</h3>
+                                    )}
+                                    {section.type === 'subheadline' && (
+                                      <h4 className="text-lg font-semibold text-muted-foreground">{section.content}</h4>
+                                    )}
+                                    {(section.type === 'intro' || section.type === 'body' || section.type === 'outro') && (
+                                      <p className="text-sm text-foreground whitespace-pre-wrap line-clamp-4">{section.content}</p>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {section.type === 'image' && section.imageUrl && (
+                                  <div className="space-y-2">
+                                    <img src={section.imageUrl} alt={section.caption || 'Section image'} className="max-h-48 w-auto rounded-lg border" />
+                                    {section.caption && (
+                                      <p className="text-xs text-muted-foreground italic">{section.caption}</p>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {section.type === 'text-image' && (
+                                  <div className="space-y-2">
+                                    {section.imagePosition === 'above' && section.imageUrl && (
+                                      <img src={section.imageUrl} alt={section.caption || 'Section image'} className="max-h-48 w-auto rounded-lg border" />
+                                    )}
+                                    {section.content && (
+                                      <p className="text-sm text-foreground whitespace-pre-wrap">{section.content}</p>
+                                    )}
+                                    {section.imagePosition === 'below' && section.imageUrl && (
+                                      <img src={section.imageUrl} alt={section.caption || 'Section image'} className="max-h-48 w-auto rounded-lg border" />
+                                    )}
+                                    {section.caption && (
+                                      <p className="text-xs text-muted-foreground italic">{section.caption}</p>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                              {section.type === 'text' && section.content && (
-                                <p className="text-sm text-muted-foreground line-clamp-2">{section.content}</p>
-                              )}
-                              {section.type === 'image' && section.imageUrl && (
-                                <img src={section.imageUrl} alt={section.caption || 'Section image'} className="h-20 w-auto rounded" />
-                              )}
-                              {section.type === 'text-image' && (
-                                <div className="flex gap-2">
-                                  {section.imageUrl && (
-                                    <img src={section.imageUrl} alt={section.caption || 'Section image'} className="h-20 w-auto rounded" />
-                                  )}
-                                  {section.content && (
-                                    <p className="text-sm text-muted-foreground line-clamp-2 flex-1">{section.content}</p>
-                                  )}
-                                </div>
-                              )}
                             </div>
                           ))}
+                        
+                        {/* Drop zone after last section */}
+                        <div
+                          className={`h-4 border-2 border-dashed rounded transition-colors ${
+                            dragOverIndex === articleSections.length ? 'border-primary bg-primary/10' : 'border-transparent'
+                          }`}
+                          onDragOver={(e) => handleDragOver(e, articleSections.length)}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, articleSections.length)}
+                        />
                       </div>
                     )}
 
                     {/* Add New Section Form */}
                     <div className="border rounded-lg p-4 space-y-4">
                       <div className="flex items-center justify-between">
-                        <Label>Add New Section</Label>
-                        <Select value={newSectionType} onValueChange={(value) => setNewSectionType(value as 'text' | 'image' | 'text-image')}>
-                          <SelectTrigger className="w-40">
+                        <Label className="text-base font-semibold">Add New Section</Label>
+                        <Select value={newSectionType} onValueChange={(value) => setNewSectionType(value as 'headline' | 'subheadline' | 'intro' | 'body' | 'outro' | 'image' | 'text-image')}>
+                          <SelectTrigger className="w-48">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="text">Text Only</SelectItem>
+                            <SelectItem value="headline">Headline</SelectItem>
+                            <SelectItem value="subheadline">Subheadline</SelectItem>
+                            <SelectItem value="intro">Introduction</SelectItem>
+                            <SelectItem value="body">Body Text</SelectItem>
+                            <SelectItem value="outro">Conclusion</SelectItem>
                             <SelectItem value="image">Image Only</SelectItem>
                             <SelectItem value="text-image">Text + Image</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
+                      
+                      {/* Drag and Drop Image Area */}
+                      <div
+                        className="border-2 border-dashed rounded-lg p-8 text-center transition-colors hover:border-primary/50 hover:bg-primary/5"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                        }}
+                        onDrop={handleImageFileDrop}
+                      >
+                        <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground mb-1">
+                          Drag and drop images here or use the file input below
+                        </p>
+                      </div>
 
                       {/* Text Content */}
-                      {(newSectionType === 'text' || newSectionType === 'text-image') && (
+                      {(newSectionType === 'headline' || newSectionType === 'subheadline' || newSectionType === 'intro' || newSectionType === 'body' || newSectionType === 'outro' || newSectionType === 'text-image') && (
                         <div className="space-y-2">
-                          <Label>Text Content *</Label>
+                          <Label>
+                            {newSectionType === 'headline' && 'Headline *'}
+                            {newSectionType === 'subheadline' && 'Subheadline *'}
+                            {newSectionType === 'intro' && 'Introduction Text *'}
+                            {newSectionType === 'body' && 'Body Text *'}
+                            {newSectionType === 'outro' && 'Conclusion Text *'}
+                            {newSectionType === 'text-image' && 'Text Content *'}
+                          </Label>
                           <Textarea
-                            placeholder="Enter section text content..."
-                            rows={4}
+                            placeholder={
+                              newSectionType === 'headline' ? 'Enter headline...' :
+                              newSectionType === 'subheadline' ? 'Enter subheadline...' :
+                              newSectionType === 'intro' ? 'Enter introduction text...' :
+                              newSectionType === 'body' ? 'Enter body text...' :
+                              newSectionType === 'outro' ? 'Enter conclusion text...' :
+                              'Enter section text content...'
+                            }
+                            rows={newSectionType === 'headline' || newSectionType === 'subheadline' ? 2 : 6}
                             value={newSectionContent}
                             onChange={(e) => setNewSectionContent(e.target.value)}
                           />
