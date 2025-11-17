@@ -34,8 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ENHANCEMENT: Use ScraperAPI if available
-    // Uncomment after installing axios and adding SCRAPER_API_KEY to .env.local
-    /*
+    // Add SCRAPER_API_KEY to .env.local to enable (optional but recommended)
     const scraperApiKey = process.env.SCRAPER_API_KEY;
     if (scraperApiKey) {
       try {
@@ -72,7 +71,6 @@ export async function POST(request: NextRequest) {
         // Fall through to direct fetch
       }
     }
-    */
 
     // Basic fetch (current implementation)
     const response = await fetch(url, {
