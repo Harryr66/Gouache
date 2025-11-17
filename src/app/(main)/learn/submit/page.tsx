@@ -462,9 +462,9 @@ export default function CourseSubmissionPage() {
         isOnSale: !!formData.originalPrice,
         isNew: true,
         isFeatured: false,
-        // Force admin approval requirement: mark as pending and not published
-        status: 'pending' as const,
-        isPublished: false,
+        // Auto-publish affiliate courses for quick launch (can add admin approval later)
+        status: 'approved' as const,
+        isPublished: true,
         tags: formData.tags,
         skills: formData.skills,
         curriculum: formData.courseType === 'hosted' ? [] : [], // Will be populated later for hosted courses
