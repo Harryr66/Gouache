@@ -220,7 +220,23 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     if (course.courseType === 'affiliate' && course.externalUrl) {
       // In real app, this would process payment first, then redirect
       // For now, we'll show a confirmation and redirect
-      if (confirm('You will be redirected to the external course platform. Continue?')) {
+      const platformName = course.hostingPlatform 
+        ? course.hostingPlatform.charAt(0).toUpperCase() + course.hostingPlatform.slice(1)
+        : 'external platform';
+      
+      let message = `You will be redirected to ${platformName} to access this course.`;
+      
+      if (course.linkType === 'enrollment') {
+        message += ' You will be automatically enrolled.';
+      } else if (course.linkType === 'affiliate') {
+        message += ' You may need to complete enrollment on the platform.';
+      } else {
+        message += ' You may need to sign in or enroll manually.';
+      }
+      
+      message += '\n\nContinue?';
+      
+      if (confirm(message)) {
         window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
       }
     } else {

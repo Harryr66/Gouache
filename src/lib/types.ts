@@ -311,6 +311,10 @@ export interface Course {
   courseType?: 'hosted' | 'affiliate';
   // External URL for affiliate courses (where course is hosted externally)
   externalUrl?: string;
+  // Link type: 'direct' = direct course link, 'enrollment' = auto-enrollment link, 'affiliate' = affiliate/referral link
+  linkType?: 'direct' | 'enrollment' | 'affiliate';
+  // Platform where course is hosted (for better UX and future integrations)
+  hostingPlatform?: string;
   createdAt: Date;
   updatedAt: Date;
   publishedAt?: Date;

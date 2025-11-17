@@ -94,6 +94,8 @@ export default function CourseSubmissionPage() {
     // Course hosting type
     courseType: 'affiliate' as 'hosted' | 'affiliate',
     externalUrl: '',
+    linkType: 'direct' as 'direct' | 'enrollment' | 'affiliate',
+    hostingPlatform: '',
     // Publish options
     isPublished: false,
   });
@@ -406,14 +408,34 @@ export default function CourseSubmissionPage() {
       };
 
       // Validate affiliate course requirements
-      if (formData.courseType === 'affiliate' && !formData.externalUrl.trim()) {
-        toast({
-          title: "External URL Required",
-          description: "Please provide the external URL where your course is hosted.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
+      if (formData.courseType === 'affiliate') {
+        if (!formData.externalUrl.trim()) {
+          toast({
+            title: "External URL Required",
+            description: "Please provide the external URL where your course is hosted.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        if (!formData.hostingPlatform) {
+          toast({
+            title: "Platform Required",
+            description: "Please select the platform where your course is hosted.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        if (!formData.linkType) {
+          toast({
+            title: "Link Type Required",
+            description: "Please select the type of link you're providing.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       // Create course data
@@ -452,6 +474,8 @@ export default function CourseSubmissionPage() {
         completionRate: 0,
         courseType: formData.courseType,
         externalUrl: formData.courseType === 'affiliate' ? formData.externalUrl.trim() : undefined,
+        linkType: formData.courseType === 'affiliate' ? formData.linkType : undefined,
+        hostingPlatform: formData.courseType === 'affiliate' ? formData.hostingPlatform : undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -628,19 +652,89 @@ export default function CourseSubmissionPage() {
                 
                 {/* External URL Input for Affiliate Courses */}
                 {formData.courseType === 'affiliate' && (
-                  <div className="mt-4 space-y-2">
-                    <Label htmlFor="externalUrl">External Course URL *</Label>
-                    <Input
-                      id="externalUrl"
-                      type="url"
-                      value={formData.externalUrl}
-                      onChange={(e) => handleInputChange('externalUrl', e.target.value)}
-                      placeholder="https://your-course-platform.com/course-name"
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Enter the full URL where your course is hosted. Students will be redirected here after payment.
-                    </p>
+                  <div className="mt-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="hostingPlatform">Course Platform *</Label>
+                      <Select 
+                        value={formData.hostingPlatform} 
+                        onValueChange={(value) => handleInputChange('hostingPlatform', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select platform" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="teachable">Teachable</SelectItem>
+                          <SelectItem value="thinkific">Thinkific</SelectItem>
+                          <SelectItem value="udemy">Udemy</SelectItem>
+                          <SelectItem value="skillshare">Skillshare</SelectItem>
+                          <SelectItem value="youtube">YouTube</SelectItem>
+                          <SelectItem value="vimeo">Vimeo</SelectItem>
+                          <SelectItem value="patreon">Patreon</SelectItem>
+                          <SelectItem value="custom">Custom Website</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Select the platform where your course is hosted. This helps us provide better guidance.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="linkType">Link Type *</Label>
+                      <Select 
+                        value={formData.linkType} 
+                        onValueChange={(value) => handleInputChange('linkType', value as 'direct' | 'enrollment' | 'affiliate')}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select link type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="enrollment">Enrollment Link (Recommended)</SelectItem>
+                          <SelectItem value="affiliate">Affiliate/Referral Link</SelectItem>
+                          <SelectItem value="direct">Direct Course Link</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p><strong>Enrollment Link:</strong> Automatically enrolls students (best for paid courses)</p>
+                        <p><strong>Affiliate Link:</strong> Tracks referrals and may auto-enroll</p>
+                        <p><strong>Direct Link:</strong> Takes students to course page (may require manual enrollment)</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="externalUrl">Course URL *</Label>
+                      <Input
+                        id="externalUrl"
+                        type="url"
+                        value={formData.externalUrl}
+                        onChange={(e) => handleInputChange('externalUrl', e.target.value)}
+                        placeholder={
+                          formData.hostingPlatform === 'teachable' 
+                            ? "https://your-school.teachable.com/p/course-name"
+                            : formData.hostingPlatform === 'thinkific'
+                            ? "https://your-school.thinkific.com/courses/course-name"
+                            : formData.hostingPlatform === 'youtube'
+                            ? "https://youtube.com/playlist?list=..."
+                            : "https://your-course-platform.com/course-name"
+                        }
+                        required
+                      />
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        {formData.hostingPlatform === 'teachable' && (
+                          <p>💡 <strong>Tip:</strong> Use your Teachable enrollment link (found in course settings → Enrollment Links) for automatic enrollment.</p>
+                        )}
+                        {formData.hostingPlatform === 'thinkific' && (
+                          <p>💡 <strong>Tip:</strong> Use your Thinkific enrollment link or affiliate link for best results.</p>
+                        )}
+                        {formData.hostingPlatform === 'youtube' && (
+                          <p>⚠️ <strong>Note:</strong> YouTube links are public. Consider using a private platform for paid courses.</p>
+                        )}
+                        {formData.hostingPlatform === 'custom' && (
+                          <p>💡 <strong>Tip:</strong> Ensure your link automatically grants access after payment, or provide access codes if needed.</p>
+                        )}
+                        <p className="mt-2">Students will be redirected to this URL after successful payment.</p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
