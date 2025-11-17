@@ -1218,6 +1218,73 @@ export default function DiscoverPage() {
       return [...sorted, ...placeholderArtworks];
     }, [filteredArtworks, sortBy, placeholderUrl]);
 
+  // Filter and sort events
+  const filteredEventsList = useMemo(() => {
+    let eventsList = [...events];
+    
+    // Filter by country
+    if (selectedEventCountry !== 'all') {
+      eventsList = eventsList.filter(event => 
+        event.country === selectedEventCountry
+      );
+    }
+    
+    // Filter by city
+    if (selectedEventCity !== 'all') {
+      eventsList = eventsList.filter(event => 
+        event.city?.toLowerCase().includes(selectedEventCity.toLowerCase())
+      );
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      eventsList = eventsList.filter(event =>
+        event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.artist.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.venue?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Sort by start date (upcoming first)
+    eventsList.sort((a, b) => {
+      const aDate = a.startDate ? new Date(a.startDate).getTime() : 0;
+      const bDate = b.startDate ? new Date(b.startDate).getTime() : 0;
+      return aDate - bDate;
+    });
+    
+    // Add placeholders to fill rows (3 columns grid)
+    const tilesPerRow = 3;
+    const currentCount = eventsList.length;
+    const rows = Math.ceil(currentCount / tilesPerRow);
+    const targetCount = rows * tilesPerRow;
+    const placeholdersNeeded = Math.max(0, targetCount - currentCount);
+    
+    const placeholderEvents = Array.from({ length: placeholdersNeeded }, (_, i) => ({
+      id: `placeholder-event-${i}`,
+      name: 'Coming Soon',
+      venue: '',
+      city: '',
+      country: '',
+      imageUrl: placeholderUrl,
+      startDate: undefined,
+      endDate: undefined,
+      type: 'event' as const,
+      artist: {
+        id: `placeholder-artist-${i}`,
+        name: 'Coming Soon',
+        handle: 'coming_soon',
+        avatarUrl: undefined,
+        followerCount: 0,
+        followingCount: 0,
+        createdAt: new Date(),
+        isVerified: false,
+        isProfessional: false
+      }
+    }));
+    
+    return [...eventsList, ...placeholderEvents];
+  }, [events, selectedEventCountry, selectedEventCity, searchTerm, placeholderUrl]);
+
   const filteredArtists = artists.filter(artist => {
     // Search term filter
     if (searchTerm) {
@@ -2002,74 +2069,7 @@ export default function DiscoverPage() {
           <div>
             {/* Filtered Events */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(() => {
-                const filteredEventsList = useMemo(() => {
-                let eventsList = [...events];
-                
-                // Filter by country
-                if (selectedEventCountry !== 'all') {
-                  eventsList = eventsList.filter(event => 
-                    event.country === selectedEventCountry
-                  );
-                }
-                
-                // Filter by city
-                if (selectedEventCity !== 'all') {
-                  eventsList = eventsList.filter(event => 
-                    event.city?.toLowerCase().includes(selectedEventCity.toLowerCase())
-                  );
-                }
-                
-                // Filter by search term
-                if (searchTerm) {
-                  eventsList = eventsList.filter(event =>
-                    event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    event.artist.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    event.venue?.toLowerCase().includes(searchTerm.toLowerCase())
-                  );
-                }
-                
-                // Sort by start date (upcoming first)
-                eventsList.sort((a, b) => {
-                  const aDate = a.startDate ? new Date(a.startDate).getTime() : 0;
-                  const bDate = b.startDate ? new Date(b.startDate).getTime() : 0;
-                  return aDate - bDate;
-                });
-                
-                // Add placeholders to fill rows (3 columns grid)
-                const tilesPerRow = 3;
-                const currentCount = eventsList.length;
-                const rows = Math.ceil(currentCount / tilesPerRow);
-                const targetCount = rows * tilesPerRow;
-                const placeholdersNeeded = Math.max(0, targetCount - currentCount);
-                
-                const placeholderEvents = Array.from({ length: placeholdersNeeded }, (_, i) => ({
-                  id: `placeholder-event-${i}`,
-                  name: 'Coming Soon',
-                  venue: '',
-                  city: '',
-                  country: '',
-                  imageUrl: placeholderUrl,
-                  startDate: undefined,
-                  endDate: undefined,
-                  type: 'event' as const,
-                  artist: {
-                    id: `placeholder-artist-${i}`,
-                    name: 'Coming Soon',
-                    handle: 'coming_soon',
-                    avatarUrl: undefined,
-                    followerCount: 0,
-                    followingCount: 0,
-                    createdAt: new Date(),
-                    isVerified: false,
-                    isProfessional: false
-                  }
-                }));
-                
-                return [...eventsList, ...placeholderEvents];
-              }, [events, selectedEventCountry, selectedEventCity, searchTerm, placeholderUrl]);
-              
-              return filteredEventsList.map((event) => {
+              {filteredEventsList.map((event) => {
               const isPlaceholder = event.id?.startsWith('placeholder-event');
               const startDate = event.startDate ? new Date(event.startDate) : null;
               const endDate = event.endDate ? new Date(event.endDate) : null;
@@ -2130,8 +2130,7 @@ export default function DiscoverPage() {
                   </CardContent>
                 </Card>
               );
-              });
-            })()}
+              })}
             </div>
             
             {events.length === 0 && !isDataLoading && (
