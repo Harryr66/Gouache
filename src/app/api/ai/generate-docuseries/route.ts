@@ -6,8 +6,9 @@ import { ArticleSection } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
+  let body: any = null;
   try {
-    const body = await request.json();
+    body = await request.json();
     const { artistName, website, socialLinks, contextImages, additionalNotes } = body;
 
     if (!artistName || typeof artistName !== 'string') {
