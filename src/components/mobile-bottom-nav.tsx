@@ -36,12 +36,16 @@ export function MobileBottomNav() {
               )}
             >
               {item.href === '/profile' ? (
-                <Avatar className="h-7 w-7">
-                   <AvatarImage src={avatarUrl || undefined} alt={user?.displayName || 'User'} data-ai-hint="artist portrait" />
-                   <AvatarFallback className="bg-muted">
-                      <Fingerprint className="h-5 w-5 text-muted-foreground" />
-                   </AvatarFallback>
-                </Avatar>
+                avatarUrl ? (
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={avatarUrl} alt={user?.displayName || 'User'} data-ai-hint="artist portrait" />
+                    <AvatarFallback className="bg-transparent">
+                      <Fingerprint className="h-7 w-7 text-muted-foreground" />
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <Fingerprint className="h-7 w-7" />
+                )
               ) : (
                 <item.icon className="h-7 w-7" />
               )}

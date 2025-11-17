@@ -194,51 +194,55 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex flex-col space-y-6">
+    <div className="container mx-auto px-4 py-4 sm:py-6 max-w-6xl">
+      <div className="flex flex-col space-y-4 sm:space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Manage your account settings and preferences
           </p>
         </div>
 
         {/* Settings Tabs */}
         <Tabs defaultValue="general" className="w-full">
-          <TabsList>
-            <TabsTrigger value="general">General</TabsTrigger>
-            {user?.isProfessional && (
-              <>
-                <TabsTrigger value="business">Business Manager</TabsTrigger>
-                <TabsTrigger value="payments">Payments</TabsTrigger>
-              </>
-            )}
-            <TabsTrigger value="discover">Discover</TabsTrigger>
-            <TabsTrigger value="support">Support</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+            <TabsList className="inline-flex w-auto min-w-full sm:min-w-0">
+              <TabsTrigger value="general" className="shrink-0 whitespace-nowrap">General</TabsTrigger>
+              {user?.isProfessional && (
+                <>
+                  <TabsTrigger value="business" className="shrink-0 whitespace-nowrap text-xs sm:text-sm">Business</TabsTrigger>
+                  <TabsTrigger value="payments" className="shrink-0 whitespace-nowrap">Payments</TabsTrigger>
+                </>
+              )}
+              <TabsTrigger value="discover" className="shrink-0 whitespace-nowrap">Discover</TabsTrigger>
+              <TabsTrigger value="support" className="shrink-0 whitespace-nowrap">Support</TabsTrigger>
+            </TabsList>
+          </div>
           
-          <TabsContent value="general" className="mt-6">
+          <TabsContent value="general" className="mt-4 sm:mt-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Settings className="h-5 w-5" />
+                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+                  <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span>General Settings</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   Manage your account and preferences
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg border-destructive/50">
-                  <div>
-                    <h4 className="font-medium">Sign Out</h4>
-                    <p className="text-sm text-muted-foreground">Sign out of your account</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg border-destructive/50">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm sm:text-base">Sign Out</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Sign out of your account</p>
                   </div>
                   <Button 
                     variant="destructive"
                     onClick={handleSignOut}
                     disabled={isSigningOut}
+                    className="w-full sm:w-auto shrink-0"
+                    size="sm"
                   >
                     <LogOut className="h-4 w-4 mr-2" />
                     {isSigningOut ? 'Signing out…' : 'Sign Out'}
@@ -250,31 +254,31 @@ export default function SettingsPage() {
 
           {user?.isProfessional && (
             <>
-              <TabsContent value="business" className="mt-6">
+              <TabsContent value="business" className="mt-4 sm:mt-6">
                 <BusinessManager />
               </TabsContent>
-              <TabsContent value="payments" className="mt-6">
+              <TabsContent value="payments" className="mt-4 sm:mt-6">
                 <StripeIntegrationWizard />
               </TabsContent>
             </>
           )}
 
-          <TabsContent value="discover" className="mt-6">
+          <TabsContent value="discover" className="mt-4 sm:mt-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Eye className="h-5 w-5" />
+                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+                  <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span>Discover Settings</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   Customize what content you see in the Discover section. These preferences are permanent and will apply to all future visits.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="hideDigitalArt">Hide Digital Art</Label>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="hideDigitalArt" className="text-sm sm:text-base">Hide Digital Art</Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Permanently hide digital art and digital paintings from your discover feed
                     </p>
                   </div>
@@ -282,13 +286,14 @@ export default function SettingsPage() {
                     id="hideDigitalArt"
                     checked={discoverPrefs.hideDigitalArt}
                     onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideDigitalArt: checked })}
+                    className="shrink-0"
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="hideAiAssistedArt">Hide AI-Assisted Art</Label>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="hideAiAssistedArt" className="text-sm sm:text-base">Hide AI-Assisted Art</Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Permanently hide AI-assisted and AI-generated artworks from your discover feed
                     </p>
                   </div>
@@ -296,13 +301,14 @@ export default function SettingsPage() {
                     id="hideAiAssistedArt"
                     checked={discoverPrefs.hideAIAssistedArt}
                     onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideAIAssistedArt: checked })}
+                    className="shrink-0"
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="hideNFTs">Hide NFTs</Label>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="hideNFTs" className="text-sm sm:text-base">Hide NFTs</Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Permanently hide NFT artworks from your discover feed
                     </p>
                   </div>
@@ -310,13 +316,14 @@ export default function SettingsPage() {
                     id="hideNFTs"
                     checked={discoverPrefs.hideNFTs}
                     onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideNFTs: checked })}
+                    className="shrink-0"
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="hidePhotography">Hide Photography</Label>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="hidePhotography" className="text-sm sm:text-base">Hide Photography</Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Permanently hide photography artworks from your discover feed
                     </p>
                   </div>
@@ -324,13 +331,14 @@ export default function SettingsPage() {
                     id="hidePhotography"
                     checked={discoverPrefs.hidePhotography}
                     onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hidePhotography: checked })}
+                    className="shrink-0"
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="hideVideoArt">Hide Video Art</Label>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="hideVideoArt" className="text-sm sm:text-base">Hide Video Art</Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Permanently hide video art from your discover feed
                     </p>
                   </div>
@@ -338,13 +346,14 @@ export default function SettingsPage() {
                     id="hideVideoArt"
                     checked={discoverPrefs.hideVideoArt}
                     onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideVideoArt: checked })}
+                    className="shrink-0"
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="hidePerformanceArt">Hide Performance Art</Label>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="hidePerformanceArt" className="text-sm sm:text-base">Hide Performance Art</Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Permanently hide performance art from your discover feed
                     </p>
                   </div>
@@ -352,13 +361,14 @@ export default function SettingsPage() {
                     id="hidePerformanceArt"
                     checked={discoverPrefs.hidePerformanceArt}
                     onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hidePerformanceArt: checked })}
+                    className="shrink-0"
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="hideInstallationArt">Hide Installation Art</Label>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="hideInstallationArt" className="text-sm sm:text-base">Hide Installation Art</Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Permanently hide installation art from your discover feed
                     </p>
                   </div>
@@ -366,13 +376,14 @@ export default function SettingsPage() {
                     id="hideInstallationArt"
                     checked={discoverPrefs.hideInstallationArt}
                     onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideInstallationArt: checked })}
+                    className="shrink-0"
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="hidePrintmaking">Hide Printmaking</Label>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="hidePrintmaking" className="text-sm sm:text-base">Hide Printmaking</Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Permanently hide printmaking artworks from your discover feed
                     </p>
                   </div>
@@ -380,13 +391,14 @@ export default function SettingsPage() {
                     id="hidePrintmaking"
                     checked={discoverPrefs.hidePrintmaking}
                     onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hidePrintmaking: checked })}
+                    className="shrink-0"
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="hideTextileArt">Hide Textile Art</Label>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="hideTextileArt" className="text-sm sm:text-base">Hide Textile Art</Label>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Permanently hide textile art from your discover feed
                     </p>
                   </div>
@@ -394,6 +406,7 @@ export default function SettingsPage() {
                     id="hideTextileArt"
                     checked={discoverPrefs.hideTextileArt}
                     onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideTextileArt: checked })}
+                    className="shrink-0"
                   />
                 </div>
                 
@@ -420,27 +433,27 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="support" className="mt-6">
+          <TabsContent value="support" className="mt-4 sm:mt-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <AlertCircle className="h-5 w-5" />
+                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+                  <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span>Report Bug or System Problem</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   Found a bug or experiencing a system problem? Report it to our admin team and we'll investigate.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="report-message">Describe the issue *</Label>
+                  <Label htmlFor="report-message" className="text-sm sm:text-base">Describe the issue *</Label>
                   <Textarea
                     id="report-message"
                     value={reportMessage}
                     onChange={(e) => setReportMessage(e.target.value)}
                     placeholder="Please describe the bug, system problem, or issue you're experiencing. Include steps to reproduce if possible..."
-                    rows={8}
-                    className="resize-none"
+                    rows={6}
+                    className="resize-none text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
                     Include as much detail as possible: what happened, when it occurred, what you were trying to do, and any error messages you saw. This helps us investigate and fix the issue quickly.

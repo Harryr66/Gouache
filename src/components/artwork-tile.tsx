@@ -172,23 +172,27 @@ const generateArtistContent = (artist: Artist) => ({
     }
   };
 
-  // Swipe down gesture handlers
+  // Swipe up/down gesture handlers
   const minSwipeDistance = 50;
   const onTouchStart = (e: React.TouchEvent) => {
-    if (!isBannerExpanded) return;
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientY);
   };
   const onTouchMove = (e: React.TouchEvent) => {
-    if (!isBannerExpanded) return;
     setTouchEnd(e.targetTouches[0].clientY);
   };
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd || !isBannerExpanded) return;
+    if (!touchStart || !touchEnd) return;
     const distance = touchStart - touchEnd;
-    const isDownSwipe = distance < -minSwipeDistance;
-    if (isDownSwipe) {
+    const isDownSwipe = distance < -minSwipeDistance; // Swiping down (touchEnd > touchStart)
+    const isUpSwipe = distance > minSwipeDistance; // Swiping up (touchEnd < touchStart)
+    
+    if (isDownSwipe && isBannerExpanded) {
+      // Swipe down to close when expanded
       setIsBannerExpanded(false);
+    } else if (isUpSwipe && !isBannerExpanded) {
+      // Swipe up to open when collapsed
+      setIsBannerExpanded(true);
     }
   };
 
@@ -345,7 +349,7 @@ const generateArtistContent = (artist: Artist) => ({
                   onTouchEnd={onTouchEnd}
                 >
                   <CollapsibleTrigger asChild>
-                    <div className="flex items-center gap-3 px-4 py-3 w-full cursor-pointer">
+                    <div className="flex items-center gap-3 px-4 py-3 w-full cursor-pointer touch-none">
                       <Avatar className="h-10 w-10 border-2 border-background">
                         <AvatarImage
                           src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(40, 40)}
