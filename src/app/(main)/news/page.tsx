@@ -282,7 +282,7 @@ export default function NewsPage() {
             {/* WHAT'S NEW Section - Editorial Style (moved under hero) */}
             {filteredArticles.length > 1 && (
               <div className="space-y-8">
-                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold italic text-center tracking-tight">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold italic text-left tracking-tight">
                   WHAT&apos;S NEW
                 </h2>
                 <div className="space-y-6">
