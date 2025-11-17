@@ -154,7 +154,8 @@ export default function AdminPanel() {
     imageUrl: '',
     externalUrl: '',
     publishedAt: '',
-    tags: ''
+    tags: '',
+    location: 'evergreen' as 'main-banner' | 'whats-new' | 'evergreen'
   });
   const [newArticleContent, setNewArticleContent] = useState('');
   const [newArticleImageFile, setNewArticleImageFile] = useState<File | null>(null);
@@ -352,6 +353,7 @@ export default function AdminPanel() {
             externalUrl: data.externalUrl ?? '',
             featured: data.featured ?? false,
             content: data.content ?? '',
+            location: data.location ?? 'evergreen',
             archived: data.archived ?? false,
             archivedAt: data.archivedAt?.toDate?.()
           } as NewsArticle;
@@ -1589,6 +1591,7 @@ export default function AdminPanel() {
         featured: false,
         tags,
         content: newArticleContent,
+        location: newArticle.location || 'evergreen',
         publishedAt: publishedAtDate,
         archived: false,
         archivedAt: null,
@@ -1608,6 +1611,7 @@ export default function AdminPanel() {
           featured: false,
           tags,
           content: newArticleContent,
+          location: newArticle.location || 'evergreen',
           publishedAt: publishedAtDate,
           updatedAt: new Date(),
           archived: false
@@ -1628,7 +1632,8 @@ export default function AdminPanel() {
         imageUrl: '',
         externalUrl: '',
         publishedAt: '',
-        tags: ''
+        tags: '',
+        location: 'evergreen'
       });
       setNewArticleContent('');
       setNewArticleImageFile(null);
@@ -2862,6 +2867,56 @@ export default function AdminPanel() {
                       value={newArticle.tags}
                       onChange={(event) => setNewArticle((prev) => ({ ...prev, tags: event.target.value }))}
                     />
+                  </div>
+                  <div className="space-y-3 md:col-span-2">
+                    <Label>Article Location *</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Select where this article should appear on the news page:
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="location-main-banner"
+                          name="article-location"
+                          value="main-banner"
+                          checked={newArticle.location === 'main-banner'}
+                          onChange={(e) => setNewArticle((prev) => ({ ...prev, location: e.target.value as 'main-banner' | 'whats-new' | 'evergreen' }))}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="location-main-banner" className="font-normal cursor-pointer">
+                          Main Banner (Hero tile - first article)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="location-whats-new"
+                          name="article-location"
+                          value="whats-new"
+                          checked={newArticle.location === 'whats-new'}
+                          onChange={(e) => setNewArticle((prev) => ({ ...prev, location: e.target.value as 'main-banner' | 'whats-new' | 'evergreen' }))}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="location-whats-new" className="font-normal cursor-pointer">
+                          What&apos;s New (Featured section - articles 2-4)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="location-evergreen"
+                          name="article-location"
+                          value="evergreen"
+                          checked={newArticle.location === 'evergreen'}
+                          onChange={(e) => setNewArticle((prev) => ({ ...prev, location: e.target.value as 'main-banner' | 'whats-new' | 'evergreen' }))}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="location-evergreen" className="font-normal cursor-pointer">
+                          Evergreen Article (Normal article spaces - articles 5+)
+                        </Label>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-end">

@@ -502,6 +502,7 @@ export interface NewsArticle {
   content?: string;
   archived?: boolean;
   archivedAt?: Date;
+  location?: 'main-banner' | 'whats-new' | 'evergreen';
 }
 
 export interface Comment {
