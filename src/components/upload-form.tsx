@@ -11,10 +11,12 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/providers/auth-provider';
 import { useContent } from '@/providers/content-provider';
 import { useRouter } from 'next/navigation';
-import { Upload, Image as ImageIcon, Video, FileText } from 'lucide-react';
+import { Upload, Image as ImageIcon, Video, FileText, X } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { toast } from '@/hooks/use-toast';
 
 export function UploadForm() {
   const { user, avatarUrl, refreshUser } = useAuth();
@@ -38,36 +40,80 @@ export function UploadForm() {
     process: ''
   });
   
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length > 0) {
+      setFiles(selectedFiles);
+      
+      // Generate previews for all files
+      const newPreviews: string[] = [];
+      let loadedCount = 0;
+      
+      selectedFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newPreviews.push(e.target?.result as string);
+          loadedCount++;
+          if (loadedCount === selectedFiles.length) {
+            setPreviews(newPreviews);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeFile = (index: number) => {
+    const newFiles = files.filter((_, i) => i !== index);
+    const newPreviews = previews.filter((_, i) => i !== index);
+    setFiles(newFiles);
+    setPreviews(newPreviews);
+    if (currentPreviewIndex >= newFiles.length && newFiles.length > 0) {
+      setCurrentPreviewIndex(newFiles.length - 1);
+    } else if (newFiles.length === 0) {
+      setCurrentPreviewIndex(0);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !user) return;
+    if (!files.length || !user) return;
+
+    // Validate minimum 2 tags
+    const tags = formData.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+    if (tags.length < 2) {
+      toast({
+        title: "Tags Required",
+        description: "Please add at least 2 tags to your artwork.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
       console.log('📤 UploadForm: Starting upload process...');
       
-      // Upload image to Firebase Storage
-      console.log('📤 UploadForm: Uploading image to Firebase Storage...');
-      const imageRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${file.name}`);
-      await uploadBytes(imageRef, file);
-      const imageUrl = await getDownloadURL(imageRef);
-      console.log('✅ UploadForm: Image uploaded to Storage:', imageUrl);
+      // Upload all files to Firebase Storage
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        console.log(`📤 UploadForm: Uploading file ${i + 1}/${files.length}...`);
+        const fileRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${i}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        const fileUrl = await getDownloadURL(fileRef);
+        uploadedUrls.push(fileUrl);
+        console.log(`✅ UploadForm: File ${i + 1} uploaded to Storage:`, fileUrl);
+      }
+
+      // Use first image as primary imageUrl, store all in supportingImages
+      const primaryImageUrl = uploadedUrls[0];
+      const supportingImages = uploadedUrls.slice(1);
 
       // Create artwork object
       const newArtwork = {
@@ -83,9 +129,10 @@ export function UploadForm() {
         },
         title: formData.title,
         description: formData.description,
-        imageUrl: imageUrl, // Use Storage URL instead of base64 preview
+        imageUrl: primaryImageUrl,
+        supportingImages: supportingImages, // Store additional images/videos
         imageAiHint: formData.description,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        tags: tags,
         price: formData.isForSale ? parseFloat(formData.price) : undefined,
         currency: formData.currency,
         isForSale: formData.isForSale,
@@ -112,7 +159,7 @@ export function UploadForm() {
         id: `post-${Date.now()}`,
         artworkId: newArtwork.id,
         artist: newArtwork.artist,
-        imageUrl: newArtwork.imageUrl,
+        imageUrl: primaryImageUrl,
         imageAiHint: newArtwork.imageAiHint,
         caption: formData.description,
         likes: 0,
@@ -134,7 +181,8 @@ export function UploadForm() {
       
       const portfolioItem = {
         id: newArtwork.id,
-        imageUrl: imageUrl,
+        imageUrl: primaryImageUrl,
+        supportingImages: supportingImages, // Store all images for carousel
         title: formData.title,
         description: formData.description || '',
         medium: formData.medium || '',
@@ -195,24 +243,110 @@ export function UploadForm() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* File Upload */}
           <div className="space-y-2">
-            <Label htmlFor="file">Artwork File</Label>
+            <Label htmlFor="file">Artwork Files {files.length > 0 && `(${files.length} selected)`}</Label>
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
               <input
                 type="file"
                 id="file"
                 accept="image/*,video/*"
                 onChange={handleFileChange}
+                multiple
                 className="hidden"
               />
               <label htmlFor="file" className="cursor-pointer">
-                {preview ? (
-                  <div className="space-y-2">
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="mx-auto h-32 w-32 object-cover rounded-lg"
-                    />
-                    <p className="text-sm text-muted-foreground">Click to change</p>
+                {previews.length > 0 ? (
+                  <div className="space-y-4">
+                    {previews.length === 1 ? (
+                      <div className="relative">
+                        {files[0]?.type.startsWith('video/') ? (
+                          <video
+                            src={previews[0]}
+                            controls
+                            className="mx-auto h-64 w-auto max-w-full object-contain rounded-lg"
+                          />
+                        ) : (
+                          <img
+                            src={previews[0]}
+                            alt="Preview"
+                            className="mx-auto h-64 w-auto max-w-full object-contain rounded-lg"
+                          />
+                        )}
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeFile(0);
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <Carousel 
+                          className="w-full max-w-md mx-auto"
+                          opts={{
+                            align: "start",
+                          }}
+                          setApi={(api) => {
+                            if (api) {
+                              api.on("select", () => {
+                                setCurrentPreviewIndex(api.selectedScrollSnap());
+                              });
+                            }
+                          }}
+                        >
+                          <CarouselContent>
+                            {previews.map((preview, index) => (
+                              <CarouselItem key={index}>
+                                <div className="relative">
+                                  {files[index]?.type.startsWith('video/') ? (
+                                    <video
+                                      src={preview}
+                                      controls
+                                      className="mx-auto h-64 w-auto max-w-full object-contain rounded-lg"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={preview}
+                                      alt={`Preview ${index + 1}`}
+                                      className="mx-auto h-64 w-auto max-w-full object-contain rounded-lg"
+                                    />
+                                  )}
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-2 right-2"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      removeFile(index);
+                                    }}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          {previews.length > 1 && (
+                            <>
+                              <CarouselPrevious />
+                              <CarouselNext />
+                            </>
+                          )}
+                        </Carousel>
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          {currentPreviewIndex + 1} of {previews.length}
+                        </p>
+                      </div>
+                    )}
+                    <p className="text-sm text-muted-foreground">Click to add more files</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -220,7 +354,7 @@ export function UploadForm() {
                     <div>
                       <p className="text-sm font-medium">Upload your artwork</p>
                       <p className="text-xs text-muted-foreground">
-                        PNG, JPG, GIF, MP4 up to 10MB
+                        PNG, JPG, GIF, MP4 up to 10MB (multiple files supported)
                       </p>
                     </div>
                   </div>
@@ -325,13 +459,17 @@ export function UploadForm() {
 
           {/* Tags */}
           <div className="space-y-2">
-            <Label htmlFor="tags">Tags</Label>
+            <Label htmlFor="tags">Tags <span className="text-destructive">*</span> (Minimum 2 required)</Label>
             <Input
               id="tags"
               value={formData.tags}
               onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              placeholder="Enter tags separated by commas"
+              placeholder="Enter at least 2 tags separated by commas (e.g., abstract, painting, modern)"
+              required
             />
+            <p className="text-xs text-muted-foreground">
+              {formData.tags.split(',').map(tag => tag.trim()).filter(Boolean).length} tag(s) added
+            </p>
           </div>
 
           {/* AI Assistance */}
@@ -449,8 +587,8 @@ export function UploadForm() {
           </div>
 
           {/* Submit Button */}
-          <Button type="submit" disabled={loading || !file}>
-            {loading ? 'Uploading...' : 'Upload Artwork'}
+          <Button type="submit" disabled={loading || !files.length}>
+            {loading ? `Uploading ${files.length} file(s)...` : `Upload ${files.length > 1 ? `${files.length} Files` : 'Artwork'}`}
           </Button>
         </form>
       </CardContent>
