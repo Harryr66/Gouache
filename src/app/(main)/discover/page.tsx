@@ -1504,9 +1504,9 @@ export default function DiscoverPage() {
             </TabsList>
 
             <TabsContent value="portfolio" className="mt-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-px">
                 {artistArtworks.map((artwork) => (
-                  <ArtworkTile key={artwork.id} artwork={artwork} />
+                  <ArtworkTile key={artwork.id} artwork={artwork} className="rounded-none" />
                 ))}
               </div>
             </TabsContent>
@@ -2079,7 +2079,7 @@ export default function DiscoverPage() {
         ) : view === 'events' ? (
           <div>
             {/* Filtered Events */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px">
               {filteredEventsList.map((event) => {
               const isPlaceholder = event.id?.startsWith('placeholder-event');
               const startDate = event.startDate ? new Date(event.startDate) : null;
@@ -2089,8 +2089,8 @@ export default function DiscoverPage() {
               const isUpcoming = startDate && startDate > now;
               
               return (
-                <Card key={event.id} className={isPlaceholder ? "opacity-50 pointer-events-none" : "hover:shadow-lg transition-shadow cursor-pointer"} onClick={() => !isPlaceholder && router.push(`/profile/${event.artist.id}`)}>
-                  <div className="relative aspect-video overflow-hidden rounded-t-lg">
+                <Card key={event.id} className={isPlaceholder ? "opacity-50 pointer-events-none rounded-none" : "hover:shadow-lg transition-shadow cursor-pointer rounded-none"} onClick={() => !isPlaceholder && router.push(`/profile/${event.artist.id}`)}>
+                  <div className="relative aspect-video overflow-hidden rounded-none">
                     <img
                       src={event.imageUrl || placeholderUrl}
                       alt={event.name}
@@ -2154,12 +2154,12 @@ export default function DiscoverPage() {
           </div>
         ) : (
           <div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-px">
               {sortedArtworks.map((artwork) => {
                 const isPlaceholder = artwork.id?.startsWith('placeholder');
                 return (
                   <div key={artwork.id} className={isPlaceholder ? "pointer-events-none opacity-50" : ""}>
-                    <ArtworkTile artwork={artwork} />
+                    <ArtworkTile artwork={artwork} className="rounded-none" />
                   </div>
                 );
               })}

@@ -40,9 +40,10 @@ import {
 interface ArtworkTileProps {
   artwork: Artwork;
   onClick?: () => void;
+  className?: string;
 }
 
-export function ArtworkTile({ artwork, onClick }: ArtworkTileProps) {
+export function ArtworkTile({ artwork, onClick, className }: ArtworkTileProps) {
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
@@ -199,7 +200,7 @@ const generateArtistContent = (artist: Artist) => ({
   return (
     <>
     <Card 
-        className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0"
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 ${className || ''}`}
         onClick={handleTileClick}
     >
       <div className="relative aspect-square overflow-hidden">
