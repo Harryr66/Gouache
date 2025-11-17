@@ -1822,7 +1822,7 @@ export default function AdminPanel() {
       setNewArticleImageFile(null);
       setNewArticleImagePreview(null);
       setArticleSections([]);
-      setNewSectionType('text');
+      setNewSectionType('body');
       setNewSectionContent('');
       setNewSectionImageFile(null);
       setNewSectionImagePreview(null);
