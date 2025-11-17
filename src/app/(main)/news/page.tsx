@@ -202,8 +202,8 @@ export default function NewsPage() {
 
       {/* Newsletter Signup - Accent Banner (pill, slimmer) */}
       <div className="bg-red-600 dark:bg-slate-900 rounded-full px-4 py-3 sm:px-6 sm:py-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex-shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <div className="flex-shrink-0 px-2 sm:px-4">
             <h3 className="text-xs sm:text-sm md:text-base font-semibold text-white sm:uppercase leading-snug text-center sm:text-left">
               Subscribe to Gouache Discovery
               <span className="hidden sm:inline font-normal normal-case">
@@ -214,7 +214,7 @@ export default function NewsPage() {
               </span>
             </h3>
           </div>
-          <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-2 flex-1 sm:max-w-md sm:ml-auto w-full">
+          <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-2 flex-1 sm:max-w-md sm:ml-0 w-full">
             <div className="flex-1">
               <Input
                 type="email"
