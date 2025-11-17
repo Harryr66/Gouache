@@ -95,15 +95,15 @@ export default function NewsPage() {
       return matchesCategory;
     });
 
-    // Always show 12 tiles, fill with placeholders if needed
+    // Always show 9 tiles, fill with placeholders if needed
     const displayArticles = [...realArticles];
-    while (displayArticles.length < 12) {
+    while (displayArticles.length < 9) {
       displayArticles.push(
         createPlaceholderArticle(theme, `placeholder-${displayArticles.length + 1}`)
       );
     }
 
-    return displayArticles.slice(0, 12);
+    return displayArticles.slice(0, 9);
   }, [articles, filteredCategory, theme]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -270,87 +270,97 @@ export default function NewsPage() {
         </div>
       ) : (
         <>
-          {/* WHAT'S NEW Section - Editorial Style */}
-          {filteredArticles.length > 0 && (
-            <div className="space-y-8 mb-12">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold italic text-center tracking-tight">
-                WHAT&apos;S NEW
-              </h2>
-              <div className="space-y-6">
-                {filteredArticles.slice(0, 3).map((article) => {
-                  const isPlaceholder = Boolean(article.id?.toString?.().startsWith('placeholder'));
-                  const href = isPlaceholder ? '#' : (article.externalUrl ?? `/news/${article.id}`);
-                  const publishedDate = article.publishedAt instanceof Date 
-                    ? article.publishedAt 
-                    : new Date(article.publishedAt || Date.now());
-                  
-                  const Wrapper = ({ children }: { children: React.ReactNode }) => {
-                    if (isPlaceholder) {
-                      return <div className="pointer-events-none">{children}</div>;
-                    }
+          {/* Hero Media Tile + What's New Section */}
+          <div className="space-y-12">
+            {/* Hero Tile - First Article */}
+            {filteredArticles.length > 0 && (
+              <div>
+                <NewsTile article={filteredArticles[0]} />
+              </div>
+            )}
+
+            {/* WHAT'S NEW Section - Editorial Style (moved under hero) */}
+            {filteredArticles.length > 1 && (
+              <div className="space-y-8">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold italic text-center tracking-tight">
+                  WHAT&apos;S NEW
+                </h2>
+                <div className="space-y-6">
+                  {filteredArticles.slice(1, 4).map((article) => {
+                    const isPlaceholder = Boolean(article.id?.toString?.().startsWith('placeholder'));
+                    const href = isPlaceholder ? '#' : (article.externalUrl ?? `/news/${article.id}`);
+                    const publishedDate = article.publishedAt instanceof Date 
+                      ? article.publishedAt 
+                      : new Date(article.publishedAt || Date.now());
+                    
+                    const Wrapper = ({ children }: { children: React.ReactNode }) => {
+                      if (isPlaceholder) {
+                        return <div className="pointer-events-none">{children}</div>;
+                      }
+                      return (
+                        <Link 
+                          href={href as string} 
+                          target={article.externalUrl ? '_blank' : '_self'} 
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          {children}
+                        </Link>
+                      );
+                    };
+
                     return (
-                      <Link 
-                        href={href as string} 
-                        target={article.externalUrl ? '_blank' : '_self'} 
-                        rel="noopener noreferrer"
-                        className="block"
-                      >
-                        {children}
-                      </Link>
-                    );
-                  };
-
-                  return (
-                    <Wrapper key={article.id}>
-                      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 group hover:opacity-90 transition-opacity">
-                        <div className="relative w-full sm:w-48 md:w-64 flex-shrink-0 aspect-[4/3] overflow-hidden rounded-lg">
-                          <img
-                            src={article.imageUrl}
-                            alt={article.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                        </div>
-                        <div className="flex-1 flex flex-col justify-center min-w-0">
-                          <div className="text-xs sm:text-sm text-muted-foreground mb-2 uppercase tracking-wide">
-                            {article.category} | {publishedDate.toLocaleDateString('en-US', { 
-                              month: '2-digit', 
-                              day: '2-digit', 
-                              year: 'numeric' 
-                            })}
+                      <Wrapper key={article.id}>
+                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 group hover:opacity-90 transition-opacity">
+                          <div className="relative w-full sm:w-48 md:w-64 flex-shrink-0 aspect-[4/3] overflow-hidden rounded-lg">
+                            <img
+                              src={article.imageUrl}
+                              alt={article.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
                           </div>
-                          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight text-foreground group-hover:text-primary transition-colors">
-                            {article.title || 'Coming Soon'}
-                          </h3>
-                          {article.summary && (
-                            <p className="text-sm sm:text-base text-muted-foreground mt-2 line-clamp-2">
-                              {article.summary}
-                            </p>
-                          )}
+                          <div className="flex-1 flex flex-col justify-center min-w-0">
+                            <div className="text-xs sm:text-sm text-muted-foreground mb-2 uppercase tracking-wide">
+                              {article.category} | {publishedDate.toLocaleDateString('en-US', { 
+                                month: '2-digit', 
+                                day: '2-digit', 
+                                year: 'numeric' 
+                              })}
+                            </div>
+                            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight text-foreground group-hover:text-primary transition-colors">
+                              {article.title || 'Coming Soon'}
+                            </h3>
+                            {article.summary && (
+                              <p className="text-sm sm:text-base text-muted-foreground mt-2 line-clamp-2">
+                                {article.summary}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </Wrapper>
-                  );
-                })}
+                      </Wrapper>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Responsive, editorial-style grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredArticles.slice(3, 12).map((article, idx) => (
-              <div
-                key={article.id}
-                className={
-                  idx === 0
-                    ? 'lg:col-span-3 md:col-span-2'
-                    : idx % 5 === 0
-                    ? 'lg:col-span-2'
-                    : ''
-                }
-              >
-                <NewsTile article={article} />
+            {/* Responsive, editorial-style grid - Remaining 5 articles (total 9) */}
+            {filteredArticles.length > 4 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredArticles.slice(4, 9).map((article, idx) => (
+                  <div
+                    key={article.id}
+                    className={
+                      idx % 5 === 0
+                        ? 'lg:col-span-2'
+                        : ''
+                    }
+                  >
+                    <NewsTile article={article} />
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </>
       )}
