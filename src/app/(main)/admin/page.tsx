@@ -3688,7 +3688,7 @@ export default function AdminPanel() {
                                   <div key={section.id} className="border rounded-lg p-3 bg-background">
                                     <div className="flex items-center gap-2 mb-2">
                                       <Badge variant="outline">
-                                        {section.type === 'text' ? 'Text' : section.type === 'image' ? 'Image' : 'Text + Image'}
+                                        {section.type === 'image' ? 'Image' : section.type === 'text-image' ? 'Text + Image' : section.type.charAt(0).toUpperCase() + section.type.slice(1)}
                                       </Badge>
                                       {section.imagePosition && (
                                         <Badge variant="secondary">{section.imagePosition}</Badge>
