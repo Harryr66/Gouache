@@ -3719,6 +3719,7 @@ export default function AdminPanel() {
                           </Card>
                         )}
                       </CardContent>
+                      )}
                     </Card>
                   </div>
 
