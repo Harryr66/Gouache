@@ -349,10 +349,10 @@ const generateArtistContent = (artist: Artist) => ({
                   onTouchEnd={onTouchEnd}
                 >
                   <CollapsibleTrigger asChild>
-                    <div className="flex items-center gap-3 px-4 py-3 w-full cursor-pointer touch-none">
-                      <Avatar className="h-10 w-10 border-2 border-background">
+                    <div className="flex items-center gap-3 px-4 py-5 w-full cursor-pointer touch-none">
+                      <Avatar className="h-12 w-12 border-2 border-background">
                         <AvatarImage
-                          src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(40, 40)}
+                          src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(48, 48)}
                           alt={artwork.artist.name}
                           className="object-cover"
                         />
@@ -370,22 +370,22 @@ const generateArtistContent = (artist: Artist) => ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-12 w-12"
                         onClick={async (e) => {
                           e.stopPropagation();
                           await toggleLike(artwork.id);
                         }}
                         disabled={likesLoading}
                       >
-                        <HeartIcon className={`h-5 w-5 ${liked ? 'fill-current text-red-500' : ''}`} />
+                        <HeartIcon className={`h-7 w-7 ${liked ? 'fill-current text-red-500' : ''}`} />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-10 w-10"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <Share2 className="h-4 w-4" />
+                        <Share2 className="h-5 w-5" />
                       </Button>
                     </div>
                   </CollapsibleTrigger>
