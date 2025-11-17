@@ -185,13 +185,14 @@ export default function NewsPage() {
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
             {categories.map((category) => (
               <Button
                 key={category}
                 variant={filteredCategory === category ? 'gradient' : 'outline'}
                 size="sm"
                 onClick={() => setFilteredCategory(category)}
+                className="shrink-0 whitespace-nowrap"
               >
                 {category}
               </Button>
@@ -202,17 +203,19 @@ export default function NewsPage() {
 
       {/* Newsletter Signup - Accent Banner (pill, slimmer) */}
       <div className="bg-red-600 dark:bg-slate-900 rounded-full px-4 py-3 sm:px-6 sm:py-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          <div className="flex-shrink-0 px-2 sm:px-4">
-            <h3 className="text-xs sm:text-sm md:text-base font-semibold text-white sm:uppercase leading-snug text-center sm:text-left">
-              Subscribe to Gouache Discovery
-              <span className="hidden sm:inline font-normal normal-case">
-                {' '}— Discover New Artists Weekly
-              </span>
-              <span className="block sm:hidden font-normal normal-case">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <div className="flex-shrink-0 px-3 sm:px-4">
+            <div className="text-center sm:text-left">
+              <div className="text-sm sm:text-base font-semibold text-white sm:uppercase leading-relaxed">
+                Subscribe to Gouache Discovery
+              </div>
+              <div className="hidden sm:inline text-sm sm:text-base font-normal text-white normal-case">
+                — Discover New Artists Weekly
+              </div>
+              <div className="block sm:hidden text-xs font-normal text-white normal-case mt-1">
                 Discover New Artists Weekly
-              </span>
-            </h3>
+              </div>
+            </div>
           </div>
           <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-2 flex-1 sm:max-w-md sm:ml-0 w-full">
             <div className="flex-1">

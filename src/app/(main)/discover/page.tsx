@@ -5,7 +5,6 @@ import { ArtworkTile } from '@/components/artwork-tile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -242,7 +241,8 @@ export default function DiscoverPage() {
   const placeholderUrl = getDiscoverPlaceholder();
   
   
-  const [view, setView] = useState<'artworks' | 'artists'>('artworks');
+  // Always show artworks - users find artists by clicking on artwork tiles
+  const view: 'artworks' = 'artworks';
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -1439,7 +1439,7 @@ export default function DiscoverPage() {
       <div className="border-b border-border bg-card">
     <div className="container mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold mb-2">Discover</h1>
-          <p className="text-muted-foreground">Explore artworks and artists from around the world</p>
+          <p className="text-muted-foreground">Explore artworks from around the world</p>
         </div>
         </div>
 
@@ -1456,108 +1456,45 @@ export default function DiscoverPage() {
               className="pl-10"
             />
             </div>
-            <Tabs value={view} onValueChange={(v) => setView(v as 'artworks' | 'artists')} className="w-full sm:w-auto">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="artworks">Artworks</TabsTrigger>
-                <TabsTrigger value="artists">Artists</TabsTrigger>
-              </TabsList>
-            </Tabs>
           </div>
           
           <div className="flex flex-wrap gap-3 mt-3 pb-2 min-w-0">
-            {view === 'artworks' && (
-              <>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-[180px] shrink-0">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[140px] shrink-0">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-                    <SelectItem value="random">Shuffle</SelectItem>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="popular">Most Popular</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-                  variant={showVerifiedOnly ? "default" : "outline"}
-                  onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
-                  className="whitespace-nowrap shrink-0"
-                >
-                  <BadgeCheck className="h-4 w-4 mr-2 text-blue-500 fill-current" />
-                  Verified Only
-          </Button>
-                
-              </>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[180px] shrink-0">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[140px] shrink-0">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="random">Shuffle</SelectItem>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="popular">Most Popular</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant={showVerifiedOnly ? "default" : "outline"}
+              onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
+              className="whitespace-nowrap shrink-0"
+            >
+              <BadgeCheck className="h-4 w-4 mr-2 text-blue-500 fill-current" />
+              Verified Only
+            </Button>
+            {activeFiltersCount > 0 && (
+              <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap shrink-0">
+                Clear Filters ({activeFiltersCount})
+              </Button>
             )}
-            
-            {view === 'artists' && (
-              <>
-                <Select value={selectedCountryOfOrigin} onValueChange={setSelectedCountryOfOrigin}>
-                  <SelectTrigger className="w-[200px] shrink-0">
-                    <SelectValue placeholder="Country of Origin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Origins</SelectItem>
-                    {availableOriginCountries.map((country) => (
-                      <SelectItem key={country} value={country}>{country}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-                <Select value={selectedCountryOfResidence} onValueChange={setSelectedCountryOfResidence}>
-                  <SelectTrigger className="w-[200px] shrink-0">
-                    <SelectValue placeholder="Country of Residence" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Residences</SelectItem>
-                    {availableResidenceCountries.map((country) => (
-                      <SelectItem key={country} value={country}>{country}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-                  variant={showVerifiedOnly ? "default" : "outline"}
-                  onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
-                  className="whitespace-nowrap shrink-0"
-                >
-                  <BadgeCheck className="h-4 w-4 mr-2 text-blue-500 fill-current" />
-                  Verified Only
-          </Button>
-          <Button
-                  variant={showCoursesAvailable ? "default" : "outline"}
-                  onClick={() => setShowCoursesAvailable(!showCoursesAvailable)}
-                  className="whitespace-nowrap shrink-0"
-            size="sm"
-          >
-                  Courses Available
-          </Button>
-          <Button
-                  variant={showUpcomingEvents ? "default" : "outline"}
-                  onClick={() => setShowUpcomingEvents(!showUpcomingEvents)}
-                  className="whitespace-nowrap shrink-0"
-            size="sm"
-          >
-                  Upcoming Events
-          </Button>
-                {activeFiltersCount > 0 && (
-                  <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap shrink-0">
-                    Clear Filters ({activeFiltersCount})
-                  </Button>
-                )}
-              </>
-            )}
-            
-          <Button
+            <Button
               variant="outline" 
               className="whitespace-nowrap shrink-0"
               onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
@@ -1882,75 +1819,7 @@ export default function DiscoverPage() {
       <div className="container mx-auto px-4 py-6">
         {isDataLoading ? (
           <div className="flex justify-center py-12">
-            <ThemeLoading text="Loading artists..." size="lg" />
-          </div>
-        ) : view === 'artists' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredArtists.map((artist) => {
-              const following = isFollowing(artist.id);
-              return (
-                <Card key={artist.id} className="group hover:shadow-lg transition-all cursor-pointer overflow-hidden">
-                  <div onClick={() => setSelectedArtist(artist)}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-16 w-16 border-2 border-background">
-                          <AvatarImage src={artist.avatarUrl || generateAvatarPlaceholderUrl(64, 64)} alt={artist.name} />
-                          <AvatarFallback>{artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <CardTitle className="text-lg truncate">{artist.name}</CardTitle>
-                            {artist.isVerified && (
-                              <BadgeCheck className="h-4 w-4 text-blue-500 fill-current flex-shrink-0" />
-                            )}
-        </div>
-                          <CardDescription className="truncate">@{artist.handle}</CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground line-clamp-2">{artist.bio}</p>
-                      
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <div>
-                          <span className="font-bold text-foreground">{artist.followerCount.toLocaleString()}</span> followers
-          </div>
-                        {artist.location && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            <span className="truncate">{artist.location}</span>
-          </div>
-        )}
-                      </div>
-
-                      <Separator />
-
-                      <div className="flex items-center gap-2">
-          <Button
-                          variant={following ? "outline" : "default"}
-            size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleFollowToggle(artist);
-                          }}
-                          className="flex-1"
-                        >
-                          {following ? <UserCheck className="h-3 w-3 mr-1" /> : <UserPlus className="h-3 w-3 mr-1" />}
-                          {following ? 'Following' : 'Follow'}
-          </Button>
-          <Button
-                          variant="ghost"
-            size="sm"
-                          onClick={() => setSelectedArtist(artist)}
-                        >
-                          View Profile
-            </Button>
-            </div>
-                    </CardContent>
-          </div>
-                </Card>
-              );
-            })}
+            <ThemeLoading text="Loading artworks..." size="lg" />
           </div>
         ) : (
           <div>
@@ -1963,8 +1832,8 @@ export default function DiscoverPage() {
             {isDataLoading && (
               <div className="flex justify-center py-12">
                 <ThemeLoading text="Loading more artworks..." size="md" />
-          </div>
-        )}
+              </div>
+            )}
           </div>
         )}
       </div>
