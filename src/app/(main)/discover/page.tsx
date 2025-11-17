@@ -256,6 +256,8 @@ export default function DiscoverPage() {
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  // Main filter: For Sale (artworks) / Country (events)
+  const [showForSale, setShowForSale] = useState(false);
   // Event filters
   const [selectedEventCountry, setSelectedEventCountry] = useState<string>('all');
   const [selectedEventCity, setSelectedEventCity] = useState<string>('all');
@@ -1053,6 +1055,11 @@ export default function DiscoverPage() {
       if (!artwork.artist.isVerified || !artwork.artist.isProfessional) return false;
     }
     
+    // For Sale filter
+    if (showForSale) {
+      if (!artwork.isForSale) return false;
+    }
+    
     // Medium filter
     if (selectedMediums.length > 0) {
       if (!artwork.medium || !selectedMediums.includes(artwork.medium)) return false;
@@ -1227,8 +1234,8 @@ export default function DiscoverPage() {
   const filteredEventsList = useMemo(() => {
     let eventsList = [...events];
     
-    // Filter by country
-    if (selectedEventCountry !== 'all') {
+    // Filter by country (when main filter is active)
+    if (showForSale && selectedEventCountry !== 'all') {
       eventsList = eventsList.filter(event => 
         event.country === selectedEventCountry
       );
@@ -1355,6 +1362,7 @@ export default function DiscoverPage() {
     setHideDigitalArt(false);
     setHideAIAssistedArt(false);
     setHideNFTs(false);
+    setShowForSale(false);
     // Clear event filters
     setSelectedEventCountry('all');
     setSelectedEventCity('all');
@@ -1364,12 +1372,13 @@ export default function DiscoverPage() {
   const activeFiltersCount = useMemo(() => {
     if (view === 'events') {
       return [
-        selectedEventCountry !== 'all',
+        showForSale && selectedEventCountry !== 'all',
         selectedEventCity !== 'all',
         searchTerm.length > 0
       ].filter(Boolean).length;
     }
     return [
+      showForSale,
       selectedCountryOfOrigin !== 'all',
       selectedCountryOfResidence !== 'all',
       selectedCategory !== 'All',
@@ -1388,7 +1397,7 @@ export default function DiscoverPage() {
       hidePrintmaking,
       hideTextileArt
     ].filter(Boolean).length;
-  }, [view, selectedCountryOfOrigin, selectedCountryOfResidence, selectedCategory, showVerifiedOnly, selectedMediums, selectedTags, selectedCountries, selectedCities, hideDigitalArt, hideAIAssistedArt, hideNFTs, hidePhotography, hideVideoArt, hidePerformanceArt, hideInstallationArt, hidePrintmaking, hideTextileArt, selectedEventCountry, selectedEventCity, searchTerm]);
+  }, [view, showForSale, selectedCountryOfOrigin, selectedCountryOfResidence, selectedCategory, showVerifiedOnly, selectedMediums, selectedTags, selectedCountries, selectedCities, hideDigitalArt, hideAIAssistedArt, hideNFTs, hidePhotography, hideVideoArt, hidePerformanceArt, hideInstallationArt, hidePrintmaking, hideTextileArt, selectedEventCountry, selectedEventCity, searchTerm]);
 
   if (selectedArtist) {
     const artistArtworks = artworks.filter(artwork => artwork.artist.id === selectedArtist.id);
@@ -1643,6 +1652,33 @@ export default function DiscoverPage() {
                 Events
               </Button>
             </div>
+            
+            {/* Main Filter: For Sale (artworks) / Country (events) */}
+            {view === 'artworks' ? (
+              <Button
+                variant={showForSale ? "default" : "outline"}
+                onClick={() => setShowForSale(!showForSale)}
+                className="whitespace-nowrap shrink-0"
+                size="sm"
+              >
+                For Sale
+              </Button>
+            ) : (
+              <div className="flex border border-border rounded-md overflow-hidden shrink-0">
+                <Select value={selectedEventCountry} onValueChange={setSelectedEventCountry}>
+                  <SelectTrigger className="w-32 h-9 border-0 rounded-none">
+                    <SelectValue placeholder="Country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Countries</SelectItem>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country} value={country}>{country}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
             {activeFiltersCount > 0 && (
               <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap shrink-0">
                 Clear Filters ({activeFiltersCount})
@@ -1726,27 +1762,6 @@ export default function DiscoverPage() {
                       <SelectItem value="popular">Most Popular</SelectItem>
                       <SelectItem value="price-low">Price: Low to High</SelectItem>
                       <SelectItem value="price-high">Price: High to Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Event Country Filter - Only for Events */}
-              {view === 'events' && (
-                <div>
-                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Country
-                  </label>
-                  <Select value={selectedEventCountry} onValueChange={setSelectedEventCountry}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="All Countries" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Countries</SelectItem>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country} value={country}>{country}</SelectItem>
-                      ))}
                     </SelectContent>
                   </Select>
                 </div>
