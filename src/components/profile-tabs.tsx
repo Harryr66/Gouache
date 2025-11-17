@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3 } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, BadgeCheck, Play } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { PortfolioManager } from './portfolio-manager';
 import { ShopDisplay } from './shop-display';
@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/providers/auth-provider';
 import { CreditCard } from 'lucide-react';
+import { useFollow } from '@/providers/follow-provider';
 
 interface ProfileTabsProps {
   userId: string;
@@ -36,6 +37,21 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
   const [likedFetchLoading, setLikedFetchLoading] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
+  
+  // Generate avatar placeholder URL helper
+  const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
+    const isLightMode = typeof window !== 'undefined' && 
+      (document.documentElement.classList.contains('light') || 
+       !document.documentElement.classList.contains('dark'));
+    const backgroundColor = isLightMode ? '#f8f9fa' : '#1f2937';
+    const textColor = isLightMode ? '#6b7280' : '#ffffff';
+    return `data:image/svg+xml;base64,${btoa(`
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="${backgroundColor}"/>
+        <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="24" font-weight="bold">Gouache</text>
+      </svg>
+    `)}`;
+  };
   
   // Get courses by this instructor
   const instructorCourses = courses.filter(course => course.instructor.userId === userId);
@@ -326,14 +342,32 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
     );
   }
 
-  // Regular user tabs - Hide Learn for MVP
+  // Regular user tabs - Simplified: Liked, Following, Learn (purchased courses)
+  const { getFollowedArtists } = useFollow();
+  const followedArtists = getFollowedArtists();
+  const purchasedCourses = courseEnrollments.map(enrollment => {
+    const course = courses.find(c => c.id === enrollment.courseId);
+    return course;
+  }).filter(Boolean) as Course[];
+
+  const visibleTabs = [
+    { value: 'liked', label: 'Liked', icon: Heart },
+    { value: 'following', label: 'Following', icon: Users },
+    { value: 'learn', label: 'Learn', icon: BookOpen },
+  ];
+  
   return (
     <Tabs defaultValue="liked" className="w-full" onValueChange={onTabChange}>
-      <TabsList className="grid w-full grid-cols-1">
-        <TabsTrigger value="liked" className="flex items-center gap-2">
-          <Heart className="h-4 w-4" />
-          Liked
-        </TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3">
+        {visibleTabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
+              <Icon className="h-4 w-4" />
+              {tab.label}
+            </TabsTrigger>
+          );
+        })}
       </TabsList>
 
       {/* Liked Tab */}
@@ -347,6 +381,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
         {!likesLoading && !likedFetchLoading && likedArtworks.length === 0 && (
           <Card className="p-8 text-center">
             <CardContent>
+              <Heart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <CardTitle className="mb-2">No liked artworks yet</CardTitle>
               <CardDescription className="mb-4">
                 Tap the heart icon on artworks you love. They'll show up here.
@@ -371,12 +406,110 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
         )}
       </TabsContent>
 
-      {/* Learn Tab - Purchased Courses & Subscribed Communities - Hidden for MVP */}
-      {false && (
-      <TabsContent value="learn" className="space-y-6">
-        {/* Hidden for MVP */}
+      {/* Following Tab */}
+      <TabsContent value="following" className="space-y-4">
+        {followedArtists.length === 0 ? (
+          <Card className="p-8 text-center">
+            <CardContent>
+              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <CardTitle className="mb-2">No followed artists yet</CardTitle>
+              <CardDescription className="mb-4">
+                Follow artists you love to see their latest work in your feed.
+              </CardDescription>
+              <Button asChild variant="gradient">
+                <a href="/discover">Discover Artists</a>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {followedArtists.map((artist) => (
+              <Card key={artist.id} className="group hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/profile/${artist.id}`)}>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="relative h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
+                      <img
+                        src={artist.avatarUrl || generateAvatarPlaceholderUrl(64, 64)}
+                        alt={artist.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-lg truncate">{artist.name}</h3>
+                        {artist.isVerified && (
+                          <BadgeCheck className="h-4 w-4 text-blue-500 fill-current flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">@{artist.handle}</p>
+                      {artist.location && (
+                        <p className="text-xs text-muted-foreground mt-1 truncate">{artist.location}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </TabsContent>
-      )}
+
+      {/* Learn Tab - Purchased Courses */}
+      <TabsContent value="learn" className="space-y-4">
+        {coursesLoading ? (
+          <div className="flex justify-center py-12">
+            <ThemeLoading text="Loading courses..." size="md" />
+          </div>
+        ) : purchasedCourses.length === 0 ? (
+          <Card className="p-8 text-center">
+            <CardContent>
+              <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <CardTitle className="mb-2">No purchased courses yet</CardTitle>
+              <CardDescription className="mb-4">
+                Purchase courses from artists to start learning. They'll appear here.
+              </CardDescription>
+              <Button asChild variant="gradient">
+                <a href="/discover">Browse Courses</a>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {purchasedCourses.map((course) => (
+              <Card key={course.id} className="group hover:shadow-lg transition-shadow">
+                <div className="relative aspect-video">
+                  {course.thumbnail ? (
+                    <Image
+                      src={course.thumbnail}
+                      alt={course.title}
+                      fill
+                      className="object-cover rounded-t-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <BookOpen className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <CardContent className="p-4">
+                  <CardTitle className="text-lg mb-2">{course.title}</CardTitle>
+                  <CardDescription className="line-clamp-2 mb-4">
+                    {course.description}
+                  </CardDescription>
+                  <Button
+                    variant="gradient"
+                    className="w-full"
+                    onClick={() => router.push(`/learn/${course.id}`)}
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Continue Learning
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </TabsContent>
     </Tabs>
   );
 }

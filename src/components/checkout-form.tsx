@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/providers/auth-provider';
 
 // Initialize Stripe
 const stripePromise = loadStripe(
@@ -46,10 +47,24 @@ function CheckoutFormContent({
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+
+  // Check auth before allowing purchase
+  useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to make purchases. You can browse as a guest, but need an account to buy artworks.",
+        variant: "destructive",
+      });
+      router.push('/login');
+      onCancel?.();
+    }
+  }, [user, router, onCancel]);
 
   // Create payment intent when component mounts
   useEffect(() => {

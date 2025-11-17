@@ -292,13 +292,13 @@ const generateArtistContent = (artist: Artist) => ({
               </Button>
               
               <div className="flex-1 flex items-center justify-center p-0 md:p-6 relative">
-                <div className="relative w-full h-full md:aspect-[4/3] lg:aspect-[16/9] md:max-h-[70vh] md:rounded-2xl overflow-hidden">
+                <div className="relative w-full h-full md:max-h-[85vh] md:max-w-full md:rounded-2xl overflow-hidden">
                   <Image
                     src={artwork.imageUrl}
                     alt={artwork.title || artwork.imageAiHint}
                     fill
                     priority
-                    className="object-contain md:object-cover"
+                    className="object-contain"
                   />
                   {artwork.isForSale && artwork.price && (
                     <div className="absolute top-3 left-3 z-10">
@@ -371,9 +371,9 @@ const generateArtistContent = (artist: Artist) => ({
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          toggleLike(artwork.id);
+                          await toggleLike(artwork.id);
                         }}
                         disabled={likesLoading}
                       >

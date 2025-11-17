@@ -46,7 +46,13 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
   const toggleLike = async (artworkId: string) => {
     const user = auth.currentUser;
     if (!user) {
-      console.warn('User must be signed in to like artwork');
+      // Import toast dynamically to avoid SSR issues
+      const { toast } = await import('@/hooks/use-toast');
+      toast({
+        title: "Login Required",
+        description: "Please log in to like artworks. You can browse as a guest, but need an account to save your favorites.",
+        variant: "destructive",
+      });
       return;
     }
 

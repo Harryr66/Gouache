@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Artist } from '@/lib/types';
+import { getAuth } from 'firebase/auth';
 
 // Generate Gouache avatar placeholder URLs
 const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
@@ -111,7 +112,20 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('soma_followed_artists', JSON.stringify(followedArtists));
   }, [followedArtists]);
 
-  const followArtist = (artistId: string) => {
+  const followArtist = async (artistId: string) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      // Import toast dynamically to avoid SSR issues
+      const { toast } = await import('@/hooks/use-toast');
+      toast({
+        title: "Login Required",
+        description: "Please log in to follow artists. You can browse as a guest, but need an account to follow your favorites.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // In a real app, you'd fetch the artist data from API
     // For now, we'll create a mock artist
     const mockArtist: Artist = {
@@ -137,7 +151,20 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const unfollowArtist = (artistId: string) => {
+  const unfollowArtist = async (artistId: string) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      // Import toast dynamically to avoid SSR issues
+      const { toast } = await import('@/hooks/use-toast');
+      toast({
+        title: "Login Required",
+        description: "Please log in to unfollow artists.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setFollowedArtists(prev => prev.filter(artist => artist.id !== artistId));
   };
 
