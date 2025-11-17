@@ -1512,9 +1512,9 @@ export default function DiscoverPage() {
             </TabsContent>
 
             <TabsContent value="events" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px">
                 {artistEvents.map((event) => (
-                  <Card key={event.id} className="hover:shadow-lg transition-shadow">
+                  <Card key={event.id} className="hover:shadow-lg transition-shadow rounded-none">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div>
