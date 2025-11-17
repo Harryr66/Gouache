@@ -116,10 +116,21 @@ export function PortfolioManager() {
       const img = new Image();
       
       img.onload = () => {
-        const maxWidth = 1200;
-        const maxHeight = 1200;
+        // Resize to fit 1080x1080 pixels (maintaining aspect ratio)
+        const maxWidth = 1080;
+        const maxHeight = 1080;
         let { width, height } = img;
         
+        // Log original dimensions and suggest optimal sizing
+        if (width !== 1080 || height !== 1080) {
+          console.log('📐 Image Upload Suggestion:', {
+            original: `${width}x${height}`,
+            recommended: '1080x1080 pixels',
+            message: 'For best quality and performance, upload images at 1080x1080 pixels. Your image will be automatically resized to fit this format.'
+          });
+        }
+        
+        // Calculate new dimensions maintaining aspect ratio
         if (width > height) {
           if (width > maxWidth) {
             height = (height * maxWidth) / width;
@@ -132,6 +143,13 @@ export function PortfolioManager() {
           }
         }
         
+        // If image is smaller than 1080x1080, scale it up to fit (but maintain aspect ratio)
+        if (width < maxWidth && height < maxHeight) {
+          const scale = Math.min(maxWidth / width, maxHeight / height);
+          width = width * scale;
+          height = height * scale;
+        }
+        
         canvas.width = width;
         canvas.height = height;
         
@@ -142,6 +160,11 @@ export function PortfolioManager() {
             const compressedFile = new File([blob], file.name, {
               type: 'image/jpeg',
               lastModified: Date.now(),
+            });
+            console.log('✅ Image resized:', {
+              original: `${img.width}x${img.height}`,
+              resized: `${width}x${height}`,
+              fileSize: `${(compressedFile.size / 1024).toFixed(2)} KB`
             });
             resolve(compressedFile);
           } else {

@@ -157,6 +157,8 @@ const generateArtistContent = (artist: Artist) => ({
   const { toggleLike, isLiked, loading: likesLoading } = useLikes();
   const liked = isLiked(artwork.id);
   const [isBannerExpanded, setIsBannerExpanded] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   // Use artist ID for profile link - this should be the Firestore document ID
   const profileSlug = artwork.artist.id;
   const handleViewProfile = () => {
@@ -167,6 +169,26 @@ const generateArtistContent = (artist: Artist) => ({
     } else {
       console.warn('⚠️ No artist ID found for profile link');
       router.push('/profile');
+    }
+  };
+
+  // Swipe down gesture handlers
+  const minSwipeDistance = 50;
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (!isBannerExpanded) return;
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientY);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!isBannerExpanded) return;
+    setTouchEnd(e.targetTouches[0].clientY);
+  };
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd || !isBannerExpanded) return;
+    const distance = touchStart - touchEnd;
+    const isDownSwipe = distance < -minSwipeDistance;
+    if (isDownSwipe) {
+      setIsBannerExpanded(false);
     }
   };
 
@@ -250,7 +272,11 @@ const generateArtistContent = (artist: Artist) => ({
 
           <div className="flex flex-col md:flex-row h-full md:max-h-[90vh]">
             {/* Hero Artwork - Fullscreen on mobile */}
-            <div className="relative w-full h-full md:w-3/5 bg-muted flex flex-col">
+            <div className={`relative w-full h-full md:w-3/5 flex flex-col ${
+              (resolvedTheme || theme) === 'dark' 
+                ? 'bg-slate-900' 
+                : 'bg-slate-50'
+            }`}>
               {/* Close button - mobile only */}
               <Button
                 variant="ghost"
@@ -312,7 +338,12 @@ const generateArtistContent = (artist: Artist) => ({
                 onOpenChange={setIsBannerExpanded}
                 className="md:hidden"
               >
-                <div className="bg-background/95 backdrop-blur-sm border-t border-border">
+                <div 
+                  className="bg-background/95 backdrop-blur-sm border-t border-border"
+                  onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={onTouchEnd}
+                >
                   <CollapsibleTrigger asChild>
                     <div className="flex items-center gap-3 px-4 py-3 w-full cursor-pointer">
                       <Avatar className="h-10 w-10 border-2 border-background">
@@ -355,7 +386,13 @@ const generateArtistContent = (artist: Artist) => ({
                     </div>
                   </CollapsibleTrigger>
                   
-                  <CollapsibleContent className="px-4 pb-4 space-y-3">
+                  <CollapsibleContent 
+                    className="px-4 pb-4 space-y-3"
+                    onClick={(e) => {
+                      // Allow clicks inside content but collapse on swipe
+                      e.stopPropagation();
+                    }}
+                  >
                     <div className="flex flex-col gap-2">
                       <Button
                         variant={following ? 'outline' : 'default'}
