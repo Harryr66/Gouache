@@ -225,7 +225,7 @@ export default function LearnPage() {
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3 mb-3">
                     <Avatar className="h-10 w-10 flex-shrink-0">
-                      <AvatarImage src={course.instructor.avatarUrl || undefined} />
+                      <AvatarImage src={course.instructor.avatar || undefined} />
                       <AvatarFallback>
                         {course.instructor.name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
