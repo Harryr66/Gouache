@@ -185,14 +185,14 @@ export default function NewsPage() {
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide snap-x snap-mandatory">
             {categories.map((category) => (
               <Button
                 key={category}
                 variant={filteredCategory === category ? 'gradient' : 'outline'}
                 size="sm"
                 onClick={() => setFilteredCategory(category)}
-                className="shrink-0 whitespace-nowrap"
+                className="shrink-0 whitespace-nowrap text-xs sm:text-sm px-3 sm:px-4 snap-start"
               >
                 {category}
               </Button>
