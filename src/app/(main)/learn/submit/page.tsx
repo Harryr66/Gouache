@@ -91,6 +91,9 @@ export default function CourseSubmissionPage() {
     curriculum: [] as Array<{ id: string; title: string; description?: string; type: 'video' | 'reading' | 'assignment'; duration?: string }>,
     // Supply List
     supplyList: [] as Array<{ id: string; item: string; brand: string; affiliateLink?: string }>,
+    // Course hosting type
+    courseType: 'affiliate' as 'hosted' | 'affiliate',
+    externalUrl: '',
     // Publish options
     isPublished: false,
   });
@@ -402,6 +405,17 @@ export default function CourseSubmissionPage() {
         updatedAt: new Date(),
       };
 
+      // Validate affiliate course requirements
+      if (formData.courseType === 'affiliate' && !formData.externalUrl.trim()) {
+        toast({
+          title: "External URL Required",
+          description: "Please provide the external URL where your course is hosted.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       // Create course data
       const courseData = {
         title: formData.title,
@@ -420,7 +434,7 @@ export default function CourseSubmissionPage() {
         duration: formData.duration,
         format: formData.format as 'Self-Paced' | 'Live Sessions' | 'Hybrid' | 'E-Book',
         students: 0,
-        lessons: formData.curriculum.length,
+        lessons: formData.courseType === 'hosted' ? formData.curriculum.length : 0,
         rating: 0,
         reviewCount: 0,
         isOnSale: !!formData.originalPrice,
@@ -431,11 +445,13 @@ export default function CourseSubmissionPage() {
         isPublished: false,
         tags: formData.tags,
         skills: formData.skills,
-        curriculum: [],
+        curriculum: formData.courseType === 'hosted' ? [] : [], // Will be populated later for hosted courses
         reviews: [],
         discussions: [],
         enrollmentCount: 0,
         completionRate: 0,
+        courseType: formData.courseType,
+        externalUrl: formData.courseType === 'affiliate' ? formData.externalUrl.trim() : undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -549,6 +565,84 @@ export default function CourseSubmissionPage() {
                   placeholder="Detailed description of what students will learn"
                   rows={6}
                 />
+              </div>
+
+              {/* Course Type Selection */}
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                <Label>Course Hosting Type *</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Choose how your course will be delivered to students.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="course-type-affiliate"
+                      name="course-type"
+                      value="affiliate"
+                      checked={formData.courseType === 'affiliate'}
+                      onChange={(e) => {
+                        handleInputChange('courseType', e.target.value as 'hosted' | 'affiliate');
+                        if (e.target.value === 'hosted') {
+                          handleInputChange('externalUrl', '');
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="course-type-affiliate" className="font-normal cursor-pointer flex-1">
+                      <div>
+                        <div className="font-medium">Affiliate Course (External Link)</div>
+                        <div className="text-xs text-muted-foreground">
+                          Your course is hosted elsewhere (YouTube, Teachable, your website, etc.). 
+                          Students will be redirected to your external URL after payment.
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="course-type-hosted"
+                      name="course-type"
+                      value="hosted"
+                      checked={formData.courseType === 'hosted'}
+                      onChange={(e) => {
+                        handleInputChange('courseType', e.target.value as 'hosted' | 'affiliate');
+                        if (e.target.value === 'hosted') {
+                          handleInputChange('externalUrl', '');
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="course-type-hosted" className="font-normal cursor-pointer flex-1">
+                      <div>
+                        <div className="font-medium">Hosted Course (On Platform)</div>
+                        <div className="text-xs text-muted-foreground">
+                          Your course will be hosted directly on Gouache. You&apos;ll upload videos and content in the curriculum step.
+                          <span className="text-primary font-semibold"> (Premium feature - coming soon)</span>
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                </div>
+                
+                {/* External URL Input for Affiliate Courses */}
+                {formData.courseType === 'affiliate' && (
+                  <div className="mt-4 space-y-2">
+                    <Label htmlFor="externalUrl">External Course URL *</Label>
+                    <Input
+                      id="externalUrl"
+                      type="url"
+                      value={formData.externalUrl}
+                      onChange={(e) => handleInputChange('externalUrl', e.target.value)}
+                      placeholder="https://your-course-platform.com/course-name"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter the full URL where your course is hosted. Students will be redirected here after payment.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Course Thumbnail */}
@@ -694,28 +788,47 @@ export default function CourseSubmissionPage() {
 
                 {activeStep === 'curriculum' && (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Curriculum Builder</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                      <Input placeholder="Lesson title" value={newLessonTitle} onChange={(e)=>setNewLessonTitle(e.target.value)} />
-                      <Select value={newLessonType} onValueChange={(v: any)=>setNewLessonType(v)}>
-                        <SelectTrigger><SelectValue placeholder="Type"/></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="video">Video</SelectItem>
-                          <SelectItem value="reading">Reading</SelectItem>
-                          <SelectItem value="assignment">Assignment</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="flex gap-2">
-                        <Input placeholder="Duration (e.g., 8 min)" value={newLessonDuration} onChange={(e)=>setNewLessonDuration(e.target.value)} />
-                        <Button type="button" onClick={addLesson} size="sm"><Plus className="h-4 w-4"/></Button>
+                    {formData.courseType === 'affiliate' ? (
+                      <div className="p-6 border rounded-lg bg-muted/30 text-center">
+                        <p className="text-muted-foreground">
+                          Curriculum building is not required for affiliate courses. 
+                          Your course content is hosted externally at the URL you provided.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          You can skip this step and proceed to pricing.
+                        </p>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      {formData.curriculum.length === 0 && (
-                        <p className="text-sm text-muted-foreground">No lessons added yet.</p>
-                      )}
-                      <ul className="space-y-2">
-                        {formData.curriculum.map(lesson => (
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-semibold">Curriculum Builder</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Build your course curriculum by adding lessons. This feature is coming soon for hosted courses.
+                        </p>
+                      </>
+                    )}
+                    {formData.courseType === 'hosted' && (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <Input placeholder="Lesson title" value={newLessonTitle} onChange={(e)=>setNewLessonTitle(e.target.value)} />
+                          <Select value={newLessonType} onValueChange={(v: any)=>setNewLessonType(v)}>
+                            <SelectTrigger><SelectValue placeholder="Type"/></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="video">Video</SelectItem>
+                              <SelectItem value="reading">Reading</SelectItem>
+                              <SelectItem value="assignment">Assignment</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <div className="flex gap-2">
+                            <Input placeholder="Duration (e.g., 8 min)" value={newLessonDuration} onChange={(e)=>setNewLessonDuration(e.target.value)} />
+                            <Button type="button" onClick={addLesson} size="sm"><Plus className="h-4 w-4"/></Button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {formData.curriculum.length === 0 && (
+                            <p className="text-sm text-muted-foreground">No lessons added yet.</p>
+                          )}
+                          <ul className="space-y-2">
+                            {formData.curriculum.map(lesson => (
                           <li
                             key={lesson.id}
                             className="flex items-center justify-between rounded-md border p-2"
@@ -746,9 +859,11 @@ export default function CourseSubmissionPage() {
                               <Trash2 className="h-4 w-4"/>
                             </Button>
                           </li>
-                        ))}
-                      </ul>
-                    </div>
+                            ))}
+                          </ul>
+                        </div>
+                      </>
+                    )}
 
                     {/* Supply List Section */}
                     <div className="mt-8 pt-8 border-t">

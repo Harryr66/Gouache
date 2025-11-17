@@ -84,6 +84,8 @@ The course includes live demonstrations, step-by-step tutorials, and personalize
   isOnSale: true,
   isNew: false,
   isFeatured: true,
+  courseType: 'affiliate' as 'hosted' | 'affiliate',
+  externalUrl: 'https://example.com/course',
   tags: ['oil-painting', 'techniques', 'masterclass'],
   skills: ['Color Theory', 'Brush Techniques', 'Composition', 'Lighting'],
   supplyList: [
@@ -213,8 +215,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   };
 
   const handleEnroll = () => {
-    setIsEnrolled(true);
-    // In real app, this would handle payment and enrollment
+    // For affiliate courses, redirect to external URL after payment
+    // For hosted courses, enroll and show course content
+    if (course.courseType === 'affiliate' && course.externalUrl) {
+      // In real app, this would process payment first, then redirect
+      // For now, we'll show a confirmation and redirect
+      if (confirm('You will be redirected to the external course platform. Continue?')) {
+        window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
+      }
+    } else {
+      setIsEnrolled(true);
+      // In real app, this would handle payment and enrollment for hosted courses
+    }
   };
 
   const handleSubmitComment = (e: React.FormEvent) => {
@@ -249,6 +261,16 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             </Link>
             <Badge variant="outline">{course.category}</Badge>
             <Badge variant="outline">{course.difficulty}</Badge>
+            {course.courseType === 'affiliate' && (
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                External Course
+              </Badge>
+            )}
+            {course.courseType === 'hosted' && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                Hosted on Platform
+              </Badge>
+            )}
           </div>
         </div>
       </div>
@@ -646,13 +668,20 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                       </Button>
                     </div>
                   ) : (
-                    <Button 
-                      className="w-full gradient-button" 
-                      size="lg"
-                      onClick={handleEnroll}
-                    >
-                      Enroll Now
-                    </Button>
+                    <>
+                      <Button 
+                        className="w-full gradient-button" 
+                        size="lg"
+                        onClick={handleEnroll}
+                      >
+                        {course.courseType === 'affiliate' ? 'Purchase & Access Course' : 'Enroll Now'}
+                      </Button>
+                      {course.courseType === 'affiliate' && course.externalUrl && (
+                        <p className="text-xs text-muted-foreground text-center mt-2">
+                          This course is hosted externally. You&apos;ll be redirected after purchase.
+                        </p>
+                      )}
+                    </>
                   )}
 
                   <div className="text-sm text-muted-foreground space-y-2">

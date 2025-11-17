@@ -307,6 +307,10 @@ export interface Course {
   enrollmentCount: number;
   completionRate: number;
   supplyList?: SupplyItem[];
+  // Course hosting type: 'hosted' = hosted on platform, 'affiliate' = external link
+  courseType?: 'hosted' | 'affiliate';
+  // External URL for affiliate courses (where course is hosted externally)
+  externalUrl?: string;
   createdAt: Date;
   updatedAt: Date;
   publishedAt?: Date;
