@@ -12,8 +12,10 @@ export const dynamic = 'force-dynamic';
  * 3. Add Puppeteer: For JavaScript-rendered sites (requires more setup)
  */
 export async function POST(request: NextRequest) {
+  let url: string = '';
   try {
-    const { url } = await request.json();
+    const body = await request.json();
+    url = body.url;
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json(
@@ -124,7 +126,7 @@ export async function POST(request: NextRequest) {
     console.error('Error scraping URL:', error);
     return NextResponse.json(
       {
-        url: url || '',
+        url: url,
         text: '',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
