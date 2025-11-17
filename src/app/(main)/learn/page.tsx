@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Star, Users, Clock, Play, BookOpen, Filter } from 'lucide-react';
 import Link from 'next/link';
-import { usePlaceholder } from '@/hooks/use-placeholder';
 import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from '@/components/theme-loading';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,7 +16,6 @@ import Image from 'next/image';
 
 export default function LearnPage() {
   const { courses, isLoading } = useCourses();
-  const { placeholderUrl } = usePlaceholder();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
