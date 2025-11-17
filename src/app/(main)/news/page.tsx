@@ -202,9 +202,9 @@ export default function NewsPage() {
       </header>
 
       {/* Newsletter Signup - Accent Banner (pill, slimmer) */}
-      <div className="bg-red-600 dark:bg-slate-900 rounded-full px-4 py-3 sm:px-6 sm:py-4">
+      <div className="bg-red-600 dark:bg-slate-900 rounded-full px-5 py-4 sm:px-6 sm:py-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-          <div className="flex-shrink-0 px-3 sm:px-4">
+          <div className="flex-shrink-0 px-2 sm:px-4">
             <div className="text-center sm:text-left">
               <div className="text-sm sm:text-base font-semibold text-white sm:uppercase leading-relaxed">
                 Subscribe to Gouache Discovery
@@ -225,7 +225,7 @@ export default function NewsPage() {
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 disabled={isNewsletterSubmitting || isNewsletterSuccess}
-                className="bg-white dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground h-9"
+                className="bg-white dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground h-8 text-sm sm:h-9 sm:text-base"
                 required
               />
             </div>
@@ -233,20 +233,20 @@ export default function NewsPage() {
               type="submit"
               disabled={isNewsletterSubmitting || isNewsletterSuccess}
               variant="secondary"
-              className="bg-white dark:bg-slate-700 text-foreground hover:bg-white/90 dark:hover:bg-slate-700/90 shrink-0 h-9 px-3"
+              className="bg-white dark:bg-slate-700 text-foreground hover:bg-white/90 dark:hover:bg-slate-700/90 shrink-0 h-8 px-3 text-xs sm:h-9 sm:px-3 sm:text-sm"
             >
               {isNewsletterSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Subscribing...
+                  <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                  <span className="text-xs sm:text-sm">Subscribing...</span>
                 </>
               ) : isNewsletterSuccess ? (
                 <>
-                  <Check className="mr-2 h-4 w-4" />
-                  Subscribed!
+                  <Check className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="text-xs sm:text-sm">Subscribed!</span>
                 </>
               ) : (
-                'Subscribe'
+                <span className="text-xs sm:text-sm">Subscribe</span>
               )}
             </Button>
           </form>
