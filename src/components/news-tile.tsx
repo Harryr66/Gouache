@@ -9,8 +9,25 @@ type NewsTileProps = {
 };
 
 export function NewsTile({ article }: NewsTileProps) {
-  const isPlaceholder = Boolean((article as any)?.id?.toString?.().startsWith('placeholder'));
-  const href = isPlaceholder ? '#' : ((article as any).externalUrl ?? `/news/${(article as any).id}`);
+  const isPlaceholder = Boolean(article?.id?.toString?.().startsWith('placeholder'));
+  const hasExternalUrl = article.externalUrl && article.externalUrl.trim() !== '';
+  const href = isPlaceholder 
+    ? '#' 
+    : (hasExternalUrl 
+        ? article.externalUrl 
+        : `/news/${article.id}`);
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isPlaceholder) {
+      e.preventDefault();
+      return;
+    }
+    if (hasExternalUrl) {
+      e.preventDefault();
+      window.open(article.externalUrl, '_blank', 'noopener,noreferrer');
+    }
+    // Otherwise, let Next.js Link handle the navigation
+  };
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => {
     if (isPlaceholder) {
@@ -20,8 +37,25 @@ export function NewsTile({ article }: NewsTileProps) {
         </div>
       );
     }
+    if (hasExternalUrl) {
+      return (
+        <a 
+          href={href as string} 
+          onClick={handleClick}
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="flex flex-col h-full cursor-pointer"
+        >
+          {children}
+        </a>
+      );
+    }
     return (
-      <Link href={href as string} target={(article as any).externalUrl ? '_blank' : '_self'} rel="noopener noreferrer" className="flex flex-col h-full">
+      <Link 
+        href={href as string} 
+        className="flex flex-col h-full"
+        onClick={handleClick}
+      >
         {children}
       </Link>
     );
