@@ -86,6 +86,8 @@ The course includes live demonstrations, step-by-step tutorials, and personalize
   isFeatured: true,
   courseType: 'affiliate' as 'hosted' | 'affiliate',
   externalUrl: 'https://example.com/course',
+  linkType: 'enrollment' as 'direct' | 'enrollment' | 'affiliate',
+  hostingPlatform: 'teachable',
   tags: ['oil-painting', 'techniques', 'masterclass'],
   skills: ['Color Theory', 'Brush Techniques', 'Composition', 'Lighting'],
   supplyList: [
