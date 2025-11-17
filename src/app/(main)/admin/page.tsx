@@ -710,6 +710,111 @@ export default function AdminPanel() {
     setVideoTags(videoTags.filter(tag => tag !== tagToRemove));
   };
 
+  // AI headline management
+  const addAiHeadline = () => {
+    if (aiHeadlineInput.trim() && !aiHeadlines.includes(aiHeadlineInput.trim())) {
+      setAiHeadlines([...aiHeadlines, aiHeadlineInput.trim()]);
+      setAiHeadlineInput('');
+    }
+  };
+
+  const removeAiHeadline = (index: number) => {
+    setAiHeadlines(aiHeadlines.filter((_, i) => i !== index));
+  };
+
+  const handleAiImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    setAiImageFiles([...aiImageFiles, ...newFiles]);
+
+    // Create previews
+    newFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setAiImagePreviews((prev) => [...prev, event.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+      setAiImageDescriptions((prev) => [...prev, '']);
+    });
+  };
+
+  const removeAiImage = (index: number) => {
+    setAiImageFiles(aiImageFiles.filter((_, i) => i !== index));
+    setAiImagePreviews(aiImagePreviews.filter((_, i) => i !== index));
+    setAiImageDescriptions(aiImageDescriptions.filter((_, i) => i !== index));
+  };
+
+  const structureArticleWithAI = async () => {
+    if (!aiRawText.trim()) {
+      toast({
+        title: 'Raw text required',
+        description: 'Please enter some raw text to structure.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsStructuringArticle(true);
+    try {
+      // Upload images first
+      const imageUrls: string[] = [];
+      for (let i = 0; i < aiImageFiles.length; i++) {
+        try {
+          const file = aiImageFiles[i];
+          const fileName = `${Date.now()}_${i}_${file.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/sections/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, file);
+          const url = await getDownloadURL(storageRef);
+          imageUrls.push(url);
+        } catch (error) {
+          console.error('Failed to upload image:', error);
+        }
+      }
+
+      // Prepare images with descriptions
+      const images = imageUrls.map((url, index) => ({
+        url,
+        description: aiImageDescriptions[index] || ''
+      }));
+
+      // Call AI API
+      const response = await fetch('/api/ai/structure-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rawText: aiRawText,
+          headlines: aiHeadlines,
+          images: images,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to structure article');
+      }
+
+      const data = await response.json();
+      setAiGeneratedSections(data.sections || []);
+
+      toast({
+        title: 'Article structured',
+        description: `Generated ${data.sections?.length || 0} sections. Review and accept to add them.`,
+      });
+    } catch (error) {
+      console.error('Error structuring article:', error);
+      toast({
+        title: 'Structuring failed',
+        description: error instanceof Error ? error.message : 'Failed to structure article. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsStructuringArticle(false);
+    }
+  };
+
   const toggleCategory = (category: string) => {
     if (videoCategories.includes(category)) {
       setVideoCategories(videoCategories.filter(cat => cat !== category));
