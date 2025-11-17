@@ -38,6 +38,7 @@ export default function ArtistProfilePage() {
           const profileData = {
             id: userDoc.id,
             displayName: data.name || data.displayName || 'User',
+            isVerified: data.isVerified !== false && data.isProfessional === true, // All approved professional artists are verified
             username: data.handle || data.username || `user_${userDoc.id}`,
             avatarUrl: data.avatarUrl || undefined,
             bannerImageUrl: data.bannerImageUrl || undefined,

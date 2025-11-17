@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
 import { Search, Filter, Star, TrendingUp, Clock, UserPlus, UserCheck, Instagram, Globe, Calendar, ExternalLink, MapPin, BadgeCheck, Tag, Palette } from 'lucide-react';
-import { Artwork, Artist } from '@/lib/types';
+import { Artwork, Artist, ShowcaseLocation } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { useFollow } from '@/providers/follow-provider';
 import { usePlaceholder } from '@/hooks/use-placeholder';
@@ -242,8 +243,8 @@ export default function DiscoverPage() {
   const placeholderUrl = getDiscoverPlaceholder();
   
   
-  // Always show artworks - users find artists by clicking on artwork tiles
-  const view: 'artworks' = 'artworks';
+  // Toggle between Artworks and Events views
+  const [view, setView] = useState<'artworks' | 'events'>('artworks');
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -255,6 +256,10 @@ export default function DiscoverPage() {
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  // Event filters
+  const [selectedEventCountry, setSelectedEventCountry] = useState<string>('all');
+  const [selectedEventCity, setSelectedEventCity] = useState<string>('all');
+  const [events, setEvents] = useState<Array<ShowcaseLocation & { artist: Artist }>>([]);
   const [showCoursesAvailable, setShowCoursesAvailable] = useState(false);
   const [showUpcomingEvents, setShowUpcomingEvents] = useState(false);
   
@@ -804,7 +809,8 @@ export default function DiscoverPage() {
             followerCount: data.followerCount || 0,
             followingCount: data.followingCount || 0,
             createdAt: data.createdAt?.toDate() || new Date(),
-            isVerified: data.isVerified || false,
+            // All approved professional artists are verified
+            isVerified: data.isVerified !== false && data.isProfessional === true,
             isProfessional: data.isProfessional || false,
             location: data.location || '',
             countryOfOrigin: data.countryOfOrigin || '',
@@ -817,6 +823,7 @@ export default function DiscoverPage() {
             portfolioImages: portfolio,
             events: data.events || [],
             courses: data.courses || [],
+            showcaseLocations: data.showcaseLocations || [],
             discoverThumbnail: data.discoverThumbnail || null
           };
         });
@@ -873,7 +880,37 @@ export default function DiscoverPage() {
         });
         
         setArtworks(artworksData);
-        console.log('🎨 Discover: Loaded', finalArtists.length, 'artists and', artworksData.length, 'artworks');
+        
+        // Load events from artist showcaseLocations
+        const eventsData: Array<ShowcaseLocation & { artist: Artist }> = [];
+        finalArtists.forEach(artist => {
+          if (artist.showcaseLocations && artist.showcaseLocations.length > 0) {
+            const now = new Date();
+            artist.showcaseLocations.forEach((location) => {
+              // Only include events (type === 'event') that are current or upcoming
+              if (location.type === 'event') {
+                const startDate = location.startDate ? new Date(location.startDate) : null;
+                const endDate = location.endDate ? new Date(location.endDate) : null;
+                
+                // Event is current or upcoming if:
+                // - No end date and start date is today or in the future, OR
+                // - End date is in the future
+                const isCurrentOrUpcoming = 
+                  (!endDate && (!startDate || startDate >= now)) ||
+                  (endDate && endDate >= now);
+                
+                if (isCurrentOrUpcoming) {
+                  eventsData.push({
+                    ...location,
+                    artist
+                  });
+                }
+              }
+            });
+          }
+        });
+        setEvents(eventsData);
+        console.log('🎨 Discover: Loaded', finalArtists.length, 'artists,', artworksData.length, 'artworks, and', eventsData.length, 'events');
         console.log('📊 Artwork breakdown:', finalArtists.map(a => `${a.name}: ${a.portfolioImages?.length || 0} pieces`));
         console.log('📋 Portfolio details:', finalArtists.map(a => ({
           name: a.name,
@@ -1120,28 +1157,66 @@ export default function DiscoverPage() {
 
     // Sort artworks based on user selection, or randomize by default
     const sortedArtworks = useMemo(() => {
+      let sorted: Artwork[] = [];
       if (sortBy === 'newest') {
-        return [...filteredArtworks].sort((a, b) => {
+        sorted = [...filteredArtworks].sort((a, b) => {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
       } else if (sortBy === 'popular') {
-        return [...filteredArtworks].sort((a, b) => {
+        sorted = [...filteredArtworks].sort((a, b) => {
           return (b.likes || 0) - (a.likes || 0);
         });
       } else if (sortBy === 'price-low') {
-        return [...filteredArtworks].sort((a, b) => {
+        sorted = [...filteredArtworks].sort((a, b) => {
           return (a.price || 0) - (b.price || 0);
         });
       } else if (sortBy === 'price-high') {
-        return [...filteredArtworks].sort((a, b) => {
+        sorted = [...filteredArtworks].sort((a, b) => {
           return (b.price || 0) - (a.price || 0);
         });
       } else {
         // Default: randomize the order to avoid chronological clustering
-        // This will re-randomize whenever filteredArtworks changes (e.g., when filters change)
-        return shuffleArray(filteredArtworks);
+        sorted = shuffleArray(filteredArtworks);
       }
-    }, [filteredArtworks, sortBy]);
+      
+      // Add placeholder tiles to fill complete rows
+      // Grid: 2 cols (mobile), 3 (sm), 4 (md), 5 (lg), 6 (xl), 8 (2xl)
+      // Use 8 columns as base for calculating rows
+      const tilesPerRow = 8;
+      const currentCount = sorted.length;
+      const rows = Math.ceil(currentCount / tilesPerRow);
+      const targetCount = rows * tilesPerRow;
+      const placeholdersNeeded = Math.max(0, targetCount - currentCount);
+      
+      // Create placeholder artworks
+      const placeholderArtworks: Artwork[] = Array.from({ length: placeholdersNeeded }, (_, i) => {
+        const mockArtist: Artist = {
+          id: `placeholder-artist-${i}`,
+          name: 'Coming Soon',
+          handle: 'coming_soon',
+          followerCount: 0,
+          followingCount: 0,
+          createdAt: new Date(),
+          isVerified: false,
+          isProfessional: false
+        };
+        return {
+          id: `placeholder-${i}`,
+          artist: mockArtist,
+          title: 'Coming Soon',
+          description: '',
+          imageUrl: placeholderUrl,
+          imageAiHint: 'Coming Soon',
+          tags: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          views: 0,
+          likes: 0
+        };
+      });
+      
+      return [...sorted, ...placeholderArtworks];
+    }, [filteredArtworks, sortBy, placeholderUrl]);
 
   const filteredArtists = artists.filter(artist => {
     // Search term filter
@@ -1202,28 +1277,40 @@ export default function DiscoverPage() {
     setHideDigitalArt(false);
     setHideAIAssistedArt(false);
     setHideNFTs(false);
+    // Clear event filters
+    setSelectedEventCountry('all');
+    setSelectedEventCity('all');
   };
   
   // Count active filters
-  const activeFiltersCount = [
-    selectedCountryOfOrigin !== 'all',
-    selectedCountryOfResidence !== 'all',
-    selectedCategory !== 'All',
-    showVerifiedOnly,
-    selectedMediums.length > 0,
-    selectedTags.length > 0,
-    selectedCountries.length > 0,
-    selectedCities.length > 0,
-    hideDigitalArt,
-    hideAIAssistedArt,
-    hideNFTs,
-    hidePhotography,
-    hideVideoArt,
-    hidePerformanceArt,
-    hideInstallationArt,
-    hidePrintmaking,
-    hideTextileArt
-  ].filter(Boolean).length;
+  const activeFiltersCount = useMemo(() => {
+    if (view === 'events') {
+      return [
+        selectedEventCountry !== 'all',
+        selectedEventCity !== 'all',
+        searchTerm.length > 0
+      ].filter(Boolean).length;
+    }
+    return [
+      selectedCountryOfOrigin !== 'all',
+      selectedCountryOfResidence !== 'all',
+      selectedCategory !== 'All',
+      showVerifiedOnly,
+      selectedMediums.length > 0,
+      selectedTags.length > 0,
+      selectedCountries.length > 0,
+      selectedCities.length > 0,
+      hideDigitalArt,
+      hideAIAssistedArt,
+      hideNFTs,
+      hidePhotography,
+      hideVideoArt,
+      hidePerformanceArt,
+      hideInstallationArt,
+      hidePrintmaking,
+      hideTextileArt
+    ].filter(Boolean).length;
+  }, [view, selectedCountryOfOrigin, selectedCountryOfResidence, selectedCategory, showVerifiedOnly, selectedMediums, selectedTags, selectedCountries, selectedCities, hideDigitalArt, hideAIAssistedArt, hideNFTs, hidePhotography, hideVideoArt, hidePerformanceArt, hideInstallationArt, hidePrintmaking, hideTextileArt, selectedEventCountry, selectedEventCity, searchTerm]);
 
   if (selectedArtist) {
     const artistArtworks = artworks.filter(artwork => artwork.artist.id === selectedArtist.id);
@@ -1450,7 +1537,7 @@ export default function DiscoverPage() {
           <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-                placeholder="Search artists and artworks..."
+                placeholder={view === 'events' ? "Search events, artists, venues..." : "Search artists and artworks..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -1459,14 +1546,25 @@ export default function DiscoverPage() {
           </div>
           
           <div className="flex flex-wrap gap-3 mt-3 pb-2 min-w-0">
-            <Button
-              variant={showVerifiedOnly ? "default" : "outline"}
-              onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
-              className="whitespace-nowrap shrink-0"
-            >
-              <BadgeCheck className="h-4 w-4 mr-2 text-blue-500 fill-current" />
-              Verified Only
-            </Button>
+            {/* Artists/Events Toggle */}
+            <div className="flex border border-border rounded-md overflow-hidden shrink-0">
+              <Button
+                variant={view === 'artworks' ? "default" : "ghost"}
+                onClick={() => setView('artworks')}
+                className="rounded-none border-0"
+                size="sm"
+              >
+                Artworks
+              </Button>
+              <Button
+                variant={view === 'events' ? "default" : "ghost"}
+                onClick={() => setView('events')}
+                className="rounded-none border-0"
+                size="sm"
+              >
+                Events
+              </Button>
+            </div>
             {activeFiltersCount > 0 && (
               <Button variant="outline" onClick={clearFilters} className="whitespace-nowrap shrink-0">
                 Clear Filters ({activeFiltersCount})
@@ -1496,43 +1594,106 @@ export default function DiscoverPage() {
         </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Category Filter */}
-              <div>
-                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                  <Tag className="h-4 w-4" />
-                  Category
-                </label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Verified Only Filter - Moved to Advanced Search */}
+              {view === 'artworks' && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <BadgeCheck className="h-4 w-4" />
+                    Verified Artists
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={showVerifiedOnly}
+                      onCheckedChange={setShowVerifiedOnly}
+                    />
+                    <span className="text-sm text-muted-foreground">Show verified artists only</span>
+                  </div>
+                </div>
+              )}
 
-              {/* Sort/Shuffle Filter */}
-              <div>
-                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Sort By
-                </label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="random">Shuffle</SelectItem>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="popular">Most Popular</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Category Filter - Only for Artworks */}
+              {view === 'artworks' && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Category
+                  </label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Sort/Shuffle Filter - Only for Artworks */}
+              {view === 'artworks' && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Sort By
+                  </label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="random">Shuffle</SelectItem>
+                      <SelectItem value="newest">Newest</SelectItem>
+                      <SelectItem value="popular">Most Popular</SelectItem>
+                      <SelectItem value="price-low">Price: Low to High</SelectItem>
+                      <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Event Country Filter - Only for Events */}
+              {view === 'events' && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Country
+                  </label>
+                  <Select value={selectedEventCountry} onValueChange={setSelectedEventCountry}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All Countries" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Countries</SelectItem>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country} value={country}>{country}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Event City Filter - Only for Events */}
+              {view === 'events' && selectedEventCountry !== 'all' && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    City
+                  </label>
+                  <Select value={selectedEventCity} onValueChange={setSelectedEventCity}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All Cities" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Cities</SelectItem>
+                      {(CITIES_BY_COUNTRY[selectedEventCountry] || []).map((city) => (
+                        <SelectItem key={city} value={city}>{city}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Medium Filter */}
               <div>
@@ -1835,14 +1996,162 @@ export default function DiscoverPage() {
       <div className="container mx-auto px-4 py-6">
         {isDataLoading ? (
           <div className="flex justify-center py-12">
-            <ThemeLoading text="Loading artworks..." size="lg" />
+            <ThemeLoading text={view === 'events' ? "Loading events..." : "Loading artworks..."} size="lg" />
+          </div>
+        ) : view === 'events' ? (
+          <div>
+            {/* Filtered Events */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(() => {
+                const filteredEventsList = useMemo(() => {
+                let eventsList = [...events];
+                
+                // Filter by country
+                if (selectedEventCountry !== 'all') {
+                  eventsList = eventsList.filter(event => 
+                    event.country === selectedEventCountry
+                  );
+                }
+                
+                // Filter by city
+                if (selectedEventCity !== 'all') {
+                  eventsList = eventsList.filter(event => 
+                    event.city?.toLowerCase().includes(selectedEventCity.toLowerCase())
+                  );
+                }
+                
+                // Filter by search term
+                if (searchTerm) {
+                  eventsList = eventsList.filter(event =>
+                    event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    event.artist.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    event.venue?.toLowerCase().includes(searchTerm.toLowerCase())
+                  );
+                }
+                
+                // Sort by start date (upcoming first)
+                eventsList.sort((a, b) => {
+                  const aDate = a.startDate ? new Date(a.startDate).getTime() : 0;
+                  const bDate = b.startDate ? new Date(b.startDate).getTime() : 0;
+                  return aDate - bDate;
+                });
+                
+                // Add placeholders to fill rows (3 columns grid)
+                const tilesPerRow = 3;
+                const currentCount = eventsList.length;
+                const rows = Math.ceil(currentCount / tilesPerRow);
+                const targetCount = rows * tilesPerRow;
+                const placeholdersNeeded = Math.max(0, targetCount - currentCount);
+                
+                const placeholderEvents = Array.from({ length: placeholdersNeeded }, (_, i) => ({
+                  id: `placeholder-event-${i}`,
+                  name: 'Coming Soon',
+                  venue: '',
+                  city: '',
+                  country: '',
+                  imageUrl: placeholderUrl,
+                  startDate: undefined,
+                  endDate: undefined,
+                  type: 'event' as const,
+                  artist: {
+                    id: `placeholder-artist-${i}`,
+                    name: 'Coming Soon',
+                    handle: 'coming_soon',
+                    followerCount: 0,
+                    followingCount: 0,
+                    createdAt: new Date(),
+                    isVerified: false,
+                    isProfessional: false
+                  }
+                }));
+                
+                return [...eventsList, ...placeholderEvents];
+              }, [events, selectedEventCountry, selectedEventCity, searchTerm, placeholderUrl]);
+              
+              return filteredEventsList.map((event) => {
+              const isPlaceholder = event.id?.startsWith('placeholder-event');
+              const startDate = event.startDate ? new Date(event.startDate) : null;
+              const endDate = event.endDate ? new Date(event.endDate) : null;
+              const now = new Date();
+              const isCurrent = startDate && startDate <= now && (!endDate || endDate >= now);
+              const isUpcoming = startDate && startDate > now;
+              
+              return (
+                <Card key={event.id} className={isPlaceholder ? "opacity-50 pointer-events-none" : "hover:shadow-lg transition-shadow cursor-pointer"} onClick={() => !isPlaceholder && router.push(`/profile/${event.artist.id}`)}>
+                  <div className="relative aspect-video overflow-hidden rounded-t-lg">
+                    <img
+                      src={event.imageUrl || placeholderUrl}
+                      alt={event.name}
+                      className="w-full h-full object-cover"
+                    />
+                    {(isCurrent || isUpcoming) && (
+                      <Badge className={`absolute top-2 right-2 ${isCurrent ? 'bg-green-600' : 'bg-blue-600'}`}>
+                        {isCurrent ? 'Current' : 'Upcoming'}
+                      </Badge>
+                    )}
+                  </div>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3 mb-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={event.artist.avatarUrl || undefined} />
+                        <AvatarFallback>{event.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-sm truncate">{event.name}</h3>
+                          {event.artist.isVerified && (
+                            <BadgeCheck className="h-4 w-4 text-blue-500 fill-current flex-shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">by {event.artist.name}</p>
+                      </div>
+                    </div>
+                    {event.venue && (
+                      <p className="text-xs text-muted-foreground mb-1">{event.venue}</p>
+                    )}
+                    {(event.city || event.country) && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3" />
+                        <span>{[event.city, event.country].filter(Boolean).join(', ')}</span>
+                      </div>
+                    )}
+                    {startDate && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
+                        <Calendar className="h-3 w-3" />
+                        <span>
+                          {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {endDate && endDate.getTime() !== startDate.getTime() && (
+                            <> - {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+              });
+            })()}
+            </div>
+            
+            {events.length === 0 && !isDataLoading && (
+              <div className="text-center py-12">
+                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No events found</h3>
+                <p className="text-muted-foreground">Check back soon for upcoming art events.</p>
+              </div>
+            )}
           </div>
         ) : (
           <div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2">
-              {sortedArtworks.map((artwork) => (
-                <ArtworkTile key={artwork.id} artwork={artwork} />
-              ))}
+              {sortedArtworks.map((artwork) => {
+                const isPlaceholder = artwork.id?.startsWith('placeholder');
+                return (
+                  <div key={artwork.id} className={isPlaceholder ? "pointer-events-none opacity-50" : ""}>
+                    <ArtworkTile artwork={artwork} />
+                  </div>
+                );
+              })}
             </div>
 
             {isDataLoading && (

@@ -24,7 +24,8 @@ import {
   LogOut,
   Building2,
   Mail,
-  ExternalLink
+  ExternalLink,
+  BadgeCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -50,6 +51,7 @@ interface ProfileHeaderProps {
     followerCount: number;
     followingCount: number;
     isProfessional: boolean;
+    isVerified?: boolean;
     profileRingColor?: string;
     tipJarEnabled?: boolean;
     suggestionsEnabled?: boolean;
@@ -147,9 +149,14 @@ export function ProfileHeader({
           {/* User Information */}
           <div className="flex-1 space-y-3 md:space-y-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-headline font-bold text-foreground">
-                {user.displayName || 'User'}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl md:text-3xl font-headline font-bold text-foreground">
+                  {user.displayName || 'User'}
+                </h1>
+                {user.isVerified && (
+                  <BadgeCheck className="h-5 w-5 md:h-6 md:w-6 text-blue-500 fill-current flex-shrink-0" />
+                )}
+              </div>
               <p className="text-muted-foreground text-base md:text-lg">{user.username}</p>
               {user.location && !user.hideLocation && (
                 <div className="mt-1 flex items-center gap-2 text-muted-foreground">

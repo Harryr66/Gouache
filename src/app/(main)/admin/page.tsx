@@ -11,11 +11,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs, getDoc, setDoc, where } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
 import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport } from '@/lib/types';
-import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle } from 'lucide-react';
+import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
 import { useAuth } from '@/providers/auth-provider';
@@ -98,6 +99,8 @@ export default function AdminPanel() {
   const [isProductOnSale, setIsProductOnSale] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedView, setSelectedView] = useState<string>('artist-pending');
+  const [professionalArtists, setProfessionalArtists] = useState<Array<{ id: string; name: string; email: string; username?: string; avatarUrl?: string; isVerified: boolean; isProfessional: boolean }>>([]);
+  const [loadingArtists, setLoadingArtists] = useState(false);
   
   const formatDate = (value: unknown) => {
     if (!value) return 'N/A';
@@ -205,6 +208,35 @@ export default function AdminPanel() {
     const fetchData = async () => {
       try {
         console.log('🔄 Admin Panel: Fetching all data...');
+        
+        // Fetch professional artists for verified status management
+        setLoadingArtists(true);
+        try {
+          const artistsQuery = query(
+            collection(db, 'userProfiles'),
+            where('isProfessional', '==', true)
+          );
+          const artistsSnapshot = await getDocs(artistsQuery);
+          const artistsData = artistsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              name: data.name || data.displayName || data.username || 'Unknown',
+              email: data.email || '',
+              username: data.username || data.handle,
+              avatarUrl: data.avatarUrl,
+              isVerified: data.isVerified !== false, // All approved artists are verified by default
+              isProfessional: data.isProfessional || false
+            };
+          });
+          setProfessionalArtists(artistsData);
+          console.log(`✅ Loaded ${artistsData.length} professional artists`);
+        } catch (error) {
+          console.error('Error loading professional artists:', error);
+        } finally {
+          setLoadingArtists(false);
+        }
+        
         const [
           artistSnapshot,
           advertisingSnapshot,
@@ -2107,6 +2139,92 @@ export default function AdminPanel() {
       <div className="space-y-6">
         {selectedView === 'artist-management' && (
           <div className="space-y-6">
+            {/* Verified Status Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Verified Status Management</CardTitle>
+                <CardDescription>
+                  Manage verified status for professional artist accounts. All approved artists are verified by default.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingArtists ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : professionalArtists.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No professional artists found.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {professionalArtists.map((artist) => (
+                      <div
+                        key={artist.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={artist.avatarUrl || ''} />
+                            <AvatarFallback>{artist.name.charAt(0).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">{artist.name}</h3>
+                              {artist.isVerified && (
+                                <BadgeCheck className="h-4 w-4 text-blue-500 fill-current" />
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {artist.username && `@${artist.username}`} {artist.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={artist.isVerified}
+                              onCheckedChange={async (checked) => {
+                                try {
+                                  await updateDoc(doc(db, 'userProfiles', artist.id), {
+                                    isVerified: checked,
+                                    updatedAt: serverTimestamp()
+                                  });
+                                  setProfessionalArtists(prev =>
+                                    prev.map(a => a.id === artist.id ? { ...a, isVerified: checked } : a)
+                                  );
+                                  toast({
+                                    title: checked ? "Verified status enabled" : "Verified status removed",
+                                    description: `${artist.name}'s verified status has been ${checked ? 'enabled' : 'removed'}.`,
+                                  });
+                                } catch (error) {
+                                  console.error('Error updating verified status:', error);
+                                  toast({
+                                    title: "Update failed",
+                                    description: "Failed to update verified status. Please try again.",
+                                    variant: "destructive"
+                                  });
+                                }
+                              }}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              {artist.isVerified ? 'Verified' : 'Not Verified'}
+                            </span>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/profile/${artist.username || artist.id}`)}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            View Profile
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Active Artists</CardTitle>
