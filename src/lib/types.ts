@@ -495,6 +495,16 @@ export interface ShowcaseLocation {
   type?: 'event' | 'location'; // Type: 'event' for events, 'location' for showcase locations
 }
 
+export interface ArticleSection {
+  id: string;
+  type: 'text' | 'image' | 'text-image';
+  content?: string; // Text content for text sections
+  imageUrl?: string; // Image URL for image sections
+  imagePosition?: 'above' | 'below' | 'left' | 'right'; // For text-image sections
+  caption?: string; // Optional image caption
+  order: number; // Order of section in article
+}
+
 export interface NewsArticle {
   id: string;
   title: string;
@@ -507,7 +517,8 @@ export interface NewsArticle {
   tags?: string[];
   externalUrl?: string;
   featured?: boolean;
-  content?: string;
+  content?: string; // Legacy field - kept for backward compatibility
+  sections?: ArticleSection[]; // New rich content sections
   archived?: boolean;
   archivedAt?: Date;
   location?: 'main-banner' | 'whats-new' | 'evergreen';

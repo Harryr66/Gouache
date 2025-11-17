@@ -14,8 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs, getDoc, setDoc, where } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
-import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport } from '@/lib/types';
-import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck } from 'lucide-react';
+import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport, ArticleSection } from '@/lib/types';
+import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
@@ -161,6 +161,13 @@ export default function AdminPanel() {
   const [newArticleImageFile, setNewArticleImageFile] = useState<File | null>(null);
   const [newArticleImagePreview, setNewArticleImagePreview] = useState<string | null>(null);
   const [isPublishingArticle, setIsPublishingArticle] = useState(false);
+  const [articleSections, setArticleSections] = useState<ArticleSection[]>([]);
+  const [newSectionType, setNewSectionType] = useState<'text' | 'image' | 'text-image'>('text');
+  const [newSectionContent, setNewSectionContent] = useState('');
+  const [newSectionImageFile, setNewSectionImageFile] = useState<File | null>(null);
+  const [newSectionImagePreview, setNewSectionImagePreview] = useState<string | null>(null);
+  const [newSectionImagePosition, setNewSectionImagePosition] = useState<'above' | 'below' | 'left' | 'right'>('above');
+  const [newSectionCaption, setNewSectionCaption] = useState('');
 
   useEffect(() => {
     const artistRequestsQuery = query(
@@ -353,6 +360,7 @@ export default function AdminPanel() {
             externalUrl: data.externalUrl ?? '',
             featured: data.featured ?? false,
             content: data.content ?? '',
+            sections: data.sections ?? undefined,
             location: data.location ?? 'evergreen',
             archived: data.archived ?? false,
             archivedAt: data.archivedAt?.toDate?.()
@@ -1581,6 +1589,9 @@ export default function AdminPanel() {
         }
       }
 
+      // Prepare sections with correct order
+      const sortedSections = [...articleSections].sort((a, b) => a.order - b.order);
+      
       const docRef = await addDoc(collection(db, 'newsArticles'), {
         title: newArticle.title.trim(),
         summary: newArticle.summary.trim(),
@@ -1590,7 +1601,8 @@ export default function AdminPanel() {
         externalUrl: newArticle.externalUrl?.trim() || '',
         featured: false,
         tags,
-        content: newArticleContent,
+        content: newArticleContent, // Keep for backward compatibility
+        sections: sortedSections.length > 0 ? sortedSections : undefined, // New rich sections
         location: newArticle.location || 'evergreen',
         publishedAt: publishedAtDate,
         archived: false,
@@ -1638,6 +1650,13 @@ export default function AdminPanel() {
       setNewArticleContent('');
       setNewArticleImageFile(null);
       setNewArticleImagePreview(null);
+      setArticleSections([]);
+      setNewSectionType('text');
+      setNewSectionContent('');
+      setNewSectionImageFile(null);
+      setNewSectionImagePreview(null);
+      setNewSectionImagePosition('above');
+      setNewSectionCaption('');
     } catch (error) {
       console.error('Failed to create news article:', error);
       toast({
@@ -1663,6 +1682,118 @@ export default function AdminPanel() {
     setNewArticleImageFile(null);
     setNewArticleImagePreview(null);
     setNewArticle((prev) => ({ ...prev, imageUrl: '' }));
+  };
+
+  const handleSectionImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setNewSectionImageFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setNewSectionImagePreview(previewUrl);
+  };
+
+  const clearSectionImage = () => {
+    setNewSectionImageFile(null);
+    setNewSectionImagePreview(null);
+  };
+
+  const addArticleSection = async () => {
+    let imageUrl = '';
+    
+    // Upload section image if provided
+    if (newSectionImageFile) {
+      try {
+        const fileName = `${Date.now()}_${newSectionImageFile.name.replace(/\s+/g, '-')}`;
+        const storagePath = `news/sections/${fileName}`;
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, newSectionImageFile);
+        imageUrl = await getDownloadURL(storageRef);
+      } catch (error) {
+        console.error('Failed to upload section image:', error);
+        toast({
+          title: 'Upload failed',
+          description: 'Could not upload section image. Please try again.',
+          variant: 'destructive'
+        });
+        return;
+      }
+    }
+
+    // Validate section based on type
+    if (newSectionType === 'text' && !newSectionContent.trim()) {
+      toast({
+        title: 'Content required',
+        description: 'Please add text content for this section.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (newSectionType === 'image' && !imageUrl && !newSectionImageFile) {
+      toast({
+        title: 'Image required',
+        description: 'Please upload an image for this section.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (newSectionType === 'text-image' && (!newSectionContent.trim() || (!imageUrl && !newSectionImageFile))) {
+      toast({
+        title: 'Content and image required',
+        description: 'Please add both text content and an image for this section.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const newSection: ArticleSection = {
+      id: `section-${Date.now()}`,
+      type: newSectionType,
+      content: newSectionType !== 'image' ? newSectionContent.trim() : undefined,
+      imageUrl: imageUrl || undefined,
+      imagePosition: newSectionType === 'text-image' ? newSectionImagePosition : undefined,
+      caption: newSectionCaption.trim() || undefined,
+      order: articleSections.length
+    };
+
+    setArticleSections([...articleSections, newSection]);
+    
+    // Reset form
+    setNewSectionType('text');
+    setNewSectionContent('');
+    setNewSectionImageFile(null);
+    setNewSectionImagePreview(null);
+    setNewSectionImagePosition('above');
+    setNewSectionCaption('');
+
+    toast({
+      title: 'Section added',
+      description: 'Section has been added to your article.'
+    });
+  };
+
+  const removeArticleSection = (sectionId: string) => {
+    setArticleSections(articleSections.filter(s => s.id !== sectionId));
+  };
+
+  const moveSectionUp = (index: number) => {
+    if (index === 0) return;
+    const newSections = [...articleSections];
+    [newSections[index - 1], newSections[index]] = [newSections[index], newSections[index - 1]];
+    newSections[index - 1].order = index - 1;
+    newSections[index].order = index;
+    setArticleSections(newSections);
+  };
+
+  const moveSectionDown = (index: number) => {
+    if (index === articleSections.length - 1) return;
+    const newSections = [...articleSections];
+    [newSections[index], newSections[index + 1]] = [newSections[index + 1], newSections[index]];
+    newSections[index].order = index;
+    newSections[index + 1].order = index + 1;
+    setArticleSections(newSections);
   };
 
   const handleArchiveNewsArticle = async (article: NewsArticle, archive: boolean) => {
@@ -2824,15 +2955,186 @@ export default function AdminPanel() {
                       onChange={(event) => setNewArticle((prev) => ({ ...prev, summary: event.target.value }))}
                     />
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="news-content">Body (optional)</Label>
-                    <Textarea
-                      id="news-content"
-                      rows={6}
-                      placeholder="Write or paste the full article content."
-                      value={newArticleContent}
-                      onChange={(event) => setNewArticleContent(event.target.value)}
-                    />
+                  {/* Article Sections Builder */}
+                  <div className="space-y-4 md:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Article Content Sections</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Build your article with text and images
+                      </p>
+                    </div>
+
+                    {/* Existing Sections */}
+                    {articleSections.length > 0 && (
+                      <div className="space-y-3 border rounded-lg p-4">
+                        {articleSections
+                          .sort((a, b) => a.order - b.order)
+                          .map((section, index) => (
+                            <div key={section.id} className="border rounded-lg p-4 bg-muted/30">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline">
+                                    {section.type === 'text' ? 'Text' : section.type === 'image' ? 'Image' : 'Text + Image'}
+                                  </Badge>
+                                  <span className="text-sm text-muted-foreground">Section {index + 1}</span>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => moveSectionUp(index)}
+                                    disabled={index === 0}
+                                  >
+                                    <ChevronUp className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => moveSectionDown(index)}
+                                    disabled={index === articleSections.length - 1}
+                                  >
+                                    <ChevronDown className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-destructive"
+                                    onClick={() => removeArticleSection(section.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                              {section.type === 'text' && section.content && (
+                                <p className="text-sm text-muted-foreground line-clamp-2">{section.content}</p>
+                              )}
+                              {section.type === 'image' && section.imageUrl && (
+                                <img src={section.imageUrl} alt={section.caption || 'Section image'} className="h-20 w-auto rounded" />
+                              )}
+                              {section.type === 'text-image' && (
+                                <div className="flex gap-2">
+                                  {section.imageUrl && (
+                                    <img src={section.imageUrl} alt={section.caption || 'Section image'} className="h-20 w-auto rounded" />
+                                  )}
+                                  {section.content && (
+                                    <p className="text-sm text-muted-foreground line-clamp-2 flex-1">{section.content}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    {/* Add New Section Form */}
+                    <div className="border rounded-lg p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label>Add New Section</Label>
+                        <Select value={newSectionType} onValueChange={(value) => setNewSectionType(value as 'text' | 'image' | 'text-image')}>
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="text">Text Only</SelectItem>
+                            <SelectItem value="image">Image Only</SelectItem>
+                            <SelectItem value="text-image">Text + Image</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Text Content */}
+                      {(newSectionType === 'text' || newSectionType === 'text-image') && (
+                        <div className="space-y-2">
+                          <Label>Text Content *</Label>
+                          <Textarea
+                            placeholder="Enter section text content..."
+                            rows={4}
+                            value={newSectionContent}
+                            onChange={(e) => setNewSectionContent(e.target.value)}
+                          />
+                        </div>
+                      )}
+
+                      {/* Image Upload */}
+                      {(newSectionType === 'image' || newSectionType === 'text-image') && (
+                        <div className="space-y-2">
+                          <Label>Image *</Label>
+                          <div className="flex flex-col gap-2">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleSectionImageChange}
+                            />
+                            {newSectionImagePreview && (
+                              <div className="relative">
+                                <img
+                                  src={newSectionImagePreview}
+                                  alt="Preview"
+                                  className="h-32 w-auto rounded-lg border"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute top-2 right-2 h-6 w-6"
+                                  onClick={clearSectionImage}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Image Position (for text-image sections) */}
+                      {newSectionType === 'text-image' && (
+                        <div className="space-y-2">
+                          <Label>Image Position</Label>
+                          <Select value={newSectionImagePosition} onValueChange={(value) => setNewSectionImagePosition(value as 'above' | 'below' | 'left' | 'right')}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="above">Above Text</SelectItem>
+                              <SelectItem value="below">Below Text</SelectItem>
+                              <SelectItem value="left">Left of Text</SelectItem>
+                              <SelectItem value="right">Right of Text</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* Image Caption */}
+                      {(newSectionType === 'image' || newSectionType === 'text-image') && (
+                        <div className="space-y-2">
+                          <Label>Image Caption (optional)</Label>
+                          <Input
+                            placeholder="Enter image caption..."
+                            value={newSectionCaption}
+                            onChange={(e) => setNewSectionCaption(e.target.value)}
+                          />
+                        </div>
+                      )}
+
+                      <Button type="button" onClick={addArticleSection} className="w-full">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Section
+                      </Button>
+                    </div>
+
+                    {/* Legacy Content Field (for backward compatibility) */}
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="news-content">Legacy Content (optional - use sections above instead)</Label>
+                      <Textarea
+                        id="news-content"
+                        rows={4}
+                        placeholder="Simple text content (legacy field - use sections above for rich content)"
+                        value={newArticleContent}
+                        onChange={(event) => setNewArticleContent(event.target.value)}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="news-image-upload">Upload hero image</Label>

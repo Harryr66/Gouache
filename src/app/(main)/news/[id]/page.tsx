@@ -42,6 +42,7 @@ export default function NewsArticlePage() {
             externalUrl: data.externalUrl || undefined,
             featured: data.featured || false,
             content: data.content || '',
+            sections: data.sections || undefined,
             archived: data.archived || false,
             archivedAt: data.archivedAt?.toDate?.(),
             location: data.location || undefined,
@@ -184,7 +185,129 @@ export default function NewsArticlePage() {
               </p>
             )}
             
-            {article.content ? (
+            {/* Render Rich Sections */}
+            {article.sections && article.sections.length > 0 ? (
+              <div className="space-y-8">
+                {article.sections
+                  .sort((a, b) => a.order - b.order)
+                  .map((section) => (
+                    <div key={section.id} className="article-section">
+                      {section.type === 'text' && section.content && (
+                        <div className="text-foreground whitespace-pre-wrap">
+                          {section.content}
+                        </div>
+                      )}
+
+                      {section.type === 'image' && section.imageUrl && (
+                        <figure className="my-6">
+                          <img
+                            src={section.imageUrl}
+                            alt={section.caption || article.title}
+                            className="w-full rounded-lg"
+                          />
+                          {section.caption && (
+                            <figcaption className="text-sm text-muted-foreground mt-2 text-center italic">
+                              {section.caption}
+                            </figcaption>
+                          )}
+                        </figure>
+                      )}
+
+                      {section.type === 'text-image' && (
+                        <div className="space-y-4">
+                          {section.imagePosition === 'above' && section.imageUrl && (
+                            <figure className="my-6">
+                              <img
+                                src={section.imageUrl}
+                                alt={section.caption || article.title}
+                                className="w-full rounded-lg"
+                              />
+                              {section.caption && (
+                                <figcaption className="text-sm text-muted-foreground mt-2 text-center italic">
+                                  {section.caption}
+                                </figcaption>
+                              )}
+                            </figure>
+                          )}
+
+                          {section.imagePosition === 'left' && (
+                            <div className="flex flex-col md:flex-row gap-6 items-start">
+                              {section.imageUrl && (
+                                <figure className="flex-shrink-0 w-full md:w-1/2">
+                                  <img
+                                    src={section.imageUrl}
+                                    alt={section.caption || article.title}
+                                    className="w-full rounded-lg"
+                                  />
+                                  {section.caption && (
+                                    <figcaption className="text-sm text-muted-foreground mt-2 text-center italic">
+                                      {section.caption}
+                                    </figcaption>
+                                  )}
+                                </figure>
+                              )}
+                              {section.content && (
+                                <div className="text-foreground whitespace-pre-wrap flex-1">
+                                  {section.content}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {section.imagePosition === 'right' && (
+                            <div className="flex flex-col md:flex-row gap-6 items-start">
+                              {section.content && (
+                                <div className="text-foreground whitespace-pre-wrap flex-1">
+                                  {section.content}
+                                </div>
+                              )}
+                              {section.imageUrl && (
+                                <figure className="flex-shrink-0 w-full md:w-1/2">
+                                  <img
+                                    src={section.imageUrl}
+                                    alt={section.caption || article.title}
+                                    className="w-full rounded-lg"
+                                  />
+                                  {section.caption && (
+                                    <figcaption className="text-sm text-muted-foreground mt-2 text-center italic">
+                                      {section.caption}
+                                    </figcaption>
+                                  )}
+                                </figure>
+                              )}
+                            </div>
+                          )}
+
+                          {section.imagePosition === 'below' && (
+                            <>
+                              {section.content && (
+                                <div className="text-foreground whitespace-pre-wrap">
+                                  {section.content}
+                                </div>
+                              )}
+                              {section.imageUrl && (
+                                <figure className="my-6">
+                                  <img
+                                    src={section.imageUrl}
+                                    alt={section.caption || article.title}
+                                    className="w-full rounded-lg"
+                                  />
+                                  {section.caption && (
+                                    <figcaption className="text-sm text-muted-foreground mt-2 text-center italic">
+                                      {section.caption}
+                                    </figcaption>
+                                  )}
+                                </figure>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            ) : article.content ? (
+              // Fallback to legacy content if no sections
               <div 
                 className="text-foreground whitespace-pre-wrap"
                 dangerouslySetInnerHTML={{ __html: article.content }}
