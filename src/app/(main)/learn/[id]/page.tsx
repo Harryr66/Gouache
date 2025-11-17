@@ -26,7 +26,9 @@ import {
   Instagram,
   Twitter,
   Youtube,
-  Facebook
+  Facebook,
+  ShoppingBag,
+  ExternalLink
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
@@ -84,6 +86,11 @@ The course includes live demonstrations, step-by-step tutorials, and personalize
   isFeatured: true,
   tags: ['oil-painting', 'techniques', 'masterclass'],
   skills: ['Color Theory', 'Brush Techniques', 'Composition', 'Lighting'],
+  supplyList: [
+    { id: '1', item: 'Oil Paint Set', brand: 'Winsor & Newton', affiliateLink: 'https://example.com/winsor-newton' },
+    { id: '2', item: 'Canvas Boards', brand: 'Arteza', affiliateLink: 'https://example.com/arteza-canvas' },
+    { id: '3', item: 'Paint Brushes', brand: 'Princeton', affiliateLink: 'https://example.com/princeton-brushes' },
+  ],
   curriculum: [
     {
       week: 1,
@@ -301,9 +308,12 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className={`grid w-full ${isEnrolled && course.supplyList && course.supplyList.length > 0 ? 'grid-cols-5' : 'grid-cols-4'}`}>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+                {isEnrolled && course.supplyList && course.supplyList.length > 0 && (
+                  <TabsTrigger value="supplies">Supplies</TabsTrigger>
+                )}
                 <TabsTrigger value="reviews">Reviews</TabsTrigger>
                 <TabsTrigger value="discussions">Discussions</TabsTrigger>
               </TabsList>
@@ -433,6 +443,48 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              {isEnrolled && course.supplyList && course.supplyList.length > 0 && (
+                <TabsContent value="supplies" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <ShoppingBag className="h-5 w-5" />
+                        Supplies List
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-6">
+                        Here are the supplies you&apos;ll need for this course. Click on any item to purchase through our affiliate links.
+                      </p>
+                      <div className="space-y-3">
+                        {course.supplyList.map((supply) => (
+                          <div
+                            key={supply.id}
+                            className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex-1">
+                              <div className="font-semibold text-base mb-1">{supply.item}</div>
+                              <div className="text-sm text-muted-foreground mb-2">{supply.brand}</div>
+                              {supply.affiliateLink && (
+                                <a
+                                  href={supply.affiliateLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  View Product
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
 
               <TabsContent value="reviews" className="space-y-4">
                 <Card>

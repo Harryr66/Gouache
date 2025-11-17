@@ -89,6 +89,8 @@ export default function CourseSubmissionPage() {
     slug: '',
     // Curriculum
     curriculum: [] as Array<{ id: string; title: string; description?: string; type: 'video' | 'reading' | 'assignment'; duration?: string }>,
+    // Supply List
+    supplyList: [] as Array<{ id: string; item: string; brand: string; affiliateLink?: string }>,
     // Publish options
     isPublished: false,
   });
@@ -99,6 +101,10 @@ export default function CourseSubmissionPage() {
   const [newLessonTitle, setNewLessonTitle] = useState('');
   const [newLessonType, setNewLessonType] = useState<'video' | 'reading' | 'assignment'>('video');
   const [newLessonDuration, setNewLessonDuration] = useState('');
+  // Supply list state
+  const [newSupplyItem, setNewSupplyItem] = useState('');
+  const [newSupplyBrand, setNewSupplyBrand] = useState('');
+  const [newSupplyAffiliateLink, setNewSupplyAffiliateLink] = useState('');
   
   // AI tag generation
   const [isGeneratingTags, setIsGeneratingTags] = useState(false);
@@ -298,6 +304,36 @@ export default function CourseSubmissionPage() {
     setFormData(prev => ({ ...prev, curriculum: prev.curriculum.filter(l => l.id !== lessonId) }));
   };
 
+  const addSupplyItem = () => {
+    if (!newSupplyItem.trim() || !newSupplyBrand.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide both item name and brand.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      supplyList: [
+        ...prev.supplyList,
+        { 
+          id: `${Date.now()}`, 
+          item: newSupplyItem.trim(), 
+          brand: newSupplyBrand.trim(),
+          affiliateLink: newSupplyAffiliateLink.trim() || undefined
+        }
+      ]
+    }));
+    setNewSupplyItem('');
+    setNewSupplyBrand('');
+    setNewSupplyAffiliateLink('');
+  };
+
+  const removeSupplyItem = (supplyId: string) => {
+    setFormData(prev => ({ ...prev, supplyList: prev.supplyList.filter(s => s.id !== supplyId) }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -370,14 +406,16 @@ export default function CourseSubmissionPage() {
       const courseData = {
         title: formData.title,
         description: formData.description,
-        // longDescription already included above; avoid duplicate keys
+        longDescription: formData.longDescription,
         instructor: instructorData,
         thumbnail: thumbnailUrl,
+        previewVideoUrl: trailerUrl,
         price: parseFloat(formData.price),
         originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
         currency: 'USD',
         category: formData.category,
         subcategory: formData.subcategory,
+        supplyList: formData.supplyList,
         difficulty: formData.difficulty as 'Beginner' | 'Intermediate' | 'Advanced',
         duration: formData.duration,
         format: formData.format as 'Self-Paced' | 'Live Sessions' | 'Hybrid' | 'E-Book',
@@ -400,8 +438,6 @@ export default function CourseSubmissionPage() {
         completionRate: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
-        previewVideoUrl: trailerUrl,
-        longDescription: formData.longDescription,
       };
 
       // Create the course
@@ -712,6 +748,75 @@ export default function CourseSubmissionPage() {
                           </li>
                         ))}
                       </ul>
+                    </div>
+
+                    {/* Supply List Section */}
+                    <div className="mt-8 pt-8 border-t">
+                      <h3 className="text-lg font-semibold mb-4">Supply List</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Add supplies students will need for this course. Include affiliate links to earn commissions.
+                      </p>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <Input 
+                            placeholder="Item name (e.g., Paint Brush)" 
+                            value={newSupplyItem} 
+                            onChange={(e) => setNewSupplyItem(e.target.value)}
+                          />
+                          <Input 
+                            placeholder="Brand name (e.g., Winsor & Newton)" 
+                            value={newSupplyBrand} 
+                            onChange={(e) => setNewSupplyBrand(e.target.value)}
+                          />
+                          <div className="flex gap-2">
+                            <Input 
+                              placeholder="Affiliate link (optional)" 
+                              value={newSupplyAffiliateLink} 
+                              onChange={(e) => setNewSupplyAffiliateLink(e.target.value)}
+                              type="url"
+                            />
+                            <Button type="button" onClick={addSupplyItem} size="sm">
+                              <Plus className="h-4 w-4"/>
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {formData.supplyList.length === 0 && (
+                            <p className="text-sm text-muted-foreground">No supplies added yet.</p>
+                          )}
+                          <ul className="space-y-2">
+                            {formData.supplyList.map(supply => (
+                              <li
+                                key={supply.id}
+                                className="flex items-center justify-between rounded-md border p-3"
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium">{supply.item}</div>
+                                  <div className="text-sm text-muted-foreground">{supply.brand}</div>
+                                  {supply.affiliateLink && (
+                                    <a 
+                                      href={supply.affiliateLink} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-primary hover:underline"
+                                    >
+                                      View Product →
+                                    </a>
+                                  )}
+                                </div>
+                                <Button 
+                                  type="button" 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => removeSupplyItem(supply.id)}
+                                >
+                                  <Trash2 className="h-4 w-4"/>
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

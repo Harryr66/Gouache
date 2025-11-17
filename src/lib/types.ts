@@ -306,9 +306,17 @@ export interface Course {
   discussions: CourseDiscussion[];
   enrollmentCount: number;
   completionRate: number;
+  supplyList?: SupplyItem[];
   createdAt: Date;
   updatedAt: Date;
   publishedAt?: Date;
+}
+
+export interface SupplyItem {
+  id: string;
+  item: string;
+  brand: string;
+  affiliateLink?: string;
 }
 
 export interface CourseEnrollment {
