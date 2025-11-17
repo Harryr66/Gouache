@@ -511,7 +511,7 @@ export default function LearnPage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
                 <GraduationCap className="h-8 w-8 text-primary" />
-                Gouache&apos;s Art School
+                Gouache Learn
               </h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Learn directly from the best artists</span>
