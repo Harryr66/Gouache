@@ -52,9 +52,9 @@ export function MobileHeader() {
               className="h-9 w-9 rounded-lg"
               asChild
             >
-              <Link href="/profile">
-                <Fingerprint className="h-5 w-5" />
-                <span className="sr-only">Profile</span>
+              <Link href="/settings">
+                <Settings className="h-5 w-5" />
+                <span className="sr-only">Settings</span>
               </Link>
             </Button>
             <Button 
@@ -63,9 +63,9 @@ export function MobileHeader() {
               className="h-9 w-9 rounded-lg"
               asChild
             >
-              <Link href="/settings">
-                <Settings className="h-5 w-5" />
-                <span className="sr-only">Settings</span>
+              <Link href="/profile">
+                <Fingerprint className="h-5 w-5" />
+                <span className="sr-only">Profile</span>
               </Link>
             </Button>
         </div>
