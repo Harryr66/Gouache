@@ -815,6 +815,43 @@ export default function AdminPanel() {
     }
   };
 
+  const acceptAiSections = () => {
+    if (aiGeneratedSections.length === 0) {
+      toast({
+        title: 'No sections to accept',
+        description: 'There are no AI-generated sections to accept.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Add AI-generated sections to article sections
+    const maxOrder = articleSections.length > 0 
+      ? Math.max(...articleSections.map(s => s.order))
+      : -1;
+    
+    const sectionsToAdd = aiGeneratedSections.map((section, index) => ({
+      ...section,
+      order: maxOrder + index + 1
+    }));
+
+    setArticleSections([...articleSections, ...sectionsToAdd]);
+    setAiGeneratedSections([]);
+
+    toast({
+      title: 'Sections added',
+      description: `Added ${sectionsToAdd.length} sections to your article.`,
+    });
+  };
+
+  const rejectAiSections = () => {
+    setAiGeneratedSections([]);
+    toast({
+      title: 'Sections rejected',
+      description: 'AI-generated sections have been cleared.',
+    });
+  };
+
   const toggleCategory = (category: string) => {
     if (videoCategories.includes(category)) {
       setVideoCategories(videoCategories.filter(cat => cat !== category));
