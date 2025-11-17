@@ -1234,8 +1234,8 @@ export default function DiscoverPage() {
   const filteredEventsList = useMemo(() => {
     let eventsList = [...events];
     
-    // Filter by country (when main filter is active)
-    if (showForSale && selectedEventCountry !== 'all') {
+    // Filter by country
+    if (selectedEventCountry !== 'all') {
       eventsList = eventsList.filter(event => 
         event.country === selectedEventCountry
       );
@@ -1372,7 +1372,7 @@ export default function DiscoverPage() {
   const activeFiltersCount = useMemo(() => {
     if (view === 'events') {
       return [
-        showForSale && selectedEventCountry !== 'all',
+        selectedEventCountry !== 'all',
         selectedEventCity !== 'all',
         searchTerm.length > 0
       ].filter(Boolean).length;
