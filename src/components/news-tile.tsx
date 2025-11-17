@@ -20,13 +20,17 @@ export function NewsTile({ article }: NewsTileProps) {
   const handleClick = (e: React.MouseEvent) => {
     if (isPlaceholder) {
       e.preventDefault();
+      e.stopPropagation();
       return;
     }
     if (hasExternalUrl) {
       e.preventDefault();
+      e.stopPropagation();
       window.open(article.externalUrl, '_blank', 'noopener,noreferrer');
+      return;
     }
-    // Otherwise, let Next.js Link handle the navigation
+    // For internal links, let Next.js Link handle navigation
+    console.log('Navigating to:', href);
   };
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => {
@@ -64,7 +68,8 @@ export function NewsTile({ article }: NewsTileProps) {
   return (
     <Card
       className={cn(
-        'overflow-hidden transition hover:shadow-lg group h-full flex flex-col'
+        'overflow-hidden transition hover:shadow-lg group h-full flex flex-col',
+        !isPlaceholder && 'cursor-pointer'
       )}
     >
       <Wrapper>
