@@ -3243,7 +3243,7 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card id="article-editor">
               <CardHeader>
                 <CardTitle>Create newsroom article</CardTitle>
                 <CardDescription>
@@ -3882,32 +3882,91 @@ export default function AdminPanel() {
                           </span>
                           <div className="flex items-center gap-2">
                             {article.status === 'draft' && !article.archived && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={async () => {
-                                  try {
-                                    await updateDoc(doc(db, 'newsArticles', article.id), {
-                                      status: 'published',
-                                      publishedAt: serverTimestamp(),
-                                      updatedAt: serverTimestamp(),
-                                    });
-                                    toast({
-                                      title: 'Article published',
-                                      description: `"${article.title}" is now live.`,
-                                    });
-                                  } catch (error) {
-                                    console.error('Error publishing article:', error);
-                                    toast({
-                                      title: 'Publish failed',
-                                      description: 'Failed to publish article. Please try again.',
-                                      variant: 'destructive'
-                                    });
-                                  }
-                                }}
-                              >
-                                Publish
-                              </Button>
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={async () => {
+                                    try {
+                                      // Load draft into editor
+                                      const articleDoc = await getDoc(doc(db, 'newsArticles', article.id));
+                                      if (!articleDoc.exists()) {
+                                        toast({
+                                          title: 'Article not found',
+                                          variant: 'destructive',
+                                        });
+                                        return;
+                                      }
+
+                                      const data = articleDoc.data();
+                                      
+                                      setNewArticle({
+                                        title: data.title || '',
+                                        summary: data.summary || '',
+                                        category: data.category || 'Stories',
+                                        author: data.author || '',
+                                        imageUrl: data.imageUrl || '',
+                                        externalUrl: data.externalUrl || '',
+                                        publishedAt: '',
+                                        tags: (data.tags || []).join(', '),
+                                        location: data.location || 'evergreen',
+                                      });
+
+                                      setArticleSections((data.sections || []).map((s: any) => ({
+                                        ...s,
+                                        order: s.order || 0,
+                                      })));
+                                      setNewArticleContent(data.content || '');
+
+                                      // Scroll to editor
+                                      setTimeout(() => {
+                                        document.getElementById('article-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                      }, 100);
+
+                                      toast({
+                                        title: 'Draft loaded',
+                                        description: 'Article loaded into editor. Make your changes and publish.',
+                                      });
+                                    } catch (error) {
+                                      console.error('Error loading draft:', error);
+                                      toast({
+                                        title: 'Load failed',
+                                        description: 'Failed to load draft. Please try again.',
+                                        variant: 'destructive',
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={async () => {
+                                    try {
+                                      await updateDoc(doc(db, 'newsArticles', article.id), {
+                                        status: 'published',
+                                        publishedAt: serverTimestamp(),
+                                        updatedAt: serverTimestamp(),
+                                      });
+                                      toast({
+                                        title: 'Article published',
+                                        description: `"${article.title}" is now live.`,
+                                      });
+                                    } catch (error) {
+                                      console.error('Error publishing article:', error);
+                                      toast({
+                                        title: 'Publish failed',
+                                        description: 'Failed to publish article. Please try again.',
+                                        variant: 'destructive'
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Publish
+                                </Button>
+                              </>
                             )}
                             <Button
                               variant="ghost"
