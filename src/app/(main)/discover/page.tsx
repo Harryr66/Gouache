@@ -1179,13 +1179,17 @@ export default function DiscoverPage() {
         sorted = shuffleArray(filteredArtworks);
       }
       
-      // Add placeholder tiles to fill complete rows
+      // Always fill the grid completely with placeholders
       // Grid: 2 cols (mobile), 3 (sm), 4 (md), 5 (lg), 6 (xl), 8 (2xl)
-      // Use 8 columns as base for calculating rows
+      // Use 8 columns as base for calculating minimum grid size
       const tilesPerRow = 8;
+      const minRows = 4; // Always show at least 4 full rows
+      const minTiles = minRows * tilesPerRow; // Minimum 32 tiles
       const currentCount = sorted.length;
-      const rows = Math.ceil(currentCount / tilesPerRow);
-      const targetCount = rows * tilesPerRow;
+      
+      // If we have fewer artworks than minimum, fill with placeholders
+      // If we have more, still ensure complete rows
+      const targetCount = Math.max(minTiles, Math.ceil(currentCount / tilesPerRow) * tilesPerRow);
       const placeholdersNeeded = Math.max(0, targetCount - currentCount);
       
       // Create placeholder artworks
@@ -1215,6 +1219,7 @@ export default function DiscoverPage() {
         };
       });
       
+      // Return artworks first, then placeholders (artworks replace placeholders as they're uploaded)
       return [...sorted, ...placeholderArtworks];
     }, [filteredArtworks, sortBy, placeholderUrl]);
 
@@ -1252,11 +1257,16 @@ export default function DiscoverPage() {
       return aDate - bDate;
     });
     
-    // Add placeholders to fill rows (3 columns grid)
+    // Always fill the grid completely with placeholders
+    // Events grid: 3 columns
     const tilesPerRow = 3;
+    const minRows = 3; // Always show at least 3 full rows
+    const minTiles = minRows * tilesPerRow; // Minimum 9 tiles
     const currentCount = eventsList.length;
-    const rows = Math.ceil(currentCount / tilesPerRow);
-    const targetCount = rows * tilesPerRow;
+    
+    // If we have fewer events than minimum, fill with placeholders
+    // If we have more, still ensure complete rows
+    const targetCount = Math.max(minTiles, Math.ceil(currentCount / tilesPerRow) * tilesPerRow);
     const placeholdersNeeded = Math.max(0, targetCount - currentCount);
     
     const placeholderEvents = Array.from({ length: placeholdersNeeded }, (_, i) => ({
@@ -1282,6 +1292,7 @@ export default function DiscoverPage() {
       }
     }));
     
+    // Return events first, then placeholders (events replace placeholders as they're added)
     return [...eventsList, ...placeholderEvents];
   }, [events, selectedEventCountry, selectedEventCity, searchTerm, placeholderUrl]);
 
