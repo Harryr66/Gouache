@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Bell, Settings, Search } from 'lucide-react';
+import { Settings, Search, Fingerprint } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 export function MobileHeader() {
@@ -52,9 +52,9 @@ export function MobileHeader() {
               className="h-9 w-9 rounded-lg"
               asChild
             >
-              <Link href="/notifications">
-                  <Bell className="h-5 w-5" />
-                  <span className="sr-only">Notifications</span>
+              <Link href="/profile">
+                <Fingerprint className="h-5 w-5" />
+                <span className="sr-only">Profile</span>
               </Link>
             </Button>
             <Button 

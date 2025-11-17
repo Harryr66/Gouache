@@ -2057,6 +2057,7 @@ export default function DiscoverPage() {
                     id: `placeholder-artist-${i}`,
                     name: 'Coming Soon',
                     handle: 'coming_soon',
+                    avatarUrl: undefined,
                     followerCount: 0,
                     followingCount: 0,
                     createdAt: new Date(),
@@ -2093,7 +2094,7 @@ export default function DiscoverPage() {
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3 mb-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={event.artist.avatarUrl || undefined} />
+                        <AvatarImage src={event.artist.avatarUrl ?? undefined} />
                         <AvatarFallback>{event.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
