@@ -1439,8 +1439,7 @@ export default function DiscoverPage() {
       {/* Header */}
       <div className="border-b border-border bg-card">
     <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold mb-2">Discover</h1>
-          <p className="text-muted-foreground">Explore artworks from around the world</p>
+          <h1 className="text-3xl font-bold">Discover</h1>
         </div>
         </div>
 
@@ -1460,28 +1459,6 @@ export default function DiscoverPage() {
           </div>
           
           <div className="flex flex-wrap gap-3 mt-3 pb-2 min-w-0">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[180px] shrink-0">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[140px] shrink-0">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="random">Shuffle</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="popular">Most Popular</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-              </SelectContent>
-            </Select>
             <Button
               variant={showVerifiedOnly ? "default" : "outline"}
               onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
@@ -1519,6 +1496,44 @@ export default function DiscoverPage() {
         </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Category Filter */}
+              <div>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  Category
+                </label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sort/Shuffle Filter */}
+              <div>
+                <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Sort By
+                </label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="random">Shuffle</SelectItem>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="popular">Most Popular</SelectItem>
+                    <SelectItem value="price-low">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Medium Filter */}
               <div>
                 <label className="text-sm font-medium mb-2 block flex items-center gap-2">
@@ -1824,7 +1839,7 @@ export default function DiscoverPage() {
           </div>
         ) : (
           <div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2">
               {sortedArtworks.map((artwork) => (
                 <ArtworkTile key={artwork.id} artwork={artwork} />
               ))}
