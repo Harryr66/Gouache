@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { NewsArticle } from '@/lib/types';
@@ -9,10 +10,7 @@ type NewsTileProps = {
 };
 
 export function NewsTile({ article }: NewsTileProps) {
-  // Debug: Log article data
-  if (process.env.NODE_ENV === 'development') {
-    console.log('NewsTile article:', { id: article.id, title: article.title, externalUrl: article.externalUrl });
-  }
+  const router = useRouter();
   
   const isPlaceholder = Boolean(article?.id?.toString?.().startsWith('placeholder'));
   const hasExternalUrl = article.externalUrl && article.externalUrl.trim() !== '';
@@ -23,22 +21,16 @@ export function NewsTile({ article }: NewsTileProps) {
         ? article.externalUrl 
         : articleId ? `/news/${articleId}` : '#');
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (isPlaceholder) {
-      e.preventDefault();
-      e.stopPropagation();
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only handle clicks if it's not a placeholder and not an external URL (Link handles those)
+    if (isPlaceholder || hasExternalUrl) {
       return;
     }
-    if (hasExternalUrl) {
+    
+    // If clicking directly on the card (not a link), navigate programmatically
+    if (articleId && (e.target as HTMLElement).tagName !== 'A') {
       e.preventDefault();
-      e.stopPropagation();
-      window.open(article.externalUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    // For internal links, don't prevent default - let Next.js Link handle it
-    // Just log for debugging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Navigating to article:', article.id, href);
+      router.push(`/news/${articleId}`);
     }
   };
 
@@ -79,6 +71,7 @@ export function NewsTile({ article }: NewsTileProps) {
         'overflow-hidden transition hover:shadow-lg group h-full flex flex-col',
         !isPlaceholder && 'cursor-pointer'
       )}
+      onClick={handleCardClick}
     >
       <Wrapper>
         <div className="relative w-full pt-[60%] overflow-hidden">
