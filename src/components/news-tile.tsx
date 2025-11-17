@@ -29,8 +29,11 @@ export function NewsTile({ article }: NewsTileProps) {
       window.open(article.externalUrl, '_blank', 'noopener,noreferrer');
       return;
     }
-    // For internal links, let Next.js Link handle navigation
-    console.log('Navigating to:', href);
+    // For internal links, don't prevent default - let Next.js Link handle it
+    // Just log for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Navigating to article:', article.id, href);
+    }
   };
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => {
@@ -58,7 +61,6 @@ export function NewsTile({ article }: NewsTileProps) {
       <Link 
         href={href as string} 
         className="flex flex-col h-full"
-        onClick={handleClick}
       >
         {children}
       </Link>
