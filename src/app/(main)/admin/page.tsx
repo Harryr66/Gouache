@@ -15,7 +15,7 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
 import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport, ArticleSection } from '@/lib/types';
-import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown } from 'lucide-react';
+import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
@@ -168,6 +168,15 @@ export default function AdminPanel() {
   const [newSectionImagePreview, setNewSectionImagePreview] = useState<string | null>(null);
   const [newSectionImagePosition, setNewSectionImagePosition] = useState<'above' | 'below' | 'left' | 'right'>('above');
   const [newSectionCaption, setNewSectionCaption] = useState('');
+  // AI-assisted article structuring
+  const [aiRawText, setAiRawText] = useState('');
+  const [aiHeadlines, setAiHeadlines] = useState<string[]>([]);
+  const [aiHeadlineInput, setAiHeadlineInput] = useState('');
+  const [aiImageFiles, setAiImageFiles] = useState<File[]>([]);
+  const [aiImagePreviews, setAiImagePreviews] = useState<string[]>([]);
+  const [aiImageDescriptions, setAiImageDescriptions] = useState<string[]>([]);
+  const [isStructuringArticle, setIsStructuringArticle] = useState(false);
+  const [aiGeneratedSections, setAiGeneratedSections] = useState<ArticleSection[]>([]);
 
   useEffect(() => {
     const artistRequestsQuery = query(
@@ -2955,12 +2964,182 @@ export default function AdminPanel() {
                       onChange={(event) => setNewArticle((prev) => ({ ...prev, summary: event.target.value }))}
                     />
                   </div>
+                  {/* AI-Assisted Article Structuring */}
+                  <div className="space-y-4 md:col-span-2">
+                    <Card className="border-primary/20 bg-primary/5">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Sparkles className="h-5 w-5 text-primary" />
+                          AI-Assisted Article Structuring
+                        </CardTitle>
+                        <CardDescription>
+                          Paste your raw text, add headlines and images, and let AI structure your article automatically
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Raw Article Text *</Label>
+                          <Textarea
+                            placeholder="Paste your complete article text here..."
+                            rows={8}
+                            value={aiRawText}
+                            onChange={(e) => setAiRawText(e.target.value)}
+                            className="font-mono text-sm"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Headlines (optional)</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter a headline..."
+                              value={aiHeadlineInput}
+                              onChange={(e) => setAiHeadlineInput(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addAiHeadline();
+                                }
+                              }}
+                            />
+                            <Button type="button" onClick={addAiHeadline} size="sm">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {aiHeadlines.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {aiHeadlines.map((headline, index) => (
+                                <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                                  {headline}
+                                  <button
+                                    onClick={() => removeAiHeadline(index)}
+                                    className="ml-1 hover:text-destructive"
+                                  >
+                                    ×
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Images (optional)</Label>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleAiImageUpload}
+                          />
+                          {aiImagePreviews.length > 0 && (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+                              {aiImagePreviews.map((preview, index) => (
+                                <div key={index} className="relative">
+                                  <img
+                                    src={preview}
+                                    alt={`Preview ${index + 1}`}
+                                    className="w-full h-32 object-cover rounded-lg border"
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-2 right-2 h-6 w-6 bg-background/80"
+                                    onClick={() => removeAiImage(index)}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                  <Input
+                                    placeholder="Image description..."
+                                    value={aiImageDescriptions[index] || ''}
+                                    onChange={(e) => {
+                                      const newDescriptions = [...aiImageDescriptions];
+                                      newDescriptions[index] = e.target.value;
+                                      setAiImageDescriptions(newDescriptions);
+                                    }}
+                                    className="mt-2 text-xs"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <Button
+                          type="button"
+                          onClick={structureArticleWithAI}
+                          disabled={isStructuringArticle || !aiRawText.trim()}
+                          className="w-full"
+                        >
+                          {isStructuringArticle ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Structuring Article...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Structure Article with AI
+                            </>
+                          )}
+                        </Button>
+
+                        {aiGeneratedSections.length > 0 && (
+                          <Card className="border-green-500/20 bg-green-500/5">
+                            <CardHeader>
+                              <CardTitle className="text-green-700 dark:text-green-400">
+                                AI Generated {aiGeneratedSections.length} Sections
+                              </CardTitle>
+                              <CardDescription>
+                                Review the sections below and accept to add them to your article
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              {aiGeneratedSections
+                                .sort((a, b) => a.order - b.order)
+                                .map((section, index) => (
+                                  <div key={section.id} className="border rounded-lg p-3 bg-background">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Badge variant="outline">
+                                        {section.type === 'text' ? 'Text' : section.type === 'image' ? 'Image' : 'Text + Image'}
+                                      </Badge>
+                                      {section.imagePosition && (
+                                        <Badge variant="secondary">{section.imagePosition}</Badge>
+                                      )}
+                                    </div>
+                                    {section.content && (
+                                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{section.content}</p>
+                                    )}
+                                    {section.imageUrl && (
+                                      <img src={section.imageUrl} alt={section.caption || 'Section image'} className="h-20 w-auto rounded mb-2" />
+                                    )}
+                                    {section.caption && (
+                                      <p className="text-xs text-muted-foreground italic">{section.caption}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              <div className="flex gap-2">
+                                <Button onClick={acceptAiSections} className="flex-1">
+                                  <Check className="h-4 w-4 mr-2" />
+                                  Accept & Add Sections
+                                </Button>
+                                <Button onClick={rejectAiSections} variant="outline" className="flex-1">
+                                  <X className="h-4 w-4 mr-2" />
+                                  Reject
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
                   {/* Article Sections Builder */}
                   <div className="space-y-4 md:col-span-2">
                     <div className="flex items-center justify-between">
                       <Label>Article Content Sections</Label>
                       <p className="text-sm text-muted-foreground">
-                        Build your article with text and images
+                        Build your article with text and images (or use AI above)
                       </p>
                     </div>
 
