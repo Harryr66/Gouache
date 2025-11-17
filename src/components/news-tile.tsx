@@ -46,9 +46,11 @@ export function NewsTile({ article }: NewsTileProps) {
 
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
-            {article.author
-              ? `${article.author} • ${new Date(article.publishedAt).toLocaleDateString()}`
-              : new Date(article.publishedAt).toLocaleDateString()}
+            {article.publishedAt
+              ? (article.author
+                  ? `${article.author} • ${new Date(article.publishedAt).toLocaleDateString()}`
+                  : new Date(article.publishedAt).toLocaleDateString())
+              : article.author || 'No date'}
           </span>
           {!isPlaceholder && <span className="font-medium text-primary">Read more</span>}
         </div>
