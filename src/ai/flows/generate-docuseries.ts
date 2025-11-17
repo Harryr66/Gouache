@@ -23,7 +23,7 @@ export const GenerateDocuseriesOutputSchema = z.object({
   summary: z.string().describe('Article summary/standfirst (2-3 sentences)'),
   sections: z.array(
     z.object({
-      type: z.enum(['text', 'image', 'text-image']),
+      type: z.enum(['headline', 'subheadline', 'intro', 'body', 'outro', 'image', 'text-image']),
       content: z.string().optional(),
       imageUrl: z.string().optional(),
       imagePosition: z.enum(['above', 'below', 'left', 'right']).optional(),
@@ -83,8 +83,16 @@ Instructions:
    - Include quotes or paraphrased statements when appropriate
 
 4. **Section Guidelines**:
-   - Break the story into logical sections (e.g., "Early Years", "Artistic Breakthrough", "Current Work")
-   - Use 'text' sections for narrative paragraphs
+   - Break the story into logical sections using structured types:
+     * 'headline' - Major section headings (e.g., "Early Years", "Artistic Breakthrough")
+     * 'subheadline' - Subsection headings
+     * 'intro' - Introduction paragraphs (larger, more prominent)
+     * 'body' - Regular narrative paragraphs
+     * 'outro' - Conclusion paragraphs
+     * 'image' - Standalone images with captions
+     * 'text-image' - Text with accompanying images
+   - Use 'headline' for major section breaks
+   - Use 'intro' for opening paragraphs, 'body' for main content, 'outro' for conclusions
    - Use 'text-image' sections when images enhance the story
    - Position images 'above' to introduce a section, 'below' to conclude, or 'left'/'right' for side-by-side layout
    - Generate meaningful captions that add context to images

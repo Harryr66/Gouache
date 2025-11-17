@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Convert AI output to ArticleSection format
     const sections: ArticleSection[] = result.sections.map((section, index) => ({
       id: `ai-section-${Date.now()}-${index}`,
-      type: section.type as 'text' | 'image' | 'text-image',
+      type: section.type as 'headline' | 'subheadline' | 'intro' | 'body' | 'outro' | 'image' | 'text-image',
       content: section.content,
       imageUrl: section.imageUrl,
       imagePosition: section.imagePosition as 'above' | 'below' | 'left' | 'right' | undefined,

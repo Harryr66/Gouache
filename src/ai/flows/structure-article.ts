@@ -13,7 +13,7 @@ export const StructureArticleInputSchema = z.object({
 export const StructureArticleOutputSchema = z.object({
   sections: z.array(
     z.object({
-      type: z.enum(['text', 'image', 'text-image']).describe('Type of section'),
+      type: z.enum(['headline', 'subheadline', 'intro', 'body', 'outro', 'image', 'text-image']).describe('Type of section'),
       content: z.string().optional().describe('Text content for the section'),
       imageUrl: z.string().optional().describe('Image URL if section includes an image'),
       imagePosition: z.enum(['above', 'below', 'left', 'right']).optional().describe('Position of image relative to text (for text-image sections)'),
@@ -47,7 +47,16 @@ Create a structured article with sections that:
 5. Maintain a good reading flow and visual balance
 
 Guidelines:
-- Use 'text' sections for paragraphs without images
+- Use structured section types:
+  * 'headline' - Major section headings (use when headlines are provided)
+  * 'subheadline' - Subsection headings
+  * 'intro' - Introduction paragraphs (larger, more prominent opening text)
+  * 'body' - Regular narrative paragraphs (use for most text content)
+  * 'outro' - Conclusion paragraphs (final thoughts/summary)
+  * 'image' - Standalone images with captions
+  * 'text-image' - Text with accompanying images
+- Use 'headline' for major section breaks when headlines are provided
+- Use 'intro' for opening paragraphs, 'body' for main content, 'outro' for conclusions
 - Use 'image' sections for standalone images with captions
 - Use 'text-image' sections when text and image should appear together
 - For 'text-image' sections, choose positioning that makes sense:
@@ -55,7 +64,7 @@ Guidelines:
   * 'below' - image illustrates or concludes the text
   * 'left' or 'right' - image complements text side-by-side (for desktop)
 - Ensure sections are ordered logically (order: 0, 1, 2, ...)
-- If headlines are provided, use them to identify section breaks
+- If headlines are provided, use them to identify section breaks and create 'headline' sections
 - Match images to relevant text sections based on context and descriptions
 - Generate captions that are informative and engaging
 
