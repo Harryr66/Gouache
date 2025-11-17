@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Textarea } from '@/components/ui/textarea';
 import { Artwork, Artist } from '@/lib/types';
 import { useFollow } from '@/providers/follow-provider';
@@ -32,7 +33,8 @@ import {
   BookOpen,
   Users,
   Play,
-  Heart as HeartIcon
+  Heart as HeartIcon,
+  X
 } from 'lucide-react';
 
 interface ArtworkTileProps {
@@ -154,6 +156,7 @@ const generateArtistContent = (artist: Artist) => ({
   const router = useRouter();
   const { toggleLike, isLiked, loading: likesLoading } = useLikes();
   const liked = isLiked(artwork.id);
+  const [isBannerExpanded, setIsBannerExpanded] = useState(false);
   // Use artist ID for profile link - this should be the Firestore document ID
   const profileSlug = artwork.artist.id;
   const handleViewProfile = () => {
@@ -236,17 +239,30 @@ const generateArtistContent = (artist: Artist) => ({
     </Card>
 
       {/* Artist Preview Dialog */}
-      <Dialog open={showArtistPreview} onOpenChange={setShowArtistPreview}>
-        <DialogContent className="max-w-6xl w-full p-0 md:p-6 overflow-hidden border-border md:rounded-lg">
+      <Dialog open={showArtistPreview} onOpenChange={(open) => {
+        setShowArtistPreview(open);
+        if (!open) setIsBannerExpanded(false);
+      }}>
+        <DialogContent className="max-w-6xl w-full h-full md:h-auto p-0 md:p-6 overflow-hidden border-0 md:border-border rounded-none md:rounded-lg">
           <DialogHeader className="sr-only">
             <DialogTitle>Artist Profile</DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col md:flex-row max-h-[90vh]">
-            {/* Hero Artwork */}
-            <div className="relative w-full md:w-3/5 bg-muted flex flex-col">
-              <div className="flex-1 flex items-center justify-center p-0 md:p-6">
-                <div className="relative w-full aspect-[4/3] lg:aspect-[16/9] max-h-[70vh] md:rounded-2xl overflow-hidden">
+          <div className="flex flex-col md:flex-row h-full md:max-h-[90vh]">
+            {/* Hero Artwork - Fullscreen on mobile */}
+            <div className="relative w-full h-full md:w-3/5 bg-muted flex flex-col">
+              {/* Close button - mobile only */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4 z-10 md:hidden bg-background/80 backdrop-blur-sm"
+                onClick={() => setShowArtistPreview(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+              
+              <div className="flex-1 flex items-center justify-center p-0 md:p-6 relative">
+                <div className="relative w-full h-full md:aspect-[4/3] lg:aspect-[16/9] md:max-h-[70vh] md:rounded-2xl overflow-hidden">
                   <Image
                     src={artwork.imageUrl}
                     alt={artwork.title || artwork.imageAiHint}
@@ -255,7 +271,7 @@ const generateArtistContent = (artist: Artist) => ({
                     className="object-contain md:object-cover"
                   />
                   {artwork.isForSale && artwork.price && (
-                    <div className="absolute top-3 left-3">
+                    <div className="absolute top-3 left-3 z-10">
                       <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
                         ${artwork.price.toLocaleString()}
                       </Badge>
@@ -263,7 +279,9 @@ const generateArtistContent = (artist: Artist) => ({
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-start gap-3 border-t border-border bg-background/90 px-4 py-3">
+              
+              {/* Action buttons - desktop only */}
+              <div className="hidden md:flex items-center justify-start gap-3 border-t border-border bg-background/90 px-4 py-3">
                 <Button
                   variant="outline"
                   size="icon"
@@ -287,10 +305,137 @@ const generateArtistContent = (artist: Artist) => ({
                   <Share2 className="h-4 w-4" />
                 </Button>
               </div>
+              
+              {/* Mobile: Collapsible Artist Banner */}
+              <Collapsible 
+                open={isBannerExpanded} 
+                onOpenChange={setIsBannerExpanded}
+                className="md:hidden"
+              >
+                <div className="bg-background/95 backdrop-blur-sm border-t border-border">
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center gap-3 px-4 py-3 w-full cursor-pointer">
+                      <Avatar className="h-10 w-10 border-2 border-background">
+                        <AvatarImage
+                          src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(40, 40)}
+                          alt={artwork.artist.name}
+                          className="object-cover"
+                        />
+                        <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-base truncate">{artwork.artist.name}</h3>
+                          {artwork.artist.isVerified && (
+                            <BadgeCheck className="h-4 w-4 text-blue-500 fill-current flex-shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">@{artwork.artist.handle}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleLike(artwork.id);
+                        }}
+                        disabled={likesLoading}
+                      >
+                        <HeartIcon className={`h-5 w-5 ${liked ? 'fill-current text-red-500' : ''}`} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent className="px-4 pb-4 space-y-3">
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        variant={following ? 'outline' : 'default'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFollowToggle();
+                        }}
+                        className="flex items-center justify-center gap-2 w-full"
+                      >
+                        {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                        {following ? 'Following' : 'Follow'}
+                      </Button>
+                      <Button 
+                        variant="gradient" 
+                        className="flex items-center justify-center gap-2 w-full" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewProfile();
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        View Profile
+                      </Button>
+                    </div>
+                    
+                    {artwork.artist.bio && (
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                        {artwork.artist.bio}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div>
+                        <span className="font-bold text-foreground">{artwork.artist.followerCount.toLocaleString()}</span>
+                        <span className="ml-1">followers</span>
+                      </div>
+                      <div>
+                        <span className="font-bold text-foreground">{artwork.artist.followingCount.toLocaleString()}</span>
+                        <span className="ml-1">following</span>
+                      </div>
+                      {artwork.artist.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          <span className="truncate">{artwork.artist.location}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Artwork Details
+                      </h4>
+                      {artwork.title && (
+                        <p className="text-sm font-medium text-foreground">{artwork.title}</p>
+                      )}
+                      {artwork.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{artwork.description}</p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {artwork.medium && (
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {artwork.medium}
+                          </Badge>
+                        )}
+                        {artwork.tags?.slice(0, 3).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs capitalize">
+                            #{tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
             </div>
 
-            {/* Details */}
-            <div className="w-full md:w-2/5 bg-card border-t md:border-t-0 md:border-l border-border overflow-y-auto">
+            {/* Details - Desktop only */}
+            <div className="hidden md:flex w-full md:w-2/5 bg-card border-t md:border-t-0 md:border-l border-border overflow-y-auto">
               <div className="h-full flex flex-col">
                 <div className="p-6 space-y-6">
                   <div className="flex flex-col gap-4">
@@ -313,7 +458,7 @@ const generateArtistContent = (artist: Artist) => ({
                         <p className="text-muted-foreground">@{artwork.artist.handle}</p>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2 w-full">
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
                       <Button
                         variant={following ? 'outline' : 'secondary'}
                         onClick={handleFollowToggle}
