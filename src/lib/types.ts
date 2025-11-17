@@ -60,6 +60,66 @@ export interface Artist {
   discoverThumbnail?: string;
 }
 
+export interface Gallery {
+  id: string;
+  name: string;
+  handle: string;
+  avatarUrl?: string | null;
+  bio?: string;
+  website?: string;
+  location?: string;
+  country?: string;
+  city?: string;
+  followerCount: number;
+  followingCount: number;
+  createdAt: Date;
+  isVerified?: boolean;
+  // Gallery-specific fields
+  galleryType?: 'commercial' | 'non-profit' | 'artist-run' | 'museum' | 'other';
+  contactEmail?: string;
+  contactPhone?: string;
+  socialLinks?: {
+    instagram?: string;
+    x?: string;
+    website?: string;
+    facebook?: string;
+  };
+  // Events managed by gallery
+  events?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    date: Date;
+    endDate?: Date;
+    location: string;
+    venue?: string;
+    type: string;
+    bookingUrl?: string;
+    imageUrl?: string;
+    price?: string;
+    capacity?: number;
+    isEditable?: boolean;
+  }>;
+  // Artworks for sale
+  artworksForSale?: Array<{
+    id: string;
+    title: string;
+    artistName: string;
+    artistId?: string;
+    imageUrl: string;
+    price: number;
+    currency: string;
+    description?: string;
+    medium?: string;
+    dimensions?: string;
+    year?: string;
+    tags?: string[];
+    isAvailable: boolean;
+    createdAt: Date;
+  }>;
+  showcaseLocations?: ShowcaseLocation[];
+}
+
 export interface ArtistRequest {
   id: string;
   userId: string;
@@ -722,7 +782,7 @@ export interface User {
   eventStartDate?: string; // Optional start date (ISO string)
   eventEndDate?: string; // Optional end date (ISO string) - if not set, remains indefinitely
   newsletterLink?: string;
-  accountRole?: 'user' | 'artist' | 'admin';
+  accountRole?: 'user' | 'artist' | 'gallery' | 'admin';
   artistInviteToken?: string;
   artistOnboarding?: {
     completed: boolean;

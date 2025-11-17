@@ -881,6 +881,71 @@ export default function DiscoverPage() {
           }
         });
         
+        // Load gallery artworks from artworks collection
+        try {
+          // Query artworks that are for sale and filter for gallery artworks client-side
+          const forSaleArtworksQuery = query(
+            collection(db, 'artworks'),
+            where('isForSale', '==', true)
+          );
+          const forSaleArtworksSnapshot = await getDocs(forSaleArtworksQuery);
+          
+          let galleryArtworkCount = 0;
+          forSaleArtworksSnapshot.forEach((doc) => {
+            const data = doc.data();
+            // Only process artworks that have a galleryId (gallery artworks)
+            if (!data.galleryId) return;
+            
+            // Create a mock artist for gallery artworks
+            const galleryArtist: Artist = {
+              id: data.galleryId || 'gallery',
+              name: data.galleryName || 'Gallery',
+              handle: `gallery_${data.galleryId || 'unknown'}`,
+              avatarUrl: undefined,
+              bio: '',
+              followerCount: 0,
+              followingCount: 0,
+              createdAt: new Date(),
+              isProfessional: true,
+            };
+            
+            const galleryArtwork: Artwork = {
+              id: doc.id,
+              artist: galleryArtist,
+              title: data.title || 'Untitled Artwork',
+              description: data.description || '',
+              imageUrl: data.imageUrl,
+              imageAiHint: data.title || 'Gallery Artwork',
+              tags: data.tags || [],
+              price: data.price,
+              currency: data.currency || 'USD',
+              isForSale: true,
+              category: data.medium || data.category || 'Other',
+              medium: data.medium || 'Other',
+              dimensions: data.dimensions ? {
+                width: typeof data.dimensions === 'string' 
+                  ? parseFloat(data.dimensions.split('x')[0]?.trim() || '24')
+                  : data.dimensions.width || 24,
+                height: typeof data.dimensions === 'string'
+                  ? parseFloat(data.dimensions.split('x')[1]?.trim() || '30')
+                  : data.dimensions.height || 30,
+                unit: (typeof data.dimensions === 'object' && data.dimensions.unit) || 'in' as const
+              } : { width: 24, height: 30, unit: 'in' as const },
+              createdAt: data.createdAt?.toDate() || new Date(),
+              updatedAt: data.updatedAt?.toDate() || new Date(),
+              views: 0,
+              likes: 0,
+            };
+            
+            artworksData.push(galleryArtwork);
+            galleryArtworkCount++;
+          });
+          
+          console.log('🖼️ Loaded', galleryArtworkCount, 'gallery artworks for sale');
+        } catch (galleryError) {
+          console.warn('⚠️ Error loading gallery artworks:', galleryError);
+        }
+        
         setArtworks(artworksData);
         
         // Load events from artist showcaseLocations
