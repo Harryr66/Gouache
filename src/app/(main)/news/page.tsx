@@ -48,26 +48,35 @@ export default function NewsPage() {
     let isMounted = true;
     const load = async () => {
       try {
-        const articleSnapshot = await getDocs(query(collection(db, ARTICLE_COLLECTION), where('status', '==', 'published'), orderBy('publishedAt', 'desc')));
-        const loadedArticles: NewsArticle[] = articleSnapshot.docs.map((doc) => {
-          const data = doc.data() as any;
-          return {
-            id: doc.id,
-            title: data.title ?? 'Untitled',
-            summary: data.summary ?? '',
-            category: data.category ?? 'General',
-            imageUrl: data.imageUrl ?? DEFAULT_ARTICLE_IMAGE,
-            author: data.author ?? '',
-            publishedAt: data.publishedAt?.toDate?.() ?? new Date(),
-            updatedAt: data.updatedAt?.toDate?.(),
-            tags: data.tags ?? [],
-            externalUrl: data.externalUrl ?? '',
-            featured: data.featured ?? false,
-            content: data.content ?? '',
-            archived: data.archived ?? false,
-            archivedAt: data.archivedAt?.toDate?.()
-          };
-        });
+        // Fetch all articles, then filter client-side to handle backward compatibility
+        // (old articles may not have status field)
+        const articleSnapshot = await getDocs(query(collection(db, ARTICLE_COLLECTION), orderBy('publishedAt', 'desc')));
+        const loadedArticles: NewsArticle[] = articleSnapshot.docs
+          .map((doc) => {
+            const data = doc.data() as any;
+            return {
+              id: doc.id,
+              title: data.title ?? 'Untitled',
+              summary: data.summary ?? '',
+              category: data.category ?? 'General',
+              imageUrl: data.imageUrl ?? DEFAULT_ARTICLE_IMAGE,
+              author: data.author ?? '',
+              publishedAt: data.publishedAt?.toDate?.() ?? new Date(),
+              updatedAt: data.updatedAt?.toDate?.(),
+              tags: data.tags ?? [],
+              externalUrl: data.externalUrl ?? '',
+              featured: data.featured ?? false,
+              content: data.content ?? '',
+              sections: data.sections ?? undefined,
+              status: data.status ?? (data.publishedAt ? 'published' : 'draft'),
+              archived: data.archived ?? false,
+              archivedAt: data.archivedAt?.toDate?.()
+            };
+          })
+          .filter((article) => {
+            // Only show published articles (or articles without status that have publishedAt)
+            return article.status === 'published' || (!article.status && article.publishedAt);
+          });
 
         if (!isMounted) return;
         setArticles(loadedArticles);
