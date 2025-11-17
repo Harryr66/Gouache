@@ -282,7 +282,7 @@ export default function NewsPage() {
                   const href = isPlaceholder ? '#' : (article.externalUrl ?? `/news/${article.id}`);
                   const publishedDate = article.publishedAt instanceof Date 
                     ? article.publishedAt 
-                    : article.publishedAt?.toDate?.() || new Date();
+                    : new Date(article.publishedAt || Date.now());
                   
                   const Wrapper = ({ children }: { children: React.ReactNode }) => {
                     if (isPlaceholder) {
