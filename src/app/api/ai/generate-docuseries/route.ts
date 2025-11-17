@@ -38,15 +38,54 @@ export async function POST(request: NextRequest) {
         }));
     }
 
+    // Check if Google AI API key is configured
+    if (!process.env.GOOGLE_GENAI_API_KEY) {
+      console.error('GOOGLE_GENAI_API_KEY is not set in environment variables');
+      return NextResponse.json(
+        { 
+          error: 'AI service not configured', 
+          details: 'Google AI API key is missing. Please set GOOGLE_GENAI_API_KEY in your environment variables.' 
+        },
+        { status: 500 }
+      );
+    }
+
     // Call the AI flow to generate the docuseries article
-    const result = await generateDocuseries({
+    console.log('Calling generateDocuseries with:', {
       artistName,
       website,
-      socialLinks: socialLinks || [],
-      scrapedContent,
-      contextImages: contextImages || [],
-      additionalNotes,
+      socialLinksCount: socialLinks?.length || 0,
+      scrapedContentCount: scrapedContent.length,
+      contextImagesCount: contextImages?.length || 0,
+      hasAdditionalNotes: !!additionalNotes,
     });
+    
+    let result;
+    try {
+      result = await generateDocuseries({
+        artistName,
+        website,
+        socialLinks: socialLinks || [],
+        scrapedContent,
+        contextImages: contextImages || [],
+        additionalNotes,
+      });
+      
+      console.log('generateDocuseries result:', {
+        hasTitle: !!result.title,
+        hasSummary: !!result.summary,
+        sectionsCount: result.sections?.length || 0,
+        tagsCount: result.tags?.length || 0,
+      });
+    } catch (genkitError) {
+      console.error('Genkit flow error:', genkitError);
+      console.error('Genkit error details:', {
+        message: genkitError instanceof Error ? genkitError.message : 'Unknown error',
+        name: genkitError instanceof Error ? genkitError.name : 'Unknown',
+        stack: genkitError instanceof Error ? genkitError.stack : undefined,
+      });
+      throw genkitError;
+    }
 
     // Convert AI output to ArticleSection format
     const sections: ArticleSection[] = result.sections.map((section, index) => ({
