@@ -177,6 +177,22 @@ export default function AdminPanel() {
   const [aiImageDescriptions, setAiImageDescriptions] = useState<string[]>([]);
   const [isStructuringArticle, setIsStructuringArticle] = useState(false);
   const [aiGeneratedSections, setAiGeneratedSections] = useState<ArticleSection[]>([]);
+  // Artist research for docuseries
+  const [artistResearchName, setArtistResearchName] = useState('');
+  const [artistResearchWebsite, setArtistResearchWebsite] = useState('');
+  const [artistResearchSocialLinks, setArtistResearchSocialLinks] = useState<string[]>([]);
+  const [artistResearchSocialInput, setArtistResearchSocialInput] = useState('');
+  const [artistResearchImages, setArtistResearchImages] = useState<File[]>([]);
+  const [artistResearchImagePreviews, setArtistResearchImagePreviews] = useState<string[]>([]);
+  const [artistResearchNotes, setArtistResearchNotes] = useState('');
+  const [isGeneratingDocuseries, setIsGeneratingDocuseries] = useState(false);
+  const [docuseriesDraft, setDocuseriesDraft] = useState<{
+    title: string;
+    summary: string;
+    sections: ArticleSection[];
+    tags: string[];
+    researchNotes?: string;
+  } | null>(null);
 
   useEffect(() => {
     const artistRequestsQuery = query(
@@ -363,7 +379,7 @@ export default function AdminPanel() {
             category: data.category ?? 'Stories',
             author: data.author ?? '',
             imageUrl: data.imageUrl ?? DEFAULT_ARTICLE_IMAGE,
-            publishedAt: data.publishedAt?.toDate?.() ?? new Date(),
+            publishedAt: data.publishedAt?.toDate?.(),
             updatedAt: data.updatedAt?.toDate?.(),
             tags: data.tags ?? [],
             externalUrl: data.externalUrl ?? '',
@@ -371,6 +387,8 @@ export default function AdminPanel() {
             content: data.content ?? '',
             sections: data.sections ?? undefined,
             location: data.location ?? 'evergreen',
+            status: data.status ?? (data.publishedAt ? 'published' : 'draft'),
+            artistResearchData: data.artistResearchData ?? undefined,
             archived: data.archived ?? false,
             archivedAt: data.archivedAt?.toDate?.()
           } as NewsArticle;
@@ -1906,7 +1924,14 @@ export default function AdminPanel() {
   const suspendedRequests = artistRequests.filter(req => req.status === 'suspended');
   const activeNewsArticles = newsArticles.filter((article) => !article.archived);
   const archivedNewsArticles = newsArticles.filter((article) => article.archived);
-  const visibleNewsArticles = showArchivedNews ? archivedNewsArticles : activeNewsArticles;
+  const publishedArticles = newsArticles.filter((article) => !article.archived && (article.status === 'published' || (!article.status && article.publishedAt)));
+  const draftedArticles = newsArticles.filter((article) => !article.archived && article.status === 'draft');
+  const [showDraftedArticles, setShowDraftedArticles] = useState(false);
+  const visibleNewsArticles = showArchivedNews 
+    ? archivedNewsArticles 
+    : showDraftedArticles 
+    ? draftedArticles 
+    : publishedArticles;
 
   if (authLoading) {
     return (
@@ -2883,6 +2908,341 @@ export default function AdminPanel() {
 
         {selectedView === 'news-articles' && (
           <div className="space-y-6">
+            {/* Artist Research & Docuseries Generation */}
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  AI Artist Research & Docuseries Generator
+                </CardTitle>
+                <CardDescription>
+                  Research an artist and generate a complete docuseries article automatically. The article will be saved as a draft for your review.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Artist Name *</Label>
+                    <Input
+                      placeholder="e.g. Banksy, Yayoi Kusama"
+                      value={artistResearchName}
+                      onChange={(e) => setArtistResearchName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Website URL (optional)</Label>
+                    <Input
+                      placeholder="https://artist-website.com"
+                      type="url"
+                      value={artistResearchWebsite}
+                      onChange={(e) => setArtistResearchWebsite(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Social Media & Other Links (optional)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="https://instagram.com/artist, https://twitter.com/artist"
+                        value={artistResearchSocialInput}
+                        onChange={(e) => setArtistResearchSocialInput(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (artistResearchSocialInput.trim()) {
+                              setArtistResearchSocialLinks([...artistResearchSocialLinks, artistResearchSocialInput.trim()]);
+                              setArtistResearchSocialInput('');
+                            }
+                          }
+                        }}
+                      />
+                      <Button type="button" onClick={() => {
+                        if (artistResearchSocialInput.trim()) {
+                          setArtistResearchSocialLinks([...artistResearchSocialLinks, artistResearchSocialInput.trim()]);
+                          setArtistResearchSocialInput('');
+                        }
+                      }} size="sm">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {artistResearchSocialLinks.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {artistResearchSocialLinks.map((link, index) => (
+                          <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                            {link}
+                            <button
+                              onClick={() => setArtistResearchSocialLinks(artistResearchSocialLinks.filter((_, i) => i !== index))}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Context Images (optional)</Label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        setArtistResearchImages([...artistResearchImages, ...files]);
+                        const newPreviews = files.map(file => URL.createObjectURL(file));
+                        setArtistResearchImagePreviews([...artistResearchImagePreviews, ...newPreviews]);
+                      }}
+                    />
+                    {artistResearchImagePreviews.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+                        {artistResearchImagePreviews.map((preview, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={preview}
+                              alt={`Context ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg border"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-2 right-2 h-6 w-6 bg-background/80"
+                              onClick={() => {
+                                setArtistResearchImages(artistResearchImages.filter((_, i) => i !== index));
+                                URL.revokeObjectURL(preview);
+                                setArtistResearchImagePreviews(artistResearchImagePreviews.filter((_, i) => i !== index));
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Additional Notes (optional)</Label>
+                    <Textarea
+                      placeholder="Any additional context, specific topics to cover, or information about the artist..."
+                      rows={3}
+                      value={artistResearchNotes}
+                      onChange={(e) => setArtistResearchNotes(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    if (!artistResearchName.trim()) {
+                      toast({
+                        title: 'Artist name required',
+                        description: 'Please enter the artist name.',
+                        variant: 'destructive'
+                      });
+                      return;
+                    }
+
+                    setIsGeneratingDocuseries(true);
+                    try {
+                      // Upload images first
+                      const imageUrls: string[] = [];
+                      for (const file of artistResearchImages) {
+                        try {
+                          const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
+                          const storagePath = `news/sections/${fileName}`;
+                          const storageRef = ref(storage, storagePath);
+                          await uploadBytes(storageRef, file);
+                          const url = await getDownloadURL(storageRef);
+                          imageUrls.push(url);
+                        } catch (error) {
+                          console.error('Failed to upload image:', error);
+                        }
+                      }
+
+                      // Call AI API
+                      const response = await fetch('/api/ai/generate-docuseries', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          artistName: artistResearchName,
+                          website: artistResearchWebsite || undefined,
+                          socialLinks: artistResearchSocialLinks,
+                          contextImages: imageUrls,
+                          additionalNotes: artistResearchNotes || undefined,
+                        }),
+                      });
+
+                      if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Failed to generate docuseries');
+                      }
+
+                      const data = await response.json();
+                      setDocuseriesDraft(data);
+
+                      toast({
+                        title: 'Docuseries generated',
+                        description: 'Article has been generated and is ready for review.',
+                      });
+                    } catch (error) {
+                      console.error('Error generating docuseries:', error);
+                      toast({
+                        title: 'Generation failed',
+                        description: error instanceof Error ? error.message : 'Failed to generate docuseries. Please try again.',
+                        variant: 'destructive'
+                      });
+                    } finally {
+                      setIsGeneratingDocuseries(false);
+                    }
+                  }}
+                  disabled={isGeneratingDocuseries || !artistResearchName.trim()}
+                  className="w-full"
+                >
+                  {isGeneratingDocuseries ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Researching & Generating Article...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Research Artist & Generate Docuseries
+                    </>
+                  )}
+                </Button>
+
+                {docuseriesDraft && (
+                  <Card className="border-green-500/20 bg-green-500/5">
+                    <CardHeader>
+                      <CardTitle className="text-green-700 dark:text-green-400">
+                        Draft Ready for Review
+                      </CardTitle>
+                      <CardDescription>
+                        Review the generated article below. You can edit it before saving as a draft.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Title</Label>
+                        <Input
+                          value={docuseriesDraft.title}
+                          onChange={(e) => setDocuseriesDraft({ ...docuseriesDraft, title: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Summary</Label>
+                        <Textarea
+                          value={docuseriesDraft.summary}
+                          onChange={(e) => setDocuseriesDraft({ ...docuseriesDraft, summary: e.target.value })}
+                          rows={3}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Tags</Label>
+                        <Input
+                          value={docuseriesDraft.tags.join(', ')}
+                          onChange={(e) => setDocuseriesDraft({ ...docuseriesDraft, tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })}
+                        />
+                      </div>
+                      {docuseriesDraft.researchNotes && (
+                        <div className="space-y-2">
+                          <Label>Research Notes</Label>
+                          <p className="text-sm text-muted-foreground">{docuseriesDraft.researchNotes}</p>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={async () => {
+                            try {
+                              // Upload hero image (use first section image if available)
+                              let heroImageUrl = newArticle.imageUrl || '';
+                              const firstImageSection = docuseriesDraft.sections.find(s => s.imageUrl);
+                              if (firstImageSection?.imageUrl) {
+                                heroImageUrl = firstImageSection.imageUrl;
+                              }
+
+                              const docRef = await addDoc(collection(db, 'newsArticles'), {
+                                title: docuseriesDraft.title,
+                                summary: docuseriesDraft.summary,
+                                category: 'Stories',
+                                author: newArticle.author || 'Gouache Editorial',
+                                imageUrl: heroImageUrl || '/assets/placeholder-light.png',
+                                tags: docuseriesDraft.tags,
+                                sections: docuseriesDraft.sections.sort((a, b) => a.order - b.order),
+                                status: 'draft',
+                                location: 'evergreen',
+                                artistResearchData: {
+                                  artistName: artistResearchName,
+                                  website: artistResearchWebsite || undefined,
+                                  socialLinks: artistResearchSocialLinks,
+                                  researchNotes: docuseriesDraft.researchNotes,
+                                },
+                                archived: false,
+                                createdAt: serverTimestamp(),
+                                updatedAt: serverTimestamp(),
+                              });
+
+                              toast({
+                                title: 'Draft saved',
+                                description: 'Article has been saved as a draft. You can find it in "Drafted Articles".',
+                              });
+
+                              // Reset form
+                              setArtistResearchName('');
+                              setArtistResearchWebsite('');
+                              setArtistResearchSocialLinks([]);
+                              setArtistResearchImages([]);
+                              setArtistResearchImagePreviews([]);
+                              setArtistResearchNotes('');
+                              setDocuseriesDraft(null);
+                            } catch (error) {
+                              console.error('Error saving draft:', error);
+                              toast({
+                                title: 'Save failed',
+                                description: 'Failed to save draft. Please try again.',
+                                variant: 'destructive'
+                              });
+                            }
+                          }}
+                          className="flex-1"
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          Save as Draft
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            // Load draft into manual editor
+                            setNewArticle({
+                              ...newArticle,
+                              title: docuseriesDraft.title,
+                              summary: docuseriesDraft.summary,
+                              category: 'Stories',
+                            });
+                            setArticleSections(docuseriesDraft.sections.sort((a, b) => a.order - b.order));
+                            setDocuseriesDraft(null);
+                            toast({
+                              title: 'Draft loaded',
+                              description: 'Draft has been loaded into the editor below. You can make further edits.',
+                            });
+                          }}
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit in Editor
+                        </Button>
+                        <Button
+                          onClick={() => setDocuseriesDraft(null)}
+                          variant="ghost"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Create newsroom article</CardTitle>
@@ -3424,16 +3784,33 @@ export default function AdminPanel() {
                   <Button
                     type="button"
                     size="sm"
-                    variant={showArchivedNews ? 'outline' : 'secondary'}
-                    onClick={() => setShowArchivedNews(false)}
+                    variant={!showArchivedNews && !showDraftedArticles ? 'secondary' : 'outline'}
+                    onClick={() => {
+                      setShowArchivedNews(false);
+                      setShowDraftedArticles(false);
+                    }}
                   >
-                    Published ({activeNewsArticles.length})
+                    Published ({publishedArticles.length})
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={showDraftedArticles && !showArchivedNews ? 'secondary' : 'outline'}
+                    onClick={() => {
+                      setShowArchivedNews(false);
+                      setShowDraftedArticles(true);
+                    }}
+                  >
+                    Drafted ({draftedArticles.length})
                   </Button>
                   <Button
                     type="button"
                     size="sm"
                     variant={showArchivedNews ? 'secondary' : 'outline'}
-                    onClick={() => setShowArchivedNews(true)}
+                    onClick={() => {
+                      setShowArchivedNews(true);
+                      setShowDraftedArticles(false);
+                    }}
                   >
                     Archived ({archivedNewsArticles.length})
                   </Button>
@@ -3444,11 +3821,17 @@ export default function AdminPanel() {
                 <Card>
                   <CardContent className="py-12 text-center space-y-2">
                     <h3 className="text-lg font-semibold">
-                      {showArchivedNews ? 'No archived stories yet' : 'No stories published yet'}
+                      {showArchivedNews 
+                        ? 'No archived stories yet' 
+                        : showDraftedArticles 
+                        ? 'No drafted articles yet'
+                        : 'No stories published yet'}
                     </h3>
                     <p className="text-sm text-muted-foreground max-w-md mx-auto">
                       {showArchivedNews
                         ? 'When you archive a story, it will move here so you can restore or permanently delete it later.'
+                        : showDraftedArticles
+                        ? 'Drafted articles will appear here. Use the AI Artist Research tool above to generate articles automatically.'
                         : 'Publish your first story to populate the newsroom feed.'}
                     </p>
                   </CardContent>
@@ -3471,6 +3854,11 @@ export default function AdminPanel() {
                             Archived
                           </Badge>
                         )}
+                        {article.status === 'draft' && !article.archived && (
+                          <Badge className="absolute top-3 right-3" variant="outline" style={{ backgroundColor: 'rgba(255, 193, 7, 0.2)' }}>
+                            Draft
+                          </Badge>
+                        )}
                       </div>
                       <CardContent className="flex-1 p-5 space-y-3">
                         <div className="space-y-1">
@@ -3480,9 +3868,41 @@ export default function AdminPanel() {
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <span>
                             {article.author ? `${article.author} • ` : ''}
-                            {article.publishedAt.toLocaleDateString()}
+                            {article.publishedAt 
+                              ? article.publishedAt.toLocaleDateString() 
+                              : article.updatedAt 
+                              ? `Updated ${article.updatedAt.toLocaleDateString()}`
+                              : 'Draft'}
                           </span>
                           <div className="flex items-center gap-2">
+                            {article.status === 'draft' && !article.archived && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={async () => {
+                                  try {
+                                    await updateDoc(doc(db, 'newsArticles', article.id), {
+                                      status: 'published',
+                                      publishedAt: serverTimestamp(),
+                                      updatedAt: serverTimestamp(),
+                                    });
+                                    toast({
+                                      title: 'Article published',
+                                      description: `"${article.title}" is now live.`,
+                                    });
+                                  } catch (error) {
+                                    console.error('Error publishing article:', error);
+                                    toast({
+                                      title: 'Publish failed',
+                                      description: 'Failed to publish article. Please try again.',
+                                      variant: 'destructive'
+                                    });
+                                  }
+                                }}
+                              >
+                                Publish
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"

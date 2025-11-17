@@ -511,7 +511,7 @@ export interface NewsArticle {
   summary: string;
   category: string;
   imageUrl: string;
-  publishedAt: Date;
+  publishedAt?: Date; // Optional for drafts
   updatedAt?: Date;
   author?: string;
   tags?: string[];
@@ -522,6 +522,13 @@ export interface NewsArticle {
   archived?: boolean;
   archivedAt?: Date;
   location?: 'main-banner' | 'whats-new' | 'evergreen';
+  status?: 'draft' | 'published'; // Draft status for articles
+  artistResearchData?: {
+    artistName: string;
+    website?: string;
+    socialLinks?: string[];
+    researchNotes?: string;
+  };
 }
 
 export interface Comment {
