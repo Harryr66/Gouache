@@ -48,7 +48,7 @@ export default function NewsPage() {
     let isMounted = true;
     const load = async () => {
       try {
-        const articleSnapshot = await getDocs(query(collection(db, ARTICLE_COLLECTION), orderBy('publishedAt', 'desc')));
+        const articleSnapshot = await getDocs(query(collection(db, ARTICLE_COLLECTION), where('status', '==', 'published'), orderBy('publishedAt', 'desc')));
         const loadedArticles: NewsArticle[] = articleSnapshot.docs.map((doc) => {
           const data = doc.data() as any;
           return {

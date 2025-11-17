@@ -235,7 +235,7 @@ export default function AdminPanel() {
       orderBy('createdAt', 'desc')
     );
     const courseSubmissionsQuery = query(collection(db, 'courseSubmissions'), orderBy('submittedAt', 'desc'));
-    const newsArticlesQuery = query(collection(db, 'newsArticles'), orderBy('publishedAt', 'desc'));
+    const newsArticlesQuery = query(collection(db, 'newsArticles'), orderBy('updatedAt', 'desc'));
     const userReportsQuery = query(collection(db, 'userReports'), orderBy('submittedAt', 'desc'));
 
     const fetchData = async () => {
@@ -3772,11 +3772,17 @@ export default function AdminPanel() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-xl font-semibold">
-                    {showArchivedNews ? 'Archived articles' : 'Published articles'}
+                    {showArchivedNews 
+                      ? 'Archived articles' 
+                      : showDraftedArticles
+                      ? 'Drafted articles'
+                      : 'Published articles'}
                   </h2>
                   <p className="text-sm text-muted-foreground">
                     {showArchivedNews
                       ? 'Review past stories and restore any that should return to the feed.'
+                      : showDraftedArticles
+                      ? 'Review and publish drafted articles. Make final edits before publishing.'
                       : 'Manage everything currently live in the newsroom feed.'}
                   </p>
                 </div>
