@@ -23,6 +23,7 @@ import { toast } from '@/hooks/use-toast';
 // This is a large component - props interface will be defined where it's used
 export function AdminMainContent(props: any) {
   const router = useRouter();
+  
   const {
     handleSignOut,
     selectedView,
@@ -209,6 +210,7 @@ export function AdminMainContent(props: any) {
   } = props;
   
   return (
+    <>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
