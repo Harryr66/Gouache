@@ -641,7 +641,7 @@ export function AdminViewRouter(props: any) {
                       id="news-title"
                       placeholder="e.g. Inside the Lagos Art Weekender"
                       value={props.newArticle.title}
-                      onChange={(event) => props.setNewArticle((prev) => ({ ...prev, title: event.target.value }))}
+                      onChange={(event) => props.setNewArticle((prev: any) => ({ ...prev, title: event.target.value }))}
                     />
                   </div>
                   <div className="space-y-2">
