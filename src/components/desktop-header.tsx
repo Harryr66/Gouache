@@ -4,12 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Eye, Fingerprint, Globe, Brain } from 'lucide-react';
+import { Eye, Fingerprint, Globe, ShoppingCart } from 'lucide-react';
 
 const navigation = [
   { name: 'News', href: '/news', icon: Globe },
   { name: 'Discover', href: '/discover', icon: Eye },
-  { name: 'Learn', href: '/learn', icon: Brain },
+  { name: 'Marketplace', href: '/learn', icon: ShoppingCart },
   { name: 'Profile', href: '/profile', icon: Fingerprint },
 ];
 
@@ -38,7 +38,7 @@ export function DesktopHeader() {
       
       <nav className="hidden md:flex items-center space-x-6">
         {navigation.map((item) => {
-          const isActive = item.href === '/learn' ? pathname.startsWith(item.href) : pathname === item.href;
+          const isActive = item.href === '/learn' ? pathname === '/learn' || pathname.startsWith('/learn/') : pathname === item.href;
           return (
             <Link
               key={item.name}

@@ -82,59 +82,69 @@ export default function MarketplacePage() {
           
           artworksSnapshot.forEach((doc: any) => {
             const data = doc.data();
-            allProducts.push({
-              id: doc.id,
-              type: 'artwork',
-              title: data.title || 'Untitled',
-              description: data.description,
-              price: data.price || 0,
-              currency: data.currency || 'USD',
-              imageUrl: data.imageUrl,
-              sellerId: data.artist?.userId || data.userId || '',
-              sellerName: data.artist?.name || data.artistName || 'Unknown Artist',
-              isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
-              stock: data.stock,
-              category: data.category,
-              createdAt: data.createdAt?.toDate?.() || new Date(),
-            });
+            // Only add artworks that are for sale and have required fields
+            if (data.isForSale === true && data.imageUrl) {
+              allProducts.push({
+                id: doc.id,
+                type: 'artwork',
+                title: data.title || 'Untitled',
+                description: data.description,
+                price: data.price || 0,
+                currency: data.currency || 'USD',
+                imageUrl: data.imageUrl,
+                sellerId: data.artist?.userId || data.userId || '',
+                sellerName: data.artist?.name || data.artistName || 'Unknown Artist',
+                isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
+                stock: data.stock,
+                category: data.category,
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+              });
+            }
           });
         } catch (error) {
           console.error('Error fetching artworks:', error);
         }
 
-        // Fetch courses
+        // Fetch courses (only published ones)
         try {
           let coursesSnapshot;
           try {
             const coursesQuery = query(
               collection(db, 'courses'),
+              where('isPublished', '==', true),
               orderBy('createdAt', 'desc')
             );
             coursesSnapshot = await getDocs(coursesQuery);
           } catch (indexError: any) {
             console.warn('Firestore index may not exist for courses, querying without orderBy:', indexError);
-            const coursesQuery = query(collection(db, 'courses'));
+            const coursesQuery = query(
+              collection(db, 'courses'),
+              where('isPublished', '==', true)
+            );
             coursesSnapshot = await getDocs(coursesQuery);
           }
           
           coursesSnapshot.forEach((doc: any) => {
             const data = doc.data();
-            allProducts.push({
-              id: doc.id,
-              type: 'course',
-              title: data.title || 'Untitled Course',
-              description: data.description,
-              price: data.price || 0,
-              currency: data.currency || 'USD',
-              imageUrl: data.thumbnail || data.thumbnailUrl,
-              sellerId: data.instructor?.userId || data.userId || '',
-              sellerName: data.instructor?.name || 'Unknown Instructor',
-              isAvailable: data.isActive !== false,
-              category: data.category,
-              createdAt: data.createdAt?.toDate?.() || new Date(),
-              rating: data.rating,
-              reviewCount: data.reviewCount,
-            });
+            // Only add published courses
+            if (data.isPublished === true) {
+              allProducts.push({
+                id: doc.id,
+                type: 'course',
+                title: data.title || 'Untitled Course',
+                description: data.description,
+                price: data.price || 0,
+                currency: data.currency || 'USD',
+                imageUrl: data.thumbnail || data.thumbnailUrl,
+                sellerId: data.instructor?.userId || data.userId || '',
+                sellerName: data.instructor?.name || 'Unknown Instructor',
+                isAvailable: data.isActive !== false,
+                category: data.category,
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+                rating: data.rating,
+                reviewCount: data.reviewCount,
+              });
+            }
           });
         } catch (error) {
           console.error('Error fetching courses:', error);
