@@ -19,14 +19,12 @@ import { doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/fir
 import { db, storage } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 
-export function AdminViewRouter(props: any) {
+export const AdminViewRouter = (props: any): JSX.Element => {
   const router = useRouter();
   
-  // This component will be populated with all view content
-  // For now, return a placeholder to reduce main file size
   return (
     <div className="space-y-6">
-        {props.selectedView === 'artist-management' && (
+      {props.selectedView === 'artist-management' && (
           <div className="space-y-6">
             {/* Verified Status Management */}
             <Card>
