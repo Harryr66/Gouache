@@ -1987,6 +1987,8 @@ export default function AdminPanel() {
       handleReject={handleReject}
       handleRemoveArtist={handleRemoveArtist}
       handleTransferPortfolio={handleTransferPortfolio}
+      handleSuspendArtist={handleSuspendArtist}
+      handleReinstateArtist={handleReinstateArtist}
       handleApproveAdApplication={handleApproveAdApplication}
       handleRejectAdApplication={handleRejectAdApplication}
       handleVideoUpload={handleVideoUpload}
