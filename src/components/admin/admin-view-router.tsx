@@ -1087,7 +1087,7 @@ export function AdminViewRouter(props: any) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedProduct(product)}
+                          onClick={() => props.setSelectedProduct?.(product)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -1155,7 +1155,7 @@ export function AdminViewRouter(props: any) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedProduct(product)}
+                          onClick={() => props.setSelectedProduct?.(product)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
