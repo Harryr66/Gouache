@@ -1922,6 +1922,7 @@ export default function AdminPanel() {
     );
   }
 
+  // Main admin panel content
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex justify-between items-center">
