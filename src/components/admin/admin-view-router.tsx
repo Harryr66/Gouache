@@ -43,7 +43,7 @@ export function AdminViewRouter(props: any) {
                   <p className="text-sm text-muted-foreground">No professional artists found.</p>
                 ) : (
                   <div className="space-y-4">
-                    {props.professionalArtists.map((artist) => (
+                    {props.professionalArtists.map((artist: any) => (
                       <div
                         key={artist.id}
                         className="flex items-center justify-between p-4 border rounded-lg"
