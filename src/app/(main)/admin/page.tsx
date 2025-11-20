@@ -462,7 +462,7 @@ export default function AdminPanel() {
 
       // Merge existing portfolio with new portfolio images (avoid duplicates)
       const existingUrls = new Set(existingPortfolio.map((item: any) => item.imageUrl));
-      const newItems = portfolioItems.filter(item => !existingUrls.has(item.imageUrl));
+      const newItems = portfolioItems.filter((item: any) => !existingUrls.has(item.imageUrl));
       const mergedPortfolio = [...existingPortfolio, ...newItems];
 
       // Update the user's profile with portfolio images
@@ -1013,7 +1013,7 @@ export default function AdminPanel() {
   };
 
   const removeProductTag = (tagToRemove: string) => {
-    setProductTags(productTags.filter(tag => tag !== tagToRemove));
+    setProductTags(productTags.filter((tag: any) => tag !== tagToRemove));
   };
 
   // Product management functions
@@ -1219,7 +1219,7 @@ export default function AdminPanel() {
         await setDoc(doc(db, 'handles', request.user.username), { userId: null }, { merge: true });
       }
 
-      setArtistRequests((prev) => prev.filter((item) => item.id !== request.id));
+      setArtistRequests((prev) => prev.filter((item: any) => item.id !== request.id));
 
       toast({
         title: 'Artist removed',
@@ -1393,7 +1393,7 @@ export default function AdminPanel() {
   const handleDeleteNewsArticle = async (article: NewsArticle) => {
     try {
       await deleteDoc(doc(db, 'newsArticles', article.id));
-      setNewsArticles((prev) => prev.filter((item) => item.id !== article.id));
+      setNewsArticles((prev) => prev.filter((item: any) => item.id !== article.id));
       toast({
         title: 'Article removed',
         description: `"${article.title}" has been removed from the newsroom feed.`
@@ -1450,14 +1450,14 @@ export default function AdminPanel() {
     }
   };
 
-  const pendingRequests = artistRequests.filter(req => req.status === 'pending');
-  const approvedRequests = artistRequests.filter(req => req.status === 'approved');
-  const rejectedRequests = artistRequests.filter(req => req.status === 'rejected');
-  const suspendedRequests = artistRequests.filter(req => req.status === 'suspended');
-  const activeNewsArticles = newsArticles.filter((article) => !article.archived);
-  const archivedNewsArticles = newsArticles.filter((article) => article.archived);
-  const publishedArticles = newsArticles.filter((article) => !article.archived && (article.status === 'published' || (!article.status && article.publishedAt)));
-  const draftedArticles = newsArticles.filter((article) => !article.archived && article.status === 'draft');
+  const pendingRequests = artistRequests.filter((req: any) => req.status === 'pending');
+  const approvedRequests = artistRequests.filter((req: any) => req.status === 'approved');
+  const rejectedRequests = artistRequests.filter((req: any) => req.status === 'rejected');
+  const suspendedRequests = artistRequests.filter((req: any) => req.status === 'suspended');
+  const activeNewsArticles = newsArticles.filter((article: any) => !article.archived);
+  const archivedNewsArticles = newsArticles.filter((article: any) => article.archived);
+  const publishedArticles = newsArticles.filter((article: any) => !article.archived && (article.status === 'published' || (!article.status && article.publishedAt)));
+  const draftedArticles = newsArticles.filter((article: any) => !article.archived && article.status === 'draft');
   const visibleNewsArticles = showArchivedNews 
     ? archivedNewsArticles 
     : showDraftedArticles 
