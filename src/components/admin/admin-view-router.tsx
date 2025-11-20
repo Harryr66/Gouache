@@ -913,7 +913,7 @@ export function AdminViewRouter(props: any) {
                 </p>
               </div>
               <Badge variant="outline">
-                {props.userReports.filter(r => r.status === 'pending').length} pending
+                {props.userReports.filter((r: any) => r.status === 'pending').length} pending
               </Badge>
             </div>
 
