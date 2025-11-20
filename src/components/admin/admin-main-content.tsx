@@ -50,6 +50,7 @@ export const AdminMainContent = (props: any): JSX.Element => {
           advertisingApplications={props.advertisingApplications}
           advertisements={props.advertisements}
           advertisementAnalytics={props.advertisementAnalytics}
+          shopProducts={props.shopProducts}
         />
 
       {/* Upload Buttons */}

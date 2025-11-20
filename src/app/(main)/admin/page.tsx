@@ -123,11 +123,8 @@ export default function AdminPanel() {
   const [adEndDate, setAdEndDate] = useState('');
   const [isAdUploading, setIsAdUploading] = useState(false);
 
-  // Course management state
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [courseSubmissions, setCourseSubmissions] = useState<CourseSubmission[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [selectedCourseSubmission, setSelectedCourseSubmission] = useState<CourseSubmission | null>(null);
+  // Marketplace state (shop products from profiles)
+  const [shopProducts, setShopProducts] = useState<any[]>([]);
   const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
   const [showArchivedNews, setShowArchivedNews] = useState(false);
   const [showDraftedArticles, setShowDraftedArticles] = useState(false);
@@ -180,11 +177,20 @@ export default function AdminPanel() {
       collection(db, 'advertisementAnalytics'),
       orderBy('date', 'desc')
     );
+    // Fetch shop products: artworks for sale, courses, and books
+    const artworksForSaleQuery = query(
+      collection(db, 'artworks'),
+      where('isForSale', '==', true),
+      orderBy('createdAt', 'desc')
+    );
     const coursesQuery = query(
       collection(db, 'courses'),
       orderBy('createdAt', 'desc')
     );
-    const courseSubmissionsQuery = query(collection(db, 'courseSubmissions'), orderBy('submittedAt', 'desc'));
+    const booksQuery = query(
+      collection(db, 'books'),
+      orderBy('createdAt', 'desc')
+    );
     const newsArticlesQuery = query(collection(db, 'newsArticles'), orderBy('updatedAt', 'desc'));
     const userReportsQuery = query(collection(db, 'userReports'), orderBy('submittedAt', 'desc'));
 
@@ -227,8 +233,9 @@ export default function AdminPanel() {
           affiliateSnapshot,
           advertisementsSnapshot,
           analyticsSnapshot,
+          artworksForSaleSnapshot,
           coursesSnapshot,
-          courseSubmissionsSnapshot,
+          booksSnapshot,
           newsArticlesSnapshot,
           userReportsSnapshot
         ] = await Promise.all([
@@ -238,8 +245,9 @@ export default function AdminPanel() {
           getDocs(affiliateQuery),
           getDocs(advertisementsQuery),
           getDocs(advertisementAnalyticsQuery),
+          getDocs(artworksForSaleQuery),
           getDocs(coursesQuery),
-          getDocs(courseSubmissionsQuery),
+          getDocs(booksQuery),
           getDocs(newsArticlesQuery),
           getDocs(userReportsQuery)
         ]);
@@ -287,29 +295,74 @@ export default function AdminPanel() {
         setAdvertisementAnalytics(analytics);
         console.log(`✅ Loaded ${analytics.length} advertisement analytics:`, analytics);
 
-        const courses = coursesSnapshot.docs.map((doc: any) => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-          publishedAt: doc.data().publishedAt?.toDate(),
-          instructor: {
-            ...doc.data().instructor,
-            createdAt: doc.data().instructor?.createdAt?.toDate() || new Date(),
-            updatedAt: doc.data().instructor?.updatedAt?.toDate() || new Date(),
-          },
-        })) as Course[];
-        setCourses(courses);
-        console.log(`✅ Loaded ${courses.length} courses:`, courses);
+        // Combine all shop products from different collections
+        const shopProductsList: any[] = [];
 
-        const submissions = courseSubmissionsSnapshot.docs.map((doc: any) => ({
-          id: doc.id,
-          ...doc.data(),
-          submittedAt: doc.data().submittedAt?.toDate() || new Date(),
-          reviewedAt: doc.data().reviewedAt?.toDate(),
-        })) as CourseSubmission[];
-        setCourseSubmissions(submissions);
-        console.log(`✅ Loaded ${submissions.length} course submissions:`, submissions);
+        // Add artworks for sale
+        artworksForSaleSnapshot.docs.forEach((doc: any) => {
+          const data = doc.data();
+          shopProductsList.push({
+            id: doc.id,
+            type: 'artwork',
+            title: data.title || 'Untitled',
+            description: data.description,
+            price: data.price || 0,
+            currency: data.currency || 'USD',
+            imageUrl: data.imageUrl,
+            sellerId: data.artist?.userId || data.userId,
+            sellerName: data.artist?.name || data.artistName || 'Unknown',
+            isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
+            stock: data.stock,
+            category: data.category,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            isForSale: true
+          });
+        });
+
+        // Add courses
+        coursesSnapshot.docs.forEach((doc: any) => {
+          const data = doc.data();
+          shopProductsList.push({
+            id: doc.id,
+            type: 'course',
+            title: data.title || 'Untitled Course',
+            description: data.description,
+            price: data.price || 0,
+            currency: data.currency || 'USD',
+            imageUrl: data.thumbnail || data.thumbnailUrl,
+            sellerId: data.instructor?.userId || data.userId,
+            sellerName: data.instructor?.name || 'Unknown',
+            isAvailable: data.isActive !== false,
+            category: data.category,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            isPublished: data.isPublished || false
+          });
+        });
+
+        // Add books
+        booksSnapshot.docs.forEach((doc: any) => {
+          const data = doc.data();
+          shopProductsList.push({
+            id: doc.id,
+            type: 'book',
+            title: data.title || 'Untitled Book',
+            description: data.description,
+            price: data.price || 0,
+            currency: data.currency || 'USD',
+            imageUrl: data.imageUrl || data.coverImageUrl,
+            sellerId: data.artistId || data.userId,
+            sellerName: data.artistName || 'Unknown',
+            isAvailable: data.isAvailable !== false,
+            stock: data.stock,
+            category: data.category,
+            createdAt: data.createdAt?.toDate() || new Date()
+          });
+        });
+
+        // Sort by creation date (newest first)
+        shopProductsList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        setShopProducts(shopProductsList);
+        console.log(`✅ Loaded ${shopProductsList.length} shop products (${artworksForSaleSnapshot.docs.length} artworks, ${coursesSnapshot.docs.length} courses, ${booksSnapshot.docs.length} books):`, shopProductsList);
 
         const newsroomArticles = newsArticlesSnapshot.docs.map((doc: any) => {
           const data = doc.data() as any;
@@ -920,6 +973,7 @@ export default function AdminPanel() {
   };
 
   // Course management functions
+  // Removed course handlers - replaced with marketplace
   const handleCoursePublish = async (courseId: string) => {
     try {
       await updateDoc(doc(db, 'courses', courseId), {
@@ -1553,10 +1607,7 @@ export default function AdminPanel() {
       setAdvertisements={setAdvertisements}
       advertisementAnalytics={advertisementAnalytics}
       setAdvertisementAnalytics={setAdvertisementAnalytics}
-      courses={courses}
-      setCourses={setCourses}
-      courseSubmissions={courseSubmissions}
-      setCourseSubmissions={setCourseSubmissions}
+      shopProducts={shopProducts}
       newsArticles={newsArticles}
       setNewsArticles={setNewsArticles}
       professionalArtists={professionalArtists}
@@ -1572,10 +1623,6 @@ export default function AdminPanel() {
       setSelectedProduct={setSelectedProduct}
       selectedAffiliateRequest={selectedAffiliateRequest}
       setSelectedAffiliateRequest={setSelectedAffiliateRequest}
-      selectedCourse={selectedCourse}
-      setSelectedCourse={setSelectedCourse}
-      selectedCourseSubmission={selectedCourseSubmission}
-      setSelectedCourseSubmission={setSelectedCourseSubmission}
       selectedAdvertisement={selectedAdvertisement}
       setSelectedAdvertisement={setSelectedAdvertisement}
       handleApprove={handleApprove}
@@ -1595,10 +1642,6 @@ export default function AdminPanel() {
       handleArchiveNewsArticle={handleArchiveNewsArticle}
       handleDeleteNewsArticle={handleDeleteNewsArticle}
       handleUpdateReportStatus={handleUpdateReportStatus}
-      handleCoursePublish={handleCoursePublish}
-      handleCourseUnpublish={handleCourseUnpublish}
-      handleCourseSubmissionReview={handleCourseSubmissionReview}
-      handleCourseDelete={handleCourseDelete}
       productTitle={productTitle}
       setProductTitle={setProductTitle}
       productDescription={productDescription}

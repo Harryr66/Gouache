@@ -1544,38 +1544,50 @@ export function AdminViewRouter(props: any) {
           </div>
         )}
 
-        {/* Course Management Sections */}
-        {props.selectedView === 'courses-published' && (
+        {/* Marketplace - Shop Products from Profiles */}
+        {props.selectedView === 'marketplace-shop' && (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Published Courses</h2>
-            {props.courses.filter((c: any) => c.isPublished).length === 0 ? (
+            <h2 className="text-2xl font-bold">Shop Products from Profiles</h2>
+            {!props.shopProducts || props.shopProducts.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Play className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No published courses</p>
+                  <Package className="h-10 w-10 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">No shop products found</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-3">
-                {props.courses.filter((c: any) => c.isPublished).map((course: any) => (
-                  <Card key={course.id}>
+                {props.shopProducts.map((product: any) => (
+                  <Card key={product.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex gap-3 flex-1">
-                          <img src={course.thumbnail} alt={course.title} className="w-16 h-16 object-cover rounded" />
+                          {product.imageUrl && (
+                            <img src={product.imageUrl} alt={product.title} className="w-16 h-16 object-cover rounded" />
+                          )}
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold truncate">{course.title}</h3>
-                            <p className="text-sm text-muted-foreground truncate">{course.description}</p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold truncate">{product.title}</h3>
+                              <Badge variant="outline">{product.type}</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">{product.description || 'No description'}</p>
                             <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                              <span>{course.instructor.name}</span>
+                              <span>Seller: {product.sellerName}</span>
                               <span>•</span>
-                              <span>${course.price}</span>
-                      </div>
-                    </div>
+                              <span>{product.currency === 'USD' ? '$' : product.currency} {product.price.toFixed(2)}</span>
+                              {product.stock !== undefined && (
+                                <>
+                                  <span>•</span>
+                                  <span>Stock: {product.stock}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => props.handleCourseUnpublish(course.id)}>Unpublish</Button>
-                          <Button variant="destructive" size="sm" onClick={() => props.handleCourseDelete(course.id)}>Delete</Button>
+                          <Badge variant={product.isAvailable ? 'default' : 'secondary'}>
+                            {product.isAvailable ? 'Available' : 'Unavailable'}
+                          </Badge>
                         </div>
                       </div>
                     </CardContent>
@@ -1585,63 +1597,6 @@ export function AdminViewRouter(props: any) {
             )}
           </div>
         )}
-
-        {props.selectedView === 'courses-draft' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Draft Courses</h2>
-            {props.courses.filter((c: any) => !c.isPublished).length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Edit className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No draft courses</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {props.courses.filter((c: any) => !c.isPublished).map((course: any) => (
-                  <Card key={course.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex gap-3 flex-1">
-                          <img src={course.thumbnail} alt={course.title} className="w-16 h-16 object-cover rounded" />
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold truncate">{course.title}</h3>
-                            <p className="text-sm text-muted-foreground truncate">{course.description}</p>
-                            <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                              <span>{course.instructor.name}</span>
-                              <span>•</span>
-                              <span>${course.price}</span>
-                        </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="default" size="sm" onClick={() => props.handleCoursePublish(course.id)}>Publish</Button>
-                          <Button variant="destructive" size="sm" onClick={() => props.handleCourseDelete(course.id)}>Delete</Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                    </div>
-                  )}
-                </div>
-        )}
-
-        {props.selectedView === 'course-submissions' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Course Submission Requests</h2>
-            {props.courseSubmissions.filter((s: any) => s.status === 'pending').length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <User className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No pending requests</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {props.courseSubmissions.filter((s: any) => s.status === 'pending').map((submission: any) => (
-                  <Card key={submission.id}>
-                    <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold mb-2">{submission.courseTitle}</h3>
