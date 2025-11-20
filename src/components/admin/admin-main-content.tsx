@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2, GripVertical, Type, ImageIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
+import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { useRouter } from 'next/navigation';
 import { ArtistRequest, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport } from '@/lib/types';
 import { doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
@@ -24,276 +25,31 @@ export const AdminMainContent = (props: any): JSX.Element => {
   const router = useRouter();
   
   // Use props directly to avoid parser issues with large destructuring
-  const content = (
+  return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-        <Button variant="outline" onClick={props.handleSignOut} className="flex items-center gap-2">
-          <X className="h-4 w-4" />
-          Logout
-        </Button>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-      <div className="mb-8 flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-        <Button variant="outline" onClick={props.handleSignOut} className="flex items-center gap-2">
-          <X className="h-4 w-4" />
-          Logout
-        </Button>
-      </div>
+        <div className="mb-8 flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
+          <Button variant="outline" onClick={props.handleSignOut} className="flex items-center gap-2">
+            <X className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        {/* Professional Verification */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Professional Verification</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <button
-              onClick={() => props.setSelectedView('artist-management')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'artist-management' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="flex items-center gap-2 text-sm">
-                <Users className="h-4 w-4" />
-                Manage Artists
-              </span>
-              <Badge variant={props.selectedView === 'artist-management' ? 'secondary' : 'outline'}>
-                ({props.approvedRequests.length})
-              </Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('artist-pending')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'artist-pending' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Pending</span>
-              <Badge variant={props.selectedView === 'artist-pending' ? 'secondary' : 'outline'}>({props.pendingRequests.length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('artist-approved')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'artist-approved' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Approved</span>
-              <Badge variant={props.selectedView === 'artist-approved' ? 'secondary' : 'outline'}>({props.approvedRequests.length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('artist-rejected')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'artist-rejected' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Rejected</span>
-              <Badge variant={props.selectedView === 'artist-rejected' ? 'secondary' : 'outline'}>({props.rejectedRequests.length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('artist-suspended')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'artist-suspended' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Suspended</span>
-              <Badge variant={props.selectedView === 'artist-suspended' ? 'secondary' : 'outline'}>({props.suspendedRequests.length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('artist-invites')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'artist-invites' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Invite Console</span>
-              <Badge variant={props.selectedView === 'artist-invites' ? 'secondary' : 'outline'}>New</Badge>
-            </button>
-          </CardContent>
-        </Card>
-
-        {/* Newsroom */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Megaphone className="h-4 w-4" />
-              Newsroom
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <button
-              onClick={() => props.setSelectedView('news-articles')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'news-articles' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Articles</span>
-              <Badge variant={props.selectedView === 'news-articles' ? 'secondary' : 'outline'}>
-                ({props.activeNewsArticles.length})
-              </Badge>
-            </button>
-          </CardContent>
-        </Card>
-
-        {/* Marketplace */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Gallery
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <button
-              onClick={() => props.setSelectedView('marketplace-products')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'marketplace-products' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Products</span>
-              <Badge variant={props.selectedView === 'marketplace-products' ? 'secondary' : 'outline'}>({props.marketplaceProducts.length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('marketplace-requests')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'marketplace-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Requests</span>
-              <Badge variant={props.selectedView === 'marketplace-requests' ? 'secondary' : 'outline'}>({props.affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('marketplace-archived')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'marketplace-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Archived</span>
-              <Badge variant={props.selectedView === 'marketplace-archived' ? 'secondary' : 'outline'}>(0)</Badge>
-            </button>
-          </CardContent>
-        </Card>
-
-        {/* Marketplace Products */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Marketplace
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <button
-              onClick={() => props.setSelectedView('marketplace-products')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'marketplace-products' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">All Products</span>
-              <Badge variant={props.selectedView === 'marketplace-products' ? 'secondary' : 'outline'}>({props.marketplaceProducts.length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('marketplace-active')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'marketplace-active' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Active Products</span>
-              <Badge variant={props.selectedView === 'marketplace-active' ? 'secondary' : 'outline'}>({props.marketplaceProducts.filter(p => p.isActive).length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('marketplace-requests')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'marketplace-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Product Requests</span>
-              <Badge variant={props.selectedView === 'marketplace-requests' ? 'secondary' : 'outline'}>({props.affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
-            </button>
-          </CardContent>
-        </Card>
-
-        {/* User Reports */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              User Reports
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <button
-              onClick={() => props.setSelectedView('user-reports')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'user-reports' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Reports</span>
-              <Badge variant={props.selectedView === 'user-reports' ? 'secondary' : 'outline'}>
-                ({props.userReports.filter(r => r.status === 'pending').length})
-              </Badge>
-            </button>
-          </CardContent>
-        </Card>
-
-        {/* Advertising */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Megaphone className="h-4 w-4" />
-              Advertising
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <button
-              onClick={() => props.setSelectedView('advertising-live')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'advertising-live' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Live Media</span>
-              <Badge variant={props.selectedView === 'advertising-live' ? 'secondary' : 'outline'}>({props.advertisingApplications.filter(app => app.status === 'approved').length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('advertising-requests')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'advertising-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Requests</span>
-              <Badge variant={props.selectedView === 'advertising-requests' ? 'secondary' : 'outline'}>({props.advertisingApplications.filter(app => app.status === 'pending').length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('advertising-archived')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'advertising-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Archived</span>
-              <Badge variant={props.selectedView === 'advertising-archived' ? 'secondary' : 'outline'}>(0)</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('advertising-media')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'advertising-media' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Media Ads</span>
-              <Badge variant={props.selectedView === 'advertising-media' ? 'secondary' : 'outline'}>({props.advertisements.length})</Badge>
-            </button>
-            <button
-              onClick={() => props.setSelectedView('advertising-analytics')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'advertising-analytics' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Analytics</span>
-              <Badge variant={props.selectedView === 'advertising-analytics' ? 'secondary' : 'outline'}>({props.advertisementAnalytics.length})</Badge>
-            </button>
-          </CardContent>
-        </Card>
-
-      </div>
+        <AdminSidebar
+          selectedView={props.selectedView}
+          setSelectedView={props.setSelectedView}
+          approvedRequests={props.approvedRequests}
+          pendingRequests={props.pendingRequests}
+          rejectedRequests={props.rejectedRequests}
+          suspendedRequests={props.suspendedRequests}
+          activeNewsArticles={props.activeNewsArticles}
+          marketplaceProducts={props.marketplaceProducts}
+          affiliateRequests={props.affiliateRequests}
+          userReports={props.userReports}
+          advertisingApplications={props.advertisingApplications}
+          advertisements={props.advertisements}
+          advertisementAnalytics={props.advertisementAnalytics}
+        />
 
       {/* Upload Buttons */}
       <div className="flex justify-end gap-4 mb-6">
@@ -1105,11 +861,11 @@ export const AdminMainContent = (props: any): JSX.Element => {
                                         location: data.location || 'evergreen',
                                       });
 
-                                      setArticleSections((data.sections || []).map((s: any) => ({
-                                        ...s,
-                                        order: s.order || 0,
-                                      })));
-                                      setNewArticleContent(data.content || '');
+                                      // Load content into editor
+                                      const bodyEditor = document.getElementById('article-body-editor') as HTMLDivElement;
+                                      if (bodyEditor && data.content) {
+                                        bodyEditor.innerHTML = data.content;
+                                      }
 
                                       // Scroll to editor
                                       setTimeout(() => {
@@ -2338,6 +2094,4 @@ export const AdminMainContent = (props: any): JSX.Element => {
       </div>
     </div>
   );
-  
-  return content;
 };
