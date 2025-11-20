@@ -62,22 +62,23 @@ export default function MarketplacePage() {
         // Fetch artworks for sale
         try {
           // Try with orderBy first, fallback to just where if index doesn't exist
-          let artworksQuery;
+          let artworksSnapshot;
           try {
-            artworksQuery = query(
+            const artworksQuery = query(
               collection(db, 'artworks'),
               where('isForSale', '==', true),
               orderBy('createdAt', 'desc')
             );
-          } catch (indexError) {
+            artworksSnapshot = await getDocs(artworksQuery);
+          } catch (indexError: any) {
             // If index doesn't exist, query without orderBy
             console.warn('Firestore index may not exist, querying without orderBy:', indexError);
-            artworksQuery = query(
+            const artworksQuery = query(
               collection(db, 'artworks'),
               where('isForSale', '==', true)
             );
+            artworksSnapshot = await getDocs(artworksQuery);
           }
-          const artworksSnapshot = await getDocs(artworksQuery);
           
           artworksSnapshot.forEach((doc: any) => {
             const data = doc.data();
@@ -103,17 +104,18 @@ export default function MarketplacePage() {
 
         // Fetch courses
         try {
-          let coursesQuery;
+          let coursesSnapshot;
           try {
-            coursesQuery = query(
+            const coursesQuery = query(
               collection(db, 'courses'),
               orderBy('createdAt', 'desc')
             );
-          } catch (indexError) {
+            coursesSnapshot = await getDocs(coursesQuery);
+          } catch (indexError: any) {
             console.warn('Firestore index may not exist for courses, querying without orderBy:', indexError);
-            coursesQuery = query(collection(db, 'courses'));
+            const coursesQuery = query(collection(db, 'courses'));
+            coursesSnapshot = await getDocs(coursesQuery);
           }
-          const coursesSnapshot = await getDocs(coursesQuery);
           
           coursesSnapshot.forEach((doc: any) => {
             const data = doc.data();
@@ -140,17 +142,18 @@ export default function MarketplacePage() {
 
         // Fetch books
         try {
-          let booksQuery;
+          let booksSnapshot;
           try {
-            booksQuery = query(
+            const booksQuery = query(
               collection(db, 'books'),
               orderBy('createdAt', 'desc')
             );
-          } catch (indexError) {
+            booksSnapshot = await getDocs(booksQuery);
+          } catch (indexError: any) {
             console.warn('Firestore index may not exist for books, querying without orderBy:', indexError);
-            booksQuery = query(collection(db, 'books'));
+            const booksQuery = query(collection(db, 'books'));
+            booksSnapshot = await getDocs(booksQuery);
           }
-          const booksSnapshot = await getDocs(booksQuery);
           
           booksSnapshot.forEach((doc: any) => {
             const data = doc.data();
@@ -174,9 +177,14 @@ export default function MarketplacePage() {
           console.error('Error fetching books:', error);
         }
 
-        // Sort by creation date (newest first)
-        allProducts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        // Sort by creation date (newest first) - client-side sort as fallback
+        allProducts.sort((a, b) => {
+          const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+          const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+          return timeB - timeA;
+        });
         setProducts(allProducts);
+        console.log(`✅ Marketplace: Loaded ${allProducts.length} products (${allProducts.filter(p => p.type === 'artwork').length} artworks, ${allProducts.filter(p => p.type === 'course').length} courses, ${allProducts.filter(p => p.type === 'book').length} books)`);
       } catch (error) {
         console.error('Error fetching shop products:', error);
       } finally {
@@ -218,7 +226,11 @@ export default function MarketplacePage() {
         break;
       case 'newest':
       default:
-        filtered = [...filtered].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        filtered = [...filtered].sort((a, b) => {
+          const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+          const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+          return timeB - timeA;
+        });
         break;
     }
 
@@ -256,9 +268,9 @@ export default function MarketplacePage() {
       case 'artwork':
         return `/artwork/${product.id}`;
       case 'course':
-        return `/courses/${product.id}`;
+        return `/learn/${product.id}`;
       case 'book':
-        return `/shop/book/${product.id}`;
+        return `/learn/${product.id}`;
       default:
         return '#';
     }
@@ -345,6 +357,19 @@ export default function MarketplacePage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex items-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedType('all');
+                    setSortBy('newest');
+                    setSearchQuery('');
+                  }}
+                  className="w-full"
+                >
+                  Clear All Filters
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -352,11 +377,23 @@ export default function MarketplacePage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold">
-            {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'Product' : 'Products'} Found
-            {selectedType !== 'all' && ` in ${getTypeLabel(selectedType)}s`}
-          </h2>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">
+              {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'Product' : 'Products'} Found
+              {selectedType !== 'all' && ` in ${getTypeLabel(selectedType)}s`}
+            </h2>
+            {searchQuery && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Results for "{searchQuery}"
+              </p>
+            )}
+          </div>
+          {filteredAndSortedProducts.length > 0 && (
+            <div className="text-sm text-muted-foreground">
+              Showing all {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'product' : 'products'}
+            </div>
+          )}
         </div>
 
         {filteredAndSortedProducts.length === 0 ? (
@@ -372,8 +409,8 @@ export default function MarketplacePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAndSortedProducts.map((product) => (
-              <Card key={product.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                <Link href={getProductLink(product)}>
+              <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer">
+                <Link href={getProductLink(product)} className="block" prefetch={false}>
                   <div className="relative aspect-square">
                     {product.imageUrl ? (
                       <Image
@@ -385,13 +422,15 @@ export default function MarketplacePage() {
                         onError={(e) => {
                           // Fallback to placeholder if image fails to load
                           const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const parent = target.parentElement;
-                          if (parent) {
-                            const placeholder = document.createElement('div');
-                            placeholder.className = 'w-full h-full bg-muted flex items-center justify-center';
-                            placeholder.innerHTML = `<div class="text-muted-foreground">${getTypeIcon(product.type).props.children}</div>`;
-                            parent.appendChild(placeholder);
+                          if (target && target.parentElement) {
+                            target.style.display = 'none';
+                            const placeholder = target.parentElement.querySelector('.image-placeholder-fallback');
+                            if (!placeholder) {
+                              const placeholderDiv = document.createElement('div');
+                              placeholderDiv.className = 'image-placeholder-fallback w-full h-full bg-muted flex items-center justify-center absolute inset-0';
+                              placeholderDiv.innerHTML = `<div class="text-muted-foreground">${getTypeIcon(product.type).props.children}</div>`;
+                              target.parentElement.appendChild(placeholderDiv);
+                            }
                           }
                         }}
                       />
@@ -403,14 +442,14 @@ export default function MarketplacePage() {
                       </div>
                     )}
                     {!product.isAvailable && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Badge variant="destructive">Sold Out</Badge>
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                        <Badge variant="destructive" className="text-sm">Sold Out</Badge>
                       </div>
                     )}
-                    <div className="absolute top-2 left-2">
-                      <Badge variant="secondary" className="flex items-center gap-1">
+                    <div className="absolute top-2 left-2 z-10">
+                      <Badge variant="secondary" className="flex items-center gap-1 bg-background/90 backdrop-blur-sm">
                         {getTypeIcon(product.type)}
-                        {getTypeLabel(product.type)}
+                        <span className="text-xs">{getTypeLabel(product.type)}</span>
                       </Badge>
                     </div>
                   </div>
@@ -421,27 +460,36 @@ export default function MarketplacePage() {
                     <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                       {product.description || 'No description available'}
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                      <span>by {product.sellerName}</span>
-                      {product.rating && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 flex-wrap">
+                      <span className="truncate">by {product.sellerName}</span>
+                      {product.rating && product.rating > 0 && (
                         <>
                           <span>•</span>
                           <div className="flex items-center gap-1">
                             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                             <span>{product.rating.toFixed(1)}</span>
-                            {product.reviewCount && <span>({product.reviewCount})</span>}
+                            {product.reviewCount && product.reviewCount > 0 && (
+                              <span className="text-muted-foreground">({product.reviewCount})</span>
+                            )}
                           </div>
                         </>
                       )}
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-lg">
-                        {product.currency === 'USD' ? '$' : product.currency} {product.price.toFixed(2)}
-                      </span>
-                      {product.stock !== undefined && (
-                        <span className="text-xs text-muted-foreground">
-                          {product.stock} in stock
+                      <div className="flex flex-col">
+                        <span className="font-bold text-lg text-primary">
+                          {product.currency === 'USD' ? '$' : product.currency} {product.price > 0 ? product.price.toFixed(2) : 'Free'}
                         </span>
+                        {product.stock !== undefined && product.stock > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            {product.stock} in stock
+                          </span>
+                        )}
+                      </div>
+                      {!product.isAvailable && (
+                        <Badge variant="destructive" className="text-xs">
+                          Unavailable
+                        </Badge>
                       )}
                     </div>
                   </CardContent>
