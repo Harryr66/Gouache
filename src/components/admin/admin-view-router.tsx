@@ -1651,10 +1651,9 @@ export function AdminViewRouter(props: any) {
             )}
           </div>
         )}
-              </div>
 
       {/* Upload Modal */}
-      {showUploadModal && (
+      {props.showUploadModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
             <CardHeader className="flex-shrink-0">
@@ -1762,7 +1761,7 @@ export function AdminViewRouter(props: any) {
       )}
 
       {/* Advertising Upload Modal */}
-      {showAdUploadModal && (
+      {props.showAdUploadModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
             <CardHeader className="flex-shrink-0">
