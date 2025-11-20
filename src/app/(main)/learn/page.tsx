@@ -61,11 +61,22 @@ export default function MarketplacePage() {
 
         // Fetch artworks for sale
         try {
-          const artworksQuery = query(
-            collection(db, 'artworks'),
-            where('isForSale', '==', true),
-            orderBy('createdAt', 'desc')
-          );
+          // Try with orderBy first, fallback to just where if index doesn't exist
+          let artworksQuery;
+          try {
+            artworksQuery = query(
+              collection(db, 'artworks'),
+              where('isForSale', '==', true),
+              orderBy('createdAt', 'desc')
+            );
+          } catch (indexError) {
+            // If index doesn't exist, query without orderBy
+            console.warn('Firestore index may not exist, querying without orderBy:', indexError);
+            artworksQuery = query(
+              collection(db, 'artworks'),
+              where('isForSale', '==', true)
+            );
+          }
           const artworksSnapshot = await getDocs(artworksQuery);
           
           artworksSnapshot.forEach((doc: any) => {
@@ -92,10 +103,16 @@ export default function MarketplacePage() {
 
         // Fetch courses
         try {
-          const coursesQuery = query(
-            collection(db, 'courses'),
-            orderBy('createdAt', 'desc')
-          );
+          let coursesQuery;
+          try {
+            coursesQuery = query(
+              collection(db, 'courses'),
+              orderBy('createdAt', 'desc')
+            );
+          } catch (indexError) {
+            console.warn('Firestore index may not exist for courses, querying without orderBy:', indexError);
+            coursesQuery = query(collection(db, 'courses'));
+          }
           const coursesSnapshot = await getDocs(coursesQuery);
           
           coursesSnapshot.forEach((doc: any) => {
@@ -123,10 +140,16 @@ export default function MarketplacePage() {
 
         // Fetch books
         try {
-          const booksQuery = query(
-            collection(db, 'books'),
-            orderBy('createdAt', 'desc')
-          );
+          let booksQuery;
+          try {
+            booksQuery = query(
+              collection(db, 'books'),
+              orderBy('createdAt', 'desc')
+            );
+          } catch (indexError) {
+            console.warn('Firestore index may not exist for books, querying without orderBy:', indexError);
+            booksQuery = query(collection(db, 'books'));
+          }
           const booksSnapshot = await getDocs(booksQuery);
           
           booksSnapshot.forEach((doc: any) => {
@@ -358,10 +381,25 @@ export default function MarketplacePage() {
                         alt={product.title}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        unoptimized
+                        onError={(e) => {
+                          // Fallback to placeholder if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            const placeholder = document.createElement('div');
+                            placeholder.className = 'w-full h-full bg-muted flex items-center justify-center';
+                            placeholder.innerHTML = `<div class="text-muted-foreground">${getTypeIcon(product.type).props.children}</div>`;
+                            parent.appendChild(placeholder);
+                          }
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full bg-muted flex items-center justify-center">
-                        {getTypeIcon(product.type)}
+                        <div className="text-muted-foreground">
+                          {getTypeIcon(product.type)}
+                        </div>
                       </div>
                     )}
                     {!product.isAvailable && (
