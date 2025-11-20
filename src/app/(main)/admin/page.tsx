@@ -1923,7 +1923,7 @@ export default function AdminPanel() {
   }
 
   // Main admin panel content
-  const mainContent = (
+  const renderMainContent = () => (
     <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
@@ -4866,5 +4866,5 @@ export default function AdminPanel() {
     </div>
   );
 
-  return mainContent;
+  return renderMainContent();
 }
