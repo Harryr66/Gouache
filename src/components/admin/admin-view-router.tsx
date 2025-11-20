@@ -1476,19 +1476,19 @@ export function AdminViewRouter(props: any) {
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Total Impressions</p>
-                  <p className="text-xl font-bold">{props.advertisements.reduce((sum, ad) => sum + ad.impressions, 0).toLocaleString()}</p>
+                  <p className="text-xl font-bold">{props.advertisements.reduce((sum: any, ad: any) => sum + ad.impressions, 0).toLocaleString()}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Total Views</p>
-                  <p className="text-xl font-bold">{props.advertisements.reduce((sum, ad) => sum + ad.views, 0).toLocaleString()}</p>
+                  <p className="text-xl font-bold">{props.advertisements.reduce((sum: any, ad: any) => sum + ad.views, 0).toLocaleString()}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Total Clicks</p>
-                  <p className="text-xl font-bold">{props.advertisements.reduce((sum, ad) => sum + ad.clicks, 0).toLocaleString()}</p>
+                  <p className="text-xl font-bold">{props.advertisements.reduce((sum: any, ad: any) => sum + ad.clicks, 0).toLocaleString()}</p>
                 </CardContent>
               </Card>
               <Card>
