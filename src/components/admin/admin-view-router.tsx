@@ -22,8 +22,9 @@ import { toast } from '@/hooks/use-toast';
 export const AdminViewRouter = (props: any): JSX.Element => {
   const router = useRouter();
   
-  return (
-    <div className="space-y-6">
+  const renderContent = () => {
+    return (
+      <div className="space-y-6">
       {props.selectedView === 'artist-management' && (
           <div className="space-y-6">
             {/* Verified Status Management */}
@@ -2049,6 +2050,9 @@ export const AdminViewRouter = (props: any): JSX.Element => {
           </AlertDialogContent>
         </AlertDialog>
       )}
-    </div>
-  );
+      </div>
+    );
+  };
+  
+  return renderContent();
 };
