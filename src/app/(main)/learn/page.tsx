@@ -298,49 +298,50 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-background border-b border-border">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-                <ShoppingCart className="h-8 w-8 text-primary" />
-                Marketplace
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="flex flex-col gap-2">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+                <ShoppingCart className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary flex-shrink-0" />
+                <span>Marketplace</span>
               </h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Shop products from artists and creators</span>
-              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Shop products from artists and creators
+              </p>
             </div>
           </div>
 
           {/* Search Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
             <div className="flex-1 relative">
               <Input
                 placeholder="Search products, artists, or creators..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-12 rounded-r-none pl-4 pr-12"
+                className="h-10 sm:h-12 rounded-r-none pl-3 sm:pl-4 pr-10 sm:pr-12 text-sm sm:text-base"
               />
-              <Button className="absolute right-0 top-0 h-12 px-4 rounded-l-none">
+              <Button className="absolute right-0 top-0 h-10 sm:h-12 px-3 sm:px-4 rounded-l-none" size="sm">
                 <Search className="h-4 w-4" />
               </Button>
             </div>
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className="h-12 px-4 flex-shrink-0"
+              className="h-10 sm:h-12 px-3 sm:px-4 flex-shrink-0 text-sm sm:text-base"
+              size="sm"
             >
-              <Filter className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Filters</span>
+              <Filter className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline sm:inline">Filters</span>
             </Button>
           </div>
 
           {/* Filters */}
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6 p-3 sm:p-4 bg-muted/50 rounded-lg">
               <div>
-                <label className="text-sm font-medium mb-2 block">Product Type</label>
+                <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">Product Type</label>
                 <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -353,9 +354,9 @@ export default function MarketplacePage() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Sort By</label>
+                <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">Sort By</label>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -367,7 +368,7 @@ export default function MarketplacePage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-end">
+              <div className="flex items-end sm:col-span-2 md:col-span-1">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -375,7 +376,8 @@ export default function MarketplacePage() {
                     setSortBy('newest');
                     setSearchQuery('');
                   }}
-                  className="w-full"
+                  className="w-full h-9 sm:h-10 text-sm"
+                  size="sm"
                 >
                   Clear All Filters
                 </Button>
@@ -386,38 +388,48 @@ export default function MarketplacePage() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">
-              {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'Product' : 'Products'} Found
-              {selectedType !== 'all' && ` in ${getTypeLabel(selectedType)}s`}
-            </h2>
-            {searchQuery && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Results for "{searchQuery}"
-              </p>
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl font-semibold truncate">
+                {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'Product' : 'Products'} Found
+                {selectedType !== 'all' && (
+                  <span className="hidden sm:inline"> in {getTypeLabel(selectedType)}s</span>
+                )}
+              </h2>
+              {selectedType !== 'all' && (
+                <span className="sm:hidden text-sm text-muted-foreground">
+                  in {getTypeLabel(selectedType)}s
+                </span>
+              )}
+              {searchQuery && (
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
+                  Results for "{searchQuery}"
+                </p>
+              )}
+            </div>
+            {filteredAndSortedProducts.length > 0 && (
+              <div className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
+                <span className="hidden sm:inline">Showing all </span>
+                {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'product' : 'products'}
+              </div>
             )}
           </div>
-          {filteredAndSortedProducts.length > 0 && (
-            <div className="text-sm text-muted-foreground">
-              Showing all {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'product' : 'products'}
-            </div>
-          )}
         </div>
 
         {filteredAndSortedProducts.length === 0 ? (
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No products found</h3>
-              <p className="text-muted-foreground text-center">
+            <CardContent className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
+              <ShoppingCart className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mb-3 sm:mb-4" />
+              <h3 className="text-base sm:text-lg font-semibold mb-1.5 sm:mb-2 text-center">No products found</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground text-center max-w-sm">
                 {searchQuery ? 'Try adjusting your search or filters.' : 'No products available at the moment.'}
               </p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {filteredAndSortedProducts.map((product) => (
               <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer">
                 <Link href={getProductLink(product)} className="block" prefetch={false}>
@@ -456,27 +468,27 @@ export default function MarketplacePage() {
                         <Badge variant="destructive" className="text-sm">Sold Out</Badge>
                       </div>
                     )}
-                    <div className="absolute top-2 left-2 z-10">
-                      <Badge variant="secondary" className="flex items-center gap-1 bg-background/90 backdrop-blur-sm">
-                        {getTypeIcon(product.type)}
-                        <span className="text-xs">{getTypeLabel(product.type)}</span>
+                    <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-10">
+                      <Badge variant="secondary" className="flex items-center gap-0.5 sm:gap-1 bg-background/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1">
+                        <span className="h-3 w-3 sm:h-4 sm:w-4">{getTypeIcon(product.type)}</span>
+                        <span className="text-[10px] sm:text-xs">{getTypeLabel(product.type)}</span>
                       </Badge>
                     </div>
                   </div>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-sm line-clamp-2 flex-1">{product.title}</h3>
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-start justify-between mb-1.5 sm:mb-2">
+                      <h3 className="font-semibold text-xs sm:text-sm line-clamp-2 flex-1 leading-tight">{product.title}</h3>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 line-clamp-2 leading-relaxed">
                       {product.description || 'No description available'}
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground mb-2 flex-wrap">
                       <span className="truncate">by {product.sellerName}</span>
                       {product.rating && product.rating > 0 && (
                         <>
-                          <span>•</span>
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <span className="hidden sm:inline">•</span>
+                          <div className="flex items-center gap-0.5 sm:gap-1">
+                            <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
                             <span>{product.rating.toFixed(1)}</span>
                             {product.reviewCount && product.reviewCount > 0 && (
                               <span className="text-muted-foreground">({product.reviewCount})</span>
@@ -485,19 +497,19 @@ export default function MarketplacePage() {
                         </>
                       )}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-lg text-primary">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="font-bold text-base sm:text-lg text-primary truncate">
                           {product.currency === 'USD' ? '$' : product.currency} {product.price > 0 ? product.price.toFixed(2) : 'Free'}
                         </span>
                         {product.stock !== undefined && product.stock > 0 && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">
                             {product.stock} in stock
                           </span>
                         )}
                       </div>
                       {!product.isAvailable && (
-                        <Badge variant="destructive" className="text-xs">
+                        <Badge variant="destructive" className="text-[10px] sm:text-xs flex-shrink-0">
                           Unavailable
                         </Badge>
                       )}
