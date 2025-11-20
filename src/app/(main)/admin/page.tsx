@@ -157,44 +157,11 @@ export default function AdminPanel() {
     tags: '',
     location: 'evergreen' as 'main-banner' | 'whats-new' | 'evergreen'
   });
-  const [newArticleContent, setNewArticleContent] = useState('');
+  const [newArticleSubheadline, setNewArticleSubheadline] = useState('');
+  const [newArticleBody, setNewArticleBody] = useState('');
   const [newArticleImageFile, setNewArticleImageFile] = useState<File | null>(null);
   const [newArticleImagePreview, setNewArticleImagePreview] = useState<string | null>(null);
   const [isPublishingArticle, setIsPublishingArticle] = useState(false);
-  const [articleSections, setArticleSections] = useState<ArticleSection[]>([]);
-  const [newSectionType, setNewSectionType] = useState<'headline' | 'subheadline' | 'intro' | 'body' | 'outro' | 'image' | 'text-image'>('headline');
-  const [newSectionContent, setNewSectionContent] = useState('');
-  const [newSectionImageFile, setNewSectionImageFile] = useState<File | null>(null);
-  const [newSectionImagePreview, setNewSectionImagePreview] = useState<string | null>(null);
-  const [newSectionImagePosition, setNewSectionImagePosition] = useState<'above' | 'below' | 'left' | 'right'>('above');
-  const [newSectionCaption, setNewSectionCaption] = useState('');
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [showAiSection, setShowAiSection] = useState(false);
-  // AI-assisted article structuring
-  const [aiRawText, setAiRawText] = useState('');
-  const [aiHeadlines, setAiHeadlines] = useState<string[]>([]);
-  const [aiHeadlineInput, setAiHeadlineInput] = useState('');
-  const [aiImageFiles, setAiImageFiles] = useState<File[]>([]);
-  const [aiImagePreviews, setAiImagePreviews] = useState<string[]>([]);
-  const [aiImageDescriptions, setAiImageDescriptions] = useState<string[]>([]);
-  const [isStructuringArticle, setIsStructuringArticle] = useState(false);
-  const [aiGeneratedSections, setAiGeneratedSections] = useState<ArticleSection[]>([]);
-  // Artist research for docuseries
-  const [artistResearchName, setArtistResearchName] = useState('');
-  const [artistResearchWebsite, setArtistResearchWebsite] = useState('');
-  const [artistResearchSocialLinks, setArtistResearchSocialLinks] = useState<string[]>([]);
-  const [artistResearchSocialInput, setArtistResearchSocialInput] = useState('');
-  const [artistResearchImages, setArtistResearchImages] = useState<File[]>([]);
-  const [artistResearchImagePreviews, setArtistResearchImagePreviews] = useState<string[]>([]);
-  const [artistResearchNotes, setArtistResearchNotes] = useState('');
-  const [isGeneratingDocuseries, setIsGeneratingDocuseries] = useState(false);
-  const [docuseriesDraft, setDocuseriesDraft] = useState<{
-    title: string;
-    summary: string;
-    sections: ArticleSection[];
-    tags: string[];
-    researchNotes?: string;
-  } | null>(null);
 
   useEffect(() => {
     const artistRequestsQuery = query(
@@ -712,146 +679,79 @@ export default function AdminPanel() {
     setVideoTags(videoTags.filter(tag => tag !== tagToRemove));
   };
 
-  // AI headline management
-  const addAiHeadline = () => {
-    if (aiHeadlineInput.trim() && !aiHeadlines.includes(aiHeadlineInput.trim())) {
-      setAiHeadlines([...aiHeadlines, aiHeadlineInput.trim()]);
-      setAiHeadlineInput('');
-    }
-  };
-
-  const removeAiHeadline = (index: number) => {
-    setAiHeadlines(aiHeadlines.filter((_, i) => i !== index));
-  };
-
-  const handleAiImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const newFiles = Array.from(files);
-    setAiImageFiles([...aiImageFiles, ...newFiles]);
-
-    // Create previews
-    newFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setAiImagePreviews((prev) => [...prev, event.target?.result as string]);
-      };
-      reader.readAsDataURL(file);
-      setAiImageDescriptions((prev) => [...prev, '']);
-    });
-  };
-
-  const removeAiImage = (index: number) => {
-    setAiImageFiles(aiImageFiles.filter((_, i) => i !== index));
-    setAiImagePreviews(aiImagePreviews.filter((_, i) => i !== index));
-    setAiImageDescriptions(aiImageDescriptions.filter((_, i) => i !== index));
-  };
-
-  const structureArticleWithAI = async () => {
-    if (!aiRawText.trim()) {
-      toast({
-        title: 'Raw text required',
-        description: 'Please enter some raw text to structure.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsStructuringArticle(true);
-    try {
-      // Upload images first
-      const imageUrls: string[] = [];
-      for (let i = 0; i < aiImageFiles.length; i++) {
-        try {
-          const file = aiImageFiles[i];
-          const fileName = `${Date.now()}_${i}_${file.name.replace(/\s+/g, '-')}`;
-          const storagePath = `news/sections/${fileName}`;
-          const storageRef = ref(storage, storagePath);
-          await uploadBytes(storageRef, file);
-          const url = await getDownloadURL(storageRef);
-          imageUrls.push(url);
-        } catch (error) {
-          console.error('Failed to upload image:', error);
+  // Rich text editor handlers for image paste and resize
+  const handleBodyPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) {
+          try {
+            const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
+            const storagePath = `news/articles/${fileName}`;
+            const storageRef = ref(storage, storagePath);
+            await uploadBytes(storageRef, file);
+            const imageUrl = await getDownloadURL(storageRef);
+            
+            // Insert image into contentEditable div
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              range.deleteContents();
+              
+              const img = document.createElement('img');
+              img.src = imageUrl;
+              img.style.maxWidth = '100%';
+              img.style.height = 'auto';
+              img.style.display = 'block';
+              img.style.margin = '1rem 0';
+              img.contentEditable = 'false';
+              img.draggable = true;
+              
+              // Make image resizable
+              img.addEventListener('mousedown', (e) => {
+                if (e.shiftKey) {
+                  e.preventDefault();
+                  const startX = e.pageX;
+                  const startWidth = img.offsetWidth;
+                  
+                  const onMouseMove = (e: MouseEvent) => {
+                    const diff = e.pageX - startX;
+                    const newWidth = Math.max(200, Math.min(1200, startWidth + diff));
+                    img.style.width = `${newWidth}px`;
+                  };
+                  
+                  const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                  };
+                  
+                  document.addEventListener('mousemove', onMouseMove);
+                  document.addEventListener('mouseup', onMouseUp);
+                }
+              });
+              
+              range.insertNode(img);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+            
+            toast({
+              title: 'Image pasted',
+              description: 'Image has been inserted into the article. Hold Shift and drag to resize.',
+            });
+          } catch (error) {
+            console.error('Failed to upload pasted image:', error);
+            toast({
+              title: 'Upload failed',
+              description: 'Could not upload pasted image. Please try again.',
+              variant: 'destructive'
+            });
+          }
         }
       }
-
-      // Prepare images with descriptions
-      const images = imageUrls.map((url, index) => ({
-        url,
-        description: aiImageDescriptions[index] || ''
-      }));
-
-      // Call AI API
-      const response = await fetch('/api/ai/structure-article', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rawText: aiRawText,
-          headlines: aiHeadlines,
-          images: images,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to structure article');
-      }
-
-      const data = await response.json();
-      setAiGeneratedSections(data.sections || []);
-
-      toast({
-        title: 'Article structured',
-        description: `Generated ${data.sections?.length || 0} sections. Review and accept to add them.`,
-      });
-    } catch (error) {
-      console.error('Error structuring article:', error);
-      toast({
-        title: 'Structuring failed',
-        description: error instanceof Error ? error.message : 'Failed to structure article. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsStructuringArticle(false);
     }
-  };
-
-  const acceptAiSections = () => {
-    if (aiGeneratedSections.length === 0) {
-      toast({
-        title: 'No sections to accept',
-        description: 'There are no AI-generated sections to accept.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Add AI-generated sections to article sections
-    const maxOrder = articleSections.length > 0 
-      ? Math.max(...articleSections.map(s => s.order))
-      : -1;
-    
-    const sectionsToAdd = aiGeneratedSections.map((section, index) => ({
-      ...section,
-      order: maxOrder + index + 1
-    }));
-
-    setArticleSections([...articleSections, ...sectionsToAdd]);
-    setAiGeneratedSections([]);
-
-    toast({
-      title: 'Sections added',
-      description: `Added ${sectionsToAdd.length} sections to your article.`,
-    });
-  };
-
-  const rejectAiSections = () => {
-    setAiGeneratedSections([]);
-    toast({
-      title: 'Sections rejected',
-      description: 'AI-generated sections have been cleared.',
-    });
   };
 
   const toggleCategory = (category: string) => {
@@ -1760,20 +1660,21 @@ export default function AdminPanel() {
         }
       }
 
-      // Prepare sections with correct order
-      const sortedSections = [...articleSections].sort((a, b) => a.order - b.order);
+      // Get body content from contentEditable div
+      const bodyElement = document.getElementById('article-body-editor') as HTMLDivElement;
+      const bodyContent = bodyElement?.innerHTML || newArticleBody;
       
       const docRef = await addDoc(collection(db, 'newsArticles'), {
         title: newArticle.title.trim(),
         summary: newArticle.summary.trim(),
+        subheadline: newArticleSubheadline.trim() || undefined,
         category: newArticle.category || 'Stories',
         author: newArticle.author?.trim() || '',
         imageUrl,
         externalUrl: newArticle.externalUrl?.trim() || '',
         featured: false,
         tags,
-        content: newArticleContent, // Keep for backward compatibility
-        sections: sortedSections.length > 0 ? sortedSections : undefined, // New rich sections
+        content: bodyContent, // Rich HTML content with images
         location: newArticle.location || 'evergreen',
         publishedAt: publishedAtDate,
         archived: false,
@@ -1793,7 +1694,7 @@ export default function AdminPanel() {
           externalUrl: newArticle.externalUrl?.trim() || '',
           featured: false,
           tags,
-          content: newArticleContent,
+          content: bodyContent,
           location: newArticle.location || 'evergreen',
           publishedAt: publishedAtDate,
           updatedAt: new Date(),
@@ -1818,16 +1719,14 @@ export default function AdminPanel() {
         tags: '',
         location: 'evergreen'
       });
-      setNewArticleContent('');
+      setNewArticleSubheadline('');
+      setNewArticleBody('');
+      const bodyEditor = document.getElementById('article-body-editor') as HTMLDivElement;
+      if (bodyEditor) {
+        bodyEditor.innerHTML = '';
+      }
       setNewArticleImageFile(null);
       setNewArticleImagePreview(null);
-      setArticleSections([]);
-      setNewSectionType('body');
-      setNewSectionContent('');
-      setNewSectionImageFile(null);
-      setNewSectionImagePreview(null);
-      setNewSectionImagePosition('above');
-      setNewSectionCaption('');
     } catch (error) {
       console.error('Failed to create news article:', error);
       toast({
@@ -1855,21 +1754,6 @@ export default function AdminPanel() {
     setNewArticle((prev) => ({ ...prev, imageUrl: '' }));
   };
 
-  const handleSectionImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setNewSectionImageFile(file);
-    const previewUrl = URL.createObjectURL(file);
-    setNewSectionImagePreview(previewUrl);
-  };
-
-  const clearSectionImage = () => {
-    setNewSectionImageFile(null);
-    setNewSectionImagePreview(null);
-  };
-
-  const addArticleSection = async () => {
     let imageUrl = '';
     
     // Upload section image if provided
@@ -3124,18 +3008,176 @@ export default function AdminPanel() {
 
         {selectedView === 'news-articles' && (
           <div className="space-y-6">
-            {/* Artist Research & Docuseries Generation */}
-            <Card className="border-primary/20 bg-primary/5">
+            {/* Article Editor */}
+            <Card id="article-editor">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  AI Artist Research & Docuseries Generator
-                </CardTitle>
+                <CardTitle>Create newsroom article</CardTitle>
                 <CardDescription>
-                  Research an artist and generate a complete docuseries article automatically. The article will be saved as a draft for your review.
+                  Publish Gouache editorial or link out to external coverage. Articles appear in the newsroom alongside sponsored tiles.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="news-title">Headline *</Label>
+                    <Input
+                      id="news-title"
+                      placeholder="e.g. Inside the Lagos Art Weekender"
+                      value={newArticle.title}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, title: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-subheadline">Subheadline</Label>
+                    <Input
+                      id="news-subheadline"
+                      placeholder="Optional subheadline"
+                      value={newArticleSubheadline}
+                      onChange={(e) => setNewArticleSubheadline(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-category">Category *</Label>
+                    <Select
+                      value={newArticle.category || 'Stories'}
+                      onValueChange={(value) => setNewArticle((prev) => ({ ...prev, category: value }))}
+                    >
+                      <SelectTrigger id="news-category">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Stories">Stories</SelectItem>
+                        <SelectItem value="Events">Events</SelectItem>
+                        <SelectItem value="News">News</SelectItem>
+                        <SelectItem value="Partners">Partners</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="news-author">Author</Label>
+                    <Input
+                      id="news-author"
+                      placeholder="Byline (optional)"
+                      value={newArticle.author}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, author: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="news-summary">Standfirst *</Label>
+                    <Textarea
+                      id="news-summary"
+                      rows={3}
+                      placeholder="One or two sentences summarising the story."
+                      value={newArticle.summary}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, summary: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="article-body-editor">Article Body *</Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Paste images directly into the editor. Hold Shift and drag images to resize them.
+                    </p>
+                    <div
+                      id="article-body-editor"
+                      contentEditable
+                      onPaste={handleBodyPaste}
+                      className="min-h-[400px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      style={{ whiteSpace: 'pre-wrap' }}
+                      suppressContentEditableWarning
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="news-image-upload">Upload hero image</Label>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <Input
+                        id="news-image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleNewsArticleImageChange}
+                      />
+                      {(newArticleImagePreview || newArticle.imageUrl) && (
+                        <Button variant="ghost" size="sm" type="button" onClick={clearNewsArticleImage}>
+                          Remove image
+                        </Button>
+                      )}
+                    </div>
+                    {(newArticleImagePreview || newArticle.imageUrl) && (
+                      <div className="mt-2">
+                        <img
+                          src={newArticleImagePreview || newArticle.imageUrl}
+                          alt="Article preview"
+                          className="h-32 w-full max-w-sm rounded-lg border object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="news-tags">Tags</Label>
+                    <Input
+                      id="news-tags"
+                      placeholder="Comma separated (e.g. art fair, investment, photography)"
+                      value={newArticle.tags}
+                      onChange={(event) => setNewArticle((prev) => ({ ...prev, tags: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-3 md:col-span-2">
+                    <Label>Article Location *</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Select where this article should appear on the news page:
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="location-main-banner"
+                          name="article-location"
+                          value="main-banner"
+                          checked={newArticle.location === 'main-banner'}
+                          onChange={(e) => setNewArticle((prev) => ({ ...prev, location: e.target.value as 'main-banner' | 'whats-new' | 'evergreen' }))}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="location-main-banner" className="font-normal cursor-pointer">
+                          Main Banner (Hero tile - first article)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="location-whats-new"
+                          name="article-location"
+                          value="whats-new"
+                          checked={newArticle.location === 'whats-new'}
+                          onChange={(e) => setNewArticle((prev) => ({ ...prev, location: e.target.value as 'main-banner' | 'whats-new' | 'evergreen' }))}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="location-whats-new" className="font-normal cursor-pointer">
+                          What&apos;s New (Featured section - articles 2-4)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="location-evergreen"
+                          name="article-location"
+                          value="evergreen"
+                          checked={newArticle.location === 'evergreen'}
+                          onChange={(e) => setNewArticle((prev) => ({ ...prev, location: e.target.value as 'main-banner' | 'whats-new' | 'evergreen' }))}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="location-evergreen" className="font-normal cursor-pointer">
+                          Evergreen Article (Normal article spaces - articles 5+)
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleCreateNewsArticle} disabled={isPublishingArticle}>
+                    {isPublishingArticle ? 'Publishing…' : 'Publish article'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Artist Name *</Label>
@@ -3459,26 +3501,7 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
 
-            <Card id="article-editor">
-              <CardHeader>
-                <CardTitle>Create newsroom article</CardTitle>
-                <CardDescription>
-                  Publish Gouache editorial or link out to external coverage. Articles appear in the newsroom alongside sponsored tiles.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="news-title">Headline *</Label>
-                    <Input
-                      id="news-title"
-                      placeholder="e.g. Inside the Lagos Art Weekender"
-                      value={newArticle.title}
-                      onChange={(event) => setNewArticle((prev) => ({ ...prev, title: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="news-category">Category *</Label>
+            <div className="space-y-4">
                     <Select
                       value={newArticle.category || 'Stories'}
                       onValueChange={(value) => setNewArticle((prev) => ({ ...prev, category: value }))}
@@ -4150,7 +4173,7 @@ export default function AdminPanel() {
                       {showArchivedNews
                         ? 'When you archive a story, it will move here so you can restore or permanently delete it later.'
                         : showDraftedArticles
-                        ? 'Drafted articles will appear here. Use the AI Artist Research tool above to generate articles automatically.'
+                        ? 'Drafted articles will appear here. Review and publish drafted articles.'
                         : 'Publish your first story to populate the newsroom feed.'}
                     </p>
                   </CardContent>
