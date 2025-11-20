@@ -24,81 +24,11 @@ export function AdminMainContent(props: any) {
   const router = useRouter();
   
   // Use props directly to avoid parser issues with large destructuring
-  const {
-    handleSignOut,
-    selectedView,
-    setSelectedView,
-    pendingRequests,
-    approvedRequests,
-    rejectedRequests,
-    suspendedRequests,
-    activeNewsArticles,
-    archivedNewsArticles,
-    publishedArticles,
-    draftedArticles,
-    visibleNewsArticles,
-    showArchivedNews,
-    setShowArchivedNews,
-    showDraftedArticles,
-    setShowDraftedArticles,
-    marketplaceProducts,
-    affiliateRequests,
-    userReports,
-    advertisingApplications,
-    advertisements,
-    advertisementAnalytics,
-    courses,
-    courseSubmissions,
-    newsArticles,
-    professionalArtists,
-    loadingArtists,
-    isProcessing,
-    selectedRequest,
-    setSelectedRequest,
-    handleApprove,
-    handleReject,
-    handleRemoveArtist,
-    handleTransferPortfolio,
-    handleSuspendArtist,
-    handleReinstateArtist,
-    handleApproveAdApplication,
-    handleRejectAdApplication,
-    handleProductUpload,
-    handleAdUpload,
-    handleDeleteProduct,
-    handleApproveAffiliateRequest,
-    handleRejectAffiliateRequest,
-    handleCreateNewsArticle,
-    handleArchiveNewsArticle,
-    handleDeleteNewsArticle,
-    handleUpdateReportStatus,
-    handleCoursePublish,
-    handleCourseUnpublish,
-    handleCourseSubmissionReview,
-    handleCourseDelete,
-    formatDate,
-    getStatusBadge,
-    user,
-    setShowAdUploadModal,
-    setShowUploadModal,
-    setNewArticle,
-    setNewArticleSubheadline,
-    setRejectionReason,
-    setProfessionalArtists,
-    handleBodyPaste,
-    handleNewsArticleImageChange,
-    clearNewsArticleImage,
-    newArticle,
-    newArticleSubheadline,
-    newArticleImagePreview,
-    newArticleImageFile
-  } = props;
-  
   return (
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-        <Button variant="outline" onClick={handleSignOut} className="flex items-center gap-2">
+        <Button variant="outline" onClick={props.handleSignOut} className="flex items-center gap-2">
           <X className="h-4 w-4" />
           Logout
         </Button>
@@ -113,63 +43,63 @@ export function AdminMainContent(props: any) {
           </CardHeader>
           <CardContent className="space-y-2">
             <button
-              onClick={() => setSelectedView('artist-management')}
+              onClick={() => props.setSelectedView('artist-management')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'artist-management' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'artist-management' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="flex items-center gap-2 text-sm">
                 <Users className="h-4 w-4" />
                 Manage Artists
               </span>
-              <Badge variant={selectedView === 'artist-management' ? 'secondary' : 'outline'}>
-                ({approvedRequests.length})
+              <Badge variant={props.selectedView === 'artist-management' ? 'secondary' : 'outline'}>
+                ({props.approvedRequests.length})
               </Badge>
             </button>
             <button
-              onClick={() => setSelectedView('artist-pending')}
+              onClick={() => props.setSelectedView('artist-pending')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'artist-pending' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'artist-pending' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Pending</span>
-              <Badge variant={selectedView === 'artist-pending' ? 'secondary' : 'outline'}>({pendingRequests.length})</Badge>
+              <Badge variant={props.selectedView === 'artist-pending' ? 'secondary' : 'outline'}>({props.pendingRequests.length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('artist-approved')}
+              onClick={() => props.setSelectedView('artist-approved')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'artist-approved' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'artist-approved' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Approved</span>
-              <Badge variant={selectedView === 'artist-approved' ? 'secondary' : 'outline'}>({approvedRequests.length})</Badge>
+              <Badge variant={props.selectedView === 'artist-approved' ? 'secondary' : 'outline'}>({props.approvedRequests.length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('artist-rejected')}
+              onClick={() => props.setSelectedView('artist-rejected')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'artist-rejected' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'artist-rejected' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Rejected</span>
-              <Badge variant={selectedView === 'artist-rejected' ? 'secondary' : 'outline'}>({rejectedRequests.length})</Badge>
+              <Badge variant={props.selectedView === 'artist-rejected' ? 'secondary' : 'outline'}>({props.rejectedRequests.length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('artist-suspended')}
+              onClick={() => props.setSelectedView('artist-suspended')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'artist-suspended' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'artist-suspended' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Suspended</span>
-              <Badge variant={selectedView === 'artist-suspended' ? 'secondary' : 'outline'}>({suspendedRequests.length})</Badge>
+              <Badge variant={props.selectedView === 'artist-suspended' ? 'secondary' : 'outline'}>({props.suspendedRequests.length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('artist-invites')}
+              onClick={() => props.setSelectedView('artist-invites')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'artist-invites' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'artist-invites' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Invite Console</span>
-              <Badge variant={selectedView === 'artist-invites' ? 'secondary' : 'outline'}>New</Badge>
+              <Badge variant={props.selectedView === 'artist-invites' ? 'secondary' : 'outline'}>New</Badge>
             </button>
           </CardContent>
         </Card>
@@ -184,14 +114,14 @@ export function AdminMainContent(props: any) {
           </CardHeader>
           <CardContent className="space-y-2">
             <button
-              onClick={() => setSelectedView('news-articles')}
+              onClick={() => props.setSelectedView('news-articles')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'news-articles' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'news-articles' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Articles</span>
-              <Badge variant={selectedView === 'news-articles' ? 'secondary' : 'outline'}>
-                ({activeNewsArticles.length})
+              <Badge variant={props.selectedView === 'news-articles' ? 'secondary' : 'outline'}>
+                ({props.activeNewsArticles.length})
               </Badge>
             </button>
           </CardContent>
@@ -207,31 +137,31 @@ export function AdminMainContent(props: any) {
           </CardHeader>
           <CardContent className="space-y-2">
             <button
-              onClick={() => setSelectedView('marketplace-products')}
+              onClick={() => props.setSelectedView('marketplace-products')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'marketplace-products' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'marketplace-products' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Products</span>
-              <Badge variant={selectedView === 'marketplace-products' ? 'secondary' : 'outline'}>({marketplaceProducts.length})</Badge>
+              <Badge variant={props.selectedView === 'marketplace-products' ? 'secondary' : 'outline'}>({props.marketplaceProducts.length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('marketplace-requests')}
+              onClick={() => props.setSelectedView('marketplace-requests')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'marketplace-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'marketplace-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Requests</span>
-              <Badge variant={selectedView === 'marketplace-requests' ? 'secondary' : 'outline'}>({affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
+              <Badge variant={props.selectedView === 'marketplace-requests' ? 'secondary' : 'outline'}>({props.affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('marketplace-archived')}
+              onClick={() => props.setSelectedView('marketplace-archived')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'marketplace-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'marketplace-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Archived</span>
-              <Badge variant={selectedView === 'marketplace-archived' ? 'secondary' : 'outline'}>(0)</Badge>
+              <Badge variant={props.selectedView === 'marketplace-archived' ? 'secondary' : 'outline'}>(0)</Badge>
             </button>
           </CardContent>
         </Card>
@@ -246,31 +176,31 @@ export function AdminMainContent(props: any) {
           </CardHeader>
           <CardContent className="space-y-2">
             <button
-              onClick={() => setSelectedView('marketplace-products')}
+              onClick={() => props.setSelectedView('marketplace-products')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'marketplace-products' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'marketplace-products' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">All Products</span>
-              <Badge variant={selectedView === 'marketplace-products' ? 'secondary' : 'outline'}>({marketplaceProducts.length})</Badge>
+              <Badge variant={props.selectedView === 'marketplace-products' ? 'secondary' : 'outline'}>({props.marketplaceProducts.length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('marketplace-active')}
+              onClick={() => props.setSelectedView('marketplace-active')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'marketplace-active' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'marketplace-active' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Active Products</span>
-              <Badge variant={selectedView === 'marketplace-active' ? 'secondary' : 'outline'}>({marketplaceProducts.filter(p => p.isActive).length})</Badge>
+              <Badge variant={props.selectedView === 'marketplace-active' ? 'secondary' : 'outline'}>({props.marketplaceProducts.filter(p => p.isActive).length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('marketplace-requests')}
+              onClick={() => props.setSelectedView('marketplace-requests')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'marketplace-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'marketplace-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Product Requests</span>
-              <Badge variant={selectedView === 'marketplace-requests' ? 'secondary' : 'outline'}>({affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
+              <Badge variant={props.selectedView === 'marketplace-requests' ? 'secondary' : 'outline'}>({props.affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
             </button>
           </CardContent>
         </Card>
@@ -285,14 +215,14 @@ export function AdminMainContent(props: any) {
           </CardHeader>
           <CardContent className="space-y-2">
             <button
-              onClick={() => setSelectedView('user-reports')}
+              onClick={() => props.setSelectedView('props.user-reports')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'user-reports' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'props.user-reports' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Reports</span>
-              <Badge variant={selectedView === 'user-reports' ? 'secondary' : 'outline'}>
-                ({userReports.filter(r => r.status === 'pending').length})
+              <Badge variant={props.selectedView === 'props.user-reports' ? 'secondary' : 'outline'}>
+                ({props.userReports.filter(r => r.status === 'pending').length})
               </Badge>
             </button>
           </CardContent>
@@ -308,49 +238,49 @@ export function AdminMainContent(props: any) {
           </CardHeader>
           <CardContent className="space-y-2">
             <button
-              onClick={() => setSelectedView('advertising-live')}
+              onClick={() => props.setSelectedView('advertising-live')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'advertising-live' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'advertising-live' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Live Media</span>
-              <Badge variant={selectedView === 'advertising-live' ? 'secondary' : 'outline'}>({advertisingApplications.filter(app => app.status === 'approved').length})</Badge>
+              <Badge variant={props.selectedView === 'advertising-live' ? 'secondary' : 'outline'}>({props.advertisingApplications.filter(app => app.status === 'approved').length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('advertising-requests')}
+              onClick={() => props.setSelectedView('advertising-requests')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'advertising-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'advertising-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Requests</span>
-              <Badge variant={selectedView === 'advertising-requests' ? 'secondary' : 'outline'}>({advertisingApplications.filter(app => app.status === 'pending').length})</Badge>
+              <Badge variant={props.selectedView === 'advertising-requests' ? 'secondary' : 'outline'}>({props.advertisingApplications.filter(app => app.status === 'pending').length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('advertising-archived')}
+              onClick={() => props.setSelectedView('advertising-archived')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'advertising-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'advertising-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Archived</span>
-              <Badge variant={selectedView === 'advertising-archived' ? 'secondary' : 'outline'}>(0)</Badge>
+              <Badge variant={props.selectedView === 'advertising-archived' ? 'secondary' : 'outline'}>(0)</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('advertising-media')}
+              onClick={() => props.setSelectedView('advertising-media')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'advertising-media' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'advertising-media' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Media Ads</span>
-              <Badge variant={selectedView === 'advertising-media' ? 'secondary' : 'outline'}>({advertisements.length})</Badge>
+              <Badge variant={props.selectedView === 'advertising-media' ? 'secondary' : 'outline'}>({props.advertisements.length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('advertising-analytics')}
+              onClick={() => props.setSelectedView('advertising-analytics')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'advertising-analytics' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'advertising-analytics' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Analytics</span>
-              <Badge variant={selectedView === 'advertising-analytics' ? 'secondary' : 'outline'}>({advertisementAnalytics.length})</Badge>
+              <Badge variant={props.selectedView === 'advertising-analytics' ? 'secondary' : 'outline'}>({props.advertisementAnalytics.length})</Badge>
             </button>
           </CardContent>
         </Card>
@@ -359,11 +289,11 @@ export function AdminMainContent(props: any) {
 
       {/* Upload Buttons */}
       <div className="flex justify-end gap-4 mb-6">
-        <Button onClick={() => setShowAdUploadModal(true)} className="flex items-center gap-2">
+        <Button onClick={() => props.setShowAdUploadModal(true)} className="flex items-center gap-2">
           <Megaphone className="h-4 w-4" />
           Upload Ad
         </Button>
-        <Button onClick={() => setShowUploadModal(true)} className="flex items-center gap-2">
+        <Button onClick={() => props.setShowUploadModal(true)} className="flex items-center gap-2">
           <Upload className="h-4 w-4" />
           Upload Content
         </Button>
@@ -371,7 +301,7 @@ export function AdminMainContent(props: any) {
 
       {/* Main Content Area */}
       <div className="space-y-6">
-        {selectedView === 'artist-management' && (
+        {props.selectedView === 'artist-management' && (
           <div className="space-y-6">
             {/* Verified Status Management */}
             <Card>
@@ -382,15 +312,15 @@ export function AdminMainContent(props: any) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loadingArtists ? (
+                {props.loadingArtists ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
-                ) : professionalArtists.length === 0 ? (
+                ) : props.professionalArtists.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No professional artists found.</p>
                 ) : (
                   <div className="space-y-4">
-                    {professionalArtists.map((artist) => (
+                    {props.professionalArtists.map((artist) => (
                       <div
                         key={artist.id}
                         className="flex items-center justify-between p-4 border rounded-lg"
@@ -422,7 +352,7 @@ export function AdminMainContent(props: any) {
                                     isVerified: checked,
                                     updatedAt: serverTimestamp()
                                   });
-                                  setProfessionalArtists(prev =>
+                                  props.setProfessionalArtists(prev =>
                                     prev.map(a => a.id === artist.id ? { ...a, isVerified: checked } : a)
                                   );
                                   toast({
@@ -467,12 +397,12 @@ export function AdminMainContent(props: any) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {approvedRequests.length === 0 ? (
+                {props.approvedRequests.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     No verified artists have been approved yet.
                   </p>
                 ) : (
-                  approvedRequests.map((request) => (
+                  props.approvedRequests.map((request) => (
                     <div
                       key={request.id}
                       className="rounded-lg border border-border/60 p-4 transition hover:bg-muted/50"
@@ -480,24 +410,24 @@ export function AdminMainContent(props: any) {
                       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex items-start gap-4">
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={request.user.avatarUrl || ''} alt={request.user.displayName} />
-                            <AvatarFallback>{request.user.displayName?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
+                            <AvatarImage src={request.props.user.avatarUrl || ''} alt={request.props.user.displayName} />
+                            <AvatarFallback>{request.props.user.displayName?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
                           </Avatar>
                           <div className="space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-base font-semibold leading-snug">
-                                {request.user.displayName || request.user.username || request.user.email}
+                                {request.props.user.displayName || request.props.user.username || request.props.user.email}
                               </h3>
                               <Badge variant="default" className="bg-emerald-600 text-emerald-50">
                                 Approved
                               </Badge>
                             </div>
-                            {request.user.username && (
-                              <p className="text-sm text-muted-foreground">@{request.user.username}</p>
+                            {request.props.user.username && (
+                              <p className="text-sm text-muted-foreground">@{request.props.user.username}</p>
                             )}
                             <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                              <span>Email: {request.user.email}</span>
-                              <span>Reviewed: {formatDate(request.reviewedAt)}</span>
+                              <span>Email: {request.props.user.email}</span>
+                              <span>Reviewed: {props.formatDate(request.reviewedAt)}</span>
                               {request.reviewedBy && <span>Reviewed by: {request.reviewedBy}</span>}
                             </div>
                           </div>
@@ -506,7 +436,7 @@ export function AdminMainContent(props: any) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/profile/${request.user.username || request.userId}`)}
+                            onClick={() => router.push(`/profile/${request.props.user.username || request.userId}`)}
                           >
                             <ExternalLink className="mr-1 h-4 w-4" />
                             View Profile
@@ -514,14 +444,14 @@ export function AdminMainContent(props: any) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleSuspendArtist(request)}
-                            disabled={isProcessing}
+                            onClick={() => props.handleSuspendArtist(request)}
+                            disabled={props.isProcessing}
                           >
                             Suspend
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm" disabled={isProcessing}>
+                              <Button variant="destructive" size="sm" disabled={props.isProcessing}>
                                 Remove
                               </Button>
                             </AlertDialogTrigger>
@@ -535,7 +465,7 @@ export function AdminMainContent(props: any) {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleRemoveArtist(request)}
+                                  onClick={() => props.handleRemoveArtist(request)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Confirm removal
@@ -559,10 +489,10 @@ export function AdminMainContent(props: any) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {suspendedRequests.length === 0 ? (
+                {props.suspendedRequests.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No artists are currently suspended.</p>
                 ) : (
-                  suspendedRequests.map((request) => (
+                  props.suspendedRequests.map((request) => (
                     <div
                       key={request.id}
                       className="rounded-lg border border-border/60 p-4 transition hover:bg-muted/50"
@@ -570,22 +500,22 @@ export function AdminMainContent(props: any) {
                       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex items-start gap-4">
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={request.user.avatarUrl || ''} alt={request.user.displayName} />
-                            <AvatarFallback>{request.user.displayName?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
+                            <AvatarImage src={request.props.user.avatarUrl || ''} alt={request.props.user.displayName} />
+                            <AvatarFallback>{request.props.user.displayName?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
                           </Avatar>
                           <div className="space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-base font-semibold leading-snug">
-                                {request.user.displayName || request.user.username || request.user.email}
+                                {request.props.user.displayName || request.props.user.username || request.props.user.email}
                               </h3>
                               <Badge variant="destructive">Suspended</Badge>
                             </div>
-                            {request.user.username && (
-                              <p className="text-sm text-muted-foreground">@{request.user.username}</p>
+                            {request.props.user.username && (
+                              <p className="text-sm text-muted-foreground">@{request.props.user.username}</p>
                             )}
                             <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                              <span>Email: {request.user.email}</span>
-                              <span>Suspended: {formatDate(request.reviewedAt)}</span>
+                              <span>Email: {request.props.user.email}</span>
+                              <span>Suspended: {props.formatDate(request.reviewedAt)}</span>
                               {request.reviewedBy && <span>By: {request.reviewedBy}</span>}
                             </div>
                           </div>
@@ -594,21 +524,21 @@ export function AdminMainContent(props: any) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/profile/${request.user.username || request.userId}`)}
+                            onClick={() => router.push(`/profile/${request.props.user.username || request.userId}`)}
                           >
                             <ExternalLink className="mr-1 h-4 w-4" />
                             View Profile
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => handleReinstateArtist(request)}
-                            disabled={isProcessing}
+                            onClick={() => props.handleReinstateArtist(request)}
+                            disabled={props.isProcessing}
                           >
                             Reinstate
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm" disabled={isProcessing}>
+                              <Button variant="destructive" size="sm" disabled={props.isProcessing}>
                                 Remove
                               </Button>
                             </AlertDialogTrigger>
@@ -622,7 +552,7 @@ export function AdminMainContent(props: any) {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleRemoveArtist(request)}
+                                  onClick={() => props.handleRemoveArtist(request)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Confirm removal
@@ -641,14 +571,14 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Artist Account - Pending */}
-        {selectedView === 'artist-invites' && (
+        {props.selectedView === 'artist-invites' && (
           <div className="space-y-6">
             <ArtistInviteConsole />
           </div>
         )}
 
-        {selectedView === 'artist-pending' && (
-          pendingRequests.length === 0 ? (
+        {props.selectedView === 'artist-pending' && (
+          props.pendingRequests.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Clock className="h-12 w-12 text-muted-foreground mb-4" />
@@ -661,25 +591,25 @@ export function AdminMainContent(props: any) {
             ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Pending Professional Verification Requests</h2>
-              {pendingRequests.map((request) => (
+              {props.pendingRequests.map((request) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.user.avatarUrl || ''} />
+                          <AvatarImage src={request.props.user.avatarUrl || ''} />
                           <AvatarFallback>
-                            {request.user.displayName?.charAt(0) || 'U'}
+                            {request.props.user.displayName?.charAt(0) || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
+                            <h3 className="text-lg font-semibold">{request.props.user.displayName}</h3>
                             <Badge variant="outline">Pending</Badge>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
                         <div>
-                              <p><strong>Email:</strong> {request.user.email}</p>
+                              <p><strong>Email:</strong> {request.props.user.email}</p>
                               <p><strong>Experience:</strong> {request.experience}</p>
                         </div>
                             <div>
@@ -696,15 +626,15 @@ export function AdminMainContent(props: any) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedRequest(request)}
+                          onClick={() => props.setSelectedRequest(request)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => handleApprove(request)}
-                          disabled={isProcessing}
+                          onClick={() => props.handleApprove(request)}
+                          disabled={props.isProcessing}
                         >
                           <Check className="h-4 w-4 mr-1" />
                           Approve
@@ -713,10 +643,10 @@ export function AdminMainContent(props: any) {
                           variant="destructive"
                           size="sm"
                           onClick={() => {
-                            setSelectedRequest(request);
-                            setRejectionReason('');
+                            props.setSelectedRequest(request);
+                            props.setRejectionReason('');
                           }}
-                          disabled={isProcessing}
+                          disabled={props.isProcessing}
                         >
                           <X className="h-4 w-4 mr-1" />
                           Reject
@@ -731,8 +661,8 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Artist Account - Approved */}
-        {selectedView === 'artist-approved' && (
-          approvedRequests.length === 0 ? (
+        {props.selectedView === 'artist-approved' && (
+          props.approvedRequests.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Check className="h-12 w-12 text-green-500 mb-4" />
@@ -745,37 +675,37 @@ export function AdminMainContent(props: any) {
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Verified Professional Artists</h2>
-              {approvedRequests.map((request) => (
+              {props.approvedRequests.map((request) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.user.avatarUrl || ''} />
-                          <AvatarFallback>{request.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                          <AvatarImage src={request.props.user.avatarUrl || ''} />
+                          <AvatarFallback>{request.props.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
+                            <h3 className="text-lg font-semibold">{request.props.user.displayName}</h3>
                             <Badge variant="default" className="bg-green-600">Approved</Badge>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                            <p><strong>Email:</strong> {request.user.email}</p>
+                            <p><strong>Email:</strong> {request.props.user.email}</p>
                             <p><strong>Reviewed:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
                             <p><strong>Reviewed by:</strong> {request.reviewedBy || 'admin'}</p>
                           </div>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setSelectedRequest(request)}>
+                        <Button variant="outline" size="sm" onClick={() => props.setSelectedRequest(request)}>
                           <Eye className="h-4 w-4 mr-1" /> View Details
                         </Button>
                         {request.portfolioImages && request.portfolioImages.length > 0 && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleTransferPortfolio(request)}
-                            disabled={isProcessing}
+                            onClick={() => props.handleTransferPortfolio(request)}
+                            disabled={props.isProcessing}
                             className="text-blue-600 hover:text-blue-700 border-blue-200"
                           >
                             <Upload className="h-4 w-4 mr-1" /> Transfer Portfolio
@@ -784,14 +714,14 @@ export function AdminMainContent(props: any) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleSuspendArtist(request)}
-                          disabled={isProcessing}
+                          onClick={() => props.handleSuspendArtist(request)}
+                          disabled={props.isProcessing}
                         >
                           Suspend
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" disabled={isProcessing}>
+                            <Button variant="destructive" size="sm" disabled={props.isProcessing}>
                               Remove
                             </Button>
                           </AlertDialogTrigger>
@@ -805,7 +735,7 @@ export function AdminMainContent(props: any) {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleRemoveArtist(request)}
+                                onClick={() => props.handleRemoveArtist(request)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
                                 Remove
@@ -822,8 +752,8 @@ export function AdminMainContent(props: any) {
           )
         )}
 
-        {selectedView === 'artist-suspended' && (
-          suspendedRequests.length === 0 ? (
+        {props.selectedView === 'artist-suspended' && (
+          props.suspendedRequests.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Clock className="h-12 w-12 text-muted-foreground mb-4" />
@@ -836,22 +766,22 @@ export function AdminMainContent(props: any) {
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Suspended Artists</h2>
-              {suspendedRequests.map((request) => (
+              {props.suspendedRequests.map((request) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow border-amber-200">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.user.avatarUrl || ''} />
-                          <AvatarFallback>{request.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                          <AvatarImage src={request.props.user.avatarUrl || ''} />
+                          <AvatarFallback>{request.props.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
+                            <h3 className="text-lg font-semibold">{request.props.user.displayName}</h3>
                             <Badge variant="secondary" className="bg-amber-500 text-black">Suspended</Badge>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                            <p><strong>Email:</strong> {request.user.email}</p>
+                            <p><strong>Email:</strong> {request.props.user.email}</p>
                             <p><strong>Suspended:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
                             <p><strong>Suspended by:</strong> {request.reviewedBy || 'admin'}</p>
                           </div>
@@ -861,14 +791,14 @@ export function AdminMainContent(props: any) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleReinstateArtist(request)}
-                          disabled={isProcessing}
+                          onClick={() => props.handleReinstateArtist(request)}
+                          disabled={props.isProcessing}
                         >
                           Reinstate
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" disabled={isProcessing}>
+                            <Button variant="destructive" size="sm" disabled={props.isProcessing}>
                               Remove
                             </Button>
                           </AlertDialogTrigger>
@@ -882,7 +812,7 @@ export function AdminMainContent(props: any) {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleRemoveArtist(request)}
+                                onClick={() => props.handleRemoveArtist(request)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
                                 Remove
@@ -899,8 +829,8 @@ export function AdminMainContent(props: any) {
           )
         )}
 
-        {selectedView === 'artist-rejected' && (
-          rejectedRequests.length === 0 ? (
+        {props.selectedView === 'artist-rejected' && (
+          props.rejectedRequests.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <X className="h-12 w-12 text-red-500 mb-4" />
@@ -913,18 +843,18 @@ export function AdminMainContent(props: any) {
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Rejected Professional Verification Requests</h2>
-              {rejectedRequests.map((request) => (
+              {props.rejectedRequests.map((request) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.user.avatarUrl || ''} />
-                          <AvatarFallback>{request.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                          <AvatarImage src={request.props.user.avatarUrl || ''} />
+                          <AvatarFallback>{request.props.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
+                            <h3 className="text-lg font-semibold">{request.props.user.displayName}</h3>
                             <Badge variant="destructive">Rejected</Badge>
                           </div>
                           <div className="text-sm text-muted-foreground space-y-1">
@@ -934,12 +864,12 @@ export function AdminMainContent(props: any) {
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setSelectedRequest(request)}>
+                        <Button variant="outline" size="sm" onClick={() => props.setSelectedRequest(request)}>
                           <Eye className="h-4 w-4 mr-1" /> View Details
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" disabled={isProcessing}>
+                            <Button variant="destructive" size="sm" disabled={props.isProcessing}>
                               Remove
                             </Button>
                           </AlertDialogTrigger>
@@ -953,7 +883,7 @@ export function AdminMainContent(props: any) {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleRemoveArtist(request)}
+                                onClick={() => props.handleRemoveArtist(request)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
                                 Remove
@@ -970,7 +900,7 @@ export function AdminMainContent(props: any) {
           )
         )}
 
-        {selectedView === 'news-articles' && (
+        {props.selectedView === 'news-articles' && (
           <div className="space-y-6">
             {/* Article Editor */}
             <Card id="article-editor">
@@ -987,8 +917,8 @@ export function AdminMainContent(props: any) {
                     <Input
                       id="news-title"
                       placeholder="e.g. Inside the Lagos Art Weekender"
-                      value={newArticle.title}
-                      onChange={(event) => setNewArticle((prev) => ({ ...prev, title: event.target.value }))}
+                      value={props.newArticle.title}
+                      onChange={(event) => props.setNewArticle((prev) => ({ ...prev, title: event.target.value }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -996,8 +926,8 @@ export function AdminMainContent(props: any) {
                     <Input
                       id="news-subheadline"
                       placeholder="Optional subheadline"
-                      value={newArticleSubheadline}
-                      onChange={(e) => setNewArticleSubheadline(e.target.value)}
+                      value={props.newArticleSubheadline}
+                      onChange={(e) => props.setNewArticleSubheadline(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1008,7 +938,7 @@ export function AdminMainContent(props: any) {
                     <div
                       id="article-body-editor"
                       contentEditable
-                      onPaste={handleBodyPaste}
+                      onPaste={props.handleBodyPaste}
                       className="min-h-[500px] w-full rounded-lg border border-input bg-background px-4 py-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       style={{ whiteSpace: 'pre-wrap' }}
                       suppressContentEditableWarning
@@ -1016,7 +946,7 @@ export function AdminMainContent(props: any) {
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={handleCreateNewsArticle} disabled={isPublishingArticle || !newArticle.title.trim()}>
+                  <Button onClick={props.handleCreateNewsArticle} disabled={isPublishingArticle || !props.newArticle.title.trim()}>
                     {isPublishingArticle ? 'Publishing…' : 'Publish article'}
                   </Button>
                 </div>
@@ -1027,16 +957,16 @@ export function AdminMainContent(props: any) {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-xl font-semibold">
-                    {showArchivedNews 
+                    {props.showArchivedNews 
                       ? 'Archived articles' 
-                      : showDraftedArticles
+                      : props.showDraftedArticles
                       ? 'Drafted articles'
                       : 'Published articles'}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    {showArchivedNews
+                    {props.showArchivedNews
                       ? 'Review past stories and restore any that should return to the feed.'
-                      : showDraftedArticles
+                      : props.showDraftedArticles
                       ? 'Review and publish drafted articles. Make final edits before publishing.'
                       : 'Manage everything currently live in the newsroom feed.'}
                   </p>
@@ -1045,53 +975,53 @@ export function AdminMainContent(props: any) {
                   <Button
                     type="button"
                     size="sm"
-                    variant={!showArchivedNews && !showDraftedArticles ? 'secondary' : 'outline'}
+                    variant={!props.showArchivedNews && !props.showDraftedArticles ? 'secondary' : 'outline'}
                     onClick={() => {
-                      setShowArchivedNews(false);
-                      setShowDraftedArticles(false);
+                      props.setShowArchivedNews(false);
+                      props.setShowDraftedArticles(false);
                     }}
                   >
-                    Published ({publishedArticles.length})
+                    Published ({props.publishedArticles.length})
                   </Button>
                   <Button
                     type="button"
                     size="sm"
-                    variant={showDraftedArticles && !showArchivedNews ? 'secondary' : 'outline'}
+                    variant={props.showDraftedArticles && !props.showArchivedNews ? 'secondary' : 'outline'}
                     onClick={() => {
-                      setShowArchivedNews(false);
-                      setShowDraftedArticles(true);
+                      props.setShowArchivedNews(false);
+                      props.setShowDraftedArticles(true);
                     }}
                   >
-                    Drafted ({draftedArticles.length})
+                    Drafted ({props.draftedArticles.length})
                   </Button>
                   <Button
                     type="button"
                     size="sm"
-                    variant={showArchivedNews ? 'secondary' : 'outline'}
+                    variant={props.showArchivedNews ? 'secondary' : 'outline'}
                     onClick={() => {
-                      setShowArchivedNews(true);
-                      setShowDraftedArticles(false);
+                      props.setShowArchivedNews(true);
+                      props.setShowDraftedArticles(false);
                     }}
                   >
-                    Archived ({archivedNewsArticles.length})
+                    Archived ({props.archivedNewsArticles.length})
                   </Button>
                 </div>
               </div>
 
-              {visibleNewsArticles.length === 0 ? (
+              {props.visibleNewsArticles.length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center space-y-2">
                     <h3 className="text-lg font-semibold">
-                      {showArchivedNews 
+                      {props.showArchivedNews 
                         ? 'No archived stories yet' 
-                        : showDraftedArticles 
+                        : props.showDraftedArticles 
                         ? 'No drafted articles yet'
                         : 'No stories published yet'}
                     </h3>
                     <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                      {showArchivedNews
+                      {props.showArchivedNews
                         ? 'When you archive a story, it will move here so you can restore or permanently delete it later.'
-                        : showDraftedArticles
+                        : props.showDraftedArticles
                         ? 'Drafted articles will appear here. Review and publish drafted articles.'
                         : 'Publish your first story to populate the newsroom feed.'}
                     </p>
@@ -1099,7 +1029,7 @@ export function AdminMainContent(props: any) {
                 </Card>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {visibleNewsArticles.map((article) => (
+                  {props.visibleNewsArticles.map((article) => (
                     <Card key={article.id} className="flex flex-col overflow-hidden">
                       <div className="relative w-full pt-[60%]">
                         <img
@@ -1144,7 +1074,7 @@ export function AdminMainContent(props: any) {
                                   onClick={async () => {
                                     try {
                                       // Load draft into editor
-                                      const articleDoc = await getDoc(doc(db, 'newsArticles', article.id));
+                                      const articleDoc = await getDoc(doc(db, 'props.newsArticles', article.id));
                                       if (!articleDoc.exists()) {
                                         toast({
                                           title: 'Article not found',
@@ -1155,7 +1085,7 @@ export function AdminMainContent(props: any) {
 
                                       const data = articleDoc.data();
                                       
-                                      setNewArticle({
+                                      props.setNewArticle({
                                         title: data.title || '',
                                         summary: data.summary || '',
                                         category: data.category || 'Stories',
@@ -1200,7 +1130,7 @@ export function AdminMainContent(props: any) {
                                   size="sm"
                                   onClick={async () => {
                                     try {
-                                      await updateDoc(doc(db, 'newsArticles', article.id), {
+                                      await updateDoc(doc(db, 'props.newsArticles', article.id), {
                                         status: 'published',
                                         publishedAt: serverTimestamp(),
                                         updatedAt: serverTimestamp(),
@@ -1226,7 +1156,7 @@ export function AdminMainContent(props: any) {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleArchiveNewsArticle(article, !article.archived)}
+                              onClick={() => props.handleArchiveNewsArticle(article, !article.archived)}
                             >
                               {article.archived ? 'Restore' : 'Archive'}
                             </Button>
@@ -1234,7 +1164,7 @@ export function AdminMainContent(props: any) {
                               variant="ghost"
                               size="sm"
                               className="text-destructive"
-                              onClick={() => handleDeleteNewsArticle(article)}
+                              onClick={() => props.handleDeleteNewsArticle(article)}
                             >
                               Delete
                             </Button>
@@ -1250,7 +1180,7 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* User Reports */}
-        {selectedView === 'user-reports' && (
+        {props.selectedView === 'props.user-reports' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -1260,11 +1190,11 @@ export function AdminMainContent(props: any) {
                 </p>
               </div>
               <Badge variant="outline">
-                {userReports.filter(r => r.status === 'pending').length} pending
+                {props.userReports.filter(r => r.status === 'pending').length} pending
               </Badge>
             </div>
 
-            {userReports.length === 0 ? (
+            {props.userReports.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-16">
                   <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
@@ -1276,7 +1206,7 @@ export function AdminMainContent(props: any) {
               </Card>
             ) : (
               <div className="space-y-4">
-                {userReports.map((report) => (
+                {props.userReports.map((report) => (
                   <Card key={report.id} className="hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
                       <div className="space-y-4">
@@ -1344,24 +1274,24 @@ export function AdminMainContent(props: any) {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleUpdateReportStatus(report, 'reviewed')}
-                                disabled={isProcessing}
+                                onClick={() => props.handleUpdateReportStatus(report, 'reviewed')}
+                                disabled={props.isProcessing}
                               >
                                 Mark as Reviewed
                               </Button>
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => handleUpdateReportStatus(report, 'resolved')}
-                                disabled={isProcessing}
+                                onClick={() => props.handleUpdateReportStatus(report, 'resolved')}
+                                disabled={props.isProcessing}
                               >
                                 Mark as Resolved
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleUpdateReportStatus(report, 'dismissed')}
-                                disabled={isProcessing}
+                                onClick={() => props.handleUpdateReportStatus(report, 'dismissed')}
+                                disabled={props.isProcessing}
                               >
                                 Dismiss
                               </Button>
@@ -1371,8 +1301,8 @@ export function AdminMainContent(props: any) {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleUpdateReportStatus(report, 'pending')}
-                              disabled={isProcessing}
+                              onClick={() => props.handleUpdateReportStatus(report, 'pending')}
+                              disabled={props.isProcessing}
                             >
                               Reopen
                             </Button>
@@ -1388,8 +1318,8 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Marketplace - Products */}
-        {selectedView === 'marketplace-products' && (
-          marketplaceProducts.length === 0 ? (
+        {props.selectedView === 'marketplace-products' && (
+          props.marketplaceProducts.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
@@ -1402,7 +1332,7 @@ export function AdminMainContent(props: any) {
           ) : (
           <div className="space-y-4">
               <h2 className="text-2xl font-bold">All Products</h2>
-              {marketplaceProducts.map((product) => (
+              {props.marketplaceProducts.map((product) => (
                 <Card key={product.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -1442,8 +1372,8 @@ export function AdminMainContent(props: any) {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDeleteProduct(product)}
-                          disabled={isProcessing}
+                          onClick={() => props.handleDeleteProduct(product)}
+                          disabled={props.isProcessing}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Delete
@@ -1458,8 +1388,8 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Active Products */}
-        {selectedView === 'marketplace-active' && (
-          marketplaceProducts.filter(p => p.isActive).length === 0 ? (
+        {props.selectedView === 'marketplace-active' && (
+          props.marketplaceProducts.filter(p => p.isActive).length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Package className="h-12 w-12 text-muted-foreground mb-4" />
@@ -1472,7 +1402,7 @@ export function AdminMainContent(props: any) {
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Active Products</h2>
-              {marketplaceProducts.filter(p => p.isActive).map((product) => (
+              {props.marketplaceProducts.filter(p => p.isActive).map((product) => (
                 <Card key={product.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -1510,8 +1440,8 @@ export function AdminMainContent(props: any) {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDeleteProduct(product)}
-                          disabled={isProcessing}
+                          onClick={() => props.handleDeleteProduct(product)}
+                          disabled={props.isProcessing}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Delete
@@ -1526,8 +1456,8 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Product Requests */}
-        {selectedView === 'marketplace-requests' && (
-          affiliateRequests.filter(req => req.status === 'pending').length === 0 ? (
+        {props.selectedView === 'marketplace-requests' && (
+          props.affiliateRequests.filter(req => req.status === 'pending').length === 0 ? (
               <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Link className="h-12 w-12 text-muted-foreground mb-4" />
@@ -1540,7 +1470,7 @@ export function AdminMainContent(props: any) {
             ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Affiliate Product Requests</h2>
-              {affiliateRequests.filter(req => req.status === 'pending').map((request) => (
+              {props.affiliateRequests.filter(req => req.status === 'pending').map((request) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -1580,8 +1510,8 @@ export function AdminMainContent(props: any) {
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => handleApproveAffiliateRequest(request)}
-                          disabled={isProcessing}
+                          onClick={() => props.handleApproveAffiliateRequest(request)}
+                          disabled={props.isProcessing}
                         >
                           <Check className="h-4 w-4 mr-1" />
                           Approve
@@ -1589,8 +1519,8 @@ export function AdminMainContent(props: any) {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleRejectAffiliateRequest(request)}
-                          disabled={isProcessing}
+                          onClick={() => props.handleRejectAffiliateRequest(request)}
+                          disabled={props.isProcessing}
                         >
                           <X className="h-4 w-4 mr-1" />
                           Reject
@@ -1605,8 +1535,8 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Advertising - Requests */}
-        {selectedView === 'advertising-requests' && (
-          advertisingApplications.filter(app => app.status === 'pending').length === 0 ? (
+        {props.selectedView === 'advertising-requests' && (
+          props.advertisingApplications.filter(app => app.status === 'pending').length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
@@ -1619,7 +1549,7 @@ export function AdminMainContent(props: any) {
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Advertising Applications</h2>
-              {advertisingApplications.filter(app => app.status === 'pending').map((application) => (
+              {props.advertisingApplications.filter(app => app.status === 'pending').map((application) => (
                 <Card key={application.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -1650,8 +1580,8 @@ export function AdminMainContent(props: any) {
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => handleApproveAdApplication(application)}
-                          disabled={isProcessing}
+                          onClick={() => props.handleApproveAdApplication(application)}
+                          disabled={props.isProcessing}
                         >
                           <Check className="h-4 w-4 mr-1" />
                           Approve
@@ -1660,7 +1590,7 @@ export function AdminMainContent(props: any) {
                           variant="destructive"
                           size="sm"
                           onClick={() => setSelectedAdApplication(application)}
-                          disabled={isProcessing}
+                          disabled={props.isProcessing}
                         >
                           <X className="h-4 w-4 mr-1" />
                           Reject
@@ -1675,8 +1605,8 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Empty states for other views */}
-        {(selectedView === 'marketplace-archived' || selectedView === 'advertising-live' || 
-          selectedView === 'advertising-archived') && (
+        {(props.selectedView === 'marketplace-archived' || props.selectedView === 'advertising-live' || 
+          props.selectedView === 'advertising-archived') && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Clock className="h-12 w-12 text-muted-foreground mb-4" />
@@ -1690,21 +1620,21 @@ export function AdminMainContent(props: any) {
 
 
         {/* Advertising Media Management */}
-        {selectedView === 'advertising-media' && (
-          advertisements.length === 0 ? (
+        {props.selectedView === 'advertising-media' && (
+          props.advertisements.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No advertisements uploaded</h3>
+                <h3 className="text-lg font-semibold mb-2">No props.advertisements uploaded</h3>
                 <p className="text-muted-foreground text-center">
-                  Upload advertisements to display on the platform.
+                  Upload props.advertisements to display on the platform.
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Advertising Media</h2>
-              {advertisements.map((ad) => (
+              {props.advertisements.map((ad) => (
                 <Card key={ad.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -1757,12 +1687,12 @@ export function AdminMainContent(props: any) {
                           size="sm"
                           onClick={() => {
                             // Toggle active status
-                            updateDoc(doc(db, 'advertisements', ad.id), {
+                            updateDoc(doc(db, 'props.advertisements', ad.id), {
                               isActive: !ad.isActive,
                               updatedAt: serverTimestamp()
                             });
                           }}
-                          disabled={isProcessing}
+                          disabled={props.isProcessing}
                         >
                           {ad.isActive ? (
                             <>
@@ -1781,9 +1711,9 @@ export function AdminMainContent(props: any) {
                           size="sm"
                           onClick={() => {
                             // Delete advertisement
-                            deleteDoc(doc(db, 'advertisements', ad.id));
+                            deleteDoc(doc(db, 'props.advertisements', ad.id));
                           }}
-                          disabled={isProcessing}
+                          disabled={props.isProcessing}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Delete
@@ -1798,7 +1728,7 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Advertising Analytics */}
-        {selectedView === 'advertising-analytics' && (
+        {props.selectedView === 'advertising-analytics' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Advertising Analytics</h2>
             
@@ -1807,25 +1737,25 @@ export function AdminMainContent(props: any) {
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Total Impressions</p>
-                  <p className="text-xl font-bold">{advertisements.reduce((sum, ad) => sum + ad.impressions, 0).toLocaleString()}</p>
+                  <p className="text-xl font-bold">{props.advertisements.reduce((sum, ad) => sum + ad.impressions, 0).toLocaleString()}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Total Views</p>
-                  <p className="text-xl font-bold">{advertisements.reduce((sum, ad) => sum + ad.views, 0).toLocaleString()}</p>
+                  <p className="text-xl font-bold">{props.advertisements.reduce((sum, ad) => sum + ad.views, 0).toLocaleString()}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Total Clicks</p>
-                  <p className="text-xl font-bold">{advertisements.reduce((sum, ad) => sum + ad.clicks, 0).toLocaleString()}</p>
+                  <p className="text-xl font-bold">{props.advertisements.reduce((sum, ad) => sum + ad.clicks, 0).toLocaleString()}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Active Ads</p>
-                  <p className="text-xl font-bold">{advertisements.filter(ad => ad.isActive).length}</p>
+                  <p className="text-xl font-bold">{props.advertisements.filter(ad => ad.isActive).length}</p>
                 </CardContent>
               </Card>
             </div>
@@ -1837,7 +1767,7 @@ export function AdminMainContent(props: any) {
             </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {advertisements.map((ad) => (
+                  {props.advertisements.map((ad) => (
                     <div key={ad.id} className="border rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-semibold text-sm">{ad.title}</h3>
@@ -1876,19 +1806,19 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Course Management Sections */}
-        {selectedView === 'courses-published' && (
+        {props.selectedView === 'props.courses-published' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Published Courses</h2>
-            {courses.filter(c => c.isPublished).length === 0 ? (
+            {props.courses.filter(c => c.isPublished).length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Play className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No published courses</p>
+                  <p className="text-muted-foreground">No published props.courses</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-3">
-                {courses.filter(c => c.isPublished).map((course) => (
+                {props.courses.filter(c => c.isPublished).map((course) => (
                   <Card key={course.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -1905,8 +1835,8 @@ export function AdminMainContent(props: any) {
                     </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleCourseUnpublish(course.id)}>Unpublish</Button>
-                          <Button variant="destructive" size="sm" onClick={() => handleCourseDelete(course.id)}>Delete</Button>
+                          <Button variant="outline" size="sm" onClick={() => props.handleCourseUnpublish(course.id)}>Unpublish</Button>
+                          <Button variant="destructive" size="sm" onClick={() => props.handleCourseDelete(course.id)}>Delete</Button>
                         </div>
                       </div>
                     </CardContent>
@@ -1917,19 +1847,19 @@ export function AdminMainContent(props: any) {
           </div>
         )}
 
-        {selectedView === 'courses-draft' && (
+        {props.selectedView === 'props.courses-draft' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Draft Courses</h2>
-            {courses.filter(c => !c.isPublished).length === 0 ? (
+            {props.courses.filter(c => !c.isPublished).length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Edit className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No draft courses</p>
+                  <p className="text-muted-foreground">No draft props.courses</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-3">
-                {courses.filter(c => !c.isPublished).map((course) => (
+                {props.courses.filter(c => !c.isPublished).map((course) => (
                   <Card key={course.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -1946,8 +1876,8 @@ export function AdminMainContent(props: any) {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="default" size="sm" onClick={() => handleCoursePublish(course.id)}>Publish</Button>
-                          <Button variant="destructive" size="sm" onClick={() => handleCourseDelete(course.id)}>Delete</Button>
+                          <Button variant="default" size="sm" onClick={() => props.handleCoursePublish(course.id)}>Publish</Button>
+                          <Button variant="destructive" size="sm" onClick={() => props.handleCourseDelete(course.id)}>Delete</Button>
                         </div>
                       </div>
                     </CardContent>
@@ -1958,10 +1888,10 @@ export function AdminMainContent(props: any) {
                 </div>
         )}
 
-        {selectedView === 'course-submissions' && (
+        {props.selectedView === 'course-submissions' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Course Submission Requests</h2>
-            {courseSubmissions.filter(s => s.status === 'pending').length === 0 ? (
+            {props.courseSubmissions.filter(s => s.status === 'pending').length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <User className="h-10 w-10 text-muted-foreground mb-3" />
@@ -1970,7 +1900,7 @@ export function AdminMainContent(props: any) {
               </Card>
             ) : (
               <div className="space-y-3">
-                {courseSubmissions.filter(s => s.status === 'pending').map((submission) => (
+                {props.courseSubmissions.filter(s => s.status === 'pending').map((submission) => (
                   <Card key={submission.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
@@ -1985,8 +1915,8 @@ export function AdminMainContent(props: any) {
                             </div>
                             </div>
                         <div className="flex flex-col gap-2">
-                          <Button variant="default" size="sm" onClick={() => handleCourseSubmissionReview(submission.id, 'approved')}>Approve</Button>
-                          <Button variant="destructive" size="sm" onClick={() => handleCourseSubmissionReview(submission.id, 'rejected')}>Reject</Button>
+                          <Button variant="default" size="sm" onClick={() => props.handleCourseSubmissionReview(submission.id, 'approved')}>Approve</Button>
+                          <Button variant="destructive" size="sm" onClick={() => props.handleCourseSubmissionReview(submission.id, 'rejected')}>Reject</Button>
                         </div>
                       </div>
                     </CardContent>
@@ -2005,7 +1935,7 @@ export function AdminMainContent(props: any) {
             <CardHeader className="flex-shrink-0">
               <CardTitle className="flex items-center justify-between">
                 Upload Content
-                <Button variant="ghost" size="sm" onClick={() => setShowUploadModal(false)}>
+                <Button variant="ghost" size="sm" onClick={() => props.setShowUploadModal(false)}>
                   <X className="h-4 w-4" />
                 </Button>
               </CardTitle>
@@ -2083,7 +2013,7 @@ export function AdminMainContent(props: any) {
                     </div>
 
               <Button
-                      onClick={handleProductUpload}
+                      onClick={props.handleProductUpload}
                       disabled={isProductUploading || !productTitle.trim() || !productDescription.trim() || !productPrice.trim() || productImages.length < 2}
                       className="w-full h-12 text-base font-medium"
                       size="lg"
@@ -2113,7 +2043,7 @@ export function AdminMainContent(props: any) {
             <CardHeader className="flex-shrink-0">
               <CardTitle className="flex items-center justify-between">
                 Upload Advertisement
-                <Button variant="ghost" size="sm" onClick={() => setShowAdUploadModal(false)}>
+                <Button variant="ghost" size="sm" onClick={() => props.setShowAdUploadModal(false)}>
                   <X className="h-4 w-4" />
                 </Button>
               </CardTitle>
@@ -2228,7 +2158,7 @@ export function AdminMainContent(props: any) {
                 </div>
 
                           <Button
-                  onClick={handleAdUpload}
+                  onClick={props.handleAdUpload}
                   disabled={isAdUploading || !adMediaFile || !adTitle.trim() || !adDescription.trim() || !advertiserName.trim()}
                   className="w-full h-12 text-base font-medium"
                   size="lg"
@@ -2252,29 +2182,29 @@ export function AdminMainContent(props: any) {
             )}
 
       {/* Request Detail Modal */}
-      {selectedRequest && (
-        <AlertDialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
+      {props.selectedRequest && (
+        <AlertDialog open={!!props.selectedRequest} onOpenChange={() => props.setSelectedRequest(null)}>
           <AlertDialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={selectedRequest.user.avatarUrl || undefined} alt={selectedRequest.user.displayName} />
-                  <AvatarFallback>{selectedRequest.user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={props.selectedRequest.props.user.avatarUrl || undefined} alt={props.selectedRequest.props.user.displayName} />
+                  <AvatarFallback>{props.selectedRequest.props.user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <div>{selectedRequest.user.displayName}</div>
-                  <div className="text-sm font-normal text-muted-foreground">@{selectedRequest.user.username}</div>
+                  <div>{props.selectedRequest.props.user.displayName}</div>
+                  <div className="text-sm font-normal text-muted-foreground">@{props.selectedRequest.props.user.username}</div>
                 </div>
               </AlertDialogTitle>
             </AlertDialogHeader>
 
             <div className="space-y-6">
               {/* Portfolio Images */}
-              {selectedRequest.portfolioImages.length > 0 && (
+              {props.selectedRequest.portfolioImages.length > 0 && (
               <div>
                   <Label className="text-base font-semibold">Portfolio Images</Label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
-                  {selectedRequest.portfolioImages.map((url, index) => (
+                  {props.selectedRequest.portfolioImages.map((url, index) => (
                     <img
                       key={index}
                       src={url}
@@ -2287,46 +2217,46 @@ export function AdminMainContent(props: any) {
               )}
 
               {/* Artist Statement */}
-              {selectedRequest.artistStatement && (
+              {props.selectedRequest.artistStatement && (
               <div>
                   <Label className="text-base font-semibold">Artist Statement</Label>
-                  <p className="mt-2 text-sm text-muted-foreground">{selectedRequest.artistStatement}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{props.selectedRequest.artistStatement}</p>
               </div>
               )}
 
               {/* Experience */}
                 <div>
                 <Label className="text-base font-semibold">Experience</Label>
-                <p className="mt-2 text-sm text-muted-foreground">{selectedRequest.experience}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{props.selectedRequest.experience}</p>
                 </div>
 
               {/* Social Links */}
-              {selectedRequest.socialLinks && (
+              {props.selectedRequest.socialLinks && (
                 <div>
                   <Label className="text-base font-semibold">Social Links</Label>
                   <div className="mt-2 space-y-2">
-                    {selectedRequest.socialLinks.website && (
+                    {props.selectedRequest.socialLinks.website && (
                       <div className="flex items-center gap-2">
                         <ExternalLink className="h-4 w-4" />
-                        <span className="text-sm">Website: {selectedRequest.socialLinks.website}</span>
+                        <span className="text-sm">Website: {props.selectedRequest.socialLinks.website}</span>
                       </div>
                     )}
-                    {selectedRequest.socialLinks.instagram && (
+                    {props.selectedRequest.socialLinks.instagram && (
                       <div className="flex items-center gap-2">
                         <ExternalLink className="h-4 w-4" />
-                        <span className="text-sm">Instagram: {selectedRequest.socialLinks.instagram}</span>
+                        <span className="text-sm">Instagram: {props.selectedRequest.socialLinks.instagram}</span>
                       </div>
                     )}
-                    {selectedRequest.socialLinks.x && (
+                    {props.selectedRequest.socialLinks.x && (
                       <div className="flex items-center gap-2">
                         <ExternalLink className="h-4 w-4" />
-                        <span className="text-sm">X: {selectedRequest.socialLinks.x}</span>
+                        <span className="text-sm">X: {props.selectedRequest.socialLinks.x}</span>
                       </div>
                     )}
-                    {selectedRequest.socialLinks.tiktok && (
+                    {props.selectedRequest.socialLinks.tiktok && (
                       <div className="flex items-center gap-2">
                         <ExternalLink className="h-4 w-4" />
-                        <span className="text-sm">TikTok: {selectedRequest.socialLinks.tiktok}</span>
+                        <span className="text-sm">TikTok: {props.selectedRequest.socialLinks.tiktok}</span>
                       </div>
                     )}
                   </div>
@@ -2346,13 +2276,13 @@ export function AdminMainContent(props: any) {
               </div>
 
               {/* Rejection Reason (only for pending requests) */}
-              {selectedRequest.status === 'pending' && (
+              {props.selectedRequest.status === 'pending' && (
                 <div>
                   <Label htmlFor="rejectionReason">Rejection Reason (if rejecting)</Label>
                   <Textarea
                     id="rejectionReason"
                     value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
+                    onChange={(e) => props.setRejectionReason(e.target.value)}
                     placeholder="Provide a reason for rejection..."
                     rows={3}
                   />
@@ -2361,36 +2291,36 @@ export function AdminMainContent(props: any) {
             </div>
 
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setSelectedRequest(null)}>
+              <AlertDialogCancel onClick={() => props.setSelectedRequest(null)}>
                 Close
               </AlertDialogCancel>
-              {selectedRequest.status === 'pending' && (
+              {props.selectedRequest.status === 'pending' && (
                 <>
                   <AlertDialogAction
-                    onClick={() => handleReject(selectedRequest)}
+                    onClick={() => props.handleReject(props.selectedRequest)}
                     className="bg-red-600 hover:bg-red-700"
-                    disabled={isProcessing}
+                    disabled={props.isProcessing}
                   >
-                    {isProcessing ? 'Rejecting...' : 'Reject'}
+                    {props.isProcessing ? 'Rejecting...' : 'Reject'}
                   </AlertDialogAction>
                   <AlertDialogAction
-                    onClick={() => handleApprove(selectedRequest)}
-                    disabled={isProcessing}
+                    onClick={() => props.handleApprove(props.selectedRequest)}
+                    disabled={props.isProcessing}
                   >
-                    {isProcessing ? 'Approving...' : 'Approve'}
+                    {props.isProcessing ? 'Approving...' : 'Approve'}
                   </AlertDialogAction>
                 </>
               )}
-              {selectedRequest.status === 'approved' && selectedRequest.portfolioImages && selectedRequest.portfolioImages.length > 0 && (
+              {props.selectedRequest.status === 'approved' && props.selectedRequest.portfolioImages && props.selectedRequest.portfolioImages.length > 0 && (
                 <AlertDialogAction
                   onClick={() => {
-                    handleTransferPortfolio(selectedRequest);
-                    setSelectedRequest(null);
+                    props.handleTransferPortfolio(props.selectedRequest);
+                    props.setSelectedRequest(null);
                   }}
-                  disabled={isProcessing}
+                  disabled={props.isProcessing}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
-                  {isProcessing ? 'Transferring...' : 'Transfer Portfolio Images'}
+                  {props.isProcessing ? 'Transferring...' : 'Transfer Portfolio Images'}
                 </AlertDialogAction>
               )}
             </AlertDialogFooter>
