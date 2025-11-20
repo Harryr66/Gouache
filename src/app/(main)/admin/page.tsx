@@ -4861,7 +4861,6 @@ export default function AdminPanel() {
           </AlertDialogContent>
         </AlertDialog>
       )}
-      </div>
-    </>
+    </div>
   );
 }
