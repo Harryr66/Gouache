@@ -2338,4 +2338,6 @@ export const AdminMainContent = (props: any): JSX.Element => {
       </div>
     </div>
   );
-}
+  
+  return content;
+};
