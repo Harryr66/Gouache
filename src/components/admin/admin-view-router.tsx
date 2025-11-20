@@ -2051,8 +2051,6 @@ export function AdminViewRouter(props: any) {
           </AlertDialogContent>
         </AlertDialog>
       )}
-        </div>
-      )}
     </div>
   );
 }
