@@ -26,6 +26,8 @@ export function AdminViewRouter(props: any) {
   // For now, return a placeholder to reduce main file size
   return (
     <div className="space-y-6">
+        {props.selectedView === 'artist-management' && (
+          <div className="space-y-6">
             {/* Verified Status Management */}
             <Card>
               <CardHeader>
@@ -2050,7 +2052,8 @@ export function AdminViewRouter(props: any) {
           </AlertDialogContent>
         </AlertDialog>
       )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
