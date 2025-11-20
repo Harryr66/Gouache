@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs, getDoc, setDoc, where } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
-import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport, ArticleSection } from '@/lib/types';
+import { ArtistRequest, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport, ArticleSection } from '@/lib/types';
 import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2, GripVertical, Type, ImageIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
@@ -56,13 +56,11 @@ const DEFAULT_ARTICLE_IMAGE =
 export default function AdminPanel() {
   const [artistRequests, setArtistRequests] = useState<ArtistRequest[]>([]);
   const [advertisingApplications, setAdvertisingApplications] = useState<AdvertisingApplication[]>([]);
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
   const [affiliateRequests, setAffiliateRequests] = useState<AffiliateProductRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<ArtistRequest | null>(null);
   const [selectedAdApplication, setSelectedAdApplication] = useState<AdvertisingApplication | null>(null);
-  const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<MarketplaceProduct | null>(null);
   const [selectedAffiliateRequest, setSelectedAffiliateRequest] = useState<AffiliateProductRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -71,20 +69,6 @@ export default function AdminPanel() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   
-  // Video upload states
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [customVideoUrl, setCustomVideoUrl] = useState('');
-  const [videoTitle, setVideoTitle] = useState('');
-  const [videoDescription, setVideoDescription] = useState('');
-  const [videoTags, setVideoTags] = useState<string[]>([]);
-  const [videoCategories, setVideoCategories] = useState<string[]>([]);
-  // Episodes are always added to "New Releases" when published
-  const videoDisplayLocation = 'new-releases';
-  const [isMainEvent, setIsMainEvent] = useState(false);
-  const [newTag, setNewTag] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
-
   // Product upload states
   const [productTitle, setProductTitle] = useState('');
   const [productDescription, setProductDescription] = useState('');
@@ -176,11 +160,6 @@ export default function AdminPanel() {
       orderBy('submittedAt', 'desc')
     );
 
-    const episodesQuery = query(
-      collection(db, 'episodes'),
-      orderBy('createdAt', 'desc')
-    );
-
     const marketplaceQuery = query(
       collection(db, 'marketplaceProducts'),
       orderBy('createdAt', 'desc')
@@ -244,7 +223,6 @@ export default function AdminPanel() {
         const [
           artistSnapshot,
           advertisingSnapshot,
-          episodesSnapshot,
           marketplaceSnapshot,
           affiliateSnapshot,
           advertisementsSnapshot,
@@ -256,7 +234,6 @@ export default function AdminPanel() {
         ] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
-          getDocs(episodesQuery),
           getDocs(marketplaceQuery),
           getDocs(affiliateQuery),
           getDocs(advertisementsQuery),
@@ -280,13 +257,6 @@ export default function AdminPanel() {
       })) as AdvertisingApplication[];
       setAdvertisingApplications(applications);
         console.log(`✅ Loaded ${applications.length} advertising applications:`, applications);
-
-        const episodes = episodesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Episode[];
-        setEpisodes(episodes);
-        console.log(`✅ Loaded ${episodes.length} episodes:`, episodes);
 
         const products = marketplaceSnapshot.docs.map(doc => ({
           id: doc.id,
@@ -637,50 +607,6 @@ export default function AdminPanel() {
     }
   };
 
-  // Video upload functions
-  const handleVideoFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setVideoFile(file);
-    }
-  };
-
-  const handleThumbnailFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate image file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Invalid File Type",
-          description: "Please select an image file for the thumbnail.",
-          variant: "destructive",
-        });
-        return;
-      }
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "File Too Large",
-          description: "Thumbnail image must be smaller than 5MB.",
-          variant: "destructive",
-        });
-        return;
-      }
-      setThumbnailFile(file);
-    }
-  };
-
-  const addTag = () => {
-    if (newTag.trim() && !videoTags.includes(newTag.trim())) {
-      setVideoTags([...videoTags, newTag.trim()]);
-      setNewTag('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setVideoTags(videoTags.filter(tag => tag !== tagToRemove));
-  };
-
   // Rich text editor handlers for image paste and resize
   const handleBodyPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
     const items = e.clipboardData.items;
@@ -756,266 +682,7 @@ export default function AdminPanel() {
     }
   };
 
-  const toggleCategory = (category: string) => {
-    if (videoCategories.includes(category)) {
-      setVideoCategories(videoCategories.filter(cat => cat !== category));
-    } else {
-      setVideoCategories([...videoCategories, category]);
-    }
-  };
-
-  const handleVideoUpload = async () => {
-    if (!videoFile || !videoTitle.trim() || !videoDescription.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields and select a video file.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // No file size limit - we'll handle large files with chunked upload
-
-    setIsUploading(true);
-    console.log('=== STARTING UPLOAD PROCESS ===');
-    console.log('Video file:', videoFile?.name, 'Size:', videoFile?.size);
-    console.log('Title:', videoTitle);
-    console.log('Description:', videoDescription);
-    
-    let videoUrl = '';
-      let thumbnailUrl = '';
-    
-    try {
-      // Upload video file to Firebase Storage
-      const videoFileName = `video_${Date.now()}_${videoFile.name}`;
-      const videoRef = ref(storage, `episodes/${videoFileName}`);
-      
-      console.log('=== STARTING VIDEO UPLOAD ===');
-      console.log('Video file:', videoFile.name, 'Size:', videoFile.size);
-      console.log('Video reference:', videoRef.fullPath);
-      
-      // Test Firebase Storage connection first
-      console.log('Testing Firebase Storage connection...');
-      console.log('Storage instance:', storage);
-      console.log('Storage app:', storage.app);
-      
-      try {
-        console.log('Uploading video bytes...');
-        console.log('Storage bucket:', (storage as any).bucket);
-        console.log('Storage app:', storage.app.name);
-        
-        // Upload the video file with chunked upload for large files
-        console.log('Starting video upload...');
-        console.log('File size:', videoFile.size, 'bytes (', (videoFile.size / 1024 / 1024).toFixed(2), 'MB)');
-        
-        // Use uploadBytesResumable for large files with progress tracking
-        const uploadTask = uploadBytesResumable(videoRef, videoFile);
-        
-        // Create promise that resolves when upload completes
-        const uploadPromise = new Promise<void>((resolve, reject) => {
-          uploadTask.on('state_changed', 
-            (snapshot) => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              console.log(`Upload progress: ${progress.toFixed(2)}%`);
-            },
-            (error) => {
-              console.error('Upload error:', error);
-              reject(error);
-            },
-            () => {
-              console.log('Upload completed successfully');
-              resolve();
-            }
-          );
-        });
-        
-        // Set timeout to 10 minutes for large files
-        const uploadTimeout = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Upload timeout after 10 minutes')), 600000)
-        );
-        
-        try {
-          await Promise.race([uploadPromise, uploadTimeout]);
-        } catch (error) {
-          console.error('Upload failed with error:', error);
-          throw error;
-        }
-        console.log('Video bytes uploaded successfully');
-        
-        // Get the download URL with timeout
-        console.log('Getting download URL...');
-        const urlPromise = getDownloadURL(videoRef);
-        const urlTimeout = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('URL generation timeout after 10 seconds')), 10000)
-        );
-        videoUrl = await Promise.race([urlPromise, urlTimeout]);
-        console.log('Video URL obtained:', videoUrl);
-        
-      } catch (uploadError) {
-        console.error('Firebase Storage upload failed:', uploadError);
-        console.error('Error details:', {
-          code: uploadError instanceof Error ? uploadError.message : 'Unknown',
-          name: uploadError instanceof Error ? uploadError.name : 'Unknown'
-        });
-        
-        // NO FALLBACKS - FAIL THE UPLOAD IF FIREBASE STORAGE DOESN'T WORK
-        throw new Error(`Firebase Storage upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}. Please check Firebase Storage configuration.`);
-      }
-
-      // Upload thumbnail file to Firebase Storage (if provided)
-      if (thumbnailFile) {
-        const thumbnailFileName = `thumb_${Date.now()}_${thumbnailFile.name}`;
-        const thumbnailRef = ref(storage, `episodes/thumbnails/${thumbnailFileName}`);
-        
-        console.log('=== STARTING THUMBNAIL UPLOAD ===');
-        console.log('Thumbnail file:', thumbnailFile.name, 'Size:', thumbnailFile.size);
-        console.log('Thumbnail reference:', thumbnailRef.fullPath);
-        
-        try {
-          console.log('Uploading thumbnail bytes...');
-        await uploadBytes(thumbnailRef, thumbnailFile);
-          console.log('Thumbnail bytes uploaded successfully');
-          
-          console.log('Getting thumbnail download URL...');
-        thumbnailUrl = await getDownloadURL(thumbnailRef);
-          console.log('Thumbnail URL obtained:', thumbnailUrl);
-        } catch (thumbnailError) {
-          console.error('Thumbnail upload failed:', thumbnailError);
-          // NO FALLBACKS - FAIL THE UPLOAD IF THUMBNAIL UPLOAD FAILS
-          throw new Error(`Thumbnail upload failed: ${thumbnailError instanceof Error ? thumbnailError.message : 'Unknown error'}`);
-        }
-      } else {
-        // Generate a thumbnail from the video (placeholder for now)
-        // Generate Gouache placeholder URLs
-        const generatePlaceholderUrl = (width: number = 400, height: number = 600) => {
-          // Default to light mode colors, will be overridden by theme detection
-          let backgroundColor = '#f8f9fa'; // very light gray
-          let textColor = '#6b7280'; // medium gray
-          
-          // Try to detect theme if we're in a browser environment
-          if (typeof window !== 'undefined') {
-            try {
-              // Check for explicit light/dark class
-              if (document.documentElement.classList.contains('dark')) {
-                backgroundColor = '#1f2937'; // dark gray
-                textColor = '#ffffff'; // white
-              } else if (document.documentElement.classList.contains('light')) {
-                backgroundColor = '#f8f9fa'; // very light gray
-                textColor = '#6b7280'; // medium gray
-              } else {
-                // No explicit theme class, check system preference
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (prefersDark) {
-                  backgroundColor = '#1f2937'; // dark gray
-                  textColor = '#ffffff'; // white
-                }
-                // Otherwise keep light mode defaults
-              }
-            } catch (error) {
-              // If theme detection fails, keep light mode defaults
-              console.warn('Theme detection failed, using light mode defaults:', error);
-            }
-          }
-          
-          return `data:image/svg+xml;base64,${btoa(`
-            <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-              <rect width="100%" height="100%" fill="${backgroundColor}" stroke="#e5e7eb" stroke-width="1"/>
-              <text x="50%" y="50%" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold">Gouache</text>
-            </svg>
-          `)}`;
-        };
-        
-        thumbnailUrl = generatePlaceholderUrl(400, 600);
-        console.log('No thumbnail file provided, using default');
-      }
-
-      // Create episode document in Firestore
-      const episodeData: Omit<Episode, 'id'> = {
-        title: videoTitle,
-        description: videoDescription,
-        videoUrl,
-        thumbnailUrl,
-        duration: 600, // Will be calculated from actual video later
-        viewCount: 0,
-        likes: 0,
-        commentsCount: 0,
-        tags: videoTags,
-        categories: videoCategories,
-        displayLocation: videoDisplayLocation,
-        likedBy: [],
-        docuseriesId: 'admin-episodes',
-        episodeNumber: 1,
-        seasonNumber: 1,
-        releaseDate: new Date(),
-        isPublished: true,
-        isFeatured: false,
-        isMainEvent: isMainEvent,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        artist: {
-          id: 'admin',
-          name: 'Gouache Admin',
-          handle: 'soma-admin',
-          avatarUrl: '',
-          isProfessional: true,
-          followerCount: 0,
-          followingCount: 0,
-          createdAt: new Date(),
-          isVerified: true
-        }
-      };
-
-      console.log('=== SAVING TO FIRESTORE ===');
-      console.log('Episode data:', episodeData);
-      
-      const savePromise = addDoc(collection(db, 'episodes'), episodeData);
-      const saveTimeout = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Firestore save timeout after 10 seconds')), 10000)
-      );
-      const docRef = await Promise.race([savePromise, saveTimeout]);
-      console.log('Episode saved to Firestore with ID:', docRef.id);
-
-      toast({
-        title: "Video Uploaded Successfully",
-        description: "Your video has been uploaded to Firebase Storage and will appear in the home feed.",
-      });
-
-      // Reset form
-      setVideoFile(null);
-      setThumbnailFile(null);
-      setCustomVideoUrl('');
-      setVideoTitle('');
-      setVideoDescription('');
-      setVideoTags([]);
-      setVideoCategories([]);
-      setIsMainEvent(false);
-      setNewTag('');
-      
-    } catch (error) {
-      console.error('Error uploading video:', error);
-      let errorMessage = "Failed to upload video. Please try again.";
-      
-      if (error instanceof Error) {
-        if (error.message.includes('storage/unauthorized')) {
-          errorMessage = "Storage access denied. Please check Firebase Storage rules.";
-        } else if (error.message.includes('storage/bucket-not-found')) {
-          errorMessage = "Firebase Storage bucket not found. Please set up Storage in Firebase Console.";
-        } else if (error.message.includes('storage/quota-exceeded')) {
-          errorMessage = "Storage quota exceeded. Please check your Firebase plan.";
-        } else {
-          errorMessage = `Upload failed: ${error.message}`;
-        }
-      }
-      
-      toast({
-        title: "Upload Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
+  // Removed episode-related functions - Episodes feature removed
 
   // Product upload function
   const handleProductUpload = async () => {
@@ -1468,67 +1135,6 @@ export default function AdminPanel() {
     }
   };
 
-  // Episode management functions
-  const handleDeleteEpisode = async (episode: Episode) => {
-    setIsProcessing(true);
-    try {
-      // Delete video file from Storage if it exists
-      if (episode.videoUrl && episode.videoUrl.includes('firebasestorage')) {
-        const videoRef = ref(storage, episode.videoUrl);
-        await deleteObject(videoRef);
-      }
-      
-      // Delete thumbnail file from Storage if it exists
-      if (episode.thumbnailUrl && episode.thumbnailUrl.includes('firebasestorage')) {
-        const thumbnailRef = ref(storage, episode.thumbnailUrl);
-        await deleteObject(thumbnailRef);
-      }
-
-      // Delete episode document from Firestore
-      await deleteDoc(doc(db, 'episodes', episode.id));
-
-      toast({
-        title: "Episode Deleted",
-        description: `"${episode.title}" has been permanently deleted.`,
-      });
-
-      setSelectedEpisode(null);
-    } catch (error) {
-      console.error('Error deleting episode:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete episode. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleToggleMainEvent = async (episode: Episode) => {
-    setIsProcessing(true);
-    try {
-      await updateDoc(doc(db, 'episodes', episode.id), {
-        isMainEvent: !episode.isMainEvent,
-        updatedAt: serverTimestamp()
-      });
-
-      toast({
-        title: "Episode Updated",
-        description: `"${episode.title}" ${!episode.isMainEvent ? 'is now' : 'is no longer'} a main event.`,
-      });
-    } catch (error) {
-      console.error('Error updating episode:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update episode. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const handleSuspendArtist = async (request: ArtistRequest) => {
     setIsProcessing(true);
     try {
@@ -1632,10 +1238,10 @@ export default function AdminPanel() {
   };
 
   const handleCreateNewsArticle = async () => {
-    if (!newArticle.title.trim() || !newArticle.summary.trim()) {
+    if (!newArticle.title.trim()) {
       toast({
         title: 'Missing information',
-        description: 'Please provide at least a headline and summary for the article.',
+        description: 'Please provide a headline for the article.',
         variant: 'destructive'
       });
       return;
@@ -1643,41 +1249,34 @@ export default function AdminPanel() {
 
     setIsPublishingArticle(true);
     try {
-      const publishedAtDate = newArticle.publishedAt ? new Date(newArticle.publishedAt) : new Date();
-      const tags = newArticle.tags
-        ? newArticle.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
-        : [];
-      let imageUrl = newArticle.imageUrl || DEFAULT_ARTICLE_IMAGE;
-
-      if (newArticleImageFile) {
-        try {
-          const fileName = `${Date.now()}_${newArticleImageFile.name.replace(/\s+/g, '-')}`;
-          const storagePath = `news/articles/${fileName}`;
-          const storageRef = ref(storage, storagePath);
-          await uploadBytes(storageRef, newArticleImageFile);
-          imageUrl = await getDownloadURL(storageRef);
-        } catch (error) {
-          console.error('Failed to upload newsroom article image:', error);
-          throw new Error('Could not upload the article image. Please try again.');
-        }
-      }
-
+      const publishedAtDate = new Date();
+      
       // Get body content from contentEditable div
       const bodyElement = document.getElementById('article-body-editor') as HTMLDivElement;
-      const bodyContent = bodyElement?.innerHTML || newArticleBody;
+      const bodyContent = bodyElement?.innerHTML || '';
+      
+      if (!bodyContent.trim()) {
+        toast({
+          title: 'Missing content',
+          description: 'Please add content to the article body.',
+          variant: 'destructive'
+        });
+        setIsPublishingArticle(false);
+        return;
+      }
       
       const docRef = await addDoc(collection(db, 'newsArticles'), {
         title: newArticle.title.trim(),
-        summary: newArticle.summary.trim(),
+        summary: '', // Empty summary for simplified editor
         subheadline: newArticleSubheadline.trim() || undefined,
-        category: newArticle.category || 'Stories',
-        author: newArticle.author?.trim() || '',
-        imageUrl,
-        externalUrl: newArticle.externalUrl?.trim() || '',
+        category: 'Stories', // Default category
+        author: '',
+        imageUrl: DEFAULT_ARTICLE_IMAGE,
+        externalUrl: '',
         featured: false,
-        tags,
+        tags: [],
         content: bodyContent, // Rich HTML content with images
-        location: newArticle.location || 'evergreen',
+        location: 'evergreen',
         publishedAt: publishedAtDate,
         archived: false,
         archivedAt: null,
@@ -1689,15 +1288,15 @@ export default function AdminPanel() {
         {
           id: docRef.id,
           title: newArticle.title.trim(),
-          summary: newArticle.summary.trim(),
-          category: newArticle.category || 'Stories',
-          author: newArticle.author?.trim() || '',
-          imageUrl,
-          externalUrl: newArticle.externalUrl?.trim() || '',
+          summary: '',
+          category: 'Stories',
+          author: '',
+          imageUrl: DEFAULT_ARTICLE_IMAGE,
+          externalUrl: '',
           featured: false,
-          tags,
+          tags: [],
           content: bodyContent,
-          location: newArticle.location || 'evergreen',
+          location: 'evergreen',
           publishedAt: publishedAtDate,
           updatedAt: new Date(),
           archived: false
@@ -1942,8 +1541,6 @@ export default function AdminPanel() {
       setShowArchivedNews={setShowArchivedNews}
       showDraftedArticles={showDraftedArticles}
       setShowDraftedArticles={setShowDraftedArticles}
-      episodes={episodes}
-      setEpisodes={setEpisodes}
       marketplaceProducts={marketplaceProducts}
       setMarketplaceProducts={setMarketplaceProducts}
       affiliateRequests={affiliateRequests}
@@ -1971,8 +1568,6 @@ export default function AdminPanel() {
       setSelectedRequest={setSelectedRequest}
       selectedAdApplication={selectedAdApplication}
       setSelectedAdApplication={setSelectedAdApplication}
-      selectedEpisode={selectedEpisode}
-      setSelectedEpisode={setSelectedEpisode}
       selectedProduct={selectedProduct}
       setSelectedProduct={setSelectedProduct}
       selectedAffiliateRequest={selectedAffiliateRequest}
@@ -1991,13 +1586,11 @@ export default function AdminPanel() {
       handleReinstateArtist={handleReinstateArtist}
       handleApproveAdApplication={handleApproveAdApplication}
       handleRejectAdApplication={handleRejectAdApplication}
-      handleVideoUpload={handleVideoUpload}
       handleProductUpload={handleProductUpload}
       handleAdUpload={handleAdUpload}
       handleDeleteProduct={handleDeleteProduct}
       handleApproveAffiliateRequest={handleApproveAffiliateRequest}
       handleRejectAffiliateRequest={handleRejectAffiliateRequest}
-      handleDeleteEpisode={handleDeleteEpisode}
       handleCreateNewsArticle={handleCreateNewsArticle}
       handleArchiveNewsArticle={handleArchiveNewsArticle}
       handleDeleteNewsArticle={handleDeleteNewsArticle}
@@ -2006,27 +1599,6 @@ export default function AdminPanel() {
       handleCourseUnpublish={handleCourseUnpublish}
       handleCourseSubmissionReview={handleCourseSubmissionReview}
       handleCourseDelete={handleCourseDelete}
-      videoFile={videoFile}
-      setVideoFile={setVideoFile}
-      thumbnailFile={thumbnailFile}
-      setThumbnailFile={setThumbnailFile}
-      customVideoUrl={customVideoUrl}
-      setCustomVideoUrl={setCustomVideoUrl}
-      videoTitle={videoTitle}
-      setVideoTitle={setVideoTitle}
-      videoDescription={videoDescription}
-      setVideoDescription={setVideoDescription}
-      videoTags={videoTags}
-      setVideoTags={setVideoTags}
-      videoCategories={videoCategories}
-      setVideoCategories={setVideoCategories}
-      videoDisplayLocation={videoDisplayLocation}
-      isMainEvent={isMainEvent}
-      setIsMainEvent={setIsMainEvent}
-      newTag={newTag}
-      setNewTag={setNewTag}
-      isUploading={isUploading}
-      setIsUploading={setIsUploading}
       productTitle={productTitle}
       setProductTitle={setProductTitle}
       productDescription={productDescription}

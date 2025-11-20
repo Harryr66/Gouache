@@ -8,14 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2, GripVertical, Type, ImageIcon } from 'lucide-react';
+import { X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2, GripVertical, Type, ImageIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
 import { useRouter } from 'next/navigation';
-import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport } from '@/lib/types';
+import { ArtistRequest, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport } from '@/lib/types';
 import { doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
@@ -42,7 +41,6 @@ export function AdminMainContent(props: any) {
     setShowArchivedNews,
     showDraftedArticles,
     setShowDraftedArticles,
-    episodes,
     marketplaceProducts,
     affiliateRequests,
     userReports,
@@ -65,13 +63,11 @@ export function AdminMainContent(props: any) {
     handleReinstateArtist,
     handleApproveAdApplication,
     handleRejectAdApplication,
-    handleVideoUpload,
     handleProductUpload,
     handleAdUpload,
     handleDeleteProduct,
     handleApproveAffiliateRequest,
     handleRejectAffiliateRequest,
-    handleDeleteEpisode,
     handleCreateNewsArticle,
     handleArchiveNewsArticle,
     handleDeleteNewsArticle,
@@ -99,7 +95,7 @@ export function AdminMainContent(props: any) {
   } = props;
   
   return (
-    <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
         <Button variant="outline" onClick={handleSignOut} className="flex items-center gap-2">
@@ -197,45 +193,6 @@ export function AdminMainContent(props: any) {
               <Badge variant={selectedView === 'news-articles' ? 'secondary' : 'outline'}>
                 ({activeNewsArticles.length})
               </Badge>
-            </button>
-          </CardContent>
-        </Card>
-
-        {/* Episodes */}
-              <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Video className="h-4 w-4" />
-              Episodes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <button
-              onClick={() => setSelectedView('episodes-all')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'episodes-all' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Episodes</span>
-              <Badge variant={selectedView === 'episodes-all' ? 'secondary' : 'outline'}>({episodes.length})</Badge>
-            </button>
-            <button
-              onClick={() => setSelectedView('episodes-drafts')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'episodes-drafts' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Drafts</span>
-              <Badge variant={selectedView === 'episodes-drafts' ? 'secondary' : 'outline'}>(0)</Badge>
-            </button>
-            <button
-              onClick={() => setSelectedView('episodes-archived')}
-              className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'episodes-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-sm">Archived</span>
-              <Badge variant={selectedView === 'episodes-archived' ? 'secondary' : 'outline'}>(0)</Badge>
             </button>
           </CardContent>
         </Card>
@@ -1020,11 +977,11 @@ export function AdminMainContent(props: any) {
               <CardHeader>
                 <CardTitle>Create newsroom article</CardTitle>
                 <CardDescription>
-                  Publish Gouache editorial or link out to external coverage. Articles appear in the newsroom alongside sponsored tiles.
+                  Write and publish articles. Paste images directly into the body text between paragraphs.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="news-title">Headline *</Label>
                     <Input
@@ -1044,371 +1001,22 @@ export function AdminMainContent(props: any) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="news-category">Category *</Label>
-                    <Select
-                      value={newArticle.category || 'Stories'}
-                      onValueChange={(value) => setNewArticle((prev) => ({ ...prev, category: value }))}
-                    >
-                      <SelectTrigger id="news-category">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Stories">Stories</SelectItem>
-                        <SelectItem value="Events">Events</SelectItem>
-                        <SelectItem value="News">News</SelectItem>
-                        <SelectItem value="Partners">Partners</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="news-author">Author</Label>
-                    <Input
-                      id="news-author"
-                      placeholder="Byline (optional)"
-                      value={newArticle.author}
-                      onChange={(event) => setNewArticle((prev) => ({ ...prev, author: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="news-summary">Standfirst *</Label>
-                    <Textarea
-                      id="news-summary"
-                      rows={3}
-                      placeholder="One or two sentences summarising the story."
-                      value={newArticle.summary}
-                      onChange={(event) => setNewArticle((prev) => ({ ...prev, summary: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="article-body-editor">Article Body *</Label>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Paste images directly into the editor. Hold Shift and drag images to resize them.
+                      Paste images directly into the editor between paragraphs. Images can be resized by dragging.
                     </p>
                     <div
                       id="article-body-editor"
                       contentEditable
                       onPaste={handleBodyPaste}
-                      className="min-h-[400px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className="min-h-[500px] w-full rounded-lg border border-input bg-background px-4 py-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       style={{ whiteSpace: 'pre-wrap' }}
                       suppressContentEditableWarning
                     />
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="news-image-upload">Upload hero image</Label>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                      <Input
-                        id="news-image-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleNewsArticleImageChange}
-                      />
-                      {(newArticleImagePreview || newArticle.imageUrl) && (
-                        <Button variant="ghost" size="sm" type="button" onClick={clearNewsArticleImage}>
-                          Remove image
-                        </Button>
-                      )}
-                    </div>
-                    {(newArticleImagePreview || newArticle.imageUrl) && (
-                      <div className="mt-2">
-                        <img
-                          src={newArticleImagePreview || newArticle.imageUrl}
-                          alt="Article preview"
-                          className="h-32 w-full max-w-sm rounded-lg border object-cover"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="news-tags">Tags</Label>
-                    <Input
-                      id="news-tags"
-                      placeholder="Comma separated (e.g. art fair, investment, photography)"
-                      value={newArticle.tags}
-                      onChange={(event) => setNewArticle((prev) => ({ ...prev, tags: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-3 md:col-span-2">
-                    <Label>Article Location *</Label>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Select where this article should appear on the news page:
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="location-main-banner"
-                          name="article-location"
-                          value="main-banner"
-                          checked={newArticle.location === 'main-banner'}
-                          onChange={(e) => setNewArticle((prev) => ({ ...prev, location: e.target.value as 'main-banner' | 'whats-new' | 'evergreen' }))}
-                          className="h-4 w-4"
-                        />
-                        <Label htmlFor="location-main-banner" className="font-normal cursor-pointer">
-                          Main Banner (Hero tile - first article)
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="location-whats-new"
-                          name="article-location"
-                          value="whats-new"
-                          checked={newArticle.location === 'whats-new'}
-                          onChange={(e) => setNewArticle((prev) => ({ ...prev, location: e.target.value as 'main-banner' | 'whats-new' | 'evergreen' }))}
-                          className="h-4 w-4"
-                        />
-                        <Label htmlFor="location-whats-new" className="font-normal cursor-pointer">
-                          What&apos;s New (Featured section - articles 2-4)
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="location-evergreen"
-                          name="article-location"
-                          value="evergreen"
-                          checked={newArticle.location === 'evergreen'}
-                          onChange={(e) => setNewArticle((prev) => ({ ...prev, location: e.target.value as 'main-banner' | 'whats-new' | 'evergreen' }))}
-                          className="h-4 w-4"
-                        />
-                        <Label htmlFor="location-evergreen" className="font-normal cursor-pointer">
-                          Evergreen Article (Normal article spaces - articles 5+)
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={handleCreateNewsArticle} disabled={isPublishingArticle}>
-                    {isPublishingArticle ? 'Publishing…' : 'Publish article'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="news-date">Publish date</Label>
-                    <Input
-                      id="news-date"
-                      type="datetime-local"
-                      value={newArticle.publishedAt}
-                      onChange={(event) => setNewArticle((prev) => ({ ...prev, publishedAt: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="news-image">Hero image URL (optional)</Label>
-                    <Input
-                      id="news-image"
-                      placeholder="https://"
-                      value={newArticle.imageUrl}
-                      onChange={(event) => setNewArticle((prev) => ({ ...prev, imageUrl: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="news-link">External link</Label>
-                    <Input
-                      id="news-link"
-                      placeholder="https://"
-                      value={newArticle.externalUrl}
-                      onChange={(event) => setNewArticle((prev) => ({ ...prev, externalUrl: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="news-summary">Standfirst *</Label>
-                    <Textarea
-                      id="news-summary"
-                      rows={3}
-                      placeholder="One or two sentences summarising the story."
-                      value={newArticle.summary}
-                      onChange={(event) => setNewArticle((prev) => ({ ...prev, summary: event.target.value }))}
-                    />
-                  </div>
-                  {/* AI-Assisted Article Structuring - Collapsible */}
-                  <div className="space-y-4 md:col-span-2">
-                    <Card className="border-primary/20 bg-primary/5">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="flex items-center gap-2">
-                              <Sparkles className="h-5 w-5 text-primary" />
-                              AI-Assisted Article Structuring (Optional)
-                            </CardTitle>
-                            <CardDescription>
-                              Paste your raw text, add headlines and images, and let AI structure your article automatically
-                            </CardDescription>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowAiSection(!showAiSection)}
-                          >
-                            {showAiSection ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      {showAiSection && (
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>Raw Article Text *</Label>
-                          <Textarea
-                            placeholder="Paste your complete article text here..."
-                            rows={8}
-                            value={aiRawText}
-                            onChange={(e) => setAiRawText(e.target.value)}
-                            className="font-mono text-sm"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Headlines (optional)</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Enter a headline..."
-                              value={aiHeadlineInput}
-                              onChange={(e) => setAiHeadlineInput(e.target.value)}
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  addAiHeadline();
-                                }
-                              }}
-                            />
-                            <Button type="button" onClick={addAiHeadline} size="sm">
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          {aiHeadlines.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {aiHeadlines.map((headline, index) => (
-                                <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                                  {headline}
-                                  <button
-                                    onClick={() => removeAiHeadline(index)}
-                                    className="ml-1 hover:text-destructive"
-                                  >
-                                    ×
-                                  </button>
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Images (optional)</Label>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleAiImageUpload}
-                          />
-                          {aiImagePreviews.length > 0 && (
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
-                              {aiImagePreviews.map((preview, index) => (
-                                <div key={index} className="relative">
-                                  <img
-                                    src={preview}
-                                    alt={`Preview ${index + 1}`}
-                                    className="w-full h-32 object-cover rounded-lg border"
-                                  />
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute top-2 right-2 h-6 w-6 bg-background/80"
-                                    onClick={() => removeAiImage(index)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                  <Input
-                                    placeholder="Image description..."
-                                    value={aiImageDescriptions[index] || ''}
-                                    onChange={(e) => {
-                                      const newDescriptions = [...aiImageDescriptions];
-                                      newDescriptions[index] = e.target.value;
-                                      setAiImageDescriptions(newDescriptions);
-                                    }}
-                                    className="mt-2 text-xs"
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <Button
-                          type="button"
-                          onClick={structureArticleWithAI}
-                          disabled={isStructuringArticle || !aiRawText.trim()}
-                          className="w-full"
-                        >
-                          {isStructuringArticle ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Structuring Article...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 mr-2" />
-                              Structure Article with AI
-                            </>
-                          )}
-                        </Button>
-
-                        {aiGeneratedSections.length > 0 && (
-                          <Card className="border-green-500/20 bg-green-500/5">
-                            <CardHeader>
-                              <CardTitle className="text-green-700 dark:text-green-400">
-                                AI Generated {aiGeneratedSections.length} Sections
-                              </CardTitle>
-                              <CardDescription>
-                                Review the sections below and accept to add them to your article
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                              {aiGeneratedSections
-                                .sort((a, b) => a.order - b.order)
-                                .map((section, index) => (
-                                  <div key={section.id} className="border rounded-lg p-3 bg-background">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <Badge variant="outline">
-                                        {section.type === 'image' ? 'Image' : section.type === 'text-image' ? 'Text + Image' : section.type.charAt(0).toUpperCase() + section.type.slice(1)}
-                                      </Badge>
-                                      {section.imagePosition && (
-                                        <Badge variant="secondary">{section.imagePosition}</Badge>
-                                      )}
-                                    </div>
-                                    {section.content && (
-                                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{section.content}</p>
-                                    )}
-                                    {section.imageUrl && (
-                                      <img src={section.imageUrl} alt={section.caption || 'Section image'} className="h-20 w-auto rounded mb-2" />
-                                    )}
-                                    {section.caption && (
-                                      <p className="text-xs text-muted-foreground italic">{section.caption}</p>
-                                    )}
-                                  </div>
-                                ))}
-                              <div className="flex gap-2">
-                                <Button onClick={acceptAiSections} className="flex-1">
-                                  <Check className="h-4 w-4 mr-2" />
-                                  Accept & Add Sections
-                                </Button>
-                                <Button onClick={rejectAiSections} variant="outline" className="flex-1">
-                                  <X className="h-4 w-4 mr-2" />
-                                  Reject
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )}
-                      </CardContent>
-                      )}
-                    </Card>
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <Button onClick={handleCreateNewsArticle} disabled={isPublishingArticle}>
+                  <Button onClick={handleCreateNewsArticle} disabled={isPublishingArticle || !newArticle.title.trim()}>
                     {isPublishingArticle ? 'Publishing…' : 'Publish article'}
                   </Button>
                 </div>
@@ -1779,73 +1387,6 @@ export function AdminMainContent(props: any) {
           </div>
         )}
 
-        {/* Episodes - All */}
-        {selectedView === 'episodes-all' && (
-          episodes.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Video className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No episodes uploaded</h3>
-                <p className="text-muted-foreground text-center">
-                  Upload your first video using the Upload button.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold">All Episodes</h2>
-              {episodes.map((episode) => (
-                <Card key={episode.id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-32 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                        <img
-                          src={episode.thumbnailUrl}
-                          alt={episode.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{episode.title}</h3>
-                          {episode.isMainEvent && (
-                            <Badge variant="default" className="bg-red-600">Main Event</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{episode.description}</p>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>{episode.viewCount} views</span>
-                          <span>{episode.likes} likes</span>
-                          <span>Created {episode.createdAt instanceof Date ? episode.createdAt.toLocaleDateString() : 'Recently'}</span>
-                      </div>
-                        </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedEpisode(episode)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteEpisode(episode)}
-                          disabled={isProcessing}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
-          )
-        )}
-
         {/* Marketplace - Products */}
         {selectedView === 'marketplace-products' && (
           marketplaceProducts.length === 0 ? (
@@ -2134,8 +1675,7 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Empty states for other views */}
-        {(selectedView === 'episodes-drafts' || selectedView === 'episodes-archived' || 
-          selectedView === 'marketplace-archived' || selectedView === 'advertising-live' || 
+        {(selectedView === 'marketplace-archived' || selectedView === 'advertising-live' || 
           selectedView === 'advertising-archived') && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
@@ -2157,7 +1697,7 @@ export function AdminMainContent(props: any) {
                 <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No advertisements uploaded</h3>
                 <p className="text-muted-foreground text-center">
-                  Upload pre-roll advertisements to play before episodes.
+                  Upload advertisements to display on the platform.
                 </p>
               </CardContent>
             </Card>
@@ -2263,81 +1803,49 @@ export function AdminMainContent(props: any) {
             <h2 className="text-2xl font-bold">Advertising Analytics</h2>
             
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <BarChart3 className="h-8 w-8 text-primary" />
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-muted-foreground">Total Impressions</p>
-                      <p className="text-2xl font-bold">
-                        {advertisements.reduce((sum, ad) => sum + ad.impressions, 0).toLocaleString()}
-                      </p>
-          </div>
-                  </div>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Total Impressions</p>
+                  <p className="text-xl font-bold">{advertisements.reduce((sum, ad) => sum + ad.impressions, 0).toLocaleString()}</p>
                 </CardContent>
               </Card>
-              
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <Eye className="h-8 w-8 text-primary" />
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-muted-foreground">Total Views</p>
-                      <p className="text-2xl font-bold">
-                        {advertisements.reduce((sum, ad) => sum + ad.views, 0).toLocaleString()}
-                </p>
-              </div>
-                  </div>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Total Views</p>
+                  <p className="text-xl font-bold">{advertisements.reduce((sum, ad) => sum + ad.views, 0).toLocaleString()}</p>
                 </CardContent>
               </Card>
-              
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <ExternalLink className="h-8 w-8 text-primary" />
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-muted-foreground">Total Clicks</p>
-                      <p className="text-2xl font-bold">
-                        {advertisements.reduce((sum, ad) => sum + ad.clicks, 0).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Total Clicks</p>
+                  <p className="text-xl font-bold">{advertisements.reduce((sum, ad) => sum + ad.clicks, 0).toLocaleString()}</p>
                 </CardContent>
               </Card>
-              
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <Megaphone className="h-8 w-8 text-primary" />
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-muted-foreground">Active Ads</p>
-                      <p className="text-2xl font-bold">
-                        {advertisements.filter(ad => ad.isActive).length}
-                      </p>
-                    </div>
-                  </div>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Active Ads</p>
+                  <p className="text-xl font-bold">{advertisements.filter(ad => ad.isActive).length}</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Detailed Analytics Table */}
+            {/* Advertisement List */}
           <Card>
             <CardHeader>
                 <CardTitle>Advertisement Performance</CardTitle>
-                <CardDescription>Detailed analytics for each advertisement</CardDescription>
             </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {advertisements.map((ad) => (
-                    <div key={ad.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold">{ad.title}</h3>
-                        <Badge variant={ad.isActive ? 'default' : 'secondary'}>
+                    <div key={ad.id} className="border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-sm">{ad.title}</h3>
+                        <Badge variant={ad.isActive ? 'default' : 'secondary'} className="text-xs">
                           {ad.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                      <div className="grid grid-cols-5 gap-2 text-xs">
                       <div>
                           <p className="text-muted-foreground">Impressions</p>
                           <p className="font-semibold">{ad.impressions.toLocaleString()}</p>
@@ -2367,59 +1875,38 @@ export function AdminMainContent(props: any) {
           </div>
         )}
 
-        {/* Course Management Sections - Deprecated (moved to Marketplace) */}
-        {/* Published Courses */}
+        {/* Course Management Sections */}
         {selectedView === 'courses-published' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Published Courses</h2>
             {courses.filter(c => c.isPublished).length === 0 ? (
               <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <Play className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No published courses</h3>
-                  <p className="text-muted-foreground text-center">
-                    No courses have been published yet.
-                  </p>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Play className="h-10 w-10 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">No published courses</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {courses.filter(c => c.isPublished).map((course) => (
-                  <Card key={course.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex gap-4">
-                          <img
-                            src={course.thumbnail}
-                            alt={course.title}
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold mb-2">{course.title}</h3>
-                            <p className="text-muted-foreground mb-2">{course.description}</p>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>Instructor: {course.instructor.name}</span>
-                              <span>Students: {course.students}</span>
-                              <span>Rating: {course.rating}/5</span>
-                              <span>Price: ${course.price}</span>
+                  <Card key={course.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-3 flex-1">
+                          <img src={course.thumbnail} alt={course.title} className="w-16 h-16 object-cover rounded" />
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold truncate">{course.title}</h3>
+                            <p className="text-sm text-muted-foreground truncate">{course.description}</p>
+                            <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                              <span>{course.instructor.name}</span>
+                              <span>•</span>
+                              <span>${course.price}</span>
                       </div>
                     </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCourseUnpublish(course.id)}
-                          >
-                            Unpublish
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleCourseDelete(course.id)}
-                          >
-                            Delete
-                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleCourseUnpublish(course.id)}>Unpublish</Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleCourseDelete(course.id)}>Delete</Button>
                         </div>
                       </div>
                     </CardContent>
@@ -2430,57 +1917,37 @@ export function AdminMainContent(props: any) {
           </div>
         )}
 
-        {/* Draft Courses */}
         {selectedView === 'courses-draft' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Draft Courses</h2>
             {courses.filter(c => !c.isPublished).length === 0 ? (
               <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <Edit className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No draft courses</h3>
-                  <p className="text-muted-foreground text-center">
-                    No courses are currently in draft status.
-                  </p>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Edit className="h-10 w-10 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">No draft courses</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {courses.filter(c => !c.isPublished).map((course) => (
-                  <Card key={course.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex gap-4">
-                          <img
-                            src={course.thumbnail}
-                            alt={course.title}
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold mb-2">{course.title}</h3>
-                            <p className="text-muted-foreground mb-2">{course.description}</p>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>Instructor: {course.instructor.name}</span>
-                              <span>Price: ${course.price}</span>
-                              <span>Created: {course.createdAt.toLocaleDateString()}</span>
+                  <Card key={course.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-3 flex-1">
+                          <img src={course.thumbnail} alt={course.title} className="w-16 h-16 object-cover rounded" />
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold truncate">{course.title}</h3>
+                            <p className="text-sm text-muted-foreground truncate">{course.description}</p>
+                            <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                              <span>{course.instructor.name}</span>
+                              <span>•</span>
+                              <span>${course.price}</span>
                         </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleCoursePublish(course.id)}
-                          >
-                            Publish
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleCourseDelete(course.id)}
-                          >
-                            Delete
-                          </Button>
+                          <Button variant="default" size="sm" onClick={() => handleCoursePublish(course.id)}>Publish</Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleCourseDelete(course.id)}>Delete</Button>
                         </div>
                       </div>
                     </CardContent>
@@ -2491,67 +1958,35 @@ export function AdminMainContent(props: any) {
                 </div>
         )}
 
-        {/* Course Submissions */}
         {selectedView === 'course-submissions' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Course Submission Requests</h2>
             {courseSubmissions.filter(s => s.status === 'pending').length === 0 ? (
               <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <User className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
-                  <p className="text-muted-foreground text-center">
-                    No course submission requests pending review.
-                  </p>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <User className="h-10 w-10 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">No pending requests</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {courseSubmissions.filter(s => s.status === 'pending').map((submission) => (
-                  <Card key={submission.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold mb-2">{submission.courseTitle}</h3>
-                          <p className="text-muted-foreground mb-4">{submission.courseDescription}</p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <p><strong>Company:</strong> {submission.companyName}</p>
-                              <p><strong>Contact:</strong> {submission.contactName}</p>
-                              <p><strong>Email:</strong> {submission.email}</p>
-                              <p><strong>Website:</strong> {submission.website}</p>
+                  <Card key={submission.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold mb-2">{submission.courseTitle}</h3>
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{submission.courseDescription}</p>
+                          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                            <div><strong>Company:</strong> {submission.companyName}</div>
+                            <div><strong>Contact:</strong> {submission.contactName}</div>
+                            <div><strong>Email:</strong> {submission.email}</div>
+                            <div><strong>Category:</strong> {submission.courseCategory}</div>
                             </div>
-                            <div>
-                              <p><strong>Category:</strong> {submission.courseCategory}</p>
-                              <p><strong>Subcategory:</strong> {submission.courseSubcategory}</p>
-                              <p><strong>Duration:</strong> {submission.courseDuration || 'Not specified'}</p>
-                              <p><strong>Format:</strong> {submission.courseFormat || 'Not specified'}</p>
                             </div>
-                          </div>
-                          <div className="mt-4">
-                            <p><strong>Instructor Bio:</strong></p>
-                            <p className="text-muted-foreground">{submission.instructorBio}</p>
-                          </div>
-                          <div className="mt-4">
-                            <p><strong>Teaching Experience:</strong></p>
-                            <p className="text-muted-foreground">{submission.teachingExperience}</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2 ml-4">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleCourseSubmissionReview(submission.id, 'approved')}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleCourseSubmissionReview(submission.id, 'rejected')}
-                          >
-                            Reject
-                          </Button>
+                        <div className="flex flex-col gap-2">
+                          <Button variant="default" size="sm" onClick={() => handleCourseSubmissionReview(submission.id, 'approved')}>Approve</Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleCourseSubmissionReview(submission.id, 'rejected')}>Reject</Button>
                         </div>
                       </div>
                     </CardContent>
@@ -2576,80 +2011,7 @@ export function AdminMainContent(props: any) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto pb-6">
-              <Tabs defaultValue="video-upload" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-12">
-                  <TabsTrigger value="video-upload" className="text-sm font-medium">Video Upload</TabsTrigger>
-                  <TabsTrigger value="product-upload" className="text-sm font-medium">Product Upload</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="video-upload" className="mt-6">
-                  {/* Video Upload Form */}
                   <div className="space-y-4">
-              <div className="space-y-2">
-                      <Label htmlFor="video-title">Video Title *</Label>
-                <Input
-                  id="video-title"
-                  value={videoTitle}
-                  onChange={(e) => setVideoTitle(e.target.value)}
-                  placeholder="Enter video title..."
-                />
-              </div>
-
-              <div className="space-y-2">
-                      <Label htmlFor="video-description">Video Description *</Label>
-                <Textarea
-                  id="video-description"
-                  value={videoDescription}
-                  onChange={(e) => setVideoDescription(e.target.value)}
-                  placeholder="Enter video description..."
-                        rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                      <Label htmlFor="video-file">Video File *</Label>
-                <Input
-                        id="video-file"
-                        type="file"
-                        accept="video/*"
-                        onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                        className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
-                />
-              </div>
-
-              <div className="space-y-2">
-                      <Label htmlFor="thumbnail-file">Thumbnail (optional)</Label>
-                      <Input
-                        id="thumbnail-file"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
-                        className="h-12 file:mr-4 file:py-2 file:px-6 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
-                      />
-                </div>
-
-                    <Button
-                      onClick={handleVideoUpload}
-                      disabled={isUploading || !videoFile || !videoTitle.trim() || !videoDescription.trim()}
-                      className="w-full h-12 text-base font-medium"
-                      size="lg"
-                    >
-                      {isUploading ? (
-                        <>
-                          <Upload className="h-5 w-5 mr-2 animate-spin" />
-                          Uploading Video...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-5 w-5 mr-2" />
-                          Upload Video
-                        </>
-                      )}
-                    </Button>
-              </div>
-                </TabsContent>
-
-                <TabsContent value="product-upload" className="mt-6">
                   {/* Product Upload Form */}
                   <div className="space-y-4">
               <div className="space-y-2">
@@ -2739,8 +2101,6 @@ export function AdminMainContent(props: any) {
                 )}
               </Button>
                   </div>
-                </TabsContent>
-              </Tabs>
             </CardContent>
           </Card>
         </div>
