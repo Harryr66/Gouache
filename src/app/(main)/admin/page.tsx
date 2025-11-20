@@ -2272,41 +2272,41 @@ export default function AdminPanel() {
           </CardContent>
         </Card>
 
-        {/* Course Management */}
+        {/* Marketplace Products */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              Learn
+              <Package className="h-4 w-4" />
+              Marketplace
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <button
-              onClick={() => setSelectedView('courses-published')}
+              onClick={() => setSelectedView('marketplace-products')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'courses-published' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                selectedView === 'marketplace-products' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
-              <span className="text-sm">Published Courses</span>
-              <Badge variant={selectedView === 'courses-published' ? 'secondary' : 'outline'}>({courses.filter(c => c.isPublished).length})</Badge>
+              <span className="text-sm">All Products</span>
+              <Badge variant={selectedView === 'marketplace-products' ? 'secondary' : 'outline'}>({marketplaceProducts.length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('courses-draft')}
+              onClick={() => setSelectedView('marketplace-active')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'courses-draft' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                selectedView === 'marketplace-active' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
-              <span className="text-sm">Draft Courses</span>
-              <Badge variant={selectedView === 'courses-draft' ? 'secondary' : 'outline'}>({courses.filter(c => !c.isPublished).length})</Badge>
+              <span className="text-sm">Active Products</span>
+              <Badge variant={selectedView === 'marketplace-active' ? 'secondary' : 'outline'}>({marketplaceProducts.filter(p => p.isActive).length})</Badge>
             </button>
             <button
-              onClick={() => setSelectedView('course-submissions')}
+              onClick={() => setSelectedView('marketplace-requests')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                selectedView === 'course-submissions' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                selectedView === 'marketplace-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
-              <span className="text-sm">Course Requests</span>
-              <Badge variant={selectedView === 'course-submissions' ? 'secondary' : 'outline'}>({courseSubmissions.filter(s => s.status === 'pending').length})</Badge>
+              <span className="text-sm">Product Requests</span>
+              <Badge variant={selectedView === 'marketplace-requests' ? 'secondary' : 'outline'}>({affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
             </button>
           </CardContent>
         </Card>
@@ -4549,7 +4549,7 @@ export default function AdminPanel() {
             </Card>
           ) : (
           <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Learn Products</h2>
+              <h2 className="text-2xl font-bold">All Products</h2>
               {marketplaceProducts.map((product) => (
                 <Card key={product.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
@@ -4605,7 +4605,75 @@ export default function AdminPanel() {
           )
         )}
 
-        {/* Learn - Affiliate Requests */}
+        {/* Active Products */}
+        {selectedView === 'marketplace-active' && (
+          marketplaceProducts.filter(p => p.isActive).length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Package className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No active products</h3>
+                <p className="text-muted-foreground text-center">
+                  No products are currently active in the marketplace.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Active Products</h2>
+              {marketplaceProducts.filter(p => p.isActive).map((product) => (
+                <Card key={product.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        {product.images.length > 0 && (
+                          <img 
+                            src={product.images[0]} 
+                            alt={product.title}
+                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{product.title}</h3>
+                            <Badge variant="default">Active</Badge>
+                            {product.isOnSale && <Badge variant="destructive">On Sale</Badge>}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{product.description}</p>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="font-semibold">${product.price} {product.currency}</span>
+                            <span>Stock: {product.stock}</span>
+                            <span>Sales: {product.salesCount}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedProduct(product)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteProduct(product)}
+                          disabled={isProcessing}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Product Requests */}
         {selectedView === 'marketplace-requests' && (
           affiliateRequests.filter(req => req.status === 'pending').length === 0 ? (
               <Card>
@@ -4988,7 +5056,7 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* Course Management Sections */}
+        {/* Course Management Sections - Deprecated (moved to Marketplace) */}
         {/* Published Courses */}
         {selectedView === 'courses-published' && (
           <div className="space-y-4">
