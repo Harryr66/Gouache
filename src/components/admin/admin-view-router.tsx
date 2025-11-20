@@ -398,7 +398,7 @@ export function AdminViewRouter(props: any) {
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Verified Professional Artists</h2>
-              {props.approvedRequests.map((request) => (
+              {props.approvedRequests.map((request: any) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4">
