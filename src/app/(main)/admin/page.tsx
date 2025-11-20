@@ -302,7 +302,7 @@ export default function AdminPanel() {
         setCourses(courses);
         console.log(`✅ Loaded ${courses.length} courses:`, courses);
 
-        const submissions = courseSubmissionsSnapshot.docs.map(doc => ({
+        const submissions = courseSubmissionsSnapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data(),
           submittedAt: doc.data().submittedAt?.toDate() || new Date(),
@@ -311,7 +311,7 @@ export default function AdminPanel() {
         setCourseSubmissions(submissions);
         console.log(`✅ Loaded ${submissions.length} course submissions:`, submissions);
 
-        const newsroomArticles = newsArticlesSnapshot.docs.map(doc => {
+        const newsroomArticles = newsArticlesSnapshot.docs.map((doc: any) => {
           const data = doc.data() as any;
           return {
             id: doc.id,
@@ -337,7 +337,7 @@ export default function AdminPanel() {
         setNewsArticles(newsroomArticles);
         console.log(`✅ Loaded ${newsroomArticles.length} newsroom articles`);
 
-        const reports = userReportsSnapshot.docs.map(doc => {
+        const reports = userReportsSnapshot.docs.map((doc: any) => {
           const data = doc.data() as any;
           return {
             id: doc.id,
@@ -1151,7 +1151,7 @@ export default function AdminPanel() {
         reviewedBy: user?.id || 'admin'
       });
 
-      setArtistRequests((prev) => prev.map((item) => item.id === request.id ? { ...item, status: 'suspended' } : item));
+      setArtistRequests((prev) => prev.map((item: any) => item.id === request.id ? { ...item, status: 'suspended' } : item));
 
       toast({
         title: 'Artist suspended',
@@ -1186,7 +1186,7 @@ export default function AdminPanel() {
         reviewedBy: user?.id || 'admin'
       });
 
-      setArtistRequests((prev) => prev.map((item) => item.id === request.id ? { ...item, status: 'approved' } : item));
+      setArtistRequests((prev) => prev.map((item: any) => item.id === request.id ? { ...item, status: 'approved' } : item));
 
       toast({
         title: 'Artist reinstated',
@@ -1364,7 +1364,7 @@ export default function AdminPanel() {
       });
 
       setNewsArticles((prev) =>
-        prev.map((item) =>
+        prev.map((item: any) =>
           item.id === article.id
             ? {
                 ...item,
@@ -1421,7 +1421,7 @@ export default function AdminPanel() {
       });
 
       setUserReports((prev) =>
-        prev.map((item) =>
+        prev.map((item: any) =>
           item.id === report.id
             ? {
                 ...item,
