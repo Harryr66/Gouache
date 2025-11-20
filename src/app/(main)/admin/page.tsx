@@ -1668,8 +1668,6 @@ export default function AdminPanel() {
       addProductTag={addProductTag}
       removeProductTag={removeProductTag}
       handleBodyPaste={handleBodyPaste}
-      handleVideoFileChange={handleVideoFileChange}
-      handleThumbnailFileChange={handleThumbnailFileChange}
       handleNewsArticleImageChange={handleNewsArticleImageChange}
       clearNewsArticleImage={clearNewsArticleImage}
       formatDate={formatDate}
