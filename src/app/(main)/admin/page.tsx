@@ -1099,7 +1099,7 @@ export default function AdminPanel() {
         subcategory: productSubcategory,
         images: uploadedImageUrls,
         sellerId: 'admin',
-        sellerName: 'Gouache Learn',
+        sellerName: 'Gouache Marketplace',
         isAffiliate: false,
         isActive: true,
         stock: parseInt(productStock),
