@@ -59,9 +59,8 @@ export default function MarketplacePage() {
       try {
         const allProducts: ShopProduct[] = [];
 
-        // Fetch artworks for sale
+        // Fetch artworks for sale (originals)
         try {
-          // Try with orderBy first, fallback to just where if index doesn't exist
           let artworksSnapshot;
           try {
             const artworksQuery = query(
@@ -71,7 +70,6 @@ export default function MarketplacePage() {
             );
             artworksSnapshot = await getDocs(artworksQuery);
           } catch (indexError: any) {
-            // If index doesn't exist, query without orderBy
             console.warn('Firestore index may not exist, querying without orderBy:', indexError);
             const artworksQuery = query(
               collection(db, 'artworks'),
@@ -80,29 +78,92 @@ export default function MarketplacePage() {
             artworksSnapshot = await getDocs(artworksQuery);
           }
           
+          let artworksCount = 0;
           artworksSnapshot.forEach((doc: any) => {
             const data = doc.data();
-            // Only add artworks that are for sale and have required fields
-            if (data.isForSale === true && data.imageUrl) {
-              allProducts.push({
-                id: doc.id,
-                type: 'artwork',
-                title: data.title || 'Untitled',
-                description: data.description,
-                price: data.price || 0,
-                currency: data.currency || 'USD',
-                imageUrl: data.imageUrl,
-                sellerId: data.artist?.userId || data.userId || '',
-                sellerName: data.artist?.name || data.artistName || 'Unknown Artist',
-                isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
-                stock: data.stock,
-                category: data.category,
-                createdAt: data.createdAt?.toDate?.() || new Date(),
-              });
+            // Add artworks that are for sale (relax imageUrl requirement - use first image from supportingImages if needed)
+            if (data.isForSale === true) {
+              const imageUrl = data.imageUrl || data.supportingImages?.[0] || data.images?.[0];
+              if (imageUrl) {
+                artworksCount++;
+                allProducts.push({
+                  id: doc.id,
+                  type: 'artwork',
+                  title: data.title || 'Untitled',
+                  description: data.description,
+                  price: data.price || 0,
+                  currency: data.currency || 'USD',
+                  imageUrl: imageUrl,
+                  sellerId: data.artist?.userId || data.artist?.id || data.userId || '',
+                  sellerName: data.artist?.name || data.artistName || 'Unknown Artist',
+                  isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
+                  stock: data.stock,
+                  category: data.category || 'Original Artwork',
+                  createdAt: data.createdAt?.toDate?.() || new Date(),
+                });
+              }
             }
           });
+          console.log(`✅ Marketplace: Fetched ${artworksCount} artworks (originals) for sale`);
         } catch (error) {
           console.error('Error fetching artworks:', error);
+        }
+
+        // Fetch marketplace products (prints, physical products, etc.)
+        try {
+          let productsSnapshot;
+          try {
+            const productsQuery = query(
+              collection(db, 'marketplaceProducts'),
+              where('isActive', '==', true),
+              orderBy('createdAt', 'desc')
+            );
+            productsSnapshot = await getDocs(productsQuery);
+          } catch (indexError: any) {
+            console.warn('Firestore index may not exist for marketplaceProducts, querying without orderBy:', indexError);
+            const productsQuery = query(
+              collection(db, 'marketplaceProducts'),
+              where('isActive', '==', true)
+            );
+            productsSnapshot = await getDocs(productsQuery);
+          }
+          
+          let productsCount = 0;
+          productsSnapshot.forEach((doc: any) => {
+            const data = doc.data();
+            // Add active marketplace products (prints, physical products, etc.)
+            if (data.isActive === true) {
+              const imageUrl = data.imageUrl || data.images?.[0] || data.primaryImage;
+              if (imageUrl) {
+                productsCount++;
+                // Determine product type from category
+                let productType: 'artwork' | 'course' | 'book' = 'artwork';
+                const category = (data.category || '').toLowerCase();
+                if (category.includes('print') || category.includes('art-print')) {
+                  productType = 'artwork'; // Prints are still artworks
+                }
+                
+                allProducts.push({
+                  id: doc.id,
+                  type: productType,
+                  title: data.title || 'Untitled Product',
+                  description: data.description,
+                  price: data.price || 0,
+                  currency: data.currency || 'USD',
+                  imageUrl: imageUrl,
+                  sellerId: data.sellerId || data.artistId || data.userId || '',
+                  sellerName: data.sellerName || data.artistName || data.author?.name || 'Unknown Seller',
+                  isAvailable: data.isAvailable !== false && (data.stock === undefined || data.stock > 0),
+                  stock: data.stock,
+                  category: data.category || data.subcategory || 'Product',
+                  createdAt: data.createdAt?.toDate?.() || new Date(),
+                });
+              }
+            }
+          });
+          console.log(`✅ Marketplace: Fetched ${productsCount} marketplace products (prints, physical products)`);
+        } catch (error) {
+          console.error('Error fetching marketplace products:', error);
         }
 
         // Fetch courses (only published ones)
@@ -194,7 +255,10 @@ export default function MarketplacePage() {
           return timeB - timeA;
         });
         setProducts(allProducts);
-        console.log(`✅ Marketplace: Loaded ${allProducts.length} products (${allProducts.filter(p => p.type === 'artwork').length} artworks, ${allProducts.filter(p => p.type === 'course').length} courses, ${allProducts.filter(p => p.type === 'book').length} books)`);
+        const artworksCount = allProducts.filter(p => p.type === 'artwork').length;
+        const coursesCount = allProducts.filter(p => p.type === 'course').length;
+        const booksCount = allProducts.filter(p => p.type === 'book').length;
+        console.log(`✅ Marketplace: Loaded ${allProducts.length} total products (${artworksCount} artworks/originals/prints, ${coursesCount} courses, ${booksCount} books)`);
       } catch (error) {
         console.error('Error fetching shop products:', error);
       } finally {
