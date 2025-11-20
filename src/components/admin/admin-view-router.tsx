@@ -75,8 +75,8 @@ export function AdminViewRouter(props: any) {
                                     isVerified: checked,
                                     updatedAt: serverTimestamp()
                                   });
-                                  props.setProfessionalArtists(prev =>
-                                    prev.map(a => a.id === artist.id ? { ...a, isVerified: checked } : a)
+                                  props.setProfessionalArtists((prev: any[]) =>
+                                    prev.map((a: any) => a.id === artist.id ? { ...a, isVerified: checked } : a)
                                   );
                                   toast({
                                     title: checked ? "Verified status enabled" : "Verified status removed",
