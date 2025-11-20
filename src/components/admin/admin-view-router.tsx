@@ -1413,7 +1413,11 @@ export function AdminViewRouter(props: any) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedAdvertisement(ad)}
+                          onClick={() => {
+                            if (props.setSelectedAdvertisement) {
+                              props.setSelectedAdvertisement(ad);
+                            }
+                          }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
