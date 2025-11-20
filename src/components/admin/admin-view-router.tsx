@@ -1597,29 +1597,6 @@ export function AdminViewRouter(props: any) {
             )}
           </div>
         )}
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold mb-2">{submission.courseTitle}</h3>
-                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{submission.courseDescription}</p>
-                          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                            <div><strong>Company:</strong> {submission.companyName}</div>
-                            <div><strong>Contact:</strong> {submission.contactName}</div>
-                            <div><strong>Email:</strong> {submission.email}</div>
-                            <div><strong>Category:</strong> {submission.courseCategory}</div>
-                            </div>
-                            </div>
-                        <div className="flex flex-col gap-2">
-                          <Button variant="default" size="sm" onClick={() => props.handleCourseSubmissionReview(submission.id, 'approved')}>Approve</Button>
-                          <Button variant="destructive" size="sm" onClick={() => props.handleCourseSubmissionReview(submission.id, 'rejected')}>Reject</Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
     </div>
   );
