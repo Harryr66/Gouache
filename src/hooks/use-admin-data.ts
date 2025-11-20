@@ -33,7 +33,7 @@ export function useAdminData() {
             where('isProfessional', '==', true)
           );
           const artistsSnapshot = await getDocs(artistsQuery);
-          const artistsData = artistsSnapshot.docs.map(doc => {
+          const artistsData = artistsSnapshot.docs.map((doc: any) => {
             const data = doc.data();
             return {
               id: doc.id,
@@ -79,15 +79,15 @@ export function useAdminData() {
           getDocs(query(collection(db, 'userReports'), orderBy('submittedAt', 'desc')))
         ]);
 
-        setArtistRequests(artistSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ArtistRequest[]);
-        setAdvertisingApplications(advertisingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AdvertisingApplication[]);
-        setEpisodes(episodesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Episode[]);
-        setMarketplaceProducts(marketplaceSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as MarketplaceProduct[]);
-        setAffiliateRequests(affiliateSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AffiliateProductRequest[]));
-        setAdvertisements(advertisementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Advertisement[]);
-        setAdvertisementAnalytics(analyticsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AdvertisementAnalytics[]);
+        setArtistRequests(artistSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as ArtistRequest[]);
+        setAdvertisingApplications(advertisingSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as AdvertisingApplication[]);
+        setEpisodes(episodesSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as Episode[]);
+        setMarketplaceProducts(marketplaceSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as MarketplaceProduct[]);
+        setAffiliateRequests(affiliateSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as AffiliateProductRequest[]));
+        setAdvertisements(advertisementsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as Advertisement[]);
+        setAdvertisementAnalytics(analyticsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as AdvertisementAnalytics[]);
         
-        setCourses(coursesSnapshot.docs.map(doc => {
+        setCourses(coursesSnapshot.docs.map((doc: any) => {
           const data = doc.data();
           return {
             id: doc.id,
@@ -103,14 +103,14 @@ export function useAdminData() {
           } as Course;
         }));
         
-        setCourseSubmissions(courseSubmissionsSnapshot.docs.map(doc => ({
+        setCourseSubmissions(courseSubmissionsSnapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data(),
           submittedAt: doc.data().submittedAt?.toDate() || new Date(),
           reviewedAt: doc.data().reviewedAt?.toDate(),
         })) as CourseSubmission[]);
         
-        setNewsArticles(newsArticlesSnapshot.docs.map(doc => {
+        setNewsArticles(newsArticlesSnapshot.docs.map((doc: any) => {
           const data = doc.data() as any;
           return {
             id: doc.id,
@@ -134,7 +134,7 @@ export function useAdminData() {
           } as NewsArticle;
         }));
         
-        setUserReports(userReportsSnapshot.docs.map(doc => {
+        setUserReports(userReportsSnapshot.docs.map((doc: any) => {
           const data = doc.data() as any;
           return {
             id: doc.id,
