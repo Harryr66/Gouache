@@ -215,13 +215,13 @@ export function AdminMainContent(props: any) {
           </CardHeader>
           <CardContent className="space-y-2">
             <button
-              onClick={() => props.setSelectedView('props.user-reports')}
+              onClick={() => props.setSelectedView('user-reports')}
               className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-                props.selectedView === 'props.user-reports' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                props.selectedView === 'user-reports' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
               }`}
             >
               <span className="text-sm">Reports</span>
-              <Badge variant={props.selectedView === 'props.user-reports' ? 'secondary' : 'outline'}>
+              <Badge variant={props.selectedView === 'user-reports' ? 'secondary' : 'outline'}>
                 ({props.userReports.filter(r => r.status === 'pending').length})
               </Badge>
             </button>
@@ -410,23 +410,23 @@ export function AdminMainContent(props: any) {
                       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex items-start gap-4">
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={request.props.user.avatarUrl || ''} alt={request.props.user.displayName} />
-                            <AvatarFallback>{request.props.user.displayName?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
+                            <AvatarImage src={request.user.avatarUrl || ''} alt={request.user.displayName} />
+                            <AvatarFallback>{request.user.displayName?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
                           </Avatar>
                           <div className="space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-base font-semibold leading-snug">
-                                {request.props.user.displayName || request.props.user.username || request.props.user.email}
+                                {request.user.displayName || request.user.username || request.user.email}
                               </h3>
                               <Badge variant="default" className="bg-emerald-600 text-emerald-50">
                                 Approved
                               </Badge>
                             </div>
-                            {request.props.user.username && (
-                              <p className="text-sm text-muted-foreground">@{request.props.user.username}</p>
+                            {request.user.username && (
+                              <p className="text-sm text-muted-foreground">@{request.user.username}</p>
                             )}
                             <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                              <span>Email: {request.props.user.email}</span>
+                              <span>Email: {request.user.email}</span>
                               <span>Reviewed: {props.formatDate(request.reviewedAt)}</span>
                               {request.reviewedBy && <span>Reviewed by: {request.reviewedBy}</span>}
                             </div>
@@ -436,7 +436,7 @@ export function AdminMainContent(props: any) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/profile/${request.props.user.username || request.userId}`)}
+                            onClick={() => router.push(`/profile/${request.user.username || request.userId}`)}
                           >
                             <ExternalLink className="mr-1 h-4 w-4" />
                             View Profile
@@ -500,21 +500,21 @@ export function AdminMainContent(props: any) {
                       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex items-start gap-4">
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={request.props.user.avatarUrl || ''} alt={request.props.user.displayName} />
-                            <AvatarFallback>{request.props.user.displayName?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
+                            <AvatarImage src={request.user.avatarUrl || ''} alt={request.user.displayName} />
+                            <AvatarFallback>{request.user.displayName?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
                           </Avatar>
                           <div className="space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-base font-semibold leading-snug">
-                                {request.props.user.displayName || request.props.user.username || request.props.user.email}
+                                {request.user.displayName || request.user.username || request.user.email}
                               </h3>
                               <Badge variant="destructive">Suspended</Badge>
                             </div>
-                            {request.props.user.username && (
-                              <p className="text-sm text-muted-foreground">@{request.props.user.username}</p>
+                            {request.user.username && (
+                              <p className="text-sm text-muted-foreground">@{request.user.username}</p>
                             )}
                             <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                              <span>Email: {request.props.user.email}</span>
+                              <span>Email: {request.user.email}</span>
                               <span>Suspended: {props.formatDate(request.reviewedAt)}</span>
                               {request.reviewedBy && <span>By: {request.reviewedBy}</span>}
                             </div>
@@ -524,7 +524,7 @@ export function AdminMainContent(props: any) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/profile/${request.props.user.username || request.userId}`)}
+                            onClick={() => router.push(`/profile/${request.user.username || request.userId}`)}
                           >
                             <ExternalLink className="mr-1 h-4 w-4" />
                             View Profile
@@ -597,19 +597,19 @@ export function AdminMainContent(props: any) {
                     <div className="flex items-start justify-between">
                       <div className="flex gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.props.user.avatarUrl || ''} />
+                          <AvatarImage src={request.user.avatarUrl || ''} />
                           <AvatarFallback>
-                            {request.props.user.displayName?.charAt(0) || 'U'}
+                            {request.user.displayName?.charAt(0) || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold">{request.props.user.displayName}</h3>
+                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
                             <Badge variant="outline">Pending</Badge>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
                         <div>
-                              <p><strong>Email:</strong> {request.props.user.email}</p>
+                              <p><strong>Email:</strong> {request.user.email}</p>
                               <p><strong>Experience:</strong> {request.experience}</p>
                         </div>
                             <div>
@@ -681,16 +681,16 @@ export function AdminMainContent(props: any) {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.props.user.avatarUrl || ''} />
-                          <AvatarFallback>{request.props.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                          <AvatarImage src={request.user.avatarUrl || ''} />
+                          <AvatarFallback>{request.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-semibold">{request.props.user.displayName}</h3>
+                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
                             <Badge variant="default" className="bg-green-600">Approved</Badge>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                            <p><strong>Email:</strong> {request.props.user.email}</p>
+                            <p><strong>Email:</strong> {request.user.email}</p>
                             <p><strong>Reviewed:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
                             <p><strong>Reviewed by:</strong> {request.reviewedBy || 'admin'}</p>
                           </div>
@@ -772,16 +772,16 @@ export function AdminMainContent(props: any) {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.props.user.avatarUrl || ''} />
-                          <AvatarFallback>{request.props.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                          <AvatarImage src={request.user.avatarUrl || ''} />
+                          <AvatarFallback>{request.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-semibold">{request.props.user.displayName}</h3>
+                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
                             <Badge variant="secondary" className="bg-amber-500 text-black">Suspended</Badge>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                            <p><strong>Email:</strong> {request.props.user.email}</p>
+                            <p><strong>Email:</strong> {request.user.email}</p>
                             <p><strong>Suspended:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
                             <p><strong>Suspended by:</strong> {request.reviewedBy || 'admin'}</p>
                           </div>
@@ -849,16 +849,16 @@ export function AdminMainContent(props: any) {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.props.user.avatarUrl || ''} />
-                          <AvatarFallback>{request.props.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                          <AvatarImage src={request.user.avatarUrl || ''} />
+                          <AvatarFallback>{request.user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-semibold">{request.props.user.displayName}</h3>
+                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
                             <Badge variant="destructive">Rejected</Badge>
                           </div>
                           <div className="text-sm text-muted-foreground space-y-1">
-                            <p><strong>Reason:</strong> {request.rejectionReason || 'No reason provided'}</p>
+                            <p><strong>Reason:</strong> {request.props.rejectionReason || 'No reason provided'}</p>
                             <p><strong>Rejected:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
                           </div>
                         </div>
@@ -946,8 +946,8 @@ export function AdminMainContent(props: any) {
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={props.handleCreateNewsArticle} disabled={isPublishingArticle || !props.newArticle.title.trim()}>
-                    {isPublishingArticle ? 'Publishing…' : 'Publish article'}
+                  <Button onClick={props.handleCreateNewsArticle} disabled={props.isPublishingArticle || !props.newArticle.title.trim()}>
+                    {props.isPublishingArticle ? 'Publishing…' : 'Publish article'}
                   </Button>
                 </div>
               </CardContent>
@@ -1074,7 +1074,7 @@ export function AdminMainContent(props: any) {
                                   onClick={async () => {
                                     try {
                                       // Load draft into editor
-                                      const articleDoc = await getDoc(doc(db, 'props.newsArticles', article.id));
+                                      const articleDoc = await getDoc(doc(db, 'newsArticles', article.id));
                                       if (!articleDoc.exists()) {
                                         toast({
                                           title: 'Article not found',
@@ -1130,7 +1130,7 @@ export function AdminMainContent(props: any) {
                                   size="sm"
                                   onClick={async () => {
                                     try {
-                                      await updateDoc(doc(db, 'props.newsArticles', article.id), {
+                                      await updateDoc(doc(db, 'newsArticles', article.id), {
                                         status: 'published',
                                         publishedAt: serverTimestamp(),
                                         updatedAt: serverTimestamp(),
@@ -1180,7 +1180,7 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* User Reports */}
-        {props.selectedView === 'props.user-reports' && (
+        {props.selectedView === 'user-reports' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -1475,16 +1475,16 @@ export function AdminMainContent(props: any) {
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex gap-4">
-                        {request.productImages.length > 0 && (
+                        {request.props.productImages.length > 0 && (
                           <img 
-                            src={request.productImages[0]} 
-                            alt={request.productTitle}
+                            src={request.props.productImages[0]} 
+                            alt={request.props.productTitle}
                             className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                           />
                         )}
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold">{request.productTitle}</h3>
+                            <h3 className="text-lg font-semibold">{request.props.productTitle}</h3>
                             <Badge variant="outline">Pending</Badge>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
@@ -1493,7 +1493,7 @@ export function AdminMainContent(props: any) {
                               <p><strong>Email:</strong> {request.email}</p>
                         </div>
                             <div>
-                              <p><strong>Price:</strong> ${request.productPrice} {request.productCurrency}</p>
+                              <p><strong>Price:</strong> ${request.props.productPrice} {request.productCurrency}</p>
                               <p><strong>Category:</strong> {request.productCategory}</p>
                       </div>
                           </div>
@@ -1573,7 +1573,7 @@ export function AdminMainContent(props: any) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedAdApplication(application)}
+                          onClick={() => props.setSelectedAdApplication(application)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -1589,7 +1589,7 @@ export function AdminMainContent(props: any) {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => setSelectedAdApplication(application)}
+                          onClick={() => props.setSelectedAdApplication(application)}
                           disabled={props.isProcessing}
                         >
                           <X className="h-4 w-4 mr-1" />
@@ -1625,9 +1625,9 @@ export function AdminMainContent(props: any) {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No props.advertisements uploaded</h3>
+                <h3 className="text-lg font-semibold mb-2">No advertisements uploaded</h3>
                 <p className="text-muted-foreground text-center">
-                  Upload props.advertisements to display on the platform.
+                  Upload advertisements to display on the platform.
                 </p>
               </CardContent>
             </Card>
@@ -1656,7 +1656,7 @@ export function AdminMainContent(props: any) {
                           <p className="text-sm text-muted-foreground mb-2">{ad.description}</p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
                       <div>
-                              <p><strong>Advertiser:</strong> {ad.advertiserName}</p>
+                              <p><strong>Advertiser:</strong> {ad.props.advertiserName}</p>
                               <p><strong>Duration:</strong> {ad.duration}s</p>
                       </div>
                             <div>
@@ -1687,7 +1687,7 @@ export function AdminMainContent(props: any) {
                           size="sm"
                           onClick={() => {
                             // Toggle active status
-                            updateDoc(doc(db, 'props.advertisements', ad.id), {
+                            updateDoc(doc(db, 'advertisements', ad.id), {
                               isActive: !ad.isActive,
                               updatedAt: serverTimestamp()
                             });
@@ -1711,7 +1711,7 @@ export function AdminMainContent(props: any) {
                           size="sm"
                           onClick={() => {
                             // Delete advertisement
-                            deleteDoc(doc(db, 'props.advertisements', ad.id));
+                            deleteDoc(doc(db, 'advertisements', ad.id));
                           }}
                           disabled={props.isProcessing}
                         >
@@ -1806,14 +1806,14 @@ export function AdminMainContent(props: any) {
         )}
 
         {/* Course Management Sections */}
-        {props.selectedView === 'props.courses-published' && (
+        {props.selectedView === 'courses-published' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Published Courses</h2>
             {props.courses.filter(c => c.isPublished).length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Play className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No published props.courses</p>
+                  <p className="text-muted-foreground">No published courses</p>
                 </CardContent>
               </Card>
             ) : (
@@ -1847,14 +1847,14 @@ export function AdminMainContent(props: any) {
           </div>
         )}
 
-        {props.selectedView === 'props.courses-draft' && (
+        {props.selectedView === 'courses-draft' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Draft Courses</h2>
             {props.courses.filter(c => !c.isPublished).length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Edit className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No draft props.courses</p>
+                  <p className="text-muted-foreground">No draft courses</p>
                 </CardContent>
               </Card>
             ) : (
@@ -1948,7 +1948,7 @@ export function AdminMainContent(props: any) {
                       <Label htmlFor="product-title">Product Title *</Label>
                       <Input
                         id="product-title"
-                        value={productTitle}
+                        value={props.productTitle}
                         onChange={(e) => setProductTitle(e.target.value)}
                         placeholder="Enter product title..."
                       />
@@ -1958,7 +1958,7 @@ export function AdminMainContent(props: any) {
                       <Label htmlFor="product-description">Product Description *</Label>
                       <Textarea
                         id="product-description"
-                        value={productDescription}
+                        value={props.productDescription}
                         onChange={(e) => setProductDescription(e.target.value)}
                         placeholder="Enter product description..."
                         rows={3}
@@ -1972,7 +1972,7 @@ export function AdminMainContent(props: any) {
                           id="product-price"
                           type="number"
                           step="0.01"
-                          value={productPrice}
+                          value={props.productPrice}
                           onChange={(e) => setProductPrice(e.target.value)}
                           placeholder="0.00"
                         />
@@ -2014,11 +2014,11 @@ export function AdminMainContent(props: any) {
 
               <Button
                       onClick={props.handleProductUpload}
-                      disabled={isProductUploading || !productTitle.trim() || !productDescription.trim() || !productPrice.trim() || productImages.length < 2}
+                      disabled={props.isProductUploading || !props.productTitle.trim() || !props.productDescription.trim() || !props.productPrice.trim() || props.productImages.length < 2}
                       className="w-full h-12 text-base font-medium"
                       size="lg"
                     >
-                      {isProductUploading ? (
+                      {props.isProductUploading ? (
                         <>
                           <Upload className="h-5 w-5 mr-2 animate-spin" />
                           Uploading Product...
@@ -2054,7 +2054,7 @@ export function AdminMainContent(props: any) {
                   <Label htmlFor="ad-title">Advertisement Title *</Label>
                   <Input
                     id="ad-title"
-                    value={adTitle}
+                    value={props.adTitle}
                     onChange={(e) => setAdTitle(e.target.value)}
                     placeholder="Enter advertisement title..."
                   />
@@ -2064,7 +2064,7 @@ export function AdminMainContent(props: any) {
                   <Label htmlFor="ad-description">Description *</Label>
                   <Textarea
                     id="ad-description"
-                    value={adDescription}
+                    value={props.adDescription}
                     onChange={(e) => setAdDescription(e.target.value)}
                     placeholder="Enter advertisement description..."
                     rows={3}
@@ -2076,7 +2076,7 @@ export function AdminMainContent(props: any) {
                     <Label htmlFor="advertiser-name">Advertiser Name *</Label>
                     <Input
                       id="advertiser-name"
-                      value={advertiserName}
+                      value={props.advertiserName}
                       onChange={(e) => setAdvertiserName(e.target.value)}
                       placeholder="Enter advertiser name..."
                     />
@@ -2159,11 +2159,11 @@ export function AdminMainContent(props: any) {
 
                           <Button
                   onClick={props.handleAdUpload}
-                  disabled={isAdUploading || !adMediaFile || !adTitle.trim() || !adDescription.trim() || !advertiserName.trim()}
+                  disabled={props.isAdUploading || !props.adMediaFile || !props.adTitle.trim() || !props.adDescription.trim() || !props.advertiserName.trim()}
                   className="w-full h-12 text-base font-medium"
                   size="lg"
                 >
-                  {isAdUploading ? (
+                  {props.isAdUploading ? (
                     <>
                       <Upload className="h-5 w-5 mr-2 animate-spin" />
                       Uploading Advertisement...
@@ -2188,12 +2188,12 @@ export function AdminMainContent(props: any) {
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={props.selectedRequest.props.user.avatarUrl || undefined} alt={props.selectedRequest.props.user.displayName} />
-                  <AvatarFallback>{props.selectedRequest.props.user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={props.selectedRequest.user.avatarUrl || undefined} alt={props.selectedRequest.user.displayName} />
+                  <AvatarFallback>{props.selectedRequest.user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <div>{props.selectedRequest.props.user.displayName}</div>
-                  <div className="text-sm font-normal text-muted-foreground">@{props.selectedRequest.props.user.username}</div>
+                  <div>{props.selectedRequest.user.displayName}</div>
+                  <div className="text-sm font-normal text-muted-foreground">@{props.selectedRequest.user.username}</div>
                 </div>
               </AlertDialogTitle>
             </AlertDialogHeader>
@@ -2278,10 +2278,10 @@ export function AdminMainContent(props: any) {
               {/* Rejection Reason (only for pending requests) */}
               {props.selectedRequest.status === 'pending' && (
                 <div>
-                  <Label htmlFor="rejectionReason">Rejection Reason (if rejecting)</Label>
+                  <Label htmlFor="props.rejectionReason">Rejection Reason (if rejecting)</Label>
                   <Textarea
-                    id="rejectionReason"
-                    value={rejectionReason}
+                    id="props.rejectionReason"
+                    value={props.rejectionReason}
                     onChange={(e) => props.setRejectionReason(e.target.value)}
                     placeholder="Provide a reason for rejection..."
                     rows={3}
