@@ -1665,9 +1665,6 @@ export default function AdminPanel() {
       setRejectionReason={setRejectionReason}
       adminNotes={adminNotes}
       setAdminNotes={setAdminNotes}
-      addTag={addTag}
-      removeTag={removeTag}
-      toggleCategory={toggleCategory}
       addProductTag={addProductTag}
       removeProductTag={removeProductTag}
       handleBodyPaste={handleBodyPaste}
