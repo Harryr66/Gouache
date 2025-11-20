@@ -83,7 +83,7 @@ export function useAdminData() {
         setAdvertisingApplications(advertisingSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as AdvertisingApplication[]);
         setEpisodes(episodesSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as Episode[]);
         setMarketplaceProducts(marketplaceSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as MarketplaceProduct[]);
-        setAffiliateRequests(affiliateSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as AffiliateProductRequest[]));
+        setAffiliateRequests(affiliateSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as AffiliateProductRequest[]);
         setAdvertisements(advertisementsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as Advertisement[]);
         setAdvertisementAnalytics(analyticsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as AdvertisementAnalytics[]);
         
