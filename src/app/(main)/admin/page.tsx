@@ -200,7 +200,7 @@ export default function AdminPanel() {
             where('isProfessional', '==', true)
           );
           const artistsSnapshot = await getDocs(artistsQuery);
-          const artistsData = artistsSnapshot.docs.map(doc => {
+          const artistsData = artistsSnapshot.docs.map((doc: any) => {
             const data = doc.data();
             return {
               id: doc.id,
@@ -244,28 +244,28 @@ export default function AdminPanel() {
           getDocs(userReportsQuery)
         ]);
 
-        const requests = artistSnapshot.docs.map(doc => ({
+        const requests = artistSnapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data()
       })) as ArtistRequest[];
       setArtistRequests(requests);
         console.log(`✅ Loaded ${requests.length} artist requests:`, requests);
 
-        const applications = advertisingSnapshot.docs.map(doc => ({
+        const applications = advertisingSnapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data()
       })) as AdvertisingApplication[];
       setAdvertisingApplications(applications);
         console.log(`✅ Loaded ${applications.length} advertising applications:`, applications);
 
-        const products = marketplaceSnapshot.docs.map(doc => ({
+        const products = marketplaceSnapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         })) as MarketplaceProduct[];
         setMarketplaceProducts(products);
         console.log(`✅ Loaded ${products.length} marketplace products:`, products);
 
-        const affiliateRequests = affiliateSnapshot.docs.map(doc => ({
+        const affiliateRequests = affiliateSnapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         })) as AffiliateProductRequest[];
@@ -273,21 +273,21 @@ export default function AdminPanel() {
         console.log(`✅ Loaded ${affiliateRequests.length} affiliate requests:`, affiliateRequests);
 
 
-        const advertisements = advertisementsSnapshot.docs.map(doc => ({
+        const advertisements = advertisementsSnapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         })) as Advertisement[];
         setAdvertisements(advertisements);
         console.log(`✅ Loaded ${advertisements.length} advertisements:`, advertisements);
 
-        const analytics = analyticsSnapshot.docs.map(doc => ({
+        const analytics = analyticsSnapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data()
         })) as AdvertisementAnalytics[];
         setAdvertisementAnalytics(analytics);
         console.log(`✅ Loaded ${analytics.length} advertisement analytics:`, analytics);
 
-        const courses = coursesSnapshot.docs.map(doc => ({
+        const courses = coursesSnapshot.docs.map((doc: any) => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date(),
