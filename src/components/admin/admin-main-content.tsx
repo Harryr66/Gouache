@@ -24,8 +24,16 @@ export const AdminMainContent = (props: any): JSX.Element => {
   const router = useRouter();
   
   // Use props directly to avoid parser issues with large destructuring
-  return (
+  const content = (
     <div className="container mx-auto px-4 py-8">
+      <div className="mb-8 flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
+        <Button variant="outline" onClick={props.handleSignOut} className="flex items-center gap-2">
+          <X className="h-4 w-4" />
+          Logout
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
       <div className="mb-8 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
         <Button variant="outline" onClick={props.handleSignOut} className="flex items-center gap-2">
