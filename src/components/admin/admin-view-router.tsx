@@ -1087,7 +1087,11 @@ export function AdminViewRouter(props: any) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => props.setSelectedProduct?.(product)}
+                          onClick={() => {
+                            if (props.setSelectedProduct) {
+                              props.setSelectedProduct(product);
+                            }
+                          }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -1112,7 +1116,7 @@ export function AdminViewRouter(props: any) {
 
         {/* Active Products */}
         {props.selectedView === 'marketplace-active' && (
-          props.marketplaceProducts.filter(p => p.isActive).length === 0 ? (
+          props.marketplaceProducts.filter((p: any) => p.isActive).length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Package className="h-12 w-12 text-muted-foreground mb-4" />
@@ -1155,7 +1159,11 @@ export function AdminViewRouter(props: any) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => props.setSelectedProduct?.(product)}
+                          onClick={() => {
+                            if (props.setSelectedProduct) {
+                              props.setSelectedProduct(product);
+                            }
+                          }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -1180,7 +1188,7 @@ export function AdminViewRouter(props: any) {
 
         {/* Product Requests */}
         {props.selectedView === 'marketplace-requests' && (
-          props.affiliateRequests.filter(req => req.status === 'pending').length === 0 ? (
+          props.affiliateRequests.filter((req: any) => req.status === 'pending').length === 0 ? (
               <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Link className="h-12 w-12 text-muted-foreground mb-4" />
@@ -1226,7 +1234,11 @@ export function AdminViewRouter(props: any) {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedAffiliateRequest(request)}
+                          onClick={() => {
+                            if (props.setSelectedAffiliateRequest) {
+                              props.setSelectedAffiliateRequest(request);
+                            }
+                          }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -1259,7 +1271,7 @@ export function AdminViewRouter(props: any) {
 
         {/* Advertising - Requests */}
         {props.selectedView === 'advertising-requests' && (
-          props.advertisingApplications.filter(app => app.status === 'pending').length === 0 ? (
+          props.advertisingApplications.filter((app: any) => app.status === 'pending').length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Megaphone className="h-12 w-12 text-muted-foreground mb-4" />
@@ -1478,7 +1490,7 @@ export function AdminViewRouter(props: any) {
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Active Ads</p>
-                  <p className="text-xl font-bold">{props.advertisements.filter(ad => ad.isActive).length}</p>
+                  <p className="text-xl font-bold">{props.advertisements.filter((ad: any) => ad.isActive).length}</p>
                 </CardContent>
               </Card>
             </div>
@@ -1532,7 +1544,7 @@ export function AdminViewRouter(props: any) {
         {props.selectedView === 'courses-published' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Published Courses</h2>
-            {props.courses.filter(c => c.isPublished).length === 0 ? (
+            {props.courses.filter((c: any) => c.isPublished).length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Play className="h-10 w-10 text-muted-foreground mb-3" />
@@ -1573,7 +1585,7 @@ export function AdminViewRouter(props: any) {
         {props.selectedView === 'courses-draft' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Draft Courses</h2>
-            {props.courses.filter(c => !c.isPublished).length === 0 ? (
+            {props.courses.filter((c: any) => !c.isPublished).length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Edit className="h-10 w-10 text-muted-foreground mb-3" />
@@ -1614,7 +1626,7 @@ export function AdminViewRouter(props: any) {
         {props.selectedView === 'course-submissions' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Course Submission Requests</h2>
-            {props.courseSubmissions.filter(s => s.status === 'pending').length === 0 ? (
+            {props.courseSubmissions.filter((s: any) => s.status === 'pending').length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <User className="h-10 w-10 text-muted-foreground mb-3" />
