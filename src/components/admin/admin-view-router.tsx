@@ -2051,4 +2051,4 @@ export const AdminViewRouter = (props: any): JSX.Element => {
       )}
     </div>
   );
-}
+};
