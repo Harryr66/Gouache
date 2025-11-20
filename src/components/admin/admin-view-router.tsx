@@ -125,7 +125,7 @@ export function AdminViewRouter(props: any) {
                     No verified artists have been approved yet.
                   </p>
                 ) : (
-                  props.approvedRequests.map((request) => (
+                  props.approvedRequests.map((request: any) => (
                     <div
                       key={request.id}
                       className="rounded-lg border border-border/60 p-4 transition hover:bg-muted/50"
@@ -215,7 +215,7 @@ export function AdminViewRouter(props: any) {
                 {props.suspendedRequests.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No artists are currently suspended.</p>
                 ) : (
-                  props.suspendedRequests.map((request) => (
+                  props.suspendedRequests.map((request: any) => (
                     <div
                       key={request.id}
                       className="rounded-lg border border-border/60 p-4 transition hover:bg-muted/50"
@@ -314,7 +314,7 @@ export function AdminViewRouter(props: any) {
             ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Pending Professional Verification Requests</h2>
-              {props.pendingRequests.map((request) => (
+              {props.pendingRequests.map((request: any) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -566,7 +566,7 @@ export function AdminViewRouter(props: any) {
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Rejected Professional Verification Requests</h2>
-              {props.rejectedRequests.map((request) => (
+              {props.rejectedRequests.map((request: any) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4">
@@ -752,7 +752,7 @@ export function AdminViewRouter(props: any) {
                 </Card>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {props.visibleNewsArticles.map((article) => (
+                  {props.visibleNewsArticles.map((article: any) => (
                     <Card key={article.id} className="flex flex-col overflow-hidden">
                       <div className="relative w-full pt-[60%]">
                         <img
@@ -929,7 +929,7 @@ export function AdminViewRouter(props: any) {
               </Card>
             ) : (
               <div className="space-y-4">
-                {props.userReports.map((report) => (
+                {props.userReports.map((report: any) => (
                   <Card key={report.id} className="hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
                       <div className="space-y-4">
@@ -1055,7 +1055,7 @@ export function AdminViewRouter(props: any) {
           ) : (
           <div className="space-y-4">
               <h2 className="text-2xl font-bold">All Products</h2>
-              {props.marketplaceProducts.map((product) => (
+              {props.marketplaceProducts.map((product: any) => (
                 <Card key={product.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -1125,7 +1125,7 @@ export function AdminViewRouter(props: any) {
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Active Products</h2>
-              {props.marketplaceProducts.filter(p => p.isActive).map((product) => (
+              {props.marketplaceProducts.filter((p: any) => p.isActive).map((product: any) => (
                 <Card key={product.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -1193,7 +1193,7 @@ export function AdminViewRouter(props: any) {
             ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Affiliate Product Requests</h2>
-              {props.affiliateRequests.filter(req => req.status === 'pending').map((request) => (
+              {props.affiliateRequests.filter((req: any) => req.status === 'pending').map((request: any) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -1272,7 +1272,7 @@ export function AdminViewRouter(props: any) {
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Advertising Applications</h2>
-              {props.advertisingApplications.filter(app => app.status === 'pending').map((application) => (
+              {props.advertisingApplications.filter((app: any) => app.status === 'pending').map((application: any) => (
                 <Card key={application.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -1357,7 +1357,7 @@ export function AdminViewRouter(props: any) {
           ) : (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Advertising Media</h2>
-              {props.advertisements.map((ad) => (
+              {props.advertisements.map((ad: any) => (
                 <Card key={ad.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -1490,7 +1490,7 @@ export function AdminViewRouter(props: any) {
             </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {props.advertisements.map((ad) => (
+                  {props.advertisements.map((ad: any) => (
                     <div key={ad.id} className="border rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-semibold text-sm">{ad.title}</h3>
@@ -1541,7 +1541,7 @@ export function AdminViewRouter(props: any) {
               </Card>
             ) : (
               <div className="space-y-3">
-                {props.courses.filter(c => c.isPublished).map((course) => (
+                {props.courses.filter((c: any) => c.isPublished).map((course: any) => (
                   <Card key={course.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -1582,7 +1582,7 @@ export function AdminViewRouter(props: any) {
               </Card>
             ) : (
               <div className="space-y-3">
-                {props.courses.filter(c => !c.isPublished).map((course) => (
+                {props.courses.filter((c: any) => !c.isPublished).map((course: any) => (
                   <Card key={course.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -1623,7 +1623,7 @@ export function AdminViewRouter(props: any) {
               </Card>
             ) : (
               <div className="space-y-3">
-                {props.courseSubmissions.filter(s => s.status === 'pending').map((submission) => (
+                {props.courseSubmissions.filter((s: any) => s.status === 'pending').map((submission: any) => (
                   <Card key={submission.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
