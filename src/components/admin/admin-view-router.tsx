@@ -19,12 +19,11 @@ import { doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/fir
 import { db, storage } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 
-export const AdminViewRouter = (props: any): JSX.Element => {
+export function AdminViewRouter(props: any) {
   const router = useRouter();
   
-  const renderContent = () => {
-    return (
-      <div className="space-y-6">
+  return (
+    <div className="space-y-6">
       {props.selectedView === 'artist-management' && (
           <div className="space-y-6">
             {/* Verified Status Management */}
@@ -2050,9 +2049,6 @@ export const AdminViewRouter = (props: any): JSX.Element => {
           </AlertDialogContent>
         </AlertDialog>
       )}
-      </div>
-    );
-  };
-  
-  return renderContent();
-};
+    </div>
+  );
+}
