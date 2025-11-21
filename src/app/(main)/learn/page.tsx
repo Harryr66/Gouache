@@ -142,7 +142,20 @@ export default function MarketplacePage() {
                 // Determine product type and category
                 let productType: 'artwork' | 'course' | 'book' = 'artwork';
                 const category = (data.category || '').toLowerCase();
-                const isPrint = category.includes('print') || category.includes('art-print');
+                const subcategory = (data.subcategory || '').toLowerCase();
+                const combinedCategory = `${category} ${subcategory}`.toLowerCase();
+                
+                const isPrint = combinedCategory.includes('print') || 
+                               combinedCategory.includes('art-print') ||
+                               combinedCategory.includes('fine-art-print');
+                const isClothing = combinedCategory.includes('clothing') || 
+                                  combinedCategory.includes('apparel') || 
+                                  combinedCategory.includes('wear') ||
+                                  combinedCategory.includes('t-shirt') ||
+                                  combinedCategory.includes('shirt') ||
+                                  combinedCategory.includes('hoodie') ||
+                                  combinedCategory.includes('sweater') ||
+                                  combinedCategory.includes('merchandise');
                 
                 if (isPrint) {
                   productType = 'artwork'; // Prints are still artworks
@@ -161,7 +174,7 @@ export default function MarketplacePage() {
                   isAvailable: data.isAvailable !== false && (data.stock === undefined || data.stock > 0),
                   stock: data.stock,
                   category: data.category || data.subcategory || 'Product',
-                  productCategory: isPrint ? 'print' : 'product',
+                  productCategory: isClothing ? 'clothing' : (isPrint ? 'print' : 'product'),
                   createdAt: data.createdAt?.toDate?.() || new Date(),
                 });
               }
@@ -295,6 +308,7 @@ export default function MarketplacePage() {
       'Prints': [],
       'Courses': [],
       'Books': [],
+      'Clothing': [],
     };
 
     filtered.forEach(product => {
@@ -303,10 +317,28 @@ export default function MarketplacePage() {
       } else if (product.type === 'book') {
         grouped['Books'].push(product);
       } else if (product.type === 'artwork') {
-        if (product.productCategory === 'print') {
+        // Check product category first (set during fetch)
+        if (product.productCategory === 'clothing') {
+          grouped['Clothing'].push(product);
+        } else if (product.productCategory === 'print') {
           grouped['Prints'].push(product);
         } else {
-          grouped['Original Artworks'].push(product);
+          // Fallback: check category string for clothing
+          const category = (product.category || '').toLowerCase();
+          const isClothing = category.includes('clothing') || 
+                            category.includes('apparel') || 
+                            category.includes('wear') ||
+                            category.includes('t-shirt') ||
+                            category.includes('shirt') ||
+                            category.includes('hoodie') ||
+                            category.includes('sweater') ||
+                            category.includes('merchandise');
+          
+          if (isClothing) {
+            grouped['Clothing'].push(product);
+          } else {
+            grouped['Original Artworks'].push(product);
+          }
         }
       }
     });
@@ -522,27 +554,39 @@ export default function MarketplacePage() {
           </Card>
         ) : (
           <div className="space-y-8 sm:space-y-10">
-            {Object.entries(productsByCategory).map(([categoryName, categoryProducts]) => (
-              <div key={categoryName} className="space-y-3 sm:space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
-                      {categoryName}
-                    </h2>
-                    <Badge variant="secondary" className="text-xs sm:text-sm">
-                      {categoryProducts.length}
-                    </Badge>
+            {(() => {
+              // Define category order for consistent display
+              const categoryOrder = ['Original Artworks', 'Prints', 'Courses', 'Books', 'Clothing'];
+              const sortedCategories = Object.entries(productsByCategory).sort((a, b) => {
+                const indexA = categoryOrder.indexOf(a[0]);
+                const indexB = categoryOrder.indexOf(b[0]);
+                if (indexA === -1 && indexB === -1) return 0;
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+              });
+              
+              return sortedCategories.map(([categoryName, categoryProducts]) => (
+                <div key={categoryName} className="space-y-3 sm:space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
+                        {categoryName}
+                      </h2>
+                      <Badge variant="secondary" className="text-xs sm:text-sm">
+                        {categoryProducts.length}
+                      </Badge>
+                    </div>
+                    {categoryProducts.length > 4 && (
+                      <Link 
+                        href={`/learn?category=${encodeURIComponent(categoryName.toLowerCase())}`}
+                        className="text-xs sm:text-sm text-primary hover:underline flex items-center gap-1"
+                      >
+                        View all
+                        <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </Link>
+                    )}
                   </div>
-                  {categoryProducts.length > 4 && (
-                    <Link 
-                      href={`/learn?category=${encodeURIComponent(categoryName.toLowerCase())}`}
-                      className="text-xs sm:text-sm text-primary hover:underline flex items-center gap-1"
-                    >
-                      View all
-                      <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </Link>
-                  )}
-                </div>
                 
                 <Carousel
                   opts={{
@@ -649,8 +693,9 @@ export default function MarketplacePage() {
                     </>
                   )}
                 </Carousel>
-              </div>
-            ))}
+                </div>
+              ));
+            })()}
           </div>
         )}
       </div>
