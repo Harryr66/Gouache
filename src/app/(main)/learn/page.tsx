@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Package, Book, GraduationCap, ImageIcon, ShoppingCart, Star } from 'lucide-react';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Search, Filter, Package, Book, GraduationCap, ImageIcon, ShoppingCart, Star, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { db } from '@/lib/firebase';
@@ -26,6 +27,7 @@ interface ShopProduct {
   isAvailable: boolean;
   stock?: number;
   category?: string;
+  productCategory?: string; // For marketplace products: 'print', 'original', etc.
   createdAt: Date;
   rating?: number;
   reviewCount?: number;
@@ -99,6 +101,7 @@ export default function MarketplacePage() {
                   isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
                   stock: data.stock,
                   category: data.category || 'Original Artwork',
+                  productCategory: 'original', // Artworks from artworks collection are originals
                   createdAt: data.createdAt?.toDate?.() || new Date(),
                 });
               }
@@ -136,10 +139,12 @@ export default function MarketplacePage() {
               const imageUrl = data.imageUrl || data.images?.[0] || data.primaryImage;
               if (imageUrl) {
                 productsCount++;
-                // Determine product type from category
+                // Determine product type and category
                 let productType: 'artwork' | 'course' | 'book' = 'artwork';
                 const category = (data.category || '').toLowerCase();
-                if (category.includes('print') || category.includes('art-print')) {
+                const isPrint = category.includes('print') || category.includes('art-print');
+                
+                if (isPrint) {
                   productType = 'artwork'; // Prints are still artworks
                 }
                 
@@ -156,6 +161,7 @@ export default function MarketplacePage() {
                   isAvailable: data.isAvailable !== false && (data.stock === undefined || data.stock > 0),
                   stock: data.stock,
                   category: data.category || data.subcategory || 'Product',
+                  productCategory: isPrint ? 'print' : 'product',
                   createdAt: data.createdAt?.toDate?.() || new Date(),
                 });
               }
@@ -269,13 +275,9 @@ export default function MarketplacePage() {
     fetchShopProducts();
   }, []);
 
-  const filteredAndSortedProducts = useMemo(() => {
+  // Group products by category for carousel display
+  const productsByCategory = useMemo(() => {
     let filtered = products;
-
-    // Filter by type
-    if (selectedType !== 'all') {
-      filtered = filtered.filter(p => p.type === selectedType);
-    }
 
     // Filter by search query
     if (searchQuery.trim()) {
@@ -287,29 +289,76 @@ export default function MarketplacePage() {
       );
     }
 
-    // Sort
-    switch (sortBy) {
-      case 'price-low':
-        filtered = [...filtered].sort((a, b) => a.price - b.price);
-        break;
-      case 'price-high':
-        filtered = [...filtered].sort((a, b) => b.price - a.price);
-        break;
-      case 'rating':
-        filtered = [...filtered].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case 'newest':
-      default:
-        filtered = [...filtered].sort((a, b) => {
-          const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
-          const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-          return timeB - timeA;
+    // Group by category
+    const grouped: Record<string, ShopProduct[]> = {
+      'Original Artworks': [],
+      'Prints': [],
+      'Courses': [],
+      'Books': [],
+    };
+
+    filtered.forEach(product => {
+      if (product.type === 'course') {
+        grouped['Courses'].push(product);
+      } else if (product.type === 'book') {
+        grouped['Books'].push(product);
+      } else if (product.type === 'artwork') {
+        if (product.productCategory === 'print') {
+          grouped['Prints'].push(product);
+        } else {
+          grouped['Original Artworks'].push(product);
+        }
+      }
+    });
+
+    // Sort each category
+    Object.keys(grouped).forEach(category => {
+      switch (sortBy) {
+        case 'price-low':
+          grouped[category].sort((a, b) => a.price - b.price);
+          break;
+        case 'price-high':
+          grouped[category].sort((a, b) => b.price - a.price);
+          break;
+        case 'rating':
+          grouped[category].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          break;
+        case 'newest':
+        default:
+          grouped[category].sort((a, b) => {
+            const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+            const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+            return timeB - timeA;
+          });
+          break;
+      }
+    });
+
+    // Filter by type if selected
+    if (selectedType !== 'all') {
+      Object.keys(grouped).forEach(category => {
+        grouped[category] = grouped[category].filter(p => {
+          if (selectedType === 'artwork') {
+            return p.type === 'artwork';
+          }
+          return p.type === selectedType;
         });
-        break;
+      });
     }
 
-    return filtered;
+    // Remove empty categories
+    Object.keys(grouped).forEach(category => {
+      if (grouped[category].length === 0) {
+        delete grouped[category];
+      }
+    });
+
+    return grouped;
   }, [products, selectedType, searchQuery, sortBy]);
+
+  const filteredAndSortedProducts = useMemo(() => {
+    return Object.values(productsByCategory).flat();
+  }, [productsByCategory]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -453,34 +502,13 @@ export default function MarketplacePage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
-        <div className="mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg sm:text-xl font-semibold truncate">
-                {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'Product' : 'Products'} Found
-                {selectedType !== 'all' && (
-                  <span className="hidden sm:inline"> in {getTypeLabel(selectedType)}s</span>
-                )}
-              </h2>
-              {selectedType !== 'all' && (
-                <span className="sm:hidden text-sm text-muted-foreground">
-                  in {getTypeLabel(selectedType)}s
-                </span>
-              )}
-              {searchQuery && (
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
-                  Results for "{searchQuery}"
-                </p>
-              )}
-            </div>
-            {filteredAndSortedProducts.length > 0 && (
-              <div className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
-                <span className="hidden sm:inline">Showing all </span>
-                {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? 'product' : 'products'}
-              </div>
-            )}
+        {searchQuery && (
+          <div className="mb-4 sm:mb-6">
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Results for "<span className="font-semibold text-foreground">{searchQuery}</span>"
+            </p>
           </div>
-        </div>
+        )}
 
         {filteredAndSortedProducts.length === 0 ? (
           <Card>
@@ -493,94 +521,135 @@ export default function MarketplacePage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-            {filteredAndSortedProducts.map((product) => (
-              <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer">
-                <Link href={getProductLink(product)} className="block" prefetch={false}>
-                  <div className="relative aspect-square">
-                    {product.imageUrl ? (
-                      <Image
-                        src={product.imageUrl}
-                        alt={product.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        unoptimized
-                        onError={(e) => {
-                          // Fallback to placeholder if image fails to load
-                          const target = e.target as HTMLImageElement;
-                          if (target && target.parentElement) {
-                            target.style.display = 'none';
-                            const placeholder = target.parentElement.querySelector('.image-placeholder-fallback');
-                            if (!placeholder) {
-                              const placeholderDiv = document.createElement('div');
-                              placeholderDiv.className = 'image-placeholder-fallback w-full h-full bg-muted flex items-center justify-center absolute inset-0';
-                              placeholderDiv.innerHTML = `<div class="text-muted-foreground">${getTypeIcon(product.type).props.children}</div>`;
-                              target.parentElement.appendChild(placeholderDiv);
-                            }
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <div className="text-muted-foreground">
-                          {getTypeIcon(product.type)}
-                        </div>
-                      </div>
-                    )}
-                    {!product.isAvailable && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-                        <Badge variant="destructive" className="text-sm">Sold Out</Badge>
-                      </div>
-                    )}
-                    <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-10">
-                      <Badge variant="secondary" className="flex items-center gap-0.5 sm:gap-1 bg-background/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1">
-                        <span className="h-3 w-3 sm:h-4 sm:w-4">{getTypeIcon(product.type)}</span>
-                        <span className="text-[10px] sm:text-xs">{getTypeLabel(product.type)}</span>
-                      </Badge>
-                    </div>
+          <div className="space-y-8 sm:space-y-10">
+            {Object.entries(productsByCategory).map(([categoryName, categoryProducts]) => (
+              <div key={categoryName} className="space-y-3 sm:space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
+                      {categoryName}
+                    </h2>
+                    <Badge variant="secondary" className="text-xs sm:text-sm">
+                      {categoryProducts.length}
+                    </Badge>
                   </div>
-                  <CardContent className="p-3 sm:p-4">
-                    <div className="flex items-start justify-between mb-1.5 sm:mb-2">
-                      <h3 className="font-semibold text-xs sm:text-sm line-clamp-2 flex-1 leading-tight">{product.title}</h3>
-                    </div>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 line-clamp-2 leading-relaxed">
-                      {product.description || 'No description available'}
-                    </p>
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground mb-2 flex-wrap">
-                      <span className="truncate">by {product.sellerName}</span>
-                      {product.rating && product.rating > 0 && (
-                        <>
-                          <span className="hidden sm:inline">•</span>
-                          <div className="flex items-center gap-0.5 sm:gap-1">
-                            <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
-                            <span>{product.rating.toFixed(1)}</span>
-                            {product.reviewCount && product.reviewCount > 0 && (
-                              <span className="text-muted-foreground">({product.reviewCount})</span>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="font-bold text-base sm:text-lg text-primary truncate">
-                          {product.currency === 'USD' ? '$' : product.currency} {product.price > 0 ? product.price.toFixed(2) : 'Free'}
-                        </span>
-                        {product.stock !== undefined && product.stock > 0 && (
-                          <span className="text-[10px] sm:text-xs text-muted-foreground">
-                            {product.stock} in stock
-                          </span>
-                        )}
-                      </div>
-                      {!product.isAvailable && (
-                        <Badge variant="destructive" className="text-[10px] sm:text-xs flex-shrink-0">
-                          Unavailable
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Link>
-              </Card>
+                  {categoryProducts.length > 4 && (
+                    <Link 
+                      href={`/learn?category=${encodeURIComponent(categoryName.toLowerCase())}`}
+                      className="text-xs sm:text-sm text-primary hover:underline flex items-center gap-1"
+                    >
+                      View all
+                      <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Link>
+                  )}
+                </div>
+                
+                <Carousel
+                  opts={{
+                    align: "start",
+                    loop: false,
+                  }}
+                  className="w-full"
+                >
+                  <CarouselContent className="-ml-2 sm:-ml-4">
+                    {categoryProducts.map((product) => (
+                      <CarouselItem key={product.id} className="pl-2 sm:pl-4 basis-[45%] sm:basis-[30%] md:basis-[25%] lg:basis-[20%]">
+                        <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer h-full">
+                          <Link href={getProductLink(product)} className="block h-full" prefetch={false}>
+                            <div className="relative aspect-square">
+                              {product.imageUrl ? (
+                                <Image
+                                  src={product.imageUrl}
+                                  alt={product.title}
+                                  fill
+                                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                  unoptimized
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    if (target && target.parentElement) {
+                                      target.style.display = 'none';
+                                      const placeholder = target.parentElement.querySelector('.image-placeholder-fallback');
+                                      if (!placeholder) {
+                                        const placeholderDiv = document.createElement('div');
+                                        placeholderDiv.className = 'image-placeholder-fallback w-full h-full bg-muted flex items-center justify-center absolute inset-0';
+                                        placeholderDiv.innerHTML = `<div class="text-muted-foreground">${getTypeIcon(product.type).props.children}</div>`;
+                                        target.parentElement.appendChild(placeholderDiv);
+                                      }
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-muted flex items-center justify-center">
+                                  <div className="text-muted-foreground">
+                                    {getTypeIcon(product.type)}
+                                  </div>
+                                </div>
+                              )}
+                              {!product.isAvailable && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                                  <Badge variant="destructive" className="text-xs sm:text-sm">Sold Out</Badge>
+                                </div>
+                              )}
+                              <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-10">
+                                <Badge variant="secondary" className="flex items-center gap-0.5 sm:gap-1 bg-background/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1">
+                                  <span className="h-3 w-3 sm:h-4 sm:w-4">{getTypeIcon(product.type)}</span>
+                                  <span className="text-[10px] sm:text-xs">{getTypeLabel(product.type)}</span>
+                                </Badge>
+                              </div>
+                            </div>
+                            <CardContent className="p-3 sm:p-4">
+                              <div className="flex items-start justify-between mb-1.5 sm:mb-2">
+                                <h3 className="font-semibold text-xs sm:text-sm line-clamp-2 flex-1 leading-tight">{product.title}</h3>
+                              </div>
+                              <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 line-clamp-2 leading-relaxed">
+                                {product.description || 'No description available'}
+                              </p>
+                              <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground mb-2 flex-wrap">
+                                <span className="truncate">by {product.sellerName}</span>
+                                {product.rating && product.rating > 0 && (
+                                  <>
+                                    <span className="hidden sm:inline">•</span>
+                                    <div className="flex items-center gap-0.5 sm:gap-1">
+                                      <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                                      <span>{product.rating.toFixed(1)}</span>
+                                      {product.reviewCount && product.reviewCount > 0 && (
+                                        <span className="text-muted-foreground">({product.reviewCount})</span>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="font-bold text-sm sm:text-base md:text-lg text-primary truncate">
+                                    {product.currency === 'USD' ? '$' : product.currency} {product.price > 0 ? product.price.toFixed(2) : 'Free'}
+                                  </span>
+                                  {product.stock !== undefined && product.stock > 0 && (
+                                    <span className="text-[10px] sm:text-xs text-muted-foreground">
+                                      {product.stock} in stock
+                                    </span>
+                                  )}
+                                </div>
+                                {!product.isAvailable && (
+                                  <Badge variant="destructive" className="text-[10px] sm:text-xs flex-shrink-0">
+                                    Unavailable
+                                  </Badge>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Link>
+                        </Card>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  {categoryProducts.length > 4 && (
+                    <>
+                      <CarouselPrevious className="hidden sm:flex -left-8 lg:-left-12" />
+                      <CarouselNext className="hidden sm:flex -right-8 lg:-right-12" />
+                    </>
+                  )}
+                </Carousel>
+              </div>
             ))}
           </div>
         )}
