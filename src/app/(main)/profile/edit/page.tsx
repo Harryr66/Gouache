@@ -947,22 +947,31 @@ export default function ProfileEditPage() {
         
         const userRef = doc(db, 'userProfiles', user.id);
         const allowArtistFields = Boolean(user.isProfessional);
-        const updateData: any = {
-          name: formData.name,
-          email: formData.email, // Save email to Firestore for username login support
-          bio: formData.bio,
-          location: formData.location,
-          countryOfOrigin: formData.countryOfOrigin,
-          countryOfResidence: formData.countryOfResidence,
-          hideLocation: formData.hideLocation,
-          hideFlags: formData.hideFlags,
-          hideShowcaseLocations: formData.hideShowcaseLocations,
-          hideShop: formData.hideShop,
-          hideLearn: formData.hideLearn,
-          newsletterLink: formData.newsletterLink,
-          updatedAt: new Date(),
-          isProfessional: allowArtistFields,
-        };
+        
+        // CRITICAL: Email sync - Only update Firestore email if it matches Firebase Auth email
+        const firebaseAuthEmail = auth.currentUser?.email || '';
+        const formEmail = formData.email.trim();
+        const emailToSave = (formEmail && formEmail.toLowerCase() === firebaseAuthEmail.toLowerCase()) 
+          ? formEmail 
+          : firebaseAuthEmail;
+        
+      const updateData: any = {
+        name: formData.name,
+        displayName: formData.name, // Also update displayName (used by profile display) - same as handleSubmit
+        email: emailToSave, // Use synced email - same as handleSubmit
+        bio: formData.bio,
+        location: formData.location,
+        countryOfOrigin: formData.countryOfOrigin,
+        countryOfResidence: formData.countryOfResidence,
+        hideLocation: formData.hideLocation,
+        hideFlags: formData.hideFlags,
+        hideShowcaseLocations: formData.hideShowcaseLocations,
+        hideShop: formData.hideShop,
+        hideLearn: formData.hideLearn,
+        newsletterLink: formData.newsletterLink,
+        updatedAt: new Date(),
+        isProfessional: allowArtistFields,
+      };
 
         if (allowArtistFields) {
           updateData.artistType = formData.artistType;
@@ -995,13 +1004,19 @@ export default function ProfileEditPage() {
           updateData.showcaseLocations = [];
         }
 
-        await withTimeout(setDoc(userRef, updateData, { merge: true }), 5000);
+        // Use setDoc with merge: true to ensure all fields are saved (same as handleSubmit)
+        await withTimeout(setDoc(userRef, updateData, { merge: true }), 10000);
+        
+        // Refresh user data to sync changes (same as handleSubmit)
+        await withTimeout(refreshUser(), 5000);
         
         // Update initial form data ref to current values after successful save
         initialFormDataRef.current = { ...formData };
         
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
+        
+        console.log('✅ Auto-save successful:', Object.keys(updateData));
         
         // Clear offline changes after successful save
         localStorage.removeItem(`profile_offline_changes_${user.id}`);
@@ -1155,6 +1170,7 @@ export default function ProfileEditPage() {
       
       const updateData: any = {
         name: formData.name,
+        displayName: formData.name, // Also update displayName (used by profile display)
         handle: formData.handle,
         email: emailToSave, // Always use Firebase Auth email or verified email
         bio: formData.bio,
