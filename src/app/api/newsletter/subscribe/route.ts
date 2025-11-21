@@ -9,7 +9,7 @@ const convertKitApiSecret = process.env.CONVERTKIT_API_SECRET; // Optional: Acco
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email } = body as { email?: string };
+    const { email, source } = body as { email?: string; source?: string };
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
@@ -89,6 +89,7 @@ export async function POST(request: Request) {
           unsubscribed: false,
           resubscribed: true,
           previousUnsubscribeAt: existingData.unsubscribedAt,
+          source: source || 'news-page',
           convertKitSubscribed,
           convertKitSubscriberId,
           convertKitFormId: convertKitFormId || null
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
         email: trimmedEmail,
         subscribedAt: serverTimestamp(),
         unsubscribed: false,
-        source: 'news-page',
+        source: source || 'news-page',
         convertKitSubscribed,
         convertKitSubscriberId,
         convertKitFormId: convertKitFormId || null
