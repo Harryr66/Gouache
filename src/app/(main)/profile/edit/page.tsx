@@ -965,12 +965,8 @@ export default function ProfileEditPage() {
         countryOfResidence: formData.countryOfResidence,
         hideLocation: formData.hideLocation,
         hideFlags: formData.hideFlags,
-        hideShowcaseLocations: formData.hideShowcaseLocations,
-        hideShop: formData.hideShop,
-        hideLearn: formData.hideLearn,
-        newsletterLink: formData.newsletterLink,
         updatedAt: new Date(),
-        isProfessional: allowArtistFields,
+        isProfessional: allowArtistFields, // Save the toggle value
       };
 
         if (allowArtistFields) {
@@ -1189,10 +1185,6 @@ export default function ProfileEditPage() {
         countryOfResidence: formData.countryOfResidence,
         hideLocation: formData.hideLocation,
         hideFlags: formData.hideFlags,
-        hideCard: formData.hideCard,
-        hideShowcaseLocations: formData.hideShowcaseLocations,
-        hideShop: formData.hideShop,
-        hideLearn: formData.hideLearn,
         updatedAt: new Date(),
         isProfessional: allowArtistFields, // Save the toggle value
       };
@@ -1268,6 +1260,8 @@ export default function ProfileEditPage() {
         updateData.suggestionsEnabled = formData.suggestionsEnabled;
         updateData.hideCard = formData.hideCard;
         updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
+        updateData.hideShop = formData.hideShop;
+        updateData.hideLearn = formData.hideLearn;
         updateData.newsletterLink = formData.newsletterLink || null;
         updateData.eventCity = formData.eventCity || null;
         updateData.eventCountry = formData.eventCountry || null;
