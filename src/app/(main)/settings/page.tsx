@@ -15,18 +15,30 @@ import {
   AlertCircle,
   Send,
   Settings,
-  LogOut
+  LogOut,
+  Trash2
 } from 'lucide-react';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { useAuth } from '@/providers/auth-provider';
-import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
-import { signOut as firebaseSignOut } from 'firebase/auth';
+import { db, auth, storage } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { signOut as firebaseSignOut, deleteUser } from 'firebase/auth';
+import { ref, listAll, deleteObject } from 'firebase/storage';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
 import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
 import { BusinessManager } from '@/components/business-manager';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function SettingsPage() {
   const { settings: discoverSettings, updateSettings: updateDiscoverSettings } = useDiscoverSettings();
@@ -36,6 +48,8 @@ export default function SettingsPage() {
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [isSavingDiscoverSettings, setIsSavingDiscoverSettings] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   
   // Discover preferences state - load from user preferences
   const [discoverPrefs, setDiscoverPrefs] = useState({
@@ -85,6 +99,135 @@ export default function SettingsPage() {
       });
     } finally {
       setIsSigningOut(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user || !auth.currentUser) {
+      toast({
+        title: 'Error',
+        description: 'User not found. Please refresh the page.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      const userId = user.id;
+      const batch = writeBatch(db);
+
+      // 1. Delete user profile
+      const userProfileRef = doc(db, 'userProfiles', userId);
+      batch.delete(userProfileRef);
+
+      // 2. Delete handle mapping
+      if (user.username) {
+        const handleRef = doc(db, 'handles', user.username);
+        batch.delete(handleRef);
+      }
+
+      // 3. Delete user's artworks
+      const artworksQuery = query(collection(db, 'artworks'), where('artist.userId', '==', userId));
+      const artworksSnapshot = await getDocs(artworksQuery);
+      artworksSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // 4. Delete user's posts
+      const postsQuery = query(collection(db, 'posts'), where('artist.id', '==', userId));
+      const postsSnapshot = await getDocs(postsQuery);
+      postsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // 5. Delete user's courses (if any)
+      const coursesQuery = query(collection(db, 'courses'), where('instructor.userId', '==', userId));
+      const coursesSnapshot = await getDocs(coursesQuery);
+      coursesSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // 6. Delete user's marketplace products
+      const productsQuery = query(collection(db, 'marketplaceProducts'), where('sellerId', '==', userId));
+      const productsSnapshot = await getDocs(productsQuery);
+      productsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // 7. Delete user's artist request (if any)
+      const artistRequestsQuery = query(collection(db, 'artistRequests'), where('userId', '==', userId));
+      const artistRequestsSnapshot = await getDocs(artistRequestsQuery);
+      artistRequestsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // Commit all Firestore deletions
+      await batch.commit();
+
+      // 8. Delete storage files (avatars, banners, portfolio)
+      try {
+        // Delete avatar
+        if (user.avatarUrl) {
+          try {
+            const avatarRef = ref(storage, `avatars/${userId}`);
+            await deleteObject(avatarRef);
+          } catch (error) {
+            console.warn('Could not delete avatar:', error);
+          }
+        }
+
+        // Delete banner
+        if (user.bannerImageUrl) {
+          try {
+            const bannerRef = ref(storage, `banners/${userId}`);
+            await deleteObject(bannerRef);
+          } catch (error) {
+            console.warn('Could not delete banner:', error);
+          }
+        }
+
+        // Delete portfolio images
+        try {
+          const portfolioRef = ref(storage, `portfolio/${userId}`);
+          const portfolioList = await listAll(portfolioRef);
+          await Promise.all(portfolioList.items.map(item => deleteObject(item)));
+        } catch (error) {
+          console.warn('Could not delete portfolio images:', error);
+        }
+      } catch (storageError) {
+        console.warn('Error deleting storage files:', storageError);
+        // Continue with account deletion even if storage cleanup fails
+      }
+
+      // 9. Delete Firebase Auth user (must be last)
+      await deleteUser(auth.currentUser);
+
+      toast({
+        title: 'Account deleted',
+        description: 'Your account and all associated data have been permanently deleted.',
+      });
+
+      // Redirect to login
+      router.push('/login');
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      
+      let errorMessage = 'Failed to delete account. Please try again.';
+      if (error.code === 'auth/requires-recent-login') {
+        errorMessage = 'For security, please sign out and sign back in, then try deleting your account again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: 'Deletion failed',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDeletingAccount(false);
+      setShowDeleteAccountDialog(false);
     }
   };
   
@@ -248,6 +391,64 @@ export default function SettingsPage() {
                     {isSigningOut ? 'Signing out…' : 'Sign Out'}
                   </Button>
                 </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg border-destructive">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm sm:text-base text-destructive">Delete Account</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Permanently delete your account and all associated data. This action cannot be undone.
+                    </p>
+                  </div>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => setShowDeleteAccountDialog(true)}
+                    disabled={isDeletingAccount}
+                    className="w-full sm:w-auto shrink-0"
+                    size="sm"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {isDeletingAccount ? 'Deleting…' : 'Delete Account'}
+                  </Button>
+                </div>
+
+                <AlertDialog open={showDeleteAccountDialog} onOpenChange={setShowDeleteAccountDialog}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-2">
+                        <p>
+                          This action <strong>cannot be undone</strong>. This will permanently delete:
+                        </p>
+                        <ul className="list-disc list-inside space-y-1 text-sm">
+                          <li>Your account and profile</li>
+                          <li>All your artworks and portfolio</li>
+                          <li>All your posts and content</li>
+                          {user?.isProfessional && (
+                            <>
+                              <li>All your courses</li>
+                              <li>All your marketplace products</li>
+                            </>
+                          )}
+                          <li>All your uploaded images and files</li>
+                          <li>All your account data</li>
+                        </ul>
+                        <p className="font-semibold text-destructive mt-2">
+                          This action is permanent and irreversible.
+                        </p>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isDeletingAccount}>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteAccount}
+                        disabled={isDeletingAccount}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isDeletingAccount ? 'Deleting...' : 'Yes, delete my account'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardContent>
             </Card>
           </TabsContent>

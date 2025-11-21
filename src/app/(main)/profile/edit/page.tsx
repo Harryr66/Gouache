@@ -1062,6 +1062,15 @@ export default function ProfileEditPage() {
     formData.name,
     formData.email,
     formData.bio,
+    formData.isProfessional,
+    formData.tipJarEnabled,
+    formData.suggestionsEnabled,
+    formData.hideLocation,
+    formData.hideFlags,
+    formData.hideCard,
+    formData.hideShowcaseLocations,
+    formData.hideShop,
+    formData.hideLearn,
     formData.artistType,
     formData.location,
     formData.countryOfOrigin,
@@ -1146,7 +1155,8 @@ export default function ProfileEditPage() {
 
       // Update user profile - filter out undefined values
       const userRef = doc(db, 'userProfiles', user.id);
-      const allowArtistFields = Boolean(user.isProfessional);
+      // Use formData.isProfessional (the toggle value) instead of user.isProfessional
+      const allowArtistFields = Boolean(formData.isProfessional);
       
       // CRITICAL: Email sync - Only update Firestore email if it matches Firebase Auth email
       // Firebase Auth email is the source of truth for password reset and authentication
@@ -1179,8 +1189,12 @@ export default function ProfileEditPage() {
         countryOfResidence: formData.countryOfResidence,
         hideLocation: formData.hideLocation,
         hideFlags: formData.hideFlags,
+        hideCard: formData.hideCard,
+        hideShowcaseLocations: formData.hideShowcaseLocations,
+        hideShop: formData.hideShop,
+        hideLearn: formData.hideLearn,
         updatedAt: new Date(),
-        isProfessional: allowArtistFields,
+        isProfessional: allowArtistFields, // Save the toggle value
       };
 
       // Update email in Firebase Auth if it has changed
