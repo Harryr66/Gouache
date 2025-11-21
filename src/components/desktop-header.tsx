@@ -9,7 +9,8 @@ import { Eye, Fingerprint, Globe, ShoppingCart } from 'lucide-react';
 const navigation = [
   { name: 'News', href: '/news', icon: Globe },
   { name: 'Discover', href: '/discover', icon: Eye },
-  { name: 'Marketplace', href: '/learn', icon: ShoppingCart },
+  // Marketplace temporarily hidden for MVP - will be re-enabled in future
+  // { name: 'Marketplace', href: '/learn', icon: ShoppingCart },
   { name: 'Profile', href: '/profile', icon: Fingerprint },
 ];
 
