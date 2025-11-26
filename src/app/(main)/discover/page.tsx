@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Check, Mail, Palette, Sparkles } from 'lucide-react';
+import { Loader2, Check, Mail, Palette, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 
@@ -177,14 +177,13 @@ export default function DiscoverPage() {
         {/* Coming Soon Header */}
         <div className="text-center space-y-6 mb-16">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
-            <Sparkles className="h-10 w-10 text-primary" />
+            <Eye className="h-10 w-10 text-primary" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
             Discover is Coming Soon
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            We're building something amazing to help you discover incredible artists and artworks from around the world. 
-            Be the first to know when we launch.
+            Discover Upcoming Exhibitions, Events & More
           </p>
         </div>
 
@@ -342,8 +341,8 @@ export default function DiscoverPage() {
         <div className="mt-16 text-center space-y-4">
           <Separator className="max-w-md mx-auto" />
           <p className="text-muted-foreground">
-            Have questions? <a href="/contact" className="text-primary hover:underline">Contact us</a> or visit our{' '}
-            <a href="/news" className="text-primary hover:underline">newsroom</a> for updates.
+            Visit our{' '}
+            <a href="/news" className="text-primary hover:underline">newsroom</a> for updates and news.
           </p>
               </div>
       </div>
