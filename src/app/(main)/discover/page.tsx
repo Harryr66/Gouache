@@ -176,7 +176,7 @@ export default function DiscoverPage() {
       <div className="container mx-auto px-4 py-16 max-w-4xl">
         {/* Coming Soon Header */}
         <div className="text-center space-y-6 mb-16">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
+          <div className="inline-flex items-center justify-center mb-4">
             <Eye className="h-10 w-10 text-primary" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
