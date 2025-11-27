@@ -126,7 +126,7 @@ html {
 
 @layer utilities {
   .gradient-border {
-    border: 2px solid transparent !important;
+    border: 3px solid transparent !important;
     background:
       linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
       var(--gradient-border) border-box !important;

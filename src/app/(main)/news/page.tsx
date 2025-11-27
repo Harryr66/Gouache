@@ -212,7 +212,7 @@ export default function NewsPage() {
       </header>
 
       {/* Newsletter Signup - Accent Banner (pill, slimmer) */}
-      <div className="bg-red-600 dark:bg-slate-900 rounded-full px-5 py-4 sm:px-6 sm:py-4">
+      <div className="bg-red-600 dark:bg-slate-900 rounded-xl sm:rounded-full px-5 py-4 sm:px-6 sm:py-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <div className="flex-shrink-0 px-2 sm:px-4">
             <div className="text-center sm:text-left">
