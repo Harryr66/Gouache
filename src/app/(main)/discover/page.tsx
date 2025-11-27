@@ -152,8 +152,8 @@ export default function DiscoverPage() {
       });
       
       toast({
-        title: 'Request submitted!',
-        description: 'Thank you for your interest. We\'ll review your request and get back to you soon.',
+        title: 'Submitted',
+        description: 'Your application will be reviewed and you will receive an email link upon confirmation.',
       });
 
       setTimeout(() => {
