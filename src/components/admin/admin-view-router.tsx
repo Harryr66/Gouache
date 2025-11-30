@@ -688,14 +688,125 @@ export function AdminViewRouter(props: any) {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="article-body-editor">Article Body *</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="article-body-editor">Article Body *</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const editor = document.getElementById('article-body-editor') as HTMLDivElement;
+                            if (!editor) return;
+                            
+                            // Check if an image is selected
+                            const selectedImages = editor.querySelectorAll('.article-image[style*="outline"]');
+                            if (selectedImages.length > 0) {
+                              // Align selected images to left
+                              selectedImages.forEach((imgEl) => {
+                                const img = imgEl as HTMLElement;
+                                const wrapper = img.closest('.image-wrapper') as HTMLElement;
+                                if (wrapper) {
+                                  wrapper.style.textAlign = 'left';
+                                  wrapper.style.marginLeft = '0';
+                                  wrapper.style.marginRight = 'auto';
+                                  wrapper.style.display = 'block';
+                                }
+                              });
+                            } else {
+                              // Align text to left
+                              document.execCommand('justifyLeft', false);
+                            }
+                            editor.focus();
+                          }}
+                          title="Align Left"
+                        >
+                          <Type className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const editor = document.getElementById('article-body-editor') as HTMLDivElement;
+                            if (!editor) return;
+                            
+                            // Check if an image is selected
+                            const selectedImages = editor.querySelectorAll('.article-image[style*="outline"]');
+                            if (selectedImages.length > 0) {
+                              // Align selected images to center
+                              selectedImages.forEach((imgEl) => {
+                                const img = imgEl as HTMLElement;
+                                const wrapper = img.closest('.image-wrapper') as HTMLElement;
+                                if (wrapper) {
+                                  wrapper.style.textAlign = 'center';
+                                  wrapper.style.marginLeft = 'auto';
+                                  wrapper.style.marginRight = 'auto';
+                                  wrapper.style.display = 'block';
+                                }
+                              });
+                            } else {
+                              // Align text to center
+                              document.execCommand('justifyCenter', false);
+                            }
+                            editor.focus();
+                          }}
+                          title="Align Center"
+                        >
+                          <Type className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const editor = document.getElementById('article-body-editor') as HTMLDivElement;
+                            if (!editor) return;
+                            
+                            // Check if an image is selected
+                            const selectedImages = editor.querySelectorAll('.article-image[style*="outline"]');
+                            if (selectedImages.length > 0) {
+                              const img = selectedImages[0] as HTMLImageElement;
+                              const currentWidth = img.offsetWidth;
+                              const newWidth = prompt('Enter image width in pixels (200-1200):', currentWidth.toString());
+                              if (newWidth) {
+                                const width = parseInt(newWidth);
+                                if (!isNaN(width) && width >= 200 && width <= 1200) {
+                                  const aspectRatio = img.naturalWidth / img.naturalHeight;
+                                  img.style.width = `${width}px`;
+                                  img.style.height = `${width / aspectRatio}px`;
+                                  img.style.maxWidth = '100%';
+                                } else {
+                                  toast({
+                                    title: 'Invalid size',
+                                    description: 'Please enter a number between 200 and 1200.',
+                                    variant: 'destructive'
+                                  });
+                                }
+                              }
+                            } else {
+                              toast({
+                                title: 'No image selected',
+                                description: 'Please click on an image first to resize it.',
+                                variant: 'destructive'
+                              });
+                            }
+                            editor.focus();
+                          }}
+                          title="Resize Image"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Paste images directly into the editor between paragraphs. Images can be resized by dragging.
+                      Paste images directly into the editor. Click images to select, then use alignment buttons. Use resize button or drag corner handle to resize.
                     </p>
                     <div
                       id="article-body-editor"
                       contentEditable
                       onPaste={props.handleBodyPaste}
+                      onClick={props.handleEditorClick}
                       className="min-h-[500px] w-full rounded-lg border border-input bg-background px-4 py-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       style={{ whiteSpace: 'pre-wrap' }}
                       suppressContentEditableWarning

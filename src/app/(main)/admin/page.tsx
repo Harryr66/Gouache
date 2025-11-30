@@ -681,46 +681,133 @@ export default function AdminPanel() {
               const range = selection.getRangeAt(0);
               range.deleteContents();
               
+              // Create wrapper div for image with resize handles
+              const wrapper = document.createElement('div');
+              wrapper.style.position = 'relative';
+              wrapper.style.display = 'block';
+              wrapper.style.margin = '1rem auto';
+              wrapper.style.maxWidth = '100%';
+              wrapper.style.textAlign = 'left';
+              wrapper.className = 'image-wrapper';
+              
               const img = document.createElement('img');
               img.src = imageUrl;
               img.style.maxWidth = '100%';
               img.style.height = 'auto';
               img.style.display = 'block';
-              img.style.margin = '1rem 0';
+              img.style.width = 'auto';
               img.contentEditable = 'false';
-              img.draggable = true;
+              img.draggable = false;
+              img.className = 'article-image';
               
-              // Make image resizable
-              img.addEventListener('mousedown', (e) => {
-                if (e.shiftKey) {
-                  e.preventDefault();
-                  const startX = e.pageX;
-                  const startWidth = img.offsetWidth;
-                  
-                  const onMouseMove = (e: MouseEvent) => {
-                    const diff = e.pageX - startX;
-                    const newWidth = Math.max(200, Math.min(1200, startWidth + diff));
-                    img.style.width = `${newWidth}px`;
-                  };
-                  
-                  const onMouseUp = () => {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                  };
-                  
-                  document.addEventListener('mousemove', onMouseMove);
-                  document.addEventListener('mouseup', onMouseUp);
+              // Add resize handle
+              const resizeHandle = document.createElement('div');
+              resizeHandle.style.position = 'absolute';
+              resizeHandle.style.bottom = '0';
+              resizeHandle.style.right = '0';
+              resizeHandle.style.width = '24px';
+              resizeHandle.style.height = '24px';
+              resizeHandle.style.backgroundColor = '#3b82f6';
+              resizeHandle.style.border = '2px solid white';
+              resizeHandle.style.cursor = 'nwse-resize';
+              resizeHandle.style.borderRadius = '4px 0 4px 0';
+              resizeHandle.style.display = 'none';
+              resizeHandle.style.zIndex = '10';
+              resizeHandle.className = 'resize-handle';
+              resizeHandle.title = 'Drag to resize image';
+              
+              // Show resize handle on image hover or when selected
+              const showResizeHandle = () => {
+                resizeHandle.style.display = 'block';
+              };
+              const hideResizeHandle = () => {
+                // Only hide if image is not selected
+                if (!img.style.outline || img.style.outline === 'none') {
+                  resizeHandle.style.display = 'none';
                 }
+              };
+              
+              wrapper.addEventListener('mouseenter', showResizeHandle);
+              wrapper.addEventListener('mouseleave', hideResizeHandle);
+              
+              // Make image resizable with handle
+              let isResizing = false;
+              resizeHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                isResizing = true;
+                const startX = e.pageX;
+                const startY = e.pageY;
+                const startWidth = img.offsetWidth;
+                const startHeight = img.offsetHeight;
+                
+                const onMouseMove = (e: MouseEvent) => {
+                  if (!isResizing) return;
+                  const diffX = e.pageX - startX;
+                  const diffY = e.pageY - startY;
+                  const aspectRatio = startWidth / startHeight;
+                  
+                  // Calculate new dimensions maintaining aspect ratio
+                  let newWidth = startWidth + diffX;
+                  let newHeight = startHeight + diffY;
+                  
+                  // Maintain aspect ratio based on which dimension changed more
+                  if (Math.abs(diffX) > Math.abs(diffY)) {
+                    newHeight = newWidth / aspectRatio;
+                  } else {
+                    newWidth = newHeight * aspectRatio;
+                  }
+                  
+                  // Constrain to reasonable limits
+                  newWidth = Math.max(200, Math.min(1200, newWidth));
+                  newHeight = Math.max(150, Math.min(900, newHeight));
+                  
+                  img.style.width = `${newWidth}px`;
+                  img.style.height = `${newHeight}px`;
+                };
+                
+                const onMouseUp = () => {
+                  isResizing = false;
+                  document.removeEventListener('mousemove', onMouseMove);
+                  document.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
               });
               
-              range.insertNode(img);
+              // Make image selectable for alignment
+              img.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Clear other selections
+                document.querySelectorAll('.article-image').forEach(el => {
+                  (el as HTMLElement).style.outline = 'none';
+                  const wrapper = (el as HTMLElement).closest('.image-wrapper');
+                  if (wrapper) {
+                    const handle = wrapper.querySelector('.resize-handle') as HTMLElement;
+                    if (handle) handle.style.display = 'none';
+                  }
+                });
+                img.style.outline = '2px solid #3b82f6';
+                img.style.outlineOffset = '2px';
+                // Show resize handle for selected image
+                resizeHandle.style.display = 'block';
+              });
+              
+              wrapper.appendChild(img);
+              wrapper.appendChild(resizeHandle);
+              range.insertNode(wrapper);
+              
+              // Select the image
               selection.removeAllRanges();
-              selection.addRange(range);
+              const newRange = document.createRange();
+              newRange.selectNode(wrapper);
+              selection.addRange(newRange);
             }
             
             toast({
               title: 'Image pasted',
-              description: 'Image has been inserted into the article. Hold Shift and drag to resize.',
+              description: 'Image inserted. Click to select, then use alignment buttons. Drag corner to resize.',
             });
           } catch (error) {
             console.error('Failed to upload pasted image:', error);
@@ -732,6 +819,43 @@ export default function AdminPanel() {
           }
         }
       }
+    }
+  };
+
+  // Handle editor clicks to select images
+  const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG' || target.closest('.image-wrapper')) {
+      const img = target.tagName === 'IMG' ? target : target.querySelector('img');
+      if (img) {
+        // Clear other selections
+        document.querySelectorAll('.article-image').forEach(el => {
+          (el as HTMLElement).style.outline = 'none';
+          const wrapper = (el as HTMLElement).closest('.image-wrapper');
+          if (wrapper) {
+            const handle = wrapper.querySelector('.resize-handle') as HTMLElement;
+            if (handle) handle.style.display = 'none';
+          }
+        });
+        (img as HTMLElement).style.outline = '2px solid #3b82f6';
+        (img as HTMLElement).style.outlineOffset = '2px';
+        // Show resize handle for selected image
+        const wrapper = (img as HTMLElement).closest('.image-wrapper');
+        if (wrapper) {
+          const handle = wrapper.querySelector('.resize-handle') as HTMLElement;
+          if (handle) handle.style.display = 'block';
+        }
+      }
+    } else {
+      // Clear all selections when clicking elsewhere
+      document.querySelectorAll('.article-image').forEach(el => {
+        (el as HTMLElement).style.outline = 'none';
+        const wrapper = (el as HTMLElement).closest('.image-wrapper');
+        if (wrapper) {
+          const handle = wrapper.querySelector('.resize-handle') as HTMLElement;
+          if (handle) handle.style.display = 'none';
+        }
+      });
     }
   };
 
@@ -1730,6 +1854,7 @@ export default function AdminPanel() {
       addProductTag={addProductTag}
       removeProductTag={removeProductTag}
       handleBodyPaste={handleBodyPaste}
+      handleEditorClick={handleEditorClick}
       handleNewsArticleImageChange={handleNewsArticleImageChange}
       clearNewsArticleImage={clearNewsArticleImage}
       formatDate={formatDate}
