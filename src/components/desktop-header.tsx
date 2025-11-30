@@ -26,14 +26,14 @@ export function DesktopHeader() {
           alt="Gouache"
           width={1750}
           height={375}
-          className="block h-10 w-auto dark:hidden sm:h-14"
+          className="block h-8 w-auto dark:hidden sm:h-10"
         />
         <img
           src="/assets/gouache-logo-dark-20241111.png"
           alt="Gouache"
           width={1750}
           height={375}
-          className="hidden h-10 w-auto dark:block sm:h-14"
+          className="hidden h-8 w-auto dark:block sm:h-10"
         />
       </Link>
       
