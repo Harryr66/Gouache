@@ -1319,13 +1319,32 @@ export default function AdminPanel() {
         return;
       }
       
+      // Upload hero image if provided
+      let heroImageUrl = DEFAULT_ARTICLE_IMAGE;
+      if (newArticleImageFile) {
+        try {
+          const fileName = `${Date.now()}_${newArticleImageFile.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/articles/hero/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, newArticleImageFile);
+          heroImageUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+          console.error('Failed to upload hero image:', error);
+          toast({
+            title: 'Image upload failed',
+            description: 'Could not upload hero image. Using default image.',
+            variant: 'destructive'
+          });
+        }
+      }
+      
       const docRef = await addDoc(collection(db, 'newsArticles'), {
         title: newArticle.title.trim(),
         summary: '', // Empty summary for simplified editor
         subheadline: newArticleSubheadline.trim() || undefined,
         category: 'Stories', // Default category
         author: '',
-        imageUrl: DEFAULT_ARTICLE_IMAGE,
+        imageUrl: heroImageUrl,
         externalUrl: '',
         featured: false,
         tags: [],
@@ -1345,7 +1364,7 @@ export default function AdminPanel() {
           summary: '',
           category: 'Stories',
           author: '',
-          imageUrl: DEFAULT_ARTICLE_IMAGE,
+          imageUrl: heroImageUrl,
           externalUrl: '',
           featured: false,
           tags: [],

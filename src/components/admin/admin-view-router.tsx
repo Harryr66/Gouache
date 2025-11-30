@@ -654,6 +654,40 @@ export function AdminViewRouter(props: any) {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="hero-image">Hero Image</Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Upload a hero image that will appear at the top of the article (optional).
+                    </p>
+                    {props.newArticleImagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={props.newArticleImagePreview}
+                          alt="Hero preview"
+                          className="w-full h-64 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2"
+                          onClick={props.clearNewsArticleImage}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="hero-image"
+                          type="file"
+                          accept="image/*"
+                          onChange={props.handleNewsArticleImageChange}
+                          className="cursor-pointer"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="article-body-editor">Article Body *</Label>
                     <p className="text-sm text-muted-foreground mb-2">
                       Paste images directly into the editor between paragraphs. Images can be resized by dragging.
