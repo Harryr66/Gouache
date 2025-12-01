@@ -1575,6 +1575,25 @@ export default function AdminPanel() {
         }
       }
       
+      // Upload thumbnail if provided
+      let thumbnailUrl: string | undefined = undefined;
+      if (newArticleThumbnailFile) {
+        try {
+          const fileName = `${Date.now()}_thumbnail_${newArticleThumbnailFile.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/articles/thumbnails/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, newArticleThumbnailFile);
+          thumbnailUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+          console.error('Failed to upload thumbnail:', error);
+          toast({
+            title: 'Thumbnail upload failed',
+            description: 'Could not upload thumbnail image.',
+            variant: 'destructive'
+          });
+        }
+      }
+      
       // Build article data object, omitting undefined values
       const articleData: any = {
         title: newArticle.title.trim(),
