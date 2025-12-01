@@ -145,6 +145,8 @@ export default function AdminPanel() {
   const [newArticleBody, setNewArticleBody] = useState('');
   const [newArticleImageFile, setNewArticleImageFile] = useState<File | null>(null);
   const [newArticleImagePreview, setNewArticleImagePreview] = useState<string | null>(null);
+  const [newArticleAuthorAvatarFile, setNewArticleAuthorAvatarFile] = useState<File | null>(null);
+  const [newArticleAuthorAvatarPreview, setNewArticleAuthorAvatarPreview] = useState<string | null>(null);
   const [isPublishingArticle, setIsPublishingArticle] = useState(false);
 
   useEffect(() => {
@@ -1481,13 +1483,32 @@ export default function AdminPanel() {
         }
       }
       
+      // Upload author avatar if provided
+      let authorAvatarUrl: string | undefined = undefined;
+      if (newArticleAuthorAvatarFile) {
+        try {
+          const fileName = `${Date.now()}_author_${newArticleAuthorAvatarFile.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/articles/authors/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, newArticleAuthorAvatarFile);
+          authorAvatarUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+          console.error('Failed to upload author avatar:', error);
+          toast({
+            title: 'Avatar upload failed',
+            description: 'Could not upload author avatar image.',
+            variant: 'destructive'
+          });
+        }
+      }
+      
       const docRef = await addDoc(collection(db, 'newsArticles'), {
         title: newArticle.title.trim(),
         summary: '', // Empty summary for simplified editor
         subheadline: newArticleSubheadline.trim() || undefined,
         category: 'Stories', // Default category
         author: newArticle.author.trim() || undefined,
-        authorAvatarUrl: newArticle.authorAvatarUrl.trim() || undefined,
+        authorAvatarUrl: authorAvatarUrl,
         imageUrl: heroImageUrl,
         externalUrl: '',
         featured: false,
@@ -1508,7 +1529,8 @@ export default function AdminPanel() {
           title: newArticle.title.trim(),
           summary: '',
           category: 'Stories',
-          author: '',
+          author: newArticle.author.trim() || undefined,
+          authorAvatarUrl: authorAvatarUrl,
           imageUrl: heroImageUrl,
           externalUrl: '',
           featured: false,
@@ -1548,6 +1570,8 @@ export default function AdminPanel() {
       }
       setNewArticleImageFile(null);
       setNewArticleImagePreview(null);
+      setNewArticleAuthorAvatarFile(null);
+      setNewArticleAuthorAvatarPreview(null);
     } catch (error) {
       console.error('Failed to save draft:', error);
       toast({
@@ -1607,13 +1631,32 @@ export default function AdminPanel() {
         }
       }
       
+      // Upload author avatar if provided
+      let authorAvatarUrl: string | undefined = undefined;
+      if (newArticleAuthorAvatarFile) {
+        try {
+          const fileName = `${Date.now()}_author_${newArticleAuthorAvatarFile.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/articles/authors/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, newArticleAuthorAvatarFile);
+          authorAvatarUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+          console.error('Failed to upload author avatar:', error);
+          toast({
+            title: 'Avatar upload failed',
+            description: 'Could not upload author avatar image.',
+            variant: 'destructive'
+          });
+        }
+      }
+      
       const docRef = await addDoc(collection(db, 'newsArticles'), {
         title: newArticle.title.trim(),
         summary: '', // Empty summary for simplified editor
         subheadline: newArticleSubheadline.trim() || undefined,
         category: 'Stories', // Default category
         author: newArticle.author.trim() || undefined,
-        authorAvatarUrl: newArticle.authorAvatarUrl.trim() || undefined,
+        authorAvatarUrl: authorAvatarUrl,
         imageUrl: heroImageUrl,
         externalUrl: '',
         featured: false,
@@ -1634,7 +1677,8 @@ export default function AdminPanel() {
           title: newArticle.title.trim(),
           summary: '',
           category: 'Stories',
-          author: '',
+          author: newArticle.author.trim() || undefined,
+          authorAvatarUrl: authorAvatarUrl,
           imageUrl: heroImageUrl,
           externalUrl: '',
           featured: false,
@@ -1674,6 +1718,8 @@ export default function AdminPanel() {
       }
       setNewArticleImageFile(null);
       setNewArticleImagePreview(null);
+      setNewArticleAuthorAvatarFile(null);
+      setNewArticleAuthorAvatarPreview(null);
     } catch (error) {
       console.error('Failed to create news article:', error);
       toast({
@@ -1699,6 +1745,21 @@ export default function AdminPanel() {
     setNewArticleImageFile(null);
     setNewArticleImagePreview(null);
     setNewArticle((prev) => ({ ...prev, imageUrl: '' }));
+  };
+
+  const handleAuthorAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setNewArticleAuthorAvatarFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setNewArticleAuthorAvatarPreview(previewUrl);
+  };
+
+  const clearAuthorAvatar = () => {
+    setNewArticleAuthorAvatarFile(null);
+    setNewArticleAuthorAvatarPreview(null);
+    setNewArticle((prev) => ({ ...prev, authorAvatarUrl: '' }));
   };
 
   const handleArchiveNewsArticle = async (article: NewsArticle, archive: boolean) => {
@@ -1995,6 +2056,12 @@ export default function AdminPanel() {
       setNewArticleImageFile={setNewArticleImageFile}
       newArticleImagePreview={newArticleImagePreview}
       setNewArticleImagePreview={setNewArticleImagePreview}
+      newArticleAuthorAvatarFile={newArticleAuthorAvatarFile}
+      setNewArticleAuthorAvatarFile={setNewArticleAuthorAvatarFile}
+      newArticleAuthorAvatarPreview={newArticleAuthorAvatarPreview}
+      setNewArticleAuthorAvatarPreview={setNewArticleAuthorAvatarPreview}
+      handleAuthorAvatarChange={handleAuthorAvatarChange}
+      clearAuthorAvatar={clearAuthorAvatar}
       isPublishingArticle={isPublishingArticle}
       setIsPublishingArticle={setIsPublishingArticle}
       rejectionReason={rejectionReason}
