@@ -574,6 +574,7 @@ export interface NewsArticle {
   publishedAt?: Date; // Optional for drafts
   updatedAt?: Date;
   author?: string;
+  authorAvatarUrl?: string; // Profile image URL for the article author
   tags?: string[];
   externalUrl?: string;
   featured?: boolean;

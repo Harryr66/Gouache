@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import { NewsArticle } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, Share2, ExternalLink } from 'lucide-react';
 import { ThemeLoading } from '@/components/theme-loading';
 import Image from 'next/image';
@@ -38,6 +39,7 @@ export default function NewsArticlePage() {
             publishedAt: data.publishedAt?.toDate?.() || new Date(data.publishedAt || Date.now()),
             updatedAt: data.updatedAt?.toDate?.(),
             author: data.author || '',
+            authorAvatarUrl: data.authorAvatarUrl || undefined,
             tags: data.tags || [],
             externalUrl: data.externalUrl || undefined,
             featured: data.featured || false,
@@ -167,12 +169,26 @@ export default function NewsArticlePage() {
               })}</span>
             </div>
             {article.imageUrl && (
-              <div className="relative w-full h-[400px] md:h-[500px] rounded-lg overflow-hidden mb-8">
+              <div className="relative w-full h-[500px] md:h-[600px] lg:h-[700px] rounded-lg overflow-hidden mb-8">
                 <img
                   src={article.imageUrl}
                   alt={article.title}
                   className="w-full h-full object-cover"
                 />
+                {/* Author Profile Image Overlay */}
+                {article.author && (
+                  <div className="absolute bottom-6 left-6">
+                    <Avatar className="h-20 w-20 md:h-24 md:w-24 border-4 border-background shadow-lg">
+                      <AvatarImage 
+                        src={article.authorAvatarUrl || undefined} 
+                        alt={article.author}
+                      />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-lg md:text-xl font-semibold">
+                        {article.author.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                )}
               </div>
             )}
           </header>
