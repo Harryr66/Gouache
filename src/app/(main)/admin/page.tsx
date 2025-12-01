@@ -1484,7 +1484,7 @@ export default function AdminPanel() {
           content: bodyContent,
           location: 'evergreen',
           status: 'draft',
-          publishedAt: null,
+          publishedAt: undefined,
           updatedAt: new Date(),
           archived: false
         },
