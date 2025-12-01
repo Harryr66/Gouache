@@ -688,6 +688,40 @@ export function AdminViewRouter(props: any) {
                     )}
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="article-thumbnail">News Page Thumbnail (optional)</Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Upload a thumbnail image for the news page listing. This will appear in the article card on the news page.
+                    </p>
+                    {props.newArticleThumbnailPreview ? (
+                      <div className="relative">
+                        <img
+                          src={props.newArticleThumbnailPreview}
+                          alt="Thumbnail preview"
+                          className="w-full h-48 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2"
+                          onClick={props.clearThumbnail}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="article-thumbnail"
+                          type="file"
+                          accept="image/*"
+                          onChange={props.handleThumbnailChange}
+                          className="cursor-pointer"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="hero-image">Hero Image</Label>
                     <p className="text-sm text-muted-foreground mb-2">
                       Upload a hero image that will appear at the top of the article (optional).
@@ -976,12 +1010,21 @@ export function AdminViewRouter(props: any) {
                   >
                     {props.isPublishingArticle ? 'Saving…' : 'Save as Draft'}
                   </Button>
-                  <Button 
-                    onClick={props.handleCreateNewsArticle} 
-                    disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
-                  >
-                    {props.isPublishingArticle ? 'Publishing…' : 'Publish article'}
-                  </Button>
+                  {props.editingArticleId ? (
+                    <Button 
+                      onClick={props.handleUpdateArticle} 
+                      disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
+                    >
+                      {props.isPublishingArticle ? 'Updating…' : 'Update Article'}
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={props.handleCreateNewsArticle} 
+                      disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
+                    >
+                      {props.isPublishingArticle ? 'Publishing…' : 'Publish article'}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1099,65 +1142,25 @@ export function AdminViewRouter(props: any) {
                               : 'Draft'}
                           </span>
                           <div className="flex items-center gap-2">
+                            {!article.archived && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  if (props.handleEditArticle) {
+                                    props.handleEditArticle(article);
+                                    setTimeout(() => {
+                                      document.getElementById('article-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }, 100);
+                                  }
+                                }}
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit
+                              </Button>
+                            )}
                             {article.status === 'draft' && !article.archived && (
                               <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={async () => {
-                                    try {
-                                      // Load draft into editor
-                                      const articleDoc = await getDoc(doc(db, 'newsArticles', article.id));
-                                      if (!articleDoc.exists()) {
-                                        toast({
-                                          title: 'Article not found',
-                                          variant: 'destructive',
-                                        });
-                                        return;
-                                      }
-
-                                      const data = articleDoc.data();
-                                      
-                                      props.setNewArticle({
-                                        title: data.title || '',
-                                        summary: data.summary || '',
-                                        category: data.category || 'Stories',
-                                        author: data.author || '',
-                                        imageUrl: data.imageUrl || '',
-                                        externalUrl: data.externalUrl || '',
-                                        publishedAt: '',
-                                        tags: (data.tags || []).join(', '),
-                                        location: data.location || 'evergreen',
-                                      });
-
-                                      // Load content into editor
-                                      const bodyEditor = document.getElementById('article-body-editor') as HTMLDivElement;
-                                      if (bodyEditor && data.content) {
-                                        bodyEditor.innerHTML = data.content;
-                                      }
-
-                                      // Scroll to editor
-                                      setTimeout(() => {
-                                        document.getElementById('article-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                      }, 100);
-
-                                      toast({
-                                        title: 'Draft loaded',
-                                        description: 'Article loaded into editor. Make your changes and publish.',
-                                      });
-                                    } catch (error) {
-                                      console.error('Error loading draft:', error);
-                                      toast({
-                                        title: 'Load failed',
-                                        description: 'Failed to load draft. Please try again.',
-                                        variant: 'destructive',
-                                      });
-                                    }
-                                  }}
-                                >
-                                  <Edit className="h-4 w-4 mr-1" />
-                                  Edit
-                                </Button>
                                 <Button
                                   variant="default"
                                   size="sm"

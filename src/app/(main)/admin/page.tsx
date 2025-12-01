@@ -147,6 +147,9 @@ export default function AdminPanel() {
   const [newArticleImagePreview, setNewArticleImagePreview] = useState<string | null>(null);
   const [newArticleAuthorAvatarFile, setNewArticleAuthorAvatarFile] = useState<File | null>(null);
   const [newArticleAuthorAvatarPreview, setNewArticleAuthorAvatarPreview] = useState<string | null>(null);
+  const [newArticleThumbnailFile, setNewArticleThumbnailFile] = useState<File | null>(null);
+  const [newArticleThumbnailPreview, setNewArticleThumbnailPreview] = useState<string | null>(null);
+  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
   const [isPublishingArticle, setIsPublishingArticle] = useState(false);
 
   useEffect(() => {
@@ -1572,13 +1575,11 @@ export default function AdminPanel() {
         }
       }
       
-      const docRef = await addDoc(collection(db, 'newsArticles'), {
+      // Build article data object, omitting undefined values
+      const articleData: any = {
         title: newArticle.title.trim(),
         summary: '', // Empty summary for simplified editor
-        subheadline: newArticleSubheadline.trim() || undefined,
         category: 'Stories', // Default category
-        author: newArticle.author.trim() || undefined,
-        authorAvatarUrl: authorAvatarUrl,
         imageUrl: heroImageUrl,
         externalUrl: '',
         featured: false,
@@ -1591,29 +1592,50 @@ export default function AdminPanel() {
         archivedAt: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      };
+      
+      // Only add optional fields if they have values
+      if (newArticleSubheadline.trim()) {
+        articleData.subheadline = newArticleSubheadline.trim();
+      }
+      if (newArticle.author.trim()) {
+        articleData.author = newArticle.author.trim();
+      } else {
+        articleData.author = '';
+      }
+      if (authorAvatarUrl) {
+        articleData.authorAvatarUrl = authorAvatarUrl;
+      }
+      if (thumbnailUrl) {
+        articleData.thumbnailUrl = thumbnailUrl;
+      }
+      
+      const docRef = await addDoc(collection(db, 'newsArticles'), articleData);
 
-      setNewsArticles((prev) => [
-        {
-          id: docRef.id,
-          title: newArticle.title.trim(),
-          summary: '',
-          category: 'Stories',
-          author: newArticle.author.trim() || undefined,
-          authorAvatarUrl: authorAvatarUrl,
-          imageUrl: heroImageUrl,
-          externalUrl: '',
-          featured: false,
-          tags: [],
-          content: bodyContent,
-          location: 'evergreen',
-          status: 'draft',
-          publishedAt: undefined,
-          updatedAt: new Date(),
-          archived: false
-        },
-        ...prev
-      ]);
+      const newArticleState: any = {
+        id: docRef.id,
+        title: newArticle.title.trim(),
+        summary: '',
+        category: 'Stories',
+        author: newArticle.author.trim() || '',
+        imageUrl: heroImageUrl,
+        externalUrl: '',
+        featured: false,
+        tags: [],
+        content: bodyContent,
+        location: 'evergreen',
+        status: 'draft',
+        publishedAt: undefined,
+        updatedAt: new Date(),
+        archived: false
+      };
+      if (authorAvatarUrl) {
+        newArticleState.authorAvatarUrl = authorAvatarUrl;
+      }
+      if (thumbnailUrl) {
+        newArticleState.thumbnailUrl = thumbnailUrl;
+      }
+      setNewsArticles((prev) => [newArticleState, ...prev]);
 
       toast({
         title: 'Draft saved',
@@ -1642,8 +1664,17 @@ export default function AdminPanel() {
       setNewArticleImagePreview(null);
       setNewArticleAuthorAvatarFile(null);
       setNewArticleAuthorAvatarPreview(null);
+      setNewArticleThumbnailFile(null);
+      setNewArticleThumbnailPreview(null);
+      setIsPublishingArticle(false);
     } catch (error) {
       console.error('Failed to save draft:', error);
+      setIsPublishingArticle(false);
+      toast({
+        title: 'Draft save failed',
+        description: 'We could not save that draft. Please try again.',
+        variant: 'destructive'
+      });
       toast({
         title: 'Save failed',
         description: 'We could not save the draft. Please try again.',
@@ -1720,13 +1751,30 @@ export default function AdminPanel() {
         }
       }
       
-      const docRef = await addDoc(collection(db, 'newsArticles'), {
+      // Upload thumbnail if provided
+      let thumbnailUrl: string | undefined = undefined;
+      if (newArticleThumbnailFile) {
+        try {
+          const fileName = `${Date.now()}_thumbnail_${newArticleThumbnailFile.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/articles/thumbnails/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, newArticleThumbnailFile);
+          thumbnailUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+          console.error('Failed to upload thumbnail:', error);
+          toast({
+            title: 'Thumbnail upload failed',
+            description: 'Could not upload thumbnail image.',
+            variant: 'destructive'
+          });
+        }
+      }
+      
+      // Build article data object, omitting undefined values
+      const articleData: any = {
         title: newArticle.title.trim(),
         summary: '', // Empty summary for simplified editor
-        subheadline: newArticleSubheadline.trim() || undefined,
         category: 'Stories', // Default category
-        author: newArticle.author.trim() || undefined,
-        authorAvatarUrl: authorAvatarUrl,
         imageUrl: heroImageUrl,
         externalUrl: '',
         featured: false,
@@ -1739,7 +1787,25 @@ export default function AdminPanel() {
         archivedAt: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      };
+      
+      // Only add optional fields if they have values
+      if (newArticleSubheadline.trim()) {
+        articleData.subheadline = newArticleSubheadline.trim();
+      }
+      if (newArticle.author.trim()) {
+        articleData.author = newArticle.author.trim();
+      } else {
+        articleData.author = '';
+      }
+      if (authorAvatarUrl) {
+        articleData.authorAvatarUrl = authorAvatarUrl;
+      }
+      if (thumbnailUrl) {
+        articleData.thumbnailUrl = thumbnailUrl;
+      }
+      
+      const docRef = await addDoc(collection(db, 'newsArticles'), articleData);
 
       setNewsArticles((prev) => [
         {
@@ -1790,6 +1856,8 @@ export default function AdminPanel() {
       setNewArticleImagePreview(null);
       setNewArticleAuthorAvatarFile(null);
       setNewArticleAuthorAvatarPreview(null);
+      setNewArticleThumbnailFile(null);
+      setNewArticleThumbnailPreview(null);
     } catch (error) {
       console.error('Failed to create news article:', error);
       toast({
@@ -1815,6 +1883,214 @@ export default function AdminPanel() {
     setNewArticleImageFile(null);
     setNewArticleImagePreview(null);
     setNewArticle((prev) => ({ ...prev, imageUrl: '' }));
+  };
+
+  const handleThumbnailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setNewArticleThumbnailFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setNewArticleThumbnailPreview(previewUrl);
+  };
+
+  const clearThumbnail = () => {
+    setNewArticleThumbnailFile(null);
+    setNewArticleThumbnailPreview(null);
+  };
+
+  const handleEditArticle = (article: NewsArticle) => {
+    setEditingArticleId(article.id);
+    setNewArticle({
+      title: article.title,
+      summary: article.summary || '',
+      category: article.category,
+      author: article.author || '',
+      authorAvatarUrl: article.authorAvatarUrl || '',
+      imageUrl: article.imageUrl,
+      externalUrl: article.externalUrl || '',
+      publishedAt: '',
+      tags: '',
+      location: article.location || 'evergreen'
+    });
+    setNewArticleSubheadline(article.subheadline || '');
+    setNewArticleBody(article.content || '');
+    
+    // Set previews if URLs exist
+    if (article.imageUrl) {
+      setNewArticleImagePreview(article.imageUrl);
+    }
+    if (article.authorAvatarUrl) {
+      setNewArticleAuthorAvatarPreview(article.authorAvatarUrl);
+    }
+    if ((article as any).thumbnailUrl) {
+      setNewArticleThumbnailPreview((article as any).thumbnailUrl);
+    }
+    
+    // Set editor content
+    setTimeout(() => {
+      const bodyEditor = document.getElementById('article-body-editor') as HTMLDivElement;
+      if (bodyEditor) {
+        bodyEditor.innerHTML = article.content || '';
+      }
+    }, 100);
+  };
+
+  const handleUpdateArticle = async () => {
+    if (!editingArticleId || !newArticle.title.trim()) {
+      toast({
+        title: 'Missing information',
+        description: 'Please provide a headline for the article.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsPublishingArticle(true);
+    try {
+      const bodyElement = document.getElementById('article-body-editor') as HTMLDivElement;
+      const bodyContent = bodyElement?.innerHTML || '';
+      
+      if (!bodyContent.trim()) {
+        toast({
+          title: 'Missing content',
+          description: 'Please add content to the article body.',
+          variant: 'destructive'
+        });
+        setIsPublishingArticle(false);
+        return;
+      }
+      
+      // Upload hero image if new file provided
+      let heroImageUrl = newArticle.imageUrl;
+      if (newArticleImageFile) {
+        try {
+          const fileName = `${Date.now()}_${newArticleImageFile.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/articles/hero/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, newArticleImageFile);
+          heroImageUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+          console.error('Failed to upload hero image:', error);
+          toast({
+            title: 'Image upload failed',
+            description: 'Could not upload hero image. Keeping existing image.',
+            variant: 'destructive'
+          });
+        }
+      }
+      
+      // Upload author avatar if new file provided
+      let authorAvatarUrl: string | undefined = undefined;
+      const existingArticle = newsArticles.find(a => a.id === editingArticleId);
+      if (existingArticle?.authorAvatarUrl) {
+        authorAvatarUrl = existingArticle.authorAvatarUrl;
+      }
+      if (newArticleAuthorAvatarFile) {
+        try {
+          const fileName = `${Date.now()}_author_${newArticleAuthorAvatarFile.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/articles/authors/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, newArticleAuthorAvatarFile);
+          authorAvatarUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+          console.error('Failed to upload author avatar:', error);
+        }
+      }
+      
+      // Upload thumbnail if new file provided
+      let thumbnailUrl: string | undefined = undefined;
+      if (existingArticle && (existingArticle as any).thumbnailUrl) {
+        thumbnailUrl = (existingArticle as any).thumbnailUrl;
+      }
+      if (newArticleThumbnailFile) {
+        try {
+          const fileName = `${Date.now()}_thumbnail_${newArticleThumbnailFile.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/articles/thumbnails/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, newArticleThumbnailFile);
+          thumbnailUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+          console.error('Failed to upload thumbnail:', error);
+        }
+      }
+      
+      // Build update data object
+      const updateData: any = {
+        title: newArticle.title.trim(),
+        summary: '',
+        category: 'Stories',
+        imageUrl: heroImageUrl,
+        content: bodyContent,
+        location: 'evergreen',
+        updatedAt: serverTimestamp()
+      };
+      
+      if (newArticleSubheadline.trim()) {
+        updateData.subheadline = newArticleSubheadline.trim();
+      }
+      if (newArticle.author.trim()) {
+        updateData.author = newArticle.author.trim();
+      } else {
+        updateData.author = '';
+      }
+      if (authorAvatarUrl) {
+        updateData.authorAvatarUrl = authorAvatarUrl;
+      }
+      if (thumbnailUrl) {
+        updateData.thumbnailUrl = thumbnailUrl;
+      }
+      
+      await updateDoc(doc(db, 'newsArticles', editingArticleId), updateData);
+      
+      // Update local state
+      setNewsArticles((prev) => prev.map((article) => 
+        article.id === editingArticleId 
+          ? { ...article, ...updateData, id: editingArticleId }
+          : article
+      ));
+      
+      toast({
+        title: 'Article updated',
+        description: `"${newArticle.title}" has been updated.`
+      });
+      
+      // Reset form
+      setEditingArticleId(null);
+      setNewArticle({
+        title: '',
+        summary: '',
+        category: 'Stories',
+        author: '',
+        authorAvatarUrl: '',
+        imageUrl: '',
+        externalUrl: '',
+        publishedAt: '',
+        tags: '',
+        location: 'evergreen'
+      });
+      setNewArticleSubheadline('');
+      setNewArticleBody('');
+      const bodyEditor = document.getElementById('article-body-editor') as HTMLDivElement;
+      if (bodyEditor) {
+        bodyEditor.innerHTML = '';
+      }
+      setNewArticleImageFile(null);
+      setNewArticleImagePreview(null);
+      setNewArticleAuthorAvatarFile(null);
+      setNewArticleAuthorAvatarPreview(null);
+      setNewArticleThumbnailFile(null);
+      setNewArticleThumbnailPreview(null);
+    } catch (error) {
+      console.error('Failed to update article:', error);
+      toast({
+        title: 'Update failed',
+        description: 'We could not update that article. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsPublishingArticle(false);
+    }
   };
 
   const handleAuthorAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -2063,8 +2339,17 @@ export default function AdminPanel() {
       handleRejectAffiliateRequest={handleRejectAffiliateRequest}
       handleCreateNewsArticle={handleCreateNewsArticle}
       handleSaveDraftArticle={handleSaveDraftArticle}
+      handleUpdateArticle={handleUpdateArticle}
+      handleEditArticle={handleEditArticle}
+      editingArticleId={editingArticleId}
       handleArchiveNewsArticle={handleArchiveNewsArticle}
       handleDeleteNewsArticle={handleDeleteNewsArticle}
+      newArticleThumbnailFile={newArticleThumbnailFile}
+      setNewArticleThumbnailFile={setNewArticleThumbnailFile}
+      newArticleThumbnailPreview={newArticleThumbnailPreview}
+      setNewArticleThumbnailPreview={setNewArticleThumbnailPreview}
+      handleThumbnailChange={handleThumbnailChange}
+      clearThumbnail={clearThumbnail}
       handleUpdateReportStatus={handleUpdateReportStatus}
       productTitle={productTitle}
       setProductTitle={setProductTitle}
