@@ -731,50 +731,78 @@ export default function AdminPanel() {
         wrapper.addEventListener('mouseleave', hideResizeHandle);
         
         // Make image resizable with handle
-        let isResizing = false;
-        resizeHandle.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          isResizing = true;
-          const startX = e.pageX;
-          const startY = e.pageY;
-          const startWidth = img.offsetWidth;
-          const startHeight = img.offsetHeight;
+        // Use a closure to ensure each resize handle only affects its own image
+        (() => {
+          let isResizing = false;
+          const thisImg = img; // Capture the specific image in closure
+          const thisWrapper = wrapper; // Capture the specific wrapper in closure
           
-          const onMouseMove = (e: MouseEvent) => {
-            if (!isResizing) return;
-            const diffX = e.pageX - startX;
-            const diffY = e.pageY - startY;
-            const aspectRatio = startWidth / startHeight;
+          resizeHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation(); // Prevent other handlers from firing
             
-            // Calculate new dimensions maintaining aspect ratio
-            let newWidth = startWidth + diffX;
-            let newHeight = startHeight + diffY;
-            
-            // Maintain aspect ratio based on which dimension changed more
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-              newHeight = newWidth / aspectRatio;
-            } else {
-              newWidth = newHeight * aspectRatio;
+            // Only allow resizing if this image is selected
+            if (thisImg.style.outline === 'none' || !thisImg.style.outline) {
+              return;
             }
             
-            // Constrain to reasonable limits
-            newWidth = Math.max(200, Math.min(1200, newWidth));
-            newHeight = Math.max(150, Math.min(900, newHeight));
+            isResizing = true;
+            const startX = e.pageX;
+            const startY = e.pageY;
+            const startWidth = thisImg.offsetWidth;
+            const startHeight = thisImg.offsetHeight;
             
-            img.style.width = `${newWidth}px`;
-            img.style.height = `${newHeight}px`;
-          };
-          
-          const onMouseUp = () => {
-            isResizing = false;
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-          };
-          
-          document.addEventListener('mousemove', onMouseMove);
-          document.addEventListener('mouseup', onMouseUp);
-        });
+            const onMouseMove = (e: MouseEvent) => {
+              if (!isResizing) return;
+              
+              // Double-check we're still resizing the correct image
+              if (thisImg.style.outline === 'none' || !thisImg.style.outline) {
+                isResizing = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                return;
+              }
+              
+              e.preventDefault();
+              e.stopPropagation();
+              
+              const diffX = e.pageX - startX;
+              const diffY = e.pageY - startY;
+              const aspectRatio = startWidth / startHeight;
+              
+              // Calculate new dimensions maintaining aspect ratio
+              let newWidth = startWidth + diffX;
+              let newHeight = startHeight + diffY;
+              
+              // Maintain aspect ratio based on which dimension changed more
+              if (Math.abs(diffX) > Math.abs(diffY)) {
+                newHeight = newWidth / aspectRatio;
+              } else {
+                newWidth = newHeight * aspectRatio;
+              }
+              
+              // Constrain to reasonable limits
+              newWidth = Math.max(200, Math.min(1200, newWidth));
+              newHeight = Math.max(150, Math.min(900, newHeight));
+              
+              // Only update THIS specific image
+              thisImg.style.width = `${newWidth}px`;
+              thisImg.style.height = `${newHeight}px`;
+            };
+            
+            const onMouseUp = (e: MouseEvent) => {
+              e.preventDefault();
+              e.stopPropagation();
+              isResizing = false;
+              document.removeEventListener('mousemove', onMouseMove);
+              document.removeEventListener('mouseup', onMouseUp);
+            };
+            
+            document.addEventListener('mousemove', onMouseMove, { capture: true });
+            document.addEventListener('mouseup', onMouseUp, { capture: true });
+          });
+        })();
         
         // Make image selectable for alignment
         img.addEventListener('click', (e) => {
