@@ -654,24 +654,15 @@ export function AdminViewRouter(props: any) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="article-author">Author Name</Label>
-                    <Input
-                      id="article-author"
-                      placeholder="e.g. John Doe"
-                      value={props.newArticle.author || ''}
-                      onChange={(event) => props.setNewArticle((prev: any) => ({ ...prev, author: event.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="author-avatar">Author Profile Image (optional)</Label>
+                    <Label htmlFor="artist-avatar">Artist Profile Image (optional)</Label>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Upload a profile image for the author. This will appear in the bottom left of the hero image.
+                      Upload a profile image for the artist. This will appear in the bottom left of the hero image.
                     </p>
                     {props.newArticleAuthorAvatarPreview ? (
                       <div className="relative">
                         <img
                           src={props.newArticleAuthorAvatarPreview}
-                          alt="Author avatar preview"
+                          alt="Artist avatar preview"
                           className="w-24 h-24 object-cover rounded-full border"
                         />
                         <Button
@@ -687,7 +678,7 @@ export function AdminViewRouter(props: any) {
                     ) : (
                       <div className="flex items-center gap-2">
                         <Input
-                          id="author-avatar"
+                          id="artist-avatar"
                           type="file"
                           accept="image/*"
                           onChange={props.handleAuthorAvatarChange}

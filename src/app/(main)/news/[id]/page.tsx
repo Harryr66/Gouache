@@ -175,13 +175,13 @@ export default function NewsArticlePage() {
                   alt={article.title}
                   className="w-full h-full object-cover"
                 />
-                {/* Author Profile Image Overlay */}
+                {/* Artist Profile Image Overlay */}
                 {(article.author || article.authorAvatarUrl) && (
                   <div className="absolute bottom-6 left-6 z-10">
                     <Avatar className="h-20 w-20 md:h-24 md:w-24 border-4 border-white dark:border-gray-800 shadow-xl ring-2 ring-white/20">
                       <AvatarImage 
                         src={article.authorAvatarUrl || undefined} 
-                        alt={article.author || 'Author'}
+                        alt={article.author || 'Artist'}
                         className="object-cover"
                       />
                       <AvatarFallback className="bg-primary text-primary-foreground text-lg md:text-xl font-semibold">
