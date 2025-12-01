@@ -660,6 +660,164 @@ export default function AdminPanel() {
     }
   };
 
+  // Reusable function to insert an image into the editor
+  const insertImageIntoEditor = async (file: File) => {
+    try {
+      const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
+      const storagePath = `news/articles/${fileName}`;
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, file);
+      const imageUrl = await getDownloadURL(storageRef);
+      
+      // Insert image into contentEditable div
+      const editor = document.getElementById('article-body-editor') as HTMLDivElement;
+      if (!editor) return;
+      
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        
+        // Create wrapper div for image with resize handles
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'relative';
+        wrapper.style.display = 'block';
+        wrapper.style.margin = '1rem auto';
+        wrapper.style.maxWidth = '100%';
+        wrapper.style.textAlign = 'left';
+        wrapper.className = 'image-wrapper';
+        
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.display = 'block';
+        img.style.width = 'auto';
+        img.contentEditable = 'false';
+        img.draggable = false;
+        img.className = 'article-image';
+        
+        // Add resize handle
+        const resizeHandle = document.createElement('div');
+        resizeHandle.style.position = 'absolute';
+        resizeHandle.style.bottom = '0';
+        resizeHandle.style.right = '0';
+        resizeHandle.style.width = '24px';
+        resizeHandle.style.height = '24px';
+        resizeHandle.style.backgroundColor = '#3b82f6';
+        resizeHandle.style.border = '2px solid white';
+        resizeHandle.style.cursor = 'nwse-resize';
+        resizeHandle.style.borderRadius = '4px 0 4px 0';
+        resizeHandle.style.display = 'none';
+        resizeHandle.style.zIndex = '10';
+        resizeHandle.className = 'resize-handle';
+        resizeHandle.title = 'Drag to resize image';
+        
+        // Show resize handle on image hover or when selected
+        const showResizeHandle = () => {
+          resizeHandle.style.display = 'block';
+        };
+        const hideResizeHandle = () => {
+          // Only hide if image is not selected
+          if (!img.style.outline || img.style.outline === 'none') {
+            resizeHandle.style.display = 'none';
+          }
+        };
+        
+        wrapper.addEventListener('mouseenter', showResizeHandle);
+        wrapper.addEventListener('mouseleave', hideResizeHandle);
+        
+        // Make image resizable with handle
+        let isResizing = false;
+        resizeHandle.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          isResizing = true;
+          const startX = e.pageX;
+          const startY = e.pageY;
+          const startWidth = img.offsetWidth;
+          const startHeight = img.offsetHeight;
+          
+          const onMouseMove = (e: MouseEvent) => {
+            if (!isResizing) return;
+            const diffX = e.pageX - startX;
+            const diffY = e.pageY - startY;
+            const aspectRatio = startWidth / startHeight;
+            
+            // Calculate new dimensions maintaining aspect ratio
+            let newWidth = startWidth + diffX;
+            let newHeight = startHeight + diffY;
+            
+            // Maintain aspect ratio based on which dimension changed more
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+              newHeight = newWidth / aspectRatio;
+            } else {
+              newWidth = newHeight * aspectRatio;
+            }
+            
+            // Constrain to reasonable limits
+            newWidth = Math.max(200, Math.min(1200, newWidth));
+            newHeight = Math.max(150, Math.min(900, newHeight));
+            
+            img.style.width = `${newWidth}px`;
+            img.style.height = `${newHeight}px`;
+          };
+          
+          const onMouseUp = () => {
+            isResizing = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+          
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+        
+        // Make image selectable for alignment
+        img.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Clear other selections
+          document.querySelectorAll('.article-image').forEach(el => {
+            (el as HTMLElement).style.outline = 'none';
+            const wrapper = (el as HTMLElement).closest('.image-wrapper');
+            if (wrapper) {
+              const handle = wrapper.querySelector('.resize-handle') as HTMLElement;
+              if (handle) handle.style.display = 'none';
+            }
+          });
+          img.style.outline = '2px solid #3b82f6';
+          img.style.outlineOffset = '2px';
+          // Show resize handle for selected image
+          resizeHandle.style.display = 'block';
+        });
+        
+        wrapper.appendChild(img);
+        wrapper.appendChild(resizeHandle);
+        range.insertNode(wrapper);
+        
+        // Select the image
+        selection.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.selectNode(wrapper);
+        selection.addRange(newRange);
+      }
+      
+      editor.focus();
+      
+      toast({
+        title: 'Image inserted',
+        description: 'Image inserted. Click to select, then use alignment buttons. Drag corner to resize.',
+      });
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      toast({
+        title: 'Upload failed',
+        description: 'Could not upload image. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   // Rich text editor handlers for image paste and resize
   const handleBodyPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
     const items = e.clipboardData.items;
@@ -668,158 +826,30 @@ export default function AdminPanel() {
         e.preventDefault();
         const file = items[i].getAsFile();
         if (file) {
-          try {
-            const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
-            const storagePath = `news/articles/${fileName}`;
-            const storageRef = ref(storage, storagePath);
-            await uploadBytes(storageRef, file);
-            const imageUrl = await getDownloadURL(storageRef);
-            
-            // Insert image into contentEditable div
-            const selection = window.getSelection();
-            if (selection && selection.rangeCount > 0) {
-              const range = selection.getRangeAt(0);
-              range.deleteContents();
-              
-              // Create wrapper div for image with resize handles
-              const wrapper = document.createElement('div');
-              wrapper.style.position = 'relative';
-              wrapper.style.display = 'block';
-              wrapper.style.margin = '1rem auto';
-              wrapper.style.maxWidth = '100%';
-              wrapper.style.textAlign = 'left';
-              wrapper.className = 'image-wrapper';
-              
-              const img = document.createElement('img');
-              img.src = imageUrl;
-              img.style.maxWidth = '100%';
-              img.style.height = 'auto';
-              img.style.display = 'block';
-              img.style.width = 'auto';
-              img.contentEditable = 'false';
-              img.draggable = false;
-              img.className = 'article-image';
-              
-              // Add resize handle
-              const resizeHandle = document.createElement('div');
-              resizeHandle.style.position = 'absolute';
-              resizeHandle.style.bottom = '0';
-              resizeHandle.style.right = '0';
-              resizeHandle.style.width = '24px';
-              resizeHandle.style.height = '24px';
-              resizeHandle.style.backgroundColor = '#3b82f6';
-              resizeHandle.style.border = '2px solid white';
-              resizeHandle.style.cursor = 'nwse-resize';
-              resizeHandle.style.borderRadius = '4px 0 4px 0';
-              resizeHandle.style.display = 'none';
-              resizeHandle.style.zIndex = '10';
-              resizeHandle.className = 'resize-handle';
-              resizeHandle.title = 'Drag to resize image';
-              
-              // Show resize handle on image hover or when selected
-              const showResizeHandle = () => {
-                resizeHandle.style.display = 'block';
-              };
-              const hideResizeHandle = () => {
-                // Only hide if image is not selected
-                if (!img.style.outline || img.style.outline === 'none') {
-                  resizeHandle.style.display = 'none';
-                }
-              };
-              
-              wrapper.addEventListener('mouseenter', showResizeHandle);
-              wrapper.addEventListener('mouseleave', hideResizeHandle);
-              
-              // Make image resizable with handle
-              let isResizing = false;
-              resizeHandle.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                isResizing = true;
-                const startX = e.pageX;
-                const startY = e.pageY;
-                const startWidth = img.offsetWidth;
-                const startHeight = img.offsetHeight;
-                
-                const onMouseMove = (e: MouseEvent) => {
-                  if (!isResizing) return;
-                  const diffX = e.pageX - startX;
-                  const diffY = e.pageY - startY;
-                  const aspectRatio = startWidth / startHeight;
-                  
-                  // Calculate new dimensions maintaining aspect ratio
-                  let newWidth = startWidth + diffX;
-                  let newHeight = startHeight + diffY;
-                  
-                  // Maintain aspect ratio based on which dimension changed more
-                  if (Math.abs(diffX) > Math.abs(diffY)) {
-                    newHeight = newWidth / aspectRatio;
-                  } else {
-                    newWidth = newHeight * aspectRatio;
-                  }
-                  
-                  // Constrain to reasonable limits
-                  newWidth = Math.max(200, Math.min(1200, newWidth));
-                  newHeight = Math.max(150, Math.min(900, newHeight));
-                  
-                  img.style.width = `${newWidth}px`;
-                  img.style.height = `${newHeight}px`;
-                };
-                
-                const onMouseUp = () => {
-                  isResizing = false;
-                  document.removeEventListener('mousemove', onMouseMove);
-                  document.removeEventListener('mouseup', onMouseUp);
-                };
-                
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-              });
-              
-              // Make image selectable for alignment
-              img.addEventListener('click', (e) => {
-                e.stopPropagation();
-                // Clear other selections
-                document.querySelectorAll('.article-image').forEach(el => {
-                  (el as HTMLElement).style.outline = 'none';
-                  const wrapper = (el as HTMLElement).closest('.image-wrapper');
-                  if (wrapper) {
-                    const handle = wrapper.querySelector('.resize-handle') as HTMLElement;
-                    if (handle) handle.style.display = 'none';
-                  }
-                });
-                img.style.outline = '2px solid #3b82f6';
-                img.style.outlineOffset = '2px';
-                // Show resize handle for selected image
-                resizeHandle.style.display = 'block';
-              });
-              
-              wrapper.appendChild(img);
-              wrapper.appendChild(resizeHandle);
-              range.insertNode(wrapper);
-              
-              // Select the image
-              selection.removeAllRanges();
-              const newRange = document.createRange();
-              newRange.selectNode(wrapper);
-              selection.addRange(newRange);
-            }
-            
-            toast({
-              title: 'Image pasted',
-              description: 'Image inserted. Click to select, then use alignment buttons. Drag corner to resize.',
-            });
-          } catch (error) {
-            console.error('Failed to upload pasted image:', error);
-            toast({
-              title: 'Upload failed',
-              description: 'Could not upload pasted image. Please try again.',
-              variant: 'destructive'
-            });
-          }
+          await insertImageIntoEditor(file);
         }
       }
     }
+  };
+
+  // Handle image file selection from browse button
+  const handleInsertImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please select an image file.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    await insertImageIntoEditor(file);
+    
+    // Reset the input so the same file can be selected again
+    event.target.value = '';
   };
 
   // Handle editor clicks to select images
@@ -1969,6 +1999,7 @@ export default function AdminPanel() {
       addProductTag={addProductTag}
       removeProductTag={removeProductTag}
       handleBodyPaste={handleBodyPaste}
+      handleInsertImage={handleInsertImage}
       handleEditorClick={handleEditorClick}
       handleNewsArticleImageChange={handleNewsArticleImageChange}
       clearNewsArticleImage={clearNewsArticleImage}

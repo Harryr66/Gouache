@@ -763,6 +763,28 @@ export function AdminViewRouter(props: any) {
                           variant="outline"
                           size="sm"
                           onClick={() => {
+                            // Trigger file input
+                            const fileInput = document.getElementById('insert-image-input') as HTMLInputElement;
+                            if (fileInput) {
+                              fileInput.click();
+                            }
+                          }}
+                          title="Insert Image"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                        </Button>
+                        <input
+                          id="insert-image-input"
+                          type="file"
+                          accept="image/*"
+                          onChange={props.handleInsertImage}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
                             const editor = document.getElementById('article-body-editor') as HTMLDivElement;
                             if (!editor) return;
                             
