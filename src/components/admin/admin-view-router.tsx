@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2, GripVertical, Type, ImageIcon, Check, Bold } from 'lucide-react';
+import { X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2, GripVertical, Type, ImageIcon, Check, Bold, Heading2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
@@ -706,6 +706,57 @@ export function AdminViewRouter(props: any) {
                           title="Bold"
                         >
                           <Bold className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const editor = document.getElementById('article-body-editor') as HTMLDivElement;
+                            if (!editor) return;
+                            
+                            const selection = window.getSelection();
+                            if (selection && selection.rangeCount > 0) {
+                              const range = selection.getRangeAt(0);
+                              
+                              // Check if text is selected
+                              if (range.collapsed) {
+                                // No text selected - insert a new heading
+                                const heading = document.createElement('h2');
+                                heading.textContent = 'Subheading';
+                                heading.style.fontSize = '1.5rem';
+                                heading.style.fontWeight = 'bold';
+                                heading.style.marginTop = '1.5rem';
+                                heading.style.marginBottom = '0.75rem';
+                                range.insertNode(heading);
+                                
+                                // Place cursor after the heading
+                                range.setStartAfter(heading);
+                                range.collapse(true);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                              } else {
+                                // Text is selected - wrap it in a heading
+                                const contents = range.extractContents();
+                                const heading = document.createElement('h2');
+                                heading.appendChild(contents);
+                                heading.style.fontSize = '1.5rem';
+                                heading.style.fontWeight = 'bold';
+                                heading.style.marginTop = '1.5rem';
+                                heading.style.marginBottom = '0.75rem';
+                                range.insertNode(heading);
+                                
+                                // Select the heading
+                                range.selectNodeContents(heading);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                              }
+                            }
+                            editor.focus();
+                          }}
+                          title="Subheading (H2)"
+                        >
+                          <Heading2 className="h-4 w-4" />
                         </Button>
                         <Button
                           type="button"
