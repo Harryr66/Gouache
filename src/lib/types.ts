@@ -569,8 +569,10 @@ export interface NewsArticle {
   id: string;
   title: string;
   summary: string;
+  subheadline?: string; // Optional subheadline for articles
   category: string;
   imageUrl: string;
+  thumbnailUrl?: string; // Thumbnail image for news page listing
   publishedAt?: Date; // Optional for drafts
   updatedAt?: Date;
   author?: string;
