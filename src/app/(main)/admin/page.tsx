@@ -1415,6 +1415,118 @@ export default function AdminPanel() {
     }
   };
 
+  const handleSaveDraftArticle = async () => {
+    if (!newArticle.title.trim()) {
+      toast({
+        title: 'Missing information',
+        description: 'Please provide a headline for the article.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsPublishingArticle(true);
+    try {
+      // Get body content from contentEditable div
+      const bodyElement = document.getElementById('article-body-editor') as HTMLDivElement;
+      const bodyContent = bodyElement?.innerHTML || '';
+      
+      // Upload hero image if provided
+      let heroImageUrl = DEFAULT_ARTICLE_IMAGE;
+      if (newArticleImageFile) {
+        try {
+          const fileName = `${Date.now()}_${newArticleImageFile.name.replace(/\s+/g, '-')}`;
+          const storagePath = `news/articles/hero/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, newArticleImageFile);
+          heroImageUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+          console.error('Failed to upload hero image:', error);
+          toast({
+            title: 'Image upload failed',
+            description: 'Could not upload hero image. Using default image.',
+            variant: 'destructive'
+          });
+        }
+      }
+      
+      const docRef = await addDoc(collection(db, 'newsArticles'), {
+        title: newArticle.title.trim(),
+        summary: '', // Empty summary for simplified editor
+        subheadline: newArticleSubheadline.trim() || undefined,
+        category: 'Stories', // Default category
+        author: '',
+        imageUrl: heroImageUrl,
+        externalUrl: '',
+        featured: false,
+        tags: [],
+        content: bodyContent, // Rich HTML content with images
+        location: 'evergreen',
+        status: 'draft', // Save as draft
+        publishedAt: null, // No published date for drafts
+        archived: false,
+        archivedAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      setNewsArticles((prev) => [
+        {
+          id: docRef.id,
+          title: newArticle.title.trim(),
+          summary: '',
+          category: 'Stories',
+          author: '',
+          imageUrl: heroImageUrl,
+          externalUrl: '',
+          featured: false,
+          tags: [],
+          content: bodyContent,
+          location: 'evergreen',
+          status: 'draft',
+          publishedAt: null,
+          updatedAt: new Date(),
+          archived: false
+        },
+        ...prev
+      ]);
+
+      toast({
+        title: 'Draft saved',
+        description: `"${newArticle.title}" has been saved as a draft. You can publish it later.`
+      });
+
+      setNewArticle({
+        title: '',
+        summary: '',
+        category: 'Stories',
+        author: '',
+        imageUrl: '',
+        externalUrl: '',
+        publishedAt: '',
+        tags: '',
+        location: 'evergreen'
+      });
+      setNewArticleSubheadline('');
+      setNewArticleBody('');
+      const bodyEditor = document.getElementById('article-body-editor') as HTMLDivElement;
+      if (bodyEditor) {
+        bodyEditor.innerHTML = '';
+      }
+      setNewArticleImageFile(null);
+      setNewArticleImagePreview(null);
+    } catch (error) {
+      console.error('Failed to save draft:', error);
+      toast({
+        title: 'Save failed',
+        description: 'We could not save the draft. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsPublishingArticle(false);
+    }
+  };
+
   const handleCreateNewsArticle = async () => {
     if (!newArticle.title.trim()) {
       toast({
@@ -1474,6 +1586,7 @@ export default function AdminPanel() {
         tags: [],
         content: bodyContent, // Rich HTML content with images
         location: 'evergreen',
+        status: 'published', // Explicitly set as published
         publishedAt: publishedAtDate,
         archived: false,
         archivedAt: null,
@@ -1494,6 +1607,7 @@ export default function AdminPanel() {
           tags: [],
           content: bodyContent,
           location: 'evergreen',
+          status: 'published',
           publishedAt: publishedAtDate,
           updatedAt: new Date(),
           archived: false
@@ -1782,6 +1896,7 @@ export default function AdminPanel() {
       handleApproveAffiliateRequest={handleApproveAffiliateRequest}
       handleRejectAffiliateRequest={handleRejectAffiliateRequest}
       handleCreateNewsArticle={handleCreateNewsArticle}
+      handleSaveDraftArticle={handleSaveDraftArticle}
       handleArchiveNewsArticle={handleArchiveNewsArticle}
       handleDeleteNewsArticle={handleDeleteNewsArticle}
       handleUpdateReportStatus={handleUpdateReportStatus}

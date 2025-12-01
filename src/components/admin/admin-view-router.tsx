@@ -813,8 +813,18 @@ export function AdminViewRouter(props: any) {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end">
-                  <Button onClick={props.handleCreateNewsArticle} disabled={props.isPublishingArticle || !props.newArticle.title.trim()}>
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={props.handleSaveDraftArticle} 
+                    disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
+                  >
+                    {props.isPublishingArticle ? 'Saving…' : 'Save as Draft'}
+                  </Button>
+                  <Button 
+                    onClick={props.handleCreateNewsArticle} 
+                    disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
+                  >
                     {props.isPublishingArticle ? 'Publishing…' : 'Publish article'}
                   </Button>
                 </div>
