@@ -654,6 +654,27 @@ export function AdminViewRouter(props: any) {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="article-author">Author Name</Label>
+                    <Input
+                      id="article-author"
+                      placeholder="e.g. John Doe"
+                      value={props.newArticle.author || ''}
+                      onChange={(event) => props.setNewArticle((prev: any) => ({ ...prev, author: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="author-avatar-url">Author Profile Image URL (optional)</Label>
+                    <Input
+                      id="author-avatar-url"
+                      placeholder="https://example.com/avatar.jpg"
+                      value={props.newArticle.authorAvatarUrl || ''}
+                      onChange={(event) => props.setNewArticle((prev: any) => ({ ...prev, authorAvatarUrl: event.target.value }))}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter a URL for the author's profile image. This will appear in the bottom left of the hero image.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="hero-image">Hero Image</Label>
                     <p className="text-sm text-muted-foreground mb-2">
                       Upload a hero image that will appear at the top of the article (optional).

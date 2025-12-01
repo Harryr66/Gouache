@@ -134,6 +134,7 @@ export default function AdminPanel() {
     summary: '',
     category: 'Stories',
     author: '',
+    authorAvatarUrl: '',
     imageUrl: '',
     externalUrl: '',
     publishedAt: '',
@@ -1485,7 +1486,8 @@ export default function AdminPanel() {
         summary: '', // Empty summary for simplified editor
         subheadline: newArticleSubheadline.trim() || undefined,
         category: 'Stories', // Default category
-        author: '',
+        author: newArticle.author.trim() || undefined,
+        authorAvatarUrl: newArticle.authorAvatarUrl.trim() || undefined,
         imageUrl: heroImageUrl,
         externalUrl: '',
         featured: false,
@@ -1531,6 +1533,7 @@ export default function AdminPanel() {
         summary: '',
         category: 'Stories',
         author: '',
+        authorAvatarUrl: '',
         imageUrl: '',
         externalUrl: '',
         publishedAt: '',
@@ -1609,7 +1612,8 @@ export default function AdminPanel() {
         summary: '', // Empty summary for simplified editor
         subheadline: newArticleSubheadline.trim() || undefined,
         category: 'Stories', // Default category
-        author: '',
+        author: newArticle.author.trim() || undefined,
+        authorAvatarUrl: newArticle.authorAvatarUrl.trim() || undefined,
         imageUrl: heroImageUrl,
         externalUrl: '',
         featured: false,
@@ -1655,6 +1659,7 @@ export default function AdminPanel() {
         summary: '',
         category: 'Stories',
         author: '',
+        authorAvatarUrl: '',
         imageUrl: '',
         externalUrl: '',
         publishedAt: '',
