@@ -684,10 +684,12 @@ export default function AdminPanel() {
         // Create wrapper div for image with resize handles
         const wrapper = document.createElement('div');
         wrapper.style.position = 'relative';
-        wrapper.style.display = 'block';
-        wrapper.style.margin = '1rem auto';
+        wrapper.style.display = 'inline-block';
+        wrapper.style.margin = '1rem';
         wrapper.style.maxWidth = '100%';
         wrapper.style.textAlign = 'left';
+        wrapper.style.verticalAlign = 'top';
+        wrapper.style.width = 'fit-content';
         wrapper.className = 'image-wrapper';
         
         const img = document.createElement('img');
@@ -734,16 +736,47 @@ export default function AdminPanel() {
         // Use a closure to ensure each resize handle only affects its own image
         (() => {
           let isResizing = false;
+          let activeMoveHandler: ((e: MouseEvent) => void) | null = null;
+          let activeUpHandler: ((e: MouseEvent) => void) | null = null;
           const thisImg = img; // Capture the specific image in closure
           const thisWrapper = wrapper; // Capture the specific wrapper in closure
+          const thisResizeHandle = resizeHandle; // Capture the specific resize handle
+          
+          // Helper function to check if this image is selected
+          const isImageSelected = () => {
+            const outline = thisImg.style.outline || window.getComputedStyle(thisImg).outline;
+            return outline && outline !== 'none' && outline.includes('solid');
+          };
+          
+          // Function to cancel any active resize
+          const cancelResize = () => {
+            if (isResizing && activeMoveHandler && activeUpHandler) {
+              isResizing = false;
+              document.removeEventListener('mousemove', activeMoveHandler);
+              document.removeEventListener('mouseup', activeUpHandler);
+              activeMoveHandler = null;
+              activeUpHandler = null;
+            }
+          };
+          
+          // Store cancel function on the image element so it can be called when another image is selected
+          (thisImg as any).__cancelResize = cancelResize;
           
           resizeHandle.addEventListener('mousedown', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            e.stopImmediatePropagation(); // Prevent other handlers from firing
+            e.stopImmediatePropagation();
             
-            // Only allow resizing if this image is selected
-            if (thisImg.style.outline === 'none' || !thisImg.style.outline) {
+            // Cancel any other active resizes first
+            const allImages = editor.querySelectorAll('.article-image');
+            allImages.forEach((otherImg) => {
+              if (otherImg !== thisImg && (otherImg as any).__cancelResize) {
+                (otherImg as any).__cancelResize();
+              }
+            });
+            
+            // Only allow resizing if this image is currently selected
+            if (!isImageSelected()) {
               return;
             }
             
@@ -756,11 +789,9 @@ export default function AdminPanel() {
             const onMouseMove = (e: MouseEvent) => {
               if (!isResizing) return;
               
-              // Double-check we're still resizing the correct image
-              if (thisImg.style.outline === 'none' || !thisImg.style.outline) {
-                isResizing = false;
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
+              // Continuously check that this image is still selected
+              if (!isImageSelected()) {
+                cancelResize();
                 return;
               }
               
@@ -794,10 +825,11 @@ export default function AdminPanel() {
             const onMouseUp = (e: MouseEvent) => {
               e.preventDefault();
               e.stopPropagation();
-              isResizing = false;
-              document.removeEventListener('mousemove', onMouseMove);
-              document.removeEventListener('mouseup', onMouseUp);
+              cancelResize();
             };
+            
+            activeMoveHandler = onMouseMove;
+            activeUpHandler = onMouseUp;
             
             document.addEventListener('mousemove', onMouseMove, { capture: true });
             document.addEventListener('mouseup', onMouseUp, { capture: true });
@@ -807,6 +839,15 @@ export default function AdminPanel() {
         // Make image selectable for alignment
         img.addEventListener('click', (e) => {
           e.stopPropagation();
+          
+          // Cancel any active resize operations on all images
+          const allImages = editor.querySelectorAll('.article-image');
+          allImages.forEach((otherImg) => {
+            if (otherImg !== img && (otherImg as any).__cancelResize) {
+              (otherImg as any).__cancelResize();
+            }
+          });
+          
           // Clear other selections
           document.querySelectorAll('.article-image').forEach(el => {
             (el as HTMLElement).style.outline = 'none';
@@ -816,6 +857,7 @@ export default function AdminPanel() {
               if (handle) handle.style.display = 'none';
             }
           });
+          
           img.style.outline = '2px solid #3b82f6';
           img.style.outlineOffset = '2px';
           // Show resize handle for selected image
