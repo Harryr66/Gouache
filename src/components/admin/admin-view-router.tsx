@@ -822,18 +822,33 @@ export function AdminViewRouter(props: any) {
                             const editor = document.getElementById('article-body-editor') as HTMLDivElement;
                             if (!editor) return;
                             
-                            // Check if an image is selected
-                            const selectedImages = editor.querySelectorAll('.article-image[style*="outline"]');
+                            // Find all images with outline (selected images)
+                            const allImages = editor.querySelectorAll('.article-image');
+                            const selectedImages: HTMLElement[] = [];
+                            
+                            allImages.forEach((img) => {
+                              const imgEl = img as HTMLElement;
+                              const outline = imgEl.style.outline || window.getComputedStyle(imgEl).outline;
+                              if (outline && outline !== 'none' && outline.includes('solid')) {
+                                selectedImages.push(imgEl);
+                              }
+                            });
+                            
                             if (selectedImages.length > 0) {
-                              // Align selected images to left
-                              selectedImages.forEach((imgEl) => {
-                                const img = imgEl as HTMLElement;
-                                const wrapper = img.closest('.image-wrapper') as HTMLElement;
+                              // Align all selected images to left
+                              selectedImages.forEach((selectedImage) => {
+                                const wrapper = selectedImage.closest('.image-wrapper') as HTMLElement;
                                 if (wrapper) {
                                   wrapper.style.textAlign = 'left';
                                   wrapper.style.marginLeft = '0';
                                   wrapper.style.marginRight = 'auto';
                                   wrapper.style.display = 'block';
+                                  wrapper.style.width = 'fit-content';
+                                  wrapper.style.maxWidth = '100%';
+                                  // Align the image itself
+                                  selectedImage.style.marginLeft = '0';
+                                  selectedImage.style.marginRight = 'auto';
+                                  selectedImage.style.display = 'block';
                                 }
                               });
                             } else {
@@ -854,18 +869,35 @@ export function AdminViewRouter(props: any) {
                             const editor = document.getElementById('article-body-editor') as HTMLDivElement;
                             if (!editor) return;
                             
-                            // Check if an image is selected
-                            const selectedImages = editor.querySelectorAll('.article-image[style*="outline"]');
+                            // Find all images with outline (selected images)
+                            const allImages = editor.querySelectorAll('.article-image');
+                            const selectedImages: HTMLElement[] = [];
+                            
+                            allImages.forEach((img) => {
+                              const imgEl = img as HTMLElement;
+                              const outline = imgEl.style.outline || window.getComputedStyle(imgEl).outline;
+                              if (outline && outline !== 'none' && outline.includes('solid')) {
+                                selectedImages.push(imgEl);
+                              }
+                            });
+                            
                             if (selectedImages.length > 0) {
-                              // Align selected images to center
-                              selectedImages.forEach((imgEl) => {
-                                const img = imgEl as HTMLElement;
-                                const wrapper = img.closest('.image-wrapper') as HTMLElement;
+                              // Align all selected images to center
+                              selectedImages.forEach((selectedImage) => {
+                                const wrapper = selectedImage.closest('.image-wrapper') as HTMLElement;
                                 if (wrapper) {
-                                  wrapper.style.textAlign = 'center';
+                                  // Clear any existing alignment
                                   wrapper.style.marginLeft = 'auto';
                                   wrapper.style.marginRight = 'auto';
+                                  wrapper.style.textAlign = 'center';
                                   wrapper.style.display = 'block';
+                                  wrapper.style.width = 'fit-content';
+                                  wrapper.style.maxWidth = '100%';
+                                  // Center the image itself
+                                  selectedImage.style.display = 'block';
+                                  selectedImage.style.marginLeft = 'auto';
+                                  selectedImage.style.marginRight = 'auto';
+                                  selectedImage.style.width = selectedImage.style.width || 'auto';
                                 }
                               });
                             } else {
