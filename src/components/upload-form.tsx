@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/providers/auth-provider';
 import { useContent } from '@/providers/content-provider';
 import { useRouter } from 'next/navigation';
-import { Upload, Image as ImageIcon, Video, FileText, X } from 'lucide-react';
+import { Upload, Image as ImageIcon, Video, FileText, X, AlertCircle } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
@@ -44,6 +45,7 @@ export function UploadForm() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -83,6 +85,16 @@ export function UploadForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!files.length || !user) return;
+
+    // Validate agreement to terms
+    if (!agreedToTerms) {
+      toast({
+        title: "Agreement Required",
+        description: "You must agree to the terms regarding AI-generated artwork before uploading.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Validate minimum 2 tags
     const tags = formData.tags.split(',').map(tag => tag.trim()).filter(Boolean);
@@ -147,8 +159,8 @@ export function UploadForm() {
         updatedAt: new Date(),
         views: 0,
         likes: 0,
-        isAI: formData.isAI,
-        aiAssistance: formData.aiAssistance,
+        isAI: false, // AI artwork not permitted
+        aiAssistance: 'none',
         statement: formData.story,
         materialsList: formData.materials,
         processExplanation: formData.process,
@@ -240,6 +252,21 @@ export function UploadForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* AI Artwork Disclaimer */}
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <h3 className="font-semibold text-destructive">AI-Generated Artwork Policy</h3>
+              <p className="text-sm text-foreground">
+                AI-generated artwork is <strong>not permitted</strong> on Gouache. By uploading artwork, you agree that you will not upload AI-generated artworks. Breach of these terms will result in <strong>permanent suspension</strong> from the platform.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* File Upload */}
           <div className="space-y-2">
@@ -472,39 +499,6 @@ export function UploadForm() {
             </p>
           </div>
 
-          {/* AI Assistance */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isAI"
-                checked={formData.isAI}
-                onCheckedChange={(checked) => setFormData({ ...formData, isAI: checked })}
-              />
-              <Label htmlFor="isAI">AI Assisted</Label>
-            </div>
-
-            {formData.isAI && (
-              <div className="space-y-2">
-                <Label htmlFor="aiAssistance">AI Assistance Level</Label>
-                <Select 
-                  value={formData.aiAssistance} 
-                  onValueChange={(value) => setFormData({ 
-                    ...formData, 
-                    aiAssistance: value as 'none' | 'assisted'
-                  })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="assisted">AI Assisted</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-
           {/* Artist Notes */}
           <div className="space-y-4">
             <Label className="text-lg font-semibold">Artist Notes (Optional)</Label>
@@ -586,8 +580,21 @@ export function UploadForm() {
             )}
           </div>
 
+          {/* Terms Agreement */}
+          <div className="flex items-start space-x-3 p-4 bg-muted/50 rounded-lg border">
+            <Checkbox
+              id="agreeToTerms"
+              checked={agreedToTerms}
+              onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+              className="mt-1"
+            />
+            <label htmlFor="agreeToTerms" className="text-sm leading-relaxed cursor-pointer">
+              I confirm that this artwork is <strong>not AI-generated</strong> and is my original creative work. I understand that uploading AI-generated artwork will result in <strong>permanent suspension</strong> from the platform.
+            </label>
+          </div>
+
           {/* Submit Button */}
-          <Button type="submit" disabled={loading || !files.length}>
+          <Button type="submit" disabled={loading || !files.length || !agreedToTerms}>
             {loading ? `Uploading ${files.length} file(s)...` : `Upload ${files.length > 1 ? `${files.length} Files` : 'Artwork'}`}
           </Button>
         </form>
