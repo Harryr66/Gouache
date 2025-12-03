@@ -1932,7 +1932,7 @@ export default function AdminPanel() {
       tags: '',
       location: article.location || 'evergreen'
     });
-    setNewArticleSubheadline((article as any).subheadline || '');
+    setNewArticleSubheadline(article.subheadline || '');
     setNewArticleBody(article.content || '');
     
     // Set previews if URLs exist

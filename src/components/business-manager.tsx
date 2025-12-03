@@ -372,7 +372,7 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
                         <p className="font-semibold">{formatCurrency(sale.amount, sale.currency)}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Platform Fee (10%)</p>
+                        <p className="text-muted-foreground">Platform Fee (5%)</p>
                         <p className="font-semibold text-muted-foreground">
                           -{formatCurrency(sale.platformCommission, sale.currency)}
                         </p>

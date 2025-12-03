@@ -16,7 +16,6 @@ import {
   MapPin,
   Globe,
   Coffee,
-  Lightbulb,
   ImageIcon,
   Calendar,
   Brain,
@@ -31,7 +30,6 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TipDialog } from './tip-dialog';
-import { SuggestionsDialog } from './suggestions-dialog';
 import { CountryFlag } from './country-flag';
 import { ShowcaseLocation } from '@/lib/types';
 import { ChevronDown, ChevronUp, Pin } from 'lucide-react';
@@ -82,7 +80,6 @@ export function ProfileHeader({
   currentTab
 }: ProfileHeaderProps) {
   const [showTipDialog, setShowTipDialog] = useState(false);
-  const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [isEventsExpanded, setIsEventsExpanded] = useState(false);
 
@@ -274,16 +271,6 @@ export function ProfileHeader({
                 </Button>
               )}
               
-              {user.isProfessional && (user.suggestionsEnabled !== false) && (
-                <Button 
-                  variant="outline"
-                  size="icon"
-                    className="h-8 w-8 md:h-10 md:w-10 hover:gradient-border"
-                  onClick={() => setShowSuggestionsDialog(true)}
-                >
-                    <Lightbulb className="h-3 w-3 md:h-4 md:w-4" />
-                </Button>
-              )}
               </div>
             </div>
 
@@ -553,13 +540,6 @@ export function ProfileHeader({
         artistId={user.id}
       />
 
-      {/* Suggestions Dialog */}
-      <SuggestionsDialog
-        isOpen={showSuggestionsDialog}
-        onClose={() => setShowSuggestionsDialog(false)}
-        artistName={user.displayName || user.username}
-        artistId={user.id}
-      />
 
     </>
   );

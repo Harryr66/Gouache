@@ -156,7 +156,6 @@ export default function ProfileEditPage() {
     countryOfResidence: '',
     isProfessional: false,
     tipJarEnabled: false,      // Tip jar disabled by default
-    suggestionsEnabled: false, // Suggestions disabled by default
     hideLocation: false,
     hideFlags: false,
     hideCard: false,
@@ -209,11 +208,6 @@ export default function ProfileEditPage() {
               ? (changes.tipJarEnabled !== undefined
                 ? changes.tipJarEnabled
                 : (user.tipJarEnabled !== undefined ? user.tipJarEnabled : false))
-              : false,
-            suggestionsEnabled: user.isProfessional
-              ? (changes.suggestionsEnabled !== undefined
-                ? changes.suggestionsEnabled
-                : (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : false))
               : false,
             hideLocation: changes.hideLocation || user.hideLocation || false,
             hideFlags: changes.hideFlags || user.hideFlags || false,
@@ -294,9 +288,6 @@ export default function ProfileEditPage() {
             isProfessional: user.isProfessional || false,
           tipJarEnabled: user.isProfessional
             ? (user.tipJarEnabled !== undefined ? user.tipJarEnabled : false)
-            : false,
-          suggestionsEnabled: user.isProfessional
-            ? (user.suggestionsEnabled !== undefined ? user.suggestionsEnabled : false)
             : false,
           hideLocation: user.hideLocation || false,
           hideFlags: user.hideFlags || false,
@@ -916,7 +907,6 @@ export default function ProfileEditPage() {
         formData.countryOfResidence !== initialFormDataRef.current.countryOfResidence ||
         formData.isProfessional !== initialFormDataRef.current.isProfessional ||
         formData.tipJarEnabled !== initialFormDataRef.current.tipJarEnabled ||
-        formData.suggestionsEnabled !== initialFormDataRef.current.suggestionsEnabled ||
         formData.hideLocation !== initialFormDataRef.current.hideLocation ||
         formData.hideFlags !== initialFormDataRef.current.hideFlags ||
         formData.hideShowcaseLocations !== initialFormDataRef.current.hideShowcaseLocations ||
@@ -972,7 +962,6 @@ export default function ProfileEditPage() {
         if (allowArtistFields) {
           updateData.artistType = formData.artistType;
           updateData.tipJarEnabled = formData.tipJarEnabled;
-          updateData.suggestionsEnabled = formData.suggestionsEnabled;
           updateData.hideCard = formData.hideCard;
           updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
           updateData.hideShop = formData.hideShop;
@@ -985,7 +974,6 @@ export default function ProfileEditPage() {
         } else {
           updateData.artistType = '';
           updateData.tipJarEnabled = false;
-          updateData.suggestionsEnabled = false;
           updateData.hideCard = false;
           updateData.hideShowcaseLocations = false;
           updateData.hideShop = false;
@@ -1257,7 +1245,6 @@ export default function ProfileEditPage() {
       if (allowArtistFields) {
         updateData.artistType = formData.artistType;
         updateData.tipJarEnabled = formData.tipJarEnabled;
-        updateData.suggestionsEnabled = formData.suggestionsEnabled;
         updateData.hideCard = formData.hideCard;
         updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
         updateData.hideShop = formData.hideShop;
@@ -1272,7 +1259,6 @@ export default function ProfileEditPage() {
       } else {
         updateData.artistType = '';
         updateData.tipJarEnabled = false;
-        updateData.suggestionsEnabled = false;
         updateData.hideCard = false;
         updateData.hideShowcaseLocations = false;
         updateData.newsletterLink = null;
@@ -2045,21 +2031,6 @@ export default function ProfileEditPage() {
               </div>
             )}
 
-            {/* Suggestions Setting - Only for professional artists */}
-            {formData.isProfessional && (
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Fan Suggestions</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow fans to send you suggestions for future artwork
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.suggestionsEnabled}
-                  onCheckedChange={(checked) => handleInputChange('suggestionsEnabled', checked)}
-                />
-              </div>
-            )}
 
             {/* Verified Professional Artist Status */}
             {formData.isProfessional && (

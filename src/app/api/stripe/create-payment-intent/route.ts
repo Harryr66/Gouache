@@ -133,9 +133,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate commission (default 10% of sale price)
+    // Calculate commission (default 5% of sale price)
     const commissionRate = parseFloat(
-      process.env.STRIPE_PLATFORM_COMMISSION_RATE || '0.10'
+      process.env.STRIPE_PLATFORM_COMMISSION_RATE || '0.05'
     );
     const applicationFeeAmount = Math.round(amountInCents * commissionRate);
 
