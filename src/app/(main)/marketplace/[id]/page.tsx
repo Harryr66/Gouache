@@ -605,12 +605,6 @@ export default function ProductDetailPage() {
                 </Button>
               </div>
 
-              {/* Sales Info */}
-              {product.salesCount > 0 && (
-                <div className="text-sm text-muted-foreground text-center pt-4 border-t">
-                  {product.salesCount} {product.salesCount === 1 ? 'sale' : 'sales'}
-                </div>
-              )}
             </div>
           </div>
         </div>
