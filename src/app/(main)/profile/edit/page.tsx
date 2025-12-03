@@ -1707,26 +1707,6 @@ export default function ProfileEditPage() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label>Enable Learn Tab</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Show the "Learn" tab on your public profile
-                      </p>
-                    </div>
-                    <Switch
-                      checked={!formData.hideLearn}
-                      onCheckedChange={(checked) => {
-                        if (!checked) {
-                          const confirmDisable = window.confirm(
-                            'Are you sure you want to disable your Learn tab? Students will no longer see your courses on your profile.'
-                          );
-                          if (!confirmDisable) return;
-                        }
-                        handleInputChange('hideLearn', !checked);
-                      }}
-                    />
-                  </div>
                 </>
               )}
             </div>

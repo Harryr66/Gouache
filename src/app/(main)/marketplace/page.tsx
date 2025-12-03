@@ -29,7 +29,6 @@ const categoryOptions = [
   { value: 'Prints', label: 'Prints' },
   { value: 'Books', label: 'Books' },
   { value: 'Supplies', label: 'Supplies' },
-  { value: 'Courses', label: 'Courses' },
   { value: 'Other', label: 'Other' }
 ];
 
@@ -326,55 +325,7 @@ export default function MarketplacePage() {
           console.error('Error fetching artworks for sale:', error);
         }
 
-        // 3. Fetch courses from artist profiles
-        try {
-          const coursesQuery = query(
-            collection(db, 'courses'),
-            where('isPublished', '==', true),
-            orderBy('createdAt', 'desc')
-          );
-          
-          const coursesSnapshot = await getDocs(coursesQuery);
-          coursesSnapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const instructor = data.instructor || {};
-            
-            // Convert course to MarketplaceProduct format
-            const product: MarketplaceProduct = {
-              id: `course-${doc.id}`,
-              title: data.title || 'Untitled Course',
-              description: data.description || '',
-              price: data.price || 0,
-              originalPrice: data.originalPrice,
-              currency: data.currency || 'USD',
-              category: 'Courses',
-              subcategory: data.subcategory || data.category || 'General',
-              images: data.thumbnail ? [data.thumbnail] : (data.thumbnailUrl ? [data.thumbnailUrl] : []),
-              sellerId: instructor.userId || instructor.id || '',
-              sellerName: instructor.name || 'Unknown Instructor',
-              sellerWebsite: instructor.website,
-              isAffiliate: data.courseType === 'affiliate',
-              affiliateLink: data.externalUrl,
-              isActive: data.isActive !== false,
-              stock: 999, // Courses have unlimited stock
-              rating: data.rating || 0,
-              reviewCount: data.reviewCount || 0,
-              tags: data.tags || [],
-              createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-              updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
-              salesCount: data.enrollmentCount || data.students || 0,
-              isOnSale: data.isOnSale || false,
-              isApproved: data.status === 'approved' || !data.status,
-              status: data.status || 'approved'
-            };
-            
-            allProducts.push(product);
-          });
-        } catch (error) {
-          console.error('Error fetching courses:', error);
-        }
-
-        // 4. Fetch books from artist profiles (if books collection exists)
+        // 3. Fetch books from artist profiles (if books collection exists)
         try {
           const booksQuery = query(
             collection(db, 'books'),

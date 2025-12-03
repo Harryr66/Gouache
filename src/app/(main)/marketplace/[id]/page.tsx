@@ -34,7 +34,7 @@ export default function ProductDetailPage() {
         let productData: MarketplaceProduct | null = null;
 
         // Check if it's a marketplace product (starts with marketplace- or doesn't have prefix)
-        if (!productId.startsWith('artwork-') && !productId.startsWith('course-') && !productId.startsWith('book-')) {
+        if (!productId.startsWith('artwork-') && !productId.startsWith('book-')) {
           const productDoc = await getDoc(doc(db, 'marketplaceProducts', productId));
           if (productDoc.exists()) {
             const data = productDoc.data();
@@ -78,42 +78,6 @@ export default function ProductDetailPage() {
               isApproved: true,
               status: 'approved',
               dimensions: data.dimensions
-            } as MarketplaceProduct;
-          }
-        }
-        // Check if it's a course
-        else if (productId.startsWith('course-')) {
-          const courseId = productId.replace('course-', '');
-          const courseDoc = await getDoc(doc(db, 'courses', courseId));
-          if (courseDoc.exists()) {
-            const data = courseDoc.data();
-            const instructor = data.instructor || {};
-            productData = {
-              id: `course-${courseDoc.id}`,
-              title: data.title || 'Untitled Course',
-              description: data.description || '',
-              price: data.price || 0,
-              originalPrice: data.originalPrice,
-              currency: data.currency || 'USD',
-              category: 'Courses',
-              subcategory: data.subcategory || data.category || 'General',
-              images: data.thumbnail ? [data.thumbnail] : (data.thumbnailUrl ? [data.thumbnailUrl] : []),
-              sellerId: instructor.userId || instructor.id || '',
-              sellerName: instructor.name || 'Unknown Instructor',
-              sellerWebsite: instructor.website,
-              isAffiliate: data.courseType === 'affiliate',
-              affiliateLink: data.externalUrl,
-              isActive: data.isActive !== false,
-              stock: 999,
-              rating: data.rating || 0,
-              reviewCount: data.reviewCount || 0,
-              tags: data.tags || [],
-              createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-              updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
-              salesCount: data.enrollmentCount || data.students || 0,
-              isOnSale: data.isOnSale || false,
-              isApproved: data.status === 'approved' || !data.status,
-              status: data.status || 'approved'
             } as MarketplaceProduct;
           }
         }

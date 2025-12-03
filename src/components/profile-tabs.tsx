@@ -218,7 +218,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
     const visibleTabs = [
       { value: 'portfolio', label: 'Portfolio', icon: Palette },
       ...(hideShop ? [] : [{ value: 'shop', label: 'Shop', icon: ShoppingBag }]),
-      ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: Brain }]),
     ];
     
     const defaultTab = visibleTabs[0]?.value || 'portfolio';
@@ -254,90 +253,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
           </TabsContent>
         )}
 
-        {/* Learn Tab */}
-        {!hideLearn && (
-          <TabsContent value="learn" className="space-y-4">
-          {instructorCourses.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {instructorCourses.map((course) => (
-                <Card key={course.id} className="group hover:shadow-lg transition-shadow">
-                  <div className="relative aspect-video">
-                    {course.thumbnail ? (
-                      <Image
-                        src={course.thumbnail}
-                        alt={course.title}
-                        fill
-                        className="object-cover rounded-t-lg"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <BookOpen className="h-12 w-12 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <CardContent className="p-4">
-                    <CardTitle className="text-lg mb-2">{course.title}</CardTitle>
-                    <CardDescription className="line-clamp-2 mb-4">
-                      {course.description}
-                    </CardDescription>
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-lg">
-                        ${course.price.toFixed(2)}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/courses/${course.id}`)}
-                      >
-                        View Course
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="p-8 text-center">
-              <CardContent>
-                {isOwnProfile && !isStripeIntegrated ? (
-                  <>
-                    <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <CardTitle className="mb-2">Connect Stripe to Start Teaching</CardTitle>
-                    <CardDescription className="mb-4">
-                      Connect your Stripe account to enable course sales. You'll receive payouts directly to your bank account.
-                    </CardDescription>
-                    <Button 
-                      variant="gradient"
-                      onClick={() => router.push('/settings?tab=payments')}
-                    >
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Connect Stripe Account
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <CardTitle className="mb-2">No courses yet</CardTitle>
-                    <CardDescription className="mb-4">
-                      {isOwnProfile
-                        ? "Create your first course to start teaching."
-                        : "This artist hasn't created any courses yet."}
-                    </CardDescription>
-                    {isOwnProfile && isStripeIntegrated && (
-                      <Button asChild variant="gradient">
-                        <a href="/learn/submit">
-                          <Brain className="h-4 w-4 mr-2" />
-                          Create Course
-                        </a>
-                      </Button>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-        )}
       </Tabs>
     );
   }
