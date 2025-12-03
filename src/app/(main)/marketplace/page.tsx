@@ -396,12 +396,14 @@ export default function MarketplacePage() {
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = displayProducts;
 
-    // Search filter
+    // Search filter - includes title, description, tags, and artist names
     if (searchQuery) {
+      const queryLower = searchQuery.toLowerCase();
       filtered = filtered.filter(product =>
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        product.title.toLowerCase().includes(queryLower) ||
+        product.description.toLowerCase().includes(queryLower) ||
+        product.sellerName.toLowerCase().includes(queryLower) ||
+        product.tags.some(tag => tag.toLowerCase().includes(queryLower))
       );
     }
 
@@ -459,7 +461,7 @@ export default function MarketplacePage() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mb-6">
             <div className="flex-1 relative">
             <Input
-                placeholder="Search products..."
+                placeholder="Search products, artist names, or tags..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-12 rounded-r-none pl-4 pr-12"

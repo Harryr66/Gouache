@@ -668,21 +668,21 @@ export default function AdminPanel() {
 
   // Reusable function to insert an image into the editor
   const insertImageIntoEditor = async (file: File) => {
-    try {
-      const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
-      const storagePath = `news/articles/${fileName}`;
-      const storageRef = ref(storage, storagePath);
-      await uploadBytes(storageRef, file);
-      const imageUrl = await getDownloadURL(storageRef);
-      
-      // Insert image into contentEditable div
+          try {
+            const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
+            const storagePath = `news/articles/${fileName}`;
+            const storageRef = ref(storage, storagePath);
+            await uploadBytes(storageRef, file);
+            const imageUrl = await getDownloadURL(storageRef);
+            
+            // Insert image into contentEditable div
       const editor = document.getElementById('article-body-editor') as HTMLDivElement;
       if (!editor) return;
       
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              range.deleteContents();
         
         // Create wrapper div for image with resize handles
         const wrapper = document.createElement('div');
@@ -694,14 +694,14 @@ export default function AdminPanel() {
         wrapper.style.verticalAlign = 'top';
         wrapper.style.width = 'fit-content';
         wrapper.className = 'image-wrapper';
-        
-        const img = document.createElement('img');
-        img.src = imageUrl;
-        img.style.maxWidth = '100%';
-        img.style.height = 'auto';
-        img.style.display = 'block';
+              
+              const img = document.createElement('img');
+              img.src = imageUrl;
+              img.style.maxWidth = '100%';
+              img.style.height = 'auto';
+              img.style.display = 'block';
         img.style.width = 'auto';
-        img.contentEditable = 'false';
+              img.contentEditable = 'false';
         img.draggable = false;
         img.className = 'article-image';
         
@@ -720,7 +720,7 @@ export default function AdminPanel() {
         resizeHandle.style.zIndex = '10';
         resizeHandle.className = 'resize-handle';
         resizeHandle.title = 'Drag to resize image';
-        
+              
         // Show resize handle on image hover or when selected
         const showResizeHandle = () => {
           resizeHandle.style.display = 'block';
@@ -766,7 +766,7 @@ export default function AdminPanel() {
           (thisImg as any).__cancelResize = cancelResize;
           
           resizeHandle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
+                  e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
             
@@ -784,12 +784,12 @@ export default function AdminPanel() {
             }
             
             isResizing = true;
-            const startX = e.pageX;
+                  const startX = e.pageX;
             const startY = e.pageY;
             const startWidth = thisImg.offsetWidth;
             const startHeight = thisImg.offsetHeight;
-            
-            const onMouseMove = (e: MouseEvent) => {
+                  
+                  const onMouseMove = (e: MouseEvent) => {
               if (!isResizing) return;
               
               // Continuously check that this image is still selected
@@ -824,7 +824,7 @@ export default function AdminPanel() {
               thisImg.style.width = `${newWidth}px`;
               thisImg.style.height = `${newHeight}px`;
             };
-            
+                  
             const onMouseUp = (e: MouseEvent) => {
               e.preventDefault();
               e.stopPropagation();
@@ -872,26 +872,26 @@ export default function AdminPanel() {
         range.insertNode(wrapper);
         
         // Select the image
-        selection.removeAllRanges();
+              selection.removeAllRanges();
         const newRange = document.createRange();
         newRange.selectNode(wrapper);
         selection.addRange(newRange);
-      }
+            }
       
       editor.focus();
-      
-      toast({
+            
+            toast({
         title: 'Image inserted',
         description: 'Image inserted. Click to select, then use alignment buttons. Drag corner to resize.',
-      });
-    } catch (error) {
+            });
+          } catch (error) {
       console.error('Failed to upload image:', error);
-      toast({
-        title: 'Upload failed',
+            toast({
+              title: 'Upload failed',
         description: 'Could not upload image. Please try again.',
-        variant: 'destructive'
-      });
-    }
+              variant: 'destructive'
+            });
+          }
   };
 
   // Rich text editor handlers for image paste and resize

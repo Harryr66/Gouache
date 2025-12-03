@@ -757,7 +757,7 @@ export function AdminViewRouter(props: any) {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="article-body-editor">Article Body *</Label>
+                    <Label htmlFor="article-body-editor">Article Body *</Label>
                       <div className="flex gap-2">
                         <Button
                           type="button"
@@ -1022,8 +1022,8 @@ export function AdminViewRouter(props: any) {
                       onClick={props.handleCreateNewsArticle} 
                       disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
                     >
-                      {props.isPublishingArticle ? 'Publishing…' : 'Publish article'}
-                    </Button>
+                    {props.isPublishingArticle ? 'Publishing…' : 'Publish article'}
+                  </Button>
                   )}
                 </div>
               </CardContent>
@@ -1143,21 +1143,21 @@ export function AdminViewRouter(props: any) {
                           </span>
                           <div className="flex items-center gap-2">
                             {!article.archived && (
-                              <Button
-                                variant="outline"
-                                size="sm"
+                                <Button
+                                  variant="outline"
+                                  size="sm"
                                 onClick={() => {
                                   if (props.handleEditArticle) {
                                     props.handleEditArticle(article);
-                                    setTimeout(() => {
-                                      document.getElementById('article-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    }, 100);
-                                  }
-                                }}
-                              >
-                                <Edit className="h-4 w-4 mr-1" />
-                                Edit
-                              </Button>
+                                      setTimeout(() => {
+                                        document.getElementById('article-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                      }, 100);
+                                    }
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
                             )}
                             {article.status === 'draft' && !article.archived && (
                               <>
