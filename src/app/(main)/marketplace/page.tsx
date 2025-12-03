@@ -251,30 +251,183 @@ export default function MarketplacePage() {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Query for active products - check if isApproved exists, otherwise just filter by isActive
-        let productsQuery = query(
-          collection(db, 'marketplaceProducts'),
-          where('isActive', '==', true),
-          orderBy('createdAt', 'desc')
-        );
-        
-        const snapshot = await getDocs(productsQuery);
-        const productsData = snapshot.docs
-          .map(doc => {
+        const allProducts: MarketplaceProduct[] = [];
+
+        // 1. Fetch from marketplaceProducts collection
+        try {
+          const marketplaceQuery = query(
+            collection(db, 'marketplaceProducts'),
+            where('isActive', '==', true),
+            orderBy('createdAt', 'desc')
+          );
+          
+          const marketplaceSnapshot = await getDocs(marketplaceQuery);
+          const marketplaceProducts = marketplaceSnapshot.docs
+            .map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now())
+              } as MarketplaceProduct;
+            })
+            .filter(product => product.isApproved !== false && (product.status === 'approved' || !product.status));
+          
+          allProducts.push(...marketplaceProducts);
+        } catch (error) {
+          console.error('Error fetching marketplace products:', error);
+        }
+
+        // 2. Fetch artworks for sale from artist profiles
+        try {
+          const artworksQuery = query(
+            collection(db, 'artworks'),
+            where('isForSale', '==', true),
+            orderBy('createdAt', 'desc')
+          );
+          
+          const artworksSnapshot = await getDocs(artworksQuery);
+          artworksSnapshot.docs.forEach(doc => {
             const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
+            const artist = data.artist || {};
+            
+            // Convert artwork to MarketplaceProduct format
+            const product: MarketplaceProduct = {
+              id: `artwork-${doc.id}`,
+              title: data.title || 'Untitled Artwork',
+              description: data.description || '',
+              price: data.price || 0,
+              currency: data.currency || 'USD',
+              category: 'Artwork',
+              subcategory: data.category || 'Original',
+              images: data.imageUrl ? [data.imageUrl] : [],
+              sellerId: artist.userId || artist.id || '',
+              sellerName: artist.name || 'Unknown Artist',
+              sellerWebsite: artist.website,
+              isAffiliate: false,
+              isActive: !data.sold && (data.stock === undefined || data.stock > 0),
+              stock: data.stock || 1,
+              rating: 0,
+              reviewCount: 0,
+              tags: data.tags || [],
               createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-              updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now())
-            } as MarketplaceProduct;
-          })
-          // Filter for approved products if the field exists
-          .filter(product => product.isApproved !== false && (product.status === 'approved' || !product.status));
+              updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+              salesCount: 0,
+              isOnSale: false,
+              isApproved: true,
+              status: 'approved',
+              dimensions: data.dimensions
+            };
+            
+            allProducts.push(product);
+          });
+        } catch (error) {
+          console.error('Error fetching artworks for sale:', error);
+        }
+
+        // 3. Fetch courses from artist profiles
+        try {
+          const coursesQuery = query(
+            collection(db, 'courses'),
+            where('isPublished', '==', true),
+            orderBy('createdAt', 'desc')
+          );
+          
+          const coursesSnapshot = await getDocs(coursesQuery);
+          coursesSnapshot.docs.forEach(doc => {
+            const data = doc.data();
+            const instructor = data.instructor || {};
+            
+            // Convert course to MarketplaceProduct format
+            const product: MarketplaceProduct = {
+              id: `course-${doc.id}`,
+              title: data.title || 'Untitled Course',
+              description: data.description || '',
+              price: data.price || 0,
+              originalPrice: data.originalPrice,
+              currency: data.currency || 'USD',
+              category: 'Courses',
+              subcategory: data.subcategory || data.category || 'General',
+              images: data.thumbnail ? [data.thumbnail] : (data.thumbnailUrl ? [data.thumbnailUrl] : []),
+              sellerId: instructor.userId || instructor.id || '',
+              sellerName: instructor.name || 'Unknown Instructor',
+              sellerWebsite: instructor.website,
+              isAffiliate: data.courseType === 'affiliate',
+              affiliateLink: data.externalUrl,
+              isActive: data.isActive !== false,
+              stock: 999, // Courses have unlimited stock
+              rating: data.rating || 0,
+              reviewCount: data.reviewCount || 0,
+              tags: data.tags || [],
+              createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+              updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+              salesCount: data.enrollmentCount || data.students || 0,
+              isOnSale: data.isOnSale || false,
+              isApproved: data.status === 'approved' || !data.status,
+              status: data.status || 'approved'
+            };
+            
+            allProducts.push(product);
+          });
+        } catch (error) {
+          console.error('Error fetching courses:', error);
+        }
+
+        // 4. Fetch books from artist profiles (if books collection exists)
+        try {
+          const booksQuery = query(
+            collection(db, 'books'),
+            where('isActive', '==', true),
+            orderBy('createdAt', 'desc')
+          );
+          
+          const booksSnapshot = await getDocs(booksQuery);
+          booksSnapshot.docs.forEach(doc => {
+            const data = doc.data();
+            const author = data.author || data.seller || {};
+            
+            // Convert book to MarketplaceProduct format
+            const product: MarketplaceProduct = {
+              id: `book-${doc.id}`,
+              title: data.title || 'Untitled Book',
+              description: data.description || '',
+              price: data.price || 0,
+              originalPrice: data.originalPrice,
+              currency: data.currency || 'USD',
+              category: 'Books',
+              subcategory: data.subcategory || data.category || 'General',
+              images: data.thumbnail ? [data.thumbnail] : (data.thumbnailUrl ? [data.thumbnailUrl] : (data.imageUrl ? [data.imageUrl] : [])),
+              sellerId: author.userId || author.id || data.sellerId || '',
+              sellerName: author.name || data.sellerName || 'Unknown Author',
+              sellerWebsite: author.website || data.sellerWebsite,
+              isAffiliate: data.isAffiliate || false,
+              affiliateLink: data.affiliateLink || data.externalUrl,
+              isActive: true,
+              stock: data.stock || 999,
+              rating: data.rating || 0,
+              reviewCount: data.reviewCount || 0,
+              tags: data.tags || [],
+              createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+              updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+              salesCount: data.salesCount || 0,
+              isOnSale: data.isOnSale || false,
+              isApproved: true,
+              status: 'approved'
+            };
+            
+            allProducts.push(product);
+          });
+        } catch (error) {
+          console.error('Error fetching books:', error);
+        }
+
+        // Sort all products by creation date (newest first)
+        allProducts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         
-        setProducts(productsData);
+        setProducts(allProducts);
       } catch (error) {
-        console.error('Error fetching marketplace products:', error);
+        console.error('Error fetching products:', error);
       } finally {
         setLoading(false);
       }
@@ -510,7 +663,7 @@ export default function MarketplacePage() {
                     >
                       <Package className="h-4 w-4 mr-2" />
                       {product.stock === 0 ? 'Out of Stock' : 'View Details'}
-                    </Button>
+                      </Button>
                   </div>
 
                   {product.tags && product.tags.length > 0 && (
