@@ -147,7 +147,7 @@ export default function UploadPage() {
   }
 
   if (selectedType === 'product') {
-    router.push('/profile/edit?tab=portfolio');
+    router.push('/profile/edit?tab=shop');
     return null;
   }
 
