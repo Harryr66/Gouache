@@ -245,7 +245,8 @@ export default function AdminPanel() {
           coursesSnapshot,
           booksSnapshot,
           newsArticlesSnapshot,
-          userReportsSnapshot
+          userReportsSnapshot,
+          contentReportsSnapshot
         ] = await Promise.all([
           getDocs(artistRequestsQuery),
           getDocs(advertisingQuery),
