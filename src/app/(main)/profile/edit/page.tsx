@@ -977,7 +977,7 @@ export default function ProfileEditPage() {
           updateData.hideCard = false;
           updateData.hideShowcaseLocations = false;
           updateData.hideShop = false;
-          updateData.hideLearn = false;
+          updateData.hideLearn = true;
           updateData.newsletterLink = null;
           updateData.eventCity = null;
           updateData.eventCountry = null;
