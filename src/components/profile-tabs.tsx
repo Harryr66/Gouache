@@ -30,7 +30,7 @@ interface ProfileTabsProps {
   onTabChange?: (tab: string) => void;
 }
 
-export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = false, hideLearn = false, onTabChange }: ProfileTabsProps) {
+export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = false, hideLearn = true, onTabChange }: ProfileTabsProps) {
   const { courses, courseEnrollments, isLoading: coursesLoading } = useCourses();
   const { likedArtworkIds, loading: likesLoading } = useLikes();
   const [likedArtworks, setLikedArtworks] = useState<Artwork[]>([]);
