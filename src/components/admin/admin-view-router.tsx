@@ -1353,6 +1353,186 @@ export function AdminViewRouter(props: any) {
           </div>
         )}
 
+        {/* AI Content Reports */}
+        {props.selectedView === 'ai-content-reports' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold">AI Content Reports</h2>
+              <p className="text-muted-foreground mt-1">
+                Reports of suspected AI-generated artwork. Review and take action on violations.
+              </p>
+            </div>
+
+            {!props.contentReports || props.contentReports.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No AI content reports</h3>
+                  <p className="text-muted-foreground">
+                    No reports of suspected AI-generated content have been submitted yet.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {props.contentReports
+                  .filter((report: Report) => report.isAIContentReport)
+                  .map((report: Report) => (
+                    <Card key={report.id}>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Badge variant="destructive">AI Content Report</Badge>
+                            <Badge
+                              variant={
+                                report.status === 'pending'
+                                  ? 'default'
+                                  : report.status === 'resolved'
+                                  ? 'secondary'
+                                  : 'outline'
+                              }
+                            >
+                              {report.status}
+                            </Badge>
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(report.timestamp).toLocaleDateString()} at{' '}
+                            {new Date(report.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="font-medium">Content Type:</span> {report.contentType}
+                            </div>
+                            <div>
+                              <span className="font-medium">Reported By:</span> {report.reportedBy}
+                            </div>
+                            <div>
+                              <span className="font-medium">Content ID:</span>{' '}
+                              <code className="text-xs bg-muted px-1 rounded">{report.contentId}</code>
+                            </div>
+                            <div>
+                              <span className="font-medium">Offender:</span> {report.offenderHandle}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t pt-4">
+                          <Label className="text-sm font-medium mb-2 block">Report Reason</Label>
+                          <div className="p-3 bg-destructive/10 rounded-lg mb-2">
+                            <p className="text-sm font-semibold text-destructive">{report.reason}</p>
+                          </div>
+                          {report.details && (
+                            <div className="p-3 bg-muted/50 rounded-lg">
+                              <p className="text-sm whitespace-pre-wrap">{report.details}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="border-t pt-4">
+                          <Label className="text-sm font-medium mb-2 block">Content</Label>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm">{report.content}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-4 border-t">
+                          {report.status === 'pending' && (
+                            <>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={async () => {
+                                  try {
+                                    await updateDoc(doc(db, 'contentReports', report.id), {
+                                      status: 'resolved',
+                                      reviewedBy: props.user?.displayName || 'Admin',
+                                      reviewedAt: serverTimestamp(),
+                                    });
+                                    toast({
+                                      title: 'Report resolved',
+                                      description: 'AI content report has been marked as resolved.',
+                                    });
+                                  } catch (error) {
+                                    console.error('Error updating report:', error);
+                                    toast({
+                                      title: 'Error',
+                                      description: 'Failed to update report status.',
+                                      variant: 'destructive',
+                                    });
+                                  }
+                                }}
+                              >
+                                Suspend User
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                  try {
+                                    await updateDoc(doc(db, 'contentReports', report.id), {
+                                      status: 'dismissed',
+                                      reviewedBy: props.user?.displayName || 'Admin',
+                                      reviewedAt: serverTimestamp(),
+                                    });
+                                    toast({
+                                      title: 'Report dismissed',
+                                      description: 'AI content report has been dismissed.',
+                                    });
+                                  } catch (error) {
+                                    console.error('Error updating report:', error);
+                                    toast({
+                                      title: 'Error',
+                                      description: 'Failed to update report status.',
+                                      variant: 'destructive',
+                                    });
+                                  }
+                                }}
+                              >
+                                Dismiss
+                              </Button>
+                            </>
+                          )}
+                          {report.status !== 'pending' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await updateDoc(doc(db, 'contentReports', report.id), {
+                                    status: 'pending',
+                                    reviewedBy: undefined,
+                                    reviewedAt: undefined,
+                                  });
+                                  toast({
+                                    title: 'Report reopened',
+                                    description: 'AI content report has been reopened.',
+                                  });
+                                } catch (error) {
+                                  console.error('Error updating report:', error);
+                                  toast({
+                                    title: 'Error',
+                                    description: 'Failed to update report status.',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                            >
+                              Reopen
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Marketplace - Products */}
         {props.selectedView === 'marketplace-products' && (
           props.marketplaceProducts.length === 0 ? (
