@@ -515,16 +515,6 @@ export default function ProductDetailPage() {
               {/* Product Details */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between py-2 border-b">
-                  <span className="text-sm text-muted-foreground">Category</span>
-                  <span className="font-medium">{product.category}</span>
-                </div>
-                {product.subcategory && (
-                  <div className="flex items-center justify-between py-2 border-b">
-                    <span className="text-sm text-muted-foreground">Subcategory</span>
-                    <span className="font-medium">{product.subcategory}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between py-2 border-b">
                   <span className="text-sm text-muted-foreground">Availability</span>
                   <span className="font-medium">
                     {product.stock > 0 ? (
