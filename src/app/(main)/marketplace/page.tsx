@@ -447,7 +447,7 @@ export default function MarketplacePage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
                 <Palette className="h-8 w-8 text-primary" />
-                Market
+                Gouache Market
               </h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>{filteredAndSortedProducts.length} product{filteredAndSortedProducts.length !== 1 ? 's' : ''} available</span>

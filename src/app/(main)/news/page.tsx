@@ -104,15 +104,15 @@ export default function NewsPage() {
       return matchesCategory;
     });
 
-    // Always show 9 tiles, fill with placeholders if needed
+    // Always show 8 tiles, fill with placeholders if needed
     const displayArticles = [...realArticles];
-    while (displayArticles.length < 9) {
+    while (displayArticles.length < 8) {
       displayArticles.push(
         createPlaceholderArticle(theme, `placeholder-${displayArticles.length + 1}`)
       );
     }
 
-    return displayArticles.slice(0, 9);
+    return displayArticles.slice(0, 8);
   }, [articles, filteredCategory, theme]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -291,7 +291,7 @@ export default function NewsPage() {
             {/* Responsive, editorial-style grid - Remaining articles */}
             {filteredArticles.length > 1 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredArticles.slice(1, 9).map((article, idx) => (
+                {filteredArticles.slice(1, 8).map((article, idx) => (
                   <div
                     key={article.id}
                     className={

@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, ShoppingCart, Heart, Share2, Package, TrendingUp, Check, X } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart, Package, TrendingUp, Check, X } from 'lucide-react';
 import { MarketplaceProduct } from '@/lib/types';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -525,7 +525,7 @@ export default function ProductDetailPage() {
                   </div>
                 )}
                 <div className="flex items-center justify-between py-2 border-b">
-                  <span className="text-sm text-muted-foreground">Stock</span>
+                  <span className="text-sm text-muted-foreground">Availability</span>
                   <span className="font-medium">
                     {product.stock > 0 ? (
                       <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
@@ -601,26 +601,7 @@ export default function ProductDetailPage() {
                     ? 'Out of Stock'
                     : product.isAffiliate
                     ? 'Buy Now'
-                    : 'Add to Cart'}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({
-                        title: product.title,
-                        text: product.description,
-                        url: window.location.href,
-                      });
-                    } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      alert('Link copied to clipboard!');
-                    }
-                  }}
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share Product
+                    : 'Buy Now'}
                 </Button>
               </div>
 
