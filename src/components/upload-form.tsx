@@ -253,15 +253,15 @@ export function UploadForm() {
       </CardHeader>
       <CardContent>
         {/* AI Artwork Disclaimer */}
-        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+        <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 mt-0.5">
-              <AlertCircle className="h-5 w-5 text-destructive" />
+              <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-500" />
             </div>
             <div className="flex-1 space-y-2">
-              <h3 className="font-semibold text-destructive">AI-Generated Artwork Policy</h3>
+              <h3 className="font-semibold text-orange-600 dark:text-orange-500">AI-Generated Artwork Policy</h3>
               <p className="text-sm text-foreground">
-                AI-generated artwork is <strong>not permitted</strong> on Gouache. By uploading artwork, you agree that you will not upload AI-generated artworks. Breach of these terms will result in <strong>permanent suspension</strong> from the platform.
+                Gouache and our community are dedicated to supporting artist creations which are non-AI generated. We utilize a peer-to-peer report system whereby Gouache community members can and will report suspected AI-generated content. If artists cannot present proof of original creation, they may be <strong>permanently banned</strong> from the platform, sometimes without appeal.
               </p>
             </div>
           </div>
@@ -581,7 +581,7 @@ export function UploadForm() {
           </div>
 
           {/* Terms Agreement */}
-          <div className="flex items-start space-x-3 p-4 bg-muted/50 rounded-lg border">
+          <div className="flex items-start space-x-3 p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
             <Checkbox
               id="agreeToTerms"
               checked={agreedToTerms}
@@ -589,7 +589,7 @@ export function UploadForm() {
               className="mt-1"
             />
             <label htmlFor="agreeToTerms" className="text-sm leading-relaxed cursor-pointer">
-              I confirm that this artwork is <strong>not AI-generated</strong> and is my original creative work. I understand that uploading AI-generated artwork will result in <strong>permanent suspension</strong> from the platform.
+              I confirm that this artwork is <strong>not AI-generated</strong> and is my original creative work. I understand that if I cannot present proof of original creation when reported, I may be <strong>permanently banned</strong> from the platform, sometimes without appeal.
             </label>
           </div>
 
