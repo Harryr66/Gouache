@@ -18,6 +18,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLikes } from '@/providers/likes-provider';
+import { ReportDialog } from '@/components/report-dialog';
 import { 
   UserPlus, 
   UserCheck, 
@@ -34,7 +35,8 @@ import {
   Users,
   Play,
   Heart as HeartIcon,
-  X
+  X,
+  Flag
 } from 'lucide-react';
 
 interface ArtworkTileProps {
@@ -335,6 +337,14 @@ const generateArtistContent = (artist: Artist) => ({
                 >
                   <Share2 className="h-4 w-4" />
                 </Button>
+                <ReportDialog
+                  contentId={artwork.id}
+                  contentType="Artwork"
+                  content={artwork.title || artwork.description || 'Artwork'}
+                  offenderId={artwork.artist.id}
+                  offenderHandle={artwork.artist.handle || artwork.artist.name}
+                  onReport={async () => {}}
+                />
               </div>
               
               {/* Mobile: Collapsible Artist Banner */}
@@ -388,6 +398,16 @@ const generateArtistContent = (artist: Artist) => ({
                       >
                         <Share2 className="h-5 w-5" />
                       </Button>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <ReportDialog
+                          contentId={artwork.id}
+                          contentType="Artwork"
+                          content={artwork.title || artwork.description || 'Artwork'}
+                          offenderId={artwork.artist.id}
+                          offenderHandle={artwork.artist.handle || artwork.artist.name}
+                          onReport={async () => {}}
+                        />
+                      </div>
                     </div>
                   </CollapsibleTrigger>
                   

@@ -16,6 +16,7 @@ interface AdminSidebarProps {
   marketplaceProducts: any[];
   affiliateRequests: any[];
   userReports: any[];
+  contentReports?: any[];
   advertisingApplications: any[];
   advertisements: any[];
   advertisementAnalytics: any[];
@@ -212,6 +213,17 @@ export function AdminSidebar(props: AdminSidebarProps) {
             <span className="text-sm">Reports</span>
             <Badge variant={props.selectedView === 'user-reports' ? 'secondary' : 'outline'}>
               ({props.userReports.filter(r => r.status === 'pending').length})
+            </Badge>
+          </button>
+          <button
+            onClick={() => props.setSelectedView('ai-content-reports')}
+            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+              props.selectedView === 'ai-content-reports' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+            }`}
+          >
+            <span className="text-sm">AI Content Reports</span>
+            <Badge variant={props.selectedView === 'ai-content-reports' ? 'secondary' : 'outline'}>
+              ({props.contentReports?.filter(r => r.isAIContentReport && r.status === 'pending').length || 0})
             </Badge>
           </button>
         </CardContent>

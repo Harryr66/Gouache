@@ -10,6 +10,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAuth } from '@/providers/auth-provider';
 import { Report } from '@/lib/types';
 import { Flag, AlertTriangle } from 'lucide-react';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { toast } from '@/hooks/use-toast';
 
 interface ReportDialogProps {
   contentId: string;
@@ -21,6 +24,7 @@ interface ReportDialogProps {
 }
 
 const reportReasons = [
+  'Suspected AI-generated content',
   'Spam',
   'Inappropriate content',
   'Harassment',
@@ -53,28 +57,56 @@ export function ReportDialog({
     
     const reporterHandle = user.username || user.email?.split('@')[0] || 'anonymous';
 
+    const isAIContentReport = reason === 'Suspected AI-generated content';
+    
     const newReport: Report = {
       id: `report-${Date.now()}`,
       contentId,
       contentType,
       content,
       reportedBy: reporterHandle,
+      reporterId: user.id,
       offenderId,
       offenderHandle,
       reason,
       details: details.trim() || undefined,
       timestamp: new Date().toISOString(),
-      status: 'pending'
+      status: 'pending',
+      isAIContentReport
     };
 
     setLoading(true);
     try {
-      await onReport(newReport);
+      // Save report to Firestore
+      const reportData = {
+        ...newReport,
+        timestamp: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      };
+      await addDoc(collection(db, 'contentReports'), reportData);
+      
+      // Also call the onReport callback if provided
+      if (onReport) {
+        await onReport(newReport);
+      }
+      
+      toast({
+        title: "Report submitted",
+        description: isAIContentReport 
+          ? "Thank you for reporting suspected AI-generated content. Our team will review this."
+          : "Thank you for your report. Our team will review this.",
+      });
+      
       setOpen(false);
       setReason('');
       setDetails('');
     } catch (error) {
       console.error('Error submitting report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit report. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

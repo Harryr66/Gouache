@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
 import { useRouter } from 'next/navigation';
-import { ArtistRequest, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport } from '@/lib/types';
+import { ArtistRequest, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport, Report } from '@/lib/types';
 import { doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';

@@ -722,6 +722,7 @@ export interface Report {
   contentType: 'Artwork' | 'Discussion' | 'Reply' | 'Post' | 'User' | 'Community';
   content: string;
   reportedBy: string;
+  reporterId?: string;
   offenderId: string;
   offenderHandle: string;
   reason: string;
@@ -730,6 +731,7 @@ export interface Report {
   status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
   reviewedBy?: string;
   reviewedAt?: Date;
+  isAIContentReport?: boolean; // Flag for AI-generated content reports
 }
 
 export interface UserReport {

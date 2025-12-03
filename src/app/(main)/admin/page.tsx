@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, deleteDoc, getDocs, getDoc, setDoc, where } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, auth } from '@/lib/firebase';
-import { ArtistRequest, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport, ArticleSection } from '@/lib/types';
+import { ArtistRequest, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport, ArticleSection, Report } from '@/lib/types';
 import { Check, X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Video, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2, GripVertical, Type, ImageIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
@@ -129,6 +129,7 @@ export default function AdminPanel() {
   const [showArchivedNews, setShowArchivedNews] = useState(false);
   const [showDraftedArticles, setShowDraftedArticles] = useState(false);
   const [userReports, setUserReports] = useState<UserReport[]>([]);
+  const [contentReports, setContentReports] = useState<Report[]>([]);
   const [newArticle, setNewArticle] = useState({
     title: '',
     summary: '',
@@ -199,6 +200,7 @@ export default function AdminPanel() {
     );
     const newsArticlesQuery = query(collection(db, 'newsArticles'), orderBy('updatedAt', 'desc'));
     const userReportsQuery = query(collection(db, 'userReports'), orderBy('submittedAt', 'desc'));
+    const contentReportsQuery = query(collection(db, 'contentReports'), orderBy('timestamp', 'desc'));
 
     const fetchData = async () => {
       try {
@@ -255,7 +257,8 @@ export default function AdminPanel() {
           getDocs(coursesQuery),
           getDocs(booksQuery),
           getDocs(newsArticlesQuery),
-          getDocs(userReportsQuery)
+          getDocs(userReportsQuery),
+          getDocs(contentReportsQuery)
         ]);
 
         const requests = artistSnapshot.docs.map((doc: any) => ({
@@ -414,6 +417,20 @@ export default function AdminPanel() {
         });
         setUserReports(reports);
         console.log(`✅ Loaded ${reports.length} user reports`);
+
+        // Process content reports
+        const contentReports = contentReportsSnapshot.docs.map((doc: any) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            timestamp: data.timestamp || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString()),
+            reviewedAt: data.reviewedAt?.toDate ? data.reviewedAt.toDate() : undefined,
+          } as Report;
+        });
+        setContentReports(contentReports);
+        const aiReports = contentReports.filter(r => r.isAIContentReport);
+        console.log(`✅ Loaded ${contentReports.length} content reports (${aiReports.length} AI-related)`);
 
         setLoading(false);
         console.log('✅ Admin Panel: All data loaded successfully');
@@ -2319,6 +2336,8 @@ export default function AdminPanel() {
       setAffiliateRequests={setAffiliateRequests}
       userReports={userReports}
       setUserReports={setUserReports}
+      contentReports={contentReports}
+      setContentReports={setContentReports}
       advertisingApplications={advertisingApplications}
       setAdvertisingApplications={setAdvertisingApplications}
       advertisements={advertisements}

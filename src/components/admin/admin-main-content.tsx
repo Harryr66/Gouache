@@ -47,6 +47,7 @@ export const AdminMainContent = (props: any): JSX.Element => {
           marketplaceProducts={props.marketplaceProducts}
           affiliateRequests={props.affiliateRequests}
           userReports={props.userReports}
+          contentReports={props.contentReports}
           advertisingApplications={props.advertisingApplications}
           advertisements={props.advertisements}
           advertisementAnalytics={props.advertisementAnalytics}
