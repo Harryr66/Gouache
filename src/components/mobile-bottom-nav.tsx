@@ -9,8 +9,7 @@ import { cn } from '@/lib/utils';
 const mobileNavItems = [
   { href: '/news', icon: Globe, label: 'News' },
   { href: '/discover', icon: Eye, label: 'Discover' },
-  // Marketplace temporarily hidden for MVP - will be re-enabled in future
-  // { href: '/learn', icon: ShoppingCart, label: 'Marketplace' },
+  { href: '/marketplace', icon: ShoppingCart, label: 'Marketplace' },
 ];
 
 export function MobileBottomNav() {
