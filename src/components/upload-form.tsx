@@ -160,7 +160,7 @@ export function UploadForm() {
         views: 0,
         likes: 0,
         isAI: false, // AI artwork not permitted
-        aiAssistance: 'none',
+        aiAssistance: 'none' as const,
         statement: formData.story,
         materialsList: formData.materials,
         processExplanation: formData.process,
