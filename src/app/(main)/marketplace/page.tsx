@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter, Palette, Star, Heart, Package, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { MarketplaceProduct } from '@/lib/types';
@@ -242,6 +243,7 @@ export default function MarketplacePage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
+  const router = useRouter();
   const { generatePlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(400, 300);
 
@@ -502,19 +504,13 @@ export default function MarketplacePage() {
                     <Button
                       className="flex-1 gradient-button"
                       onClick={() => {
-                        if (product.isAffiliate && product.affiliateLink) {
-                          window.open(product.affiliateLink, '_blank');
-                        } else {
-                          // Navigate to product detail page or add to cart
-                          // For now, just show a message
-                          alert('Product detail page coming soon!');
-                        }
+                        router.push(`/marketplace/${product.id}`);
                       }}
                       disabled={product.stock === 0}
                     >
                       <Package className="h-4 w-4 mr-2" />
                       {product.stock === 0 ? 'Out of Stock' : 'View Details'}
-                      </Button>
+                    </Button>
                   </div>
 
                   {product.tags && product.tags.length > 0 && (
