@@ -397,8 +397,8 @@ export function UploadForm() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="abstract">Abstract</SelectItem>
-                  <SelectItem value="digital">Digital Art</SelectItem>
-                  <SelectItem value="photography">Photography</SelectItem>
+                  <SelectItem value="charcoal">Charcoal</SelectItem>
+                  <SelectItem value="drawing">Drawing</SelectItem>
                   <SelectItem value="sculpture">Sculpture</SelectItem>
                   <SelectItem value="painting">Painting</SelectItem>
                   <SelectItem value="mixed">Mixed Media</SelectItem>
