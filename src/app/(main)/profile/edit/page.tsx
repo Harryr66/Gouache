@@ -161,7 +161,7 @@ export default function ProfileEditPage() {
     hideCard: false,
     hideShowcaseLocations: false,
     hideShop: false,   // Enabled by default
-    hideLearn: false,  // Enabled by default
+    hideLearn: true,   // Hidden by default for MVP
     bannerImageUrl: '',
     // Upcoming event fields
     eventCity: '',
@@ -215,7 +215,7 @@ export default function ProfileEditPage() {
             hideShowcaseLocations: user.isProfessional ? (changes.hideShowcaseLocations || user.hideShowcaseLocations || false) : false,
             // If undefined, default to hidden (true) until artist explicitly disables
             hideShop: user.isProfessional ? (changes.hideShop ?? (user.hideShop ?? false)) : false,
-            hideLearn: user.isProfessional ? (changes.hideLearn ?? (user.hideLearn ?? false)) : false,
+            hideLearn: user.isProfessional ? (changes.hideLearn ?? (user.hideLearn ?? true)) : true,
             bannerImageUrl: user.isProfessional ? (changes.bannerImageUrl || user.bannerImageUrl || '') : '',
             eventCity: user.isProfessional ? (changes.eventCity || user.eventCity || '') : '',
             eventCountry: user.isProfessional ? (changes.eventCountry || user.eventCountry || '') : '',
@@ -295,7 +295,7 @@ export default function ProfileEditPage() {
           hideShowcaseLocations: user.isProfessional ? ((user as any).hideShowcaseLocations || false) : false,
           // Default to hidden (true) when field is undefined
           hideShop: user.isProfessional ? (((user as any).hideShop ?? false)) : false,
-          hideLearn: user.isProfessional ? (((user as any).hideLearn ?? false)) : false,
+          hideLearn: user.isProfessional ? (((user as any).hideLearn ?? true)) : true,
           bannerImageUrl: user.isProfessional ? (user.bannerImageUrl || '') : '',
           eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
           eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
