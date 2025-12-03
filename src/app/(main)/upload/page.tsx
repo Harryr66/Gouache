@@ -6,14 +6,14 @@ import { useAuth } from '@/providers/auth-provider';
 import { User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Image, Package, GraduationCap, Calendar, ArrowLeft } from 'lucide-react';
+import { Image, Package, Calendar, ArrowLeft } from 'lucide-react';
 import { UploadForm } from '@/components/upload-form';
 import { ThemeLoading } from '@/components/theme-loading';
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [selectedType, setSelectedType] = useState<'portfolio' | 'product' | 'course' | 'event' | null>(null);
+  const [selectedType, setSelectedType] = useState<'portfolio' | 'product' | 'event' | null>(null);
   const [isCheckingUser, setIsCheckingUser] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const previousUserRef = useRef<User | null>(null);
@@ -151,11 +151,6 @@ export default function UploadPage() {
     return null;
   }
 
-  if (selectedType === 'course') {
-    router.push('/learn/submit');
-    return null;
-  }
-
   if (selectedType === 'event') {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -239,27 +234,6 @@ export default function UploadPage() {
           <CardContent>
             <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
               List Product
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Course */}
-        <Card 
-          className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
-          onClick={() => setSelectedType('course')}
-        >
-          <CardHeader>
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-              <GraduationCap className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle>Course or Tutorial</CardTitle>
-            <CardDescription>
-              Create an educational course to teach your skills. Share your knowledge and earn from student enrollments.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              Create Course
             </Button>
           </CardContent>
         </Card>
