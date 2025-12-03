@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Palette, Star, Heart, Package, TrendingUp } from 'lucide-react';
+import { Search, Filter, Palette, Star, Heart, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -587,7 +587,7 @@ export default function MarketplacePage() {
         {filteredAndSortedProducts.length === 0 ? (
             <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <Package className="h-12 w-12 text-muted-foreground mb-4" />
+              <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No products found</h3>
               <p className="text-muted-foreground text-center">
                 {searchQuery || selectedCategory !== 'all'
@@ -599,7 +599,7 @@ export default function MarketplacePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAndSortedProducts.map((product) => (
-              <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
+              <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
                           <div className="relative">
                             <img
                     src={product.images && product.images.length > 0 ? product.images[0] : placeholderUrl}
@@ -627,8 +627,8 @@ export default function MarketplacePage() {
                   )}
                   </div>
                   
-                  <CardContent className="p-4">
-                  <div className="mb-2">
+                  <CardContent className="p-4 flex flex-col flex-1">
+                  <div className="mb-2 flex-1">
                     <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors mb-1">
                       {product.title}
                       </h3>
@@ -653,21 +653,8 @@ export default function MarketplacePage() {
                       </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      className="flex-1 gradient-button"
-                      onClick={() => {
-                        router.push(`/marketplace/${product.id}`);
-                      }}
-                      disabled={product.stock === 0}
-                    >
-                      <Package className="h-4 w-4 mr-2" />
-                      {product.stock === 0 ? 'Out of Stock' : 'View Details'}
-                      </Button>
-                  </div>
-
                   {product.tags && product.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-3">
+                    <div className="flex flex-wrap gap-1 mb-3">
                       {product.tags.slice(0, 3).map((tag, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {tag}
@@ -675,6 +662,18 @@ export default function MarketplacePage() {
                       ))}
                     </div>
                   )}
+
+                  <div className="flex items-center gap-2 mt-auto">
+                    <Button
+                      className="flex-1 gradient-button"
+                      onClick={() => {
+                        router.push(`/marketplace/${product.id}`);
+                      }}
+                      disabled={product.stock === 0}
+                    >
+                      {product.stock === 0 ? 'Out of Stock' : 'View'}
+                      </Button>
+                  </div>
                   </CardContent>
                 </Card>
               ))}
