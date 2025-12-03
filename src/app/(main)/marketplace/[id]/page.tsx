@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Star, ShoppingCart, Heart, Share2, Package, TrendingUp, Check, X } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart, Share2, Package, TrendingUp, Check, X } from 'lucide-react';
 import { MarketplaceProduct } from '@/lib/types';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -238,9 +238,9 @@ export default function ProductDetailPage() {
 
             {/* Product Info */}
             <div className="space-y-6">
-              {/* Title and Rating */}
+              {/* Title */}
               <div>
-                <div className="flex items-start justify-between mb-2">
+                <div className="flex items-start justify-between mb-4">
                   <h1 className="text-3xl font-bold text-foreground">{product.title}</h1>
                   <Button
                     variant="ghost"
@@ -251,18 +251,6 @@ export default function ProductDetailPage() {
                     <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-current' : ''}`} />
                   </Button>
                 </div>
-                
-                {product.rating > 0 && (
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="ml-1 font-semibold">{product.rating.toFixed(1)}</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      ({product.reviewCount} review{product.reviewCount !== 1 ? 's' : ''})
-                    </span>
-                  </div>
-                )}
 
                 {/* Seller Info */}
                 <div className="flex items-center gap-3 mb-4">

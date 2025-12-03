@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Palette, Star, Heart, TrendingUp } from 'lucide-react';
+import { Search, Filter, Palette, Heart, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -19,7 +19,6 @@ const sortOptions = [
   { value: 'newest', label: 'Newest First' },
   { value: 'price-low', label: 'Price: Low to High' },
   { value: 'price-high', label: 'Price: High to Low' },
-  { value: 'rating', label: 'Highest Rated' },
   { value: 'popular', label: 'Most Popular' }
 ];
 
@@ -420,9 +419,6 @@ export default function MarketplacePage() {
       case 'price-high':
         filtered.sort((a, b) => b.price - a.price);
         break;
-      case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
-        break;
       case 'popular':
         filtered.sort((a, b) => b.salesCount - a.salesCount);
         break;
@@ -568,14 +564,6 @@ export default function MarketplacePage() {
                       <Badge variant="secondary">Out of Stock</Badge>
                               )}
                             </div>
-                  {product.rating > 0 && (
-                    <div className="absolute top-3 right-3">
-                      <Badge variant="outline" className="bg-background/80">
-                        <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
-                        {product.rating.toFixed(1)}
-                      </Badge>
-                          </div>
-                  )}
                   </div>
                   
                   <CardContent className="p-4 flex flex-col flex-1">
