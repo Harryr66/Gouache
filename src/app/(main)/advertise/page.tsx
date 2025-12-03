@@ -19,7 +19,7 @@ const advertisingTypes = [
   { value: 'video', label: 'Video Advertisement', description: 'Featured video placements' },
   { value: 'newsletter', label: 'Newsletter Sponsorship', description: 'Email marketing integration' },
   { value: 'event', label: 'Event Sponsorship', description: 'Sponsor art events and exhibitions' },
-  { value: 'influencer', label: 'Influencer Partnership', description: 'Collaborate with artists' }
+  { value: 'social-media', label: 'Social Media', description: 'Social media advertising and promotion' }
 ];
 
 const budgetRanges = [
