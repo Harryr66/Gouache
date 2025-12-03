@@ -386,13 +386,12 @@ export default function MarketplacePage() {
     fetchProducts();
   }, []);
 
-  // Combine real products with placeholders if no real products exist
+  // Always show placeholder products for demonstration
   const displayProducts = useMemo(() => {
-    if (products.length === 0 && !loading) {
-      return generatePlaceholderProducts(generatePlaceholderUrl);
-    }
-    return products;
-  }, [products, loading, generatePlaceholderUrl]);
+    const placeholders = generatePlaceholderProducts(generatePlaceholderUrl);
+    // Combine real products with placeholders
+    return [...products, ...placeholders];
+  }, [products, generatePlaceholderUrl]);
 
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = displayProducts;
