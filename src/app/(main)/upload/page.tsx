@@ -147,8 +147,44 @@ export default function UploadPage() {
   }
 
   if (selectedType === 'product') {
-    router.push('/profile/edit?tab=shop');
-    return null;
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <Button
+          variant="ghost"
+          onClick={() => setSelectedType(null)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Upload Options
+        </Button>
+        <header className="mb-8">
+          <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
+            List Product for Sale
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Add a product to your shop to sell original artwork, prints, or merchandise.
+          </p>
+        </header>
+        <Card className="p-8 text-center">
+          <CardContent>
+            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Product Listing Coming Soon</h3>
+            <p className="text-muted-foreground">
+              Product listing functionality will be available soon. For now, you can upload artwork and mark it as for sale in your portfolio.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => {
+                setSelectedType('portfolio');
+              }}
+            >
+              Upload Artwork Instead
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (selectedType === 'event') {
