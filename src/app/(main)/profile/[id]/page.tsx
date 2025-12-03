@@ -58,8 +58,8 @@ export default function ArtistProfilePage() {
             hideUpcomingEvents: data.hideUpcomingEvents || false,
             hideShowcaseLocations: data.hideShowcaseLocations || false,
             // Default to hidden until explicitly enabled
-            hideShop: data.hideShop ?? true,
-            hideLearn: data.hideLearn ?? true,
+            hideShop: data.hideShop ?? false,
+            hideLearn: data.hideLearn ?? false,
             eventCity: data.eventCity || undefined,
             eventCountry: data.eventCountry || undefined,
             eventDate: data.eventDate || undefined,

@@ -160,8 +160,8 @@ export default function ProfileEditPage() {
     hideFlags: false,
     hideCard: false,
     hideShowcaseLocations: false,
-    hideShop: true,   // Hidden by default until artist enables
-    hideLearn: true,  // Hidden by default until artist enables
+    hideShop: false,   // Enabled by default
+    hideLearn: false,  // Enabled by default
     bannerImageUrl: '',
     // Upcoming event fields
     eventCity: '',
@@ -214,8 +214,8 @@ export default function ProfileEditPage() {
             hideCard: user.isProfessional ? (changes.hideCard || user.hideCard || false) : false,
             hideShowcaseLocations: user.isProfessional ? (changes.hideShowcaseLocations || user.hideShowcaseLocations || false) : false,
             // If undefined, default to hidden (true) until artist explicitly disables
-            hideShop: user.isProfessional ? (changes.hideShop ?? (user.hideShop ?? true)) : false,
-            hideLearn: user.isProfessional ? (changes.hideLearn ?? (user.hideLearn ?? true)) : false,
+            hideShop: user.isProfessional ? (changes.hideShop ?? (user.hideShop ?? false)) : false,
+            hideLearn: user.isProfessional ? (changes.hideLearn ?? (user.hideLearn ?? false)) : false,
             bannerImageUrl: user.isProfessional ? (changes.bannerImageUrl || user.bannerImageUrl || '') : '',
             eventCity: user.isProfessional ? (changes.eventCity || user.eventCity || '') : '',
             eventCountry: user.isProfessional ? (changes.eventCountry || user.eventCountry || '') : '',
@@ -294,8 +294,8 @@ export default function ProfileEditPage() {
           hideCard: user.isProfessional ? (user.hideCard || false) : false,
           hideShowcaseLocations: user.isProfessional ? ((user as any).hideShowcaseLocations || false) : false,
           // Default to hidden (true) when field is undefined
-          hideShop: user.isProfessional ? (((user as any).hideShop ?? true)) : false,
-          hideLearn: user.isProfessional ? (((user as any).hideLearn ?? true)) : false,
+          hideShop: user.isProfessional ? (((user as any).hideShop ?? false)) : false,
+          hideLearn: user.isProfessional ? (((user as any).hideLearn ?? false)) : false,
           bannerImageUrl: user.isProfessional ? (user.bannerImageUrl || '') : '',
           eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
           eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
@@ -1688,42 +1688,42 @@ export default function ProfileEditPage() {
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <Label>Hide Shop Tab</Label>
+                      <Label>Enable Shop Tab</Label>
                       <p className="text-sm text-muted-foreground">
-                        Hide the "Shop" tab from your public profile
+                        Show the "Shop" tab on your public profile
                       </p>
                     </div>
                     <Switch
-                      checked={formData.hideShop}
+                      checked={!formData.hideShop}
                       onCheckedChange={(checked) => {
-                        if (checked) {
-                          const confirmHide = window.confirm(
-                            'Are you sure you want to hide your Shop tab? Customers will no longer see your shop on your profile.'
+                        if (!checked) {
+                          const confirmDisable = window.confirm(
+                            'Are you sure you want to disable your Shop tab? Customers will no longer see your shop on your profile.'
                           );
-                          if (!confirmHide) return;
+                          if (!confirmDisable) return;
                         }
-                        handleInputChange('hideShop', checked);
+                        handleInputChange('hideShop', !checked);
                       }}
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <Label>Hide Learn Tab</Label>
+                      <Label>Enable Learn Tab</Label>
                       <p className="text-sm text-muted-foreground">
-                        Hide the "Learn" tab from your public profile
+                        Show the "Learn" tab on your public profile
                       </p>
                     </div>
                     <Switch
-                      checked={formData.hideLearn}
+                      checked={!formData.hideLearn}
                       onCheckedChange={(checked) => {
-                        if (checked) {
-                          const confirmHide = window.confirm(
-                            'Are you sure you want to hide your Learn tab? Students will no longer see your courses on your profile.'
+                        if (!checked) {
+                          const confirmDisable = window.confirm(
+                            'Are you sure you want to disable your Learn tab? Students will no longer see your courses on your profile.'
                           );
-                          if (!confirmHide) return;
+                          if (!confirmDisable) return;
                         }
-                        handleInputChange('hideLearn', checked);
+                        handleInputChange('hideLearn', !checked);
                       }}
                     />
                   </div>

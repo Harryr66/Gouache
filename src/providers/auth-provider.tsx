@@ -84,8 +84,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           isAdmin: false,
           tipJarEnabled: false,        // Coffee/tips hidden by default
           suggestionsEnabled: false,   // Suggestions hidden by default
-          hideShop: true,   // Tabs hidden by default until artist activates
-          hideLearn: true,  // Tabs hidden by default until artist activates
+          hideShop: false,   // Tabs enabled by default
+          hideLearn: false,  // Tabs enabled by default
           socialLinks: {},
           showcaseLocations: [],
           preferences: {
@@ -191,8 +191,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             tipJarEnabled: userData.tipJarEnabled ?? false,
             suggestionsEnabled: userData.suggestionsEnabled ?? false,
             // Tabs are hidden by default until explicitly enabled
-            hideShop: userData.hideShop ?? true,
-            hideLearn: userData.hideLearn ?? true,
+            hideShop: userData.hideShop ?? false,
+            hideLearn: userData.hideLearn ?? false,
             hideShowcaseLocations: userData.hideShowcaseLocations || false,
             newsletterLink: userData.newsletterLink || '',
             socialLinks: userData.socialLinks || {},

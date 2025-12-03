@@ -81,8 +81,8 @@ export default function ProfilePage() {
           userId={user.id}
           isOwnProfile={true}
           isProfessional={user.isProfessional || false}
-          hideShop={user.hideShop ?? true}
-          hideLearn={user.hideLearn ?? true}
+          hideShop={user.hideShop ?? false}
+          hideLearn={user.hideLearn ?? false}
           onTabChange={setCurrentTab}
         />
       </div>
