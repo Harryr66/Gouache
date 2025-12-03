@@ -15,6 +15,209 @@ import { ThemeLoading } from '@/components/theme-loading';
 import { useAuth } from '@/providers/auth-provider';
 import Link from 'next/link';
 
+// Placeholder products generator (same as marketplace page)
+const generatePlaceholderProducts = (generatePlaceholderUrl: (w: number, h: number) => string): MarketplaceProduct[] => {
+  const placeholderImage = generatePlaceholderUrl(400, 300);
+  return [
+    {
+      id: 'placeholder-1',
+      title: 'Abstract Expressionist Painting',
+      description: 'A vibrant abstract painting featuring bold colors and dynamic brushstrokes. Perfect for modern interiors.',
+      price: 450.00,
+      originalPrice: 600.00,
+      currency: 'USD',
+      category: 'Artwork',
+      subcategory: 'Painting',
+      images: [placeholderImage],
+      sellerId: 'placeholder-seller-1',
+      sellerName: 'Sarah Martinez',
+      isAffiliate: false,
+      isActive: true,
+      stock: 1,
+      rating: 0,
+      reviewCount: 0,
+      tags: ['abstract', 'painting', 'modern', 'colorful'],
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      salesCount: 12,
+      isOnSale: true,
+      isApproved: true,
+      status: 'approved'
+    },
+    {
+      id: 'placeholder-2',
+      title: 'Limited Edition Art Print',
+      description: 'High-quality giclee print on premium paper. Signed and numbered edition of 50.',
+      price: 85.00,
+      currency: 'USD',
+      category: 'Prints',
+      subcategory: 'Fine Art Print',
+      images: [placeholderImage],
+      sellerId: 'placeholder-seller-2',
+      sellerName: 'James Chen',
+      isAffiliate: false,
+      isActive: true,
+      stock: 15,
+      rating: 0,
+      reviewCount: 0,
+      tags: ['print', 'limited edition', 'giclee', 'signed'],
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      salesCount: 28,
+      isOnSale: false,
+      isApproved: true,
+      status: 'approved'
+    },
+    {
+      id: 'placeholder-3',
+      title: 'Watercolor Landscape Collection',
+      description: 'Set of three original watercolor paintings depicting serene mountain landscapes.',
+      price: 320.00,
+      currency: 'USD',
+      category: 'Artwork',
+      subcategory: 'Watercolor',
+      images: [placeholderImage],
+      sellerId: 'placeholder-seller-3',
+      sellerName: 'Emma Thompson',
+      isAffiliate: false,
+      isActive: true,
+      stock: 1,
+      rating: 0,
+      reviewCount: 0,
+      tags: ['watercolor', 'landscape', 'nature', 'set'],
+      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      salesCount: 3,
+      isOnSale: false,
+      isApproved: true,
+      status: 'approved'
+    },
+    {
+      id: 'placeholder-4',
+      title: 'Art Supplies Starter Kit',
+      description: 'Complete starter kit for beginners including brushes, paints, canvas, and palette.',
+      price: 65.00,
+      originalPrice: 90.00,
+      currency: 'USD',
+      category: 'Supplies',
+      subcategory: 'Starter Kit',
+      images: [placeholderImage],
+      sellerId: 'placeholder-seller-4',
+      sellerName: 'Art Supply Co.',
+      isAffiliate: true,
+      affiliateLink: '#',
+      isActive: true,
+      stock: 50,
+      rating: 0,
+      reviewCount: 0,
+      tags: ['supplies', 'starter kit', 'beginner', 'tools'],
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      salesCount: 89,
+      isOnSale: true,
+      isApproved: true,
+      status: 'approved'
+    },
+    {
+      id: 'placeholder-5',
+      title: 'Contemporary Sculpture',
+      description: 'Handcrafted ceramic sculpture exploring themes of nature and form. Unique one-of-a-kind piece.',
+      price: 750.00,
+      currency: 'USD',
+      category: 'Artwork',
+      subcategory: 'Sculpture',
+      images: [placeholderImage],
+      sellerId: 'placeholder-seller-5',
+      sellerName: 'Michael Rodriguez',
+      isAffiliate: false,
+      isActive: true,
+      stock: 1,
+      rating: 0,
+      reviewCount: 0,
+      tags: ['sculpture', 'ceramic', 'contemporary', 'unique'],
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      salesCount: 5,
+      isOnSale: false,
+      isApproved: true,
+      status: 'approved'
+    },
+    {
+      id: 'placeholder-6',
+      title: 'Digital Art Tutorial Book',
+      description: 'Comprehensive guide to digital art techniques with step-by-step tutorials and artist interviews.',
+      price: 29.99,
+      currency: 'USD',
+      category: 'Books',
+      subcategory: 'Tutorial',
+      images: [placeholderImage],
+      sellerId: 'placeholder-seller-6',
+      sellerName: 'Digital Arts Publishing',
+      isAffiliate: false,
+      isActive: true,
+      stock: 200,
+      rating: 0,
+      reviewCount: 0,
+      tags: ['book', 'tutorial', 'digital art', 'guide'],
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      salesCount: 156,
+      isOnSale: false,
+      isApproved: true,
+      status: 'approved'
+    },
+    {
+      id: 'placeholder-7',
+      title: 'Portrait Commission',
+      description: 'Custom portrait commission service. Professional artist will create a personalized portrait from your photo.',
+      price: 250.00,
+      currency: 'USD',
+      category: 'Other',
+      subcategory: 'Commission',
+      images: [placeholderImage],
+      sellerId: 'placeholder-seller-7',
+      sellerName: 'Portrait Studio',
+      isAffiliate: false,
+      isActive: true,
+      stock: 10,
+      rating: 0,
+      reviewCount: 0,
+      tags: ['commission', 'portrait', 'custom', 'personalized'],
+      createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+      salesCount: 22,
+      isOnSale: false,
+      isApproved: true,
+      status: 'approved'
+    },
+    {
+      id: 'placeholder-8',
+      title: 'Mixed Media Collage',
+      description: 'Unique mixed media artwork combining paper, fabric, and paint. One-of-a-kind statement piece.',
+      price: 380.00,
+      originalPrice: 450.00,
+      currency: 'USD',
+      category: 'Artwork',
+      subcategory: 'Mixed Media',
+      images: [placeholderImage],
+      sellerId: 'placeholder-seller-8',
+      sellerName: 'Lisa Anderson',
+      isAffiliate: false,
+      isActive: true,
+      stock: 1,
+      rating: 0,
+      reviewCount: 0,
+      tags: ['mixed media', 'collage', 'unique', 'statement'],
+      createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+      salesCount: 7,
+      isOnSale: true,
+      isApproved: true,
+      status: 'approved'
+    }
+  ];
+};
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -33,8 +236,13 @@ export default function ProductDetailPage() {
         setLoading(true);
         let productData: MarketplaceProduct | null = null;
 
+        // Check if it's a placeholder product
+        if (productId.startsWith('placeholder-')) {
+          const placeholderProducts = generatePlaceholderProducts(generatePlaceholderUrl);
+          productData = placeholderProducts.find(p => p.id === productId) || null;
+        }
         // Check if it's a marketplace product (starts with marketplace- or doesn't have prefix)
-        if (!productId.startsWith('artwork-') && !productId.startsWith('book-')) {
+        else if (!productId.startsWith('artwork-') && !productId.startsWith('book-')) {
           const productDoc = await getDoc(doc(db, 'marketplaceProducts', productId));
           if (productDoc.exists()) {
             const data = productDoc.data();
