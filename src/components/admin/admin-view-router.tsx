@@ -19,6 +19,8 @@ import { doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/fir
 import { db, storage } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 
+const { toast: toastHook } = require('@/hooks/use-toast');
+
 export function AdminViewRouter(props: any) {
   const router = useRouter();
   
@@ -1006,6 +1008,75 @@ export function AdminViewRouter(props: any) {
                   <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
                     <AlertCircle className="h-3 w-3" />
                     <span>Your draft is automatically saved locally. Find saved drafts in the <strong>"Drafted"</strong> section below.</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto text-xs"
+                      onClick={() => {
+                        try {
+                          const savedDraft = localStorage.getItem('gouache-article-draft');
+                          if (savedDraft) {
+                            const draft = JSON.parse(savedDraft);
+                            if (draft.title || draft.body || draft.subheadline) {
+                              props.setNewArticle({
+                                title: draft.title || '',
+                                summary: '',
+                                category: draft.category || 'Stories',
+                                author: draft.author || '',
+                                authorAvatarUrl: draft.authorAvatarUrl || '',
+                                imageUrl: draft.imageUrl || '',
+                                externalUrl: '',
+                                publishedAt: '',
+                                tags: '',
+                                location: draft.location || 'evergreen'
+                              });
+                              props.setNewArticleSubheadline(draft.subheadline || '');
+                              props.setNewArticleBody(draft.body || '');
+                              if (draft.imagePreview) {
+                                props.setNewArticleImagePreview(draft.imagePreview);
+                              }
+                              if (draft.authorAvatarPreview) {
+                                props.setNewArticleAuthorAvatarPreview(draft.authorAvatarPreview);
+                              }
+                              if (draft.thumbnailPreview) {
+                                props.setNewArticleThumbnailPreview(draft.thumbnailPreview);
+                              }
+                              setTimeout(() => {
+                                const bodyEditor = document.getElementById('article-body-editor') as HTMLDivElement;
+                                if (bodyEditor && draft.body) {
+                                  bodyEditor.innerHTML = draft.body;
+                                }
+                              }, 100);
+                              toast({
+                                title: 'Draft restored from backup',
+                                description: 'Your local draft has been restored. Click "Save as Draft" to save it to the server.',
+                              });
+                            } else {
+                              toast({
+                                title: 'No local draft found',
+                                description: 'There is no saved draft in your browser.',
+                                variant: 'destructive'
+                              });
+                            }
+                          } else {
+                            toast({
+                              title: 'No local draft found',
+                              description: 'There is no saved draft in your browser.',
+                              variant: 'destructive'
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Failed to restore draft:', error);
+                          toast({
+                            title: 'Restore failed',
+                            description: 'Could not restore draft from backup.',
+                            variant: 'destructive'
+                          });
+                        }
+                      }}
+                    >
+                      Restore from Backup
+                    </Button>
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button 

@@ -449,6 +449,7 @@ export default function AdminPanel() {
 
         const newsroomArticles = newsArticlesSnapshot.docs.map((doc: any) => {
           const data = doc.data() as any;
+          const articleStatus = data.status || (data.publishedAt ? 'published' : 'draft');
           return {
             id: doc.id,
             title: data.title ?? 'Untitled story',
@@ -467,14 +468,16 @@ export default function AdminPanel() {
             content: data.content ?? '',
             sections: data.sections ?? undefined,
             location: data.location ?? 'evergreen',
-            status: data.status ?? (data.publishedAt ? 'published' : 'draft'),
+            status: articleStatus,
             artistResearchData: data.artistResearchData ?? undefined,
             archived: data.archived ?? false,
             archivedAt: data.archivedAt?.toDate?.()
           } as NewsArticle;
         });
         setNewsArticles(newsroomArticles);
+        const draftCount = newsroomArticles.filter(a => a.status === 'draft' && !a.archived).length;
         console.log(`✅ Loaded ${newsroomArticles.length} newsroom articles`);
+        console.log(`✅ Found ${draftCount} draft articles`);
 
         const reports = userReportsSnapshot.docs.map((doc: any) => {
           const data = doc.data() as any;
@@ -1724,11 +1727,16 @@ export default function AdminPanel() {
       }
       
       const docRef = await addDoc(collection(db, 'newsArticles'), articleData);
+      
+      console.log('✅ Draft saved to Firestore with ID:', docRef.id);
+      console.log('✅ Draft status:', articleData.status);
+      console.log('✅ Draft data:', articleData);
 
       const newArticleState: any = {
         id: docRef.id,
         title: newArticle.title.trim(),
         summary: '',
+        subheadline: newArticleSubheadline.trim() || '',
         category: 'Stories',
         author: newArticle.author.trim() || '',
         imageUrl: heroImageUrl,
@@ -1737,7 +1745,7 @@ export default function AdminPanel() {
         tags: [],
         content: bodyContent,
         location: 'evergreen',
-        status: 'draft',
+        status: 'draft', // Explicitly set as draft
         publishedAt: undefined,
         updatedAt: new Date(),
         archived: false
@@ -1748,7 +1756,12 @@ export default function AdminPanel() {
       if (thumbnailUrl) {
         newArticleState.thumbnailUrl = thumbnailUrl;
       }
-      setNewsArticles((prev) => [newArticleState, ...prev]);
+      setNewsArticles((prev) => {
+        const updated = [newArticleState, ...prev];
+        console.log('✅ Updated newsArticles state. Total articles:', updated.length);
+        console.log('✅ Drafts in state:', updated.filter(a => a.status === 'draft' && !a.archived).length);
+        return updated;
+      });
 
       // Clear localStorage draft after successful save
       try {
@@ -2371,7 +2384,13 @@ export default function AdminPanel() {
   const activeNewsArticles = newsArticles.filter((article: any) => !article.archived);
   const archivedNewsArticles = newsArticles.filter((article: any) => article.archived);
   const publishedArticles = newsArticles.filter((article: any) => !article.archived && (article.status === 'published' || (!article.status && article.publishedAt)));
-  const draftedArticles = newsArticles.filter((article: any) => !article.archived && article.status === 'draft');
+  const draftedArticles = newsArticles.filter((article: any) => {
+    const isDraft = !article.archived && article.status === 'draft';
+    if (isDraft) {
+      console.log('📝 Found draft:', article.id, article.title, 'status:', article.status);
+    }
+    return isDraft;
+  });
   const visibleNewsArticles = showArchivedNews 
     ? archivedNewsArticles 
     : showDraftedArticles 
