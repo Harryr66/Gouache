@@ -255,7 +255,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
               <AlertTitle>Get Started</AlertTitle>
               <AlertDescription>
                 Connect your Stripe account to start selling. You'll be able to accept payments 
-                for originals, prints, books, and courses. We charge a commission fee on all sales.
+                for originals, prints, books, and courses. Our marketplace is commission-free - you keep 100% of sales.
               </AlertDescription>
             </Alert>
             
