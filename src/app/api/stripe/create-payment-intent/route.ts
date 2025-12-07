@@ -134,21 +134,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Commission is now 0% - marketplace is commission-free
-    const commissionRate = 0;
-    const applicationFeeAmount = 0; // No commission fee
+    // Check if artist has opted in to donate a percentage to the platform
+    const platformDonationEnabled = artistData.platformDonationEnabled || false;
+    const platformDonationPercentage = artistData.platformDonationPercentage || 0;
     
-    // Total amount includes product price + optional donation
-    const donationInCents = Math.round(donationAmount || 0);
-    const totalAmount = amountInCents + donationInCents;
+    // Calculate platform donation (if artist opted in)
+    let platformDonationAmount = 0;
+    if (platformDonationEnabled && platformDonationPercentage > 0) {
+      // Donation is calculated from the sale amount (before customer donation)
+      platformDonationAmount = Math.round(amountInCents * (platformDonationPercentage / 100));
+    }
+    
+    // Total amount includes product price + optional customer donation
+    const customerDonationInCents = Math.round(donationAmount || 0);
+    const totalAmount = amountInCents + customerDonationInCents;
+    
+    // Application fee is the platform donation (if artist opted in)
+    // Artist receives: totalAmount - platformDonationAmount
+    const applicationFeeAmount = platformDonationAmount;
 
     // Create payment intent on the connected account
-    // Artist receives full amount (no commission) + any donation
+    // Artist receives: totalAmount - platformDonationAmount (if they opted in)
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: totalAmount,
         currency: currency.toLowerCase(),
-        application_fee_amount: applicationFeeAmount, // 0 - commission-free
+        application_fee_amount: applicationFeeAmount, // Platform donation (if artist opted in)
         transfer_data: {
           destination: stripeAccountId,
         },
@@ -159,8 +170,10 @@ export async function POST(request: NextRequest) {
           itemId: itemId,
           itemTitle: itemData.title || 'Untitled',
           platform: 'gouache',
-          donationAmount: donationInCents.toString(), // Store donation amount
-          productAmount: amountInCents.toString(), // Store original product amount
+          customerDonationAmount: customerDonationInCents.toString(), // Customer donation
+          productAmount: amountInCents.toString(), // Original product amount
+          platformDonationAmount: platformDonationAmount.toString(), // Platform donation (if artist opted in)
+          platformDonationPercentage: platformDonationPercentage.toString(), // Donation percentage
         },
         description: description || `Purchase: ${itemData.title || itemType}`,
         automatic_payment_methods: {
@@ -179,9 +192,11 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
-      applicationFeeAmount, // 0 - commission-free
-      donationAmount: donationInCents,
+      applicationFeeAmount, // Platform donation (if artist opted in)
+      customerDonationAmount: customerDonationInCents,
       productAmount: amountInCents,
+      platformDonationAmount,
+      platformDonationPercentage,
     });
   } catch (error: any) {
     console.error('Error creating payment intent:', error);

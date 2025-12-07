@@ -19,6 +19,9 @@ import { useAuth } from '@/providers/auth-provider';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface StripeIntegrationWizardProps {
   onComplete?: () => void;
@@ -379,12 +382,91 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
           </div>
         )}
 
+        {/* Platform Donation Setting - Only show if account is connected */}
+        {stripeStatus.accountId && stripeStatus.onboardingStatus === 'complete' && 
+         stripeStatus.chargesEnabled && stripeStatus.payoutsEnabled && (
+          <div className="pt-4 border-t space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h4 className="font-semibold">Support Gouache (Optional)</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Optionally donate a percentage of your sales to support the Gouache platform. 
+                    This is completely voluntary and can be changed at any time.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+                <Switch
+                  checked={user?.platformDonationEnabled || false}
+                  onCheckedChange={async (checked) => {
+                    if (!user) return;
+                    try {
+                      await updateDoc(doc(db, 'userProfiles', user.id), {
+                        platformDonationEnabled: checked,
+                        platformDonationPercentage: checked ? (user.platformDonationPercentage || 5) : 0,
+                      });
+                      await refreshUser();
+                      toast({
+                        title: checked ? 'Donation enabled' : 'Donation disabled',
+                        description: checked 
+                          ? `You're now donating ${user.platformDonationPercentage || 5}% of sales to Gouache. Thank you!`
+                          : 'Donation disabled. You keep 100% of sales.',
+                      });
+                    } catch (error) {
+                      console.error('Error updating donation setting:', error);
+                      toast({
+                        title: 'Update failed',
+                        description: 'Could not update donation setting. Please try again.',
+                        variant: 'destructive',
+                      });
+                    }
+                  }}
+                />
+                <div className="flex-1">
+                  <Label className="text-sm font-medium">
+                    {user?.platformDonationEnabled ? 'Donating to Gouache' : 'Donate to Gouache'}
+                  </Label>
+                  {user?.platformDonationEnabled && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={user.platformDonationPercentage || 5}
+                        onChange={async (e) => {
+                          const value = parseFloat(e.target.value);
+                          if (!isNaN(value) && value >= 0 && value <= 100 && user) {
+                            try {
+                              await updateDoc(doc(db, 'userProfiles', user.id), {
+                                platformDonationPercentage: value,
+                              });
+                              await refreshUser();
+                            } catch (error) {
+                              console.error('Error updating donation percentage:', error);
+                            }
+                          }
+                        }}
+                        className="w-20"
+                      />
+                      <span className="text-sm text-muted-foreground">% of each sale</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="pt-4 border-t">
           <h4 className="font-semibold mb-2">Fees & Payouts</h4>
           <div className="text-sm text-muted-foreground space-y-1">
             <p>• 💚 Commission-free marketplace - you keep 100% of sales</p>
             <p>• Stripe processing fee: ~2.9% + $0.30 per transaction (paid by buyer)</p>
             <p>• Customers can add voluntary donations to support you</p>
+            <p>• Optionally donate a % of your sales to support Gouache (completely voluntary)</p>
             <p>• Payouts are processed automatically to your bank account</p>
           </div>
         </div>

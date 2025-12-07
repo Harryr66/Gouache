@@ -844,6 +844,8 @@ export interface User {
   stripeChargesEnabled?: boolean; // Whether charges are enabled
   stripePayoutsEnabled?: boolean; // Whether payouts are enabled
   stripeAccountType?: 'express' | 'standard' | 'custom'; // Account type
+  platformDonationEnabled?: boolean; // Whether artist wants to donate % of sales to platform
+  platformDonationPercentage?: number; // Percentage of sales to donate (0-100)
 }
 
 export interface Follow {
