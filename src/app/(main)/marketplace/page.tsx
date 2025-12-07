@@ -27,9 +27,7 @@ const categoryOptions = [
   { value: 'Artwork', label: 'Original Artworks' },
   { value: 'limited-prints', label: 'Limited Edition Prints' },
   { value: 'all-prints', label: 'All Prints' },
-  { value: 'Books', label: 'Books' },
-  { value: 'Supplies', label: 'Supplies' },
-  { value: 'Other', label: 'Other' }
+  { value: 'Books', label: 'Books' }
 ];
 
 // Placeholder products for demonstration
