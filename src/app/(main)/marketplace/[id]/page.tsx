@@ -6,9 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, ShoppingCart, Heart, Package, TrendingUp, Check, X, HeartHandshake } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { ArrowLeft, ShoppingCart, Heart, Package, TrendingUp, Check, X } from 'lucide-react';
 import { MarketplaceProduct } from '@/lib/types';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -231,8 +229,6 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [donationAmount, setDonationAmount] = useState<string>('');
-  const [showDonation, setShowDonation] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -387,11 +383,9 @@ export default function ProductDetailPage() {
     }
 
     try {
-      // Calculate donation amount in cents
-      const donationInCents = donationAmount ? Math.round(parseFloat(donationAmount) * 100) : 0;
       const productPriceInCents = Math.round(product.price * 100);
       
-      // Create payment intent with donation
+      // Create payment intent
       const response = await fetch('/api/stripe/create-payment-intent', {
         method: 'POST',
         headers: {
@@ -405,7 +399,6 @@ export default function ProductDetailPage() {
           itemType: product.category === 'Books' ? 'book' : (product.category === 'Prints' ? 'print' : 'original'),
           buyerId: user.id,
           description: `Purchase: ${product.title}`,
-          donationAmount: donationInCents,
         }),
       });
 
@@ -418,7 +411,7 @@ export default function ProductDetailPage() {
       
       // TODO: Integrate Stripe Elements or Checkout to complete payment
       // For now, show success message
-      alert(`Payment intent created! Total: ${product.currency} ${(product.price + parseFloat(donationAmount || '0')).toFixed(2)}${donationInCents > 0 ? ` (includes ${product.currency} ${parseFloat(donationAmount || '0').toFixed(2)} donation)` : ''}`);
+      alert(`Payment intent created! Total: ${product.currency} ${product.price.toFixed(2)}`);
     } catch (error: any) {
       console.error('Purchase error:', error);
       alert(error.message || 'Failed to process purchase. Please try again.');
@@ -708,7 +701,7 @@ export default function ProductDetailPage() {
                     : 'Buy Now'}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  💚 Commission-free marketplace • 100% goes to artists
+                  💚 Commission-free marketplace • Artists keep 100% of sales
                 </p>
               </div>
 

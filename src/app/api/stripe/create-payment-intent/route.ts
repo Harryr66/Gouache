@@ -26,8 +26,7 @@ export async function POST(request: NextRequest) {
       itemId, 
       itemType, // 'original', 'print', 'book', 'course'
       buyerId,
-      description,
-      donationAmount = 0 // Optional donation amount in cents
+      description
     } = body;
 
     // Validate required fields
@@ -141,23 +140,19 @@ export async function POST(request: NextRequest) {
     // Calculate platform donation (if artist opted in)
     let platformDonationAmount = 0;
     if (platformDonationEnabled && platformDonationPercentage > 0) {
-      // Donation is calculated from the sale amount (before customer donation)
+      // Donation is calculated from the sale amount
       platformDonationAmount = Math.round(amountInCents * (platformDonationPercentage / 100));
     }
     
-    // Total amount includes product price + optional customer donation
-    const customerDonationInCents = Math.round(donationAmount || 0);
-    const totalAmount = amountInCents + customerDonationInCents;
-    
     // Application fee is the platform donation (if artist opted in)
-    // Artist receives: totalAmount - platformDonationAmount
+    // Artist receives: amountInCents - platformDonationAmount
     const applicationFeeAmount = platformDonationAmount;
 
     // Create payment intent on the connected account
-    // Artist receives: totalAmount - platformDonationAmount (if they opted in)
+    // Artist receives: amountInCents - platformDonationAmount (if they opted in)
     const paymentIntent = await stripe.paymentIntents.create(
       {
-        amount: totalAmount,
+        amount: amountInCents,
         currency: currency.toLowerCase(),
         application_fee_amount: applicationFeeAmount, // Platform donation (if artist opted in)
         transfer_data: {
@@ -170,7 +165,6 @@ export async function POST(request: NextRequest) {
           itemId: itemId,
           itemTitle: itemData.title || 'Untitled',
           platform: 'gouache',
-          customerDonationAmount: customerDonationInCents.toString(), // Customer donation
           productAmount: amountInCents.toString(), // Original product amount
           platformDonationAmount: platformDonationAmount.toString(), // Platform donation (if artist opted in)
           platformDonationPercentage: platformDonationPercentage.toString(), // Donation percentage
@@ -193,7 +187,6 @@ export async function POST(request: NextRequest) {
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
       applicationFeeAmount, // Platform donation (if artist opted in)
-      customerDonationAmount: customerDonationInCents,
       productAmount: amountInCents,
       platformDonationAmount,
       platformDonationPercentage,

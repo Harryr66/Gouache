@@ -109,7 +109,6 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     // Extract metadata for platform donation tracking
     const platformDonationAmount = parseInt(paymentIntent.metadata.platformDonationAmount || '0');
     const platformDonationPercentage = parseFloat(paymentIntent.metadata.platformDonationPercentage || '0');
-    const customerDonationAmount = parseInt(paymentIntent.metadata.customerDonationAmount || '0');
     const productAmount = parseInt(paymentIntent.metadata.productAmount || paymentIntent.amount.toString());
     
     // Record the sale in Firestore
@@ -124,7 +123,6 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       applicationFeeAmount: paymentIntent.application_fee_amount || 0,
       platformCommission: platformDonationAmount, // Platform donation (if artist opted in)
       platformDonationPercentage, // Donation percentage
-      customerDonationAmount, // Customer donation to artist
       productAmount, // Original product price
       artistPayout: paymentIntent.amount - (paymentIntent.application_fee_amount || 0),
       status: 'completed',
