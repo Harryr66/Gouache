@@ -386,75 +386,148 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
         {stripeStatus.accountId && stripeStatus.onboardingStatus === 'complete' && 
          stripeStatus.chargesEnabled && stripeStatus.payoutsEnabled && (
           <div className="pt-4 border-t space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h4 className="font-semibold">Support Gouache (Optional)</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Optionally donate a percentage of your sales to support the Gouache platform. 
-                    This is completely voluntary and can be changed at any time.
-                  </p>
-                </div>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <h4 className="font-semibold">Support Gouache (Optional)</h4>
+                <p className="text-sm text-muted-foreground">
+                  Optionally donate a percentage of your sales to support the Gouache platform. 
+                  This is completely voluntary and can be changed at any time.
+                </p>
               </div>
               
-              <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-                <Switch
-                  checked={user?.platformDonationEnabled || false}
-                  onCheckedChange={async (checked) => {
-                    if (!user) return;
-                    try {
-                      await updateDoc(doc(db, 'userProfiles', user.id), {
-                        platformDonationEnabled: checked,
-                        platformDonationPercentage: checked ? (user.platformDonationPercentage || 5) : 0,
-                      });
-                      await refreshUser();
-                      toast({
-                        title: checked ? 'Donation enabled' : 'Donation disabled',
-                        description: checked 
-                          ? `You're now donating ${user.platformDonationPercentage || 5}% of sales to Gouache. Thank you!`
-                          : 'Donation disabled. You keep 100% of sales.',
-                      });
-                    } catch (error) {
-                      console.error('Error updating donation setting:', error);
-                      toast({
-                        title: 'Update failed',
-                        description: 'Could not update donation setting. Please try again.',
-                        variant: 'destructive',
-                      });
-                    }
-                  }}
-                />
-                <div className="flex-1">
-                  <Label className="text-sm font-medium">
-                    {user?.platformDonationEnabled ? 'Donating to Gouache' : 'Donate to Gouache'}
-                  </Label>
-                  {user?.platformDonationEnabled && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.5"
-                        value={user.platformDonationPercentage || 5}
-                        onChange={async (e) => {
-                          const value = parseFloat(e.target.value);
-                          if (!isNaN(value) && value >= 0 && value <= 100 && user) {
-                            try {
-                              await updateDoc(doc(db, 'userProfiles', user.id), {
-                                platformDonationPercentage: value,
-                              });
-                              await refreshUser();
-                            } catch (error) {
-                              console.error('Error updating donation percentage:', error);
-                            }
+              <div className="p-4 bg-muted/50 rounded-lg space-y-4">
+                {/* Percentage Selector */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Suggested Percentage</Label>
+                  <div className="flex gap-2 flex-wrap">
+                    {[5, 10, 15, 20].map((percentage) => (
+                      <Button
+                        key={percentage}
+                        type="button"
+                        variant={user?.platformDonationPercentage === percentage ? "default" : "outline"}
+                        size="sm"
+                        onClick={async () => {
+                          if (!user) return;
+                          try {
+                            await updateDoc(doc(db, 'userProfiles', user.id), {
+                              platformDonationEnabled: true,
+                              platformDonationPercentage: percentage,
+                            });
+                            await refreshUser();
+                            toast({
+                              title: 'Donation set',
+                              description: `You're now donating ${percentage}% of sales to Gouache. Thank you!`,
+                            });
+                          } catch (error) {
+                            console.error('Error updating donation:', error);
+                            toast({
+                              title: 'Update failed',
+                              description: 'Could not update donation setting. Please try again.',
+                              variant: 'destructive',
+                            });
                           }
                         }}
-                        className="w-20"
-                      />
-                      <span className="text-sm text-muted-foreground">% of each sale</span>
-                    </div>
-                  )}
+                      >
+                        {percentage}%
+                      </Button>
+                    ))}
+                    <Button
+                      type="button"
+                      variant={user?.platformDonationEnabled && ![5, 10, 15, 20].includes(user.platformDonationPercentage || 0) ? "default" : "outline"}
+                      size="sm"
+                      onClick={async () => {
+                        if (!user) return;
+                        try {
+                          await updateDoc(doc(db, 'userProfiles', user.id), {
+                            platformDonationEnabled: false,
+                            platformDonationPercentage: 0,
+                          });
+                          await refreshUser();
+                          toast({
+                            title: 'Donation removed',
+                            description: 'You keep 100% of sales.',
+                          });
+                        } catch (error) {
+                          console.error('Error removing donation:', error);
+                          toast({
+                            title: 'Update failed',
+                            description: 'Could not update donation setting. Please try again.',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                    >
+                      None
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Manual Percentage Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="custom-donation" className="text-sm font-medium">
+                    Or enter custom percentage
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="custom-donation"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder="0"
+                      value={user?.platformDonationEnabled && user.platformDonationPercentage && ![5, 10, 15, 20].includes(user.platformDonationPercentage) 
+                        ? user.platformDonationPercentage 
+                        : ''}
+                      onChange={async (e) => {
+                        const value = e.target.value;
+                        if (!user) return;
+                        
+                        if (value === '') {
+                          // Clear donation if input is empty
+                          try {
+                            await updateDoc(doc(db, 'userProfiles', user.id), {
+                              platformDonationEnabled: false,
+                              platformDonationPercentage: 0,
+                            });
+                            await refreshUser();
+                          } catch (error) {
+                            console.error('Error clearing donation:', error);
+                          }
+                          return;
+                        }
+                        
+                        const numValue = parseFloat(value);
+                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                          try {
+                            await updateDoc(doc(db, 'userProfiles', user.id), {
+                              platformDonationEnabled: numValue > 0,
+                              platformDonationPercentage: numValue,
+                            });
+                            await refreshUser();
+                          } catch (error) {
+                            console.error('Error updating donation:', error);
+                            toast({
+                              title: 'Update failed',
+                              description: 'Could not update donation. Please try again.',
+                              variant: 'destructive',
+                            });
+                          }
+                        }
+                      }}
+                      className="w-24"
+                    />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                </div>
+
+                {/* Current Status */}
+                {user?.platformDonationEnabled && user.platformDonationPercentage && user.platformDonationPercentage > 0 && (
+                  <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <p className="text-sm font-medium">
+                      Currently donating <span className="text-primary">{user.platformDonationPercentage}%</span> of each sale to Gouache
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
