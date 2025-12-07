@@ -2116,9 +2116,11 @@ export default function AdminPanel() {
         }
       }
       
+      // Get existing article to preserve status
+      const existingArticle = newsArticles.find(a => a.id === editingArticleId);
+      
       // Upload author avatar if new file provided
       let authorAvatarUrl: string | undefined = undefined;
-      const existingArticle = newsArticles.find(a => a.id === editingArticleId);
       if (existingArticle?.authorAvatarUrl) {
         authorAvatarUrl = existingArticle.authorAvatarUrl;
       }
@@ -2150,9 +2152,6 @@ export default function AdminPanel() {
           console.error('Failed to upload thumbnail:', error);
         }
       }
-      
-      // Get existing article to preserve status
-      const existingArticle = newsArticles.find(a => a.id === editingArticleId);
       
       // Build update data object
       const updateData: any = {
