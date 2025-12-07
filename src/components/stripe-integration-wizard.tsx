@@ -380,10 +380,11 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
         )}
 
         <div className="pt-4 border-t">
-          <h4 className="font-semibold mb-2">Commission & Fees</h4>
+          <h4 className="font-semibold mb-2">Fees & Payouts</h4>
           <div className="text-sm text-muted-foreground space-y-1">
-            <p>• Platform commission: 5% of each sale (includes credit card processing fees)</p>
-            <p>• Stripe processing fee: ~2.9% + $0.30 per transaction</p>
+            <p>• 💚 Commission-free marketplace - you keep 100% of sales</p>
+            <p>• Stripe processing fee: ~2.9% + $0.30 per transaction (paid by buyer)</p>
+            <p>• Customers can add voluntary donations to support you</p>
             <p>• Payouts are processed automatically to your bank account</p>
           </div>
         </div>

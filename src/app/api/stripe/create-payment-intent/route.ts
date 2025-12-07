@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
       itemId, 
       itemType, // 'original', 'print', 'book', 'course'
       buyerId,
-      description
+      description,
+      donationAmount = 0 // Optional donation amount in cents
     } = body;
 
     // Validate required fields
@@ -133,19 +134,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate commission (default 5% of sale price)
-    const commissionRate = parseFloat(
-      process.env.STRIPE_PLATFORM_COMMISSION_RATE || '0.05'
-    );
-    const applicationFeeAmount = Math.round(amountInCents * commissionRate);
+    // Commission is now 0% - marketplace is commission-free
+    const commissionRate = 0;
+    const applicationFeeAmount = 0; // No commission fee
+    
+    // Total amount includes product price + optional donation
+    const donationInCents = Math.round(donationAmount || 0);
+    const totalAmount = amountInCents + donationInCents;
 
-    // Create payment intent on the connected account with application fee
-    // Artist receives amount minus platform commission
+    // Create payment intent on the connected account
+    // Artist receives full amount (no commission) + any donation
     const paymentIntent = await stripe.paymentIntents.create(
       {
-        amount: amountInCents,
+        amount: totalAmount,
         currency: currency.toLowerCase(),
-        application_fee_amount: applicationFeeAmount,
+        application_fee_amount: applicationFeeAmount, // 0 - commission-free
         transfer_data: {
           destination: stripeAccountId,
         },
@@ -156,6 +159,8 @@ export async function POST(request: NextRequest) {
           itemId: itemId,
           itemTitle: itemData.title || 'Untitled',
           platform: 'gouache',
+          donationAmount: donationInCents.toString(), // Store donation amount
+          productAmount: amountInCents.toString(), // Store original product amount
         },
         description: description || `Purchase: ${itemData.title || itemType}`,
         automatic_payment_methods: {
@@ -174,7 +179,9 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
-      applicationFeeAmount,
+      applicationFeeAmount, // 0 - commission-free
+      donationAmount: donationInCents,
+      productAmount: amountInCents,
     });
   } catch (error: any) {
     console.error('Error creating payment intent:', error);

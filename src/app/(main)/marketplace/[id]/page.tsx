@@ -6,7 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, ShoppingCart, Heart, Package, TrendingUp, Check, X } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart, Package, TrendingUp, Check, X, HeartHandshake } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { MarketplaceProduct } from '@/lib/types';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -229,6 +231,8 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [donationAmount, setDonationAmount] = useState<string>('');
+  const [showDonation, setShowDonation] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -371,12 +375,53 @@ export default function ProductDetailPage() {
   const images = product.images && product.images.length > 0 ? product.images : [placeholderImage];
   const mainImage = images[selectedImageIndex] || placeholderImage;
 
-  const handlePurchase = () => {
+  const handlePurchase = async () => {
     if (product.isAffiliate && product.affiliateLink) {
       window.open(product.affiliateLink, '_blank');
-    } else {
-      // TODO: Implement purchase flow with Stripe
-      alert('Purchase functionality coming soon!');
+      return;
+    }
+
+    if (!user) {
+      router.push('/login?redirect=' + encodeURIComponent(`/marketplace/${product.id}`));
+      return;
+    }
+
+    try {
+      // Calculate donation amount in cents
+      const donationInCents = donationAmount ? Math.round(parseFloat(donationAmount) * 100) : 0;
+      const productPriceInCents = Math.round(product.price * 100);
+      
+      // Create payment intent with donation
+      const response = await fetch('/api/stripe/create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: productPriceInCents,
+          currency: product.currency.toLowerCase(),
+          artistId: product.sellerId,
+          itemId: product.id,
+          itemType: product.category === 'Books' ? 'book' : (product.category === 'Prints' ? 'print' : 'original'),
+          buyerId: user.id,
+          description: `Purchase: ${product.title}`,
+          donationAmount: donationInCents,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create payment');
+      }
+
+      const { clientSecret } = await response.json();
+      
+      // TODO: Integrate Stripe Elements or Checkout to complete payment
+      // For now, show success message
+      alert(`Payment intent created! Total: ${product.currency} ${(product.price + parseFloat(donationAmount || '0')).toFixed(2)}${donationInCents > 0 ? ` (includes ${product.currency} ${parseFloat(donationAmount || '0').toFixed(2)} donation)` : ''}`);
+    } catch (error: any) {
+      console.error('Purchase error:', error);
+      alert(error.message || 'Failed to process purchase. Please try again.');
     }
   };
 
@@ -578,6 +623,75 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
+              {/* Donation Section */}
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <HeartHandshake className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="donation" className="text-sm font-medium">
+                      Support the artist (optional)
+                    </Label>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowDonation(!showDonation);
+                      if (!showDonation) {
+                        setDonationAmount('');
+                      }
+                    }}
+                  >
+                    {showDonation ? 'Remove' : 'Add'}
+                  </Button>
+                </div>
+                
+                {showDonation && (
+                  <div className="space-y-2">
+                    <Input
+                      id="donation"
+                      type="number"
+                      placeholder="0.00"
+                      value={donationAmount}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                          setDonationAmount(value);
+                        }
+                      }}
+                      min="0"
+                      step="0.01"
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Add a voluntary donation to support the artist. 100% goes directly to them.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Total Price Display */}
+                {showDonation && donationAmount && parseFloat(donationAmount) > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <span className="text-sm font-medium">Product Price:</span>
+                    <span className="text-sm">{product.currency} {product.price.toFixed(2)}</span>
+                  </div>
+                )}
+                {showDonation && donationAmount && parseFloat(donationAmount) > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <span className="text-sm font-medium">Donation:</span>
+                    <span className="text-sm">{product.currency} {parseFloat(donationAmount || '0').toFixed(2)}</span>
+                  </div>
+                )}
+                {showDonation && donationAmount && parseFloat(donationAmount) > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <span className="text-sm font-semibold">Total:</span>
+                    <span className="text-sm font-semibold">
+                      {product.currency} {(product.price + parseFloat(donationAmount || '0')).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Action Buttons */}
               <div className="space-y-3 pt-4">
                 <Button
@@ -593,6 +707,9 @@ export default function ProductDetailPage() {
                     ? 'Buy Now'
                     : 'Buy Now'}
                 </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  💚 Commission-free marketplace • 100% goes to artists
+                </p>
               </div>
 
             </div>
