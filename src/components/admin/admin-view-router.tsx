@@ -1015,21 +1015,22 @@ export function AdminViewRouter(props: any) {
                     >
                       {props.isPublishingArticle ? 'Saving…' : 'Save as Draft'}
                     </Button>
-                  {props.editingArticleId ? (
-                    <Button 
-                      onClick={props.handleUpdateArticle} 
-                      disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
-                    >
-                      {props.isPublishingArticle ? 'Updating…' : 'Update Article'}
-                    </Button>
-                  ) : (
-                    <Button 
-                      onClick={props.handleCreateNewsArticle} 
-                      disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
-                    >
-                    {props.isPublishingArticle ? 'Publishing…' : 'Publish article'}
-                  </Button>
-                  )}
+                    {props.editingArticleId ? (
+                      <Button 
+                        onClick={props.handleUpdateArticle} 
+                        disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
+                      >
+                        {props.isPublishingArticle ? 'Updating…' : 'Update Article'}
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={props.handleCreateNewsArticle} 
+                        disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
+                      >
+                        {props.isPublishingArticle ? 'Publishing…' : 'Publish article'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
