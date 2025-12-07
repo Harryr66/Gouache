@@ -318,6 +318,15 @@ export default function AdminPanel() {
           setLoadingArtists(false);
         }
         
+        // Fetch artworks separately with error handling (may need index)
+        let artworksForSaleSnapshot;
+        try {
+          artworksForSaleSnapshot = await getDocs(artworksForSaleQuery);
+        } catch (error: any) {
+          console.warn('⚠️ Error fetching artworks (index may be building):', error.message);
+          artworksForSaleSnapshot = { docs: [] } as any;
+        }
+        
         const [
           artistSnapshot,
           advertisingSnapshot,
@@ -325,7 +334,6 @@ export default function AdminPanel() {
           affiliateSnapshot,
           advertisementsSnapshot,
           analyticsSnapshot,
-          artworksForSaleSnapshot,
           coursesSnapshot,
           booksSnapshot,
           newsArticlesSnapshot,
@@ -338,7 +346,6 @@ export default function AdminPanel() {
           getDocs(affiliateQuery),
           getDocs(advertisementsQuery),
           getDocs(advertisementAnalyticsQuery),
-          getDocs(artworksForSaleQuery),
           getDocs(coursesQuery),
           getDocs(booksQuery),
           getDocs(newsArticlesQuery),
