@@ -632,7 +632,7 @@ export default function ProductDetailPage() {
                     : 'Buy Now'}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  💚 Commission-free marketplace • Artists keep 100% of sales
+                  Commission-free marketplace • Artists keep 100% of sales
                 </p>
               </div>
 
