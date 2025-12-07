@@ -19,8 +19,6 @@ import { doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/fir
 import { db, storage } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 
-const { toast: toastHook } = require('@/hooks/use-toast');
-
 export function AdminViewRouter(props: any) {
   const router = useRouter();
   
