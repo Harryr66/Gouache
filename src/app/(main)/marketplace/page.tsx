@@ -557,7 +557,7 @@ export default function MarketplacePage() {
                           </CardContent>
                         </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredAndSortedProducts.map((product) => (
               <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
                           <div className="relative">
@@ -605,15 +605,6 @@ export default function MarketplacePage() {
                       </div>
                   </div>
 
-                  {product.tags && product.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {product.tags.slice(0, 3).map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
 
                   <div className="flex items-center gap-2 mt-auto">
                     <Button
