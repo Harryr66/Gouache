@@ -1002,14 +1002,19 @@ export function AdminViewRouter(props: any) {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline"
-                    onClick={props.handleSaveDraftArticle} 
-                    disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
-                  >
-                    {props.isPublishingArticle ? 'Saving…' : 'Save as Draft'}
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                    <AlertCircle className="h-3 w-3" />
+                    <span>Your draft is automatically saved locally. Find saved drafts in the <strong>"Drafted"</strong> section below.</span>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={props.handleSaveDraftArticle} 
+                      disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
+                    >
+                      {props.isPublishingArticle ? 'Saving…' : 'Save as Draft'}
+                    </Button>
                   {props.editingArticleId ? (
                     <Button 
                       onClick={props.handleUpdateArticle} 

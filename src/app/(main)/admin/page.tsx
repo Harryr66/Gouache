@@ -153,6 +153,79 @@ export default function AdminPanel() {
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
   const [isPublishingArticle, setIsPublishingArticle] = useState(false);
 
+  // Auto-save draft to localStorage (like course submission)
+  useEffect(() => {
+    try {
+      const draftData = {
+        title: newArticle.title,
+        subheadline: newArticleSubheadline,
+        body: newArticleBody,
+        author: newArticle.author,
+        category: newArticle.category,
+        location: newArticle.location,
+        imageUrl: newArticle.imageUrl,
+        authorAvatarUrl: newArticle.authorAvatarUrl,
+        imagePreview: newArticleImagePreview,
+        authorAvatarPreview: newArticleAuthorAvatarPreview,
+        thumbnailPreview: newArticleThumbnailPreview,
+        editingArticleId: editingArticleId
+      };
+      localStorage.setItem('gouache-article-draft', JSON.stringify(draftData));
+    } catch (error) {
+      console.error('Failed to save draft to localStorage:', error);
+    }
+  }, [newArticle, newArticleSubheadline, newArticleBody, newArticleImagePreview, newArticleAuthorAvatarPreview, newArticleThumbnailPreview, editingArticleId]);
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem('gouache-article-draft');
+      if (savedDraft && !editingArticleId) {
+        const draft = JSON.parse(savedDraft);
+        if (draft.title || draft.body || draft.subheadline) {
+          setNewArticle({
+            title: draft.title || '',
+            summary: '',
+            category: draft.category || 'Stories',
+            author: draft.author || '',
+            authorAvatarUrl: draft.authorAvatarUrl || '',
+            imageUrl: draft.imageUrl || '',
+            externalUrl: '',
+            publishedAt: '',
+            tags: '',
+            location: draft.location || 'evergreen'
+          });
+          setNewArticleSubheadline(draft.subheadline || '');
+          setNewArticleBody(draft.body || '');
+          if (draft.imagePreview) {
+            setNewArticleImagePreview(draft.imagePreview);
+          }
+          if (draft.authorAvatarPreview) {
+            setNewArticleAuthorAvatarPreview(draft.authorAvatarPreview);
+          }
+          if (draft.thumbnailPreview) {
+            setNewArticleThumbnailPreview(draft.thumbnailPreview);
+          }
+          
+          // Restore editor content
+          setTimeout(() => {
+            const bodyEditor = document.getElementById('article-body-editor') as HTMLDivElement;
+            if (bodyEditor && draft.body) {
+              bodyEditor.innerHTML = draft.body;
+            }
+          }, 100);
+          
+          toast({
+            title: 'Draft restored',
+            description: 'Your previous draft has been restored. Click "Save as Draft" to save it to the server.',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restore draft from localStorage:', error);
+    }
+  }, []); // Only run on mount
+
   useEffect(() => {
     const artistRequestsQuery = query(
       collection(db, 'artistRequests'),
@@ -1674,9 +1747,16 @@ export default function AdminPanel() {
       }
       setNewsArticles((prev) => [newArticleState, ...prev]);
 
+      // Clear localStorage draft after successful save
+      try {
+        localStorage.removeItem('gouache-article-draft');
+      } catch (error) {
+        console.error('Failed to clear localStorage draft:', error);
+      }
+
       toast({
         title: 'Draft saved',
-        description: `"${newArticle.title}" has been saved as a draft. You can publish it later.`
+        description: `"${newArticle.title}" has been saved as a draft. You can find it in the "Drafted" section and edit it later.`
       });
 
       setNewArticle({
@@ -1709,12 +1789,7 @@ export default function AdminPanel() {
       setIsPublishingArticle(false);
       toast({
         title: 'Draft save failed',
-        description: 'We could not save that draft. Please try again.',
-        variant: 'destructive'
-      });
-      toast({
-        title: 'Save failed',
-        description: 'We could not save the draft. Please try again.',
+        description: 'We could not save that draft to the server. Your draft is still saved locally and will be restored when you reload the page. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -1964,6 +2039,27 @@ export default function AdminPanel() {
       setNewArticleThumbnailPreview((article as any).thumbnailUrl);
     }
     
+    // Save to localStorage for backup
+    try {
+      const draftData = {
+        title: article.title,
+        subheadline: article.subheadline || '',
+        body: article.content || '',
+        author: article.author || '',
+        category: article.category,
+        location: article.location || 'evergreen',
+        imageUrl: article.imageUrl,
+        authorAvatarUrl: article.authorAvatarUrl || '',
+        imagePreview: article.imageUrl,
+        authorAvatarPreview: article.authorAvatarUrl,
+        thumbnailPreview: (article as any).thumbnailUrl,
+        editingArticleId: article.id
+      };
+      localStorage.setItem('gouache-article-draft', JSON.stringify(draftData));
+    } catch (error) {
+      console.error('Failed to save draft to localStorage:', error);
+    }
+    
     // Set editor content
     setTimeout(() => {
       const bodyEditor = document.getElementById('article-body-editor') as HTMLDivElement;
@@ -2091,6 +2187,13 @@ export default function AdminPanel() {
         title: 'Article updated',
         description: `"${newArticle.title}" has been updated.`
       });
+      
+      // Clear localStorage draft after successful update
+      try {
+        localStorage.removeItem('gouache-article-draft');
+      } catch (error) {
+        console.error('Failed to clear localStorage draft:', error);
+      }
       
       // Reset form
       setEditingArticleId(null);
