@@ -538,7 +538,6 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
           <div className="text-sm text-muted-foreground space-y-1">
             <p>• 💚 Commission-free marketplace - you keep 100% of sales</p>
             <p>• Stripe processing fee: ~2.9% + $0.30 per transaction (paid by buyer)</p>
-            <p>• Customers can add voluntary donations to support you</p>
             <p>• Optionally donate a % of your sales to support Gouache (completely voluntary)</p>
             <p>• Payouts are processed automatically to your bank account</p>
           </div>
