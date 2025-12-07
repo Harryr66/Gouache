@@ -72,8 +72,8 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...  # Your Stripe publishable key
 NEXT_PUBLIC_APP_URL=http://localhost:3000  # Development
 # NEXT_PUBLIC_APP_URL=https://yourdomain.com  # Production
 
-# Commission Rate (as decimal, e.g., 0.10 = 10%)
-STRIPE_PLATFORM_COMMISSION_RATE=0.10  # 10% platform commission (includes credit card processing fees)
+# Note: Platform is commission-free. Artists can optionally donate a % of sales.
+# No commission rate environment variable needed.
 STRIPE_APPLICATION_FEE_RATE=0.029  # 2.9% + $0.30 per transaction (Stripe's fee)
 ```
 
@@ -85,8 +85,7 @@ STRIPE_APPLICATION_FEE_RATE=0.029  # 2.9% + $0.30 per transaction (Stripe's fee)
    - `STRIPE_SECRET_KEY` (Production, Preview, Development)
    - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (Production, Preview, Development)
    - `NEXT_PUBLIC_APP_URL` (Production, Preview, Development)
-   - `STRIPE_PLATFORM_COMMISSION_RATE` (Production, Preview, Development)
-   - `STRIPE_APPLICATION_FEE_RATE` (Production, Preview, Development)
+   - `STRIPE_APPLICATION_FEE_RATE` (Production, Preview, Development) - Optional
 
 ---
 
@@ -174,10 +173,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const commissionRate = parseFloat(
-      process.env.STRIPE_PLATFORM_COMMISSION_RATE || '0.10'
-    );
-    const applicationFeeAmount = Math.round(amount * commissionRate);
+    // Platform is commission-free - artists can optionally donate a % of sales
+    // Donation percentage is stored in artist's profile (platformDonationPercentage)
+    const platformDonationPercentage = artistData.platformDonationPercentage || 0;
+    const applicationFeeAmount = platformDonationEnabled 
+      ? Math.round(amount * (platformDonationPercentage / 100))
+      : 0;
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount, // Already in cents

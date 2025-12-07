@@ -13,7 +13,6 @@ Ensure all environment variables are set in your production environment (Vercel,
 STRIPE_SECRET_KEY=sk_live_...  # LIVE key, not test!
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...  # LIVE key
 NEXT_PUBLIC_APP_URL=https://yourdomain.com  # Production URL
-STRIPE_PLATFORM_COMMISSION_RATE=0.10  # 10% commission
 STRIPE_WEBHOOK_SECRET=whsec_...  # From Stripe Dashboard
 
 # Optional but recommended
