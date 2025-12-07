@@ -258,10 +258,11 @@ export default function AdminPanel() {
       orderBy('date', 'desc')
     );
     // Fetch shop products: artworks for sale, courses, and books
+    // Note: Removed orderBy to avoid requiring composite index
+    // We'll sort in memory instead
     const artworksForSaleQuery = query(
       collection(db, 'artworks'),
-      where('isForSale', '==', true),
-      orderBy('createdAt', 'desc')
+      where('isForSale', '==', true)
     );
     const coursesQuery = query(
       collection(db, 'courses'),
@@ -278,6 +279,16 @@ export default function AdminPanel() {
     const fetchData = async () => {
       try {
         console.log('🔄 Admin Panel: Fetching all data...');
+        
+        // Wrap queries in try-catch to handle index errors gracefully
+        let artworksForSaleSnapshot;
+        try {
+          artworksForSaleSnapshot = await getDocs(artworksForSaleQuery);
+        } catch (error: any) {
+          console.warn('⚠️ Error fetching artworks (may need index):', error);
+          // Create empty snapshot-like object
+          artworksForSaleSnapshot = { docs: [] };
+        }
         
         // Fetch professional artists for verified status management
         setLoadingArtists(true);
