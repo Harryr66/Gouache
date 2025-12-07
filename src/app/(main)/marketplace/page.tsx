@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Palette, Heart, TrendingUp } from 'lucide-react';
+import { Search, Filter, Heart, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -24,8 +24,9 @@ const sortOptions = [
 
 const categoryOptions = [
   { value: 'all', label: 'All Categories' },
-  { value: 'Artwork', label: 'Artwork' },
-  { value: 'Prints', label: 'Prints' },
+  { value: 'Artwork', label: 'Original Artworks' },
+  { value: 'limited-prints', label: 'Limited Edition Prints' },
+  { value: 'all-prints', label: 'All Prints' },
   { value: 'Books', label: 'Books' },
   { value: 'Supplies', label: 'Supplies' },
   { value: 'Other', label: 'Other' }
@@ -409,7 +410,21 @@ export default function MarketplacePage() {
 
     // Category filter
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
+      if (selectedCategory === 'limited-prints') {
+        // Filter for limited edition prints (check tags or subcategory)
+        filtered = filtered.filter(product => 
+          product.category === 'Prints' && 
+          (product.tags.some(tag => tag.toLowerCase().includes('limited')) ||
+           product.subcategory?.toLowerCase().includes('limited') ||
+           product.title.toLowerCase().includes('limited edition'))
+        );
+      } else if (selectedCategory === 'all-prints') {
+        // Filter for all prints
+        filtered = filtered.filter(product => product.category === 'Prints');
+      } else {
+        // Filter for other categories
+        filtered = filtered.filter(product => product.category === selectedCategory);
+      }
     }
 
     // Sort
@@ -447,8 +462,7 @@ export default function MarketplacePage() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-                <Palette className="h-8 w-8 text-primary" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                 Gouache Market
               </h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -564,7 +578,7 @@ export default function MarketplacePage() {
                     {product.stock === 0 && (
                       <Badge variant="secondary">Out of Stock</Badge>
                               )}
-                            </div>
+                          </div>
                   </div>
                   
                   <CardContent className="p-4 flex flex-col flex-1">
@@ -613,7 +627,7 @@ export default function MarketplacePage() {
                     >
                       {product.stock === 0 ? 'Out of Stock' : 'View'}
                       </Button>
-                  </div>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
