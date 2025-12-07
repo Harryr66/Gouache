@@ -280,16 +280,6 @@ export default function AdminPanel() {
       try {
         console.log('🔄 Admin Panel: Fetching all data...');
         
-        // Wrap queries in try-catch to handle index errors gracefully
-        let artworksForSaleSnapshot;
-        try {
-          artworksForSaleSnapshot = await getDocs(artworksForSaleQuery);
-        } catch (error: any) {
-          console.warn('⚠️ Error fetching artworks (may need index):', error);
-          // Create empty snapshot-like object
-          artworksForSaleSnapshot = { docs: [] };
-        }
-        
         // Fetch professional artists for verified status management
         setLoadingArtists(true);
         try {
