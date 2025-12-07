@@ -453,8 +453,11 @@ export default function AdminPanel() {
             id: doc.id,
             title: data.title ?? 'Untitled story',
             summary: data.summary ?? '',
+            subheadline: data.subheadline ?? '',
             category: data.category ?? 'Stories',
             author: data.author ?? '',
+            authorAvatarUrl: data.authorAvatarUrl ?? '',
+            thumbnailUrl: data.thumbnailUrl ?? '',
             imageUrl: data.imageUrl ?? DEFAULT_ARTICLE_IMAGE,
             publishedAt: data.publishedAt?.toDate?.(),
             updatedAt: data.updatedAt?.toDate?.(),
@@ -2148,6 +2151,9 @@ export default function AdminPanel() {
         }
       }
       
+      // Get existing article to preserve status
+      const existingArticle = newsArticles.find(a => a.id === editingArticleId);
+      
       // Build update data object
       const updateData: any = {
         title: newArticle.title.trim(),
@@ -2156,11 +2162,15 @@ export default function AdminPanel() {
         imageUrl: heroImageUrl,
         content: bodyContent,
         location: 'evergreen',
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        // Preserve status - don't change draft to published on update
+        status: existingArticle?.status || 'draft'
       };
       
       if (newArticleSubheadline.trim()) {
         updateData.subheadline = newArticleSubheadline.trim();
+      } else {
+        updateData.subheadline = '';
       }
       if (newArticle.author.trim()) {
         updateData.author = newArticle.author.trim();
@@ -2169,9 +2179,13 @@ export default function AdminPanel() {
       }
       if (authorAvatarUrl) {
         updateData.authorAvatarUrl = authorAvatarUrl;
+      } else if (existingArticle?.authorAvatarUrl) {
+        updateData.authorAvatarUrl = existingArticle.authorAvatarUrl;
       }
       if (thumbnailUrl) {
         updateData.thumbnailUrl = thumbnailUrl;
+      } else if (existingArticle && (existingArticle as any).thumbnailUrl) {
+        updateData.thumbnailUrl = (existingArticle as any).thumbnailUrl;
       }
       
       await updateDoc(doc(db, 'newsArticles', editingArticleId), updateData);
