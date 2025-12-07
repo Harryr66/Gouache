@@ -475,9 +475,25 @@ export default function AdminPanel() {
           } as NewsArticle;
         });
         setNewsArticles(newsroomArticles);
-        const draftCount = newsroomArticles.filter(a => a.status === 'draft' && !a.archived).length;
+        
+        // Count drafts with lenient logic (same as filter below)
+        const draftCount = newsroomArticles.filter(a => {
+          const isArchived = a.archived === true;
+          const hasStatus = a.status !== undefined && a.status !== null;
+          const isDraftStatus = a.status === 'draft';
+          const hasPublishedAt = a.publishedAt !== undefined && a.publishedAt !== null;
+          return !isArchived && (isDraftStatus || (!hasStatus && !hasPublishedAt));
+        }).length;
+        
         console.log(`✅ Loaded ${newsroomArticles.length} newsroom articles`);
-        console.log(`✅ Found ${draftCount} draft articles`);
+        console.log(`✅ Found ${draftCount} draft articles (using lenient filtering)`);
+        console.log(`✅ All articles:`, newsroomArticles.map(a => ({
+          id: a.id,
+          title: a.title,
+          status: a.status,
+          publishedAt: a.publishedAt,
+          archived: a.archived
+        })));
 
         const reports = userReportsSnapshot.docs.map((doc: any) => {
           const data = doc.data() as any;
