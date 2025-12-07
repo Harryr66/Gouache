@@ -2385,9 +2385,20 @@ export default function AdminPanel() {
   const archivedNewsArticles = newsArticles.filter((article: any) => article.archived);
   const publishedArticles = newsArticles.filter((article: any) => !article.archived && (article.status === 'published' || (!article.status && article.publishedAt)));
   const draftedArticles = newsArticles.filter((article: any) => {
-    const isDraft = !article.archived && article.status === 'draft';
+    // More lenient filtering: show as draft if:
+    // 1. Not archived AND
+    // 2. Status is 'draft' OR status is missing/undefined AND no publishedAt date
+    const isArchived = article.archived === true;
+    const hasStatus = article.status !== undefined && article.status !== null;
+    const isDraftStatus = article.status === 'draft';
+    const hasPublishedAt = article.publishedAt !== undefined && article.publishedAt !== null;
+    
+    const isDraft = !isArchived && (isDraftStatus || (!hasStatus && !hasPublishedAt));
+    
     if (isDraft) {
-      console.log('📝 Found draft:', article.id, article.title, 'status:', article.status);
+      console.log('📝 Found draft:', article.id, article.title, 'status:', article.status, 'publishedAt:', article.publishedAt, 'archived:', article.archived);
+    } else {
+      console.log('❌ Not a draft:', article.id, article.title, 'status:', article.status, 'publishedAt:', article.publishedAt, 'archived:', article.archived);
     }
     return isDraft;
   });
