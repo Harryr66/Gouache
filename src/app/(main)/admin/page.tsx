@@ -2190,10 +2190,18 @@ export default function AdminPanel() {
       
       await updateDoc(doc(db, 'newsArticles', editingArticleId), updateData);
       
-      // Update local state
+      // Update local state with all fields
       setNewsArticles((prev) => prev.map((article) => 
         article.id === editingArticleId 
-          ? { ...article, ...updateData, id: editingArticleId }
+          ? { 
+              ...article, 
+              ...updateData, 
+              id: editingArticleId,
+              subheadline: updateData.subheadline ?? article.subheadline ?? '',
+              authorAvatarUrl: updateData.authorAvatarUrl ?? article.authorAvatarUrl ?? '',
+              thumbnailUrl: updateData.thumbnailUrl ?? (article as any).thumbnailUrl ?? '',
+              updatedAt: new Date()
+            }
           : article
       ));
       
