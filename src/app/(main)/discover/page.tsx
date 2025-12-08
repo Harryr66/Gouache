@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Eye, Filter, Search, X, Palette, Calendar } from 'lucide-react';
+import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
-import { Artwork } from '@/lib/types';
+import { Artwork, MarketplaceProduct } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, limit, where } from 'firebase/firestore';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { ThemeLoading } from '@/components/theme-loading';
 import { useTheme } from 'next-themes';
@@ -77,10 +79,11 @@ const SORT_OPTIONS = [
 
 export default function DiscoverPage() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'artwork' | 'events'>('artwork');
+  const [activeTab, setActiveTab] = useState<'artwork' | 'events' | 'market'>('artwork');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedMedium, setSelectedMedium] = useState('All');
@@ -155,6 +158,62 @@ export default function DiscoverPage() {
     fetchArtworks();
   }, [discoverSettings, theme]);
 
+  useEffect(() => {
+    const fetchMarketplaceProducts = async () => {
+      try {
+        const productsQuery = query(
+          collection(db, 'marketplaceProducts'),
+          where('isActive', '==', true),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        );
+        
+        const snapshot = await getDocs(productsQuery);
+        const fetchedProducts: MarketplaceProduct[] = [];
+        
+        snapshot.docs.forEach((doc) => {
+          const data = doc.data();
+          const product: MarketplaceProduct = {
+            id: doc.id,
+            title: data.title || 'Untitled Product',
+            description: data.description || '',
+            price: data.price || 0,
+            currency: data.currency || 'USD',
+            category: data.category || '',
+            subcategory: data.subcategory || '',
+            images: data.images || [],
+            sellerId: data.sellerId || '',
+            sellerName: data.sellerName || 'Unknown Seller',
+            isAffiliate: data.isAffiliate || false,
+            isActive: data.isActive !== false,
+            stock: data.stock || 1,
+            rating: data.rating || 0,
+            reviewCount: data.reviewCount || 0,
+            tags: data.tags || [],
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || data.createdAt?.toDate() || new Date(),
+            salesCount: data.salesCount || 0,
+            isOnSale: data.isOnSale || false,
+            isApproved: data.isApproved !== false,
+            status: data.status || 'approved',
+          };
+          
+          if (product.isApproved && (product.status === 'approved' || !product.status)) {
+            fetchedProducts.push(product);
+          }
+        });
+        
+        setMarketplaceProducts(fetchedProducts);
+      } catch (error) {
+        console.error('Error fetching marketplace products:', error);
+      }
+    };
+    
+    if (activeTab === 'market') {
+      fetchMarketplaceProducts();
+    }
+  }, [activeTab]);
+
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = artworks;
 
@@ -226,9 +285,9 @@ export default function DiscoverPage() {
           </p>
         </div>
 
-        {/* Tabs for Artwork/Events */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'artwork' | 'events')} className="mb-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+        {/* Tabs for Artwork/Events/Market */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'artwork' | 'events' | 'market')} className="mb-6">
+          <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="artwork" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               Artwork
@@ -236,6 +295,10 @@ export default function DiscoverPage() {
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Events
+            </TabsTrigger>
+            <TabsTrigger value="market" className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              Market
             </TabsTrigger>
           </TabsList>
 
@@ -399,6 +462,52 @@ export default function DiscoverPage() {
                 Browse upcoming exhibitions, workshops, and art events.
               </p>
             </div>
+          </TabsContent>
+
+          {/* Market Tab */}
+          <TabsContent value="market" className="mt-6">
+            {marketplaceProducts.length === 0 ? (
+              <div className="text-center py-16">
+                <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">No products available</h2>
+                <p className="text-muted-foreground">
+                  Check back later for marketplace products.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {marketplaceProducts.map((product) => {
+                  const placeholderImage = theme === 'dark' 
+                    ? '/assets/placeholder-dark.png' 
+                    : '/assets/placeholder-light.png';
+                  const productImage = product.images && product.images.length > 0 
+                    ? product.images[0] 
+                    : placeholderImage;
+                  
+                  return (
+                    <Link key={product.id} href={`/marketplace/${product.id}`}>
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                        <div className="relative aspect-square overflow-hidden">
+                          <Image
+                            src={productImage}
+                            alt={product.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.title}</h3>
+                          <p className="text-xs text-muted-foreground mb-2">{product.sellerName}</p>
+                          <p className="text-lg font-semibold">
+                            {product.currency} ${product.price.toFixed(2)}
+                          </p>
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
