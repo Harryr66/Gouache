@@ -218,6 +218,61 @@ const generatePlaceholderProducts = (generatePlaceholderUrl: (w: number, h: numb
   ];
 };
 
+// Generate marketplace placeholder products (matching discover page format)
+const generateMarketPlaceholderProducts = (generatePlaceholderUrl: (w: number, h: number) => string): MarketplaceProduct[] => {
+  const placeholderImage = generatePlaceholderUrl(400, 300);
+  const productTitles = [
+    'Original Artwork',
+    'Print',
+    'Limited Edition Print',
+    'Book'
+  ];
+  
+  const sellerNames = [
+    'Sarah Martinez', 'James Chen', 'Emma Wilson', 'Michael Brown',
+    'Sophie Anderson', 'David Lee', 'Olivia Garcia', 'Ryan Taylor',
+    'Isabella White', 'Noah Harris', 'Ava Clark', 'Lucas Moore',
+    'Mia Johnson', 'Ethan Davis', 'Zoe Martinez', 'Liam Thompson',
+    'Chloe Rodriguez', 'Aiden Lewis', 'Lily Walker', 'Jackson Hall'
+  ];
+
+  const descriptions = [
+    'A beautiful piece of art perfect for collectors and art enthusiasts.',
+    'Handcrafted with attention to detail and artistic excellence.',
+    'Unique artwork that captures the essence of contemporary art.',
+    'Premium quality piece suitable for any art collection.',
+    'Exquisite work showcasing the artist\'s unique style and vision.',
+    'Carefully curated piece that represents modern artistic expression.',
+    'Stunning artwork that combines traditional techniques with modern aesthetics.',
+    'Exceptional piece that will be a centerpiece in any collection.'
+  ];
+
+  return Array.from({ length: 50 }, (_, i) => ({
+    id: `placeholder-market-${i + 1}`,
+    title: productTitles[i % productTitles.length],
+    description: descriptions[i % descriptions.length],
+    price: Math.floor(Math.random() * 500) + 50,
+    currency: 'USD',
+    category: ['Artwork', 'Prints', 'Original', 'Limited Edition'][i % 4],
+    subcategory: ['Painting', 'Print', 'Drawing', 'Digital'][i % 4],
+    images: [placeholderImage],
+    sellerId: `placeholder-seller-${i + 1}`,
+    sellerName: sellerNames[i % sellerNames.length],
+    isAffiliate: false,
+    isActive: true,
+    stock: Math.floor(Math.random() * 10) + 1,
+    rating: 4 + Math.random(),
+    reviewCount: Math.floor(Math.random() * 50) + 5,
+    tags: ['art', 'original', 'collectible', 'handmade'],
+    createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
+    updatedAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
+    salesCount: Math.floor(Math.random() * 20),
+    isOnSale: i % 5 === 0,
+    isApproved: true,
+    status: 'approved' as const,
+  }));
+};
+
 function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -242,9 +297,12 @@ function ProductDetailPage() {
         let productData: MarketplaceProduct | null = null;
 
         // Check if it's a placeholder product
-        if (productId.startsWith('placeholder-')) {
+        if (productId.startsWith('placeholder-') || productId.startsWith('placeholder-market-')) {
+          // Generate both old format (placeholder-1, placeholder-2) and new format (placeholder-market-1, etc.)
           const placeholderProducts = generatePlaceholderProducts(generatePlaceholderUrl);
-          productData = placeholderProducts.find(p => p.id === productId) || null;
+          const marketPlaceholderProducts = generateMarketPlaceholderProducts(generatePlaceholderUrl);
+          productData = placeholderProducts.find(p => p.id === productId) || 
+                       marketPlaceholderProducts.find(p => p.id === productId) || null;
         }
         // Check if it's a marketplace product (starts with marketplace- or doesn't have prefix)
         else if (!productId.startsWith('artwork-') && !productId.startsWith('book-')) {
