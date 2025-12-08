@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Eye } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Eye, Filter, Search, X, Palette, Calendar } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
 import { Artwork } from '@/lib/types';
@@ -10,6 +10,12 @@ import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { ThemeLoading } from '@/components/theme-loading';
 import { useTheme } from 'next-themes';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 20): Artwork[] => {
   const placeholderImage = theme === 'dark' 
@@ -60,11 +66,26 @@ const generatePlaceholderArtworks = (theme: string | undefined, count: number = 
   }));
 };
 
+const CATEGORIES = ['All', 'Painting', 'Drawing', 'Digital', 'Mixed Media', 'Photography', 'Sculpture', 'Printmaking', 'Textile'];
+const MEDIUMS = ['All', 'Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Digital', 'Ink', 'Pencil', 'Pastel', 'Mixed'];
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'popular', label: 'Most Popular' },
+  { value: 'likes', label: 'Most Liked' },
+  { value: 'recent', label: 'Recently Updated' }
+];
+
 export default function DiscoverPage() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
+  const [activeTab, setActiveTab] = useState<'artwork' | 'events'>('artwork');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedMedium, setSelectedMedium] = useState('All');
+  const [sortBy, setSortBy] = useState('newest');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     const fetchArtworks = async () => {
@@ -134,6 +155,57 @@ export default function DiscoverPage() {
     fetchArtworks();
   }, [discoverSettings, theme]);
 
+  const filteredAndSortedArtworks = useMemo(() => {
+    let filtered = artworks;
+
+    // Search filter
+    if (searchQuery) {
+      const queryLower = searchQuery.toLowerCase();
+      filtered = filtered.filter(artwork =>
+        artwork.title.toLowerCase().includes(queryLower) ||
+        artwork.description?.toLowerCase().includes(queryLower) ||
+        artwork.artist.name.toLowerCase().includes(queryLower) ||
+        artwork.tags.some(tag => tag.toLowerCase().includes(queryLower))
+      );
+    }
+
+    // Category filter
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(artwork => artwork.category === selectedCategory);
+    }
+
+    // Medium filter
+    if (selectedMedium !== 'All') {
+      filtered = filtered.filter(artwork => artwork.medium === selectedMedium);
+    }
+
+    // Apply discover settings filters
+    if (discoverSettings.hideAiAssistedArt) {
+      filtered = filtered.filter(artwork => 
+        artwork.aiAssistance === 'none' && !artwork.isAI
+      );
+    }
+
+    // Sort
+    switch (sortBy) {
+      case 'popular':
+        filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
+        break;
+      case 'likes':
+        filtered.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+        break;
+      case 'recent':
+        filtered.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+        break;
+      case 'newest':
+      default:
+        filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        break;
+    }
+
+    return filtered;
+  }, [artworks, searchQuery, selectedCategory, selectedMedium, sortBy, discoverSettings]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -154,21 +226,181 @@ export default function DiscoverPage() {
           </p>
         </div>
 
-        {artworks.length === 0 ? (
-          <div className="text-center py-16">
-            <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">No artworks found</h2>
-            <p className="text-muted-foreground">
-              Check back later for new content.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {artworks.map((artwork) => (
-              <ArtworkTile key={artwork.id} artwork={artwork} />
-            ))}
-          </div>
-        )}
+        {/* Tabs for Artwork/Events */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'artwork' | 'events')} className="mb-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="artwork" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              Artwork
+            </TabsTrigger>
+            <TabsTrigger value="events" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Events
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Artwork Tab */}
+          <TabsContent value="artwork" className="mt-6">
+            {/* Search and Filter Bar */}
+            <div className="mb-6 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search artworks, artists, or tags..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="shrink-0"
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
+                </Button>
+              </div>
+
+              {/* Filters Panel */}
+              {showFilters && (
+                <Card className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Category</label>
+                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.map((cat) => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Medium</label>
+                      <Select value={selectedMedium} onValueChange={setSelectedMedium}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MEDIUMS.map((med) => (
+                            <SelectItem key={med} value={med}>
+                              {med}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Sort By</label>
+                      <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SORT_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCategory('All');
+                        setSelectedMedium('All');
+                        setSortBy('newest');
+                        setSearchQuery('');
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Clear Filters
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
+              {/* Active Filters Display */}
+              {(selectedCategory !== 'All' || selectedMedium !== 'All' || searchQuery) && (
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="text-sm text-muted-foreground">Active filters:</span>
+                  {searchQuery && (
+                    <Badge variant="secondary" className="gap-1">
+                      Search: {searchQuery}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSearchQuery('')} />
+                    </Badge>
+                  )}
+                  {selectedCategory !== 'All' && (
+                    <Badge variant="secondary" className="gap-1">
+                      Category: {selectedCategory}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCategory('All')} />
+                    </Badge>
+                  )}
+                  {selectedMedium !== 'All' && (
+                    <Badge variant="secondary" className="gap-1">
+                      Medium: {selectedMedium}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedMedium('All')} />
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Artworks Grid */}
+            {filteredAndSortedArtworks.length === 0 ? (
+              <div className="text-center py-16">
+                <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">No artworks found</h2>
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery || selectedCategory !== 'All' || selectedMedium !== 'All'
+                    ? 'Try adjusting your filters to see more results.'
+                    : 'Check back later for new content.'}
+                </p>
+                {(searchQuery || selectedCategory !== 'All' || selectedMedium !== 'All') && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedCategory('All');
+                      setSelectedMedium('All');
+                      setSearchQuery('');
+                    }}
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredAndSortedArtworks.map((artwork) => (
+                  <ArtworkTile key={artwork.id} artwork={artwork} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Events Tab */}
+          <TabsContent value="events" className="mt-6">
+            <div className="text-center py-16">
+              <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-2xl font-semibold mb-2">Events Coming Soon</h2>
+              <p className="text-muted-foreground">
+                Browse upcoming exhibitions, workshops, and art events.
+              </p>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
