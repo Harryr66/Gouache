@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Share2, ArrowLeft, ThumbsUp, ThumbsDown, Clock, Palette, Ruler } from 'lucide-react';
+import { Heart, Share2, ArrowLeft, Clock, Palette, Ruler } from 'lucide-react';
 import { Artwork } from '@/lib/types';
 import Image from 'next/image';
 import { AboutTheArtist } from '@/components/about-the-artist';
@@ -102,140 +101,17 @@ const mockArtwork: Artwork = {
 };
 
 // Mock comments data
-const mockComments = [
-  {
-    id: '1',
-    author: {
-      id: 'user1',
-      name: 'Art Lover',
-      handle: 'art_lover',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-    },
-    content: 'This piece is absolutely stunning! The color palette is so vibrant and the composition is perfect.',
-    createdAt: new Date('2024-01-16'),
-    upvotes: 12,
-    downvotes: 1,
-    userVote: null
-  },
-  {
-    id: '2',
-    author: {
-      id: 'user2',
-      name: 'Creative Soul',
-      handle: 'creative_soul',
-      avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
-    },
-    content: 'I love how the artist explores the emotional connection through color. Really inspiring work!',
-    createdAt: new Date('2024-01-17'),
-    upvotes: 8,
-    downvotes: 0,
-    userVote: null
-  },
-  {
-    id: '3',
-    author: {
-      id: 'user3',
-      name: 'Art Critic',
-      handle: 'art_critic',
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-    },
-    content: 'The technique is impressive, but I think the composition could be stronger. Still, a solid piece overall.',
-    createdAt: new Date('2024-01-18'),
-    upvotes: 3,
-    downvotes: 5,
-    userVote: null
-  }
-];
-
-interface Comment {
-  id: string;
-  author: {
-    id: string;
-    name: string;
-    handle: string;
-    avatarUrl: string;
-  };
-  content: string;
-  createdAt: Date;
-  upvotes: number;
-  downvotes: number;
-  userVote: 'up' | 'down' | null;
-}
 
 export default function ArtworkThreadPage() {
   const params = useParams();
   const router = useRouter();
   const [artwork, setArtwork] = useState<Artwork>(mockArtwork);
-  const [comments, setComments] = useState<Comment[]>(mockComments);
-  const [newComment, setNewComment] = useState('');
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(artwork.likes || 0);
-
-  // Sort comments by upvotes (most upvoted first)
-  const sortedComments = [...comments].sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
 
   const handleLike = () => {
     setIsLiked(!isLiked);
     setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
-  };
-
-  const handleCommentVote = (commentId: string, vote: 'up' | 'down') => {
-    setComments(prev => prev.map(comment => {
-      if (comment.id === commentId) {
-        const currentVote = comment.userVote;
-        let newUpvotes = comment.upvotes;
-        let newDownvotes = comment.downvotes;
-        let newUserVote: 'up' | 'down' | null = vote;
-
-        // Handle vote changes
-        if (currentVote === vote) {
-          // Remove vote
-          newUserVote = null;
-          if (vote === 'up') newUpvotes -= 1;
-          else newDownvotes -= 1;
-        } else if (currentVote === null) {
-          // Add new vote
-          if (vote === 'up') newUpvotes += 1;
-          else newDownvotes += 1;
-        } else {
-          // Change vote
-          if (currentVote === 'up') newUpvotes -= 1;
-          else newDownvotes -= 1;
-          if (vote === 'up') newUpvotes += 1;
-          else newDownvotes += 1;
-        }
-
-        return {
-          ...comment,
-          upvotes: newUpvotes,
-          downvotes: newDownvotes,
-          userVote: newUserVote
-        };
-      }
-      return comment;
-    }));
-  };
-
-  const handleSubmitComment = () => {
-    if (!newComment.trim()) return;
-
-    const comment: Comment = {
-      id: `comment-${Date.now()}`,
-      author: {
-        id: 'current-user',
-        name: 'You',
-        handle: 'you',
-        avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-      },
-      content: newComment,
-      createdAt: new Date(),
-      upvotes: 0,
-      downvotes: 0,
-      userVote: null
-    };
-
-    setComments(prev => [comment, ...prev]);
-    setNewComment('');
   };
 
   return (
@@ -293,17 +169,13 @@ export default function ArtworkThreadPage() {
                 <Heart className={`h-4 w-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                 <span>{likeCount}</span>
               </Button>
-              <Button variant="outline" className="flex items-center space-x-2">
-                <MessageCircle className="h-4 w-4" />
-                <span>{comments.length}</span>
-              </Button>
               <Button variant="outline">
                 <Share2 className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          {/* Artwork Details and Comments */}
+          {/* Artwork Details */}
           <div className="space-y-6">
             {/* Artwork Info */}
             <Card>
@@ -404,74 +276,6 @@ export default function ArtworkThreadPage() {
               </CardContent>
             </Card>
 
-            {/* Comments Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Comments ({comments.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Add Comment */}
-                <div className="space-y-2">
-                  <Textarea
-                    placeholder="Share your thoughts on this artwork..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="min-h-[100px]"
-                  />
-                  <div className="flex justify-end">
-                    <Button onClick={handleSubmitComment} disabled={!newComment.trim()}>
-                      Post Comment
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Comments List */}
-                <div className="space-y-4">
-                  {sortedComments.map((comment) => (
-                    <div key={comment.id} className="flex space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={comment.author.avatarUrl} />
-                        <AvatarFallback>{comment.author.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-semibold text-sm">{comment.author.name}</span>
-                          <span className="text-muted-foreground text-sm">@{comment.author.handle}</span>
-                          <span className="text-muted-foreground text-sm">
-                            {comment.createdAt.toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-sm">{comment.content}</p>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCommentVote(comment.id, 'up')}
-                            className={`h-8 px-2 ${
-                              comment.userVote === 'up' ? 'text-green-600' : 'text-muted-foreground'
-                            }`}
-                          >
-                            <ThumbsUp className="h-3 w-3 mr-1" />
-                            {comment.upvotes}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCommentVote(comment.id, 'down')}
-                            className={`h-8 px-2 ${
-                              comment.userVote === 'down' ? 'text-red-600' : 'text-muted-foreground'
-                            }`}
-                          >
-                            <ThumbsDown className="h-3 w-3 mr-1" />
-                            {comment.downvotes}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
