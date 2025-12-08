@@ -229,6 +229,17 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [cameFromDiscover, setCameFromDiscover] = useState(false);
+
+  useEffect(() => {
+    // Check if user came from discover page
+    if (typeof window !== 'undefined') {
+      const referrer = document.referrer;
+      if (referrer.includes('/discover')) {
+        setCameFromDiscover(true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -425,7 +436,16 @@ export default function ProductDetailPage() {
           {/* Back Button */}
           <Button
             variant="ghost"
-            onClick={() => router.push('/marketplace')}
+            onClick={() => {
+              // Try to go back in history first
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                router.back();
+              } else if (cameFromDiscover) {
+                router.push('/discover?tab=market');
+              } else {
+                router.push('/marketplace');
+              }
+            }}
             className="mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />

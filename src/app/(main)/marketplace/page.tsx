@@ -14,6 +14,7 @@ import { db } from '@/lib/firebase';
 import { MarketplaceProduct } from '@/lib/types';
 import { usePlaceholder } from '@/hooks/use-placeholder';
 import { ThemeLoading } from '@/components/theme-loading';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const sortOptions = [
   { value: 'newest', label: 'Newest First' },
@@ -457,7 +458,7 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-background">
         {/* Header */}
       <div className="bg-background border-b border-border">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-6 space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
@@ -467,6 +468,21 @@ export default function MarketplacePage() {
                 <span>{filteredAndSortedProducts.length} product{filteredAndSortedProducts.length !== 1 ? 's' : ''} available</span>
               </div>
             </div>
+
+          {/* Cross-navigation tabs to keep Artwork / Events / Market accessible */}
+          <Tabs defaultValue="market" className="w-full max-w-xl">
+            <TabsList className="grid grid-cols-3 w-full">
+              <TabsTrigger value="artwork" asChild>
+                <Link href="/discover?tab=artwork">Artwork</Link>
+              </TabsTrigger>
+              <TabsTrigger value="events" asChild>
+                <Link href="/discover?tab=events">Events</Link>
+              </TabsTrigger>
+              <TabsTrigger value="market" className="cursor-default">
+                Market
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
           </div>
 
           {/* Search Bar */}

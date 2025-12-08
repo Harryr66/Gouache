@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -18,6 +20,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense } from 'react';
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 20): Artwork[] => {
   const placeholderImage = theme === 'dark' 
@@ -122,20 +126,10 @@ const generatePlaceholderMarketplaceProducts = (theme: string | undefined, count
     : '/assets/placeholder-light.png';
   
   const productTitles = [
-    'Abstract Expressionist Painting', 'Limited Edition Art Print', 'Watercolor Landscape',
-    'Charcoal Portrait Study', 'Digital Art Collection', 'Mixed Media Sculpture',
-    'Oil Painting Series', 'Acrylic Abstract', 'Ink Illustration Set',
-    'Pastel Drawing', 'Photography Print', 'Sculpture Piece',
-    'Fine Art Print', 'Original Sketch', 'Contemporary Artwork',
-    'Traditional Painting', 'Modern Art Print', 'Artist Portfolio',
-    'Gallery Quality Print', 'Handmade Art Piece', 'Etching Collection',
-    'Lithograph Series', 'Screen Print Edition', 'Woodblock Print',
-    'Linocut Artwork', 'Monotype Original', 'Collage Composition',
-    'Assemblage Art', 'Found Object Sculpture', 'Ceramic Art Piece',
-    'Bronze Sculpture', 'Stone Carving', 'Glass Artwork',
-    'Textile Art', 'Fiber Art Piece', 'Quilt Artwork',
-    'Embroidery Art', 'Tapestry Design', 'Paper Art Sculpture',
-    'Origami Collection', 'Book Art', 'Zine Collection'
+    'Original Artwork',
+    'Print',
+    'Limited Edition Print',
+    'Book'
   ];
   
   const sellerNames = [
@@ -169,39 +163,6 @@ const generatePlaceholderMarketplaceProducts = (theme: string | undefined, count
     isOnSale: i % 5 === 0,
     isApproved: true,
     status: 'approved' as const,
-  }));
-};
-
-const generatePlaceholderEvents = (theme: string | undefined, count: number = 6) => {
-  const placeholderImage = theme === 'dark'
-    ? '/assets/placeholder-dark.png'
-    : '/assets/placeholder-light.png';
-
-  const titles = [
-    'Gallery Opening Night',
-    'Artist Talk & Q&A',
-    'Printmaking Workshop',
-    'Contemporary Art Fair',
-    'Charcoal Drawing Session',
-    'Studio Open House'
-  ];
-
-  const locations = [
-    'London, UK',
-    'New York, USA',
-    'Paris, FR',
-    'Berlin, DE',
-    'Tokyo, JP',
-    'Sydney, AU'
-  ];
-
-  return Array.from({ length: count }, (_, i) => ({
-    id: `event-placeholder-${i + 1}`,
-    title: titles[i % titles.length],
-    date: new Date(Date.now() + i * 3 * 24 * 60 * 60 * 1000),
-    location: locations[i % locations.length],
-    description: 'Join us for an inspiring session featuring emerging artists and new works.',
-    imageUrl: placeholderImage,
   }));
 };
 
@@ -273,14 +234,22 @@ const EVENT_COUNTRIES = [
   'Canada'
 ];
 
-export default function DiscoverPage() {
+function DiscoverPageContent() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'artwork' | 'events' | 'market'>('artwork');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialTab = (searchParams?.get?.('tab') as 'artwork' | 'events' | 'market') || 'artwork';
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const [activeTab, setActiveTab] = useState<'artwork' | 'events' | 'market'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedMedium, setSelectedMedium] = useState('All');
@@ -342,13 +311,13 @@ export default function DiscoverPage() {
           fetchedArtworks.push(artwork);
         });
         
-        const placeholderArtworks = generatePlaceholderArtworks(theme, 20);
+        const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
         const finalArtworks = fetchedArtworks.length > 0 ? fetchedArtworks : placeholderArtworks;
         setArtworks(finalArtworks);
       } catch (error) {
         console.error('Error fetching artworks:', error);
         // Even on error, show placeholder artworks
-        const placeholderArtworks = generatePlaceholderArtworks(theme, 20);
+        const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
         setArtworks(placeholderArtworks);
       } finally {
         setLoading(false);
@@ -356,7 +325,55 @@ export default function DiscoverPage() {
     };
     
     fetchArtworks();
-  }, [discoverSettings, theme]);
+  }, [discoverSettings, theme, mounted]);
+
+  const filteredAndSortedArtworks = useMemo(() => {
+    let filtered = artworks;
+
+    // Search filter
+    if (searchQuery) {
+      const queryLower = searchQuery.toLowerCase();
+      filtered = filtered.filter(artwork =>
+        artwork.title.toLowerCase().includes(queryLower) ||
+        artwork.description?.toLowerCase().includes(queryLower) ||
+        artwork.artist.name.toLowerCase().includes(queryLower) ||
+        artwork.tags.some(tag => tag.toLowerCase().includes(queryLower))
+      );
+    }
+
+    // Category filter
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(artwork => artwork.category === selectedCategory);
+    }
+
+    // Medium filter
+    if (selectedMedium !== 'All') {
+      filtered = filtered.filter(artwork => artwork.medium === selectedMedium);
+    }
+
+    // Apply discover settings filters
+    if (discoverSettings.hideAiAssistedArt) {
+      filtered = filtered.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
+    }
+
+    // Sort
+    const sorted = [...filtered];
+    switch (sortBy) {
+      case 'newest':
+        sorted.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+        break;
+      case 'oldest':
+        sorted.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+        break;
+      case 'popular':
+        sorted.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+        break;
+      default:
+        break;
+    }
+
+    return sorted;
+  }, [artworks, searchQuery, selectedCategory, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt]);
 
   // Infinite scroll observer for artworks
   useEffect(() => {
@@ -430,12 +447,12 @@ export default function DiscoverPage() {
         });
         
         // Always add placeholder products to simulate marketplace
-        const placeholderProducts = generatePlaceholderMarketplaceProducts(theme, 50);
+        const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 50);
         setMarketplaceProducts([...fetchedProducts, ...placeholderProducts]);
       } catch (error) {
         console.error('Error fetching marketplace products:', error);
         // Even on error, show placeholder products
-        const placeholderProducts = generatePlaceholderMarketplaceProducts(theme, 50);
+        const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 50);
         setMarketplaceProducts(placeholderProducts);
       }
     };
@@ -443,64 +460,14 @@ export default function DiscoverPage() {
     if (activeTab === 'market') {
       fetchMarketplaceProducts();
     }
-  }, [activeTab, theme]);
+  }, [activeTab, theme, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     // Always show placeholder events
     const placeholderEvents = generatePlaceholderEvents(theme, 12);
     setEvents(placeholderEvents);
-  }, [theme]);
-
-  const filteredAndSortedArtworks = useMemo(() => {
-    let filtered = artworks;
-
-    // Search filter
-    if (searchQuery) {
-      const queryLower = searchQuery.toLowerCase();
-      filtered = filtered.filter(artwork =>
-        artwork.title.toLowerCase().includes(queryLower) ||
-        artwork.description?.toLowerCase().includes(queryLower) ||
-        artwork.artist.name.toLowerCase().includes(queryLower) ||
-        artwork.tags.some(tag => tag.toLowerCase().includes(queryLower))
-      );
-    }
-
-    // Category filter
-    if (selectedCategory !== 'All') {
-      filtered = filtered.filter(artwork => artwork.category === selectedCategory);
-    }
-
-    // Medium filter
-    if (selectedMedium !== 'All') {
-      filtered = filtered.filter(artwork => artwork.medium === selectedMedium);
-    }
-
-    // Apply discover settings filters
-    if (discoverSettings.hideAiAssistedArt) {
-      filtered = filtered.filter(artwork => 
-        artwork.aiAssistance === 'none' && !artwork.isAI
-      );
-    }
-
-    // Sort
-    switch (sortBy) {
-      case 'popular':
-        filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
-        break;
-      case 'likes':
-        filtered.sort((a, b) => (b.likes || 0) - (a.likes || 0));
-        break;
-      case 'recent':
-        filtered.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-        break;
-      case 'newest':
-      default:
-        filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        break;
-    }
-
-    return filtered;
-  }, [artworks, searchQuery, selectedCategory, selectedMedium, sortBy, discoverSettings]);
+  }, [theme, mounted]);
 
   if (loading) {
     return (
@@ -523,7 +490,14 @@ export default function DiscoverPage() {
         </div>
 
         {/* Tabs for Artwork/Events/Market */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'artwork' | 'events' | 'market')} className="mb-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => {
+            setActiveTab(value as 'artwork' | 'events' | 'market');
+            router.replace(`/discover?tab=${value}`);
+          }}
+          className="mb-6"
+        >
           <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="artwork" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
@@ -683,7 +657,7 @@ export default function DiscoverPage() {
               </div>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {visibleArtworks.map((artwork) => (
+                {visibleFilteredArtworks.map((artwork) => (
                   <ArtworkTile key={artwork.id} artwork={artwork} />
                 ))}
               </div>
@@ -798,5 +772,17 @@ export default function DiscoverPage() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+export default function DiscoverPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <ThemeLoading text="Loading discover feed..." size="lg" />
+      </div>
+    }>
+      <DiscoverPageContent />
+    </Suspense>
   );
 }
