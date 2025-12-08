@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
@@ -116,7 +116,7 @@ const generatePlaceholderEvents = (theme: string | undefined, count: number = 12
   });
 };
 
-const generatePlaceholderMarketplaceProducts = (theme: string | undefined, count: number = 20): MarketplaceProduct[] => {
+const generatePlaceholderMarketplaceProducts = (theme: string | undefined, count: number = 50): MarketplaceProduct[] => {
   const placeholderImage = theme === 'dark' 
     ? '/assets/placeholder-dark.png' 
     : '/assets/placeholder-light.png';
@@ -165,6 +165,88 @@ const generatePlaceholderMarketplaceProducts = (theme: string | undefined, count
   }));
 };
 
+const generatePlaceholderEvents = (theme: string | undefined, count: number = 6) => {
+  const placeholderImage = theme === 'dark'
+    ? '/assets/placeholder-dark.png'
+    : '/assets/placeholder-light.png';
+
+  const titles = [
+    'Gallery Opening Night',
+    'Artist Talk & Q&A',
+    'Printmaking Workshop',
+    'Contemporary Art Fair',
+    'Charcoal Drawing Session',
+    'Studio Open House'
+  ];
+
+  const locations = [
+    'London, UK',
+    'New York, USA',
+    'Paris, FR',
+    'Berlin, DE',
+    'Tokyo, JP',
+    'Sydney, AU'
+  ];
+
+  return Array.from({ length: count }, (_, i) => ({
+    id: `event-placeholder-${i + 1}`,
+    title: titles[i % titles.length],
+    date: new Date(Date.now() + i * 3 * 24 * 60 * 60 * 1000),
+    location: locations[i % locations.length],
+    description: 'Join us for an inspiring session featuring emerging artists and new works.',
+    imageUrl: placeholderImage,
+  }));
+};
+
+const generatePlaceholderProducts = (theme: string | undefined, count: number = 12): MarketplaceProduct[] => {
+  const placeholderImage = theme === 'dark'
+    ? '/assets/placeholder-dark.png'
+    : '/assets/placeholder-light.png';
+
+  const titles = [
+    'Limited Edition Print',
+    'Original Canvas Painting',
+    'Monotype Series',
+    'Charcoal Portrait',
+    'Watercolor Landscape',
+    'Abstract Study'
+  ];
+
+  const sellers = [
+    'Studio Rivera',
+    'Atelier Laurent',
+    'Gallery Chen',
+    'Artist Collective',
+    'Maison d’Art',
+    'Urban Canvas'
+  ];
+
+  return Array.from({ length: count }, (_, i) => ({
+    id: `market-placeholder-${i + 1}`,
+    title: titles[i % titles.length],
+    description: 'Placeholder product to preview the market layout.',
+    price: 120 + i * 5,
+    currency: 'USD',
+    category: 'Artwork',
+    subcategory: 'Prints',
+    images: [placeholderImage],
+    sellerId: `seller-${i + 1}`,
+    sellerName: sellers[i % sellers.length],
+    isAffiliate: false,
+    isActive: true,
+    stock: 1,
+    rating: 0,
+    reviewCount: 0,
+    tags: ['art', 'print', 'placeholder'],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    salesCount: 0,
+    isOnSale: false,
+    isApproved: true,
+    status: 'approved',
+  }));
+};
+
 const CATEGORIES = ['All', 'Painting', 'Drawing', 'Digital', 'Mixed Media', 'Photography', 'Sculpture', 'Printmaking', 'Textile'];
 const MEDIUMS = ['All', 'Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Digital', 'Ink', 'Pencil', 'Pastel', 'Mixed'];
 const SORT_OPTIONS = [
@@ -172,6 +254,16 @@ const SORT_OPTIONS = [
   { value: 'popular', label: 'Most Popular' },
   { value: 'likes', label: 'Most Liked' },
   { value: 'recent', label: 'Recently Updated' }
+];
+const EVENT_COUNTRIES = [
+  'All',
+  'United States',
+  'United Kingdom',
+  'France',
+  'Germany',
+  'Japan',
+  'Australia',
+  'Canada'
 ];
 
 export default function DiscoverPage() {
@@ -187,6 +279,9 @@ export default function DiscoverPage() {
   const [selectedMedium, setSelectedMedium] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedEventCountry, setSelectedEventCountry] = useState('All');
+  const [visibleCount, setVisibleCount] = useState(15);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const fetchArtworks = async () => {
@@ -240,9 +335,9 @@ export default function DiscoverPage() {
           fetchedArtworks.push(artwork);
         });
         
-        // Always add placeholder artworks to simulate the feed
         const placeholderArtworks = generatePlaceholderArtworks(theme, 20);
-        setArtworks([...fetchedArtworks, ...placeholderArtworks]);
+        const finalArtworks = fetchedArtworks.length > 0 ? fetchedArtworks : placeholderArtworks;
+        setArtworks(finalArtworks);
       } catch (error) {
         console.error('Error fetching artworks:', error);
         // Even on error, show placeholder artworks
@@ -255,6 +350,32 @@ export default function DiscoverPage() {
     
     fetchArtworks();
   }, [discoverSettings, theme]);
+
+  // Infinite scroll observer for artworks
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + 15, filteredAndSortedArtworks.length || prev + 15));
+        }
+      });
+    }, { rootMargin: '200px' });
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [filteredAndSortedArtworks]);
+
+  const visibleFilteredArtworks = useMemo(() => {
+    const limitCount = Math.max(visibleCount, 15);
+    return filteredAndSortedArtworks.slice(0, limitCount);
+  }, [filteredAndSortedArtworks, visibleCount]);
+
+  useEffect(() => {
+    setVisibleCount(15);
+  }, [searchQuery, selectedCategory, selectedMedium, sortBy]);
 
   useEffect(() => {
     const fetchMarketplaceProducts = async () => {
@@ -301,13 +422,13 @@ export default function DiscoverPage() {
           }
         });
         
-        // Always add placeholder products
-        const placeholderProducts = generatePlaceholderMarketplaceProducts(theme, 20);
+        // Always add placeholder products to simulate marketplace
+        const placeholderProducts = generatePlaceholderMarketplaceProducts(theme, 50);
         setMarketplaceProducts([...fetchedProducts, ...placeholderProducts]);
       } catch (error) {
         console.error('Error fetching marketplace products:', error);
         // Even on error, show placeholder products
-        const placeholderProducts = generatePlaceholderMarketplaceProducts(theme, 20);
+        const placeholderProducts = generatePlaceholderMarketplaceProducts(theme, 50);
         setMarketplaceProducts(placeholderProducts);
       }
     };
@@ -554,12 +675,13 @@ export default function DiscoverPage() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {filteredAndSortedArtworks.map((artwork) => (
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {visibleArtworks.map((artwork) => (
                   <ArtworkTile key={artwork.id} artwork={artwork} />
                 ))}
               </div>
             )}
+            <div ref={loadMoreRef} className="h-10" />
           </TabsContent>
 
           {/* Events Tab */}
@@ -573,7 +695,7 @@ export default function DiscoverPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {events.map((event) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
@@ -632,7 +754,7 @@ export default function DiscoverPage() {
           </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {marketplaceProducts.map((product) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
