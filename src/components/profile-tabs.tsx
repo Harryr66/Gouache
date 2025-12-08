@@ -268,12 +268,14 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
   const visibleTabs = [
     { value: 'liked', label: 'Liked', icon: Heart },
     { value: 'following', label: 'Following', icon: Users },
-    { value: 'learn', label: 'Learn', icon: BookOpen },
+    ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: BookOpen }]),
   ];
+  
+  const gridCols = visibleTabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
   
   return (
     <Tabs defaultValue="liked" className="w-full" onValueChange={onTabChange}>
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className={`grid w-full ${gridCols}`}>
         {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -370,6 +372,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
       </TabsContent>
 
       {/* Learn Tab - Purchased Courses */}
+      {!hideLearn && (
       <TabsContent value="learn" className="space-y-4">
         {coursesLoading ? (
           <div className="flex justify-center py-12">
@@ -425,6 +428,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
           </div>
         )}
       </TabsContent>
+      )}
     </Tabs>
   );
 }
