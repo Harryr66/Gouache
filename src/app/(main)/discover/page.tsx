@@ -183,7 +183,7 @@ export default function DiscoverPage() {
             Discover is Coming Soon
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Discover Upcoming Exhibitions, Events & More
+            Discover New Artists, Upcoming Exhibitions, Events & More
           </p>
         </div>
 
