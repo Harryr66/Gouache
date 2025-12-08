@@ -188,10 +188,6 @@ export default function NewsPage() {
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
             Stories, Events, and Emerging Artists Shaping Today&apos;s Art World
           </h1>
-          <p className="text-muted-foreground max-w-3xl">
-            Follow the latest movements across galleries, fairs, studios, and creative communities.
-            We feature headline news, trend pieces, and opportunities that support artists.
-          </p>
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
