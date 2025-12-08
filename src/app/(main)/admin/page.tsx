@@ -1580,6 +1580,7 @@ export default function AdminPanel() {
       await updateDoc(doc(db, 'userProfiles', request.userId), {
         isActive: true,
         isProfessional: true,
+        isVerified: true,
         suspendedAt: null,
         suspendedBy: null,
         updatedAt: serverTimestamp()
@@ -1603,6 +1604,72 @@ export default function AdminPanel() {
         title: 'Reinstate failed',
         description: 'Could not reinstate this artist. Please try again.',
         variant: 'destructive'
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConvertToProfessional = async (request: ArtistRequest) => {
+    setIsProcessing(true);
+    try {
+      // Get current user profile to check status
+      const userProfileRef = doc(db, 'userProfiles', request.userId);
+      const userProfileSnap = await getDoc(userProfileRef);
+      const userData = userProfileSnap.data();
+
+      // Convert portfolio image URLs to portfolio items format if needed
+      let portfolioItems = userData?.portfolio || [];
+      if (request.portfolioImages && request.portfolioImages.length > 0) {
+        const existingUrls = new Set((portfolioItems || []).map((item: any) => item.imageUrl));
+        const newItems = request.portfolioImages
+          .filter((url: string) => !existingUrls.has(url))
+          .map((imageUrl: string, index: number) => ({
+            id: `portfolio-${Date.now()}-${index}`,
+            imageUrl,
+            title: 'Untitled Artwork',
+            description: '',
+            medium: '',
+            dimensions: '',
+            year: '',
+            tags: [],
+            createdAt: new Date()
+          }));
+        portfolioItems = [...(portfolioItems || []), ...newItems];
+      }
+
+      // Update the user's profile to make them a verified professional artist
+      await updateDoc(userProfileRef, {
+        isProfessional: true,
+        isVerified: true,
+        portfolio: portfolioItems,
+        updatedAt: serverTimestamp()
+      });
+
+      toast({
+        title: "Account converted",
+        description: `${request.user.displayName} is now a verified professional artist.`,
+      });
+
+      // Refresh the artist requests list
+      const artistRequestsQuery = query(
+        collection(db, 'artistRequests'),
+        orderBy('submittedAt', 'desc')
+      );
+      const snapshot = await getDocs(artistRequestsQuery);
+      const requests = snapshot.docs.map((doc: any) => ({
+        id: doc.id,
+        ...doc.data(),
+        submittedAt: doc.data().submittedAt?.toDate?.() || new Date(),
+        reviewedAt: doc.data().reviewedAt?.toDate?.() || null,
+      }));
+      setArtistRequests(requests);
+    } catch (error) {
+      console.error('Error converting account:', error);
+      toast({
+        title: "Conversion failed",
+        description: "Failed to convert account. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setIsProcessing(false);
@@ -2547,6 +2614,7 @@ export default function AdminPanel() {
       handleTransferPortfolio={handleTransferPortfolio}
       handleSuspendArtist={handleSuspendArtist}
       handleReinstateArtist={handleReinstateArtist}
+      handleConvertToProfessional={handleConvertToProfessional}
       handleApproveAdApplication={handleApproveAdApplication}
       handleRejectAdApplication={handleRejectAdApplication}
       handleProductUpload={handleProductUpload}

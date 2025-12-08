@@ -165,6 +165,17 @@ export function AdminViewRouter(props: any) {
                             <ExternalLink className="mr-1 h-4 w-4" />
                             View Profile
                           </Button>
+                          {props.handleConvertToProfessional && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => props.handleConvertToProfessional(request)}
+                              disabled={props.isProcessing}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              Convert to Professional
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -441,6 +452,17 @@ export function AdminViewRouter(props: any) {
                         <Button variant="outline" size="sm" onClick={() => props.setSelectedRequest(request)}>
                           <Eye className="h-4 w-4 mr-1" /> View Details
                         </Button>
+                        {props.handleConvertToProfessional && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => props.handleConvertToProfessional(request)}
+                            disabled={props.isProcessing}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Convert to Professional
+                          </Button>
+                        )}
                         {request.portfolioImages && request.portfolioImages.length > 0 && (
                           <Button
                             variant="outline"
