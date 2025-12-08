@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, BadgeCheck, Play } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { PortfolioManager } from './portfolio-manager';
 import { ShopDisplay } from './shop-display';
@@ -354,9 +354,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-lg truncate">{artist.name}</h3>
-                        {artist.isVerified && (
-                          <BadgeCheck className="h-4 w-4 text-blue-500 fill-current flex-shrink-0" />
-                        )}
                       </div>
                       <p className="text-sm text-muted-foreground truncate">@{artist.handle}</p>
                       {artist.location && (
