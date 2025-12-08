@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -218,9 +218,10 @@ const generatePlaceholderProducts = (generatePlaceholderUrl: (w: number, h: numb
   ];
 };
 
-export default function ProductDetailPage() {
+function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const productId = params.id as string;
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
@@ -229,17 +230,10 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [cameFromDiscover, setCameFromDiscover] = useState(false);
-
-  useEffect(() => {
-    // Check if user came from discover page
-    if (typeof window !== 'undefined') {
-      const referrer = document.referrer;
-      if (referrer.includes('/discover')) {
-        setCameFromDiscover(true);
-      }
-    }
-  }, []);
+  
+  // Check if user came from discover page via query param or referrer
+  const cameFromDiscover = searchParams?.get('from') === 'discover' || 
+    (typeof window !== 'undefined' && document.referrer.includes('/discover'));
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -437,13 +431,15 @@ export default function ProductDetailPage() {
           <Button
             variant="ghost"
             onClick={() => {
-              // Try to go back in history first
-              if (typeof window !== 'undefined' && window.history.length > 1) {
-                router.back();
-              } else if (cameFromDiscover) {
+              if (cameFromDiscover) {
                 router.push('/discover?tab=market');
               } else {
-                router.push('/marketplace');
+                // Try to go back in history first
+                if (typeof window !== 'undefined' && window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push('/marketplace');
+                }
               }
             }}
             className="mb-6"
@@ -664,3 +660,16 @@ export default function ProductDetailPage() {
   );
 }
 
+function ProductDetailPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <ThemeLoading text="Loading product..." size="lg" />
+      </div>
+    }>
+      <ProductDetailPage />
+    </Suspense>
+  );
+}
+
+export default ProductDetailPageWrapper;

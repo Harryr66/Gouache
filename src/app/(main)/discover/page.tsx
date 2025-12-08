@@ -745,7 +745,7 @@ function DiscoverPageContent() {
                     : placeholderImage;
                   
                   return (
-                    <Link key={product.id} href={`/marketplace/${product.id}`}>
+                    <Link key={product.id} href={`/marketplace/${product.id}?from=discover`}>
                       <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
                         <div className="relative aspect-square overflow-hidden">
                           <Image
