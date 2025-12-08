@@ -676,20 +676,6 @@ function ProductDetailPage() {
                 )}
               </div>
 
-              {/* Tags */}
-              {product.tags && product.tags.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Tags</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {product.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Action Buttons */}
               <div className="space-y-3 pt-4">
                 <Button
