@@ -31,8 +31,8 @@ export const usePlaceholder = () => {
   const generateLightPlaceholder = (width: number = 400, height: number = 600) => {
     return `data:image/svg+xml;base64,${btoa(`
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="#fafafa" stroke="#e5e5e5" stroke-width="1"/>
-        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="20" font-weight="bold">Gouache</text>
+        <rect width="100%" height="100%" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="Arial, sans-serif" font-size="20" font-weight="bold">Gouache</text>
       </svg>
     `)}`;
   };
@@ -49,8 +49,8 @@ export const usePlaceholder = () => {
   const generateLightAvatarPlaceholder = (width: number = 150, height: number = 150) => {
     return `data:image/svg+xml;base64,${btoa(`
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="#fafafa" stroke="#e5e5e5" stroke-width="1"/>
-        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#000000" font-family="Arial, sans-serif" font-size="16" font-weight="bold">Gouache</text>
+        <rect width="100%" height="100%" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="Arial, sans-serif" font-size="16" font-weight="bold">Gouache</text>
       </svg>
     `)}`;
   };
@@ -59,7 +59,7 @@ export const usePlaceholder = () => {
   const generatePlaceholderUrl = useMemo(() => {
     return (width: number = 400, height: number = 600) => {
       if (!mounted) {
-        return generateDarkPlaceholder(width, height); // Default to dark during SSR
+        return generateLightPlaceholder(width, height); // Default to light to match marketplace light scheme
       }
       
       // SIMPLE CHECK - Just look at document class
@@ -72,7 +72,7 @@ export const usePlaceholder = () => {
   const generateAvatarPlaceholderUrl = useMemo(() => {
     return (width: number = 150, height: number = 150) => {
       if (!mounted) {
-        return generateDarkAvatarPlaceholder(width, height); // Default to dark during SSR
+        return generateLightAvatarPlaceholder(width, height); // Default to light to match marketplace light scheme
       }
       
       // SIMPLE CHECK - Just look at document class
