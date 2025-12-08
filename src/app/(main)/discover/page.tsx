@@ -303,7 +303,7 @@ export default function DiscoverPage() {
                     />
                     <Input
                       type="text"
-                      placeholder="X (Twitter)"
+                      placeholder="X"
                       value={artistRequest.x}
                       onChange={(e) => setArtistRequest(prev => ({ ...prev, x: e.target.value }))}
                       disabled={isArtistSubmitting || isArtistSuccess}
