@@ -48,11 +48,13 @@ export function ArtworkTile({ artwork, onClick, className }: ArtworkTileProps) {
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
+  const router = useRouter();
   const [showArtistPreview, setShowArtistPreview] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
 
   const handleTileClick = () => {
-    setShowArtistPreview(true);
+    // Navigate to full-screen artwork page instead of opening dialog
+    router.push(`/artwork/${artwork.id}`);
     if (onClick) onClick();
   };
 
@@ -155,7 +157,6 @@ const generateArtistContent = (artist: Artist) => ({
   const artistContent = generateArtistContent(artwork.artist);
   const following = isFollowing(artwork.artist.id);
 
-  const router = useRouter();
   const { toggleLike, isLiked, loading: likesLoading } = useLikes();
   const liked = isLiked(artwork.id);
   const [isBannerExpanded, setIsBannerExpanded] = useState(false);
