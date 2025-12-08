@@ -41,6 +41,7 @@ export default function DiscoverPage() {
             title: data.title || 'Untitled',
             description: data.description || '',
             imageUrl: data.imageUrl || '',
+            imageAiHint: data.imageAiHint || '',
             artist: {
               id: data.artist?.userId || data.artist?.id || '',
               name: data.artist?.name || 'Unknown Artist',
@@ -55,6 +56,7 @@ export default function DiscoverPage() {
             likes: data.likes || 0,
             commentsCount: data.commentsCount || 0,
             createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || data.createdAt?.toDate() || new Date(),
             category: data.category || '',
             medium: data.medium || '',
             tags: data.tags || [],
