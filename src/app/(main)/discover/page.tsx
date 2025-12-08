@@ -690,34 +690,40 @@ function DiscoverPageContent() {
                   });
                   
                   return (
-                    <Card key={event.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
-                      <div className="relative aspect-video overflow-hidden">
-                        <Image
-                          src={eventImage}
-                          alt={event.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                      <div className="p-4">
-                        <Badge variant="secondary" className="mb-2">{event.type}</Badge>
-                        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{event.title}</h3>
-                        <div className="space-y-1 text-sm text-muted-foreground">
-                          <p className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {formattedDate}
-                          </p>
-                          <p className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {event.venue}
-                          </p>
-                          <p>{event.location}</p>
-                          {event.price && (
-                            <p className="font-medium text-foreground">{event.price}</p>
-                          )}
+                    <Link key={event.id} href={`/event/${event.id}`}>
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                        <div className="relative aspect-video overflow-hidden">
+                          <Image
+                            src={eventImage}
+                            alt={event.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
                         </div>
-                      </div>
-                    </Card>
+                        <div className="p-4">
+                          <Badge variant="secondary" className="mb-2">{event.type}</Badge>
+                          <h3 className="font-semibold text-lg mb-2 line-clamp-2">{event.title}</h3>
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            <p className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {formattedDate}
+                            </p>
+                          {event.locationName && (
+                            <p className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {event.locationName}
+                            </p>
+                          )}
+                          {event.locationAddress && (
+                            <p className="text-xs">{event.locationAddress}</p>
+                          )}
+                            {event.price && (
+                              <p className="font-medium text-foreground">{event.price}</p>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    </Link>
                   );
                 })}
               </div>
