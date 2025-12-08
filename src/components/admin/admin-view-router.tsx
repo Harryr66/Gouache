@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Plus, Megaphone, Trash2, Edit, Package, ShoppingCart, Link, Image, Play, Pause, BarChart3, AlertCircle, BadgeCheck, ChevronUp, ChevronDown, Sparkles, Loader2, GripVertical, Type, ImageIcon, Check, Bold, Heading2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -333,7 +334,24 @@ export function AdminViewRouter(props: any) {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
                         <div>
                               <p><strong>Email:</strong> {request.user.email}</p>
-                              <p><strong>Experience:</strong> {request.experience}</p>
+                              <p><strong>Experience:</strong> {request.experience || 'Not provided'}</p>
+                              {(request.socialLinks?.instagram || request.socialLinks?.x || request.socialLinks?.tiktok || request.socialLinks?.website) && (
+                                <div className="mt-2 space-y-1">
+                                  <p><strong>Social Links:</strong></p>
+                                  {request.socialLinks?.instagram && (
+                                    <p className="text-xs">Instagram: <a href={request.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.instagram}</a></p>
+                                  )}
+                                  {request.socialLinks?.x && (
+                                    <p className="text-xs">X: <a href={request.socialLinks.x} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.x}</a></p>
+                                  )}
+                                  {request.socialLinks?.tiktok && (
+                                    <p className="text-xs">TikTok: <a href={request.socialLinks.tiktok} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.tiktok}</a></p>
+                                  )}
+                                  {request.socialLinks?.website && (
+                                    <p className="text-xs">Website: <a href={request.socialLinks.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.website}</a></p>
+                                  )}
+                                </div>
+                              )}
                         </div>
                             <div>
                               <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
@@ -2165,6 +2183,124 @@ export function AdminViewRouter(props: any) {
             )}
           </div>
         )}
+
+        {/* Artist Request Detail Dialog */}
+        <Dialog open={!!props.selectedRequest} onOpenChange={(open) => !open && props.setSelectedRequest(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Artist Request Details</DialogTitle>
+              <DialogDescription>
+                Full details for {props.selectedRequest?.user.displayName || 'artist request'}
+              </DialogDescription>
+            </DialogHeader>
+            {props.selectedRequest && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={props.selectedRequest.user.avatarUrl || ''} />
+                    <AvatarFallback>
+                      {props.selectedRequest.user.displayName?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="text-xl font-semibold">{props.selectedRequest.user.displayName}</h3>
+                    <p className="text-muted-foreground">{props.selectedRequest.user.email}</p>
+                    <Badge variant="outline" className="mt-1">
+                      {props.selectedRequest.status}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold mb-2">Contact Information</h4>
+                      <p className="text-sm"><strong>Email:</strong> {props.selectedRequest.user.email}</p>
+                      {props.selectedRequest.socialLinks && (
+                        <div className="mt-2 space-y-1">
+                          <p className="text-sm font-semibold">Social Links:</p>
+                          {props.selectedRequest.socialLinks.instagram && (
+                            <p className="text-sm">Instagram: <a href={props.selectedRequest.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{props.selectedRequest.socialLinks.instagram}</a></p>
+                          )}
+                          {props.selectedRequest.socialLinks.x && (
+                            <p className="text-sm">X: <a href={props.selectedRequest.socialLinks.x} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{props.selectedRequest.socialLinks.x}</a></p>
+                          )}
+                          {props.selectedRequest.socialLinks.tiktok && (
+                            <p className="text-sm">TikTok: <a href={props.selectedRequest.socialLinks.tiktok} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{props.selectedRequest.socialLinks.tiktok}</a></p>
+                          )}
+                          {props.selectedRequest.socialLinks.website && (
+                            <p className="text-sm">Website: <a href={props.selectedRequest.socialLinks.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{props.selectedRequest.socialLinks.website}</a></p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold mb-2">Submission Details</h4>
+                      <p className="text-sm"><strong>Submitted:</strong> {props.selectedRequest.submittedAt instanceof Date ? props.selectedRequest.submittedAt.toLocaleDateString() : (props.selectedRequest.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                      <p className="text-sm"><strong>Portfolio Images:</strong> {props.selectedRequest.portfolioImages.length}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {props.selectedRequest.experience && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Experience</h4>
+                        <p className="text-sm whitespace-pre-wrap">{props.selectedRequest.experience}</p>
+                      </div>
+                    )}
+                    {props.selectedRequest.artistStatement && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Artist Statement</h4>
+                        <p className="text-sm whitespace-pre-wrap">{props.selectedRequest.artistStatement}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {props.selectedRequest.portfolioImages.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-4">Portfolio Images</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {props.selectedRequest.portfolioImages.map((imageUrl: string, index: number) => (
+                        <div key={index} className="relative aspect-square">
+                          <img
+                            src={imageUrl}
+                            alt={`Portfolio ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg border"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button
+                    onClick={() => props.handleApprove(props.selectedRequest)}
+                    disabled={props.isProcessing}
+                    className="flex-1"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Approve
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      props.setRejectionReason('');
+                      props.setSelectedRequest(null);
+                    }}
+                    disabled={props.isProcessing}
+                    className="flex-1"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
     </div>
   );

@@ -65,62 +65,6 @@ export default function ProfileEditPage() {
   };
 
   // Test portfolio upload with a sample file
-  const testPortfolioUpload = async () => {
-    try {
-      console.log('🧪 Testing portfolio upload with sample file...');
-      
-      if (!auth.currentUser) {
-        console.error('❌ No authenticated user');
-        toast({
-          title: "Test failed",
-          description: "No authenticated user found",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Create a test image file
-      const canvas = document.createElement('canvas');
-      canvas.width = 100;
-      canvas.height = 100;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#ff0000';
-        ctx.fillRect(0, 0, 100, 100);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '16px Arial';
-        ctx.fillText('TEST', 25, 50);
-      }
-      
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          console.error('❌ Failed to create test image blob');
-          return;
-        }
-        
-        const testFile = new File([blob], 'test-image.png', { type: 'image/png' });
-        console.log('📸 Created test file:', testFile.name, testFile.size, 'bytes');
-        
-        // Test the upload function directly
-        const mockEvent = {
-          target: {
-            files: [testFile],
-            value: ''
-          }
-        } as any;
-        
-        await handlePortfolioImageUpload(mockEvent);
-      }, 'image/png');
-      
-    } catch (error) {
-      console.error('❌ Test portfolio upload failed:', error);
-      toast({
-        title: "Test failed",
-        description: error instanceof Error ? error.message : "Test upload failed",
-        variant: "destructive"
-      });
-    }
-  };
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingHandle, setIsCheckingHandle] = useState(false);
   const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
@@ -631,7 +575,6 @@ export default function ProfileEditPage() {
     
     const files = event.target.files;
     if (!files || files.length === 0) {
-      console.log('❌ No files selected');
       toast({
         title: "No files selected",
         description: "Please select at least one image to upload.",
@@ -640,7 +583,6 @@ export default function ProfileEditPage() {
       return;
     }
     
-    console.log('✅ Files selected:', files.length, Array.from(files).map(f => f.name));
 
     if (!user) {
       toast({
@@ -671,8 +613,6 @@ export default function ProfileEditPage() {
     }
 
     setIsLoading(true);
-    console.log('📸 Starting portfolio image upload...', files.length, 'files');
-    console.log('🔐 User authenticated:', !!auth.currentUser, 'User ID:', auth.currentUser?.uid);
     
     try {
       const urls: string[] = [];
@@ -680,7 +620,6 @@ export default function ProfileEditPage() {
       // Upload files one by one to avoid overwhelming the system
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        console.log(`📸 Uploading file ${i + 1}/${files.length}:`, file.name, file.size, 'bytes');
         
         // Validate file type
         if (!file.type.startsWith('image/')) {
@@ -695,13 +634,11 @@ export default function ProfileEditPage() {
         try {
           // Compress image
           const compressedFile = await compressImage(file);
-          console.log(`✅ Image compressed:`, compressedFile.size, 'bytes');
           
           // Create storage reference
           const timestamp = Date.now();
           const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
           const imageRef = ref(storage, `portfolio/${user.id}/${fileName}`);
-          console.log(`📤 Uploading to:`, imageRef.fullPath);
           
           // Upload file with metadata
           const metadata = {
@@ -713,11 +650,9 @@ export default function ProfileEditPage() {
           };
           
           const uploadResult = await uploadBytes(imageRef, compressedFile, metadata);
-          console.log(`✅ Upload successful:`, uploadResult.metadata.fullPath);
           
           // Get download URL
           const downloadURL = await getDownloadURL(imageRef);
-          console.log(`✅ Download URL obtained:`, downloadURL);
           
           urls.push(downloadURL);
         } catch (fileError: any) {
@@ -741,7 +676,6 @@ export default function ProfileEditPage() {
       }
 
       setPortfolioImages(prev => [...prev, ...urls]);
-      console.log(`✅ All ${urls.length} portfolio images uploaded successfully`);
       
       toast({
         title: "Upload successful",
@@ -751,17 +685,7 @@ export default function ProfileEditPage() {
       // Reset file input
       event.target.value = '';
     } catch (error: any) {
-      console.error('❌ Portfolio image upload failed:', error);
-      
-      // Log additional debugging information
-      console.error('🔍 Debug info:', {
-        userExists: !!user,
-        authUserExists: !!auth.currentUser,
-        authUserUid: auth.currentUser?.uid,
-        storageBucket: storage.app.options.storageBucket,
-        errorCode: error.code,
-        errorMessage: error.message
-      });
+      console.error('Portfolio image upload failed:', error);
       
       toast({
         title: "Upload failed",
@@ -2074,38 +1998,7 @@ export default function ProfileEditPage() {
                   {/* Portfolio Images */}
                   <div className="space-y-4">
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Portfolio Images *</Label>
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={testPortfolioUpload}
-                            className="text-xs"
-                          >
-                            Test Upload
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const fileInput = document.getElementById('portfolio-upload') as HTMLInputElement;
-                              console.log('🔍 File input element:', fileInput);
-                              if (fileInput) {
-                                console.log('🔍 File input found, triggering click');
-                                fileInput.click();
-                              } else {
-                                console.error('❌ File input element not found');
-                              }
-                            }}
-                            className="text-xs"
-                          >
-                            Debug File Input
-                          </Button>
-                        </div>
-                      </div>
+                      <Label>Portfolio Images *</Label>
                       <p className="text-sm text-muted-foreground mb-2">
                         Upload 3-10 images showcasing your best work
                       </p>
