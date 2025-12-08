@@ -128,7 +128,14 @@ const generatePlaceholderMarketplaceProducts = (theme: string | undefined, count
     'Pastel Drawing', 'Photography Print', 'Sculpture Piece',
     'Fine Art Print', 'Original Sketch', 'Contemporary Artwork',
     'Traditional Painting', 'Modern Art Print', 'Artist Portfolio',
-    'Gallery Quality Print', 'Handmade Art Piece'
+    'Gallery Quality Print', 'Handmade Art Piece', 'Etching Collection',
+    'Lithograph Series', 'Screen Print Edition', 'Woodblock Print',
+    'Linocut Artwork', 'Monotype Original', 'Collage Composition',
+    'Assemblage Art', 'Found Object Sculpture', 'Ceramic Art Piece',
+    'Bronze Sculpture', 'Stone Carving', 'Glass Artwork',
+    'Textile Art', 'Fiber Art Piece', 'Quilt Artwork',
+    'Embroidery Art', 'Tapestry Design', 'Paper Art Sculpture',
+    'Origami Collection', 'Book Art', 'Zine Collection'
   ];
   
   const sellerNames = [
