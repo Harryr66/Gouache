@@ -394,7 +394,7 @@ export default function SettingsPage() {
 
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg border-destructive">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm sm:text-base text-destructive">Delete Account</h4>
+                    <h4 className="font-medium text-sm sm:text-base text-foreground">Delete Account</h4>
                     <p className="text-xs sm:text-sm text-foreground/90">
                       Permanently delete your account and all associated data. This action cannot be undone.
                     </p>
