@@ -587,7 +587,7 @@ export default function AdminPanel() {
         dimensions: '',
         year: '',
         tags: [],
-        createdAt: serverTimestamp() // Use serverTimestamp for consistency
+        createdAt: new Date() // Use Date() instead of serverTimestamp() for array items
       }));
 
       // Update the user's profile to make them a verified professional artist
@@ -632,7 +632,7 @@ export default function AdminPanel() {
         dimensions: '',
         year: '',
         tags: [],
-        createdAt: serverTimestamp() // Use serverTimestamp for consistency
+        createdAt: new Date() // Use Date() instead of serverTimestamp() for array items
       }));
 
       // Get current user profile to merge with existing portfolio if any
