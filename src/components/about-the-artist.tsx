@@ -122,6 +122,9 @@ export function AboutTheArtist({ artistId, artistName, artistHandle, className }
     <Card className={className}>
       <CardContent className="p-6">
         <div className="space-y-4">
+          {/* Section Title */}
+          <h2 className="text-2xl font-bold mb-4">About The Artist</h2>
+          
           {/* Header */}
           <div className="flex items-start gap-4">
             <Avatar className="h-20 w-20 border-2 border-border">
