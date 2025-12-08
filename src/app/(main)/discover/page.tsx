@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Check, Mail, Palette, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -19,9 +18,9 @@ export default function DiscoverPage() {
   const [artistRequest, setArtistRequest] = useState({
     name: '',
     email: '',
-    artistStatement: '',
-    experience: '',
     instagram: '',
+    x: '',
+    tiktok: '',
     website: ''
   });
   const [isArtistSubmitting, setIsArtistSubmitting] = useState(false);
@@ -114,6 +113,21 @@ export default function DiscoverPage() {
       return;
     }
 
+    // Validate that at least one social link is provided
+    const hasSocialLink = artistRequest.instagram.trim() || 
+                         artistRequest.x.trim() || 
+                         artistRequest.tiktok.trim() || 
+                         artistRequest.website.trim();
+    
+    if (!hasSocialLink) {
+      toast({
+        title: 'Social link required',
+        description: 'Please provide at least one social link (Instagram, X, TikTok, or Website).',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsArtistSubmitting(true);
 
     try {
@@ -125,10 +139,10 @@ export default function DiscoverPage() {
         body: JSON.stringify({
           name: artistRequest.name.trim(),
           email: artistRequest.email.trim().toLowerCase(),
-          artistStatement: artistRequest.artistStatement.trim() || undefined,
-          experience: artistRequest.experience.trim() || undefined,
           socialLinks: {
             ...(artistRequest.instagram.trim() && { instagram: artistRequest.instagram.trim() }),
+            ...(artistRequest.x.trim() && { x: artistRequest.x.trim() }),
+            ...(artistRequest.tiktok.trim() && { tiktok: artistRequest.tiktok.trim() }),
             ...(artistRequest.website.trim() && { website: artistRequest.website.trim() })
           },
           source: 'discover-coming-soon'
@@ -145,9 +159,9 @@ export default function DiscoverPage() {
       setArtistRequest({
         name: '',
         email: '',
-        artistStatement: '',
-        experience: '',
         instagram: '',
+        x: '',
+        tiktok: '',
         website: ''
       });
       
@@ -275,40 +289,43 @@ export default function DiscoverPage() {
                     className="h-10"
                     required
                   />
-                  <Textarea
-                    placeholder="Artist statement (optional)"
-                    value={artistRequest.artistStatement}
-                    onChange={(e) => setArtistRequest(prev => ({ ...prev, artistStatement: e.target.value }))}
-                    disabled={isArtistSubmitting || isArtistSuccess}
-                    rows={3}
-                    className="resize-none"
-                  />
-                  <Textarea
-                    placeholder="Experience/Background (optional)"
-                    value={artistRequest.experience}
-                    onChange={(e) => setArtistRequest(prev => ({ ...prev, experience: e.target.value }))}
-                    disabled={isArtistSubmitting || isArtistSuccess}
-                    rows={2}
-                    className="resize-none"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-            <Input
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Social links (at least one required)
+                    </p>
+                    <Input
                       type="text"
-                      placeholder="Instagram (optional)"
+                      placeholder="Instagram"
                       value={artistRequest.instagram}
                       onChange={(e) => setArtistRequest(prev => ({ ...prev, instagram: e.target.value }))}
                       disabled={isArtistSubmitting || isArtistSuccess}
                       className="h-10"
                     />
-                  <Input
+                    <Input
+                      type="text"
+                      placeholder="X (Twitter)"
+                      value={artistRequest.x}
+                      onChange={(e) => setArtistRequest(prev => ({ ...prev, x: e.target.value }))}
+                      disabled={isArtistSubmitting || isArtistSuccess}
+                      className="h-10"
+                    />
+                    <Input
+                      type="text"
+                      placeholder="TikTok"
+                      value={artistRequest.tiktok}
+                      onChange={(e) => setArtistRequest(prev => ({ ...prev, tiktok: e.target.value }))}
+                      disabled={isArtistSubmitting || isArtistSuccess}
+                      className="h-10"
+                    />
+                    <Input
                       type="url"
-                      placeholder="Website (optional)"
+                      placeholder="Website"
                       value={artistRequest.website}
                       onChange={(e) => setArtistRequest(prev => ({ ...prev, website: e.target.value }))}
                       disabled={isArtistSubmitting || isArtistSuccess}
                       className="h-10"
                     />
-          </div>
+                  </div>
                   </div>
           <Button
                   type="submit"
