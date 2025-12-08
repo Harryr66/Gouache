@@ -54,11 +54,6 @@ export function ArtworkGrid({ posts, className }: ArtworkGridProps) {
                 <h4 className="font-medium text-sm truncate">{post.artist.name}</h4>
                 <p className="text-xs text-muted-foreground">@{post.artist.handle}</p>
               </div>
-              {post.artist.isVerified && (
-                <Badge variant="secondary" className="text-xs">
-                  ✓
-                </Badge>
-              )}
             </div>
             
             <p className="text-sm text-muted-foreground line-clamp-2 mb-3">

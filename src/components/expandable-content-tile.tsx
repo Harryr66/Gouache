@@ -195,9 +195,6 @@ export function ExpandableContentTile({
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-lg font-semibold">{artist.name}</h3>
-                      {artist.isVerified && (
-                        <Badge variant="secondary" className="text-xs">Verified</Badge>
-                      )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
                       {artist.bio || 'Artist bio coming soon...'}

@@ -26,7 +26,6 @@ import {
   Globe, 
   Calendar, 
   MapPin, 
-  BadgeCheck,
   Heart,
   MessageCircle,
   Share2,
@@ -249,11 +248,6 @@ const generateArtistContent = (artist: Artist) => ({
                   <span className="text-sm font-medium truncate">
                     {artwork.artist.name}
                   </span>
-                  {artwork.artist.isVerified && <BadgeCheck className={`h-3 w-3 flex-shrink-0 fill-current ${
-                    (resolvedTheme || theme) === 'dark' 
-                      ? 'text-blue-400' 
-                      : 'text-blue-500'
-                  }`} />}
                 </div>
                 {artwork.artist.location && (
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -372,9 +366,6 @@ const generateArtistContent = (artist: Artist) => ({
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-base truncate">{artwork.artist.name}</h3>
-                          {artwork.artist.isVerified && (
-                            <BadgeCheck className="h-4 w-4 text-blue-500 fill-current flex-shrink-0" />
-                          )}
                         </div>
                         <p className="text-xs text-muted-foreground truncate">@{artwork.artist.handle}</p>
                       </div>
@@ -513,9 +504,6 @@ const generateArtistContent = (artist: Artist) => ({
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
-                          {artwork.artist.isVerified && (
-                            <BadgeCheck className="h-5 w-5 text-blue-500 fill-current" />
-                          )}
                         </div>
                         <p className="text-muted-foreground">@{artwork.artist.handle}</p>
                       </div>

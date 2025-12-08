@@ -68,11 +68,6 @@ export function ArtworkCard({
             <CardTitle className="text-sm md:text-lg line-clamp-1">{artwork.title}</CardTitle>
             <CardDescription className="flex items-center space-x-2 mt-1">
               <span className="text-xs md:text-sm">by {artwork.artist.name}</span>
-              {artwork.artist.isVerified && (
-                <Badge variant="outline" className="text-xs">
-                  Verified
-                </Badge>
-              )}
             </CardDescription>
           </div>
           <Button

@@ -24,7 +24,6 @@ import {
   Building2,
   Mail,
   ExternalLink,
-  BadgeCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -150,9 +149,6 @@ export function ProfileHeader({
                 <h1 className="text-2xl md:text-3xl font-headline font-bold text-foreground">
                   {user.displayName || 'User'}
                 </h1>
-                {user.isVerified && (
-                  <BadgeCheck className="h-5 w-5 md:h-6 md:w-6 text-blue-500 fill-current flex-shrink-0" />
-                )}
               </div>
               <p className="text-muted-foreground text-base md:text-lg">{user.username}</p>
               {user.location && !user.hideLocation && (
