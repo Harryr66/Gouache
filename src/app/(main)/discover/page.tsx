@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag } from 'lucide-react';
+import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
 import { Artwork, MarketplaceProduct } from '@/lib/types';
@@ -383,7 +383,7 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
@@ -425,15 +425,15 @@ export default function DiscoverPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
                   />
-                </div>
-                <Button
+                  </div>
+                  <Button
                   variant="outline"
                   onClick={() => setShowFilters(!showFilters)}
                   className="shrink-0"
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   Filters
-                </Button>
+                      </Button>
               </div>
 
               {/* Filters Panel */}
@@ -454,7 +454,7 @@ export default function DiscoverPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
+                        </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Medium</label>
                       <Select value={selectedMedium} onValueChange={setSelectedMedium}>
@@ -469,7 +469,7 @@ export default function DiscoverPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
+                      </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Sort By</label>
                       <Select value={sortBy} onValueChange={setSortBy}>
@@ -484,10 +484,10 @@ export default function DiscoverPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
+          </div>
                   </div>
                   <div className="mt-4 flex gap-2">
-                    <Button
+          <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
@@ -499,7 +499,7 @@ export default function DiscoverPage() {
                     >
                       <X className="h-4 w-4 mr-2" />
                       Clear Filters
-                    </Button>
+                      </Button>
                   </div>
                 </Card>
               )}
@@ -529,7 +529,7 @@ export default function DiscoverPage() {
                 </div>
               )}
             </div>
-
+            
             {/* Artworks Grid */}
             {filteredAndSortedArtworks.length === 0 ? (
               <div className="text-center py-16">
@@ -605,7 +605,7 @@ export default function DiscoverPage() {
                             {formattedDate}
                           </p>
                           <p className="flex items-center gap-1">
-                            <X className="h-3 w-3" />
+                            <MapPin className="h-3 w-3" />
                             {event.venue}
                           </p>
                           <p>{event.location}</p>
@@ -627,9 +627,9 @@ export default function DiscoverPage() {
               <div className="text-center py-16">
                 <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">No products available</h2>
-                <p className="text-muted-foreground">
+          <p className="text-muted-foreground">
                   Check back later for marketplace products.
-                </p>
+          </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
