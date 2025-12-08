@@ -329,6 +329,7 @@ export default function DiscoverPage() {
                   </div>
           <Button
                   type="submit"
+                  variant="gradient"
                   disabled={isArtistSubmitting || isArtistSuccess}
                   className="w-full h-11"
                 >
