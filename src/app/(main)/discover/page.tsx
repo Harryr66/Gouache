@@ -68,6 +68,103 @@ const generatePlaceholderArtworks = (theme: string | undefined, count: number = 
   }));
 };
 
+const generatePlaceholderEvents = (theme: string | undefined, count: number = 12) => {
+  const placeholderImage = theme === 'dark' 
+    ? '/assets/placeholder-dark.png' 
+    : '/assets/placeholder-light.png';
+  
+  const eventTitles = [
+    'Contemporary Art Exhibition', 'Gallery Opening Night', 'Artist Workshop Series',
+    'Sculpture Garden Tour', 'Abstract Art Showcase', 'Photography Exhibition',
+    'Mixed Media Workshop', 'Art Auction Gala', 'Street Art Festival',
+    'Digital Art Symposium', 'Watercolor Masterclass', 'Printmaking Workshop'
+  ];
+  
+  const venues = [
+    'Modern Art Gallery', 'Downtown Cultural Center', 'Riverside Gallery',
+    'Metropolitan Museum', 'Art District Studio', 'Contemporary Space',
+    'Heritage Gallery', 'Creative Hub', 'Urban Art Center',
+    'Gallery 302', 'The Loft', 'Artisan Collective'
+  ];
+  
+  const locations = [
+    'New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'San Francisco, CA',
+    'Miami, FL', 'Seattle, WA', 'Boston, MA', 'Portland, OR',
+    'Austin, TX', 'Denver, CO', 'Philadelphia, PA', 'Nashville, TN'
+  ];
+  
+  return Array.from({ length: count }, (_, i) => {
+    const daysFromNow = i * 7 + Math.floor(Math.random() * 7);
+    const eventDate = new Date();
+    eventDate.setDate(eventDate.getDate() + daysFromNow);
+    const endDate = new Date(eventDate);
+    endDate.setDate(endDate.getDate() + (i % 3 === 0 ? 7 : 1));
+    
+    return {
+      id: `placeholder-event-${i + 1}`,
+      title: eventTitles[i % eventTitles.length],
+      description: 'Join us for an exciting art event featuring contemporary works and engaging discussions.',
+      date: eventDate,
+      endDate: i % 3 === 0 ? endDate : undefined,
+      location: locations[i % locations.length],
+      venue: venues[i % venues.length],
+      type: ['Exhibition', 'Workshop', 'Gallery Opening', 'Festival'][i % 4],
+      imageUrl: placeholderImage,
+      price: i % 4 === 0 ? 'Free' : `$${Math.floor(Math.random() * 50) + 10}`,
+      capacity: Math.floor(Math.random() * 200) + 50,
+    };
+  });
+};
+
+const generatePlaceholderMarketplaceProducts = (theme: string | undefined, count: number = 20): MarketplaceProduct[] => {
+  const placeholderImage = theme === 'dark' 
+    ? '/assets/placeholder-dark.png' 
+    : '/assets/placeholder-light.png';
+  
+  const productTitles = [
+    'Abstract Expressionist Painting', 'Limited Edition Art Print', 'Watercolor Landscape',
+    'Charcoal Portrait Study', 'Digital Art Collection', 'Mixed Media Sculpture',
+    'Oil Painting Series', 'Acrylic Abstract', 'Ink Illustration Set',
+    'Pastel Drawing', 'Photography Print', 'Sculpture Piece',
+    'Fine Art Print', 'Original Sketch', 'Contemporary Artwork',
+    'Traditional Painting', 'Modern Art Print', 'Artist Portfolio',
+    'Gallery Quality Print', 'Handmade Art Piece'
+  ];
+  
+  const sellerNames = [
+    'Sarah Martinez', 'James Chen', 'Emma Wilson', 'Michael Brown',
+    'Sophie Anderson', 'David Lee', 'Olivia Garcia', 'Ryan Taylor',
+    'Isabella White', 'Noah Harris', 'Ava Clark', 'Lucas Moore',
+    'Mia Johnson', 'Ethan Davis', 'Zoe Martinez', 'Liam Thompson',
+    'Chloe Rodriguez', 'Aiden Lewis', 'Lily Walker', 'Jackson Hall'
+  ];
+  
+  return Array.from({ length: count }, (_, i) => ({
+    id: `placeholder-market-${i + 1}`,
+    title: productTitles[i % productTitles.length],
+    description: 'A beautiful piece of art perfect for collectors and art enthusiasts.',
+    price: Math.floor(Math.random() * 500) + 50,
+    currency: 'USD',
+    category: ['Artwork', 'Prints', 'Original', 'Limited Edition'][i % 4],
+    subcategory: ['Painting', 'Print', 'Drawing', 'Digital'][i % 4],
+    images: [placeholderImage],
+    sellerId: `placeholder-seller-${i + 1}`,
+    sellerName: sellerNames[i % sellerNames.length],
+    isAffiliate: false,
+    isActive: true,
+    stock: Math.floor(Math.random() * 10) + 1,
+    rating: 4 + Math.random(),
+    reviewCount: Math.floor(Math.random() * 50) + 5,
+    tags: ['art', 'original', 'collectible', 'handmade'],
+    createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
+    updatedAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
+    salesCount: Math.floor(Math.random() * 20),
+    isOnSale: i % 5 === 0,
+    isApproved: true,
+    status: 'approved' as const,
+  }));
+};
+
 const CATEGORIES = ['All', 'Painting', 'Drawing', 'Digital', 'Mixed Media', 'Photography', 'Sculpture', 'Printmaking', 'Textile'];
 const MEDIUMS = ['All', 'Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Digital', 'Ink', 'Pencil', 'Pastel', 'Mixed'];
 const SORT_OPTIONS = [
@@ -80,6 +177,7 @@ const SORT_OPTIONS = [
 export default function DiscoverPage() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
@@ -203,16 +301,27 @@ export default function DiscoverPage() {
           }
         });
         
-        setMarketplaceProducts(fetchedProducts);
+        // Always add placeholder products
+        const placeholderProducts = generatePlaceholderMarketplaceProducts(theme, 20);
+        setMarketplaceProducts([...fetchedProducts, ...placeholderProducts]);
       } catch (error) {
         console.error('Error fetching marketplace products:', error);
+        // Even on error, show placeholder products
+        const placeholderProducts = generatePlaceholderMarketplaceProducts(theme, 20);
+        setMarketplaceProducts(placeholderProducts);
       }
     };
     
     if (activeTab === 'market') {
       fetchMarketplaceProducts();
     }
-  }, [activeTab]);
+  }, [activeTab, theme]);
+
+  useEffect(() => {
+    // Always show placeholder events
+    const placeholderEvents = generatePlaceholderEvents(theme, 12);
+    setEvents(placeholderEvents);
+  }, [theme]);
 
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = artworks;
@@ -455,13 +564,61 @@ export default function DiscoverPage() {
 
           {/* Events Tab */}
           <TabsContent value="events" className="mt-6">
-            <div className="text-center py-16">
-              <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">Events Coming Soon</h2>
-              <p className="text-muted-foreground">
-                Browse upcoming exhibitions, workshops, and art events.
-              </p>
-            </div>
+            {events.length === 0 ? (
+              <div className="text-center py-16">
+                <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">No events available</h2>
+                <p className="text-muted-foreground">
+                  Check back later for upcoming exhibitions, workshops, and art events.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {events.map((event) => {
+                  const placeholderImage = theme === 'dark' 
+                    ? '/assets/placeholder-dark.png' 
+                    : '/assets/placeholder-light.png';
+                  const eventImage = event.imageUrl || placeholderImage;
+                  const eventDate = new Date(event.date);
+                  const formattedDate = eventDate.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                  });
+                  
+                  return (
+                    <Card key={event.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
+                      <div className="relative aspect-video overflow-hidden">
+                        <Image
+                          src={eventImage}
+                          alt={event.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <Badge variant="secondary" className="mb-2">{event.type}</Badge>
+                        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{event.title}</h3>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          <p className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {formattedDate}
+                          </p>
+                          <p className="flex items-center gap-1">
+                            <X className="h-3 w-3" />
+                            {event.venue}
+                          </p>
+                          <p>{event.location}</p>
+                          {event.price && (
+                            <p className="font-medium text-foreground">{event.price}</p>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </TabsContent>
 
           {/* Market Tab */}
