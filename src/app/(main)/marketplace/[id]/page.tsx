@@ -14,6 +14,7 @@ import { usePlaceholder } from '@/hooks/use-placeholder';
 import { ThemeLoading } from '@/components/theme-loading';
 import { useAuth } from '@/providers/auth-provider';
 import Link from 'next/link';
+import { AboutTheArtist } from '@/components/about-the-artist';
 
 // Placeholder products generator (same as marketplace page)
 const generatePlaceholderProducts = (generatePlaceholderUrl: (w: number, h: number) => string): MarketplaceProduct[] => {
@@ -698,6 +699,17 @@ function ProductDetailPage() {
 
             </div>
           </div>
+
+          {/* About the Artist Section */}
+          {product.sellerId && (
+            <div className="mt-8">
+              <AboutTheArtist
+                artistId={product.sellerId}
+                artistName={product.sellerName}
+                artistHandle={product.sellerId}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { useContent } from '@/providers/content-provider';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
+import { AboutTheArtist } from '@/components/about-the-artist';
 
 interface ExpandedEventViewProps {
     event: Event;
@@ -162,6 +163,15 @@ export function ExpandedEventView({ event, discussion, onClose }: ExpandedEventV
                                         <Button>Get Tickets</Button>
                                     </div>
                                 </div>
+                            )}
+
+                            {/* About the Artist */}
+                            {event.artist.id && (
+                                <AboutTheArtist
+                                    artistId={event.artist.id}
+                                    artistName={event.artist.name}
+                                    artistHandle={event.artist.handle}
+                                />
                             )}
 
                             {/* Discussion */}

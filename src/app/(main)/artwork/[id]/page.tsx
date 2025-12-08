@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Heart, MessageCircle, Share2, ArrowLeft, ThumbsUp, ThumbsDown, Clock, Palette, Ruler } from 'lucide-react';
 import { Artwork } from '@/lib/types';
 import Image from 'next/image';
+import { AboutTheArtist } from '@/components/about-the-artist';
 
 // Generate Gouache placeholder URLs
 const generatePlaceholderUrl = (width: number = 800, height: number = 800) => {
@@ -353,6 +354,15 @@ export default function ArtworkThreadPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* About the Artist */}
+            {artwork.artist.id && (
+              <AboutTheArtist
+                artistId={artwork.artist.id}
+                artistName={artwork.artist.name}
+                artistHandle={artwork.artist.handle}
+              />
+            )}
 
             {/* Artist Notes */}
             <Card>
