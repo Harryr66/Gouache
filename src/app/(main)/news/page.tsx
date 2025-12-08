@@ -186,7 +186,7 @@ export default function NewsPage() {
             Gouache Newsroom
           </Badge>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            Stories, insights, and opportunities shaping today&apos;s art world
+            Stories, Events, and Emerging Artists Shaping Today&apos;s Art World
           </h1>
           <p className="text-muted-foreground max-w-3xl">
             Follow the latest movements across galleries, fairs, studios, and creative communities.
