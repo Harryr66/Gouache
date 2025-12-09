@@ -947,7 +947,7 @@ function DiscoverPageContent() {
           </p>
               </div>
             ) : (marketView === 'grid' || !isMobile) ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+              <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
                 {filteredAndSortedMarketProducts.map((product) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
@@ -958,8 +958,8 @@ function DiscoverPageContent() {
                   
                   return (
                     <Link key={product.id} href={`/marketplace/${product.id}?from=discover`}>
-                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col h-full">
-                        <div className="relative aspect-square overflow-hidden">
+                      <Card className={`group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full ${isMobile ? 'flex flex-row min-h-[140px]' : 'flex flex-col'}`}>
+                        <div className={`${isMobile ? 'relative w-36 sm:w-40 h-full aspect-[3/2] flex-shrink-0' : 'relative aspect-[4/3]'} overflow-hidden`}>
                           <Image
                             src={productImage}
                             alt={product.title}
