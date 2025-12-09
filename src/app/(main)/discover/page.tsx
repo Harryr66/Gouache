@@ -1196,8 +1196,8 @@ function DiscoverPageContent() {
                   
                   return (
                     <Link key={event.id} href={`/event/${event.id}`}>
-                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col h-full">
-                        <div className="relative aspect-[16/9] sm:aspect-[4/3] overflow-hidden">
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-row md:flex-col h-full">
+                        <div className="relative w-32 h-24 md:w-auto md:h-auto md:aspect-[4/3] overflow-hidden flex-shrink-0">
                           <Image
                             src={eventImage}
                             alt={event.title}
