@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Grid3X3, List } from 'lucide-react';
+import { Grid3X3, List, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ViewSelectorProps {
@@ -22,8 +22,9 @@ export function ViewSelector({ view, onViewChange, className }: ViewSelectorProp
             ? 'bg-background text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'
         )}
+        aria-label="Single view"
       >
-        <List className="h-4 w-4" />
+        <Square className="h-4 w-4" />
       </button>
       <button
         onClick={() => onViewChange('grid')}
@@ -33,8 +34,9 @@ export function ViewSelector({ view, onViewChange, className }: ViewSelectorProp
             ? 'bg-background text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'
         )}
+        aria-label="Grid view"
       >
-        <Grid3X3 className="h-4 w-4" />
+        <List className="h-4 w-4" />
       </button>
     </div>
   );
