@@ -223,20 +223,6 @@ const SORT_OPTIONS = [
   { value: 'likes', label: 'Most Liked' },
   { value: 'recent', label: 'Recently Updated' }
 ];
-const EVENT_LOCATIONS = [
-  'All',
-  'New York, NY',
-  'Los Angeles, CA',
-  'Chicago, IL',
-  'San Francisco, CA',
-  'Miami, FL',
-  'Seattle, WA',
-  'Boston, MA',
-  'Portland, OR',
-  'Nashville, TN',
-  'Online',
-  'Virtual Event'
-];
 
 function DiscoverPageContent() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
@@ -259,7 +245,7 @@ function DiscoverPageContent() {
   const [selectedMedium, setSelectedMedium] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedEventLocation, setSelectedEventLocation] = useState('All');
+  const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [visibleCount, setVisibleCount] = useState(15);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -717,29 +703,39 @@ function DiscoverPageContent() {
 
           {/* Events Tab */}
           <TabsContent value="events" className="mt-6">
-            {/* Location Filter */}
+            {/* Location Search */}
             <div className="mb-6">
-              <label className="text-sm font-medium mb-2 block">Filter by Location</label>
-              <Select value={selectedEventLocation} onValueChange={setSelectedEventLocation}>
-                <SelectTrigger className="w-full sm:w-[300px]">
-                  <SelectValue placeholder="All Locations" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EVENT_LOCATIONS.map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium mb-2 block">Search Events by Location</label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Enter your city or location (e.g., New York, London, Paris)..."
+                  value={selectedEventLocation}
+                  onChange={(e) => setSelectedEventLocation(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              {selectedEventLocation && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedEventLocation('')}
+                  className="mt-2"
+                >
+                  Clear location filter
+                </Button>
+              )}
             </div>
 
             {/* Filtered Events */}
             {(() => {
               const filteredEvents = events.filter((event: any) => {
-                if (selectedEventLocation === 'All') return true;
-                const eventLocation = event.location || event.locationName || event.locationAddress || '';
-                return eventLocation.toLowerCase().includes(selectedEventLocation.toLowerCase());
+                if (!selectedEventLocation.trim()) return true;
+                const searchTerm = selectedEventLocation.toLowerCase().trim();
+                const eventLocation = (event.location || event.locationName || event.locationAddress || '').toLowerCase();
+                const eventVenue = ((event as any).venue || '').toLowerCase();
+                return eventLocation.includes(searchTerm) || eventVenue.includes(searchTerm);
               });
 
               if (filteredEvents.length === 0) {
@@ -748,13 +744,13 @@ function DiscoverPageContent() {
                     <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                     <h2 className="text-2xl font-semibold mb-2">No events found</h2>
                     <p className="text-muted-foreground mb-4">
-                      {selectedEventLocation !== 'All' 
-                        ? `No events found in ${selectedEventLocation}. Try selecting a different location.`
+                      {selectedEventLocation.trim()
+                        ? `No events found matching "${selectedEventLocation}". Try a different location or clear the filter.`
                         : 'Check back later for upcoming exhibitions, workshops, and art events.'}
                     </p>
-                    {selectedEventLocation !== 'All' && (
-                      <Button variant="outline" onClick={() => setSelectedEventLocation('All')}>
-                        Show All Events
+                    {selectedEventLocation.trim() && (
+                      <Button variant="outline" onClick={() => setSelectedEventLocation('')}>
+                        Clear Location Filter
                       </Button>
                     )}
                   </div>
