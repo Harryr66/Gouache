@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { User } from '@/lib/types';
@@ -11,6 +11,12 @@ import { UploadForm } from '@/components/upload-form';
 import { ThemeLoading } from '@/components/theme-loading';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/hooks/use-toast';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { addDoc } from 'firebase/firestore';
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
@@ -20,6 +26,17 @@ export default function UploadPage() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const previousUserRef = useRef<User | null>(null);
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    date: '',
+    time: '',
+    location: '',
+    venue: '',
+    description: '',
+    price: '',
+  });
+  const [eventImageFile, setEventImageFile] = useState<File | null>(null);
+  const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
 
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
@@ -110,6 +127,83 @@ export default function UploadPage() {
   // Check if user is a professional artist
   // At this point, isProfessional should be explicitly true or false (not undefined)
   const isProfessional = user.isProfessional === true || hasApprovedArtistRequest;
+
+  const handleEventImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEventImageFile(file);
+    }
+  };
+
+  const handleEventSubmit = async () => {
+    if (!user) return;
+    if (!eventForm.title || !eventForm.date || !eventForm.location || !eventImageFile) {
+      toast({
+        title: 'Missing required fields',
+        description: 'Title, date, location, and an image are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsSubmittingEvent(true);
+
+      // Upload image
+      const path = `events/${user.id}/${Date.now()}-${eventImageFile.name}`;
+      const storageRef = ref(storage, path);
+      await uploadBytes(storageRef, eventImageFile);
+      const imageUrl = await getDownloadURL(storageRef);
+
+      // Combine date and time (if time provided)
+      const dateTime = eventForm.time
+        ? new Date(`${eventForm.date}T${eventForm.time}`)
+        : new Date(eventForm.date);
+
+      await addDoc(collection(db, 'events'), {
+        title: eventForm.title,
+        description: eventForm.description,
+        location: eventForm.location,
+        venue: eventForm.venue,
+        date: dateTime.toISOString(),
+        price: eventForm.price,
+        type: 'Event',
+        imageUrl,
+        artistId: user.id,
+        artistName: user.displayName || user.username || 'Artist',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: 'active',
+      });
+
+      toast({
+        title: 'Event created',
+        description: 'Your event has been created and will appear in your profile and discover feed.',
+      });
+
+      // Reset form and go back
+      setEventForm({
+        title: '',
+        date: '',
+        time: '',
+        location: '',
+        venue: '',
+        description: '',
+        price: '',
+      });
+      setEventImageFile(null);
+      setSelectedType(null);
+    } catch (error) {
+      console.error('Error creating event:', error);
+      toast({
+        title: 'Event creation failed',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmittingEvent(false);
+    }
+  };
 
   if (!isProfessional) {
     return (
@@ -212,18 +306,58 @@ export default function UploadPage() {
             Create Event
           </h1>
           <p className="text-muted-foreground text-lg">
-            Event creation uses the same upload flow. Add artwork and include event details in the description.
+            Location, venue, date, time, upload image.
           </p>
         </header>
-        <Card className="p-6">
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              For now, create an event by uploading a visual and including date, venue, and details in the description. We’ll surface these in the events feed.
-            </p>
-            <Button variant="gradient" onClick={() => setSelectedType('portfolio')}>
-              Upload Event Artwork
+        <Card className="p-6 space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              placeholder="Event title"
+              value={eventForm.title}
+              onChange={(e) => setEventForm((p) => ({ ...p, title: e.target.value }))}
+            />
+            <Input
+              type="date"
+              value={eventForm.date}
+              onChange={(e) => setEventForm((p) => ({ ...p, date: e.target.value }))}
+            />
+            <Input
+              type="time"
+              value={eventForm.time}
+              onChange={(e) => setEventForm((p) => ({ ...p, time: e.target.value }))}
+            />
+            <Input
+              placeholder="Venue (optional)"
+              value={eventForm.venue}
+              onChange={(e) => setEventForm((p) => ({ ...p, venue: e.target.value }))}
+            />
+            <Input
+              placeholder="Location (city, country)"
+              value={eventForm.location}
+              onChange={(e) => setEventForm((p) => ({ ...p, location: e.target.value }))}
+              className="md:col-span-2"
+            />
+          </div>
+          <Textarea
+            placeholder="Event details (optional)"
+            value={eventForm.description}
+            onChange={(e) => setEventForm((p) => ({ ...p, description: e.target.value }))}
+            rows={3}
+          />
+          <Input
+            placeholder="Price (optional, e.g., Free or 25)"
+            value={eventForm.price}
+            onChange={(e) => setEventForm((p) => ({ ...p, price: e.target.value }))}
+          />
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Event image</p>
+            <Input type="file" accept="image/*" onChange={handleEventImageChange} />
+          </div>
+          <div className="flex justify-end">
+            <Button variant="gradient" onClick={handleEventSubmit} disabled={isSubmittingEvent}>
+              {isSubmittingEvent ? 'Creating…' : 'Create Event'}
             </Button>
-          </CardContent>
+          </div>
         </Card>
       </div>
     );

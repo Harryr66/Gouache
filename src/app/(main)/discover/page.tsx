@@ -561,16 +561,52 @@ function DiscoverPageContent() {
 
   useEffect(() => {
     if (!mounted) return;
-    // Always show placeholder events
-    const placeholderEvents = generatePlaceholderEvents(theme, 12);
-    setEvents(placeholderEvents);
+    const fetchEvents = async () => {
+      try {
+        const eventsSnapshot = await getDocs(query(collection(db, 'events'), orderBy('date', 'desc')));
+        const fetchedEvents = eventsSnapshot.docs.map((doc) => {
+          const data = doc.data() as any;
+          return {
+            id: doc.id,
+            title: data.title || 'Untitled Event',
+            description: data.description || '',
+            imageUrl: data.imageUrl,
+            imageAiHint: data.title || 'Event',
+            date: data.date,
+            type: data.type || 'Event',
+            location: data.location || data.venue || '',
+            locationName: data.venue || '',
+            locationAddress: data.location || '',
+            venue: data.venue,
+            price: data.price,
+            artist: {
+              id: data.artistId || '',
+              name: data.artistName || 'Artist',
+              handle: data.artistHandle || '',
+              avatarUrl: data.artistAvatarUrl || '',
+              followerCount: 0,
+              followingCount: 0,
+              createdAt: new Date(),
+            },
+          } as Event;
+        });
+        const placeholderEvents = generatePlaceholderEvents(theme, 12);
+        setEvents([...fetchedEvents, ...placeholderEvents]);
+      } catch (error) {
+        console.error('Failed to load events:', error);
+        const placeholderEvents = generatePlaceholderEvents(theme, 12);
+        setEvents(placeholderEvents);
+      }
+    };
+
+    fetchEvents();
   }, [theme, mounted]);
 
   if (loading) {
-    return (
+  return (
       <div className="min-h-screen flex items-center justify-center">
         <ThemeLoading text="Loading discover feed..." size="lg" />
-      </div>
+          </div>
     );
   }
 
@@ -627,7 +663,7 @@ function DiscoverPageContent() {
                   </div>
                   {isMobile ? (
                     <div className="flex gap-2">
-                      <Button
+                  <Button
                         variant="outline"
                         onClick={() => setShowFilters(!showFilters)}
                         className="flex-1"
@@ -712,7 +748,7 @@ function DiscoverPageContent() {
                       Clear Filters
                       </Button>
                   </div>
-                </Card>
+          </Card>
               )}
 
               {/* Active Filters Display */}
@@ -737,9 +773,9 @@ function DiscoverPageContent() {
                       <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedMedium('All')} />
                     </Badge>
                   )}
-                </div>
+                        </div>
               )}
-            </div>
+                      </div>
             
             {/* Artworks Grid */}
             {filteredAndSortedArtworks.length === 0 ? (
@@ -771,7 +807,7 @@ function DiscoverPageContent() {
                 ))}
               </div>
             ) : (
-              <div className="space-y-3">
+                <div className="space-y-3">
                 {visibleFilteredArtworks.map((artwork) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
@@ -1027,17 +1063,17 @@ function DiscoverPageContent() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1 relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="text"
+            <Input
+                      type="text"
                     placeholder="Search events by location (e.g., New York, London, Paris)..."
                     value={selectedEventLocation}
                     onChange={(e) => setSelectedEventLocation(e.target.value)}
                     className="pl-10"
-                  />
-                </div>
+                    />
+          </div>
                 {isMobile ? (
                   <div className="flex gap-2">
-                    <Button
+          <Button
                       variant="outline"
                       onClick={() => setShowEventFilters(!showEventFilters)}
                       className="flex-1"
@@ -1093,7 +1129,7 @@ function DiscoverPageContent() {
                       }}
                     >
                       Clear All Filters
-                    </Button>
+                      </Button>
                   )}
                   {selectedEventLocation && (
                     <Badge variant="secondary" className="gap-1">
@@ -1213,11 +1249,11 @@ function DiscoverPageContent() {
                               <p className="font-semibold text-foreground text-sm mt-auto pt-1">{event.price}</p>
                             )}
                         </div>
-                      </Card>
+                </Card>
                     </Link>
                   );
                   })}
-                </div>
+            </div>
               ) : (
                 <div className="space-y-4">
                   {filteredEvents.map((event: any) => {
@@ -1283,9 +1319,9 @@ function DiscoverPageContent() {
                                 {(event as any).venue && (
                                   <p className="text-sm text-muted-foreground">{(event as any).venue}</p>
                                 )}
-                              </div>
-                            </div>
-                          </div>
+              </div>
+      </div>
+    </div>
                         </Card>
                       </Link>
                     );
