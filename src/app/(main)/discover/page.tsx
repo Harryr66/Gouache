@@ -275,12 +275,19 @@ function DiscoverPageContent() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Force grid view on desktop
+  // Force grid view on desktop (only for artwork, market and events stay as set)
   useEffect(() => {
     if (!isMobile) {
       setArtworkView('grid');
+      // Market and Events can stay as list on desktop if user prefers, but default to grid
+      // Actually, let's keep them as grid on desktop for consistency
       setMarketView('grid');
       setEventsView('grid');
+    } else {
+      // On mobile, ensure correct defaults
+      setArtworkView('grid');
+      setMarketView('list');
+      setEventsView('list');
     }
   }, [isMobile]);
 
