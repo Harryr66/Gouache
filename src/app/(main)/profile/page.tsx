@@ -77,6 +77,11 @@ export default function ProfilePage() {
     );
   }
 
+  // If artist request is approved but flag missing, treat as professional
+  const effectiveUser = hasApprovedArtistRequest && !user.isProfessional
+    ? { ...user, isProfessional: true, isVerified: user.isVerified || true }
+    : user;
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="space-y-8">
@@ -87,16 +92,16 @@ export default function ProfilePage() {
           </div>
         )}
         <ProfileHeader
-          user={user}
+          user={effectiveUser}
           isOwnProfile={true}
           currentTab={currentTab}
         />
 
         <ProfileTabs
-          userId={user.id}
+          userId={effectiveUser.id}
           isOwnProfile={true}
-          isProfessional={user.isProfessional || hasApprovedArtistRequest || false}
-          hideShop={user.hideShop ?? false}
+          isProfessional={effectiveUser.isProfessional || hasApprovedArtistRequest || false}
+          hideShop={effectiveUser.hideShop ?? false}
           hideLearn={true}
           onTabChange={setCurrentTab}
         />
