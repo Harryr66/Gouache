@@ -251,9 +251,9 @@ function DiscoverPageContent() {
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [visibleCount, setVisibleCount] = useState(15);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const [artworkView, setArtworkView] = useState<'grid' | 'list'>('grid');
-  const [marketView, setMarketView] = useState<'grid' | 'list'>('grid');
-  const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
+  const [artworkView, setArtworkView] = useState<'grid' | 'list'>('list');
+  const [marketView, setMarketView] = useState<'grid' | 'list'>('list');
+  const [eventsView, setEventsView] = useState<'grid' | 'list'>('list');
   const [isMobile, setIsMobile] = useState(false);
   const [marketSearchQuery, setMarketSearchQuery] = useState('');
   const [selectedMarketCategory, setSelectedMarketCategory] = useState('All');
