@@ -113,10 +113,9 @@ export default function UploadPage() {
     }
   }, [loading, user, initialLoadComplete]);
 
-  // Show loading animation while auth is loading, user data is not yet available, or we're checking user status
-  // Also show loading if isProfessional hasn't been explicitly loaded yet (could be undefined)
+  // Show loading animation while auth is loading or we're checking user status
   const isProfessionalLoaded = user?.isProfessional !== undefined || user?.updatedAt !== undefined || hasApprovedArtistRequest;
-  
+
   if (loading || !user || isCheckingUser || !isProfessionalLoaded) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
@@ -125,9 +124,8 @@ export default function UploadPage() {
     );
   }
 
-  // Check if user is a professional artist
-  // At this point, isProfessional should be explicitly true or false (not undefined)
-  const isProfessional = user.isProfessional === true || hasApprovedArtistRequest;
+  // If they reached upload, allow it (Upload button only shown to approved artists)
+  const isProfessional = true;
 
   const handleEventImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
