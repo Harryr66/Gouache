@@ -286,7 +286,7 @@ export default function NewsPage() {
 
             {/* Responsive, editorial-style grid - Remaining articles */}
             {filteredArticles.length > 1 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {filteredArticles.slice(1, 8).map((article, idx) => (
                   <div
                     key={article.id}
