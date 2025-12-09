@@ -220,6 +220,7 @@ const generatePlaceholderProducts = (theme: string | undefined, count: number = 
 const CATEGORIES = ['All', 'Painting', 'Drawing', 'Digital', 'Mixed Media', 'Photography', 'Sculpture', 'Printmaking', 'Textile'];
 const MEDIUMS = ['All', 'Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Digital', 'Ink', 'Pencil', 'Pastel', 'Mixed'];
 const MARKET_CATEGORIES = ['All', 'Original Artworks', 'Limited Edition Prints', 'All Prints', 'Books'];
+const EVENT_TYPES = ['All Events', 'Exhibition', 'Gallery', 'Meet and greet', 'Pop up event'];
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
   { value: 'popular', label: 'Most Popular' },
@@ -249,6 +250,8 @@ function DiscoverPageContent() {
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
+  const [selectedEventType, setSelectedEventType] = useState('All Events');
+  const [showEventFilters, setShowEventFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [artworkView, setArtworkView] = useState<'grid' | 'list'>('list');
@@ -1062,11 +1065,34 @@ function DiscoverPageContent() {
             {/* Filtered Events */}
             {(() => {
               const filteredEvents = events.filter((event: any) => {
-                if (!selectedEventLocation.trim()) return true;
-                const searchTerm = selectedEventLocation.toLowerCase().trim();
-                const eventLocation = (event.location || event.locationName || event.locationAddress || '').toLowerCase();
-                const eventVenue = ((event as any).venue || '').toLowerCase();
-                return eventLocation.includes(searchTerm) || eventVenue.includes(searchTerm);
+                // Location filter
+                if (selectedEventLocation.trim()) {
+                  const searchTerm = selectedEventLocation.toLowerCase().trim();
+                  const eventLocation = (event.location || event.locationName || event.locationAddress || '').toLowerCase();
+                  const eventVenue = ((event as any).venue || '').toLowerCase();
+                  if (!eventLocation.includes(searchTerm) && !eventVenue.includes(searchTerm)) {
+                    return false;
+                  }
+                }
+
+                // Event type filter
+                if (selectedEventType !== 'All Events') {
+                  const eventType = (event.type || '').toLowerCase();
+                  const selectedType = selectedEventType.toLowerCase();
+                  
+                  // Map filter options to event types
+                  if (selectedType === 'exhibition') {
+                    if (!eventType.includes('exhibition')) return false;
+                  } else if (selectedType === 'gallery') {
+                    if (!eventType.includes('gallery') && !eventType.includes('opening')) return false;
+                  } else if (selectedType === 'meet and greet') {
+                    if (!eventType.includes('meet') && !eventType.includes('greet')) return false;
+                  } else if (selectedType === 'pop up event') {
+                    if (!eventType.includes('pop') && !eventType.includes('popup')) return false;
+                  }
+                }
+
+                return true;
               });
 
               if (filteredEvents.length === 0) {
@@ -1075,13 +1101,16 @@ function DiscoverPageContent() {
                     <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                     <h2 className="text-2xl font-semibold mb-2">No events found</h2>
                     <p className="text-muted-foreground mb-4">
-                      {selectedEventLocation.trim()
-                        ? `No events found matching "${selectedEventLocation}". Try a different location or clear the filter.`
+                      {(selectedEventLocation.trim() || selectedEventType !== 'All Events')
+                        ? 'No events found matching your filters. Try adjusting your filters or clear them to see all events.'
                         : 'Check back later for upcoming exhibitions, workshops, and art events.'}
                     </p>
-                    {selectedEventLocation.trim() && (
-                      <Button variant="outline" onClick={() => setSelectedEventLocation('')}>
-                        Clear Location Filter
+                    {(selectedEventLocation.trim() || selectedEventType !== 'All Events') && (
+                      <Button variant="outline" onClick={() => {
+                        setSelectedEventLocation('');
+                        setSelectedEventType('All Events');
+                      }}>
+                        Clear All Filters
                       </Button>
                     )}
                   </div>
