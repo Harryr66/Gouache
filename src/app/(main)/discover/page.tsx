@@ -219,6 +219,7 @@ const generatePlaceholderProducts = (theme: string | undefined, count: number = 
 
 const CATEGORIES = ['All', 'Painting', 'Drawing', 'Digital', 'Mixed Media', 'Photography', 'Sculpture', 'Printmaking', 'Textile'];
 const MEDIUMS = ['All', 'Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Digital', 'Ink', 'Pencil', 'Pastel', 'Mixed'];
+const MARKET_CATEGORIES = ['All', 'Original Artworks', 'Limited Edition Prints', 'All Prints', 'Books'];
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
   { value: 'popular', label: 'Most Popular' },
@@ -254,6 +255,10 @@ function DiscoverPageContent() {
   const [marketView, setMarketView] = useState<'grid' | 'list'>('grid');
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
   const [isMobile, setIsMobile] = useState(false);
+  const [marketSearchQuery, setMarketSearchQuery] = useState('');
+  const [selectedMarketCategory, setSelectedMarketCategory] = useState('All');
+  const [marketSortBy, setMarketSortBy] = useState('newest');
+  const [showMarketFilters, setShowMarketFilters] = useState(false);
 
   // Detect mobile device
   useEffect(() => {
@@ -390,6 +395,71 @@ function DiscoverPageContent() {
 
     return sorted;
   }, [artworks, searchQuery, selectedCategory, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt]);
+
+  // Filter and sort marketplace products
+  const filteredAndSortedMarketProducts = useMemo(() => {
+    let filtered = marketplaceProducts;
+
+    // Search filter
+    if (marketSearchQuery) {
+      const queryLower = marketSearchQuery.toLowerCase();
+      filtered = filtered.filter(product =>
+        product.title.toLowerCase().includes(queryLower) ||
+        product.description?.toLowerCase().includes(queryLower) ||
+        product.sellerName.toLowerCase().includes(queryLower) ||
+        product.tags.some(tag => tag.toLowerCase().includes(queryLower))
+      );
+    }
+
+    // Category filter
+    if (selectedMarketCategory !== 'All') {
+      if (selectedMarketCategory === 'Limited Edition Prints') {
+        filtered = filtered.filter(product => 
+          product.tags?.some(tag => tag.toLowerCase().includes('limited')) ||
+          product.subcategory?.toLowerCase().includes('limited') ||
+          product.title.toLowerCase().includes('limited')
+        );
+      } else if (selectedMarketCategory === 'All Prints') {
+        filtered = filtered.filter(product => 
+          product.category?.toLowerCase().includes('print') ||
+          product.subcategory?.toLowerCase().includes('print') ||
+          product.title.toLowerCase().includes('print')
+        );
+      } else if (selectedMarketCategory === 'Original Artworks') {
+        filtered = filtered.filter(product => 
+          product.category?.toLowerCase().includes('artwork') ||
+          product.category?.toLowerCase().includes('original') ||
+          (!product.category?.toLowerCase().includes('print') && !product.subcategory?.toLowerCase().includes('print'))
+        );
+      } else if (selectedMarketCategory === 'Books') {
+        filtered = filtered.filter(product => 
+          product.category?.toLowerCase().includes('book') ||
+          product.title.toLowerCase().includes('book')
+        );
+      }
+    }
+
+    // Sort
+    const sorted = [...filtered];
+    switch (marketSortBy) {
+      case 'newest':
+        sorted.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+        break;
+      case 'oldest':
+        sorted.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+        break;
+      case 'price-low':
+        sorted.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-high':
+        sorted.sort((a, b) => b.price - a.price);
+        break;
+      default:
+        break;
+    }
+
+    return sorted;
+  }, [marketplaceProducts, marketSearchQuery, selectedMarketCategory, marketSortBy]);
 
   // Infinite scroll observer for artworks
   useEffect(() => {
@@ -756,12 +826,115 @@ function DiscoverPageContent() {
 
           {/* Market Tab */}
           <TabsContent value="market" className="mt-6">
-            {isMobile && (
-              <div className="mb-6 flex justify-end">
-                <ViewSelector view={marketView} onViewChange={setMarketView} />
+            {/* Search and Filter Bar */}
+            <div className="mb-6 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search products, artist names, or tags..."
+                    value={marketSearchQuery}
+                    onChange={(e) => setMarketSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                {isMobile ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowMarketFilters(!showMarketFilters)}
+                      className="flex-1"
+                    >
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filters
+                    </Button>
+                    <ViewSelector view={marketView} onViewChange={setMarketView} className="flex-1 justify-center" />
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowMarketFilters(!showMarketFilters)}
+                      className="shrink-0"
+                    >
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filters
+                    </Button>
+                    <ViewSelector view={marketView} onViewChange={setMarketView} />
+                  </div>
+                )}
               </div>
-            )}
-            {marketplaceProducts.length === 0 ? (
+
+              {/* Filters Panel */}
+              {showMarketFilters && (
+                <Card className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Category</label>
+                      <Select value={selectedMarketCategory} onValueChange={setSelectedMarketCategory}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MARKET_CATEGORIES.map((cat) => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Sort By</label>
+                      <Select value={marketSortBy} onValueChange={setMarketSortBy}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="newest">Newest First</SelectItem>
+                          <SelectItem value="oldest">Oldest First</SelectItem>
+                          <SelectItem value="price-low">Price: Low to High</SelectItem>
+                          <SelectItem value="price-high">Price: High to Low</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {/* Active Filters */}
+              {(marketSearchQuery || selectedMarketCategory !== 'All') && (
+                <div className="flex flex-wrap gap-2 items-center">
+                  {(marketSearchQuery || selectedMarketCategory !== 'All') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setMarketSearchQuery('');
+                        setSelectedMarketCategory('All');
+                      }}
+                    >
+                      Clear All Filters
+                    </Button>
+                  )}
+                  {marketSearchQuery && (
+                    <Badge variant="secondary" className="gap-1">
+                      Search: {marketSearchQuery}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setMarketSearchQuery('')} />
+                    </Badge>
+                  )}
+                  {selectedMarketCategory !== 'All' && (
+                    <Badge variant="secondary" className="gap-1">
+                      Category: {selectedMarketCategory}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedMarketCategory('All')} />
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {filteredAndSortedMarketProducts.length === 0 ? (
               <div className="text-center py-16">
                 <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">No products available</h2>
@@ -771,7 +944,7 @@ function DiscoverPageContent() {
               </div>
             ) : (marketView === 'grid' || !isMobile) ? (
               <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                {marketplaceProducts.map((product) => {
+                {filteredAndSortedMarketProducts.map((product) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
                     : '/assets/placeholder-light.png';
@@ -804,7 +977,7 @@ function DiscoverPageContent() {
               </div>
             ) : (
               <div className="space-y-4">
-                {marketplaceProducts.map((product) => {
+                {filteredAndSortedMarketProducts.map((product) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
                     : '/assets/placeholder-light.png';
