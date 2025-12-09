@@ -189,7 +189,8 @@ export default function UploadPage() {
       // Reset form and go back
       setEventForm({
         title: '',
-        date: '',
+        startDate: '',
+        endDate: '',
         time: '',
         location: '',
         venue: '',
