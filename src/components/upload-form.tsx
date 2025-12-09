@@ -492,7 +492,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                 value={formData.dimensions.unit} 
                 onValueChange={(value) => setFormData({ 
                   ...formData, 
-                  dimensions: { ...formData.dimensions, unit: value as 'cm' | 'in' | 'px' }
+                  dimensions: { ...formData.dimensions, unit: value as 'cm' | 'in' }
                 })}
               >
                 <SelectTrigger>
