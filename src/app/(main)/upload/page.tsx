@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Image, Package, Calendar, ArrowLeft } from 'lucide-react';
 import { UploadForm } from '@/components/upload-form';
 import { ThemeLoading } from '@/components/theme-loading';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
@@ -17,6 +19,21 @@ export default function UploadPage() {
   const [isCheckingUser, setIsCheckingUser] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const previousUserRef = useRef<User | null>(null);
+  const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
+
+  // Listen for approved artist request as fallback when isProfessional flag is missing
+  useEffect(() => {
+    if (!user) return;
+    const q = query(
+      collection(db, 'artistRequests'),
+      where('userId', '==', user.id),
+      where('status', '==', 'approved')
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setHasApprovedArtistRequest(!snap.empty);
+    });
+    return () => unsub();
+  }, [user?.id]);
 
   // Wait for Firestore data to load after initial auth
   // The auth provider sets loading=false immediately but loads Firestore data asynchronously
@@ -80,7 +97,7 @@ export default function UploadPage() {
 
   // Show loading animation while auth is loading, user data is not yet available, or we're checking user status
   // Also show loading if isProfessional hasn't been explicitly loaded yet (could be undefined)
-  const isProfessionalLoaded = user?.isProfessional !== undefined || user?.updatedAt !== undefined;
+  const isProfessionalLoaded = user?.isProfessional !== undefined || user?.updatedAt !== undefined || hasApprovedArtistRequest;
   
   if (loading || !user || isCheckingUser || !isProfessionalLoaded) {
     return (
@@ -92,7 +109,7 @@ export default function UploadPage() {
 
   // Check if user is a professional artist
   // At this point, isProfessional should be explicitly true or false (not undefined)
-  const isProfessional = user.isProfessional === true;
+  const isProfessional = user.isProfessional === true || hasApprovedArtistRequest;
 
   if (!isProfessional) {
     return (
