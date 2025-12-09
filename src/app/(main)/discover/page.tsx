@@ -1014,7 +1014,7 @@ function DiscoverPageContent() {
                                 <h3 className="font-semibold text-lg mb-1">{product.title}</h3>
                                 <p className="text-sm text-muted-foreground">by {product.sellerName}</p>
                               </div>
-                              <Badge className="bg-green-600 hover:bg-green-700 text-sm px-3 py-1">
+                              <Badge className="bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1">
                                 {product.currency} ${product.price.toFixed(2)}
                               </Badge>
                             </div>
