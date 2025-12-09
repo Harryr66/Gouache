@@ -544,15 +544,28 @@ function DiscoverPageContent() {
                     className="pl-10"
                   />
                   </div>
-                  <Button
-                  variant="outline"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="shrink-0"
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
+                  {isMobile ? (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="flex-1"
+                      >
+                        <Filter className="h-4 w-4 mr-2" />
+                        Filters
                       </Button>
-                  {isMobile && <ViewSelector view={artworkView} onViewChange={setArtworkView} />}
+                      <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1 justify-center" />
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="shrink-0"
+                    >
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filters
+                    </Button>
+                  )}
               </div>
 
               {/* Filters Panel */}
@@ -675,7 +688,7 @@ function DiscoverPageContent() {
             ) : (artworkView === 'grid' || !isMobile) ? (
               <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {visibleFilteredArtworks.map((artwork) => (
-                  <ArtworkTile key={artwork.id} artwork={artwork} />
+                  <ArtworkTile key={artwork.id} artwork={artwork} hideBanner={isMobile && artworkView === 'grid'} />
                 ))}
               </div>
             ) : (

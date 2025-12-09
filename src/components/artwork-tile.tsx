@@ -42,9 +42,10 @@ interface ArtworkTileProps {
   artwork: Artwork;
   onClick?: () => void;
   className?: string;
+  hideBanner?: boolean;
 }
 
-export function ArtworkTile({ artwork, onClick, className }: ArtworkTileProps) {
+export function ArtworkTile({ artwork, onClick, className, hideBanner = false }: ArtworkTileProps) {
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
@@ -230,6 +231,7 @@ const generateArtistContent = (artist: Artist) => ({
         )}
 
           {/* Artist banner at bottom */}
+          {!hideBanner && (
           <div
             className={`absolute bottom-0 left-0 right-0 backdrop-blur-sm p-2 ${
               (resolvedTheme || theme) === 'dark' ? 'bg-gray-900/90' : 'bg-white/90'
@@ -259,6 +261,7 @@ const generateArtistContent = (artist: Artist) => ({
               </div>
             </div>
           </div>
+          )}
       </div>
     </Card>
 
