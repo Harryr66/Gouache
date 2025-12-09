@@ -270,40 +270,7 @@ export function ProfileHeader({
               </div>
             </div>
 
-            {/* Artist Location (moved from Upcoming Events) */}
-            {(user.countryOfOrigin || user.countryOfResidence) && !user.hideLocation && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                {user.countryOfOrigin && (
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-sm text-muted-foreground mb-1">Country of Origin</p>
-                      <div className="flex items-center gap-2">
-                        {!user.hideFlags && <CountryFlag country={user.countryOfOrigin} size="sm" />}
-                        <p className="text-foreground">{user.countryOfOrigin}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {user.countryOfResidence && (
-                  <div className="flex items-start gap-3">
-                    <Globe className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-sm text-muted-foreground mb-1">Currently Based In</p>
-                      <div className="flex items-center gap-2">
-                        {!user.hideFlags && <CountryFlag country={user.countryOfResidence} size="sm" />}
-                        <p className="text-foreground">
-                          {user.location && user.countryOfResidence 
-                            ? `${user.location}, ${user.countryOfResidence}`
-                            : user.countryOfResidence
-                          }
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Location block removed per request */}
           </div>
         </div>
       </Card>

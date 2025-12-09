@@ -1372,20 +1372,7 @@ export default function ArtistOnboardingPage() {
                       setPendingEvent((prev) => ({ ...prev, date: event.target.value }))
                     }
                   />
-                  <Input
-                    placeholder="City / Venue city"
-                    value={pendingEvent.city}
-                    onChange={(event) =>
-                      setPendingEvent((prev) => ({ ...prev, city: event.target.value }))
-                    }
-                  />
-                  <Input
-                    placeholder="Country"
-                    value={pendingEvent.country}
-                    onChange={(event) =>
-                      setPendingEvent((prev) => ({ ...prev, country: event.target.value }))
-                    }
-                  />
+                  {/* Location fields removed per UX request */}
                   <Textarea
                     placeholder="Event description (optional)"
                     className="sm:col-span-2"
@@ -1445,9 +1432,7 @@ export default function ArtistOnboardingPage() {
                               <p className="font-semibold text-sm text-foreground">
                                 {event.title || 'Untitled event'}
                               </p>
-                              <p className="text-xs text-muted-foreground">
-                                {[event.city, event.country].filter(Boolean).join(', ') || 'Location TBD'}
-                              </p>
+                              {/* Location removed */}
                               <p className="text-xs text-muted-foreground">
                                 {event.date || 'Date TBD'}
                               </p>
