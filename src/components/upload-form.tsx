@@ -19,26 +19,49 @@ import { storage, db } from '@/lib/firebase';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { toast } from '@/hooks/use-toast';
 
-export function UploadForm() {
+type UploadInitialForm = Partial<{
+  title: string;
+  description: string;
+  category: string;
+  medium: string;
+  dimensions: { width: string; height: string; unit: 'cm' | 'in' };
+  tags: string;
+  isForSale: boolean;
+  price: string;
+  currency: string;
+  isAI: boolean;
+  aiAssistance: 'none' | 'assisted';
+  story: string;
+  materials: string;
+  process: string;
+}>;
+
+interface UploadFormProps {
+  initialFormData?: UploadInitialForm;
+  titleText?: string;
+  descriptionText?: string;
+}
+
+export function UploadForm({ initialFormData, titleText, descriptionText }: UploadFormProps) {
   const { user, avatarUrl, refreshUser } = useAuth();
   const { addContent } = useContent();
   const router = useRouter();
   
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    medium: '',
-    dimensions: { width: '', height: '', unit: 'cm' },
-    tags: '',
-    isForSale: false,
-    price: '',
-    currency: 'USD',
-    isAI: false,
-    aiAssistance: 'none' as 'none' | 'assisted',
-    story: '',
-    materials: '',
-    process: ''
+    title: initialFormData?.title || '',
+    description: initialFormData?.description || '',
+    category: initialFormData?.category || '',
+    medium: initialFormData?.medium || '',
+    dimensions: initialFormData?.dimensions || { width: '', height: '', unit: 'cm' as const },
+    tags: initialFormData?.tags || '',
+    isForSale: initialFormData?.isForSale ?? false,
+    price: initialFormData?.price || '',
+    currency: initialFormData?.currency || 'USD',
+    isAI: initialFormData?.isAI ?? false,
+    aiAssistance: initialFormData?.aiAssistance || ('none' as 'none' | 'assisted'),
+    story: initialFormData?.story || '',
+    materials: initialFormData?.materials || '',
+    process: initialFormData?.process || ''
   });
   
   const [files, setFiles] = useState<File[]>([]);

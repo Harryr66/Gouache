@@ -273,19 +273,14 @@ export default function UploadPage() {
             List Product for Sale
           </h1>
           <p className="text-muted-foreground text-lg">
-            List a product in your shop. Use the artwork upload to add items and mark them for sale.
+            List a product in your shop. Upload the visuals and set price to sell originals or prints.
           </p>
         </header>
-        <Card className="p-6">
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              To list a product, upload it as an artwork and set price/for-sale details in the form. This keeps one consistent upload flow.
-            </p>
-            <Button variant="gradient" onClick={() => setSelectedType('portfolio')}>
-              Upload Artwork for Sale
-            </Button>
-          </CardContent>
-        </Card>
+        <UploadForm
+          initialFormData={{ isForSale: true }}
+          titleText="List Product for Sale"
+          descriptionText="Upload your product visuals and set price/for-sale details."
+        />
       </div>
     );
   }
