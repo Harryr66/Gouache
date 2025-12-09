@@ -7,7 +7,7 @@ import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin } from '
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
-import { Artwork, MarketplaceProduct } from '@/lib/types';
+import { Artwork, MarketplaceProduct, Event as EventType } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, limit, where } from 'firebase/firestore';
 import Link from 'next/link';
@@ -563,32 +563,39 @@ function DiscoverPageContent() {
     if (!mounted) return;
     const fetchEvents = async () => {
       try {
+        const placeholderImage = theme === 'dark' ? '/assets/placeholder-dark.png' : '/assets/placeholder-light.png';
         const eventsSnapshot = await getDocs(query(collection(db, 'events'), orderBy('date', 'desc')));
-        const fetchedEvents = eventsSnapshot.docs.map((doc) => {
+        const fetchedEvents: EventType[] = eventsSnapshot.docs.map((doc) => {
           const data = doc.data() as any;
+          const eventType: EventType['type'] =
+            data.type === 'Auction' || data.type === 'Workshop' || data.type === 'Exhibition'
+              ? data.type
+              : 'Exhibition';
           return {
             id: doc.id,
             title: data.title || 'Untitled Event',
             description: data.description || '',
-            imageUrl: data.imageUrl,
-            imageAiHint: data.title || 'Event',
-            date: data.date,
-            type: data.type || 'Event',
-            location: data.location || data.venue || '',
-            locationName: data.venue || '',
-            locationAddress: data.location || '',
-            venue: data.venue,
-            price: data.price,
+            imageUrl: data.imageUrl || placeholderImage,
+            imageAiHint: data.imageAiHint || data.title || 'Event',
+            date: data.date || new Date().toISOString(),
+            type: eventType,
             artist: {
               id: data.artistId || '',
               name: data.artistName || 'Artist',
               handle: data.artistHandle || '',
               avatarUrl: data.artistAvatarUrl || '',
-              followerCount: 0,
+              followerCount: data.artistFollowerCount || 0,
               followingCount: 0,
               createdAt: new Date(),
             },
-          } as Event;
+            locationType: 'In-person',
+            locationName: data.venue || data.location || '',
+            locationAddress: data.location || '',
+            discussionId: data.discussionId || `event-${doc.id}`,
+            attendees: data.attendees || [],
+            maxAttendees: data.maxAttendees,
+            price: data.price ? Number(data.price) : undefined,
+          };
         });
         const placeholderEvents = generatePlaceholderEvents(theme, 12);
         setEvents([...fetchedEvents, ...placeholderEvents]);
