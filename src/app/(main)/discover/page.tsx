@@ -677,7 +677,7 @@ function DiscoverPageContent() {
                   
                   return (
                     <Link key={product.id} href={`/marketplace/${product.id}?from=discover`}>
-                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col h-full">
                         <div className="relative aspect-square overflow-hidden">
                           <Image
                             src={productImage}
@@ -686,10 +686,10 @@ function DiscoverPageContent() {
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>
-                        <div className="p-4">
+                        <div className="p-4 flex flex-col flex-grow min-h-[100px]">
                           <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.title}</h3>
-                          <p className="text-xs text-muted-foreground mb-2">{product.sellerName}</p>
-                          <p className="text-sm font-semibold">
+                          <p className="text-xs text-muted-foreground mb-2 line-clamp-1">{product.sellerName}</p>
+                          <p className="text-sm font-semibold mt-auto">
                             {product.currency} ${product.price.toFixed(2)}
                           </p>
                         </div>
@@ -773,7 +773,7 @@ function DiscoverPageContent() {
                   
                   return (
                     <Link key={event.id} href={`/event/${event.id}`}>
-                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col h-full">
                         <div className="relative aspect-square overflow-hidden">
                           <Image
                             src={eventImage}
@@ -782,13 +782,13 @@ function DiscoverPageContent() {
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>
-                        <div className="p-4">
-                          <Badge variant="secondary" className="mb-2 text-xs">{event.type}</Badge>
+                        <div className="p-4 flex flex-col flex-grow min-h-[100px]">
+                          <Badge variant="secondary" className="mb-2 text-xs w-fit">{event.type}</Badge>
                           <h3 className="font-medium text-sm mb-1 line-clamp-2">{event.title}</h3>
-                          <div className="space-y-1 text-xs text-muted-foreground">
+                          <div className="space-y-1 text-xs text-muted-foreground flex-grow">
                             <p className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {formattedDate}
+                              <Calendar className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{formattedDate}</span>
                             </p>
                           {((event as any).location || event.locationName) && (
                             <p className="flex items-center gap-1 line-clamp-1">
@@ -799,10 +799,10 @@ function DiscoverPageContent() {
                           {(event as any).venue && (
                             <p className="text-xs text-muted-foreground line-clamp-1 truncate">{(event as any).venue}</p>
                           )}
-                            {event.price && (
-                              <p className="font-semibold text-foreground text-sm mt-1">{event.price}</p>
-                            )}
                           </div>
+                            {event.price && (
+                              <p className="font-semibold text-foreground text-sm mt-auto pt-1">{event.price}</p>
+                            )}
                         </div>
                       </Card>
                     </Link>
