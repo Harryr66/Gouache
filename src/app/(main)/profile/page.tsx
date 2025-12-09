@@ -16,6 +16,7 @@ export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
   const [currentTab, setCurrentTab] = useState('portfolio'); // Portfolio is default tab
   const [hasPendingArtistRequest, setHasPendingArtistRequest] = useState(false);
+  const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
 
   // Watch for pending artist request for this user
   useEffect(() => {
@@ -27,6 +28,20 @@ export default function ProfilePage() {
     );
     const unsub = onSnapshot(q, (snap) => {
       setHasPendingArtistRequest(!snap.empty);
+    });
+    return () => unsub();
+  }, [user?.id]);
+
+  // Check if user has an approved artist request (fallback for missing isProfessional flag)
+  useEffect(() => {
+    if (!user) return;
+    const q = query(
+      collection(db, 'artistRequests'),
+      where('userId', '==', user.id),
+      where('status', '==', 'approved')
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setHasApprovedArtistRequest(!snap.empty);
     });
     return () => unsub();
   }, [user?.id]);
@@ -80,7 +95,7 @@ export default function ProfilePage() {
         <ProfileTabs
           userId={user.id}
           isOwnProfile={true}
-          isProfessional={user.isProfessional || false}
+          isProfessional={user.isProfessional || hasApprovedArtistRequest || false}
           hideShop={user.hideShop ?? false}
           hideLearn={true}
           onTabChange={setCurrentTab}
