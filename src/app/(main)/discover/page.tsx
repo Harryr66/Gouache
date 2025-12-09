@@ -1028,37 +1028,92 @@ function DiscoverPageContent() {
 
           {/* Events Tab */}
           <TabsContent value="events" className="mt-6">
-            {/* Location Search and View Toggle */}
+            {/* Search and Filter Bar */}
             <div className="mb-6 space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">Search Events by Location</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder="Enter your city or location (e.g., New York, London, Paris)..."
-                      value={selectedEventLocation}
-                      onChange={(e) => setSelectedEventLocation(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+                <div className="flex-1 relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search events by location (e.g., New York, London, Paris)..."
+                    value={selectedEventLocation}
+                    onChange={(e) => setSelectedEventLocation(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-                {isMobile && (
-                  <div className="flex items-end">
-                    <ViewSelector view={eventsView} onViewChange={setEventsView} />
+                {isMobile ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowEventFilters(!showEventFilters)}
+                      className="flex-1"
+                    >
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                    <ViewSelector view={eventsView} onViewChange={setEventsView} className="flex-1 justify-center" />
                   </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowEventFilters(!showEventFilters)}
+                    className="shrink-0"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
-              {selectedEventLocation && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedEventLocation('')}
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Clear location filter
-                </Button>
+
+              {/* Filters Panel */}
+              {showEventFilters && (
+                <Card className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Event Type</label>
+                      <Select value={selectedEventType} onValueChange={setSelectedEventType}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EVENT_TYPES.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {/* Active Filters */}
+              {(selectedEventLocation || selectedEventType !== 'All Events') && (
+                <div className="flex flex-wrap gap-2 items-center">
+                  {(selectedEventLocation || selectedEventType !== 'All Events') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedEventLocation('');
+                        setSelectedEventType('All Events');
+                      }}
+                    >
+                      Clear All Filters
+                    </Button>
+                  )}
+                  {selectedEventLocation && (
+                    <Badge variant="secondary" className="gap-1">
+                      Location: {selectedEventLocation}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedEventLocation('')} />
+                    </Badge>
+                  )}
+                  {selectedEventType !== 'All Events' && (
+                    <Badge variant="secondary" className="gap-1">
+                      Type: {selectedEventType}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedEventType('All Events')} />
+                    </Badge>
+                  )}
+                </div>
               )}
             </div>
 
