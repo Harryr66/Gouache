@@ -1181,7 +1181,7 @@ function DiscoverPageContent() {
               }
 
               return (eventsView === 'grid' || !isMobile) ? (
-                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-3">
                   {filteredEvents.map((event: any) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
@@ -1196,8 +1196,8 @@ function DiscoverPageContent() {
                   
                   return (
                     <Link key={event.id} href={`/event/${event.id}`}>
-                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-row md:flex-col h-full">
-                        <div className="relative w-32 h-24 md:w-auto md:h-auto md:aspect-[4/3] overflow-hidden flex-shrink-0">
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-row h-full min-h-[140px]">
+                        <div className="relative w-36 sm:w-40 md:w-48 h-full aspect-[3/2] overflow-hidden flex-shrink-0">
                           <Image
                             src={eventImage}
                             alt={event.title}
@@ -1205,7 +1205,7 @@ function DiscoverPageContent() {
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>
-                        <div className="p-4 flex flex-col flex-grow min-h-[100px]">
+                        <div className="p-4 flex flex-col flex-grow">
                           <Badge variant="secondary" className="mb-2 text-xs w-fit">{event.type}</Badge>
                           <h3 className="font-medium text-sm mb-1 line-clamp-2">{event.title}</h3>
                           <div className="space-y-1 text-xs text-muted-foreground flex-grow">
