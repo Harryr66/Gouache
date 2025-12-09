@@ -771,7 +771,7 @@ function DiscoverPageContent() {
                 ))}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {visibleFilteredArtworks.map((artwork) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
@@ -783,40 +783,32 @@ function DiscoverPageContent() {
                   
                   return (
                     <Link key={artwork.id} href={`/artwork/${artwork.id}`}>
-                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
-                        <div className="flex flex-col md:flex-row gap-3 p-3">
-                          <div className="relative w-28 h-28 md:w-32 md:h-32 flex-shrink-0 rounded-lg overflow-hidden">
-                            <Image
-                              src={artworkImage}
-                              alt={artwork.imageAiHint || artwork.title}
-                              fill
-                              className="object-cover"
-                            />
+                      <Card className="group relative aspect-square overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                        <Image
+                          src={artworkImage}
+                          alt={artwork.imageAiHint || artwork.title}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-background/80 backdrop-blur-sm p-3 flex items-center gap-2">
+                          <Avatar className="h-9 w-9 flex-shrink-0">
+                            <AvatarImage src={artwork.artist.avatarUrl || avatarPlaceholder} />
+                            <AvatarFallback>{artwork.artist.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">by {artwork.artist.name}</p>
+                            {artwork.artist.location && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                                <MapPin className="h-3 w-3" />
+                                {artwork.artist.location}
+                              </p>
+                            )}
                           </div>
-                          <div className="flex-1 flex flex-col">
-                            <div className="flex items-start gap-3 mb-2">
-                              <Avatar className="h-10 w-10 flex-shrink-0">
-                                <AvatarImage src={artwork.artist.avatarUrl || avatarPlaceholder} />
-                                <AvatarFallback>{artwork.artist.name.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-muted-foreground">by {artwork.artist.name}</p>
-                                {artwork.artist.location && (
-                                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {artwork.artist.location}
-                                  </p>
-                                )}
-                              </div>
-                              {artwork.isForSale && artwork.price && (
-                                <Badge className="bg-green-600 hover:bg-green-700 text-sm px-3 py-1">
-                                  ${artwork.price.toLocaleString()}
-                                </Badge>
-                              )}
-                            </div>
-                            {/* Trim banner content to keep tiles thin on mobile */}
-                            <div className="mt-auto" />
-                          </div>
+                          {artwork.isForSale && artwork.price && (
+                            <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 flex-shrink-0">
+                              ${artwork.price.toLocaleString()}
+                            </Badge>
+                          )}
                         </div>
                       </Card>
                     </Link>
