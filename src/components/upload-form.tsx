@@ -34,6 +34,8 @@ type UploadInitialForm = Partial<{
   story: string;
   materials: string;
   process: string;
+  deliveryScope: 'worldwide' | 'specific';
+  deliveryCountries: string;
 }>;
 
 interface UploadFormProps {
@@ -61,7 +63,9 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
     aiAssistance: initialFormData?.aiAssistance || ('none' as 'none' | 'assisted'),
     story: initialFormData?.story || '',
     materials: initialFormData?.materials || '',
-    process: initialFormData?.process || ''
+    process: initialFormData?.process || '',
+    deliveryScope: initialFormData?.deliveryScope || 'worldwide',
+    deliveryCountries: initialFormData?.deliveryCountries || ''
   });
   
   const [files, setFiles] = useState<File[]>([]);
@@ -171,6 +175,8 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         price: formData.isForSale ? parseFloat(formData.price) : undefined,
         currency: formData.currency,
         isForSale: formData.isForSale,
+        deliveryScope: formData.isForSale ? formData.deliveryScope : undefined,
+        deliveryCountries: formData.isForSale ? formData.deliveryCountries : undefined,
         category: formData.category,
         medium: formData.medium,
         dimensions: {
@@ -226,6 +232,8 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
           : '',
         year: '', // UploadForm doesn't have year field
         tags: newArtwork.tags,
+        deliveryScope: newArtwork.deliveryScope,
+        deliveryCountries: newArtwork.deliveryCountries,
         createdAt: new Date()
       };
 
@@ -557,32 +565,60 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             </div>
 
             {formData.isForSale && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0.00"
-                  />
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Currency</Label>
+                    <Select 
+                      value={formData.currency} 
+                      onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="GBP">GBP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select 
-                    value={formData.currency} 
-                    onValueChange={(value) => setFormData({ ...formData, currency: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Available for delivery</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Button
+                      type="button"
+                      variant={formData.deliveryScope === 'worldwide' ? 'gradient' : 'outline'}
+                      onClick={() => setFormData({ ...formData, deliveryScope: 'worldwide', deliveryCountries: '' })}
+                    >
+                      Worldwide
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.deliveryScope === 'specific' ? 'gradient' : 'outline'}
+                      onClick={() => setFormData({ ...formData, deliveryScope: 'specific' })}
+                    >
+                      Specific countries
+                    </Button>
+                  </div>
+                  {formData.deliveryScope === 'specific' && (
+                    <Input
+                      placeholder="List countries (comma-separated)"
+                      value={formData.deliveryCountries}
+                      onChange={(e) => setFormData({ ...formData, deliveryCountries: e.target.value })}
+                    />
+                  )}
                 </div>
               </div>
             )}
