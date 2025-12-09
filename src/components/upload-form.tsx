@@ -275,21 +275,6 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* AI Artwork Disclaimer */}
-        <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 mt-0.5">
-              <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-500" />
-            </div>
-            <div className="flex-1 space-y-2">
-              <h3 className="font-semibold text-orange-600 dark:text-orange-500">AI-Generated Artwork Policy</h3>
-              <p className="text-sm text-foreground">
-                Gouache and our community are dedicated to supporting artist creations which are non-AI generated. We utilize a peer-to-peer report system whereby Gouache community members can and will report suspected AI-generated content. If artists cannot present proof of original creation, they may be <strong>permanently banned</strong> from the platform, sometimes without appeal.
-              </p>
-            </div>
-          </div>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* File Upload */}
           <div className="space-y-2">
