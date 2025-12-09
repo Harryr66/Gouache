@@ -465,7 +465,7 @@ function DiscoverPageContent() {
         // Always add placeholder products to simulate marketplace
         const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 50);
         setMarketplaceProducts([...fetchedProducts, ...placeholderProducts]);
-      } catch (error) {
+    } catch (error) {
         console.error('Error fetching marketplace products:', error);
         // Even on error, show placeholder products
         const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 50);
@@ -757,7 +757,7 @@ function DiscoverPageContent() {
           </p>
               </div>
             ) : (marketView === 'grid' || !isMobile) ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3">
                 {marketplaceProducts.map((product) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
@@ -910,7 +910,7 @@ function DiscoverPageContent() {
               }
 
               return (eventsView === 'grid' || !isMobile) ? (
-                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3">
                   {filteredEvents.map((event: any) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
