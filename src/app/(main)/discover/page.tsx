@@ -507,13 +507,13 @@ function DiscoverPageContent() {
               <Palette className="h-4 w-4" />
               Artwork
             </TabsTrigger>
-            <TabsTrigger value="events" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Events
-            </TabsTrigger>
             <TabsTrigger value="market" className="flex items-center gap-2">
               <ShoppingBag className="h-4 w-4" />
               Market
+            </TabsTrigger>
+            <TabsTrigger value="events" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Events
             </TabsTrigger>
           </TabsList>
 
@@ -669,6 +669,52 @@ function DiscoverPageContent() {
             <div ref={loadMoreRef} className="h-10" />
           </TabsContent>
 
+          {/* Market Tab */}
+          <TabsContent value="market" className="mt-6">
+            {marketplaceProducts.length === 0 ? (
+              <div className="text-center py-16">
+                <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">No products available</h2>
+          <p className="text-muted-foreground">
+                  Check back later for marketplace products.
+          </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {marketplaceProducts.map((product) => {
+                  const placeholderImage = theme === 'dark' 
+                    ? '/assets/placeholder-dark.png' 
+                    : '/assets/placeholder-light.png';
+                  const productImage = product.images && product.images.length > 0 
+                    ? product.images[0] 
+                    : placeholderImage;
+                  
+                  return (
+                    <Link key={product.id} href={`/marketplace/${product.id}?from=discover`}>
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                        <div className="relative aspect-square overflow-hidden">
+                          <Image
+                            src={productImage}
+                            alt={product.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.title}</h3>
+                          <p className="text-xs text-muted-foreground mb-2">{product.sellerName}</p>
+                          <p className="text-lg font-semibold">
+                            {product.currency} ${product.price.toFixed(2)}
+                          </p>
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
           {/* Events Tab */}
           <TabsContent value="events" className="mt-6">
             {/* Location Filter */}
@@ -772,52 +818,6 @@ function DiscoverPageContent() {
                 </div>
               );
             })()}
-          </TabsContent>
-
-          {/* Market Tab */}
-          <TabsContent value="market" className="mt-6">
-            {marketplaceProducts.length === 0 ? (
-              <div className="text-center py-16">
-                <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h2 className="text-2xl font-semibold mb-2">No products available</h2>
-          <p className="text-muted-foreground">
-                  Check back later for marketplace products.
-          </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {marketplaceProducts.map((product) => {
-                  const placeholderImage = theme === 'dark' 
-                    ? '/assets/placeholder-dark.png' 
-                    : '/assets/placeholder-light.png';
-                  const productImage = product.images && product.images.length > 0 
-                    ? product.images[0] 
-                    : placeholderImage;
-                  
-                  return (
-                    <Link key={product.id} href={`/marketplace/${product.id}?from=discover`}>
-                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
-                        <div className="relative aspect-square overflow-hidden">
-                          <Image
-                            src={productImage}
-                            alt={product.title}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.title}</h3>
-                          <p className="text-xs text-muted-foreground mb-2">{product.sellerName}</p>
-                          <p className="text-lg font-semibold">
-                            {product.currency} ${product.price.toFixed(2)}
-                          </p>
-                        </div>
-                      </Card>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
           </TabsContent>
         </Tabs>
       </div>
