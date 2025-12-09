@@ -785,7 +785,7 @@ function DiscoverPageContent() {
                     <Link key={artwork.id} href={`/artwork/${artwork.id}`}>
                       <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
                         <div className="flex flex-col md:flex-row gap-3 p-3">
-                          <div className="relative w-full md:w-48 h-40 md:h-40 flex-shrink-0 rounded-lg overflow-hidden">
+                          <div className="relative w-28 h-28 md:w-32 md:h-32 flex-shrink-0 rounded-lg overflow-hidden">
                             <Image
                               src={artworkImage}
                               alt={artwork.imageAiHint || artwork.title}
@@ -800,7 +800,6 @@ function DiscoverPageContent() {
                                 <AvatarFallback>{artwork.artist.name.charAt(0)}</AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-lg mb-1">{artwork.title}</h3>
                                 <p className="text-sm text-muted-foreground">by {artwork.artist.name}</p>
                                 {artwork.artist.location && (
                                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
