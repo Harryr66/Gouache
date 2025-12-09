@@ -254,7 +254,8 @@ function DiscoverPageContent() {
   const [showEventFilters, setShowEventFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const [artworkView, setArtworkView] = useState<'grid' | 'list'>('list');
+  // Default views: Artwork grid, Market & Events list (single tile) on mobile
+  const [artworkView, setArtworkView] = useState<'grid' | 'list'>('grid');
   const [marketView, setMarketView] = useState<'grid' | 'list'>('list');
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('list');
   const [isMobile, setIsMobile] = useState(false);
