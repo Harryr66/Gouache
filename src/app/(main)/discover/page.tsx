@@ -852,17 +852,14 @@ function DiscoverPageContent() {
                     <ViewSelector view={marketView} onViewChange={setMarketView} className="flex-1 justify-center" />
                   </div>
                 ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowMarketFilters(!showMarketFilters)}
-                      className="shrink-0"
-                    >
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filters
-                    </Button>
-                    <ViewSelector view={marketView} onViewChange={setMarketView} />
-                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowMarketFilters(!showMarketFilters)}
+                    className="shrink-0"
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filters
+                  </Button>
                 )}
               </div>
 
