@@ -124,8 +124,8 @@ export default function AdvertisePage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4">
-            <Megaphone className="h-12 w-12 text-primary mr-4" />
+          <div className="flex flex-col md:flex-row items-center justify-center mb-4 gap-4 md:gap-0">
+            <Megaphone className="h-12 w-12 text-primary md:mr-4" />
             <h1 className="text-4xl font-bold text-foreground">Advertise with Gouache</h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
