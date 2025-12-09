@@ -621,8 +621,7 @@ function DiscoverPageContent() {
                         onClick={() => setShowFilters(!showFilters)}
                         className="flex-1"
                       >
-                        <Filter className="h-4 w-4 mr-2" />
-                        Filters
+                        <Filter className="h-4 w-4" />
                       </Button>
                       <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1 justify-center" />
                     </div>
@@ -632,8 +631,7 @@ function DiscoverPageContent() {
                       onClick={() => setShowFilters(!showFilters)}
                       className="shrink-0"
                     >
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filters
+                      <Filter className="h-4 w-4" />
                     </Button>
                   )}
               </div>
@@ -846,8 +844,7 @@ function DiscoverPageContent() {
                       onClick={() => setShowMarketFilters(!showMarketFilters)}
                       className="flex-1"
                     >
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filters
+                      <Filter className="h-4 w-4" />
                     </Button>
                     <ViewSelector view={marketView} onViewChange={setMarketView} className="flex-1 justify-center" />
                   </div>
@@ -857,8 +854,7 @@ function DiscoverPageContent() {
                     onClick={() => setShowMarketFilters(!showMarketFilters)}
                     className="shrink-0"
                   >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filters
+                    <Filter className="h-4 w-4" />
                   </Button>
                 )}
               </div>
