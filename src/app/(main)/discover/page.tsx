@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin } from 'lucide-react';
+import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
 import { Artwork, MarketplaceProduct } from '@/lib/types';
@@ -20,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -248,6 +250,9 @@ function DiscoverPageContent() {
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [visibleCount, setVisibleCount] = useState(15);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [artworkView, setArtworkView] = useState<'grid' | 'list'>('grid');
+  const [marketView, setMarketView] = useState<'grid' | 'list'>('grid');
+  const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     const fetchArtworks = async () => {
@@ -526,6 +531,7 @@ function DiscoverPageContent() {
                   <Filter className="h-4 w-4 mr-2" />
                   Filters
                       </Button>
+                  <ViewSelector view={artworkView} onViewChange={setArtworkView} />
               </div>
 
               {/* Filters Panel */}
@@ -645,11 +651,70 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : (
+            ) : artworkView === 'grid' ? (
               <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {visibleFilteredArtworks.map((artwork) => (
                   <ArtworkTile key={artwork.id} artwork={artwork} />
                 ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {visibleFilteredArtworks.map((artwork) => {
+                  const placeholderImage = theme === 'dark' 
+                    ? '/assets/placeholder-dark.png' 
+                    : '/assets/placeholder-light.png';
+                  const artworkImage = artwork.imageUrl || placeholderImage;
+                  const avatarPlaceholder = theme === 'dark'
+                    ? '/assets/placeholder-dark.png'
+                    : '/assets/placeholder-light.png';
+                  
+                  return (
+                    <Link key={artwork.id} href={`/artwork/${artwork.id}`}>
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                        <div className="flex flex-col md:flex-row gap-4 p-4">
+                          <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
+                            <Image
+                              src={artworkImage}
+                              alt={artwork.imageAiHint || artwork.title}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 flex flex-col">
+                            <div className="flex items-start gap-3 mb-3">
+                              <Avatar className="h-10 w-10 flex-shrink-0">
+                                <AvatarImage src={artwork.artist.avatarUrl || avatarPlaceholder} />
+                                <AvatarFallback>{artwork.artist.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-lg mb-1">{artwork.title}</h3>
+                                <p className="text-sm text-muted-foreground">by {artwork.artist.name}</p>
+                                {artwork.artist.location && (
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {artwork.artist.location}
+                                  </p>
+                                )}
+                              </div>
+                              {artwork.isForSale && artwork.price && (
+                                <Badge className="bg-green-600 hover:bg-green-700 text-sm px-3 py-1">
+                                  ${artwork.price.toLocaleString()}
+                                </Badge>
+                              )}
+                            </div>
+                            {artwork.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{artwork.description}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-auto">
+                              <Badge variant="outline" className="text-xs">{artwork.category}</Badge>
+                              <Badge variant="secondary" className="text-xs">{artwork.medium}</Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                })}
               </div>
             )}
             <div ref={loadMoreRef} className="h-10" />
@@ -657,6 +722,9 @@ function DiscoverPageContent() {
 
           {/* Market Tab */}
           <TabsContent value="market" className="mt-6">
+            <div className="mb-6 flex justify-end">
+              <ViewSelector view={marketView} onViewChange={setMarketView} />
+            </div>
             {marketplaceProducts.length === 0 ? (
               <div className="text-center py-16">
                 <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -665,7 +733,7 @@ function DiscoverPageContent() {
                   Check back later for marketplace products.
           </p>
               </div>
-            ) : (
+            ) : marketView === 'grid' ? (
               <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {marketplaceProducts.map((product) => {
                   const placeholderImage = theme === 'dark' 
@@ -698,31 +766,90 @@ function DiscoverPageContent() {
                   );
                 })}
               </div>
+            ) : (
+              <div className="space-y-4">
+                {marketplaceProducts.map((product) => {
+                  const placeholderImage = theme === 'dark' 
+                    ? '/assets/placeholder-dark.png' 
+                    : '/assets/placeholder-light.png';
+                  const productImage = product.images && product.images.length > 0 
+                    ? product.images[0] 
+                    : placeholderImage;
+                  const avatarPlaceholder = theme === 'dark'
+                    ? '/assets/placeholder-dark.png'
+                    : '/assets/placeholder-light.png';
+                  
+                  return (
+                    <Link key={product.id} href={`/marketplace/${product.id}?from=discover`}>
+                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                        <div className="flex flex-col md:flex-row gap-4 p-4">
+                          <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
+                            <Image
+                              src={productImage}
+                              alt={product.title}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 flex flex-col">
+                            <div className="flex items-start gap-3 mb-3">
+                              <Avatar className="h-10 w-10 flex-shrink-0">
+                                <AvatarImage src={avatarPlaceholder} />
+                                <AvatarFallback>{product.sellerName.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-lg mb-1">{product.title}</h3>
+                                <p className="text-sm text-muted-foreground">by {product.sellerName}</p>
+                              </div>
+                              <Badge className="bg-green-600 hover:bg-green-700 text-sm px-3 py-1">
+                                {product.currency} ${product.price.toFixed(2)}
+                              </Badge>
+                            </div>
+                            {product.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{product.description}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-auto">
+                              <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
             )}
           </TabsContent>
 
           {/* Events Tab */}
           <TabsContent value="events" className="mt-6">
-            {/* Location Search */}
-            <div className="mb-6">
-              <label className="text-sm font-medium mb-2 block">Search Events by Location</label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Enter your city or location (e.g., New York, London, Paris)..."
-                  value={selectedEventLocation}
-                  onChange={(e) => setSelectedEventLocation(e.target.value)}
-                  className="pl-10"
-                />
+            {/* Location Search and View Toggle */}
+            <div className="mb-6 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">Search Events by Location</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Enter your city or location (e.g., New York, London, Paris)..."
+                      value={selectedEventLocation}
+                      onChange={(e) => setSelectedEventLocation(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-end">
+                  <ViewSelector view={eventsView} onViewChange={setEventsView} />
+                </div>
               </div>
               {selectedEventLocation && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSelectedEventLocation('')}
-                  className="mt-2"
                 >
+                  <X className="h-3 w-3 mr-1" />
                   Clear location filter
                 </Button>
               )}
@@ -757,7 +884,7 @@ function DiscoverPageContent() {
                 );
               }
 
-              return (
+              return eventsView === 'grid' ? (
                 <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                   {filteredEvents.map((event: any) => {
                   const placeholderImage = theme === 'dark' 
@@ -807,6 +934,79 @@ function DiscoverPageContent() {
                       </Card>
                     </Link>
                   );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredEvents.map((event: any) => {
+                    const placeholderImage = theme === 'dark' 
+                      ? '/assets/placeholder-dark.png' 
+                      : '/assets/placeholder-light.png';
+                    const eventImage = event.imageUrl || placeholderImage;
+                    const eventDate = new Date(event.date);
+                    const formattedDate = eventDate.toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    });
+                    const avatarPlaceholder = theme === 'dark'
+                      ? '/assets/placeholder-dark.png'
+                      : '/assets/placeholder-light.png';
+                    
+                    return (
+                      <Link key={event.id} href={`/event/${event.id}`}>
+                        <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                          <div className="flex flex-col md:flex-row gap-4 p-4">
+                            <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
+                              <Image
+                                src={eventImage}
+                                alt={event.title}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 flex flex-col">
+                              <div className="flex items-start gap-3 mb-3">
+                                <Avatar className="h-10 w-10 flex-shrink-0">
+                                  <AvatarImage src={event.artist?.avatarUrl || avatarPlaceholder} />
+                                  <AvatarFallback>{event.artist?.name?.charAt(0) || 'E'}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge variant="secondary" className="text-xs">{event.type}</Badge>
+                                  </div>
+                                  <h3 className="font-semibold text-lg mb-1">{event.title}</h3>
+                                  <p className="text-sm text-muted-foreground">by {event.artist?.name || 'Event Organizer'}</p>
+                                </div>
+                                {event.price && (
+                                  <Badge className="bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1">
+                                    {event.price}
+                                  </Badge>
+                                )}
+                              </div>
+                              {event.description && (
+                                <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{event.description}</p>
+                              )}
+                              <div className="space-y-1 text-sm text-muted-foreground mt-auto">
+                                <p className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  {formattedDate}
+                                </p>
+                                {((event as any).location || event.locationName) && (
+                                  <p className="flex items-center gap-1">
+                                    <MapPin className="h-4 w-4" />
+                                    {(event as any).location || event.locationName}
+                                  </p>
+                                )}
+                                {(event as any).venue && (
+                                  <p className="text-sm text-muted-foreground">{(event as any).venue}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </Link>
+                    );
                   })}
                 </div>
               );
