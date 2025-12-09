@@ -223,15 +223,19 @@ const SORT_OPTIONS = [
   { value: 'likes', label: 'Most Liked' },
   { value: 'recent', label: 'Recently Updated' }
 ];
-const EVENT_COUNTRIES = [
+const EVENT_LOCATIONS = [
   'All',
-  'United States',
-  'United Kingdom',
-  'France',
-  'Germany',
-  'Japan',
-  'Australia',
-  'Canada'
+  'New York, NY',
+  'Los Angeles, CA',
+  'Chicago, IL',
+  'San Francisco, CA',
+  'Miami, FL',
+  'Seattle, WA',
+  'Boston, MA',
+  'Portland, OR',
+  'Nashville, TN',
+  'Online',
+  'Virtual Event'
 ];
 
 function DiscoverPageContent() {
@@ -255,7 +259,7 @@ function DiscoverPageContent() {
   const [selectedMedium, setSelectedMedium] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedEventCountry, setSelectedEventCountry] = useState('All');
+  const [selectedEventLocation, setSelectedEventLocation] = useState('All');
   const [visibleCount, setVisibleCount] = useState(15);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -399,7 +403,7 @@ function DiscoverPageContent() {
 
   useEffect(() => {
     setVisibleCount(15);
-  }, [searchQuery, selectedCategory, selectedMedium, sortBy]);
+  }, [searchQuery, selectedCategory, selectedMedium, sortBy, selectedEventLocation]);
 
   useEffect(() => {
     const fetchMarketplaceProducts = async () => {
@@ -667,17 +671,53 @@ function DiscoverPageContent() {
 
           {/* Events Tab */}
           <TabsContent value="events" className="mt-6">
-            {events.length === 0 ? (
-              <div className="text-center py-16">
-                <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h2 className="text-2xl font-semibold mb-2">No events available</h2>
-                <p className="text-muted-foreground">
-                  Check back later for upcoming exhibitions, workshops, and art events.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {events.map((event) => {
+            {/* Location Filter */}
+            <div className="mb-6">
+              <label className="text-sm font-medium mb-2 block">Filter by Location</label>
+              <Select value={selectedEventLocation} onValueChange={setSelectedEventLocation}>
+                <SelectTrigger className="w-full sm:w-[300px]">
+                  <SelectValue placeholder="All Locations" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EVENT_LOCATIONS.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtered Events */}
+            {(() => {
+              const filteredEvents = events.filter((event: any) => {
+                if (selectedEventLocation === 'All') return true;
+                const eventLocation = event.location || event.locationName || event.locationAddress || '';
+                return eventLocation.toLowerCase().includes(selectedEventLocation.toLowerCase());
+              });
+
+              if (filteredEvents.length === 0) {
+                return (
+                  <div className="text-center py-16">
+                    <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h2 className="text-2xl font-semibold mb-2">No events found</h2>
+                    <p className="text-muted-foreground mb-4">
+                      {selectedEventLocation !== 'All' 
+                        ? `No events found in ${selectedEventLocation}. Try selecting a different location.`
+                        : 'Check back later for upcoming exhibitions, workshops, and art events.'}
+                    </p>
+                    {selectedEventLocation !== 'All' && (
+                      <Button variant="outline" onClick={() => setSelectedEventLocation('All')}>
+                        Show All Events
+                      </Button>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {filteredEvents.map((event: any) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
                     : '/assets/placeholder-light.png';
@@ -708,14 +748,17 @@ function DiscoverPageContent() {
                               <Calendar className="h-3 w-3" />
                               {formattedDate}
                             </p>
-                          {event.locationName && (
+                          {((event as any).location || event.locationName) && (
                             <p className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
-                              {event.locationName}
+                              {(event as any).location || event.locationName}
                             </p>
                           )}
                           {event.locationAddress && (
                             <p className="text-xs">{event.locationAddress}</p>
+                          )}
+                          {(event as any).venue && (
+                            <p className="text-xs text-muted-foreground">{(event as any).venue}</p>
                           )}
                             {event.price && (
                               <p className="font-medium text-foreground">{event.price}</p>
@@ -725,9 +768,10 @@ function DiscoverPageContent() {
                       </Card>
                     </Link>
                   );
-                })}
-              </div>
-            )}
+                  })}
+                </div>
+              );
+            })()}
           </TabsContent>
 
           {/* Market Tab */}
