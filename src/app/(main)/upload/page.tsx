@@ -15,7 +15,7 @@ import { db } from '@/lib/firebase';
 export default function UploadPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [selectedType, setSelectedType] = useState<'portfolio' | 'product' | 'event' | null>('portfolio');
+  const [selectedType, setSelectedType] = useState<'portfolio' | 'product' | 'event' | null>(null);
   const [isCheckingUser, setIsCheckingUser] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const previousUserRef = useRef<User | null>(null);
@@ -139,18 +139,172 @@ export default function UploadPage() {
   }
 
   // If a type is selected, show the appropriate form
-  // Default to portfolio upload (fully functional)
+  if (selectedType === 'portfolio') {
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <Button
+          variant="ghost"
+          onClick={() => setSelectedType(null)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Upload Options
+        </Button>
+        <header className="mb-8">
+          <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
+            Upload Artwork
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Add a new piece to your portfolio to showcase your work.
+          </p>
+        </header>
+        <UploadForm />
+      </div>
+    );
+  }
+
+  if (selectedType === 'product') {
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <Button
+          variant="ghost"
+          onClick={() => setSelectedType(null)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Upload Options
+        </Button>
+        <header className="mb-8">
+          <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
+            List Product for Sale
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            List a product in your shop. Use the artwork upload to add items and mark them for sale.
+          </p>
+        </header>
+        <Card className="p-6">
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              To list a product, upload it as an artwork and set price/for-sale details in the form. This keeps one consistent upload flow.
+            </p>
+            <Button variant="gradient" onClick={() => setSelectedType('portfolio')}>
+              Upload Artwork for Sale
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (selectedType === 'event') {
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <Button
+          variant="ghost"
+          onClick={() => setSelectedType(null)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Upload Options
+        </Button>
+        <header className="mb-8">
+          <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
+            Create Event
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Event creation uses the same upload flow. Add artwork and include event details in the description.
+          </p>
+        </header>
+        <Card className="p-6">
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              For now, create an event by uploading a visual and including date, venue, and details in the description. We’ll surface these in the events feed.
+            </p>
+            <Button variant="gradient" onClick={() => setSelectedType('portfolio')}>
+              Upload Event Artwork
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show upload type selection
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
-      <header className="mb-8">
+    <div className="container mx-auto max-w-6xl px-4 py-8">
+      <header className="mb-8 text-center">
         <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
-          Upload Artwork
+          What would you like to upload?
         </h1>
         <p className="text-muted-foreground text-lg">
-          Add a new piece to your portfolio to showcase your work.
+          Choose the type of content you want to share with the Gouache community.
         </p>
       </header>
-      <UploadForm />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {/* Portfolio Image */}
+        <Card 
+          className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
+          onClick={() => setSelectedType('portfolio')}
+        >
+          <CardHeader>
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+              <Image className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Portfolio Piece</CardTitle>
+            <CardDescription>
+              Upload artwork to showcase in your portfolio. Perfect for displaying your best work and attracting collectors.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              Upload Artwork
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Product */}
+        <Card 
+          className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
+          onClick={() => setSelectedType('product')}
+        >
+          <CardHeader>
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+              <Package className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Product for Sale</CardTitle>
+            <CardDescription>
+              List a product in your shop. Use the upload flow and set price to sell originals or prints.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              List Product
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Event */}
+        <Card 
+          className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
+          onClick={() => setSelectedType('event')}
+        >
+          <CardHeader>
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+              <Calendar className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Event</CardTitle>
+            <CardDescription>
+              Organize a workshop, exhibition, or community event. Add visuals and event details to share with your audience.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              Create Event
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
