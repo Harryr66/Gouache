@@ -578,6 +578,7 @@ function DiscoverPageContent() {
             imageUrl: data.imageUrl || placeholderImage,
             imageAiHint: data.imageAiHint || data.title || 'Event',
             date: data.date || new Date().toISOString(),
+            endDate: data.endDate || undefined,
             type: eventType,
             artist: {
               id: data.artistId || '',

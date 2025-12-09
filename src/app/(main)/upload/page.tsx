@@ -28,7 +28,8 @@ export default function UploadPage() {
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
   const [eventForm, setEventForm] = useState({
     title: '',
-    date: '',
+    startDate: '',
+    endDate: '',
     time: '',
     location: '',
     venue: '',
@@ -137,10 +138,10 @@ export default function UploadPage() {
 
   const handleEventSubmit = async () => {
     if (!user) return;
-    if (!eventForm.title || !eventForm.date || !eventForm.location || !eventImageFile) {
+    if (!eventForm.title || !eventForm.startDate || !eventForm.location || !eventImageFile) {
       toast({
         title: 'Missing required fields',
-        description: 'Title, date, location, and an image are required.',
+        description: 'Title, start date, location, and an image are required.',
         variant: 'destructive',
       });
       return;
@@ -156,16 +157,20 @@ export default function UploadPage() {
       const imageUrl = await getDownloadURL(storageRef);
 
       // Combine date and time (if time provided)
-      const dateTime = eventForm.time
-        ? new Date(`${eventForm.date}T${eventForm.time}`)
-        : new Date(eventForm.date);
+      const startDateTime = eventForm.time
+        ? new Date(`${eventForm.startDate}T${eventForm.time}`)
+        : new Date(eventForm.startDate);
+      const endDateTime = eventForm.endDate
+        ? new Date(`${eventForm.endDate}T${eventForm.time || '00:00'}`)
+        : undefined;
 
       await addDoc(collection(db, 'events'), {
         title: eventForm.title,
         description: eventForm.description,
         location: eventForm.location,
         venue: eventForm.venue,
-        date: dateTime.toISOString(),
+        date: startDateTime.toISOString(),
+        endDate: endDateTime?.toISOString(),
         price: eventForm.price,
         type: 'Event',
         imageUrl,
@@ -313,8 +318,13 @@ export default function UploadPage() {
             />
             <Input
               type="date"
-              value={eventForm.date}
-              onChange={(e) => setEventForm((p) => ({ ...p, date: e.target.value }))}
+              value={eventForm.startDate}
+              onChange={(e) => setEventForm((p) => ({ ...p, startDate: e.target.value }))}
+            />
+            <Input
+              type="date"
+              value={eventForm.endDate}
+              onChange={(e) => setEventForm((p) => ({ ...p, endDate: e.target.value }))}
             />
             <Input
               type="time"
