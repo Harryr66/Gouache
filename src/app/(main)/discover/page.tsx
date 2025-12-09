@@ -689,7 +689,7 @@ function DiscoverPageContent() {
                         <div className="p-4">
                           <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.title}</h3>
                           <p className="text-xs text-muted-foreground mb-2">{product.sellerName}</p>
-                          <p className="text-lg font-semibold">
+                          <p className="text-sm font-semibold">
                             {product.currency} ${product.price.toFixed(2)}
                           </p>
                         </div>
@@ -758,7 +758,7 @@ function DiscoverPageContent() {
               }
 
               return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                   {filteredEvents.map((event: any) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
@@ -774,7 +774,7 @@ function DiscoverPageContent() {
                   return (
                     <Link key={event.id} href={`/event/${event.id}`}>
                       <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
-                        <div className="relative aspect-video overflow-hidden">
+                        <div className="relative aspect-square overflow-hidden">
                           <Image
                             src={eventImage}
                             alt={event.title}
@@ -783,27 +783,24 @@ function DiscoverPageContent() {
                           />
                         </div>
                         <div className="p-4">
-                          <Badge variant="secondary" className="mb-2">{event.type}</Badge>
-                          <h3 className="font-semibold text-lg mb-2 line-clamp-2">{event.title}</h3>
-                          <div className="space-y-1 text-sm text-muted-foreground">
+                          <Badge variant="secondary" className="mb-2 text-xs">{event.type}</Badge>
+                          <h3 className="font-medium text-sm mb-1 line-clamp-2">{event.title}</h3>
+                          <div className="space-y-1 text-xs text-muted-foreground">
                             <p className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {formattedDate}
                             </p>
                           {((event as any).location || event.locationName) && (
-                            <p className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {(event as any).location || event.locationName}
+                            <p className="flex items-center gap-1 line-clamp-1">
+                              <MapPin className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{(event as any).location || event.locationName}</span>
                             </p>
                           )}
-                          {event.locationAddress && (
-                            <p className="text-xs">{event.locationAddress}</p>
-                          )}
                           {(event as any).venue && (
-                            <p className="text-xs text-muted-foreground">{(event as any).venue}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1 truncate">{(event as any).venue}</p>
                           )}
                             {event.price && (
-                              <p className="font-medium text-foreground">{event.price}</p>
+                              <p className="font-semibold text-foreground text-sm mt-1">{event.price}</p>
                             )}
                           </div>
                         </div>
