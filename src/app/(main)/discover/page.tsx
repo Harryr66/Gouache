@@ -784,8 +784,8 @@ function DiscoverPageContent() {
                   return (
                     <Link key={artwork.id} href={`/artwork/${artwork.id}`}>
                       <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
-                        <div className="flex flex-col md:flex-row gap-4 p-4">
-                          <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
+                        <div className="flex flex-col md:flex-row gap-3 p-3">
+                          <div className="relative w-full md:w-48 h-40 md:h-40 flex-shrink-0 rounded-lg overflow-hidden">
                             <Image
                               src={artworkImage}
                               alt={artwork.imageAiHint || artwork.title}
@@ -794,7 +794,7 @@ function DiscoverPageContent() {
                             />
                           </div>
                           <div className="flex-1 flex flex-col">
-                            <div className="flex items-start gap-3 mb-3">
+                            <div className="flex items-start gap-3 mb-2">
                               <Avatar className="h-10 w-10 flex-shrink-0">
                                 <AvatarImage src={artwork.artist.avatarUrl || avatarPlaceholder} />
                                 <AvatarFallback>{artwork.artist.name.charAt(0)}</AvatarFallback>
@@ -815,13 +815,8 @@ function DiscoverPageContent() {
                                 </Badge>
                               )}
                             </div>
-                            {artwork.description && (
-                              <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{artwork.description}</p>
-                            )}
-                            <div className="flex items-center gap-2 mt-auto">
-                              <Badge variant="outline" className="text-xs">{artwork.category}</Badge>
-                              <Badge variant="secondary" className="text-xs">{artwork.medium}</Badge>
-                            </div>
+                            {/* Trim banner content to keep tiles thin on mobile */}
+                            <div className="mt-auto" />
                           </div>
                         </div>
                       </Card>
