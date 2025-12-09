@@ -1181,7 +1181,7 @@ function DiscoverPageContent() {
               }
 
               return (eventsView === 'grid' || !isMobile) ? (
-                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-3">
+                <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
                   {filteredEvents.map((event: any) => {
                   const placeholderImage = theme === 'dark' 
                     ? '/assets/placeholder-dark.png' 
@@ -1196,8 +1196,8 @@ function DiscoverPageContent() {
                   
                   return (
                     <Link key={event.id} href={`/event/${event.id}`}>
-                      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-row h-full min-h-[140px]">
-                        <div className="relative w-36 sm:w-40 md:w-48 h-full aspect-[3/2] overflow-hidden flex-shrink-0">
+                      <Card className={`group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full ${isMobile ? 'flex flex-row min-h-[140px]' : 'flex flex-col'}`}>
+                        <div className={`${isMobile ? 'relative w-36 sm:w-40 h-full aspect-[3/2] flex-shrink-0' : 'relative aspect-[4/3]'} overflow-hidden`}>
                           <Image
                             src={eventImage}
                             alt={event.title}
