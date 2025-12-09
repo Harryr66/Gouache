@@ -597,7 +597,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
               className="mt-1"
             />
             <label htmlFor="agreeToTerms" className="text-sm leading-relaxed cursor-pointer">
-              I confirm that this artwork is <strong>not AI-generated</strong> and is my original creative work. I understand that if I cannot present proof of original creation when reported, I may be <strong>permanently banned</strong> from the platform, sometimes without appeal.
+              I confirm that this artwork is not AI-generated and is my own original creative work. I understand that Gouache reserves the right to request proof of original creation and I risk suspension from the platform if I am unable to provide evidence to demonstrate this.
             </label>
           </div>
 
