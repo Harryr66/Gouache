@@ -317,16 +317,22 @@ export default function UploadPage() {
               value={eventForm.title}
               onChange={(e) => setEventForm((p) => ({ ...p, title: e.target.value }))}
             />
-            <Input
-              type="date"
-              value={eventForm.startDate}
-              onChange={(e) => setEventForm((p) => ({ ...p, startDate: e.target.value }))}
-            />
-            <Input
-              type="date"
-              value={eventForm.endDate}
-              onChange={(e) => setEventForm((p) => ({ ...p, endDate: e.target.value }))}
-            />
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-foreground">Start date (from)</label>
+              <Input
+                type="date"
+                value={eventForm.startDate}
+                onChange={(e) => setEventForm((p) => ({ ...p, startDate: e.target.value }))}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-foreground">End date (to)</label>
+              <Input
+                type="date"
+                value={eventForm.endDate}
+                onChange={(e) => setEventForm((p) => ({ ...p, endDate: e.target.value }))}
+              />
+            </div>
             <Input
               type="time"
               value={eventForm.time}
