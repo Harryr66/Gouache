@@ -253,6 +253,27 @@ function DiscoverPageContent() {
   const [artworkView, setArtworkView] = useState<'grid' | 'list'>('grid');
   const [marketView, setMarketView] = useState<'grid' | 'list'>('grid');
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Force grid view on desktop
+  useEffect(() => {
+    if (!isMobile) {
+      setArtworkView('grid');
+      setMarketView('grid');
+      setEventsView('grid');
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     const fetchArtworks = async () => {
@@ -531,7 +552,7 @@ function DiscoverPageContent() {
                   <Filter className="h-4 w-4 mr-2" />
                   Filters
                       </Button>
-                  <ViewSelector view={artworkView} onViewChange={setArtworkView} />
+                  {isMobile && <ViewSelector view={artworkView} onViewChange={setArtworkView} />}
               </div>
 
               {/* Filters Panel */}
@@ -651,7 +672,7 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : artworkView === 'grid' ? (
+            ) : (artworkView === 'grid' || !isMobile) ? (
               <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {visibleFilteredArtworks.map((artwork) => (
                   <ArtworkTile key={artwork.id} artwork={artwork} />
@@ -722,9 +743,11 @@ function DiscoverPageContent() {
 
           {/* Market Tab */}
           <TabsContent value="market" className="mt-6">
-            <div className="mb-6 flex justify-end">
-              <ViewSelector view={marketView} onViewChange={setMarketView} />
-            </div>
+            {isMobile && (
+              <div className="mb-6 flex justify-end">
+                <ViewSelector view={marketView} onViewChange={setMarketView} />
+              </div>
+            )}
             {marketplaceProducts.length === 0 ? (
               <div className="text-center py-16">
                 <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -733,7 +756,7 @@ function DiscoverPageContent() {
                   Check back later for marketplace products.
           </p>
               </div>
-            ) : marketView === 'grid' ? (
+            ) : (marketView === 'grid' || !isMobile) ? (
               <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {marketplaceProducts.map((product) => {
                   const placeholderImage = theme === 'dark' 
@@ -839,9 +862,11 @@ function DiscoverPageContent() {
                     />
                   </div>
                 </div>
-                <div className="flex items-end">
-                  <ViewSelector view={eventsView} onViewChange={setEventsView} />
-                </div>
+                {isMobile && (
+                  <div className="flex items-end">
+                    <ViewSelector view={eventsView} onViewChange={setEventsView} />
+                  </div>
+                )}
               </div>
               {selectedEventLocation && (
                 <Button
@@ -884,7 +909,7 @@ function DiscoverPageContent() {
                 );
               }
 
-              return eventsView === 'grid' ? (
+              return (eventsView === 'grid' || !isMobile) ? (
                 <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                   {filteredEvents.map((event: any) => {
                   const placeholderImage = theme === 'dark' 
