@@ -128,17 +128,17 @@ export default function ArtworkThreadPage() {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Artwork Image - Full Screen View */}
-          <div className="space-y-4">
-            <div className="relative w-full min-h-[600px] lg:min-h-[800px] rounded-lg overflow-hidden bg-muted">
-              <Image
-                src={artwork.imageUrl}
-                alt={artwork.imageAiHint}
-                fill
-                className="object-contain"
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-              />
+            {/* Artwork Image - Full Screen View */}
+            <div className="space-y-4">
+              <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-muted">
+                <Image
+                  src={artwork.imageUrl}
+                  alt={artwork.imageAiHint}
+                  fill
+                  className="object-contain"
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
               
               {/* Price badge */}
               {artwork.isForSale && artwork.price && (
