@@ -244,17 +244,16 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       });
       console.log('✅ UploadForm: Added to user portfolio');
 
-      // Refresh user data to sync with Firestore
+      // Refresh user data to sync with Firestore then go to portfolio tab
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for Firestore to process
+        await new Promise(resolve => setTimeout(resolve, 800)); // brief wait for Firestore write
         await refreshUser();
         console.log('✅ UploadForm: User data refreshed, portfolio synced');
       } catch (refreshError) {
         console.error('⚠️ UploadForm: Error refreshing user data:', refreshError);
-        // Don't fail the upload if refresh fails
       }
 
-      router.push('/profile');
+      router.push('/profile?tab=portfolio');
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
     } finally {
