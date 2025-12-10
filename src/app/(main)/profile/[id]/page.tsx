@@ -52,11 +52,13 @@ export default function ArtistProfilePage() {
             createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
           }));
           
+          const isProfessionalFlag = data.isProfessional || (portfolio.length > 0);
+
           // Map Firestore data to ProfileHeader expected format
           const profileData = {
             id: userDoc.id,
             displayName: data.name || data.displayName || 'User',
-            isVerified: data.isVerified !== false && data.isProfessional === true, // All approved professional artists are verified
+            isVerified: data.isVerified !== false && isProfessionalFlag === true, // All approved professional artists are verified
             username: data.handle || data.username || `user_${userDoc.id}`,
             avatarUrl: data.avatarUrl || undefined,
             bannerImageUrl: data.bannerImageUrl || undefined,
@@ -66,7 +68,7 @@ export default function ArtistProfilePage() {
             countryOfResidence: data.countryOfResidence || '',
             followerCount: data.followerCount || 0,
             followingCount: data.followingCount || 0,
-            isProfessional: data.isProfessional || false,
+            isProfessional: isProfessionalFlag,
             profileRingColor: data.profileRingColor || undefined,
             tipJarEnabled: data.tipJarEnabled || false,
             suggestionsEnabled: data.suggestionsEnabled || false,
