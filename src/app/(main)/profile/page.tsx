@@ -11,10 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { Loader2, MapPin, Calendar as CalendarIcon, Pin, PinOff, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
+import { Loader2, MapPin, Calendar as CalendarIcon, Pin, PinOff, Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProfilePage() {
