@@ -6,11 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Share2, ArrowLeft, Calendar, MapPin, Users, Clock, Bookmark, Flag } from 'lucide-react';
+import { Heart, Share2, ArrowLeft, Calendar, MapPin, Users, Clock, Bookmark, Flag, Ticket } from 'lucide-react';
 import { Event } from '@/lib/types';
 import Image from 'next/image';
 import { AboutTheArtist } from '@/components/about-the-artist';
 import { usePlaceholder } from '@/hooks/use-placeholder';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -24,35 +26,45 @@ export default function EventDetailPage() {
   const [isAttending, setIsAttending] = useState(false);
 
   useEffect(() => {
-    // For now, we'll use placeholder data
-    // In production, fetch from Firestore
     const fetchEvent = async () => {
       try {
         setLoading(true);
-        // TODO: Fetch event from Firestore
-        // For now, create a placeholder event
-        const placeholderEvent: Event = {
-          id: eventId,
-          artist: {
-            id: 'placeholder-artist',
-            name: 'Placeholder Artist',
-            handle: 'placeholder',
-            avatarUrl: generateAvatarPlaceholderUrl(150, 150),
-            followerCount: 0,
-            followingCount: 0,
-            createdAt: new Date()
-          },
-          title: 'Placeholder Event',
-          description: 'This is a placeholder event description.',
-          imageUrl: generatePlaceholderUrl(800, 600),
-          imageAiHint: 'Event placeholder',
-          date: new Date().toISOString(),
-          type: 'Exhibition',
-          locationType: 'In-person',
-          locationName: 'Gallery',
-          discussionId: `discussion-${eventId}`
-        };
-        setEvent(placeholderEvent);
+        const docRef = doc(db, 'events', eventId);
+        const snapshot = await getDoc(docRef);
+
+        if (snapshot.exists()) {
+          const data = snapshot.data() as any;
+          const fallbackImage = generatePlaceholderUrl(800, 600);
+          const eventData: Event = {
+            id: snapshot.id,
+            artist: {
+              id: data.artistId || '',
+              name: data.artistName || 'Artist',
+              handle: data.artistHandle || '',
+              avatarUrl: data.artistAvatarUrl || generateAvatarPlaceholderUrl(150, 150),
+              followerCount: data.artistFollowerCount || 0,
+              followingCount: 0,
+              createdAt: new Date()
+            },
+            title: data.title || 'Untitled Event',
+            description: data.description || '',
+            imageUrl: data.imageUrl || fallbackImage,
+            imageAiHint: data.imageAiHint || data.title || 'Event',
+            date: data.date || new Date().toISOString(),
+            endDate: data.endDate || undefined,
+            type: data.type || 'Exhibition',
+            locationType: 'In-person',
+            locationName: data.venue || data.location || '',
+            locationAddress: data.location || '',
+            discussionId: data.discussionId || `event-${snapshot.id}`,
+            attendees: data.attendees || [],
+            maxAttendees: data.maxAttendees,
+            price: data.price ?? undefined,
+          };
+          setEvent(eventData);
+        } else {
+          setEvent(null);
+        }
       } catch (error) {
         console.error('Error fetching event:', error);
         setEvent(null);
@@ -101,6 +113,9 @@ export default function EventDetailPage() {
     day: 'numeric',
     year: 'numeric'
   });
+  const priceLabel = event.price === undefined || event.price === null || `${event.price}`.trim?.() === ''
+    ? null
+    : (typeof event.price === 'number' ? `$${event.price}` : `${event.price}`);
 
   const handleBookmark = () => setIsBookmarked(!isBookmarked);
   const handleAttend = () => setIsAttending(!isAttending);
@@ -198,6 +213,12 @@ export default function EventDetailPage() {
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">{event.type}</span>
                     </div>
+                    {priceLabel && (
+                      <div className="flex items-center space-x-2">
+                        <Ticket className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-semibold">{priceLabel}</span>
+                      </div>
+                    )}
                     {event.locationName && (
                       <div className="flex items-center space-x-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -229,12 +250,12 @@ export default function EventDetailPage() {
                   )}
 
                   {/* Price */}
-                  {event.price && (
+                  {priceLabel && (
                     <div className="p-4 bg-muted rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Price</p>
-                          <p className="text-2xl font-bold">${event.price.toLocaleString()}</p>
+                          <p className="text-2xl font-bold">{priceLabel}</p>
                         </div>
                         <Button>Get Tickets</Button>
                       </div>

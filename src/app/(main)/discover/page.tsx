@@ -595,7 +595,7 @@ function DiscoverPageContent() {
             discussionId: data.discussionId || `event-${doc.id}`,
             attendees: data.attendees || [],
             maxAttendees: data.maxAttendees,
-            price: data.price ? Number(data.price) : undefined,
+            price: data.price ?? undefined,
           };
         });
         const placeholderEvents = generatePlaceholderEvents(theme, 12);
@@ -1224,6 +1224,10 @@ function DiscoverPageContent() {
                     year: 'numeric'
                   });
                   
+                  const priceLabel = event.price === undefined || event.price === null || `${event.price}`.trim() === ''
+                    ? null
+                    : (typeof event.price === 'number' ? `$${event.price}` : `${event.price}`);
+
                   return (
                     <Link key={event.id} href={`/event/${event.id}`}>
                       <Card className={`group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full ${isMobile ? 'flex flex-row min-h-[140px]' : 'flex flex-col'}`}>
@@ -1253,9 +1257,9 @@ function DiscoverPageContent() {
                             <p className="text-xs text-muted-foreground line-clamp-1 truncate">{(event as any).venue}</p>
                           )}
                           </div>
-                            {event.price && (
-                              <p className="font-semibold text-foreground text-sm mt-auto pt-1">{event.price}</p>
-                            )}
+                          {priceLabel && (
+                            <p className="font-semibold text-foreground text-sm mt-auto pt-1">{priceLabel}</p>
+                          )}
                         </div>
                 </Card>
                     </Link>
@@ -1279,6 +1283,10 @@ function DiscoverPageContent() {
                       ? '/assets/placeholder-dark.png'
                       : '/assets/placeholder-light.png';
                     
+                    const priceLabel = event.price === undefined || event.price === null || `${event.price}`.trim() === ''
+                      ? null
+                      : (typeof event.price === 'number' ? `$${event.price}` : `${event.price}`);
+
                     return (
                       <Link key={event.id} href={`/event/${event.id}`}>
                         <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
@@ -1304,9 +1312,9 @@ function DiscoverPageContent() {
                                   <h3 className="font-semibold text-lg mb-1">{event.title}</h3>
                                   <p className="text-sm text-muted-foreground">by {event.artist?.name || 'Event Organizer'}</p>
                                 </div>
-                                {event.price && (
+                                {priceLabel && (
                                   <Badge className="bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1">
-                                    {event.price}
+                                    {priceLabel}
                                   </Badge>
                                 )}
                               </div>
