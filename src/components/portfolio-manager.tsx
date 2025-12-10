@@ -99,7 +99,7 @@ export function PortfolioManager() {
 
           console.log('📋 PortfolioManager: Loaded portfolio from Firestore', {
             count: mappedItems.length,
-            items: mappedItems.map(i => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
+            items: mappedItems.map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
           });
 
           setPortfolioItems(mappedItems);
