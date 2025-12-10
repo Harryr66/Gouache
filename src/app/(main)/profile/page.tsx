@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [showEvents, setShowEvents] = useState(true);
 
   // Watch for pending artist request for this user
   useEffect(() => {
@@ -172,12 +173,21 @@ export default function ProfilePage() {
         ) : (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Events</CardTitle>
-              <Badge variant="secondary">{events.length}</Badge>
+              <div className="flex items-center gap-3">
+                <CardTitle>Upcoming Events</CardTitle>
+                <Badge variant="secondary">{events.length}</Badge>
+              </div>
+              {isOwnProfile && (
+                <Button variant="outline" size="sm" onClick={() => setShowEvents((v) => !v)}>
+                  {showEvents ? 'Hide' : 'Show'}
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
-              {events.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No events yet.</p>
+              {!showEvents ? (
+                <p className="text-sm text-muted-foreground">Events section hidden.</p>
+              ) : events.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No Upcoming Events</p>
               ) : (
                 <div className="flex gap-4 overflow-x-auto pb-2">
                   {events.map((event) => (
