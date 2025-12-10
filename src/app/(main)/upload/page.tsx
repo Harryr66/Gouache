@@ -314,6 +314,7 @@ export default function UploadPage() {
               placeholder="Event title"
               value={eventForm.title}
               onChange={(e) => setEventForm((p) => ({ ...p, title: e.target.value }))}
+              className="md:col-span-2"
             />
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-foreground">Start date (from)</label>
@@ -333,6 +334,7 @@ export default function UploadPage() {
             </div>
             <Input
               type="time"
+              placeholder="Time (optional)"
               value={eventForm.time}
               onChange={(e) => setEventForm((p) => ({ ...p, time: e.target.value }))}
             />
