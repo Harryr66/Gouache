@@ -123,16 +123,8 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       return;
     }
 
-    // Validate minimum 2 tags
+    // Parse tags (optional)
     const tags = formData.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-    if (tags.length < 2) {
-      toast({
-        title: "Tags Required",
-        description: "Please add at least 2 tags to your artwork.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     setLoading(true);
     try {
@@ -253,9 +245,20 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         console.error('⚠️ UploadForm: Error refreshing user data:', refreshError);
       }
 
+      toast({
+        title: "Upload complete",
+        description: "Your artwork was uploaded and added to your portfolio.",
+        variant: "default",
+      });
+
       router.push('/profile?tab=portfolio');
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
+      toast({
+        title: "Upload failed",
+        description: "We couldn't save your artwork. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
