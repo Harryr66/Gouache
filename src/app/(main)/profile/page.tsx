@@ -13,6 +13,12 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Loader2, MapPin, Calendar as CalendarIcon, Pin, PinOff, Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -157,15 +163,6 @@ export default function ProfilePage() {
           currentTab={currentTab}
         />
 
-        <ProfileTabs
-          userId={effectiveUser.id}
-          isOwnProfile={true}
-          isProfessional={effectiveUser.isProfessional || hasApprovedArtistRequest || false}
-          hideShop={effectiveUser.hideShop ?? false}
-          hideLearn={true}
-          onTabChange={setCurrentTab}
-        />
-
         {/* Events Carousel */}
         {eventsLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -231,24 +228,34 @@ export default function ProfilePage() {
                           <div className="text-xs font-medium">
                             {event.price ? event.price : 'Free'}
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handlePinEvent(event.id, !event.pinned)}
-                              title={event.pinned ? 'Unpin' : 'Pin'}
-                            >
-                              {event.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              onClick={() => handleDeleteEvent(event.id)}
-                              title="Delete event"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          {isOwnProfile && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="icon">
+                                  ⋯
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handlePinEvent(event.id, !event.pinned)}>
+                                  {event.pinned ? (
+                                    <>
+                                      <PinOff className="h-4 w-4 mr-2" /> Unpin
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Pin className="h-4 w-4 mr-2" /> Pin
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => handleDeleteEvent(event.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -258,6 +265,15 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         )}
+
+        <ProfileTabs
+          userId={effectiveUser.id}
+          isOwnProfile={true}
+          isProfessional={effectiveUser.isProfessional || hasApprovedArtistRequest || false}
+          hideShop={effectiveUser.hideShop ?? false}
+          hideLearn={true}
+          onTabChange={setCurrentTab}
+        />
       </div>
     </div>
   );
