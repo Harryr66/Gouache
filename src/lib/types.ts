@@ -527,6 +527,7 @@ export interface Event {
   imageUrl: string;
   imageAiHint: string;
   date: string;
+  endDate?: string;
   type: 'Auction' | 'Exhibition' | 'Workshop';
   artist: Artist;
   locationType: 'Online' | 'In-person';
@@ -536,8 +537,9 @@ export interface Event {
   discussionId: string;
   attendees?: string[];
   maxAttendees?: number;
-  price?: number;
+  price?: number | string;
   currency?: string;
+  bookingUrl?: string;
 }
 
 export interface ShowcaseLocation {
