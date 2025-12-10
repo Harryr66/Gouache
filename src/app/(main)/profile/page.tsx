@@ -259,7 +259,7 @@ export default function ProfilePage() {
                                   )}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
+                                  className="text-red-400 hover:text-red-500 focus:text-red-500"
                                   onClick={() => handleDeleteEvent(event.id)}
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" /> Delete
