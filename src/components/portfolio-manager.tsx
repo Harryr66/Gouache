@@ -95,7 +95,7 @@ export function PortfolioManager() {
             };
           }).filter((item: PortfolioItem) => item.imageUrl);
 
-          mappedItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+          mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
 
           console.log('📋 PortfolioManager: Loaded portfolio from Firestore', {
             count: mappedItems.length
