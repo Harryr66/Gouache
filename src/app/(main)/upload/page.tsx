@@ -35,6 +35,7 @@ export default function UploadPage() {
     venue: '',
     description: '',
     price: '',
+    bookingUrl: '',
   });
   const [eventImageFile, setEventImageFile] = useState<File | null>(null);
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
@@ -170,6 +171,7 @@ export default function UploadPage() {
         date: startDateTime.toISOString(),
         endDate: endDateTime?.toISOString(),
         price: eventForm.price,
+        bookingUrl: eventForm.bookingUrl,
         type: 'Event',
         imageUrl,
         artistId: user.id,
@@ -360,6 +362,11 @@ export default function UploadPage() {
             placeholder="Price (optional, e.g., Free or 25)"
             value={eventForm.price}
             onChange={(e) => setEventForm((p) => ({ ...p, price: e.target.value }))}
+          />
+          <Input
+            placeholder="Booking link (optional)"
+            value={eventForm.bookingUrl}
+            onChange={(e) => setEventForm((p) => ({ ...p, bookingUrl: e.target.value }))}
           />
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">Event image</p>
