@@ -24,7 +24,25 @@ export default function ArtistProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const userDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        let profileDocRef = doc(db, 'userProfiles', artistId);
+        let userDoc = await getDoc(profileDocRef);
+
+        // If no doc by id, try lookup by handle/username
+        if (!userDoc.exists()) {
+          const { getDocs, collection, query, where, limit } = await import('firebase/firestore');
+          const q = query(
+            collection(db, 'userProfiles'),
+            where('handle', '==', artistId),
+            limit(1)
+          );
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const docMatch = snap.docs[0];
+            profileDocRef = doc(db, 'userProfiles', docMatch.id);
+            userDoc = await getDoc(profileDocRef);
+          }
+        }
+
         if (userDoc.exists()) {
           const data = userDoc.data();
           
@@ -133,7 +151,7 @@ export default function ArtistProfilePage() {
         />
 
         <ProfileTabs
-          userId={artistId}
+          userId={profileUser.id}
           isOwnProfile={isOwnProfile}
           isProfessional={profileUser.isProfessional || false}
           hideShop={profileUser.hideShop || false}
