@@ -196,6 +196,7 @@ export default function UploadPage() {
         venue: '',
         description: '',
         price: '',
+        bookingUrl: '',
       });
       setEventImageFile(null);
       setSelectedType(null);
