@@ -194,9 +194,9 @@ export default function ProfilePage() {
                   {events.map((event) => (
                     <div
                       key={event.id}
-                      className="min-w-[280px] max-w-[320px] border rounded-lg overflow-hidden shadow-sm bg-card"
+                      className="min-w-[360px] max-w-[400px] border rounded-lg overflow-hidden shadow-sm bg-card"
                     >
-                      <div className="relative h-40 w-full bg-muted">
+                      <div className="relative h-32 w-full bg-muted">
                         {event.imageUrl ? (
                           <Image
                             src={event.imageUrl}
@@ -210,13 +210,13 @@ export default function ProfilePage() {
                           </div>
                         )}
                       </div>
-                      <div className="p-3 space-y-2">
+                      <div className="p-2.5 space-y-1.5">
                         <div className="flex items-center gap-2">
-                          <Badge variant="secondary">{event.type || 'Event'}</Badge>
-                          {event.pinned && <Badge variant="outline">Pinned</Badge>}
+                          <Badge variant="secondary" className="text-xs">{event.type || 'Event'}</Badge>
+                          {event.pinned && <Badge variant="outline" className="text-xs">Pinned</Badge>}
                         </div>
-                        <div className="space-y-1">
-                          <p className="font-semibold line-clamp-1">{event.title || 'Untitled event'}</p>
+                        <div className="space-y-0.5">
+                          <p className="font-semibold text-sm line-clamp-1">{event.title || 'Untitled event'}</p>
                           {event.date && (
                             <p className="text-xs text-muted-foreground flex items-center gap-1">
                               <CalendarIcon className="h-3 w-3" />
@@ -232,10 +232,10 @@ export default function ProfilePage() {
                             </p>
                           )}
                         </div>
-                        {event.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">{event.description}</p>
-                        )}
-                        <div className="flex items-center justify-between pt-2">
+                          {event.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">{event.description}</p>
+                          )}
+                        <div className="flex items-center justify-between pt-1">
                           <div className="text-xs font-medium">
                             {event.price ? event.price : 'Free'}
                           </div>

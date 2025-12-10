@@ -83,8 +83,8 @@ export function PortfolioManager() {
             }
 
             return {
-              id: item.id || `portfolio-${item.imageUrl}`,
-              imageUrl: item.imageUrl || '',
+              id: item.id || `portfolio-${item.imageUrl || Date.now()}`,
+              imageUrl: item.imageUrl || item.supportingImages?.[0] || '',
               title: item.title || 'Untitled Artwork',
               description: item.description || '',
               medium: item.medium || '',
@@ -93,12 +93,13 @@ export function PortfolioManager() {
               tags: Array.isArray(item.tags) ? item.tags : [],
               createdAt
             };
-          }).filter((item: PortfolioItem) => item.imageUrl);
+          }).filter((item: PortfolioItem) => item.imageUrl || item.title); // Show items with image OR title
 
           mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
 
           console.log('📋 PortfolioManager: Loaded portfolio from Firestore', {
-            count: mappedItems.length
+            count: mappedItems.length,
+            items: mappedItems.map(i => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
           });
 
           setPortfolioItems(mappedItems);
@@ -654,11 +655,13 @@ export function PortfolioManager() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {portfolioItems.map((item) => (
+          {portfolioItems.map((item) => {
+            const imageUrl = item.imageUrl || '/assets/placeholder-light.png';
+            return (
             <Card key={item.id} className="overflow-hidden group">
               <div className="relative">
                 <img
-                  src={item.imageUrl}
+                  src={imageUrl}
                   alt={item.title}
                   className="w-full h-64 object-cover"
                 />
@@ -706,7 +709,8 @@ export function PortfolioManager() {
                 )}
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 

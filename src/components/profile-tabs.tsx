@@ -150,10 +150,15 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
             const data = userDoc.data();
             const portfolioItems = (data.portfolio || []).map((item: any) => ({
               ...item,
+              imageUrl: item.imageUrl || item.supportingImages?.[0] || '',
               createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
-            })).filter((item: any) => item.imageUrl); // Only show items with images
+            })).filter((item: any) => item.imageUrl || item.title); // Show items with image OR title
             setPortfolio(portfolioItems);
-            console.log('📋 Portfolio loaded for user:', userId, portfolioItems.length, 'items');
+            console.log('📋 Portfolio loaded for user:', userId, portfolioItems.length, 'items', {
+              totalInFirestore: (data.portfolio || []).length,
+              withImages: portfolioItems.length,
+              items: portfolioItems.map((i: any) => ({ id: i.id, title: i.title, imageUrl: i.imageUrl ? 'has image' : 'no image' }))
+            });
           }
         } catch (error) {
           console.error('Error fetching portfolio:', error);
@@ -191,11 +196,13 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {portfolio.map((item) => (
-          <Card key={item.id || `portfolio-${item.imageUrl}`} className="group hover:shadow-lg transition-shadow overflow-hidden">
+        {portfolio.map((item) => {
+          const imageUrl = item.imageUrl || item.supportingImages?.[0] || '/assets/placeholder-light.png';
+          return (
+          <Card key={item.id || `portfolio-${item.imageUrl || Date.now()}`} className="group hover:shadow-lg transition-shadow overflow-hidden">
             <div className="relative aspect-square">
               <Image
-                src={item.imageUrl}
+                src={imageUrl}
                 alt={item.title || 'Artwork'}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -208,7 +215,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
               )}
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
     );
   }
