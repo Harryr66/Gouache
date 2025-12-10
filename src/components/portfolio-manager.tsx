@@ -41,9 +41,10 @@ export function PortfolioManager() {
       hasUser: !!user,
       userId: user?.id,
       portfolioCount: portfolioItems.length,
-      isUploading
+      isUploading,
+      portfolioItems: portfolioItems.map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
     });
-  }, [showAddForm, user, portfolioItems.length, isUploading]);
+  }, [showAddForm, user, portfolioItems, isUploading]);
   
   // Log when form becomes visible
   useEffect(() => {
@@ -98,9 +99,22 @@ export function PortfolioManager() {
           mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
 
           console.log('📋 PortfolioManager: Loaded portfolio from Firestore', {
-            count: mappedItems.length,
-            items: mappedItems.map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
+            userId: user.id,
+            rawPortfolioCount: (data.portfolio || []).length,
+            mappedCount: mappedItems.length,
+            items: mappedItems.map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl, imageUrl: i.imageUrl?.substring(0, 50) + '...' }))
           });
+
+          if (mappedItems.length === 0 && (data.portfolio || []).length > 0) {
+            console.error('⚠️ PortfolioManager: Items filtered out!', {
+              rawItems: (data.portfolio || []).map((item: any) => ({
+                id: item.id,
+                title: item.title,
+                imageUrl: item.imageUrl,
+                supportingImages: item.supportingImages
+              }))
+            });
+          }
 
           setPortfolioItems(mappedItems);
         } else {
@@ -654,64 +668,74 @@ export function PortfolioManager() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {portfolioItems.map((item) => {
-            const imageUrl = item.imageUrl || '/assets/placeholder-light.png';
-            return (
-            <Card key={item.id} className="overflow-hidden group">
-              <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt={item.title}
-                  className="w-full h-64 object-cover"
-                />
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setEditingItem(item)}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDeleteItem(item)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+        <>
+          <div className="mb-4 text-sm text-muted-foreground">
+            Showing {portfolioItems.length} artwork{portfolioItems.length !== 1 ? 's' : ''}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {portfolioItems.map((item) => {
+              const imageUrl = item.imageUrl || '/assets/placeholder-light.png';
+              console.log('🎨 Rendering portfolio item:', { id: item.id, title: item.title, imageUrl: imageUrl.substring(0, 50) });
+              return (
+              <Card key={item.id} className="overflow-hidden group">
+                <div className="relative">
+                  <img
+                    src={imageUrl}
+                    alt={item.title}
+                    className="w-full h-64 object-cover"
+                    onError={(e) => {
+                      console.error('❌ Image load error for item:', item.id, item.title);
+                      (e.target as HTMLImageElement).src = '/assets/placeholder-light.png';
+                    }}
+                  />
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setEditingItem(item)}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDeleteItem(item)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <CardContent className="p-4">
-                <h3 className="font-semibold mb-1">{item.title}</h3>
-                {item.medium && (
-                  <p className="text-sm text-muted-foreground mb-2">{item.medium}</p>
-                )}
-                {item.dimensions && (
-                  <p className="text-sm text-muted-foreground mb-2">{item.dimensions}</p>
-                )}
-                {item.year && (
-                  <p className="text-sm text-muted-foreground mb-2">{item.year}</p>
-                )}
-                {item.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
-                )}
-                {item.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {item.tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            );
-          })}
-        </div>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-1">{item.title}</h3>
+                  {item.medium && (
+                    <p className="text-sm text-muted-foreground mb-2">{item.medium}</p>
+                  )}
+                  {item.dimensions && (
+                    <p className="text-sm text-muted-foreground mb-2">{item.dimensions}</p>
+                  )}
+                  {item.year && (
+                    <p className="text-sm text-muted-foreground mb-2">{item.year}</p>
+                  )}
+                  {item.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                  )}
+                  {item.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {item.tags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* Edit Item Modal */}

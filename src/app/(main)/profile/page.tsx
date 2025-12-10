@@ -194,9 +194,9 @@ export default function ProfilePage() {
                   {events.map((event) => (
                     <div
                       key={event.id}
-                      className="min-w-[360px] max-w-[400px] border rounded-lg overflow-hidden shadow-sm bg-card"
+                      className="min-w-[360px] max-w-[400px] border rounded-lg overflow-hidden shadow-sm bg-card relative"
                     >
-                      <div className="relative h-32 w-full bg-muted">
+                      <div className="relative h-28 w-full bg-muted">
                         {event.imageUrl ? (
                           <Image
                             src={event.imageUrl}
@@ -209,40 +209,11 @@ export default function ProfilePage() {
                             No image
                           </div>
                         )}
-                      </div>
-                      <div className="p-2.5 space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">{event.type || 'Event'}</Badge>
-                          {event.pinned && <Badge variant="outline" className="text-xs">Pinned</Badge>}
-                        </div>
-                        <div className="space-y-0.5">
-                          <p className="font-semibold text-sm line-clamp-1">{event.title || 'Untitled event'}</p>
-                          {event.date && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <CalendarIcon className="h-3 w-3" />
-                              {new Date(event.date).toLocaleDateString()}
-                              {event.endDate ? ` → ${new Date(event.endDate).toLocaleDateString()}` : ''}
-                              {event.time ? ` at ${event.time}` : ''}
-                            </p>
-                          )}
-                          {event.location && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {event.location}
-                            </p>
-                          )}
-                        </div>
-                          {event.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-1">{event.description}</p>
-                          )}
-                        <div className="flex items-center justify-between pt-1">
-                          <div className="text-xs font-medium">
-                            {event.price ? event.price : 'Free'}
-                          </div>
-                          {isOwnProfile && (
+                        {isOwnProfile && (
+                          <div className="absolute top-2 right-2">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="icon">
+                                <Button variant="secondary" size="icon" className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background">
                                   ⋯
                                 </Button>
                               </DropdownMenuTrigger>
@@ -266,8 +237,24 @@ export default function ProfilePage() {
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          )}
-                        </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-2 space-y-1">
+                        <p className="font-semibold text-sm line-clamp-1">{event.title || 'Untitled event'}</p>
+                        {event.date && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <CalendarIcon className="h-3 w-3" />
+                            {new Date(event.date).toLocaleDateString()}
+                            {event.endDate ? ` → ${new Date(event.endDate).toLocaleDateString()}` : ''}
+                          </p>
+                        )}
+                        {event.location && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {event.location}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
