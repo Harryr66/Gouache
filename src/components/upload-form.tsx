@@ -73,6 +73,13 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+  const [tagsList, setTagsList] = useState<string[]>(
+    (initialFormData?.tags || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -123,8 +130,8 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       return;
     }
 
-    // Parse tags (optional)
-    const tags = formData.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+    // Use chip-based tags (optional)
+    const tags = tagsList;
 
     setLoading(true);
     try {
@@ -261,6 +268,27 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const addTag = () => {
+    const newTag = tagInput.trim();
+    if (!newTag) return;
+    if (tagsList.includes(newTag)) {
+      setTagInput('');
+      return;
+    }
+    setTagsList([...tagsList, newTag]);
+    setTagInput('');
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ' ' || e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag();
+    } else if (e.key === 'Backspace' && !tagInput && tagsList.length) {
+      e.preventDefault();
+      setTagsList(tagsList.slice(0, -1));
     }
   };
 
@@ -406,6 +434,38 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                 )}
               </label>
             </div>
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags</Label>
+            <div className="flex flex-wrap gap-2 pb-1">
+              {tagsList.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => setTagsList(tagsList.filter((t) => t !== tag))}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <Input
+              id="tags"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagKeyDown}
+              placeholder="Type a tag and press space or enter to add"
+            />
+            <p className="text-xs text-muted-foreground">
+              Tags help discovery. Add one per word; space or enter locks it in.
+            </p>
           </div>
 
           {/* Title */}
