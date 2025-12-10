@@ -60,6 +60,7 @@ export default function EventDetailPage() {
             attendees: data.attendees || [],
             maxAttendees: data.maxAttendees,
             price: data.price ?? undefined,
+            bookingUrl: data.bookingUrl || '',
           };
           setEvent(eventData);
         } else {
@@ -249,16 +250,26 @@ export default function EventDetailPage() {
                     </div>
                   )}
 
-                  {/* Price */}
-                  {priceLabel && (
-                    <div className="p-4 bg-muted rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Price</p>
-                          <p className="text-2xl font-bold">{priceLabel}</p>
+                  {/* Price / Tickets */}
+                  {(priceLabel || event.bookingUrl) && (
+                    <div className="p-4 bg-muted rounded-lg flex flex-col gap-3">
+                      {priceLabel && (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Price</p>
+                            <p className="text-2xl font-bold">{priceLabel}</p>
+                          </div>
                         </div>
-                        <Button>Get Tickets</Button>
-                      </div>
+                      )}
+                      {event.bookingUrl && (
+                        <div className="flex justify-start">
+                          <Button asChild>
+                            <a href={event.bookingUrl} target="_blank" rel="noopener noreferrer">
+                              Get Tickets
+                            </a>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
