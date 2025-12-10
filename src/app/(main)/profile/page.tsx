@@ -117,6 +117,7 @@ export default function ProfilePage() {
   const effectiveUser = hasApprovedArtistRequest && !user.isProfessional
     ? { ...user, isProfessional: true, isVerified: user.isVerified || true }
     : user;
+  const isOwnProfile = true;
 
   const handleDeleteEvent = async (eventId: string) => {
     try {
