@@ -93,7 +93,7 @@ export function PortfolioManager() {
               tags: Array.isArray(item.tags) ? item.tags : [],
               createdAt
             };
-          }).filter(item => item.imageUrl);
+          }).filter((item: PortfolioItem) => item.imageUrl);
 
           mappedItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
