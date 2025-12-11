@@ -54,8 +54,12 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
 
   const handleTileClick = () => {
-    // Navigate to full-screen artwork page instead of opening dialog
-    router.push(`/artwork/${artwork.id}`);
+    // Navigate to the artist profile (more reliable than artwork page for now)
+    if (artwork?.artist?.id) {
+      router.push(`/profile/${artwork.artist.id}`);
+    } else {
+      router.push('/profile');
+    }
     if (onClick) onClick();
   };
 
@@ -208,7 +212,7 @@ const generateArtistContent = (artist: Artist) => ({
     >
       <div className="relative aspect-square overflow-hidden">
         <Image
-          src={artwork.imageUrl}
+          src={artwork.imageUrl || '/assets/placeholder-light.png'}
           alt={artwork.imageAiHint}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
