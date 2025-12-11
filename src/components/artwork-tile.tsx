@@ -244,7 +244,10 @@ const generateArtistContent = (artist: Artist) => ({
                   alt={artwork.artist.name}
                   className="object-cover"
                 />
-                <AvatarFallback className="text-xs">{artwork.artist.name.slice(0, 2)}</AvatarFallback>
+                <AvatarFallback className="text-xs">
+                  {(typeof artwork.artist?.name === 'string' ? artwork.artist.name : '')
+                    .slice(0, 2)}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
@@ -365,7 +368,11 @@ const generateArtistContent = (artist: Artist) => ({
                           alt={artwork.artist.name}
                           className="object-cover"
                         />
-                        <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>
+                          {(typeof artwork.artist?.name === 'string' ? artwork.artist.name : '')
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center gap-2">
