@@ -486,7 +486,7 @@ const generateArtistContent = (artist: Artist) => ({
                             {artwork.medium}
                           </Badge>
                         )}
-                        {artwork.tags?.slice(0, 3).map((tag) => (
+                        {(Array.isArray(artwork.tags) ? artwork.tags : []).slice(0, 3).map((tag) => (
                           <Badge key={tag} variant="secondary" className="text-xs capitalize">
                             #{tag}
                           </Badge>
@@ -510,7 +510,11 @@ const generateArtistContent = (artist: Artist) => ({
                           alt={artwork.artist.name}
                           className="object-cover"
                         />
-                        <AvatarFallback>{artwork.artist.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>
+                          {(typeof artwork.artist?.name === 'string' ? artwork.artist.name : '')
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -569,7 +573,7 @@ const generateArtistContent = (artist: Artist) => ({
                             {artwork.medium}
                           </Badge>
                         )}
-                        {artwork.tags?.slice(0, 4).map((tag) => (
+                        {(Array.isArray(artwork.tags) ? artwork.tags : []).slice(0, 4).map((tag) => (
                           <Badge key={tag} variant="secondary" className="capitalize">
                             #{tag}
                           </Badge>
