@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { Loader2, MapPin, Calendar as CalendarIcon, Pin, PinOff, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2, MapPin, Calendar as CalendarIcon, Pin, PinOff, Trash2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -27,7 +28,7 @@ export default function ProfilePage() {
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
-  const [showEvents, setShowEvents] = useState(true);
+  const [showEvents, setShowEvents] = useState(false); // Collapsed by default
 
   // Watch for pending artist request for this user
   useEffect(() => {
@@ -172,96 +173,102 @@ export default function ProfilePage() {
             Loading events…
           </div>
         ) : (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CardTitle>Upcoming Events</CardTitle>
-                <Badge variant="secondary">{events.length}</Badge>
-              </div>
-              {isOwnProfile && (
-                <Button variant="outline" size="sm" onClick={() => setShowEvents((v) => !v)}>
-                  {showEvents ? 'Hide' : 'Show'}
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {!showEvents ? (
-                <p className="text-sm text-muted-foreground">Events section hidden.</p>
-              ) : events.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No Upcoming Events</p>
-              ) : (
-                <div className="flex gap-4 overflow-x-auto pb-2">
-                  {events.map((event) => (
-                    <div
-                      key={event.id}
-                      className="min-w-[360px] max-w-[400px] border rounded-lg overflow-hidden shadow-sm bg-card relative"
-                    >
-                      <div className="relative h-28 w-full bg-muted">
-                        {event.imageUrl ? (
-                          <Image
-                            src={event.imageUrl}
-                            alt={event.title || 'Event'}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">
-                            No image
+          <Collapsible open={showEvents} onOpenChange={setShowEvents}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="flex flex-row items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <CardTitle>Upcoming Events</CardTitle>
+                    <Badge variant="secondary">{events.length}</Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {showEvents ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent>
+                  {events.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No Upcoming Events</p>
+                  ) : (
+                    <div className="flex gap-4 overflow-x-auto pb-2">
+                      {events.map((event) => (
+                        <div
+                          key={event.id}
+                          className="min-w-[360px] max-w-[400px] border rounded-lg overflow-hidden shadow-sm bg-card relative"
+                        >
+                          <div className="relative h-28 w-full bg-muted">
+                            {event.imageUrl ? (
+                              <Image
+                                src={event.imageUrl}
+                                alt={event.title || 'Event'}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">
+                                No image
+                              </div>
+                            )}
+                            {isOwnProfile && (
+                              <div className="absolute top-2 right-2">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="secondary" size="icon" className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background">
+                                      ⋯
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handlePinEvent(event.id, !event.pinned)}>
+                                      {event.pinned ? (
+                                        <>
+                                          <PinOff className="h-4 w-4 mr-2" /> Unpin
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Pin className="h-4 w-4 mr-2" /> Pin
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-red-400 hover:text-red-500 focus:text-red-500"
+                                      onClick={() => handleDeleteEvent(event.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {isOwnProfile && (
-                          <div className="absolute top-2 right-2">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="secondary" size="icon" className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background">
-                                  ⋯
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handlePinEvent(event.id, !event.pinned)}>
-                                  {event.pinned ? (
-                                    <>
-                                      <PinOff className="h-4 w-4 mr-2" /> Unpin
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Pin className="h-4 w-4 mr-2" /> Pin
-                                    </>
-                                  )}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-red-400 hover:text-red-500 focus:text-red-500"
-                                  onClick={() => handleDeleteEvent(event.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" /> Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                          <div className="p-2 space-y-1">
+                            <p className="font-semibold text-sm line-clamp-1">{event.title || 'Untitled event'}</p>
+                            {event.date && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <CalendarIcon className="h-3 w-3" />
+                                {new Date(event.date).toLocaleDateString()}
+                                {event.endDate ? ` → ${new Date(event.endDate).toLocaleDateString()}` : ''}
+                              </p>
+                            )}
+                            {event.location && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {event.location}
+                              </p>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div className="p-2 space-y-1">
-                        <p className="font-semibold text-sm line-clamp-1">{event.title || 'Untitled event'}</p>
-                        {event.date && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <CalendarIcon className="h-3 w-3" />
-                            {new Date(event.date).toLocaleDateString()}
-                            {event.endDate ? ` → ${new Date(event.endDate).toLocaleDateString()}` : ''}
-                          </p>
-                        )}
-                        {event.location && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {event.location}
-                          </p>
-                        )}
-                      </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         )}
 
         {(() => {
