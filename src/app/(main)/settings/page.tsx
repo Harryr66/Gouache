@@ -21,12 +21,12 @@ import {
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { useAuth } from '@/providers/auth-provider';
 import { db, auth, storage } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, query, where, getDocs, writeBatch, onSnapshot } from 'firebase/firestore';
 import { signOut as firebaseSignOut, deleteUser } from 'firebase/auth';
 import { ref, listAll, deleteObject } from 'firebase/storage';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
 import { BusinessManager } from '@/components/business-manager';
 import {
@@ -44,12 +44,30 @@ export default function SettingsPage() {
   const { settings: discoverSettings, updateSettings: updateDiscoverSettings } = useDiscoverSettings();
   const { user, refreshUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [reportMessage, setReportMessage] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [isSavingDiscoverSettings, setIsSavingDiscoverSettings] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
+  
+  // Get tab from URL or default to 'general'
+  const currentTab = searchParams.get('tab') || 'general';
+  const [activeTab, setActiveTab] = useState(currentTab);
+  
+  // Update active tab when URL changes
+  useEffect(() => {
+    const tab = searchParams.get('tab') || 'general';
+    setActiveTab(tab);
+  }, [searchParams]);
+  
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    router.push(`/settings?tab=${value}`, { scroll: false });
+  };
   
   // Discover preferences state - load from user preferences
   const [discoverPrefs, setDiscoverPrefs] = useState({
@@ -64,6 +82,20 @@ export default function SettingsPage() {
     hideTextileArt: user?.preferences?.discover?.hideTextileArt || false,
   });
   
+  // Check if user has an approved artist request (fallback for missing isProfessional flag)
+  useEffect(() => {
+    if (!user) return;
+    const q = query(
+      collection(db, 'artistRequests'),
+      where('userId', '==', user.id),
+      where('status', '==', 'approved')
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setHasApprovedArtistRequest(!snap.empty);
+    });
+    return () => unsub();
+  }, [user?.id]);
+
   // Load preferences from user when user changes
   useEffect(() => {
     if (user?.preferences?.discover) {
@@ -348,16 +380,14 @@ export default function SettingsPage() {
         </div>
 
         {/* Settings Tabs */}
-        <Tabs defaultValue="general" className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
             <TabsList className="inline-flex w-auto min-w-full sm:min-w-0">
               <TabsTrigger value="general" className="shrink-0 whitespace-nowrap">General</TabsTrigger>
-              {user?.isProfessional && (
-                <>
-                  <TabsTrigger value="business" className="shrink-0 whitespace-nowrap text-xs sm:text-sm">Business</TabsTrigger>
-                  <TabsTrigger value="payments" className="shrink-0 whitespace-nowrap">Payments</TabsTrigger>
-                </>
+              {(user?.isProfessional || hasApprovedArtistRequest) && (
+                <TabsTrigger value="business" className="shrink-0 whitespace-nowrap text-xs sm:text-sm">Business</TabsTrigger>
               )}
+              <TabsTrigger value="payments" className="shrink-0 whitespace-nowrap">Payments</TabsTrigger>
               <TabsTrigger value="discover" className="shrink-0 whitespace-nowrap">Discover</TabsTrigger>
               <TabsTrigger value="support" className="shrink-0 whitespace-nowrap">Support</TabsTrigger>
             </TabsList>
@@ -453,16 +483,15 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
 
-          {user?.isProfessional && (
-            <>
-              <TabsContent value="business" className="mt-4 sm:mt-6">
-                <BusinessManager />
-              </TabsContent>
-              <TabsContent value="payments" className="mt-4 sm:mt-6">
-                <StripeIntegrationWizard />
-              </TabsContent>
-            </>
+          {(user?.isProfessional || hasApprovedArtistRequest) && (
+            <TabsContent value="business" className="mt-4 sm:mt-6">
+              <BusinessManager />
+            </TabsContent>
           )}
+          
+          <TabsContent value="payments" className="mt-4 sm:mt-6">
+            <StripeIntegrationWizard />
+          </TabsContent>
 
           <TabsContent value="discover" className="mt-4 sm:mt-6">
             <Card>
