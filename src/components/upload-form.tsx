@@ -554,7 +554,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             />
           </div>
 
-          {/* Is this item for sale */}
+          {/* Mark this item for sale */}
           <div className="space-y-4 p-4 border rounded-lg">
             <div className="flex items-center space-x-2">
               <Switch
@@ -563,7 +563,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                 onCheckedChange={(checked) => setFormData({ ...formData, isForSale: checked })}
               />
               <Label htmlFor="isForSale" className="cursor-pointer text-base font-semibold">
-                Is this item for sale?
+                Mark this item for sale
               </Label>
             </div>
           </div>
@@ -626,7 +626,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                 I want this to appear under my portfolio
               </Label>
             </div>
-          </div>
+            </div>
 
           {/* Show in shop */}
           <div className="space-y-4 p-4 border rounded-lg">
@@ -700,33 +700,33 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
           {formData.isForSale && (
             <div className="space-y-4 p-4 border rounded-lg">
               <Label className="text-base font-semibold mb-4 block">Pricing & Delivery</Label>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Price</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="currency">Currency</Label>
-                    <Select 
-                      value={formData.currency} 
-                      onValueChange={(value) => setFormData({ ...formData, currency: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                      </SelectContent>
-                    </Select>
+          <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="price">Price</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select 
+                    value={formData.currency} 
+                    onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -755,9 +755,9 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                     />
                   )}
                 </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Terms Agreement */}
           <div className="flex items-start space-x-3 p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
