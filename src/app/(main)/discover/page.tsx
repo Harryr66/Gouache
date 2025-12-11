@@ -295,6 +295,7 @@ function DiscoverPageContent() {
     const fetchArtworks = async () => {
       try {
         setLoading(true);
+        console.log('🔍 Discover: Starting to fetch artworks from artist profiles...');
         
         // Fetch all professional artists from userProfiles
         const artistsQuery = query(
@@ -303,22 +304,39 @@ function DiscoverPageContent() {
         );
         
         const artistsSnapshot = await getDocs(artistsQuery);
+        console.log(`👥 Discover: Found ${artistsSnapshot.docs.length} professional artists`);
+        
         const fetchedArtworks: Artwork[] = [];
+        let totalPortfolioItems = 0;
+        let skippedNoPortfolio = 0;
+        let skippedShowInPortfolioFalse = 0;
+        let skippedNoImage = 0;
+        let skippedAI = 0;
         
         // Extract portfolio items from each artist
         for (const artistDoc of artistsSnapshot.docs) {
           const artistData = artistDoc.data();
           const portfolio = artistData.portfolio || [];
+          totalPortfolioItems += portfolio.length;
+          
+          if (portfolio.length === 0) {
+            skippedNoPortfolio++;
+            continue;
+          }
+          
+          console.log(`🎨 Discover: Processing artist ${artistData.displayName || artistData.username || artistDoc.id} - ${portfolio.length} portfolio items`);
           
           // Process each portfolio item
-          portfolio.forEach((item: any) => {
+          portfolio.forEach((item: any, index: number) => {
             // Only include items that should be shown in portfolio (showInPortfolio !== false)
             if (item.showInPortfolio === false) {
+              skippedShowInPortfolioFalse++;
               return; // Skip items explicitly marked as not for portfolio
             }
             
             // Apply discover settings filters for AI content
             if (discoverSettings.hideAiAssistedArt && (item.aiAssistance === 'assisted' || item.aiAssistance === 'generated' || item.isAI)) {
+              skippedAI++;
               return; // Skip AI-assisted/generated artworks if hidden
             }
             
@@ -327,12 +345,14 @@ function DiscoverPageContent() {
             
             // Skip items without images
             if (!imageUrl) {
+              skippedNoImage++;
+              console.log(`⚠️ Discover: Skipping item "${item.title || 'Untitled'}" from ${artistData.displayName || artistDoc.id} - no image URL`);
               return;
             }
             
             // Convert portfolio item to Artwork object
             const artwork: Artwork = {
-              id: item.id || `${artistDoc.id}-${Date.now()}`,
+              id: item.id || `${artistDoc.id}-${Date.now()}-${index}`,
               title: item.title || 'Untitled',
               description: item.description || '',
               imageUrl: imageUrl,
@@ -360,8 +380,11 @@ function DiscoverPageContent() {
             };
             
             fetchedArtworks.push(artwork);
+            console.log(`✅ Discover: Added artwork "${artwork.title}" from ${artwork.artist.name} (imageUrl: ${artwork.imageUrl.substring(0, 50)}...)`);
           });
         }
+        
+        console.log(`📊 Discover: Summary - Total portfolio items: ${totalPortfolioItems}, Added: ${fetchedArtworks.length}, Skipped (no portfolio): ${skippedNoPortfolio}, Skipped (showInPortfolio=false): ${skippedShowInPortfolioFalse}, Skipped (no image): ${skippedNoImage}, Skipped (AI): ${skippedAI}`);
         
         // Sort by createdAt descending (newest first)
         fetchedArtworks.sort((a, b) => {
@@ -373,11 +396,18 @@ function DiscoverPageContent() {
         // Limit to 50 most recent
         const limitedArtworks = fetchedArtworks.slice(0, 50);
         
+        console.log(`🎯 Discover: Final artworks count: ${limitedArtworks.length}`);
+        
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
         const finalArtworks = limitedArtworks.length > 0 ? limitedArtworks : placeholderArtworks;
+        
+        if (limitedArtworks.length === 0) {
+          console.warn('⚠️ Discover: No artworks found, showing placeholders');
+        }
+        
         setArtworks(finalArtworks);
       } catch (error) {
-        console.error('Error fetching artworks from artist profiles:', error);
+        console.error('❌ Error fetching artworks from artist profiles:', error);
         // Even on error, show placeholder artworks
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
         setArtworks(placeholderArtworks);
