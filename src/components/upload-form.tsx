@@ -49,6 +49,9 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   const { addContent } = useContent();
   const router = useRouter();
   
+  // Check if this is a product upload (not artwork/portfolio)
+  const isProductUpload = titleText?.toLowerCase().includes('product') || false;
+  
   const [formData, setFormData] = useState({
     title: initialFormData?.title || '',
     description: initialFormData?.description || '',
@@ -124,7 +127,9 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
     if (!agreedToTerms) {
       toast({
         title: "Agreement Required",
-        description: "You must agree to the terms regarding AI-generated artwork before uploading.",
+        description: isProductUpload
+          ? "You must agree to the terms regarding AI-generated content before uploading."
+          : "You must agree to the terms regarding AI-generated artwork before uploading.",
         variant: "destructive",
       });
       return;
@@ -254,7 +259,9 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
 
       toast({
         title: "Upload complete",
-        description: "Your artwork was uploaded and added to your portfolio.",
+        description: isProductUpload 
+          ? "Your product was uploaded and added to your shop."
+          : "Your artwork was uploaded and added to your portfolio.",
         variant: "default",
       });
 
@@ -263,7 +270,9 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       console.error('❌ UploadForm: Error uploading artwork:', error);
       toast({
         title: "Upload failed",
-        description: "We couldn't save your artwork. Please try again.",
+        description: isProductUpload
+          ? "We couldn't save your product. Please try again."
+          : "We couldn't save your artwork. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -297,7 +306,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       <Card>
         <CardContent className="p-6">
           <div className="text-center">
-            <p className="text-muted-foreground">Please log in to upload artwork.</p>
+            <p className="text-muted-foreground">{isProductUpload ? "Please log in to upload products." : "Please log in to upload artwork."}</p>
           </div>
         </CardContent>
       </Card>
@@ -307,16 +316,16 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Upload Artwork</CardTitle>
+        <CardTitle>{titleText || 'Upload Artwork'}</CardTitle>
         <CardDescription>
-          Share your creative work with the community
+          {descriptionText || 'Share your creative work with the community'}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* File Upload */}
           <div className="space-y-2">
-            <Label htmlFor="file">Artwork Files {files.length > 0 && `(${files.length} selected)`}</Label>
+            <Label htmlFor="file">{isProductUpload ? 'Product Files' : 'Artwork Files'} {files.length > 0 && `(${files.length} selected)`}</Label>
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
               <input
                 type="file"
@@ -425,7 +434,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                   <div className="space-y-2">
                     <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">Upload your artwork</p>
+                      <p className="text-sm font-medium">{isProductUpload ? 'Upload your product files' : 'Upload your artwork'}</p>
                       <p className="text-xs text-muted-foreground">
                         PNG, JPG, GIF, MP4 up to 10MB (multiple files supported)
                       </p>
@@ -475,7 +484,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Enter artwork title"
+              placeholder={isProductUpload ? "Enter product title" : "Enter artwork title"}
               required
             />
           </div>
@@ -487,7 +496,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe your artwork..."
+              placeholder={isProductUpload ? "Describe your product..." : "Describe your artwork..."}
               rows={3}
             />
           </div>
@@ -623,7 +632,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                 checked={formData.isForSale}
                 onCheckedChange={(checked) => setFormData({ ...formData, isForSale: checked })}
               />
-              <Label htmlFor="isForSale">Make this artwork available for sale</Label>
+              <Label htmlFor="isForSale">Make this available for sale</Label>
             </div>
 
             {formData.isForSale && (
@@ -695,13 +704,21 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
               className="mt-1"
             />
             <label htmlFor="agreeToTerms" className="text-sm leading-relaxed cursor-pointer">
-              I confirm that this artwork is not AI-generated and is my own original creative work.
+              {isProductUpload 
+                ? "I confirm that this product is not AI-generated and is my own original creative work."
+                : "I confirm that this artwork is not AI-generated and is my own original creative work."
+              }
             </label>
           </div>
 
           {/* Submit Button */}
           <Button type="submit" disabled={loading || !files.length || !agreedToTerms}>
-            {loading ? `Uploading ${files.length} file(s)...` : `Upload ${files.length > 1 ? `${files.length} Files` : 'Artwork'}`}
+            {loading 
+              ? `Uploading ${files.length} file(s)...` 
+              : isProductUpload
+                ? `Upload ${files.length > 1 ? `${files.length} Files` : 'Product'}`
+                : `Upload ${files.length > 1 ? `${files.length} Files` : 'Artwork'}`
+            }
           </Button>
         </form>
       </CardContent>
