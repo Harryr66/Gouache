@@ -19,7 +19,7 @@ interface ShopDisplayProps {
 
 interface ShopItem {
   id: string;
-  type: 'original' | 'print' | 'book' | 'course';
+  type: 'original' | 'print' | 'merchandise';
   title: string;
   description?: string;
   price: number;
@@ -89,7 +89,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
           });
         });
 
-        // Fetch courses
+        // Fetch courses (map to merchandise)
         const coursesQuery = query(
           collection(db, 'courses'),
           where('instructor.userId', '==', userId)
@@ -100,20 +100,19 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
           const data = doc.data();
           results.push({
             id: doc.id,
-            type: 'course',
+            type: 'merchandise',
             title: data.title || 'Untitled Course',
             description: data.description,
             price: data.price || 0,
             currency: data.currency || 'USD',
-            thumbnailUrl: data.thumbnail || data.thumbnailUrl,
+            imageUrl: data.thumbnail || data.thumbnailUrl,
             isAvailable: data.isActive !== false,
             category: data.category,
             createdAt: data.createdAt?.toDate?.() || new Date(),
           });
         });
 
-        // Fetch books (if stored in a separate collection)
-        // For now, we'll check if there's a 'books' collection
+        // Fetch books (map to merchandise)
         try {
           const booksQuery = query(
             collection(db, 'books'),
@@ -125,7 +124,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             const data = doc.data();
             results.push({
               id: doc.id,
-              type: 'book',
+              type: 'merchandise',
               title: data.title || 'Untitled Book',
               description: data.description,
               price: data.price || 0,
@@ -161,10 +160,8 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
         return <ImageIcon className="h-4 w-4" />;
       case 'print':
         return <Package className="h-4 w-4" />;
-      case 'book':
-        return <Book className="h-4 w-4" />;
-      case 'course':
-        return <GraduationCap className="h-4 w-4" />;
+      case 'merchandise':
+        return <Package className="h-4 w-4" />;
       default:
         return <Package className="h-4 w-4" />;
     }
@@ -176,10 +173,8 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
         return 'Original';
       case 'print':
         return 'Print';
-      case 'book':
-        return 'Book';
-      case 'course':
-        return 'Course';
+      case 'merchandise':
+        return 'Merchandise';
       default:
         return type;
     }
@@ -202,7 +197,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <CardTitle className="mb-2">Connect Stripe to Start Selling</CardTitle>
             <CardDescription className="mb-4">
-              Connect your Stripe account to enable sales of originals, prints, books, and courses. You'll receive payouts directly to your bank account.
+              Connect your Stripe account to enable sales of originals, prints, and merchandise. You'll receive payouts directly to your bank account.
             </CardDescription>
             <Button 
               variant="gradient"
@@ -224,24 +219,16 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
           <CardTitle className="mb-2">No items for sale yet</CardTitle>
           <CardDescription className="mb-4">
             {isOwnProfile
-              ? "Start selling your work! Mark artworks as for sale, create courses, or add books to your shop."
+              ? "Start selling your work! Upload artwork or products to your shop."
               : "This artist hasn't listed any items for sale yet."}
           </CardDescription>
           {isOwnProfile && isStripeIntegrated && (
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button asChild variant="gradient">
-                <a href="/upload">
-                  <ImageIcon className="h-4 w-4 mr-2" />
-                  Upload Artwork
-                </a>
-              </Button>
-              <Button asChild variant="outline">
-                <a href="/learn/submit">
-                  <GraduationCap className="h-4 w-4 mr-2" />
-                  Create Course
-                </a>
-              </Button>
-            </div>
+            <Button asChild variant="gradient">
+              <a href="/upload">
+                <ImageIcon className="h-4 w-4 mr-2" />
+                Upload Artwork/Product
+              </a>
+            </Button>
           )}
         </CardContent>
       </Card>
@@ -252,7 +239,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
   const groupedItems = {
     original: items.filter(item => item.type === 'original'),
     print: items.filter(item => item.type === 'print'),
-    merchandise: items.filter(item => item.type === 'merchandise' || item.type === 'book'),
+    merchandise: items.filter(item => item.type === 'merchandise'),
   };
 
   return (
@@ -427,54 +414,6 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
         </div>
       )}
 
-      {groupedItems.course.length > 0 && (
-        <div>
-          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <GraduationCap className="h-5 w-5" />
-            Courses
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {groupedItems.course.map((item) => (
-              <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                <div className="relative aspect-video">
-                  {item.thumbnailUrl ? (
-                    <Image
-                      src={item.thumbnailUrl}
-                      alt={item.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <GraduationCap className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-sm line-clamp-1 flex-1">{item.title}</h4>
-                    <Badge variant="secondary" className="ml-2">
-                      {getTypeIcon(item.type)}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-lg">
-                      {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => router.push(`/courses/${item.id}`)}
-                    >
-                      View
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
