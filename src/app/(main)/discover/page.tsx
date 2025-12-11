@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useDeferredValue } from 'react';
 import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
@@ -229,6 +229,10 @@ const SORT_OPTIONS = [
 ];
 
 function DiscoverPageContent() {
+  const isDev = process.env.NODE_ENV === 'development';
+  const log = (...args: any[]) => { if (isDev) console.log(...args); };
+  const warn = (...args: any[]) => { if (isDev) console.warn(...args); };
+  const error = (...args: any[]) => { if (isDev) console.error(...args); };
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
   const [events, setEvents] = useState<any[]>([]);
@@ -254,6 +258,7 @@ function DiscoverPageContent() {
   const [showEventFilters, setShowEventFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market & Events list (single tile) on mobile
   const [artworkView, setArtworkView] = useState<'grid' | 'list'>('grid');
   const [marketView, setMarketView] = useState<'grid' | 'list'>('list');
@@ -295,7 +300,7 @@ function DiscoverPageContent() {
     const fetchArtworks = async () => {
       try {
         setLoading(true);
-        console.log('🔍 Discover: Starting to fetch artworks from artist profiles...');
+        log('🔍 Discover: Starting to fetch artworks from artist profiles...');
         
         // Fetch all professional artists from userProfiles
         const artistsQuery = query(
@@ -304,7 +309,7 @@ function DiscoverPageContent() {
         );
         
         const artistsSnapshot = await getDocs(artistsQuery);
-        console.log(`👥 Discover: Found ${artistsSnapshot.docs.length} professional artists`);
+        log(`👥 Discover: Found ${artistsSnapshot.docs.length} professional artists`);
         
         const fetchedArtworks: Artwork[] = [];
         let totalPortfolioItems = 0;
@@ -324,7 +329,7 @@ function DiscoverPageContent() {
             continue;
           }
           
-          console.log(`🎨 Discover: Processing artist ${artistData.displayName || artistData.username || artistDoc.id} - ${portfolio.length} portfolio items`);
+          log(`🎨 Discover: Processing artist ${artistData.displayName || artistData.username || artistDoc.id} - ${portfolio.length} portfolio items`);
           
           // Process each portfolio item
           portfolio.forEach((item: any, index: number) => {
@@ -346,7 +351,7 @@ function DiscoverPageContent() {
             // Skip items without images
             if (!imageUrl) {
               skippedNoImage++;
-              console.log(`⚠️ Discover: Skipping item "${item.title || 'Untitled'}" from ${artistData.displayName || artistDoc.id} - no image URL`);
+              log(`⚠️ Discover: Skipping item "${item.title || 'Untitled'}" from ${artistData.displayName || artistDoc.id} - no image URL`);
               return;
             }
             
@@ -380,11 +385,11 @@ function DiscoverPageContent() {
             };
             
             fetchedArtworks.push(artwork);
-            console.log(`✅ Discover: Added artwork "${artwork.title}" from ${artwork.artist.name} (imageUrl: ${artwork.imageUrl.substring(0, 50)}...)`);
+            log(`✅ Discover: Added artwork "${artwork.title}" from ${artwork.artist.name} (imageUrl: ${artwork.imageUrl.substring(0, 50)}...)`);
           });
         }
         
-        console.log(`📊 Discover: Summary - Total portfolio items: ${totalPortfolioItems}, Added: ${fetchedArtworks.length}, Skipped (no portfolio): ${skippedNoPortfolio}, Skipped (showInPortfolio=false): ${skippedShowInPortfolioFalse}, Skipped (no image): ${skippedNoImage}, Skipped (AI): ${skippedAI}`);
+        log(`📊 Discover: Summary - Total portfolio items: ${totalPortfolioItems}, Added: ${fetchedArtworks.length}, Skipped (no portfolio): ${skippedNoPortfolio}, Skipped (showInPortfolio=false): ${skippedShowInPortfolioFalse}, Skipped (no image): ${skippedNoImage}, Skipped (AI): ${skippedAI}`);
         
         // Sort by createdAt descending (newest first)
         fetchedArtworks.sort((a, b) => {
@@ -395,7 +400,7 @@ function DiscoverPageContent() {
         
         // If we still have nothing (or fetch failed), fall back to the artworks collection
         if (fetchedArtworks.length === 0) {
-          console.warn('⚠️ Discover: No portfolio artworks found, falling back to artworks collection');
+          warn('⚠️ Discover: No portfolio artworks found, falling back to artworks collection');
           try {
             const fallbackQuery = query(
               collection(db, 'artworks'),
@@ -435,27 +440,27 @@ function DiscoverPageContent() {
                 isAI: data.isAI || false,
               });
             });
-            console.log(`🎯 Discover: Fallback artworks count: ${fetchedArtworks.length}`);
+            log(`🎯 Discover: Fallback artworks count: ${fetchedArtworks.length}`);
           } catch (fallbackError) {
-            console.error('❌ Discover: Fallback to artworks collection failed:', fallbackError);
+            error('❌ Discover: Fallback to artworks collection failed:', fallbackError);
           }
         }
         
         // Limit to 50 most recent after any fallback
         const limitedArtworks = fetchedArtworks.slice(0, 50);
         
-        console.log(`🎯 Discover: Final artworks count: ${limitedArtworks.length}`);
+        log(`🎯 Discover: Final artworks count: ${limitedArtworks.length}`);
         
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
         const finalArtworks = limitedArtworks.length > 0 ? limitedArtworks : placeholderArtworks;
         
         if (limitedArtworks.length === 0) {
-          console.warn('⚠️ Discover: No artworks found, showing placeholders');
+        warn('⚠️ Discover: No artworks found, showing placeholders');
         }
         
         setArtworks(finalArtworks);
       } catch (error) {
-        console.error('❌ Error fetching artworks from artist profiles:', error);
+        error('❌ Error fetching artworks from artist profiles:', error);
         // Even on error, show placeholder artworks
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
         setArtworks(placeholderArtworks);
@@ -662,7 +667,7 @@ function DiscoverPageContent() {
         const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 50);
         setMarketplaceProducts([...fetchedProducts, ...placeholderProducts]);
     } catch (error) {
-        console.error('Error fetching marketplace products:', error);
+        error('Error fetching marketplace products:', error);
         // Even on error, show placeholder products
         const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 50);
         setMarketplaceProducts(placeholderProducts);
@@ -716,7 +721,7 @@ function DiscoverPageContent() {
         const placeholderEvents = generatePlaceholderEvents(theme, 12);
         setEvents([...fetchedEvents, ...placeholderEvents]);
       } catch (error) {
-        console.error('Failed to load events:', error);
+        error('Failed to load events:', error);
         const placeholderEvents = generatePlaceholderEvents(theme, 12);
         setEvents(placeholderEvents);
     }
