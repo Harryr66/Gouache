@@ -69,6 +69,38 @@ export function PortfolioManager() {
         return;
       }
 
+      // First, try to use portfolio from user object if available (faster)
+      if (user.portfolio && Array.isArray(user.portfolio) && user.portfolio.length > 0) {
+        console.log('📋 PortfolioManager: Using portfolio from user object', user.portfolio.length);
+        const mappedFromUser = user.portfolio.map((item: any) => {
+          let createdAt: Date;
+          if (item.createdAt?.toDate) {
+            createdAt = item.createdAt.toDate();
+          } else if (item.createdAt instanceof Date) {
+            createdAt = item.createdAt;
+          } else {
+            createdAt = new Date();
+          }
+
+          const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
+
+          return {
+            id: item.id || `portfolio-${Date.now()}-${Math.random()}`,
+            imageUrl: imageUrl,
+            title: item.title || 'Untitled Artwork',
+            description: item.description || '',
+            medium: item.medium || '',
+            dimensions: item.dimensions || '',
+            year: item.year || '',
+            tags: Array.isArray(item.tags) ? item.tags : [],
+            createdAt
+          };
+        });
+        mappedFromUser.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
+        setPortfolioItems(mappedFromUser);
+      }
+
+      // Always also fetch from Firestore to ensure we have the latest
       try {
         const userDoc = await getDoc(doc(db, 'userProfiles', user.id));
         if (userDoc.exists()) {
@@ -83,9 +115,12 @@ export function PortfolioManager() {
               createdAt = new Date();
             }
 
+            // Try multiple sources for image URL
+            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
+
             return {
-              id: item.id || `portfolio-${item.imageUrl || Date.now()}`,
-              imageUrl: item.imageUrl || item.supportingImages?.[0] || '',
+              id: item.id || `portfolio-${Date.now()}-${Math.random()}`,
+              imageUrl: imageUrl,
               title: item.title || 'Untitled Artwork',
               description: item.description || '',
               medium: item.medium || '',
@@ -94,7 +129,7 @@ export function PortfolioManager() {
               tags: Array.isArray(item.tags) ? item.tags : [],
               createdAt
             };
-          }).filter((item: PortfolioItem) => item.imageUrl || item.title); // Show items with image OR title
+          }); // REMOVED FILTER - show ALL items, even without images
 
           mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
 
@@ -127,7 +162,7 @@ export function PortfolioManager() {
     };
 
     loadPortfolio();
-  }, [user?.id]);
+  }, [user?.id, user?.portfolio]);
 
   const compressImage = (file: File): Promise<File> => {
     return new Promise((resolve) => {
@@ -673,21 +708,32 @@ export function PortfolioManager() {
             Showing {portfolioItems.length} artwork{portfolioItems.length !== 1 ? 's' : ''}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {portfolioItems.map((item) => {
+            {portfolioItems.map((item, index) => {
               const imageUrl = item.imageUrl || '/assets/placeholder-light.png';
-              console.log('🎨 Rendering portfolio item:', { id: item.id, title: item.title, imageUrl: imageUrl.substring(0, 50) });
+              console.log(`🎨 Rendering portfolio item ${index + 1}/${portfolioItems.length}:`, { 
+                id: item.id, 
+                title: item.title, 
+                hasImageUrl: !!item.imageUrl,
+                imageUrl: imageUrl.substring(0, 80) 
+              });
               return (
-              <Card key={item.id} className="overflow-hidden group">
-                <div className="relative">
-                  <img
-                    src={imageUrl}
-                    alt={item.title}
-                    className="w-full h-64 object-cover"
-                    onError={(e) => {
-                      console.error('❌ Image load error for item:', item.id, item.title);
-                      (e.target as HTMLImageElement).src = '/assets/placeholder-light.png';
-                    }}
-                  />
+              <Card key={item.id || `portfolio-item-${index}`} className="overflow-hidden group">
+                <div className="relative h-64 bg-muted">
+                  {item.imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error('❌ Image load error for item:', item.id, item.title, imageUrl);
+                        (e.target as HTMLImageElement).src = '/assets/placeholder-light.png';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      <Upload className="h-12 w-12" />
+                    </div>
+                  )}
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="flex gap-1">
                       <Button

@@ -150,9 +150,9 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
             const data = userDoc.data();
             const portfolioItems = (data.portfolio || []).map((item: any) => ({
               ...item,
-              imageUrl: item.imageUrl || item.supportingImages?.[0] || '',
+              imageUrl: item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '',
               createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
-            })).filter((item: any) => item.imageUrl || item.title); // Show items with image OR title
+            })); // REMOVED FILTER - show ALL items
             setPortfolio(portfolioItems);
             console.log('📋 Portfolio loaded for user:', userId, portfolioItems.length, 'items', {
               totalInFirestore: (data.portfolio || []).length,
