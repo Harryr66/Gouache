@@ -34,6 +34,14 @@ export function PortfolioManager() {
   useEffect(() => {
     console.log('🚀 PortfolioManager component MOUNTED');
   }, []);
+  
+  // Log when portfolioItems changes
+  useEffect(() => {
+    console.log('🔄 PortfolioManager: portfolioItems changed', {
+      count: portfolioItems.length,
+      items: portfolioItems.slice(0, 3).map((i: PortfolioItem) => ({ id: i.id, title: i.title }))
+    });
+  }, [portfolioItems]);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
@@ -542,6 +550,12 @@ export function PortfolioManager() {
     return null;
   }
 
+  console.log('🎬 PortfolioManager RETURN/RENDER:', { 
+    portfolioItemsCount: portfolioItems.length,
+    showAddForm,
+    willShowGrid: portfolioItems.length > 0
+  });
+
   return (
     <div className="space-y-6">
 
@@ -695,12 +709,22 @@ export function PortfolioManager() {
           );
         }
         
+        console.log('✅ PortfolioManager: Rendering grid with', portfolioItems.length, 'items');
+        console.log('📊 PortfolioManager: Items data:', portfolioItems.map(i => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl })));
+        
+        if (portfolioItems.length === 0) {
+          console.error('❌ PortfolioManager: portfolioItems.length is 0 but we should have items!');
+        }
+        
         return (
           <>
             <div className="mb-4 text-sm text-muted-foreground">
               Showing {portfolioItems.length} artwork{portfolioItems.length !== 1 ? 's' : ''}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              data-portfolio-count={portfolioItems.length}
+            >
               {portfolioItems.map((item, index) => {
               const imageUrl = item.imageUrl || '/assets/placeholder-light.png';
               // Only log first 3 items to avoid blocking
