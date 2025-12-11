@@ -468,16 +468,23 @@ function DiscoverPageContent() {
   }, [discoverSettings, theme, mounted]);
 
   const filteredAndSortedArtworks = useMemo(() => {
-    let filtered = artworks;
+    let filtered = Array.isArray(artworks) ? artworks : [];
 
     // Search filter
     if (searchQuery) {
       const queryLower = searchQuery.toLowerCase();
-      filtered = filtered.filter(artwork =>
-        artwork.title.toLowerCase().includes(queryLower) ||
-        artwork.description?.toLowerCase().includes(queryLower) ||
-        artwork.artist.name.toLowerCase().includes(queryLower) ||
-        artwork.tags.some(tag => tag.toLowerCase().includes(queryLower))
+      filtered = filtered.filter(artwork => {
+        const title = (artwork.title || '').toLowerCase();
+        const description = (artwork.description || '').toLowerCase();
+        const artistName = (artwork.artist?.name || '').toLowerCase();
+        const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
+        return (
+          title.includes(queryLower) ||
+          description.includes(queryLower) ||
+          artistName.includes(queryLower) ||
+          tags.some(tag => (tag || '').toLowerCase().includes(queryLower))
+        );
+      }
       );
     }
 
