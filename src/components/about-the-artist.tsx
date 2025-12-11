@@ -17,9 +17,10 @@ interface AboutTheArtistProps {
   artistName?: string;
   artistHandle?: string;
   className?: string;
+  compact?: boolean;
 }
 
-export function AboutTheArtist({ artistId, artistName, artistHandle, className }: AboutTheArtistProps) {
+export function AboutTheArtist({ artistId, artistName, artistHandle, className, compact = false }: AboutTheArtistProps) {
   const [artist, setArtist] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
   const { generateAvatarPlaceholderUrl, generatePlaceholderUrl } = usePlaceholder();
@@ -118,30 +119,37 @@ export function AboutTheArtist({ artistId, artistName, artistHandle, className }
   const portfolioImages = artist.portfolio?.filter(item => item.imageUrl) || [];
   const previewImages = portfolioImages.slice(0, 4); // Show up to 4 portfolio images
 
+  const padding = compact ? 'p-4' : 'p-6';
+  const titleClass = compact ? 'text-lg font-semibold mb-3' : 'text-2xl font-bold mb-4';
+  const avatarSize = compact ? 'h-14 w-14' : 'h-20 w-20';
+  const nameClass = compact ? 'text-base font-semibold truncate' : 'text-xl font-semibold truncate';
+  const usernameClass = compact ? 'text-xs text-muted-foreground mb-1' : 'text-sm text-muted-foreground mb-2';
+  const bioClamp = compact ? 'line-clamp-3' : 'line-clamp-4';
+
   return (
     <Card className={className}>
-      <CardContent className="p-6">
-        <div className="space-y-4">
+      <CardContent className={padding}>
+        <div className="space-y-3">
           {/* Section Title */}
-          <h2 className="text-2xl font-bold mb-4">About The Artist</h2>
+          <h2 className={titleClass}>About The Artist</h2>
           
           {/* Header */}
-          <div className="flex items-start gap-4">
-            <Avatar className="h-20 w-20 border-2 border-border">
+          <div className="flex items-start gap-3">
+            <Avatar className={`${avatarSize} border-2 border-border`}>
               <AvatarImage 
                 src={artist.avatarUrl || avatarPlaceholder} 
                 alt={artist.displayName}
               />
-              <AvatarFallback className="text-lg">
+              <AvatarFallback className="text-base">
                 {artist.displayName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-xl font-semibold truncate">{artist.displayName}</h3>
+                <h3 className={nameClass}>{artist.displayName}</h3>
               </div>
               {artist.username && (
-                <p className="text-sm text-muted-foreground mb-2">@{artist.username}</p>
+                <p className={usernameClass}>@{artist.username}</p>
               )}
               <Link
                 href={`/profile/${artist.username || artist.id}`}
@@ -157,14 +165,13 @@ export function AboutTheArtist({ artistId, artistName, artistHandle, className }
           {/* Bio */}
           {artist.bio && (
             <div>
-              <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
+              <p className={`text-sm text-muted-foreground leading-relaxed ${bioClamp}`}>
                 {artist.bio}
               </p>
             </div>
           )}
 
-          {/* Portfolio Preview */}
-          {previewImages.length > 0 && (
+          {!compact && previewImages.length > 0 && (
             <div>
               <h4 className="text-sm font-medium mb-3">Portfolio Preview</h4>
               <div className="grid grid-cols-2 gap-2">
@@ -204,7 +211,7 @@ export function AboutTheArtist({ artistId, artistName, artistHandle, className }
           <Button
             asChild
             variant="outline"
-            className="w-full"
+            className={compact ? 'w-full text-sm py-2' : 'w-full'}
           >
             <Link href={`/profile/${artist.username || artist.id}`}>
               <User className="h-4 w-4 mr-2" />

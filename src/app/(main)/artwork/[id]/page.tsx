@@ -222,6 +222,7 @@ export default function ArtworkPage() {
               artistName={artwork.artist.name}
               artistHandle={artwork.artist.handle}
               className="border"
+              compact
             />
           )}
               </CardContent>
