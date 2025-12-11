@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import { AboutTheArtist } from '@/components/about-the-artist';
 
 interface ArtworkView {
   id: string;
@@ -131,14 +132,14 @@ export default function ArtworkPage() {
   }
 
   if (error || !artwork) {
-    return (
+  return (
       <div className="max-w-3xl mx-auto p-6 space-y-4 text-center">
         <p className="text-lg font-semibold">Unable to load artwork.</p>
         <p className="text-muted-foreground">{error || 'Please try again later.'}</p>
         <Button variant="outline" onClick={() => router.back()}>
           Go Back
         </Button>
-      </div>
+                </div>
     );
   }
 
@@ -151,9 +152,9 @@ export default function ArtworkPage() {
             {artwork.isForSale && artwork.price !== undefined && (
               <Badge className="bg-green-600 hover:bg-green-700 text-sm px-3 py-1">
                 {artwork.currency || 'USD'} {artwork.price.toLocaleString()}
-              </Badge>
-            )}
-          </div>
+                  </Badge>
+              )}
+            </div>
           {artwork.artist?.id && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>by</span>
@@ -176,17 +177,55 @@ export default function ArtworkPage() {
           {artwork.description && (
             <p className="text-muted-foreground whitespace-pre-line">{artwork.description}</p>
           )}
-          {artwork.tags && artwork.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {artwork.tags.map((tag) => (
+                {artwork.tags && artwork.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {artwork.tags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="capitalize">
-                  #{tag}
-                </Badge>
-              ))}
-            </div>
+                        #{tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+          {/* Artwork details */}
+          <Card className="border">
+              <CardHeader>
+              <CardTitle className="text-lg">Artwork details</CardTitle>
+              </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <div className="flex gap-2 items-center">
+                <span className="font-medium text-foreground">For sale:</span>
+                <span>{artwork.isForSale ? 'Yes' : 'No'}</span>
+                </div>
+              {artwork.price !== undefined && (
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-foreground">Price:</span>
+                  <span>{artwork.currency || 'USD'} {artwork.price.toLocaleString()}</span>
+                </div>
+              )}
+              {artwork.tags && artwork.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {artwork.tags.map((tag) => (
+                    <Badge key={`detail-${tag}`} variant="outline" className="capitalize">
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              </CardContent>
+            </Card>
+
+          {/* About the artist */}
+          {artwork.artist?.id && (
+            <AboutTheArtist
+              artistId={artwork.artist.id}
+              artistName={artwork.artist.name}
+              artistHandle={artwork.artist.handle}
+              className="border"
+            />
           )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
     </div>
   );
 }
