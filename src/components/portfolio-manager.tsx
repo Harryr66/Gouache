@@ -553,30 +553,17 @@ export function PortfolioManager() {
 
   console.log('🎬 PortfolioManager RETURN/RENDER:', { 
     hasUser: !!user,
-    isProfessional: user?.isProfessional,
+    userId: user?.id,
     portfolioItemsCount: portfolioItems.length,
     showAddForm,
     willShowGrid: portfolioItems.length > 0
   });
 
-  if (!user?.isProfessional) {
-    console.warn('⚠️ PortfolioManager: Early return - user is not professional', { userId: user?.id, isProfessional: user?.isProfessional });
-    return null;
-  }
-
-  // Force a test render to verify component is working
-  if (portfolioItems.length > 0) {
-    console.log('🎯 PortfolioManager: About to render with', portfolioItems.length, 'items');
-  }
+  // Note: No need to check isProfessional here - this component is only rendered
+  // when isProfessional is true (via ProfileTabs component)
 
   return (
-    <div className="space-y-6" data-testid="portfolio-manager">
-      {portfolioItems.length > 0 && (
-        <div className="bg-green-500/10 border border-green-500 p-2 rounded text-sm mb-4">
-          DEBUG: Portfolio has {portfolioItems.length} items - Grid should render below
-        </div>
-      )}
-
+    <div className="space-y-6">
       {/* Add New Artwork Form */}
       {showAddForm && (
         <Card>
