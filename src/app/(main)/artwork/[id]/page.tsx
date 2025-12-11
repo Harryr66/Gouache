@@ -190,7 +190,7 @@ export default function ArtworkPage() {
           {/* Artwork details */}
           <Card className="border">
               <CardHeader>
-              <CardTitle className="text-lg">Artwork details</CardTitle>
+              <CardTitle className="text-lg">About the artwork</CardTitle>
               </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <div className="flex gap-2 items-center">
