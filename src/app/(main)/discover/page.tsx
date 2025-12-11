@@ -302,10 +302,10 @@ function DiscoverPageContent() {
         setLoading(true);
         log('🔍 Discover: Starting to fetch artworks from artist profiles...');
         
-        // Fetch all professional artists from userProfiles
+        // Fetch artists with portfolios (no isProfessional filter so we include all creators)
         const artistsQuery = query(
           collection(db, 'userProfiles'),
-          where('isProfessional', '==', true)
+          limit(200)
         );
         
         const artistsSnapshot = await getDocs(artistsQuery);
