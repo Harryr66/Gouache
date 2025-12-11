@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 
 interface ArtworkView {
   id: string;
@@ -44,36 +44,71 @@ export default function ArtworkPage() {
         return;
       }
       try {
+        // First try the artworks collection
         const ref = doc(db, 'artworks', artworkId);
         const snap = await getDoc(ref);
-        if (!snap.exists()) {
-          setError('Artwork not found.');
+
+        if (snap.exists()) {
+          const data = snap.data();
+          const imageUrl = data.imageUrl || data.supportingImages?.[0] || data.images?.[0] || '';
+          if (!imageUrl) {
+            setError('Artwork image not available.');
+            setLoading(false);
+            return;
+          }
+          setArtwork({
+            id: artworkId,
+            title: data.title || 'Untitled',
+            description: data.description || '',
+            imageUrl,
+            tags: Array.isArray(data.tags) ? data.tags : [],
+            price: data.price,
+            currency: data.currency || 'USD',
+            isForSale: data.isForSale,
+            artist: {
+              id: data.artist?.userId || data.artist?.id,
+              name: data.artist?.name,
+              handle: data.artist?.handle,
+              avatarUrl: data.artist?.avatarUrl ?? null,
+            },
+          });
           setLoading(false);
           return;
         }
-        const data = snap.data();
-        const imageUrl = data.imageUrl || data.supportingImages?.[0] || data.images?.[0] || '';
-        if (!imageUrl) {
-          setError('Artwork image not available.');
-          setLoading(false);
-          return;
-        }
-        setArtwork({
-          id: artworkId,
-          title: data.title || 'Untitled',
-          description: data.description || '',
-          imageUrl,
-          tags: Array.isArray(data.tags) ? data.tags : [],
-          price: data.price,
-          currency: data.currency || 'USD',
-          isForSale: data.isForSale,
-          artist: {
-            id: data.artist?.userId || data.artist?.id,
-            name: data.artist?.name,
-            handle: data.artist?.handle,
-            avatarUrl: data.artist?.avatarUrl ?? null,
-          },
+
+        // Fallback: search userProfiles portfolios for this item id
+        const usersSnap = await getDocs(collection(db, 'userProfiles'));
+        let found = false;
+        usersSnap.forEach((userDoc) => {
+          if (found) return;
+          const userData = userDoc.data();
+          const portfolio = Array.isArray(userData.portfolio) ? userData.portfolio : [];
+          const match = portfolio.find((item: any) => item?.id === artworkId);
+          if (!match) return;
+          const imageUrl = match.imageUrl || match.supportingImages?.[0] || match.images?.[0] || '';
+          if (!imageUrl) return;
+          found = true;
+          setArtwork({
+            id: artworkId,
+            title: match.title || 'Untitled',
+            description: match.description || '',
+            imageUrl,
+            tags: Array.isArray(match.tags) ? match.tags : [],
+            price: match.price,
+            currency: match.currency || 'USD',
+            isForSale: match.isForSale,
+            artist: {
+              id: userDoc.id,
+              name: userData.displayName || userData.name || userData.username,
+              handle: userData.username || userData.handle,
+              avatarUrl: userData.avatarUrl ?? null,
+            },
+          });
         });
+
+        if (!found) {
+          setError('Artwork not found.');
+        }
       } catch (err) {
         console.error('Failed to load artwork', err);
         setError('Failed to load artwork.');
