@@ -60,12 +60,23 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
         
         artworksSnapshot.forEach((doc) => {
           const data = doc.data();
-          // Determine if it's a print or original based on category or a field
-          const isPrint = data.category === 'print' || data.isPrint || false;
+          
+          // Only include items where showInShop is true (or undefined for backward compatibility)
+          if (data.showInShop === false) {
+            return; // Skip items explicitly marked as not for shop
+          }
+          
+          // Use the type field from Stage 2, or determine from category/legacy fields
+          let itemType = data.type;
+          if (!itemType) {
+            // Fallback for legacy items
+            const isPrint = data.category === 'print' || data.isPrint || false;
+            itemType = isPrint ? 'print' : 'original';
+          }
           
           results.push({
             id: doc.id,
-            type: isPrint ? 'print' : 'original',
+            type: itemType === 'merchandise' ? 'merchandise' : (itemType === 'print' ? 'print' : 'original'),
             title: data.title || 'Untitled',
             description: data.description,
             price: data.price || 0,

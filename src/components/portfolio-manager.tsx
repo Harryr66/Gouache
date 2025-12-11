@@ -121,7 +121,10 @@ export function PortfolioManager() {
         console.log('📋 PortfolioManager: Using portfolio from user object', userPortfolio.length);
         
         // Process immediately - the operations are fast enough for small arrays
-        const mappedFromUser = userPortfolio.map(mapPortfolioItem);
+        // Filter to only show items where showInPortfolio is true (or undefined for backward compatibility)
+        const mappedFromUser = userPortfolio
+          .filter((item: any) => item.showInPortfolio !== false) // Show if true or undefined
+          .map(mapPortfolioItem);
         mappedFromUser.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
         console.log('✅ PortfolioManager: Setting portfolio items from user object', mappedFromUser.length);
         setPortfolioItems(mappedFromUser);
@@ -134,8 +137,11 @@ export function PortfolioManager() {
           const data = userDoc.data();
           const rawPortfolio = data.portfolio || [];
           
+          // Filter to only show items where showInPortfolio is true (or undefined for backward compatibility)
           // Process immediately
-          const mappedItems = rawPortfolio.map(mapPortfolioItem);
+          const mappedItems = rawPortfolio
+            .filter((item: any) => item.showInPortfolio !== false) // Show if true or undefined
+            .map(mapPortfolioItem);
           mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
 
           console.log('📋 PortfolioManager: Loaded portfolio from Firestore', {
