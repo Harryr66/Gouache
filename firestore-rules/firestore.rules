@@ -1,9 +1,118 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // TEMPORARILY ALLOW ALL ACCESS FOR TESTING
+    // Allow public read access to episodes for the home feed
+    match /episodes/{episodeId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Allow public read access to posts
+    match /posts/{postId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Allow public read access to artworks
+    match /artworks/{artworkId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Allow public read access to discussions
+    match /discussions/{discussionId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Allow public read access to artist requests
+    match /artistRequests/{requestId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Allow access to artist invites
+    match /artistInvites/{inviteId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Allow public read access to advertising applications
+    match /advertisingApplications/{applicationId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Allow public read access to user profiles
+    match /userProfiles/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Allow access to events
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow access to marketplace products
+    match /marketplaceProducts/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow access to news articles
+    match /newsArticles/{articleId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow access to content reports
+    match /contentReports/{reportId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow access to user reports
+    match /userReports/{reportId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow access to courses
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow access to books
+    match /books/{bookId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow access to affiliate requests
+    match /affiliateRequests/{requestId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow access to advertisements
+    match /advertisements/{adId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow access to advertisement analytics
+    match /advertisementAnalytics/{analyticsId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Default rule - deny all other access
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }
