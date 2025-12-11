@@ -45,6 +45,11 @@ export function PortfolioManager() {
       count: portfolioItems.length,
       items: portfolioItems.slice(0, 3).map((i: PortfolioItem) => ({ id: i.id, title: i.title }))
     });
+    if (portfolioItems.length > 0) {
+      console.log('✅ PortfolioManager: portfolioItems has items!', portfolioItems.length, 'items ready to render');
+    } else {
+      console.warn('⚠️ PortfolioManager: portfolioItems is empty!');
+    }
   }, [portfolioItems]);
   
   // Debug logging (throttled to avoid blocking)
@@ -546,18 +551,31 @@ export function PortfolioManager() {
     }
   };
 
-  if (!user?.isProfessional) {
-    return null;
-  }
-
   console.log('🎬 PortfolioManager RETURN/RENDER:', { 
+    hasUser: !!user,
+    isProfessional: user?.isProfessional,
     portfolioItemsCount: portfolioItems.length,
     showAddForm,
     willShowGrid: portfolioItems.length > 0
   });
 
+  if (!user?.isProfessional) {
+    console.warn('⚠️ PortfolioManager: Early return - user is not professional', { userId: user?.id, isProfessional: user?.isProfessional });
+    return null;
+  }
+
+  // Force a test render to verify component is working
+  if (portfolioItems.length > 0) {
+    console.log('🎯 PortfolioManager: About to render with', portfolioItems.length, 'items');
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="portfolio-manager">
+      {portfolioItems.length > 0 && (
+        <div className="bg-green-500/10 border border-green-500 p-2 rounded text-sm mb-4">
+          DEBUG: Portfolio has {portfolioItems.length} items - Grid should render below
+        </div>
+      )}
 
       {/* Add New Artwork Form */}
       {showAddForm && (
