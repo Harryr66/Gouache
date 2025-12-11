@@ -7,6 +7,11 @@ const resendApiKey = process.env.RESEND_API_KEY;
 const fromAddress = process.env.ADVERTISING_FROM_EMAIL || 'Gouache Ads <news@gouache.art>';
 const fallbackRecipient = 'news@gouache.art';
 
+// Handle preflight
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200 });
+}
+
 export async function POST(request: Request) {
   try {
     const payload = await request.json();

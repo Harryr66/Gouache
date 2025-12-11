@@ -90,11 +90,14 @@ export default function AdvertisePage() {
 
       // Email notification
       try {
-        await fetch('/api/notify-advertising', {
+        const notifyRes = await fetch('/api/notify-advertising', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...adData, applicationId: adDocRef.id, sendTo: 'news@gouache.art' }),
         });
+        if (!notifyRes.ok) {
+          console.warn('⚠️ Advertising email notification failed', await notifyRes.text());
+        }
       } catch (err) {
         console.warn('⚠️ Failed to send advertising email notification', err);
       }
