@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useState, useEffect, useMemo, useRef, useDeferredValue } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition } from 'react';
 import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
@@ -25,7 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 
-const generatePlaceholderArtworks = (theme: string | undefined, count: number = 20): Artwork[] => {
+const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   const placeholderImage = theme === 'dark' 
     ? '/assets/placeholder-dark.png' 
     : '/assets/placeholder-light.png';
@@ -122,7 +122,7 @@ const generatePlaceholderEvents = (theme: string | undefined, count: number = 12
   });
 };
 
-const generatePlaceholderMarketplaceProducts = (theme: string | undefined, count: number = 50): MarketplaceProduct[] => {
+const generatePlaceholderMarketplaceProducts = (theme: string | undefined, count: number = 20): MarketplaceProduct[] => {
   const placeholderImage = theme === 'dark' 
     ? '/assets/placeholder-dark.png' 
     : '/assets/placeholder-light.png';
@@ -256,7 +256,7 @@ function DiscoverPageContent() {
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(15);
+  const [visibleCount, setVisibleCount] = useState(12);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market & Events list (single tile) on mobile
@@ -476,8 +476,8 @@ function DiscoverPageContent() {
     let filtered = Array.isArray(artworks) ? artworks : [];
 
     // Search filter
-    if (searchQuery) {
-      const queryLower = searchQuery.toLowerCase();
+    if (deferredSearchQuery) {
+      const queryLower = deferredSearchQuery.toLowerCase();
       filtered = filtered.filter(artwork => {
         const title = (artwork.title || '').toLowerCase();
         const description = (artwork.description || '').toLowerCase();
@@ -600,7 +600,7 @@ function DiscoverPageContent() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + 15, filteredAndSortedArtworks.length || prev + 15));
+          setVisibleCount((prev) => Math.min(prev + 8, filteredAndSortedArtworks.length || prev + 8));
         }
       });
     }, { rootMargin: '200px' });
@@ -617,7 +617,7 @@ function DiscoverPageContent() {
   }, [filteredAndSortedArtworks, visibleCount]);
 
   useEffect(() => {
-    setVisibleCount(15);
+    setVisibleCount(12);
   }, [searchQuery, selectedCategory, selectedMedium, sortBy, selectedEventLocation]);
 
   useEffect(() => {
@@ -666,12 +666,12 @@ function DiscoverPageContent() {
         });
         
         // Always add placeholder products to simulate marketplace
-        const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 50);
+        const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 20);
         setMarketplaceProducts([...fetchedProducts, ...placeholderProducts]);
     } catch (err) {
         error('Error fetching marketplace products:', err);
         // Even on error, show placeholder products
-        const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 50);
+        const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 20);
         setMarketplaceProducts(placeholderProducts);
       }
     };
@@ -755,8 +755,8 @@ function DiscoverPageContent() {
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
           value={activeTab}
-          onValueChange={(value) => {
-            setActiveTab(value as 'artwork' | 'events' | 'market');
+        onValueChange={(value) => {
+            startTransition(() => setActiveTab(value as 'artwork' | 'events' | 'market'));
             router.replace(`/discover?tab=${value}`);
           }}
           className="mb-6"
@@ -787,7 +787,7 @@ function DiscoverPageContent() {
                     type="text"
                     placeholder="Search artworks, artists, or tags..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => startTransition(() => setSearchQuery(e.target.value))}
                     className="pl-10"
                   />
                   </div>
@@ -805,7 +805,7 @@ function DiscoverPageContent() {
                   ) : (
                     <Button
                       variant="outline"
-                      onClick={() => setShowFilters(!showFilters)}
+                      onClick={() => startTransition(() => setShowFilters(!showFilters))}
                       className="shrink-0"
                     >
                       <Filter className="h-4 w-4" />
@@ -868,10 +868,12 @@ function DiscoverPageContent() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setSelectedCategory('All');
-                        setSelectedMedium('All');
-                        setSortBy('newest');
-                        setSearchQuery('');
+                        startTransition(() => {
+                          setSelectedCategory('All');
+                          setSelectedMedium('All');
+                          setSortBy('newest');
+                          setSearchQuery('');
+                        });
                       }}
                     >
                       <X className="h-4 w-4 mr-2" />
@@ -888,19 +890,19 @@ function DiscoverPageContent() {
                   {searchQuery && (
                     <Badge variant="secondary" className="gap-1">
                       Search: {searchQuery}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSearchQuery('')} />
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setSearchQuery(''))} />
                     </Badge>
                   )}
                   {selectedCategory !== 'All' && (
                     <Badge variant="secondary" className="gap-1">
                       Category: {selectedCategory}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCategory('All')} />
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setSelectedCategory('All'))} />
                     </Badge>
                   )}
                   {selectedMedium !== 'All' && (
                     <Badge variant="secondary" className="gap-1">
                       Medium: {selectedMedium}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedMedium('All')} />
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setSelectedMedium('All'))} />
                     </Badge>
                   )}
                         </div>
@@ -921,9 +923,11 @@ function DiscoverPageContent() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setSelectedCategory('All');
-                      setSelectedMedium('All');
-                      setSearchQuery('');
+                      startTransition(() => {
+                        setSelectedCategory('All');
+                        setSelectedMedium('All');
+                        setSearchQuery('');
+                      });
                     }}
                   >
                     Clear All Filters
