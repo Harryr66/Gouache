@@ -1136,8 +1136,8 @@ export function AdminViewRouter(props: any) {
                         onClick={props.handleCreateNewsArticle} 
                         disabled={props.isPublishingArticle || !props.newArticle.title.trim()}
                       >
-                        {props.isPublishingArticle ? 'Publishing…' : 'Publish article'}
-                      </Button>
+                    {props.isPublishingArticle ? 'Publishing…' : 'Publish article'}
+                  </Button>
                     )}
                   </div>
                 </div>
@@ -1639,10 +1639,10 @@ export function AdminViewRouter(props: any) {
                               Reopen
                             </Button>
                           )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </div>

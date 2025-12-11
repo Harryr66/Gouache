@@ -21,7 +21,7 @@ import { addDoc } from 'firebase/firestore';
 export default function UploadPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [selectedType, setSelectedType] = useState<'portfolio' | 'product' | 'event' | null>(null);
+  const [selectedType, setSelectedType] = useState<'artwork-product' | 'event' | null>(null);
   const [isCheckingUser, setIsCheckingUser] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const previousUserRef = useRef<User | null>(null);
@@ -116,7 +116,7 @@ export default function UploadPage() {
 
   // Show loading animation while auth is loading or we're checking user status
   const isProfessionalLoaded = user?.isProfessional !== undefined || user?.updatedAt !== undefined || hasApprovedArtistRequest;
-
+  
   if (loading || !user || isCheckingUser || !isProfessionalLoaded) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
@@ -240,7 +240,7 @@ export default function UploadPage() {
   }
 
   // If a type is selected, show the appropriate form
-  if (selectedType === 'portfolio') {
+  if (selectedType === 'artwork-product') {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <Button
@@ -253,41 +253,13 @@ export default function UploadPage() {
         </Button>
         <header className="mb-8">
           <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
-            Upload Artwork
+            Upload Artwork/Product
           </h1>
           <p className="text-muted-foreground text-lg">
-            Add a new piece to your portfolio to showcase your work.
+            Upload artwork or products to your portfolio and shop.
           </p>
         </header>
         <UploadForm />
-      </div>
-    );
-  }
-
-  if (selectedType === 'product') {
-    return (
-      <div className="container mx-auto max-w-4xl px-4 py-8">
-        <Button
-          variant="ghost"
-          onClick={() => setSelectedType(null)}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Upload Options
-        </Button>
-        <header className="mb-8">
-          <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
-            List Product for Sale
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            List a product in your shop. Upload the visuals and set price to sell originals or prints.
-          </p>
-        </header>
-        <UploadForm
-          initialFormData={{ isForSale: true }}
-          titleText="List Product for Sale"
-          descriptionText="Upload your product visuals and set price/for-sale details."
-        />
       </div>
     );
   }
@@ -396,44 +368,23 @@ export default function UploadPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        {/* Portfolio Image */}
+        {/* Artwork/Product */}
         <Card 
           className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
-          onClick={() => setSelectedType('portfolio')}
+          onClick={() => setSelectedType('artwork-product')}
         >
           <CardHeader>
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
               <Image className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle>Portfolio Piece</CardTitle>
+            <CardTitle>Artwork/Product</CardTitle>
             <CardDescription>
-              Upload artwork to showcase in your portfolio. Perfect for displaying your best work and attracting collectors.
+              Upload artwork or products. Choose to display in your portfolio, shop, or both.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              Upload Artwork
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Product */}
-        <Card 
-          className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
-          onClick={() => setSelectedType('product')}
-        >
-          <CardHeader>
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-              <Package className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle>Product for Sale</CardTitle>
-            <CardDescription>
-              List a product in your shop. Use the upload flow and set price to sell originals or prints.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              List Product
+              Upload Artwork/Product
             </Button>
           </CardContent>
         </Card>

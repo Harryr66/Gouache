@@ -237,12 +237,11 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
     );
   }
 
-  // Group items by type
+  // Group items by type - 3 categories: Original Artworks, Prints, Merchandise
   const groupedItems = {
     original: items.filter(item => item.type === 'original'),
     print: items.filter(item => item.type === 'print'),
-    book: items.filter(item => item.type === 'book'),
-    course: items.filter(item => item.type === 'course'),
+    merchandise: items.filter(item => item.type === 'merchandise' || item.type === 'book'),
   };
 
   return (
@@ -362,14 +361,14 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
         </div>
       )}
 
-      {groupedItems.book.length > 0 && (
+      {groupedItems.merchandise.length > 0 && (
         <div>
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Book className="h-5 w-5" />
-            Books
+            <Package className="h-5 w-5" />
+            Merchandise
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {groupedItems.book.map((item) => (
+            {groupedItems.merchandise.map((item) => (
               <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
                 <div className="relative aspect-[3/4]">
                   {item.imageUrl ? (

@@ -58,7 +58,7 @@ export function ReportDialog({
     const reporterHandle = user.username || user.email?.split('@')[0] || 'anonymous';
 
     const isAIContentReport = reason === 'Suspected AI-generated content';
-    
+
     const newReport: Report = {
       id: `report-${Date.now()}`,
       contentId,
@@ -87,7 +87,7 @@ export function ReportDialog({
       
       // Also call the onReport callback if provided
       if (onReport) {
-        await onReport(newReport);
+      await onReport(newReport);
       }
       
       toast({

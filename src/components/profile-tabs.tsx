@@ -222,7 +222,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
   }
 
   console.log('🎯 ProfileTabs render:', { isProfessional, userId, isOwnProfile, hideShop });
-  
+
   if (isProfessional) {
     // For professional artists, show tabs: Portfolio, Shop (if not hidden), Learn (if not hidden)
     const visibleTabs = [

@@ -353,9 +353,9 @@ function DiscoverPageContent() {
         setArtworks(placeholderArtworks);
       } finally {
         setLoading(false);
-      }
-    };
-    
+    }
+  };
+
     fetchArtworks();
   }, [discoverSettings, theme, mounted]);
 
@@ -604,8 +604,8 @@ function DiscoverPageContent() {
         console.error('Failed to load events:', error);
         const placeholderEvents = generatePlaceholderEvents(theme, 12);
         setEvents(placeholderEvents);
-      }
-    };
+    }
+  };
 
     fetchEvents();
   }, [theme, mounted]);
@@ -995,7 +995,7 @@ function DiscoverPageContent() {
                             alt={product.title}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
+                  />
                         </div>
                         <div className="p-4 flex flex-col flex-grow min-h-[100px]">
                           <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.title}</h3>

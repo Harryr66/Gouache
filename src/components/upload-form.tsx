@@ -59,7 +59,14 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
     medium: initialFormData?.medium || '',
     dimensions: initialFormData?.dimensions || { width: '', height: '', unit: 'cm' as const },
     tags: initialFormData?.tags || '',
+    // Stage 1: Is this item for sale or not
     isForSale: initialFormData?.isForSale ?? false,
+    // Stage 2: Identify item type
+    itemType: null as 'original' | 'print' | 'merchandise' | null,
+    // Stage 3: Show in portfolio
+    showInPortfolio: true,
+    // Stage 4: Show in shop
+    showInShop: false,
     price: initialFormData?.price || '',
     currency: initialFormData?.currency || 'USD',
     isAI: initialFormData?.isAI ?? false,
@@ -135,6 +142,26 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       return;
     }
 
+    // Validate item type is selected (Stage 2)
+    if (!formData.itemType) {
+      toast({
+        title: "Item Type Required",
+        description: "Please identify the item type (Original artwork, Print, or Merchandise product).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate at least one display option is selected (Stage 3 or 4)
+    if (!formData.showInPortfolio && !formData.showInShop) {
+      toast({
+        title: "Display Location Required",
+        description: "Please select at least one option: show in portfolio or show in shop.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Use chip-based tags (optional)
     const tags = tagsList;
 
@@ -178,6 +205,12 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         tags: tags,
         currency: formData.currency,
         isForSale: formData.isForSale,
+        // Stage 2: Item type
+        type: formData.itemType || 'original',
+        // Stage 3: Show in portfolio
+        showInPortfolio: formData.showInPortfolio,
+        // Stage 4: Show in shop
+        showInShop: formData.showInShop,
         dimensions: {
           width: parseFloat(formData.dimensions.width) || 0,
           height: parseFloat(formData.dimensions.height) || 0,
@@ -233,6 +266,9 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         supportingImages: supportingImages, // Store all images for carousel
         title: formData.title,
         description: formData.description || '',
+        type: newArtwork.type,
+        showInPortfolio: newArtwork.showInPortfolio,
+        showInShop: newArtwork.showInShop,
         dimensions: formData.dimensions.width && formData.dimensions.height 
           ? `${formData.dimensions.width} x ${formData.dimensions.height} ${formData.dimensions.unit}`
           : '',
@@ -518,6 +554,95 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             />
           </div>
 
+          {/* Stage 1: Is this item for sale or not */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <Label className="text-base font-semibold">Stage 1: Is this item for sale or not?</Label>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isForSale"
+                checked={formData.isForSale}
+                onCheckedChange={(checked) => setFormData({ ...formData, isForSale: checked })}
+              />
+              <Label htmlFor="isForSale" className="cursor-pointer">
+                {formData.isForSale ? 'Yes, this item is for sale' : 'No, this item is not for sale'}
+              </Label>
+            </div>
+          </div>
+
+          {/* Stage 2: Identify item type */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <Label className="text-base font-semibold">Stage 2: Identify item</Label>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="itemType-original"
+                  name="itemType"
+                  checked={formData.itemType === 'original'}
+                  onChange={() => setFormData({ ...formData, itemType: 'original' })}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="itemType-original" className="cursor-pointer font-normal">
+                  Original artwork
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="itemType-print"
+                  name="itemType"
+                  checked={formData.itemType === 'print'}
+                  onChange={() => setFormData({ ...formData, itemType: 'print' })}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="itemType-print" className="cursor-pointer font-normal">
+                  Print
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="itemType-merchandise"
+                  name="itemType"
+                  checked={formData.itemType === 'merchandise'}
+                  onChange={() => setFormData({ ...formData, itemType: 'merchandise' })}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="itemType-merchandise" className="cursor-pointer font-normal">
+                  Merchandise product
+                </Label>
+              </div>
+            </div>
+          </div>
+
+          {/* Stage 3: Show in portfolio */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="showInPortfolio"
+                checked={formData.showInPortfolio}
+                onCheckedChange={(checked) => setFormData({ ...formData, showInPortfolio: checked as boolean })}
+              />
+              <Label htmlFor="showInPortfolio" className="cursor-pointer text-base font-semibold">
+                Stage 3: I want this to appear under my portfolio
+              </Label>
+            </div>
+          </div>
+
+          {/* Stage 4: Show in shop */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="showInShop"
+                checked={formData.showInShop}
+                onCheckedChange={(checked) => setFormData({ ...formData, showInShop: checked as boolean })}
+              />
+              <Label htmlFor="showInShop" className="cursor-pointer text-base font-semibold">
+                Stage 4: I want this to appear in my shop
+              </Label>
+            </div>
+          </div>
+
           {/* Dimensions */}
           <div className="space-y-2">
             <Label>Dimensions</Label>
@@ -572,18 +697,10 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             </p>
           </div>
 
-          {/* Sale Options */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isForSale"
-                checked={formData.isForSale}
-                onCheckedChange={(checked) => setFormData({ ...formData, isForSale: checked })}
-              />
-              <Label htmlFor="isForSale">Make this available for sale</Label>
-            </div>
-
-            {formData.isForSale && (
+          {/* Price and Delivery (only shown if for sale) */}
+          {formData.isForSale && (
+            <div className="space-y-4 p-4 border rounded-lg">
+              <Label className="text-base font-semibold mb-4 block">Pricing & Delivery</Label>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
