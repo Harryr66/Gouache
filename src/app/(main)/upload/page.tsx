@@ -253,10 +253,10 @@ export default function UploadPage() {
         </Button>
         <header className="mb-8">
           <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
-            Upload Artwork/Product
+            Upload Image
           </h1>
           <p className="text-muted-foreground text-lg">
-            Upload artwork or products to your portfolio and shop.
+            Upload images to your portfolio and shop.
           </p>
         </header>
         <UploadForm />
@@ -379,12 +379,12 @@ export default function UploadPage() {
             </div>
             <CardTitle>Artwork/Product</CardTitle>
             <CardDescription>
-              Upload artwork or products. Choose to display in your portfolio, shop, or both.
+              Upload images. Choose to display in your portfolio, shop, or both.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              Upload Artwork/Product
+              Upload Image
             </Button>
           </CardContent>
         </Card>

@@ -369,7 +369,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{titleText || 'Upload Artwork'}</CardTitle>
+        <CardTitle>{titleText || 'Upload Image'}</CardTitle>
         <CardDescription>
           {descriptionText || 'Share your creative work with the community'}
         </CardDescription>
@@ -378,7 +378,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* File Upload */}
           <div className="space-y-2">
-            <Label htmlFor="file">{isProductUpload ? 'Product Files' : 'Artwork Files'} {files.length > 0 && `(${files.length} selected)`}</Label>
+            <Label htmlFor="file">Image Files {files.length > 0 && `(${files.length} selected)`}</Label>
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
               <input
                 type="file"
@@ -487,7 +487,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                   <div className="space-y-2">
                     <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">{isProductUpload ? 'Upload your product files' : 'Upload your artwork'}</p>
+                      <p className="text-sm font-medium">Upload your image</p>
                       <p className="text-xs text-muted-foreground">
                         PNG, JPG, GIF, MP4 up to 10MB (multiple files supported)
                       </p>
@@ -554,24 +554,23 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             />
           </div>
 
-          {/* Stage 1: Is this item for sale or not */}
+          {/* Is this item for sale */}
           <div className="space-y-4 p-4 border rounded-lg">
-            <Label className="text-base font-semibold">Stage 1: Is this item for sale or not?</Label>
             <div className="flex items-center space-x-2">
               <Switch
                 id="isForSale"
                 checked={formData.isForSale}
                 onCheckedChange={(checked) => setFormData({ ...formData, isForSale: checked })}
               />
-              <Label htmlFor="isForSale" className="cursor-pointer">
-                {formData.isForSale ? 'Yes, this item is for sale' : 'No, this item is not for sale'}
+              <Label htmlFor="isForSale" className="cursor-pointer text-base font-semibold">
+                Is this item for sale?
               </Label>
             </div>
           </div>
 
-          {/* Stage 2: Identify item type */}
+          {/* Identify item type */}
           <div className="space-y-4 p-4 border rounded-lg">
-            <Label className="text-base font-semibold">Stage 2: Identify item</Label>
+            <Label className="text-base font-semibold">Identify item</Label>
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <input
@@ -615,7 +614,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             </div>
           </div>
 
-          {/* Stage 3: Show in portfolio */}
+          {/* Show in portfolio */}
           <div className="space-y-4 p-4 border rounded-lg">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -624,12 +623,12 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                 onCheckedChange={(checked) => setFormData({ ...formData, showInPortfolio: checked as boolean })}
               />
               <Label htmlFor="showInPortfolio" className="cursor-pointer text-base font-semibold">
-                Stage 3: I want this to appear under my portfolio
+                I want this to appear under my portfolio
               </Label>
             </div>
           </div>
 
-          {/* Stage 4: Show in shop */}
+          {/* Show in shop */}
           <div className="space-y-4 p-4 border rounded-lg">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -638,7 +637,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                 onCheckedChange={(checked) => setFormData({ ...formData, showInShop: checked as boolean })}
               />
               <Label htmlFor="showInShop" className="cursor-pointer text-base font-semibold">
-                Stage 4: I want this to appear in my shop
+                I want this to appear in my shop
               </Label>
             </div>
           </div>
@@ -780,9 +779,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
           <Button type="submit" disabled={loading || !files.length || !agreedToTerms}>
             {loading 
               ? `Uploading ${files.length} file(s)...` 
-              : isProductUpload
-                ? `Upload ${files.length > 1 ? `${files.length} Files` : 'Product'}`
-                : `Upload ${files.length > 1 ? `${files.length} Files` : 'Artwork'}`
+              : `Upload ${files.length > 1 ? `${files.length} Files` : 'Image'}`
             }
           </Button>
         </form>
