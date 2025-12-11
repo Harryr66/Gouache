@@ -611,7 +611,9 @@ function DiscoverPageContent() {
 
   const visibleFilteredArtworks = useMemo(() => {
     const limitCount = Math.max(visibleCount, 15);
-    return filteredAndSortedArtworks.slice(0, limitCount);
+    return Array.isArray(filteredAndSortedArtworks)
+      ? filteredAndSortedArtworks.slice(0, limitCount)
+      : [];
   }, [filteredAndSortedArtworks, visibleCount]);
 
   useEffect(() => {
