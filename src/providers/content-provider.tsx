@@ -24,7 +24,7 @@ import {
 } from '@/lib/idb';
 import { useToast } from '@/hooks/use-toast';
 import { db, storage } from '@/lib/firebase';
-import { collection, getDocs, onSnapshot, orderBy, query, writeBatch, doc, addDoc, deleteDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, orderBy, query, writeBatch, doc, addDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 
@@ -172,10 +172,15 @@ export const ContentProvider = ({ children }: { children: ReactNode }) => {
 
         const artworkRef = doc(db, 'artworks', newArtwork.id);
         const cleanedArtwork = cleanObject({ ...newArtwork, discussionId: discussionRef.id });
+        // Override createdAt and updatedAt with serverTimestamp for proper Firestore querying
+        cleanedArtwork.createdAt = serverTimestamp();
+        cleanedArtwork.updatedAt = serverTimestamp();
         batch.set(artworkRef, cleanedArtwork);
 
         const postRef = doc(db, 'posts', newPost.id);
         const cleanedPost = cleanObject({ ...newPost, discussionId: discussionRef.id });
+        // Override createdAt with serverTimestamp for proper Firestore querying
+        cleanedPost.createdAt = serverTimestamp();
         batch.set(postRef, cleanedPost);
 
         await batch.commit();
