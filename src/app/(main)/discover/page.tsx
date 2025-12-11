@@ -447,7 +447,8 @@ function DiscoverPageContent() {
         }
         
         // Limit to 50 most recent after any fallback
-        const limitedArtworks = Array.isArray(fetchedArtworks) ? fetchedArtworks.slice(0, 50) : [];
+        const safeArtworks = Array.isArray(fetchedArtworks) ? fetchedArtworks : [];
+        const limitedArtworks = safeArtworks.slice(0, 50);
         
         log(`🎯 Discover: Final artworks count: ${limitedArtworks.length}`);
         
@@ -458,7 +459,7 @@ function DiscoverPageContent() {
         warn('⚠️ Discover: No artworks found, showing placeholders');
         }
         
-        setArtworks(finalArtworks);
+        setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
       } catch (err) {
         error('❌ Error fetching artworks from artist profiles:', err);
         // Even on error, show placeholder artworks
