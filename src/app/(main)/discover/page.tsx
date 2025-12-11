@@ -295,59 +295,89 @@ function DiscoverPageContent() {
     const fetchArtworks = async () => {
       try {
         setLoading(true);
-        const artworksQuery = query(
-          collection(db, 'artworks'),
-          orderBy('createdAt', 'desc'),
-          limit(50)
+        
+        // Fetch all professional artists from userProfiles
+        const artistsQuery = query(
+          collection(db, 'userProfiles'),
+          where('isProfessional', '==', true)
         );
         
-        const snapshot = await getDocs(artworksQuery);
+        const artistsSnapshot = await getDocs(artistsQuery);
         const fetchedArtworks: Artwork[] = [];
         
-        snapshot.docs.forEach((doc) => {
-          const data = doc.data();
+        // Extract portfolio items from each artist
+        for (const artistDoc of artistsSnapshot.docs) {
+          const artistData = artistDoc.data();
+          const portfolio = artistData.portfolio || [];
           
-          // Apply discover settings filters
-          if (discoverSettings.hideAiAssistedArt && (data.aiAssistance === 'assisted' || data.aiAssistance === 'generated' || data.isAI)) {
-            return; // Skip AI-assisted/generated artworks if hidden
-          }
-          
-          const artwork: Artwork = {
-            id: doc.id,
-            title: data.title || 'Untitled',
-            description: data.description || '',
-            imageUrl: data.imageUrl || '',
-            imageAiHint: data.imageAiHint || '',
-            artist: {
-              id: data.artist?.userId || data.artist?.id || '',
-              name: data.artist?.name || 'Unknown Artist',
-              handle: data.artist?.handle || '',
-              avatarUrl: data.artist?.avatarUrl || null,
-              isVerified: data.artist?.isVerified || false,
-              isProfessional: data.artist?.isProfessional || false,
-              followerCount: data.artist?.followerCount || 0,
-              followingCount: data.artist?.followingCount || 0,
-              createdAt: data.artist?.createdAt?.toDate() || new Date(),
-            },
-            likes: data.likes || 0,
-            commentsCount: data.commentsCount || 0,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || data.createdAt?.toDate() || new Date(),
-            category: data.category || '',
-            medium: data.medium || '',
-            tags: data.tags || [],
-            aiAssistance: data.aiAssistance || 'none',
-            isAI: data.isAI || false,
-          };
-          
-          fetchedArtworks.push(artwork);
+          // Process each portfolio item
+          portfolio.forEach((item: any) => {
+            // Only include items that should be shown in portfolio (showInPortfolio !== false)
+            if (item.showInPortfolio === false) {
+              return; // Skip items explicitly marked as not for portfolio
+            }
+            
+            // Apply discover settings filters for AI content
+            if (discoverSettings.hideAiAssistedArt && (item.aiAssistance === 'assisted' || item.aiAssistance === 'generated' || item.isAI)) {
+              return; // Skip AI-assisted/generated artworks if hidden
+            }
+            
+            // Get image URL (support multiple fallbacks)
+            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
+            
+            // Skip items without images
+            if (!imageUrl) {
+              return;
+            }
+            
+            // Convert portfolio item to Artwork object
+            const artwork: Artwork = {
+              id: item.id || `${artistDoc.id}-${Date.now()}`,
+              title: item.title || 'Untitled',
+              description: item.description || '',
+              imageUrl: imageUrl,
+              imageAiHint: item.description || '',
+              artist: {
+                id: artistDoc.id,
+                name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
+                handle: artistData.username || artistData.handle || '',
+                avatarUrl: artistData.avatarUrl || null,
+                isVerified: artistData.isVerified || false,
+                isProfessional: true,
+                followerCount: artistData.followerCount || 0,
+                followingCount: artistData.followingCount || 0,
+                createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
+              },
+              likes: item.likes || 0,
+              commentsCount: item.commentsCount || 0,
+              createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date()),
+              updatedAt: item.updatedAt?.toDate?.() || item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date()),
+              category: item.category || '',
+              medium: item.medium || '',
+              tags: item.tags || [],
+              aiAssistance: item.aiAssistance || 'none',
+              isAI: item.isAI || false,
+            };
+            
+            fetchedArtworks.push(artwork);
+          });
+        }
+        
+        // Sort by createdAt descending (newest first)
+        fetchedArtworks.sort((a, b) => {
+          const dateA = a.createdAt.getTime();
+          const dateB = b.createdAt.getTime();
+          return dateB - dateA;
         });
         
+        // Limit to 50 most recent
+        const limitedArtworks = fetchedArtworks.slice(0, 50);
+        
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
-        const finalArtworks = fetchedArtworks.length > 0 ? fetchedArtworks : placeholderArtworks;
+        const finalArtworks = limitedArtworks.length > 0 ? limitedArtworks : placeholderArtworks;
         setArtworks(finalArtworks);
       } catch (error) {
-        console.error('Error fetching artworks:', error);
+        console.error('Error fetching artworks from artist profiles:', error);
         // Even on error, show placeholder artworks
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
         setArtworks(placeholderArtworks);
