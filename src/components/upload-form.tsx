@@ -501,37 +501,6 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             />
           </div>
 
-          {/* Category and Medium */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="abstract">Abstract</SelectItem>
-                  <SelectItem value="charcoal">Charcoal</SelectItem>
-                  <SelectItem value="drawing">Drawing</SelectItem>
-                  <SelectItem value="sculpture">Sculpture</SelectItem>
-                  <SelectItem value="painting">Painting</SelectItem>
-                  <SelectItem value="mixed">Mixed Media</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="medium">Medium</Label>
-              <Input
-                id="medium"
-                value={formData.medium}
-                onChange={(e) => setFormData({ ...formData, medium: e.target.value })}
-                placeholder="e.g., Oil on Canvas, Digital"
-              />
-            </div>
-          </div>
-
           {/* Dimensions */}
           <div className="space-y-2">
             <Label>Dimensions</Label>
@@ -584,44 +553,6 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             <p className="text-xs text-muted-foreground">
               {formData.tags.split(',').map(tag => tag.trim()).filter(Boolean).length} tag(s) added
             </p>
-          </div>
-
-          {/* Artist Notes */}
-          <div className="space-y-4">
-            <Label className="text-lg font-semibold">Artist Notes (Optional)</Label>
-            
-            <div className="space-y-2">
-              <Label htmlFor="story">The Story Behind This Work</Label>
-              <Textarea
-                id="story"
-                value={formData.story}
-                onChange={(e) => setFormData({ ...formData, story: e.target.value })}
-                placeholder="Share the inspiration or story behind this piece..."
-                rows={4}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="materials">Materials Used</Label>
-              <Textarea
-                id="materials"
-                value={formData.materials}
-                onChange={(e) => setFormData({ ...formData, materials: e.target.value })}
-                placeholder="List materials (e.g., Oil paints, canvas, brushes)..."
-                rows={3}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="process">Creation Process</Label>
-              <Textarea
-                id="process"
-                value={formData.process}
-                onChange={(e) => setFormData({ ...formData, process: e.target.value })}
-                placeholder="Describe your creation process step by step..."
-                rows={4}
-              />
-            </div>
           </div>
 
           {/* Sale Options */}
