@@ -152,7 +152,17 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       return;
     }
 
-    // Validate at least one display option is selected (Stage 3 or 4)
+    // Validate that showInShop requires isForSale
+    if (formData.showInShop && !formData.isForSale) {
+      toast({
+        title: "Invalid Selection",
+        description: "Items must be marked for sale to appear in your shop.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate at least one display option is selected
     if (!formData.showInPortfolio && !formData.showInShop) {
       toast({
         title: "Display Location Required",
@@ -560,7 +570,14 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
               <Switch
                 id="isForSale"
                 checked={formData.isForSale}
-                onCheckedChange={(checked) => setFormData({ ...formData, isForSale: checked })}
+                onCheckedChange={(checked) => {
+                  setFormData({ 
+                    ...formData, 
+                    isForSale: checked,
+                    // If unchecking "for sale", also uncheck "show in shop"
+                    showInShop: checked ? formData.showInShop : false
+                  });
+                }}
               />
               <Label htmlFor="isForSale" className="cursor-pointer text-base font-semibold">
                 Mark this item for sale
@@ -634,12 +651,21 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
               <Checkbox
                 id="showInShop"
                 checked={formData.showInShop}
+                disabled={!formData.isForSale}
                 onCheckedChange={(checked) => setFormData({ ...formData, showInShop: checked as boolean })}
               />
-              <Label htmlFor="showInShop" className="cursor-pointer text-base font-semibold">
+              <Label 
+                htmlFor="showInShop" 
+                className={`cursor-pointer text-base font-semibold ${!formData.isForSale ? 'text-muted-foreground' : ''}`}
+              >
                 I want this to appear in my shop
               </Label>
             </div>
+            {!formData.isForSale && (
+              <p className="text-sm text-muted-foreground ml-6">
+                You must mark this item for sale first
+              </p>
+            )}
           </div>
 
           {/* Dimensions */}
