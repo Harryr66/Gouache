@@ -526,7 +526,7 @@ function DiscoverPageContent() {
     }
 
     return Array.isArray(sorted) ? sorted : [];
-  }, [artworks, searchQuery, selectedCategory, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt]);
+  }, [artworks, deferredSearchQuery, selectedCategory, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
@@ -535,12 +535,18 @@ function DiscoverPageContent() {
     // Search filter
     if (marketSearchQuery) {
       const queryLower = marketSearchQuery.toLowerCase();
-      filtered = filtered.filter(product =>
-        product.title.toLowerCase().includes(queryLower) ||
-        product.description?.toLowerCase().includes(queryLower) ||
-        product.sellerName.toLowerCase().includes(queryLower) ||
-        product.tags.some(tag => tag.toLowerCase().includes(queryLower))
-      );
+      filtered = filtered.filter(product => {
+        const title = (product.title || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        const sellerName = (product.sellerName || '').toLowerCase();
+        const tags = Array.isArray(product.tags) ? product.tags : [];
+        return (
+          title.includes(queryLower) ||
+          description.includes(queryLower) ||
+          sellerName.includes(queryLower) ||
+          tags.some(tag => (tag || '').toLowerCase().includes(queryLower))
+        );
+      });
     }
 
     // Category filter
@@ -601,7 +607,9 @@ function DiscoverPageContent() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + 8, filteredAndSortedArtworks.length || prev + 8));
+          startTransition(() => {
+            setVisibleCount((prev) => Math.min(prev + 8, filteredAndSortedArtworks.length || prev + 8));
+          });
         }
       });
     }, { rootMargin: '200px' });
@@ -611,7 +619,7 @@ function DiscoverPageContent() {
   }, [filteredAndSortedArtworks]);
 
   const visibleFilteredArtworks = useMemo(() => {
-    const limitCount = Math.max(visibleCount, 15);
+    const limitCount = Math.max(visibleCount, 12);
     return Array.isArray(filteredAndSortedArtworks)
       ? filteredAndSortedArtworks.slice(0, limitCount)
       : [];
@@ -820,7 +828,7 @@ function DiscoverPageContent() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Category</label>
-                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <Select value={selectedCategory} onValueChange={(value) => startTransition(() => setSelectedCategory(value))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -835,7 +843,7 @@ function DiscoverPageContent() {
                         </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Medium</label>
-                      <Select value={selectedMedium} onValueChange={setSelectedMedium}>
+                      <Select value={selectedMedium} onValueChange={(value) => startTransition(() => setSelectedMedium(value))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -850,7 +858,7 @@ function DiscoverPageContent() {
                       </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Sort By</label>
-                      <Select value={sortBy} onValueChange={setSortBy}>
+                      <Select value={sortBy} onValueChange={(value) => startTransition(() => setSortBy(value))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
