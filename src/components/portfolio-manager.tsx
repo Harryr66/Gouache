@@ -14,6 +14,7 @@ import { doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/auth-provider';
+import { useRouter } from 'next/navigation';
 
 interface PortfolioItem {
   id: string;
@@ -29,6 +30,7 @@ interface PortfolioItem {
 
 export function PortfolioManager() {
   const { user, refreshUser } = useAuth();
+  const router = useRouter();
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
@@ -248,19 +250,13 @@ export function PortfolioManager() {
       return;
     }
 
-    // Require title before uploading
+    // Block auto-upload until required fields are set (title at minimum)
     if (!newItem.title.trim()) {
-      console.log('⚠️ Upload cancelled - title required', {
-        titleValue: newItem.title,
-        titleTrimmed: newItem.title.trim(),
-        hasFile: !!file
-      });
       toast({
-        title: "Title required",
-        description: "Please enter an artwork title before uploading. The file selection has been cancelled.",
+        title: "Add a title first",
+        description: "Enter a title before selecting an image.",
         variant: "destructive"
       });
-      // Reset the file input
       event.target.value = '';
       return;
     }
@@ -284,7 +280,9 @@ export function PortfolioManager() {
         dimensions: newItem.dimensions || '',
         year: newItem.year || '',
         tags: newItem.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        createdAt: now // Use Date object instead of serverTimestamp to avoid placeholder issues
+        createdAt: now, // Use Date object instead of serverTimestamp to avoid placeholder issues
+        showInPortfolio: true,
+        deleted: false
       };
 
       console.log('📤 Uploading portfolio item:', {
@@ -708,8 +706,8 @@ export function PortfolioManager() {
                 <Button 
                   variant="gradient"
                   onClick={() => {
-                    console.log('➕ Add Your First Artwork button clicked');
-                    setShowAddForm(true);
+                    console.log('➕ Add Your First Artwork button clicked - redirect to /upload');
+                    router.push('/upload');
                   }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
