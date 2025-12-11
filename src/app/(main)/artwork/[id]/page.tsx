@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { AboutTheArtist } from '@/components/about-the-artist';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { X } from 'lucide-react';
 
 interface ArtworkView {
   id: string;
@@ -36,6 +38,7 @@ export default function ArtworkPage() {
   const [artwork, setArtwork] = useState<ArtworkView | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   useEffect(() => {
     const fetchArtwork = async () => {
@@ -144,89 +147,129 @@ export default function ArtworkPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <Card className="overflow-hidden">
-        <CardHeader className="space-y-2">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <CardTitle className="text-2xl font-semibold">{artwork.title}</CardTitle>
-            {artwork.isForSale && artwork.price !== undefined && (
-              <Badge className="bg-green-600 hover:bg-green-700 text-sm px-3 py-1">
-                {artwork.currency || 'USD'} {artwork.price.toLocaleString()}
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Button variant="ghost" onClick={() => router.back()} className="mb-2">
+            <span className="mr-2">←</span> Back
+          </Button>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Artwork image + actions */}
+            <div className="space-y-4">
+              <div
+                className="relative w-full min-h-[400px] lg:min-h-[560px] rounded-lg overflow-hidden bg-muted cursor-zoom-in"
+                onClick={() => setShowImageModal(true)}
+              >
+                <Image
+                  src={artwork.imageUrl}
+                  alt={artwork.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              </div>
+
+              {artwork.isForSale && artwork.price !== undefined && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Badge className="bg-green-600 hover:bg-green-700 text-sm px-3 py-1">
+                    {artwork.currency || 'USD'} {artwork.price.toLocaleString()}
                   </Badge>
+                  <span className="text-muted-foreground">Available</span>
+                </div>
               )}
             </div>
-          {artwork.artist?.id && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>by</span>
-              <Link href={`/profile/${artwork.artist.id}`} className="font-medium hover:underline">
-                {artwork.artist.name || artwork.artist.handle || 'View artist'}
-              </Link>
+
+            {/* Details column */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl">{artwork.title}</CardTitle>
+                  {artwork.artist?.id && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>by</span>
+                      <Link href={`/profile/${artwork.artist.id}`} className="font-medium hover:underline">
+                        {artwork.artist.name || artwork.artist.handle || 'View artist'}
+                      </Link>
+                    </div>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {artwork.description && (
+                    <div>
+                      <h4 className="font-medium mb-2">Description</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                        {artwork.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {artwork.tags && artwork.tags.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Tags</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {artwork.tags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="capitalize">
+                            #{tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground">For sale:</span>
+                      <span>{artwork.isForSale ? 'Yes' : 'No'}</span>
+                    </div>
+                    {artwork.price !== undefined && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">Price:</span>
+                        <span>{artwork.currency || 'USD'} {artwork.price.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* About the artist */}
+              {artwork.artist?.id && (
+                <AboutTheArtist
+                  artistId={artwork.artist.id}
+                  artistName={artwork.artist.name}
+                  artistHandle={artwork.artist.handle}
+                  className="border"
+                  compact
+                />
+              )}
             </div>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative w-full aspect-square bg-muted rounded-lg overflow-hidden">
+          </div>
+        </div>
+      </div>
+
+      {/* Fullscreen image dialog */}
+      <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+        <DialogContent className="max-w-5xl w-[90vw] p-0 overflow-hidden">
+          <button
+            aria-label="Close"
+            className="absolute top-3 right-3 z-10 rounded-full bg-black/60 text-white p-1 hover:bg-black/80"
+            onClick={() => setShowImageModal(false)}
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="relative w-full aspect-[4/3] bg-black">
             <Image
               src={artwork.imageUrl}
               alt={artwork.title}
               fill
-              className="object-cover"
-              sizes="(min-width: 1024px) 640px, 100vw"
+              className="object-contain"
+              sizes="100vw"
+              priority
             />
           </div>
-          {artwork.description && (
-            <p className="text-muted-foreground whitespace-pre-line">{artwork.description}</p>
-          )}
-                {artwork.tags && artwork.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {artwork.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="capitalize">
-                        #{tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-          {/* Artwork details */}
-          <Card className="border">
-              <CardHeader>
-              <CardTitle className="text-lg">About the artwork</CardTitle>
-              </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex gap-2 items-center">
-                <span className="font-medium text-foreground">For sale:</span>
-                <span>{artwork.isForSale ? 'Yes' : 'No'}</span>
-                </div>
-              {artwork.price !== undefined && (
-                <div className="flex gap-2 items-center">
-                  <span className="font-medium text-foreground">Price:</span>
-                  <span>{artwork.currency || 'USD'} {artwork.price.toLocaleString()}</span>
-                </div>
-              )}
-              {artwork.tags && artwork.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {artwork.tags.map((tag) => (
-                    <Badge key={`detail-${tag}`} variant="outline" className="capitalize">
-                      #{tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              </CardContent>
-            </Card>
-
-          {/* About the artist */}
-          {artwork.artist?.id && (
-            <AboutTheArtist
-              artistId={artwork.artist.id}
-              artistName={artwork.artist.name}
-              artistHandle={artwork.artist.handle}
-              className="border"
-              compact
-            />
-          )}
-              </CardContent>
-            </Card>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
