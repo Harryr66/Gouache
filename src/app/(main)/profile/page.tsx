@@ -264,14 +264,25 @@ export default function ProfilePage() {
           </Card>
         )}
 
-        <ProfileTabs
-          userId={effectiveUser.id}
-          isOwnProfile={true}
-          isProfessional={effectiveUser.isProfessional || hasApprovedArtistRequest || false}
-          hideShop={effectiveUser.hideShop ?? false}
-          hideLearn={true}
-          onTabChange={setCurrentTab}
-        />
+        {(() => {
+          const isProf = effectiveUser.isProfessional || hasApprovedArtistRequest || false;
+          console.log('👤 Profile page: isProfessional check', {
+            effectiveUserIsProfessional: effectiveUser.isProfessional,
+            hasApprovedArtistRequest,
+            finalIsProfessional: isProf,
+            userId: effectiveUser.id
+          });
+          return (
+            <ProfileTabs
+              userId={effectiveUser.id}
+              isOwnProfile={true}
+              isProfessional={isProf}
+              hideShop={effectiveUser.hideShop ?? false}
+              hideLearn={true}
+              onTabChange={setCurrentTab}
+            />
+          );
+        })()}
       </div>
     </div>
   );

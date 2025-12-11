@@ -28,6 +28,8 @@ interface PortfolioItem {
 }
 
 export function PortfolioManager() {
+  console.log('🚀 PortfolioManager component MOUNTED/RENDERED');
+  
   const { user, refreshUser } = useAuth();
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
