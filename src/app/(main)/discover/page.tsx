@@ -722,8 +722,8 @@ function DiscoverPageContent() {
         });
         const placeholderEvents = generatePlaceholderEvents(theme, 12);
         setEvents([...fetchedEvents, ...placeholderEvents]);
-      } catch (error) {
-        error('Failed to load events:', error);
+      } catch (err) {
+        error('Failed to load events:', err);
         const placeholderEvents = generatePlaceholderEvents(theme, 12);
         setEvents(placeholderEvents);
     }
