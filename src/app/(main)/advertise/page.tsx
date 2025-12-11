@@ -314,8 +314,8 @@ export default function AdvertisePage() {
           <h3 className="text-lg font-semibold text-foreground mb-2">Questions?</h3>
           <p className="text-muted-foreground mb-4">
             Contact our advertising team at{' '}
-            <a href="mailto:advertising@soma.com" className="text-primary hover:underline">
-              advertising@soma.com
+            <a href="mailto:news@gouache.art" className="text-primary hover:underline">
+              news@gouache.art
             </a>
           </p>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
