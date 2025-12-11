@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/providers/auth-provider';
 import { useContent } from '@/providers/content-provider';
 import { useRouter } from 'next/navigation';
@@ -43,6 +44,35 @@ interface UploadFormProps {
   titleText?: string;
   descriptionText?: string;
 }
+
+// List of countries for delivery selector
+const COUNTRIES = [
+  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 'Italy', 'Spain',
+  'Netherlands', 'Belgium', 'Switzerland', 'Austria', 'Sweden', 'Norway', 'Denmark', 'Finland',
+  'Ireland', 'Portugal', 'Greece', 'Poland', 'Czech Republic', 'Hungary', 'Romania', 'Bulgaria',
+  'Croatia', 'Slovenia', 'Slovakia', 'Estonia', 'Latvia', 'Lithuania', 'Luxembourg', 'Malta',
+  'Cyprus', 'Japan', 'South Korea', 'China', 'India', 'Singapore', 'Hong Kong', 'Taiwan',
+  'Thailand', 'Malaysia', 'Indonesia', 'Philippines', 'Vietnam', 'New Zealand', 'South Africa',
+  'Brazil', 'Mexico', 'Argentina', 'Chile', 'Colombia', 'Peru', 'Uruguay', 'Ecuador',
+  'Venezuela', 'Panama', 'Costa Rica', 'Guatemala', 'Israel', 'United Arab Emirates', 'Saudi Arabia',
+  'Qatar', 'Kuwait', 'Bahrain', 'Oman', 'Jordan', 'Lebanon', 'Egypt', 'Morocco',
+  'Tunisia', 'Turkey', 'Russia', 'Ukraine', 'Belarus', 'Iceland', 'Liechtenstein', 'Monaco',
+  'Andorra', 'San Marino', 'Vatican City', 'Albania', 'Bosnia and Herzegovina', 'Serbia', 'Montenegro',
+  'North Macedonia', 'Kosovo', 'Moldova', 'Georgia', 'Armenia', 'Azerbaijan', 'Kazakhstan',
+  'Uzbekistan', 'Kyrgyzstan', 'Tajikistan', 'Turkmenistan', 'Mongolia', 'Nepal', 'Bhutan',
+  'Bangladesh', 'Sri Lanka', 'Maldives', 'Myanmar', 'Cambodia', 'Laos', 'Brunei', 'East Timor',
+  'Papua New Guinea', 'Fiji', 'Samoa', 'Tonga', 'Vanuatu', 'Solomon Islands', 'Palau',
+  'Micronesia', 'Marshall Islands', 'Kiribati', 'Tuvalu', 'Nauru', 'Mauritius', 'Seychelles',
+  'Madagascar', 'Kenya', 'Tanzania', 'Uganda', 'Rwanda', 'Ethiopia', 'Ghana', 'Nigeria',
+  'Senegal', 'Ivory Coast', 'Cameroon', 'Gabon', 'Botswana', 'Namibia', 'Zimbabwe', 'Zambia',
+  'Mozambique', 'Angola', 'Malawi', 'Lesotho', 'Swaziland', 'Djibouti', 'Eritrea', 'Sudan',
+  'Chad', 'Niger', 'Mali', 'Burkina Faso', 'Guinea', 'Sierra Leone', 'Liberia', 'Togo',
+  'Benin', 'Gambia', 'Guinea-Bissau', 'Cape Verde', 'São Tomé and Príncipe', 'Equatorial Guinea',
+  'Central African Republic', 'Democratic Republic of the Congo', 'Republic of the Congo', 'Burundi',
+  'Comoros', 'Algeria', 'Libya', 'Tunisia', 'Mauritania', 'Western Sahara', 'Afghanistan',
+  'Iran', 'Iraq', 'Syria', 'Yemen', 'Oman', 'Pakistan', 'Bangladesh', 'Myanmar',
+  'North Korea', 'Mongolia', 'Bhutan', 'Nepal', 'Sri Lanka', 'Maldives', 'Other'
+].sort();
 
 export function UploadForm({ initialFormData, titleText, descriptionText }: UploadFormProps) {
   const { user, avatarUrl, refreshUser } = useAuth();
@@ -90,6 +120,14 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       .map((t) => t.trim())
       .filter(Boolean)
   );
+  
+  // Country selector state
+  const [selectedCountries, setSelectedCountries] = useState<string[]>(
+    initialFormData?.deliveryCountries 
+      ? initialFormData.deliveryCountries.split(',').map(c => c.trim()).filter(Boolean)
+      : []
+  );
+  const [countrySearch, setCountrySearch] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -761,7 +799,10 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                     <Button
                       type="button"
                       variant={formData.deliveryScope === 'worldwide' ? 'gradient' : 'outline'}
-                      onClick={() => setFormData({ ...formData, deliveryScope: 'worldwide', deliveryCountries: '' })}
+                      onClick={() => {
+                        setSelectedCountries([]);
+                        setFormData({ ...formData, deliveryScope: 'worldwide', deliveryCountries: '' });
+                      }}
                     >
                       Worldwide
                     </Button>
@@ -774,11 +815,69 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                     </Button>
                   </div>
                   {formData.deliveryScope === 'specific' && (
-                    <Input
-                      placeholder="List countries (comma-separated)"
-                      value={formData.deliveryCountries}
-                      onChange={(e) => setFormData({ ...formData, deliveryCountries: e.target.value })}
-                    />
+                    <div className="space-y-2">
+                      <Label>Select countries</Label>
+                      <Input
+                        placeholder="Search countries..."
+                        value={countrySearch}
+                        onChange={(e) => setCountrySearch(e.target.value)}
+                        className="mb-2"
+                      />
+                      <div className="border rounded-lg p-4 max-h-64 overflow-y-auto space-y-2">
+                        {COUNTRIES.filter(country => 
+                          country.toLowerCase().includes(countrySearch.toLowerCase())
+                        ).map((country) => (
+                          <div key={country} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`country-${country}`}
+                              checked={selectedCountries.includes(country)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  const updated = [...selectedCountries, country];
+                                  setSelectedCountries(updated);
+                                  setFormData({ ...formData, deliveryCountries: updated.join(', ') });
+                                } else {
+                                  const updated = selectedCountries.filter(c => c !== country);
+                                  setSelectedCountries(updated);
+                                  setFormData({ ...formData, deliveryCountries: updated.join(', ') });
+                                }
+                              }}
+                            />
+                            <Label 
+                              htmlFor={`country-${country}`} 
+                              className="cursor-pointer font-normal text-sm"
+                            >
+                              {country}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      {selectedCountries.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Selected: {selectedCountries.length} countr{selectedCountries.length === 1 ? 'y' : 'ies'}
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {selectedCountries.map((country) => (
+                              <Badge key={country} variant="secondary" className="text-xs">
+                                {country}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = selectedCountries.filter(c => c !== country);
+                                    setSelectedCountries(updated);
+                                    setFormData({ ...formData, deliveryCountries: updated.join(', ') });
+                                  }}
+                                  className="ml-1 hover:text-destructive"
+                                >
+                                  ×
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
