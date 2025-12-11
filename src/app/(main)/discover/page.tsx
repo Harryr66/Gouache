@@ -459,8 +459,8 @@ function DiscoverPageContent() {
         }
         
         setArtworks(finalArtworks);
-      } catch (error) {
-        error('❌ Error fetching artworks from artist profiles:', error);
+      } catch (err) {
+        error('❌ Error fetching artworks from artist profiles:', err);
         // Even on error, show placeholder artworks
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
         setArtworks(placeholderArtworks);
