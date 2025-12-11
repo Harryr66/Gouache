@@ -88,6 +88,17 @@ export default function AdvertisePage() {
       const adDocRef = await addDoc(collection(db, 'advertisingApplications'), adData);
       console.log('✅ Advertising application submitted successfully:', adDocRef.id, adData);
 
+      // Email notification
+      try {
+        await fetch('/api/notify-advertising', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...adData, applicationId: adDocRef.id, sendTo: 'news@gouache.art' }),
+        });
+      } catch (err) {
+        console.warn('⚠️ Failed to send advertising email notification', err);
+      }
+
       toast({
         title: "Application Submitted",
         description: "Your advertising application has been submitted successfully. We'll review it and get back to you within 2-3 business days.",
