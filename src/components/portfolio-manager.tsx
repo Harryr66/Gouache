@@ -28,25 +28,30 @@ interface PortfolioItem {
 }
 
 export function PortfolioManager() {
-  console.log('🚀 PortfolioManager component MOUNTED/RENDERED');
-  
   const { user, refreshUser } = useAuth();
+  
+  // Log mount only once
+  useEffect(() => {
+    console.log('🚀 PortfolioManager component MOUNTED');
+  }, []);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   
-  // Debug logging
+  // Debug logging (throttled to avoid blocking)
   useEffect(() => {
-    console.log('📋 PortfolioManager state:', {
-      showAddForm,
-      hasUser: !!user,
-      userId: user?.id,
-      portfolioCount: portfolioItems.length,
-      isUploading,
-      portfolioItems: portfolioItems.map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
-    });
-  }, [showAddForm, user, portfolioItems, isUploading]);
+    if (portfolioItems.length > 0) {
+      console.log('📋 PortfolioManager state:', {
+        showAddForm,
+        hasUser: !!user,
+        userId: user?.id,
+        portfolioCount: portfolioItems.length,
+        isUploading,
+        sampleItems: portfolioItems.slice(0, 3).map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
+      });
+    }
+  }, [showAddForm, user?.id, portfolioItems.length, isUploading]);
   
   // Log when form becomes visible
   useEffect(() => {
@@ -71,35 +76,42 @@ export function PortfolioManager() {
         return;
       }
 
+      // Helper function to map portfolio items (deferred to avoid blocking)
+      const mapPortfolioItem = (item: any, index: number): PortfolioItem => {
+        let createdAt: Date;
+        if (item.createdAt?.toDate) {
+          createdAt = item.createdAt.toDate();
+        } else if (item.createdAt instanceof Date) {
+          createdAt = item.createdAt;
+        } else {
+          createdAt = new Date();
+        }
+
+        const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
+
+        return {
+          id: item.id || `portfolio-${Date.now()}-${index}`,
+          imageUrl: imageUrl,
+          title: item.title || 'Untitled Artwork',
+          description: item.description || '',
+          medium: item.medium || '',
+          dimensions: item.dimensions || '',
+          year: item.year || '',
+          tags: Array.isArray(item.tags) ? item.tags : [],
+          createdAt
+        };
+      };
+
       // First, try to use portfolio from user object if available (faster)
       if (user.portfolio && Array.isArray(user.portfolio) && user.portfolio.length > 0) {
         console.log('📋 PortfolioManager: Using portfolio from user object', user.portfolio.length);
-        const mappedFromUser = user.portfolio.map((item: any) => {
-          let createdAt: Date;
-          if (item.createdAt?.toDate) {
-            createdAt = item.createdAt.toDate();
-          } else if (item.createdAt instanceof Date) {
-            createdAt = item.createdAt;
-          } else {
-            createdAt = new Date();
-          }
-
-          const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
-
-          return {
-            id: item.id || `portfolio-${Date.now()}-${Math.random()}`,
-            imageUrl: imageUrl,
-            title: item.title || 'Untitled Artwork',
-            description: item.description || '',
-            medium: item.medium || '',
-            dimensions: item.dimensions || '',
-            year: item.year || '',
-            tags: Array.isArray(item.tags) ? item.tags : [],
-            createdAt
-          };
-        });
-        mappedFromUser.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
-        setPortfolioItems(mappedFromUser);
+        
+        // Defer heavy operations to avoid blocking UI
+        setTimeout(() => {
+          const mappedFromUser = user.portfolio.map(mapPortfolioItem);
+          mappedFromUser.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
+          setPortfolioItems(mappedFromUser);
+        }, 0);
       }
 
       // Always also fetch from Firestore to ensure we have the latest
@@ -107,53 +119,22 @@ export function PortfolioManager() {
         const userDoc = await getDoc(doc(db, 'userProfiles', user.id));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          const mappedItems = (data.portfolio || []).map((item: any) => {
-            let createdAt: Date;
-            if (item.createdAt?.toDate) {
-              createdAt = item.createdAt.toDate();
-            } else if (item.createdAt instanceof Date) {
-              createdAt = item.createdAt;
-            } else {
-              createdAt = new Date();
-            }
+          const rawPortfolio = data.portfolio || [];
+          
+          // Defer heavy operations to avoid blocking UI
+          setTimeout(() => {
+            const mappedItems = rawPortfolio.map(mapPortfolioItem);
+            mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
 
-            // Try multiple sources for image URL
-            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
-
-            return {
-              id: item.id || `portfolio-${Date.now()}-${Math.random()}`,
-              imageUrl: imageUrl,
-              title: item.title || 'Untitled Artwork',
-              description: item.description || '',
-              medium: item.medium || '',
-              dimensions: item.dimensions || '',
-              year: item.year || '',
-              tags: Array.isArray(item.tags) ? item.tags : [],
-              createdAt
-            };
-          }); // REMOVED FILTER - show ALL items, even without images
-
-          mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
-
-          console.log('📋 PortfolioManager: Loaded portfolio from Firestore', {
-            userId: user.id,
-            rawPortfolioCount: (data.portfolio || []).length,
-            mappedCount: mappedItems.length,
-            items: mappedItems.map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl, imageUrl: i.imageUrl?.substring(0, 50) + '...' }))
-          });
-
-          if (mappedItems.length === 0 && (data.portfolio || []).length > 0) {
-            console.error('⚠️ PortfolioManager: Items filtered out!', {
-              rawItems: (data.portfolio || []).map((item: any) => ({
-                id: item.id,
-                title: item.title,
-                imageUrl: item.imageUrl,
-                supportingImages: item.supportingImages
-              }))
+            console.log('📋 PortfolioManager: Loaded portfolio from Firestore', {
+              userId: user.id,
+              rawPortfolioCount: rawPortfolio.length,
+              mappedCount: mappedItems.length,
+              items: mappedItems.slice(0, 5).map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
             });
-          }
 
-          setPortfolioItems(mappedItems);
+            setPortfolioItems(mappedItems);
+          }, 0);
         } else {
           setPortfolioItems([]);
         }
@@ -712,12 +693,14 @@ export function PortfolioManager() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {portfolioItems.map((item, index) => {
               const imageUrl = item.imageUrl || '/assets/placeholder-light.png';
-              console.log(`🎨 Rendering portfolio item ${index + 1}/${portfolioItems.length}:`, { 
-                id: item.id, 
-                title: item.title, 
-                hasImageUrl: !!item.imageUrl,
-                imageUrl: imageUrl.substring(0, 80) 
-              });
+              // Only log first 3 items to avoid blocking
+              if (index < 3) {
+                console.log(`🎨 Rendering portfolio item ${index + 1}/${portfolioItems.length}:`, { 
+                  id: item.id, 
+                  title: item.title, 
+                  hasImageUrl: !!item.imageUrl
+                });
+              }
               return (
               <Card key={item.id || `portfolio-item-${index}`} className="overflow-hidden group">
                 <div className="relative h-64 bg-muted">
