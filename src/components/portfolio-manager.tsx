@@ -104,11 +104,12 @@ export function PortfolioManager() {
 
       // First, try to use portfolio from user object if available (faster)
       if (user.portfolio && Array.isArray(user.portfolio) && user.portfolio.length > 0) {
-        console.log('📋 PortfolioManager: Using portfolio from user object', user.portfolio.length);
+        const userPortfolio = user.portfolio; // Capture for setTimeout
+        console.log('📋 PortfolioManager: Using portfolio from user object', userPortfolio.length);
         
         // Defer heavy operations to avoid blocking UI
         setTimeout(() => {
-          const mappedFromUser = user.portfolio.map(mapPortfolioItem);
+          const mappedFromUser = userPortfolio.map(mapPortfolioItem);
           mappedFromUser.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
           setPortfolioItems(mappedFromUser);
         }, 0);
