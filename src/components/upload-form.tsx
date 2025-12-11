@@ -546,9 +546,9 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             </div>
           </div>
 
-          {/* Tags */}
+          {/* Discovery Tags */}
           <div className="space-y-2">
-            <Label htmlFor="tags">Tags</Label>
+            <Label htmlFor="tags">Discovery Tags</Label>
             <div className="flex flex-wrap gap-2 pb-1">
               {tagsList.map((tag) => (
                 <span
@@ -743,21 +743,6 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          {/* Tags */}
-          <div className="space-y-2">
-            <Label htmlFor="tags">Tags <span className="text-destructive">*</span> (Minimum 2 required)</Label>
-            <Input
-              id="tags"
-              value={formData.tags}
-              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              placeholder="Enter at least 2 tags separated by commas (e.g., abstract, painting, modern)"
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              {formData.tags.split(',').map(tag => tag.trim()).filter(Boolean).length} tag(s) added
-            </p>
           </div>
 
           {/* Price and Delivery (only shown if for sale) */}
