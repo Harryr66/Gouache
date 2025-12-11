@@ -352,9 +352,9 @@ function DiscoverPageContent() {
             if (!imageUrl) {
               skippedNoImage++;
               log(`⚠️ Discover: Skipping item "${item.title || 'Untitled'}" from ${artistData.displayName || artistDoc.id} - no image URL`);
-              return;
-            }
-            
+      return;
+    }
+
             // Convert portfolio item to Artwork object
             const artwork: Artwork = {
               id: item.id || `${artistDoc.id}-${Date.now()}-${index}`,
@@ -510,7 +510,7 @@ function DiscoverPageContent() {
     }
 
     // Sort
-    const sorted = [...filtered];
+    const sorted = Array.isArray(filtered) ? [...filtered] : [];
     switch (sortBy) {
       case 'newest':
         sorted.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
@@ -525,12 +525,12 @@ function DiscoverPageContent() {
         break;
     }
 
-    return sorted;
+    return Array.isArray(sorted) ? sorted : [];
   }, [artworks, searchQuery, selectedCategory, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
-    let filtered = marketplaceProducts;
+    let filtered = Array.isArray(marketplaceProducts) ? marketplaceProducts : [];
 
     // Search filter
     if (marketSearchQuery) {
@@ -572,7 +572,7 @@ function DiscoverPageContent() {
     }
 
     // Sort
-    const sorted = [...filtered];
+    const sorted = Array.isArray(filtered) ? [...filtered] : [];
     switch (marketSortBy) {
       case 'newest':
         sorted.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
@@ -590,7 +590,7 @@ function DiscoverPageContent() {
         break;
     }
 
-    return sorted;
+    return Array.isArray(sorted) ? sorted : [];
   }, [marketplaceProducts, marketSearchQuery, selectedMarketCategory, marketSortBy]);
 
   // Infinite scroll observer for artworks
