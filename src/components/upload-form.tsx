@@ -168,13 +168,11 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
     e.preventDefault();
     if (!files.length || !user) return;
 
-    // Validate agreement to terms
-    if (!agreedToTerms) {
+    // Validate agreement to terms (only required for original artworks and prints, not merchandise)
+    if (formData.itemType !== 'merchandise' && !agreedToTerms) {
       toast({
         title: "Agreement Required",
-        description: isProductUpload
-          ? "You must agree to the terms regarding AI-generated content before uploading."
-          : "You must agree to the terms regarding AI-generated artwork before uploading.",
+        description: "You must agree to the terms regarding AI-generated artwork before uploading.",
         variant: "destructive",
       });
       return;
@@ -869,24 +867,23 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             </div>
           )}
 
-          {/* Terms Agreement */}
-          <div className="flex items-start space-x-3 p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
-            <Checkbox
-              id="agreeToTerms"
-              checked={agreedToTerms}
-              onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
-              className="mt-1"
-            />
-            <label htmlFor="agreeToTerms" className="text-sm leading-relaxed cursor-pointer">
-              {isProductUpload 
-                ? "I confirm that this product is not AI-generated and is my own original creative work."
-                : "I confirm that this artwork is not AI-generated and is my own original creative work."
-              }
-            </label>
-          </div>
+          {/* Terms Agreement - Only show for original artworks and prints, not merchandise */}
+          {formData.itemType !== 'merchandise' && (
+            <div className="flex items-start space-x-3 p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
+              <Checkbox
+                id="agreeToTerms"
+                checked={agreedToTerms}
+                onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                className="mt-1"
+              />
+              <label htmlFor="agreeToTerms" className="text-sm leading-relaxed cursor-pointer">
+                I confirm that this artwork is not AI-generated and is my own original creative work.
+              </label>
+            </div>
+          )}
 
           {/* Submit Button */}
-          <Button type="submit" disabled={loading || !files.length || !agreedToTerms}>
+          <Button type="submit" disabled={loading || !files.length || (formData.itemType !== 'merchandise' && !agreedToTerms)}>
             {loading 
               ? `Uploading ${files.length} file(s)...` 
               : `Upload ${files.length > 1 ? `${files.length} Files` : 'Image'}`
