@@ -104,15 +104,14 @@ export function PortfolioManager() {
 
       // First, try to use portfolio from user object if available (faster)
       if (user.portfolio && Array.isArray(user.portfolio) && user.portfolio.length > 0) {
-        const userPortfolio = user.portfolio; // Capture for setTimeout
+        const userPortfolio = user.portfolio;
         console.log('📋 PortfolioManager: Using portfolio from user object', userPortfolio.length);
         
-        // Defer heavy operations to avoid blocking UI
-        setTimeout(() => {
-          const mappedFromUser = userPortfolio.map(mapPortfolioItem);
-          mappedFromUser.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
-          setPortfolioItems(mappedFromUser);
-        }, 0);
+        // Process immediately - the operations are fast enough for small arrays
+        const mappedFromUser = userPortfolio.map(mapPortfolioItem);
+        mappedFromUser.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
+        console.log('✅ PortfolioManager: Setting portfolio items from user object', mappedFromUser.length);
+        setPortfolioItems(mappedFromUser);
       }
 
       // Always also fetch from Firestore to ensure we have the latest
@@ -122,20 +121,19 @@ export function PortfolioManager() {
           const data = userDoc.data();
           const rawPortfolio = data.portfolio || [];
           
-          // Defer heavy operations to avoid blocking UI
-          setTimeout(() => {
-            const mappedItems = rawPortfolio.map(mapPortfolioItem);
-            mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
+          // Process immediately
+          const mappedItems = rawPortfolio.map(mapPortfolioItem);
+          mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
 
-            console.log('📋 PortfolioManager: Loaded portfolio from Firestore', {
-              userId: user.id,
-              rawPortfolioCount: rawPortfolio.length,
-              mappedCount: mappedItems.length,
-              items: mappedItems.slice(0, 5).map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
-            });
+          console.log('📋 PortfolioManager: Loaded portfolio from Firestore', {
+            userId: user.id,
+            rawPortfolioCount: rawPortfolio.length,
+            mappedCount: mappedItems.length,
+            items: mappedItems.slice(0, 5).map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
+          });
 
-            setPortfolioItems(mappedItems);
-          }, 0);
+          console.log('✅ PortfolioManager: Setting portfolio items from Firestore', mappedItems.length);
+          setPortfolioItems(mappedItems);
         } else {
           setPortfolioItems([]);
         }
@@ -666,33 +664,44 @@ export function PortfolioManager() {
       )}
 
       {/* Portfolio Grid */}
-      {portfolioItems.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No artworks yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Start building your portfolio by adding your first artwork.
-            </p>
-            <Button 
-              variant="gradient"
-              onClick={() => {
-                console.log('➕ Add Your First Artwork button clicked');
-                setShowAddForm(true);
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Your First Artwork
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="mb-4 text-sm text-muted-foreground">
-            Showing {portfolioItems.length} artwork{portfolioItems.length !== 1 ? 's' : ''}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {portfolioItems.map((item, index) => {
+      {(() => {
+        console.log('🔍 PortfolioManager render check:', { 
+          portfolioItemsLength: portfolioItems.length,
+          showAddForm,
+          hasItems: portfolioItems.length > 0
+        });
+        
+        if (portfolioItems.length === 0) {
+          return (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No artworks yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Start building your portfolio by adding your first artwork.
+                </p>
+                <Button 
+                  variant="gradient"
+                  onClick={() => {
+                    console.log('➕ Add Your First Artwork button clicked');
+                    setShowAddForm(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your First Artwork
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        }
+        
+        return (
+          <>
+            <div className="mb-4 text-sm text-muted-foreground">
+              Showing {portfolioItems.length} artwork{portfolioItems.length !== 1 ? 's' : ''}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {portfolioItems.map((item, index) => {
               const imageUrl = item.imageUrl || '/assets/placeholder-light.png';
               // Only log first 3 items to avoid blocking
               if (index < 3) {
@@ -766,9 +775,10 @@ export function PortfolioManager() {
               </Card>
               );
             })}
-          </div>
-        </>
-      )}
+            </div>
+          </>
+        );
+      })()}
 
       {/* Edit Item Modal */}
       {editingItem && (
