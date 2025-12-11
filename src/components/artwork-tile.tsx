@@ -54,11 +54,13 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
 
   const handleTileClick = () => {
-    // Navigate to the artist profile (more reliable than artwork page for now)
-    if (artwork?.artist?.id) {
+    // Navigate to artwork detail page; fallback to profile if missing
+    if (artwork?.id) {
+      router.push(`/artwork/${artwork.id}`);
+    } else if (artwork?.artist?.id) {
       router.push(`/profile/${artwork.artist.id}`);
     } else {
-      router.push('/profile');
+      router.push('/discover');
     }
     if (onClick) onClick();
   };
