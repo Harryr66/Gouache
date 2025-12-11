@@ -757,8 +757,8 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                   )}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Terms Agreement */}
           <div className="flex items-start space-x-3 p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
