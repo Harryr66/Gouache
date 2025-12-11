@@ -29,6 +29,10 @@ interface PortfolioItem {
 
 export function PortfolioManager() {
   const { user, refreshUser } = useAuth();
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   
   // Log mount only once
   useEffect(() => {
@@ -42,10 +46,6 @@ export function PortfolioManager() {
       items: portfolioItems.slice(0, 3).map((i: PortfolioItem) => ({ id: i.id, title: i.title }))
     });
   }, [portfolioItems]);
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
   
   // Debug logging (throttled to avoid blocking)
   useEffect(() => {
