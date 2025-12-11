@@ -447,7 +447,7 @@ function DiscoverPageContent() {
         }
         
         // Limit to 50 most recent after any fallback
-        const limitedArtworks = fetchedArtworks.slice(0, 50);
+        const limitedArtworks = Array.isArray(fetchedArtworks) ? fetchedArtworks.slice(0, 50) : [];
         
         log(`🎯 Discover: Final artworks count: ${limitedArtworks.length}`);
         
