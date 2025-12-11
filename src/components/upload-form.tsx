@@ -159,7 +159,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       const supportingImages = uploadedUrls.slice(1);
 
       // Create artwork object
-      const newArtwork = {
+      const newArtwork: any = {
         id: `artwork-${Date.now()}`,
         artist: {
           id: user.id,
@@ -176,16 +176,11 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         supportingImages: supportingImages, // Store additional images/videos
         imageAiHint: formData.description,
         tags: tags,
-        price: formData.isForSale ? parseFloat(formData.price) : undefined,
         currency: formData.currency,
         isForSale: formData.isForSale,
-        deliveryScope: formData.isForSale ? formData.deliveryScope : undefined,
-        deliveryCountries: formData.isForSale ? formData.deliveryCountries : undefined,
-        category: formData.category,
-        medium: formData.medium,
         dimensions: {
-          width: parseFloat(formData.dimensions.width),
-          height: parseFloat(formData.dimensions.height),
+          width: parseFloat(formData.dimensions.width) || 0,
+          height: parseFloat(formData.dimensions.height) || 0,
           unit: formData.dimensions.unit as 'cm' | 'in' | 'px'
         },
         createdAt: new Date(),
@@ -194,10 +189,18 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         likes: 0,
         isAI: false, // AI artwork not permitted
         aiAssistance: 'none' as const,
-        statement: formData.story,
-        materialsList: formData.materials,
-        processExplanation: formData.process,
       };
+
+      // Only add optional fields if they have values
+      if (formData.isForSale && formData.price) {
+        newArtwork.price = parseFloat(formData.price);
+      }
+      if (formData.isForSale && formData.deliveryScope) {
+        newArtwork.deliveryScope = formData.deliveryScope;
+      }
+      if (formData.isForSale && formData.deliveryCountries) {
+        newArtwork.deliveryCountries = formData.deliveryCountries;
+      }
 
       // Create post object
       const post = {
@@ -224,24 +227,38 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       const userDoc = await getDoc(userDocRef);
       const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
       
-      const portfolioItem = {
+      const portfolioItem: any = {
         id: newArtwork.id,
         imageUrl: primaryImageUrl,
         supportingImages: supportingImages, // Store all images for carousel
         title: formData.title,
         description: formData.description || '',
-        medium: formData.medium || '',
         dimensions: formData.dimensions.width && formData.dimensions.height 
           ? `${formData.dimensions.width} x ${formData.dimensions.height} ${formData.dimensions.unit}`
           : '',
         year: '', // UploadForm doesn't have year field
         tags: newArtwork.tags,
-        deliveryScope: newArtwork.deliveryScope,
-        deliveryCountries: newArtwork.deliveryCountries,
         createdAt: new Date()
       };
 
-      const updatedPortfolio = [...currentPortfolio, portfolioItem];
+      // Only add optional fields if they have values
+      if (newArtwork.deliveryScope) {
+        portfolioItem.deliveryScope = newArtwork.deliveryScope;
+      }
+      if (newArtwork.deliveryCountries) {
+        portfolioItem.deliveryCountries = newArtwork.deliveryCountries;
+      }
+
+      // Clean portfolio item to remove undefined values
+      const cleanPortfolioItem: any = {};
+      Object.keys(portfolioItem).forEach(key => {
+        if (portfolioItem[key] !== undefined) {
+          cleanPortfolioItem[key] = portfolioItem[key];
+        }
+      });
+      
+      const updatedPortfolio = [...currentPortfolio, cleanPortfolioItem];
+      
       await updateDoc(userDocRef, {
         portfolio: updatedPortfolio,
         updatedAt: new Date()
