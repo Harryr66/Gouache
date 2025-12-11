@@ -666,8 +666,8 @@ function DiscoverPageContent() {
         // Always add placeholder products to simulate marketplace
         const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 50);
         setMarketplaceProducts([...fetchedProducts, ...placeholderProducts]);
-    } catch (error) {
-        error('Error fetching marketplace products:', error);
+    } catch (err) {
+        error('Error fetching marketplace products:', err);
         // Even on error, show placeholder products
         const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 50);
         setMarketplaceProducts(placeholderProducts);
