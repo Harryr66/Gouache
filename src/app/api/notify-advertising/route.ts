@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
 const resendApiKey = process.env.RESEND_API_KEY;
-const fromAddress = process.env.ADVERTISING_FROM_EMAIL || 'Gouache Ads <ads@example.com>';
+const fromAddress = process.env.ADVERTISING_FROM_EMAIL || 'Gouache Ads <news@gouache.art>';
 const fallbackRecipient = 'news@gouache.art';
 
 export async function POST(request: Request) {
