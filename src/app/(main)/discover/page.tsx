@@ -393,7 +393,55 @@ function DiscoverPageContent() {
           return dateB - dateA;
         });
         
-        // Limit to 50 most recent
+        // If we still have nothing (or fetch failed), fall back to the artworks collection
+        if (fetchedArtworks.length === 0) {
+          console.warn('⚠️ Discover: No portfolio artworks found, falling back to artworks collection');
+          try {
+            const fallbackQuery = query(
+              collection(db, 'artworks'),
+              orderBy('createdAt', 'desc'),
+              limit(50)
+            );
+            const snapshot = await getDocs(fallbackQuery);
+            snapshot.docs.forEach((doc) => {
+              const data = doc.data();
+              const imageUrl = data.imageUrl || data.supportingImages?.[0] || data.images?.[0] || '';
+              if (!imageUrl) return;
+              fetchedArtworks.push({
+                id: doc.id,
+                title: data.title || 'Untitled',
+                description: data.description || '',
+                imageUrl,
+                imageAiHint: data.imageAiHint || '',
+                artist: {
+                  id: data.artist?.userId || data.artist?.id || '',
+                  name: data.artist?.name || 'Unknown Artist',
+                  handle: data.artist?.handle || '',
+                  avatarUrl: data.artist?.avatarUrl || null,
+                  isVerified: data.artist?.isVerified || false,
+                  isProfessional: data.artist?.isProfessional || false,
+                  followerCount: data.artist?.followerCount || 0,
+                  followingCount: data.artist?.followingCount || 0,
+                  createdAt: data.artist?.createdAt?.toDate?.() || new Date(),
+                },
+                likes: data.likes || 0,
+                commentsCount: data.commentsCount || 0,
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+                updatedAt: data.updatedAt?.toDate?.() || data.createdAt?.toDate?.() || new Date(),
+                category: data.category || '',
+                medium: data.medium || '',
+                tags: data.tags || [],
+                aiAssistance: data.aiAssistance || 'none',
+                isAI: data.isAI || false,
+              });
+            });
+            console.log(`🎯 Discover: Fallback artworks count: ${fetchedArtworks.length}`);
+          } catch (fallbackError) {
+            console.error('❌ Discover: Fallback to artworks collection failed:', fallbackError);
+          }
+        }
+        
+        // Limit to 50 most recent after any fallback
         const limitedArtworks = fetchedArtworks.slice(0, 50);
         
         console.log(`🎯 Discover: Final artworks count: ${limitedArtworks.length}`);
