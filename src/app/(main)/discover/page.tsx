@@ -242,12 +242,13 @@ function DiscoverPageContent() {
   const { theme } = useTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialTab = (searchParams?.get?.('tab') as 'artwork' | 'events') || 'artwork';
+  const tabParam = searchParams?.get?.('tab');
+  const initialTab: 'artwork' | 'events' = (tabParam === 'artwork' || tabParam === 'events') ? tabParam : 'artwork';
   
   useEffect(() => {
     setMounted(true);
   }, []);
-  const [activeTab, setActiveTab] = useState<'artwork' | 'events'>(initialTab === 'market' ? 'artwork' : initialTab);
+  const [activeTab, setActiveTab] = useState<'artwork' | 'events'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedMedium, setSelectedMedium] = useState('All');
