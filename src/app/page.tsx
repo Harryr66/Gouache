@@ -119,12 +119,12 @@ export default function RootPage() {
                 <img
                   src="/assets/Gouache Hero Light.png"
                   alt="Welcome to Gouache - Discover art, connect with artists, and explore creative communities"
-                  className="w-full max-w-3xl h-auto object-contain block dark:hidden"
+                  className="w-full max-w-5xl h-auto object-contain block dark:hidden"
                 />
                 <img
                   src="/assets/Gouache Hero Dark.png"
                   alt="Welcome to Gouache - Discover art, connect with artists, and explore creative communities"
-                  className="w-full max-w-3xl h-auto object-contain hidden dark:block"
+                  className="w-full max-w-5xl h-auto object-contain hidden dark:block"
                 />
               </div>
               
