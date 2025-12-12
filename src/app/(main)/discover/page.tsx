@@ -743,28 +743,19 @@ function DiscoverPageContent() {
             {/* Search and Filter Bar */}
             <div className="mb-6 space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search artworks, artists, or tags..."
-                    value={searchQuery}
-                    onChange={(e) => startTransition(() => setSearchQuery(e.target.value))}
-                    className="pl-10"
-                  />
+                {isMobile ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="flex-1"
+                    >
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1 justify-center" />
                   </div>
-                  {isMobile ? (
-                    <div className="flex gap-2">
-                  <Button
-                        variant="outline"
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="flex-1"
-                      >
-                        <Filter className="h-4 w-4" />
-                      </Button>
-                      <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1 justify-center" />
-                    </div>
-                  ) : (
+                ) : (
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       onClick={() => startTransition(() => setShowFilters(!showFilters))}
@@ -772,12 +763,24 @@ function DiscoverPageContent() {
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
-                  )}
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="shrink-0" />
+                  </div>
+                )}
               </div>
 
               {/* Filters Panel */}
               {showFilters && (
-                <Card className="p-4">
+                <Card className="p-4 space-y-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search artworks, artists, or tags..."
+                      value={searchQuery}
+                      onChange={(e) => startTransition(() => setSearchQuery(e.target.value))}
+                      className="pl-10"
+                    />
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Category</label>
@@ -793,7 +796,7 @@ function DiscoverPageContent() {
                           ))}
                         </SelectContent>
                       </Select>
-                        </div>
+                    </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Medium</label>
                       <Select value={selectedMedium} onValueChange={(value) => startTransition(() => setSelectedMedium(value))}>
@@ -808,7 +811,7 @@ function DiscoverPageContent() {
                           ))}
                         </SelectContent>
                       </Select>
-                      </div>
+                    </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Sort By</label>
                       <Select value={sortBy} onValueChange={(value) => startTransition(() => setSortBy(value))}>
@@ -823,10 +826,10 @@ function DiscoverPageContent() {
                           ))}
                         </SelectContent>
                       </Select>
-          </div>
+                    </div>
                   </div>
-                  <div className="mt-4 flex gap-2">
-          <Button
+                  <div className="mt-2 flex gap-2">
+                    <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
@@ -840,9 +843,9 @@ function DiscoverPageContent() {
                     >
                       <X className="h-4 w-4 mr-2" />
                       Clear Filters
-                      </Button>
+                    </Button>
                   </div>
-          </Card>
+                </Card>
               )}
 
               {/* Active Filters Display */}
