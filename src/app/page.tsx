@@ -129,46 +129,46 @@ export default function RootPage() {
               </div>
               
               {/* Buttons below hero image */}
-              <div className="space-y-3 pt-4">
+              <div className="space-y-2.5 pt-4">
                 <Button
                   variant="gradient"
-                  className="w-full !rounded-full [&::before]:!rounded-full"
+                  className="w-full h-9 !rounded-full [&::before]:!rounded-full [&::before]:!inset-[2px]"
                   size="sm"
                   asChild
                 >
                   <Link href="/login">
-                    <LogIn className="mr-2 h-4 w-4" />
+                    <LogIn className="mr-2 h-3.5 w-3.5" />
                     Login
                   </Link>
                 </Button>
 
                 <Button
                   variant="outline"
-                  className="w-full rounded-full border-2"
+                  className="w-full h-9 rounded-full border-2 border-border"
                   size="sm"
                   asChild
                 >
                   <Link href="/login?tab=signup">
-                    <UserPlus className="mr-2 h-4 w-4" />
+                    <UserPlus className="mr-2 h-3.5 w-3.5" />
                     Create Account
                   </Link>
                 </Button>
 
                 <Button
                   variant="ghost"
-                  className="w-full rounded-full"
+                  className="w-full h-9 rounded-full"
                   size="sm"
                   onClick={handleGuestLogin}
                   disabled={isGuestLoading}
                 >
                   {isGuestLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                       Signing in...
                     </>
                   ) : (
                     <>
-                      <User className="mr-2 h-4 w-4" />
+                      <User className="mr-2 h-3.5 w-3.5" />
                       Login as Guest
                     </>
                   )}
