@@ -145,9 +145,9 @@ export default function RootPage() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col items-center justify-start pt-4 pb-2 sm:pt-8 sm:pb-4 relative min-h-[calc(100vh-4rem)]">
-          <div className="w-full max-w-4xl space-y-3 sm:space-y-6 relative z-10 px-4">
-            <div className="text-center space-y-3 sm:space-y-6">
+        <main className="flex-1 flex flex-col items-center justify-start pt-4 pb-0 sm:pt-8 sm:pb-2 relative min-h-[calc(100vh-4rem)]">
+          <div className="w-full max-w-4xl space-y-2 sm:space-y-4 relative z-10 px-4">
+            <div className="text-center space-y-2 sm:space-y-4">
               {/* Hero Image - replaces welcome text */}
               <div className="flex items-center justify-center px-2 sm:px-8 md:px-16 lg:px-24">
                 <img
@@ -163,7 +163,7 @@ export default function RootPage() {
               </div>
               
               {/* Buttons below hero image - constrained to hero image width */}
-              <div className="flex flex-col items-center space-y-2 pt-1 sm:pt-2 px-2 sm:px-8 md:px-16 lg:px-24">
+              <div className="flex flex-col items-center space-y-2 pt-1 pb-0 sm:pt-2 sm:pb-0 px-2 sm:px-8 md:px-16 lg:px-24">
                 <div className="w-full max-w-6xl flex flex-col items-center space-y-2">
                   <Button
                     variant="gradient"
