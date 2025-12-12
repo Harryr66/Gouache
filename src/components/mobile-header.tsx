@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Settings, Search, Fingerprint } from 'lucide-react';
+import { Settings, Fingerprint } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 export function MobileHeader() {
@@ -35,17 +35,6 @@ export function MobileHeader() {
         
         {/* Action Buttons */}
         <div className="flex flex-1 items-center justify-end space-x-2">
-           <Button 
-              variant="ghost"
-              size="icon" 
-              className="h-9 w-9 rounded-lg"
-              asChild
-            >
-              <Link href="/search">
-                  <Search className="h-5 w-5" />
-                  <span className="sr-only">Search</span>
-              </Link>
-            </Button>
             <Button 
               variant="ghost"
               size="icon" 
