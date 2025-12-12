@@ -9,7 +9,6 @@ export function SiteFooter() {
             <Link href="#" className="transition-colors hover:text-foreground">Terms of Service</Link>
             <Link href="#" className="transition-colors hover:text-foreground">Privacy Policy</Link>
             <Link href="/advertise" className="transition-colors hover:text-foreground">Advertise with Gouache</Link>
-            <Link href="/partners" className="transition-colors hover:text-foreground">Partners</Link>
             <Link href="/admin" className="font-medium transition-colors hover:text-foreground">
                 Admin
             </Link>
