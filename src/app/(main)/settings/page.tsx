@@ -153,6 +153,8 @@ function SettingsPageContent() {
     }
 
     setIsDeletingAccount(true);
+    let deletionSuccessful = false;
+    let errorStep = '';
     
     // Re-authenticate user before deletion
     try {
@@ -186,7 +188,7 @@ function SettingsPageContent() {
       setDeletePassword('');
       return;
     }
-    let errorStep = '';
+    
     try {
       const userId = user.id;
       
