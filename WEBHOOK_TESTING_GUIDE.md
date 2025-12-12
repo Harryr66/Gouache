@@ -94,8 +94,8 @@ Quick steps to test your webhook and verify everything is working correctly.
      - `itemId`: The purchased item ID
      - `itemType`: Type of item (course, original, print, book)
      - `amount`: Payment amount
-     - `platformCommission`: 10% of amount
-     - `artistPayout`: 90% of amount
+     - `platformCommission`: 5% of amount
+     - `artistPayout`: 95% of amount
      - `status`: "completed"
 
 2. **Check Item Status** (if applicable)
@@ -149,11 +149,11 @@ Test each event type to ensure they're handled correctly:
 1. **Check a completed sale** in Firestore `sales` collection
 2. **Verify calculations**:
    - `amount`: Total payment amount (e.g., $100.00 = 10000 cents)
-   - `platformCommission`: Should be 10% (e.g., $10.00 = 1000 cents)
-   - `artistPayout`: Should be 90% (e.g., $90.00 = 9000 cents)
+   - `platformCommission`: Should be 5% (e.g., $5.00 = 500 cents)
+   - `artistPayout`: Should be 95% (e.g., $95.00 = 9500 cents)
    - Formula: `artistPayout = amount - platformCommission`
 
-**Expected Result:** ✅ Commission calculated correctly (10%)
+**Expected Result:** ✅ Commission calculated correctly (5%)
 
 ---
 
@@ -231,7 +231,7 @@ Use this checklist to verify everything is working:
 - [ ] Vercel logs show successful processing
 - [ ] Real payment test completed
 - [ ] Sale recorded in Firestore `sales` collection
-- [ ] Commission calculated correctly (10%)
+- [ ] Commission calculated correctly (5%)
 - [ ] Item status updated (if applicable)
 - [ ] All event types tested
 - [ ] No errors in logs

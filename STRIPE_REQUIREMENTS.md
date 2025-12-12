@@ -25,7 +25,7 @@
 **Status**: ❌ Not implemented yet
 
 **What it does**: Creates a payment intent when customer wants to buy
-- Calculates commission (10%)
+- Calculates commission (5%)
 - Creates payment with application fee
 - Transfers to artist's Stripe account
 
@@ -112,7 +112,7 @@ User Flow (Future - Payments):
 
 - **Stripe API**: Free (included with Stripe account)
 - **Webhooks**: Free (Stripe sends events for free)
-- **Processing Fees**: 2.9% + $0.30 per transaction (covered by 10% commission)
+- **Processing Fees**: 2.9% + $0.30 per transaction (paid by buyer)
 
 ## Summary
 

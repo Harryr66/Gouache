@@ -220,7 +220,7 @@ Make sure to:
 After setting up the webhook:
 
 1. ✅ Test with a small real payment
-2. ✅ Verify commission is calculated correctly (10%)
+2. ✅ Verify commission is calculated correctly (5%)
 3. ✅ Check that artist receives payout
 4. ✅ Monitor webhook deliveries for 24-48 hours
 5. ✅ Set up email alerts in Stripe Dashboard

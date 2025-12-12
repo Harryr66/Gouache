@@ -53,7 +53,7 @@ export default function ArtistProfilePage() {
           }));
           
           const isProfessionalFlag = data.isProfessional || (portfolio.length > 0);
-
+          
           // Map Firestore data to ProfileHeader expected format
           const profileData = {
             id: userDoc.id,

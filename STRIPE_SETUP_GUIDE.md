@@ -90,20 +90,20 @@ STRIPE_APPLICATION_FEE_RATE=0.029  # 2.9% + $0.30 per transaction (Stripe's fee)
 
 ## Commission Structure
 
-### Recommended Commission Model
+### Commission Model
 
-**Platform Commission**: 10% of sale price (includes credit card processing fees)
-**Stripe Processing Fee**: 2.9% + $0.30 per transaction (covered by platform commission)
-**Artist Receives**: 90% of sale price (after platform commission)
+**Platform Commission**: 5% of sale price
+**Stripe Processing Fee**: 2.9% + $0.30 per transaction (paid by buyer)
+**Artist Receives**: 95% of sale price (after platform commission)
 
 ### Example Calculation
 
 For a $100 course sale:
 - **Sale Price**: $100.00
-- **Platform Commission (10%)**: $10.00
-- **Stripe Fee (2.9% + $0.30)**: $3.20 (covered by platform)
-- **Platform Net Revenue**: $10.00 - $3.20 = $6.80
-- **Artist Payout**: $100.00 - $10.00 = $90.00
+- **Platform Commission (5%)**: $5.00
+- **Stripe Fee (2.9% + $0.30)**: $3.20 (paid by buyer)
+- **Platform Net Revenue**: $5.00
+- **Artist Payout**: $100.00 - $5.00 = $95.00
 
 ### Implementation
 
