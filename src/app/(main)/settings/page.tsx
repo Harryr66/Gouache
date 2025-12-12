@@ -457,10 +457,7 @@ function SettingsPageContent() {
           <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
             <TabsList className="inline-flex w-auto min-w-full sm:min-w-0">
               <TabsTrigger value="general" className="shrink-0 whitespace-nowrap">General</TabsTrigger>
-              {(user?.isProfessional || hasApprovedArtistRequest) && (
-                <TabsTrigger value="business" className="shrink-0 whitespace-nowrap text-xs sm:text-sm">Business</TabsTrigger>
-              )}
-              <TabsTrigger value="payments" className="shrink-0 whitespace-nowrap">Payments</TabsTrigger>
+              <TabsTrigger value="business" className="shrink-0 whitespace-nowrap text-xs sm:text-sm">Business & Payments</TabsTrigger>
               <TabsTrigger value="support" className="shrink-0 whitespace-nowrap">Support</TabsTrigger>
             </TabsList>
           </div>
@@ -603,14 +600,17 @@ function SettingsPageContent() {
             </Card>
           </TabsContent>
 
-          {(user?.isProfessional || hasApprovedArtistRequest) && (
-            <TabsContent value="business" className="mt-4 sm:mt-6">
-              <BusinessManager />
-            </TabsContent>
-          )}
-          
-          <TabsContent value="payments" className="mt-4 sm:mt-6">
-            <StripeIntegrationWizard />
+          <TabsContent value="business" className="mt-4 sm:mt-6 space-y-6">
+            {(user?.isProfessional || hasApprovedArtistRequest) && (
+              <div>
+                <h2 className="text-lg font-semibold mb-4">Business Management</h2>
+                <BusinessManager />
+              </div>
+            )}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Payments & Payouts</h2>
+              <StripeIntegrationWizard />
+            </div>
           </TabsContent>
 
           <TabsContent value="support" className="mt-4 sm:mt-6">
