@@ -10,15 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Eye,
-  EyeOff,
   AlertCircle,
   Send,
   Settings,
   LogOut,
   Trash2
 } from 'lucide-react';
-import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { useAuth } from '@/providers/auth-provider';
 import { db, auth, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, query, where, getDocs, writeBatch, onSnapshot } from 'firebase/firestore';
@@ -41,13 +38,11 @@ import {
 } from '@/components/ui/alert-dialog';
 
 function SettingsPageContent() {
-  const { settings: discoverSettings, updateSettings: updateDiscoverSettings } = useDiscoverSettings();
   const { user, refreshUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [reportMessage, setReportMessage] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const [isSavingDiscoverSettings, setIsSavingDiscoverSettings] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -70,19 +65,6 @@ function SettingsPageContent() {
     setActiveTab(value);
     router.push(`/settings?tab=${value}`, { scroll: false });
   };
-  
-  // Discover preferences state - load from user preferences
-  const [discoverPrefs, setDiscoverPrefs] = useState({
-    hideDigitalArt: user?.preferences?.discover?.hideDigitalArt || false,
-    hideAIAssistedArt: user?.preferences?.discover?.hideAIAssistedArt || false,
-    hideNFTs: user?.preferences?.discover?.hideNFTs || false,
-    hidePhotography: user?.preferences?.discover?.hidePhotography || false,
-    hideVideoArt: user?.preferences?.discover?.hideVideoArt || false,
-    hidePerformanceArt: user?.preferences?.discover?.hidePerformanceArt || false,
-    hideInstallationArt: user?.preferences?.discover?.hideInstallationArt || false,
-    hidePrintmaking: user?.preferences?.discover?.hidePrintmaking || false,
-    hideTextileArt: user?.preferences?.discover?.hideTextileArt || false,
-  });
   
   // Check if user has an approved artist request (fallback for missing isProfessional flag)
   useEffect(() => {
@@ -427,61 +409,6 @@ function SettingsPageContent() {
   };
   
   
-  const handleSaveDiscoverSettings = async () => {
-    if (!user) {
-      toast({
-        title: "Not signed in",
-        description: "Please sign in to save settings.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsSavingDiscoverSettings(true);
-    try {
-      const userProfileRef = doc(db, 'userProfiles', user.id);
-      const userProfileSnap = await getDoc(userProfileRef);
-      
-      const currentPreferences = userProfileSnap.data()?.preferences || {};
-      const updatedPreferences = {
-        ...currentPreferences,
-        discover: {
-          hideDigitalArt: discoverPrefs.hideDigitalArt,
-          hideAIAssistedArt: discoverPrefs.hideAIAssistedArt,
-          hideNFTs: discoverPrefs.hideNFTs,
-          hidePhotography: discoverPrefs.hidePhotography,
-          hideVideoArt: discoverPrefs.hideVideoArt,
-          hidePerformanceArt: discoverPrefs.hidePerformanceArt,
-          hideInstallationArt: discoverPrefs.hideInstallationArt,
-          hidePrintmaking: discoverPrefs.hidePrintmaking,
-          hideTextileArt: discoverPrefs.hideTextileArt,
-        }
-      };
-      
-      await updateDoc(userProfileRef, {
-        preferences: updatedPreferences,
-        updatedAt: serverTimestamp()
-      });
-      
-      // Refresh user data to reflect changes
-      await refreshUser();
-      
-      toast({
-        title: "Settings saved",
-        description: "Your discover preferences have been saved and will apply to all future visits.",
-      });
-    } catch (error) {
-      console.error('Error saving discover settings:', error);
-      toast({
-        title: "Save failed",
-        description: "Failed to save discover settings. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSavingDiscoverSettings(false);
-    }
-  };
-
   const handleSubmitReport = async () => {
     if (!user) {
       toast({
@@ -551,7 +478,6 @@ function SettingsPageContent() {
                 <TabsTrigger value="business" className="shrink-0 whitespace-nowrap text-xs sm:text-sm">Business</TabsTrigger>
               )}
               <TabsTrigger value="payments" className="shrink-0 whitespace-nowrap">Payments</TabsTrigger>
-              <TabsTrigger value="discover" className="shrink-0 whitespace-nowrap">Discover</TabsTrigger>
               <TabsTrigger value="support" className="shrink-0 whitespace-nowrap">Support</TabsTrigger>
             </TabsList>
           </div>
@@ -702,176 +628,6 @@ function SettingsPageContent() {
           
           <TabsContent value="payments" className="mt-4 sm:mt-6">
             <StripeIntegrationWizard />
-          </TabsContent>
-
-          <TabsContent value="discover" className="mt-4 sm:mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
-                  <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span>Discover Settings</span>
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Customize what content you see in the Discover section. These preferences are permanent and will apply to all future visits.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <Label htmlFor="hideDigitalArt" className="text-sm sm:text-base">Hide Digital Art</Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Permanently hide digital art and digital paintings from your discover feed
-                    </p>
-                  </div>
-                  <Switch
-                    id="hideDigitalArt"
-                    checked={discoverPrefs.hideDigitalArt}
-                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideDigitalArt: checked })}
-                    className="shrink-0"
-                  />
-                </div>
-                
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <Label htmlFor="hideAiAssistedArt" className="text-sm sm:text-base">Hide AI-Assisted Art</Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Permanently hide AI-assisted and AI-generated artworks from your discover feed
-                    </p>
-                  </div>
-                  <Switch
-                    id="hideAiAssistedArt"
-                    checked={discoverPrefs.hideAIAssistedArt}
-                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideAIAssistedArt: checked })}
-                    className="shrink-0"
-                  />
-                </div>
-                
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <Label htmlFor="hideNFTs" className="text-sm sm:text-base">Hide NFTs</Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Permanently hide NFT artworks from your discover feed
-                    </p>
-                  </div>
-                  <Switch
-                    id="hideNFTs"
-                    checked={discoverPrefs.hideNFTs}
-                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideNFTs: checked })}
-                    className="shrink-0"
-                  />
-                </div>
-                
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <Label htmlFor="hidePhotography" className="text-sm sm:text-base">Hide Photography</Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Permanently hide photography artworks from your discover feed
-                    </p>
-                  </div>
-                  <Switch
-                    id="hidePhotography"
-                    checked={discoverPrefs.hidePhotography}
-                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hidePhotography: checked })}
-                    className="shrink-0"
-                  />
-                </div>
-                
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <Label htmlFor="hideVideoArt" className="text-sm sm:text-base">Hide Video Art</Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Permanently hide video art from your discover feed
-                    </p>
-                  </div>
-                  <Switch
-                    id="hideVideoArt"
-                    checked={discoverPrefs.hideVideoArt}
-                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideVideoArt: checked })}
-                    className="shrink-0"
-                  />
-                </div>
-                
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <Label htmlFor="hidePerformanceArt" className="text-sm sm:text-base">Hide Performance Art</Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Permanently hide performance art from your discover feed
-                    </p>
-                  </div>
-                  <Switch
-                    id="hidePerformanceArt"
-                    checked={discoverPrefs.hidePerformanceArt}
-                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hidePerformanceArt: checked })}
-                    className="shrink-0"
-                  />
-                </div>
-                
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <Label htmlFor="hideInstallationArt" className="text-sm sm:text-base">Hide Installation Art</Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Permanently hide installation art from your discover feed
-                    </p>
-                  </div>
-                  <Switch
-                    id="hideInstallationArt"
-                    checked={discoverPrefs.hideInstallationArt}
-                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideInstallationArt: checked })}
-                    className="shrink-0"
-                  />
-                </div>
-                
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <Label htmlFor="hidePrintmaking" className="text-sm sm:text-base">Hide Printmaking</Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Permanently hide printmaking artworks from your discover feed
-                    </p>
-                  </div>
-                  <Switch
-                    id="hidePrintmaking"
-                    checked={discoverPrefs.hidePrintmaking}
-                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hidePrintmaking: checked })}
-                    className="shrink-0"
-                  />
-                </div>
-                
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <Label htmlFor="hideTextileArt" className="text-sm sm:text-base">Hide Textile Art</Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Permanently hide textile art from your discover feed
-                    </p>
-                  </div>
-                  <Switch
-                    id="hideTextileArt"
-                    checked={discoverPrefs.hideTextileArt}
-                    onCheckedChange={(checked) => setDiscoverPrefs({ ...discoverPrefs, hideTextileArt: checked })}
-                    className="shrink-0"
-                  />
-                </div>
-                
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-start space-x-3">
-                    <EyeOff className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-sm">About Content Filtering</h4>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        These settings are permanent and will automatically filter content in your Discover feed. 
-                        You can override these filters temporarily using the Advanced Search panel on the Discover page, 
-                        but your permanent preferences will be restored when you refresh the page.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleSaveDiscoverSettings}
-                  disabled={isSavingDiscoverSettings}
-                >
-                  {isSavingDiscoverSettings ? 'Saving...' : 'Save Discover Settings'}
-                </Button>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="support" className="mt-4 sm:mt-6">
