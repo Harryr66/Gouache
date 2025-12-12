@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { signInAnonymously } from 'firebase/auth';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, LogIn, UserPlus, User } from 'lucide-react';
@@ -16,13 +16,30 @@ export default function RootPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const [isAnonymousUser, setIsAnonymousUser] = useState(false);
 
-  // Redirect logged-in users to news page
+  // Check if current Firebase user is anonymous
   useEffect(() => {
-    if (!loading && user) {
-      router.replace('/news');
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Firebase anonymous users don't have email and have isAnonymous property
+        setIsAnonymousUser(firebaseUser.isAnonymous || !firebaseUser.email);
+      } else {
+        setIsAnonymousUser(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Redirect logged-in users (but not anonymous) to news page
+  useEffect(() => {
+    if (!loading && user && !isAnonymousUser) {
+      // Only redirect if user has an email (not anonymous)
+      if (user.email && user.email !== '') {
+        router.replace('/news');
+      }
     }
-  }, [user, loading, router]);
+  }, [user, loading, isAnonymousUser, router]);
 
   const handleGuestLogin = async () => {
     setIsGuestLoading(true);
@@ -53,8 +70,8 @@ export default function RootPage() {
     );
   }
 
-  // Show homepage for logged-out users
-  if (!user) {
+  // Show homepage for logged-out users or anonymous users
+  if (!user || isAnonymousUser) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         {/* Header */}

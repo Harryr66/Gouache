@@ -17,7 +17,7 @@ export function DesktopHeader() {
 
   return (
     <div className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6">
-      <Link href="/news" className="flex items-center">
+      <Link href="/" className="flex items-center">
         <span className="sr-only">Gouache</span>
         <img
           src="/assets/gouache-logo-light-20241111.png"
