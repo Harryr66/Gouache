@@ -1117,7 +1117,7 @@ function DiscoverPageContent() {
                 );
               }
 
-              return (eventsView === 'grid' || !isMobile) ? (
+              return eventsView === 'grid' ? (
                 <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
                   {filteredEvents.map((event: any) => {
                   const placeholderImage = theme === 'dark' 
