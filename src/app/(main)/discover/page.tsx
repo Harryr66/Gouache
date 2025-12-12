@@ -444,8 +444,7 @@ function DiscoverPageContent() {
           artistName.includes(queryLower) ||
           tags.some(tag => (tag || '').toLowerCase().includes(queryLower))
         );
-      }
-      );
+      });
     }
 
     // Category filter
