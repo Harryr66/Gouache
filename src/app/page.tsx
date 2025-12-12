@@ -110,33 +110,24 @@ export default function RootPage() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col items-center justify-center relative min-h-[calc(100vh-4rem)]">
-          {/* Hero Image - properly sized and centered */}
-          <div className="absolute inset-0 flex items-center justify-center z-0 px-4 sm:px-8 md:px-16 lg:px-24">
-            <div className="relative w-full max-w-6xl h-full flex items-center justify-center">
-              <img
-                src="/assets/Gouache Hero Light.png"
-                alt="Gouache Hero"
-                className="w-full h-full object-contain block dark:hidden"
-              />
-              <img
-                src="/assets/Gouache Hero Dark.png"
-                alt="Gouache Hero"
-                className="w-full h-full object-contain hidden dark:block"
-              />
-              {/* Overlay for better text readability - reduced opacity */}
-              <div className="absolute inset-0 bg-background/40 dark:bg-background/50" />
-            </div>
-          </div>
-
-          <div className="w-full max-w-md space-y-6 relative z-10 px-4">
-            <div className="text-center space-y-4">
-              <h1 className="text-4xl font-bold tracking-tight">Welcome to Gouache</h1>
-              <p className="text-muted-foreground">
-                Discover art, connect with artists, and explore creative communities
-              </p>
+        <main className="flex-1 flex flex-col items-center justify-center p-4 relative min-h-[calc(100vh-4rem)]">
+          <div className="w-full max-w-4xl space-y-6 relative z-10 px-4">
+            <div className="text-center space-y-6">
+              {/* Hero Image - replaces welcome text */}
+              <div className="flex items-center justify-center px-4 sm:px-8 md:px-16 lg:px-24">
+                <img
+                  src="/assets/Gouache Hero Light.png"
+                  alt="Welcome to Gouache - Discover art, connect with artists, and explore creative communities"
+                  className="w-full max-w-3xl h-auto object-contain block dark:hidden"
+                />
+                <img
+                  src="/assets/Gouache Hero Dark.png"
+                  alt="Welcome to Gouache - Discover art, connect with artists, and explore creative communities"
+                  className="w-full max-w-3xl h-auto object-contain hidden dark:block"
+                />
+              </div>
               
-              {/* Buttons below subtext */}
+              {/* Buttons below hero image */}
               <div className="space-y-3 pt-4">
                 <Button
                   variant="gradient"
