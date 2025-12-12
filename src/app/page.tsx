@@ -111,9 +111,9 @@ export default function RootPage() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col items-center justify-center p-4 relative min-h-[calc(100vh-4rem)]">
+        <main className="flex-1 flex flex-col items-center justify-start pt-8 pb-4 relative min-h-[calc(100vh-4rem)]">
           <div className="w-full max-w-4xl space-y-6 relative z-10 px-4">
-            <div className="text-center space-y-6 pt-0">
+            <div className="text-center space-y-6">
               {/* Hero Image - replaces welcome text */}
               <div className="flex items-center justify-center px-4 sm:px-8 md:px-16 lg:px-24">
                 <img
