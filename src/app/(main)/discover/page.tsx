@@ -719,8 +719,13 @@ function DiscoverPageContent() {
         <Tabs
           value={activeTab}
         onValueChange={(value) => {
-            startTransition(() => setActiveTab(value as 'artwork' | 'events' | 'market'));
-            router.replace(`/discover?tab=${value}`);
+            startTransition(() => {
+              setActiveTab(value as 'artwork' | 'events' | 'market');
+            });
+            // Defer router update to avoid blocking UI
+            setTimeout(() => {
+              router.replace(`/discover?tab=${value}`, { scroll: false });
+            }, 0);
           }}
           className="mb-6"
         >
