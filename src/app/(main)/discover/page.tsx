@@ -696,15 +696,15 @@ function DiscoverPageContent() {
   }, [theme, mounted]);
 
   if (loading) {
-  return (
+    return (
       <div className="min-h-screen flex items-center justify-center">
         <ThemeLoading text="Loading discover feed..." size="lg" />
-          </div>
+      </div>
     );
   }
 
   return (
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
