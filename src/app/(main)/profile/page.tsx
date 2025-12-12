@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, startTransition } from 'react';
 import { useAuth } from '@/providers/auth-provider';
 import { ProfileHeader } from '@/components/profile-header';
 import { ProfileTabs } from '@/components/profile-tabs';
@@ -173,7 +173,14 @@ export default function ProfilePage() {
             Loading events…
           </div>
         ) : (
-          <Collapsible open={showEvents} onOpenChange={setShowEvents}>
+          <Collapsible 
+            open={showEvents} 
+            onOpenChange={(open) => {
+              startTransition(() => {
+                setShowEvents(open);
+              });
+            }}
+          >
             <Card>
               <CollapsibleTrigger asChild>
                 <CardHeader className="flex flex-row items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors">
@@ -280,14 +287,14 @@ export default function ProfilePage() {
             userId: effectiveUser.id
           });
           return (
-            <ProfileTabs
+        <ProfileTabs
               userId={effectiveUser.id}
-              isOwnProfile={true}
+          isOwnProfile={true}
               isProfessional={isProf}
               hideShop={effectiveUser.hideShop ?? false}
               hideLearn={true}
-              onTabChange={setCurrentTab}
-            />
+          onTabChange={setCurrentTab}
+        />
           );
         })()}
       </div>
