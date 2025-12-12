@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2, LogIn, UserPlus, User } from 'lucide-react';
 import Link from 'next/link';
 import { LoadingTransition } from '@/components/loading-transition';
+import { SiteFooter } from '@/components/site-footer';
 
 export default function RootPage() {
   const router = useRouter();
@@ -180,6 +181,9 @@ export default function RootPage() {
             </p>
           </div>
         </main>
+        
+        {/* Footer */}
+        <SiteFooter />
       </div>
     );
   }
