@@ -19,7 +19,7 @@ import {
 import { useAuth } from '@/providers/auth-provider';
 import { db, auth, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, query, where, getDocs, writeBatch, onSnapshot } from 'firebase/firestore';
-import { signOut as firebaseSignOut, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { signOut as firebaseSignOut, deleteUser, reauthenticateWithCredential, EmailAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import { ref, listAll, deleteObject } from 'firebase/storage';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,6 +49,17 @@ function SettingsPageContent() {
   const [deletePassword, setDeletePassword] = useState('');
   const [showPasswordInput, setShowPasswordInput] = useState(false);
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
+
+  // Block guest (anonymous) users from accessing settings
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser && (firebaseUser.isAnonymous || !firebaseUser.email)) {
+        // User is anonymous/guest - redirect to homepage
+        router.replace('/');
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
   
   // Get tab from URL or default to 'general'
   // Map old 'payments' tab to 'business' for backward compatibility
