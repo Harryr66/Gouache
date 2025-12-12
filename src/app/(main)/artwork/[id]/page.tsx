@@ -219,9 +219,11 @@ export default function ArtworkPage() {
                   )}
 
                   <div className="flex items-center gap-3 flex-wrap">
-                    <Badge className="bg-blue-600 hover:bg-blue-700">
-                      {artwork.isForSale ? 'For sale' : 'Not for sale'}
-                    </Badge>
+                    {artwork.isForSale && (
+                      <Badge className="bg-blue-600 hover:bg-blue-700">
+                        For sale
+                      </Badge>
+                    )}
                     {artwork.price !== undefined && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="font-medium text-foreground">Price:</span>
