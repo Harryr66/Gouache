@@ -145,6 +145,7 @@ function SettingsPageContent() {
     }
 
     setIsDeletingAccount(true);
+    let errorStep = '';
     try {
       const userId = user.id;
       
@@ -166,84 +167,126 @@ function SettingsPageContent() {
       const operations: Array<{ type: 'delete', ref: any }> = [];
 
       // 1. Delete user profile
+      errorStep = 'deleting user profile';
       const userProfileRef = doc(db, 'userProfiles', userId);
       operations.push({ type: 'delete', ref: userProfileRef });
 
-      // 2. Delete handle mapping
+      // 2. Delete handle mapping (skip if it doesn't exist)
+      errorStep = 'deleting handle mapping';
       if (user.username) {
-        const handleRef = doc(db, 'handles', user.username);
-        operations.push({ type: 'delete', ref: handleRef });
+        try {
+          const handleRef = doc(db, 'handles', user.username);
+          const handleDoc = await getDoc(handleRef);
+          if (handleDoc.exists()) {
+            operations.push({ type: 'delete', ref: handleRef });
+          }
+        } catch (error: any) {
+          // Handle might not exist, continue
+          console.warn('Handle not found or error checking handle:', error?.message);
+        }
       }
 
       // 3. Delete user's artworks
+      errorStep = 'fetching artworks';
       try {
         const artworksQuery = query(collection(db, 'artworks'), where('artist.userId', '==', userId));
         const artworksSnapshot = await getDocs(artworksQuery);
         artworksSnapshot.forEach((doc) => {
           operations.push({ type: 'delete', ref: doc.ref });
         });
-      } catch (error) {
-        console.warn('Error fetching artworks for deletion:', error);
+      } catch (error: any) {
+        const errorMsg = error?.message || String(error);
+        toast({
+          title: 'Warning',
+          description: `Could not fetch artworks: ${errorMsg}. Continuing with deletion...`,
+          variant: 'default'
+        });
       }
 
       // 4. Delete user's posts
+      errorStep = 'fetching posts';
       try {
         const postsQuery = query(collection(db, 'posts'), where('artist.id', '==', userId));
         const postsSnapshot = await getDocs(postsQuery);
         postsSnapshot.forEach((doc) => {
           operations.push({ type: 'delete', ref: doc.ref });
         });
-      } catch (error) {
-        console.warn('Error fetching posts for deletion:', error);
+      } catch (error: any) {
+        const errorMsg = error?.message || String(error);
+        toast({
+          title: 'Warning',
+          description: `Could not fetch posts: ${errorMsg}. Continuing with deletion...`,
+          variant: 'default'
+        });
       }
 
       // 5. Delete user's courses (if any)
+      errorStep = 'fetching courses';
       try {
         const coursesQuery = query(collection(db, 'courses'), where('instructor.userId', '==', userId));
         const coursesSnapshot = await getDocs(coursesQuery);
         coursesSnapshot.forEach((doc) => {
           operations.push({ type: 'delete', ref: doc.ref });
         });
-      } catch (error) {
-        console.warn('Error fetching courses for deletion:', error);
+      } catch (error: any) {
+        const errorMsg = error?.message || String(error);
+        toast({
+          title: 'Warning',
+          description: `Could not fetch courses: ${errorMsg}. Continuing with deletion...`,
+          variant: 'default'
+        });
       }
 
       // 6. Delete user's marketplace products
+      errorStep = 'fetching marketplace products';
       try {
         const productsQuery = query(collection(db, 'marketplaceProducts'), where('sellerId', '==', userId));
         const productsSnapshot = await getDocs(productsQuery);
         productsSnapshot.forEach((doc) => {
           operations.push({ type: 'delete', ref: doc.ref });
         });
-      } catch (error) {
-        console.warn('Error fetching marketplace products for deletion:', error);
+      } catch (error: any) {
+        const errorMsg = error?.message || String(error);
+        toast({
+          title: 'Warning',
+          description: `Could not fetch marketplace products: ${errorMsg}. Continuing with deletion...`,
+          variant: 'default'
+        });
       }
 
       // 7. Delete user's artist request (if any)
+      errorStep = 'fetching artist requests';
       try {
         const artistRequestsQuery = query(collection(db, 'artistRequests'), where('userId', '==', userId));
         const artistRequestsSnapshot = await getDocs(artistRequestsQuery);
         artistRequestsSnapshot.forEach((doc) => {
           operations.push({ type: 'delete', ref: doc.ref });
         });
-      } catch (error) {
-        console.warn('Error fetching artist requests for deletion:', error);
+      } catch (error: any) {
+        const errorMsg = error?.message || String(error);
+        toast({
+          title: 'Warning',
+          description: `Could not fetch artist requests: ${errorMsg}. Continuing with deletion...`,
+          variant: 'default'
+        });
       }
 
       // Commit all Firestore deletions in chunks if needed
+      errorStep = `committing ${operations.length} deletions`;
       if (operations.length > 0) {
         await executeBatchInChunks(operations);
       }
 
       // 8. Delete storage files (avatars, banners, portfolio)
+      errorStep = 'deleting storage files';
       try {
         // Delete avatar
         if (user.avatarUrl) {
           try {
             const avatarRef = ref(storage, `avatars/${userId}`);
             await deleteObject(avatarRef);
-          } catch (error) {
-            console.warn('Could not delete avatar:', error);
+          } catch (error: any) {
+            console.warn('Could not delete avatar:', error?.message || error);
           }
         }
 
@@ -252,8 +295,8 @@ function SettingsPageContent() {
           try {
             const bannerRef = ref(storage, `banners/${userId}`);
             await deleteObject(bannerRef);
-          } catch (error) {
-            console.warn('Could not delete banner:', error);
+          } catch (error: any) {
+            console.warn('Could not delete banner:', error?.message || error);
           }
         }
 
@@ -262,15 +305,21 @@ function SettingsPageContent() {
           const portfolioRef = ref(storage, `portfolio/${userId}`);
           const portfolioList = await listAll(portfolioRef);
           await Promise.all(portfolioList.items.map(item => deleteObject(item)));
-        } catch (error) {
-          console.warn('Could not delete portfolio images:', error);
+        } catch (error: any) {
+          console.warn('Could not delete portfolio images:', error?.message || error);
         }
-      } catch (storageError) {
-        console.warn('Error deleting storage files:', storageError);
+      } catch (storageError: any) {
+        const errorMsg = storageError?.message || String(storageError);
+        toast({
+          title: 'Warning',
+          description: `Could not delete all storage files: ${errorMsg}. Continuing with account deletion...`,
+          variant: 'default'
+        });
         // Continue with account deletion even if storage cleanup fails
       }
 
       // 9. Delete Firebase Auth user (must be last)
+      errorStep = 'deleting authentication account';
       await deleteUser(auth.currentUser);
 
       toast({
@@ -281,31 +330,38 @@ function SettingsPageContent() {
       // Redirect to login
       router.push('/login');
     } catch (error: any) {
-      console.error('Error deleting account:', error);
-      console.error('Error details:', {
-        code: error?.code,
-        message: error?.message,
-        stack: error?.stack
+      const errorCode = error?.code || 'unknown';
+      const errorMessage = error?.message || String(error) || 'Unknown error';
+      const errorStack = error?.stack;
+      
+      console.error('Error deleting account:', {
+        step: errorStep,
+        code: errorCode,
+        message: errorMessage,
+        stack: errorStack
       });
       
-      let errorMessage = 'Failed to delete account. Please try again.';
+      let userFriendlyMessage = 'Failed to delete account. ';
       
-      if (error?.code === 'auth/requires-recent-login') {
-        errorMessage = 'For security, please sign out and sign back in, then try deleting your account again.';
-      } else if (error?.code === 'permission-denied') {
-        errorMessage = 'Permission denied. Please check your account permissions or contact support.';
-      } else if (error?.code === 'unavailable') {
-        errorMessage = 'Service temporarily unavailable. Please try again in a moment.';
-      } else if (error?.message) {
-        errorMessage = `Deletion failed: ${error.message}`;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
+      if (errorCode === 'auth/requires-recent-login') {
+        userFriendlyMessage = 'For security, please sign out and sign back in, then try deleting your account again.';
+      } else if (errorCode === 'permission-denied') {
+        userFriendlyMessage = `Permission denied at step: ${errorStep}. Error: ${errorMessage}`;
+      } else if (errorCode === 'unavailable') {
+        userFriendlyMessage = 'Service temporarily unavailable. Please try again in a moment.';
+      } else if (errorCode === 'failed-precondition') {
+        userFriendlyMessage = `Operation failed: ${errorMessage}. Please try again.`;
+      } else if (errorCode === 'not-found') {
+        userFriendlyMessage = `Resource not found at step: ${errorStep}. Error: ${errorMessage}`;
+      } else {
+        userFriendlyMessage = `Failed at step: ${errorStep}. Error code: ${errorCode}. Message: ${errorMessage}`;
       }
 
       toast({
         title: 'Deletion failed',
-        description: errorMessage,
-        variant: 'destructive'
+        description: userFriendlyMessage,
+        variant: 'destructive',
+        duration: 10000 // Show for 10 seconds so user can read it
       });
     } finally {
       setIsDeletingAccount(false);
