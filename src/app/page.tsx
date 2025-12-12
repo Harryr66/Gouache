@@ -45,17 +45,32 @@ export default function RootPage() {
   const handleGuestLogin = async () => {
     setIsGuestLoading(true);
     try {
-      await signInAnonymously(auth);
+      const userCredential = await signInAnonymously(auth);
+      console.log('Guest login successful:', userCredential.user.uid);
+      
+      // Wait a moment for auth state to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       toast({
         title: "Welcome!",
         description: "You're now browsing as a guest. You can explore the platform, but some features require an account.",
       });
+      
+      // Redirect to news page
       router.push('/news');
     } catch (error: any) {
       console.error('Guest login error:', error);
+      let errorMessage = "Failed to sign in as guest. Please try again.";
+      
+      if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = "Anonymous authentication is not enabled. Please contact support.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Guest login failed",
-        description: error.message || "Failed to sign in as guest. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       setIsGuestLoading(false);
