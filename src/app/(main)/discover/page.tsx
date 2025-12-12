@@ -263,7 +263,7 @@ function DiscoverPageContent() {
   // Default views: Artwork grid, Market & Events list (single tile) on mobile
   const [artworkView, setArtworkView] = useState<'grid' | 'list'>('grid');
   const [marketView, setMarketView] = useState<'grid' | 'list'>('list');
-  const [eventsView, setEventsView] = useState<'grid' | 'list'>('list');
+  const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
   const [isMobile, setIsMobile] = useState(false);
   const [marketSearchQuery, setMarketSearchQuery] = useState('');
   const [selectedMarketCategory, setSelectedMarketCategory] = useState('All');
@@ -281,12 +281,12 @@ function DiscoverPageContent() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Force grid view on desktop (only artwork); keep events default to list
+  // Force grid view on desktop (only artwork); events list default only on mobile
   useEffect(() => {
     if (!isMobile) {
       setArtworkView('grid');
       setMarketView('grid');
-      setEventsView('list');
+      setEventsView('grid');
     } else {
       // On mobile, ensure correct defaults
       setArtworkView('grid');
@@ -294,13 +294,6 @@ function DiscoverPageContent() {
       setEventsView('list');
     }
   }, [isMobile]);
-
-  // Ensure events default to list on mobile when viewing events tab
-  useEffect(() => {
-    if (isMobile && activeTab === 'events') {
-      setEventsView('list');
-    }
-  }, [isMobile, activeTab]);
 
   useEffect(() => {
     const fetchArtworks = async () => {
@@ -1117,7 +1110,7 @@ function DiscoverPageContent() {
                 );
               }
 
-              return eventsView === 'grid' ? (
+              return (eventsView === 'grid' || !isMobile) ? (
                 <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
                   {filteredEvents.map((event: any) => {
                   const placeholderImage = theme === 'dark' 
