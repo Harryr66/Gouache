@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
     
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${refreshUrl}/settings?tab=payments&refresh=true`,
-      return_url: `${returnUrl}/settings?tab=payments&success=true`,
+      refresh_url: `${refreshUrl}/settings?tab=business&refresh=true`,
+      return_url: `${returnUrl}/settings?tab=business&success=true`,
       type: 'account_onboarding',
     });
 

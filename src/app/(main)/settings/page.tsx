@@ -607,7 +607,7 @@ function SettingsPageContent() {
                 <BusinessManager />
               </div>
             )}
-            <div>
+            <div data-payments-section>
               <h2 className="text-lg font-semibold mb-4">Payments & Payouts</h2>
               <StripeIntegrationWizard />
             </div>

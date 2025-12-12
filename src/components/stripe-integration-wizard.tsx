@@ -70,11 +70,23 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
     }
   };
 
-  const handleConnectStripe = async () => {
+  const handleConnectStripe = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    
     if (!user) {
       toast({
         title: "Not signed in",
         description: "Please sign in to connect your Stripe account.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user.email) {
+      toast({
+        title: "Email required",
+        description: "Your account must have an email address to connect Stripe.",
         variant: "destructive"
       });
       return;
@@ -96,12 +108,23 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        console.error('Stripe account creation error:', error);
-        throw new Error(error.error || error.message || 'Failed to create Stripe account');
+        let errorMessage = 'Failed to create Stripe account';
+        try {
+          const error = await response.json();
+          errorMessage = error.error || error.message || errorMessage;
+          console.error('Stripe account creation error:', error);
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      
+      if (!data.accountId || !data.onboardingUrl) {
+        throw new Error('Invalid response from server: missing account ID or onboarding URL');
+      }
       
       // Save account ID and onboarding URL to Firestore
       await updateDoc(doc(db, 'userProfiles', user.id), {
@@ -112,12 +135,22 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
       });
 
       // Open Stripe onboarding in new window
-      window.open(data.onboardingUrl, '_blank', 'width=800,height=600');
+      const onboardingWindow = window.open(data.onboardingUrl, '_blank', 'width=800,height=600');
       
-      toast({
-        title: "Stripe account created",
-        description: "Complete the onboarding process in the new window. We'll check your status automatically.",
-      });
+      if (!onboardingWindow) {
+        toast({
+          title: "Popup blocked",
+          description: "Please allow popups for this site and try again, or click the link below to open onboarding.",
+          variant: "destructive"
+        });
+        // Fallback: show the URL so user can manually open it
+        console.log('Onboarding URL:', data.onboardingUrl);
+      } else {
+        toast({
+          title: "Stripe account created",
+          description: "Complete the onboarding process in the new window. We'll check your status automatically.",
+        });
+      }
 
       // Refresh user data
       await refreshUser();
@@ -130,7 +163,8 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
       toast({
         title: "Connection failed",
         description: error.message || "Failed to connect Stripe account. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 10000
       });
     } finally {
       setLoading(false);

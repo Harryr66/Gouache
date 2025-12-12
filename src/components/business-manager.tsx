@@ -136,7 +136,16 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
           </CardDescription>
           <Button 
             variant="gradient"
-            onClick={() => window.location.href = '/settings?tab=payments'}
+            onClick={() => {
+              // Scroll to the Payments section on the same page
+              const paymentsSection = document.querySelector('[data-payments-section]');
+              if (paymentsSection) {
+                paymentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              } else {
+                // Fallback: navigate to business tab
+                window.location.href = '/settings?tab=business';
+              }
+            }}
           >
             <CreditCard className="h-4 w-4 mr-2" />
             Connect Stripe Account
