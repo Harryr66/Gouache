@@ -128,51 +128,53 @@ export default function RootPage() {
                 />
               </div>
               
-              {/* Buttons below hero image */}
-              <div className="space-y-2.5 pt-4">
-                <Button
-                  variant="gradient"
-                  className="w-full h-9 !rounded-full [&::before]:!rounded-full [&::before]:!inset-[2px]"
-                  size="sm"
-                  asChild
-                >
-                  <Link href="/login">
-                    <LogIn className="mr-2 h-3.5 w-3.5" />
-                    Login
-                  </Link>
-                </Button>
+              {/* Buttons below hero image - constrained to hero image width */}
+              <div className="flex flex-col items-center space-y-2.5 pt-4 px-4 sm:px-8 md:px-16 lg:px-24">
+                <div className="w-full max-w-3xl space-y-2.5">
+                  <Button
+                    variant="gradient"
+                    className="w-auto min-w-[140px] h-8 px-6 !rounded-full [&::before]:!rounded-full [&::before]:!inset-[2px] text-xs"
+                    size="sm"
+                    asChild
+                  >
+                    <Link href="/login">
+                      <LogIn className="mr-1.5 h-3 w-3" />
+                      Login
+                    </Link>
+                  </Button>
 
-                <Button
-                  variant="outline"
-                  className="w-full h-9 rounded-full border-2 border-border"
-                  size="sm"
-                  asChild
-                >
-                  <Link href="/login?tab=signup">
-                    <UserPlus className="mr-2 h-3.5 w-3.5" />
-                    Create Account
-                  </Link>
-                </Button>
+                  <Button
+                    variant="outline"
+                    className="w-auto min-w-[140px] h-8 px-6 rounded-full border-2 border-border text-xs"
+                    size="sm"
+                    asChild
+                  >
+                    <Link href="/login?tab=signup">
+                      <UserPlus className="mr-1.5 h-3 w-3" />
+                      Create Account
+                    </Link>
+                  </Button>
 
-                <Button
-                  variant="ghost"
-                  className="w-full h-9 rounded-full"
-                  size="sm"
-                  onClick={handleGuestLogin}
-                  disabled={isGuestLoading}
-                >
-                  {isGuestLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    <>
-                      <User className="mr-2 h-3.5 w-3.5" />
-                      Login as Guest
-                    </>
-                  )}
-                </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-auto min-w-[140px] h-8 px-6 rounded-full text-xs"
+                    size="sm"
+                    onClick={handleGuestLogin}
+                    disabled={isGuestLoading}
+                  >
+                    {isGuestLoading ? (
+                      <>
+                        <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        <User className="mr-1.5 h-3 w-3" />
+                        Login as Guest
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
 
