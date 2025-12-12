@@ -80,23 +80,6 @@ function SettingsPageContent() {
     return () => unsub();
   }, [user?.id]);
 
-  // Load preferences from user when user changes
-  useEffect(() => {
-    if (user?.preferences?.discover) {
-      setDiscoverPrefs({
-        hideDigitalArt: user.preferences.discover.hideDigitalArt || false,
-        hideAIAssistedArt: user.preferences.discover.hideAIAssistedArt || false,
-        hideNFTs: user.preferences.discover.hideNFTs || false,
-        hidePhotography: user.preferences.discover.hidePhotography || false,
-        hideVideoArt: user.preferences.discover.hideVideoArt || false,
-        hidePerformanceArt: user.preferences.discover.hidePerformanceArt || false,
-        hideInstallationArt: user.preferences.discover.hideInstallationArt || false,
-        hidePrintmaking: user.preferences.discover.hidePrintmaking || false,
-        hideTextileArt: user.preferences.discover.hideTextileArt || false,
-      });
-    }
-  }, [user?.preferences?.discover]);
-  
   const handleSignOut = async () => {
     setIsSigningOut(true);
     try {
