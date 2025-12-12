@@ -46,24 +46,26 @@ export default function RootPage() {
     setIsGuestLoading(true);
     try {
       const userCredential = await signInAnonymously(auth);
-      console.log('Guest login successful:', userCredential.user.uid);
+      console.log('Guest login successful:', userCredential.user.uid, 'isAnonymous:', userCredential.user.isAnonymous);
       
-      // Wait a moment for auth state to update
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for auth provider to update
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
         title: "Welcome!",
         description: "You're now browsing as a guest. You can explore the platform, but some features require an account.",
       });
       
-      // Redirect to news page
-      router.push('/news');
+      // Force redirect to news page - don't wait for state updates
+      window.location.href = '/news';
     } catch (error: any) {
       console.error('Guest login error:', error);
       let errorMessage = "Failed to sign in as guest. Please try again.";
       
       if (error.code === 'auth/operation-not-allowed') {
-        errorMessage = "Anonymous authentication is not enabled. Please contact support.";
+        errorMessage = "Anonymous authentication is not enabled in Firebase. Please enable it in Firebase Console > Authentication > Sign-in method.";
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = "Network error. Please check your connection and try again.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -72,6 +74,7 @@ export default function RootPage() {
         title: "Guest login failed",
         description: errorMessage,
         variant: "destructive",
+        duration: 10000,
       });
       setIsGuestLoading(false);
     }
