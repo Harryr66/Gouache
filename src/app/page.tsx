@@ -60,21 +60,37 @@ export default function RootPage() {
       window.location.href = '/news';
     } catch (error: any) {
       console.error('Guest login error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      
       let errorMessage = "Failed to sign in as guest. Please try again.";
+      let errorTitle = "Guest login failed";
       
       if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/admin-restricted-operation') {
-        errorMessage = "Anonymous authentication is not enabled or is restricted. Please enable it in Firebase Console: Authentication > Sign-in method > Anonymous > Enable.";
+        errorTitle = "Anonymous Authentication Disabled";
+        errorMessage = "Anonymous authentication is not enabled in Firebase Console. To enable it:\n\n1. Go to Firebase Console (https://console.firebase.google.com/)\n2. Select your project (soma-social)\n3. Navigate to Authentication > Sign-in method\n4. Find 'Anonymous' in the list\n5. Click 'Enable'\n6. Click 'Save'\n\nAfter enabling, guest login will work.";
       } else if (error.code === 'auth/network-request-failed') {
         errorMessage = "Network error. Please check your connection and try again.";
       } else if (error.message) {
         errorMessage = error.message;
       }
       
+      // Show detailed error in console for debugging
+      if (error.code === 'auth/admin-restricted-operation') {
+        console.error('🔴 ANONYMOUS AUTHENTICATION IS NOT ENABLED IN FIREBASE CONSOLE');
+        console.error('📋 Steps to fix:');
+        console.error('   1. Go to: https://console.firebase.google.com/');
+        console.error('   2. Select project: soma-social');
+        console.error('   3. Go to: Authentication > Sign-in method');
+        console.error('   4. Find "Anonymous" and click "Enable"');
+        console.error('   5. Click "Save"');
+      }
+      
       toast({
-        title: "Guest login failed",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
-        duration: 10000,
+        duration: 15000,
       });
       setIsGuestLoading(false);
     }
