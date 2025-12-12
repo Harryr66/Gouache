@@ -110,21 +110,23 @@ export default function RootPage() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col items-center justify-center p-4 relative">
+        <main className="flex-1 flex flex-col items-center justify-center p-4 relative min-h-[calc(100vh-4rem)]">
           {/* Hero Image */}
-          <div className="absolute inset-0 overflow-hidden -z-10">
+          <div className="absolute inset-0 overflow-hidden z-0">
             <img
               src="/assets/Gouache Hero Light.png"
               alt="Gouache Hero"
               className="w-full h-full object-cover block dark:hidden"
+              style={{ minHeight: '100%', minWidth: '100%' }}
             />
             <img
               src="/assets/Gouache Hero Dark.png"
               alt="Gouache Hero"
               className="w-full h-full object-cover hidden dark:block"
+              style={{ minHeight: '100%', minWidth: '100%' }}
             />
-            {/* Overlay for better text readability */}
-            <div className="absolute inset-0 bg-background/60 dark:bg-background/70" />
+            {/* Overlay for better text readability - reduced opacity */}
+            <div className="absolute inset-0 bg-background/40 dark:bg-background/50" />
           </div>
 
           <div className="w-full max-w-md space-y-6 relative z-10">
