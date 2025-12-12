@@ -129,7 +129,7 @@ export default function RootPage() {
               </div>
               
               {/* Buttons below hero image - constrained to hero image width */}
-              <div className="flex flex-col items-center space-y-2 pt-4 px-4 sm:px-8 md:px-16 lg:px-24">
+              <div className="flex flex-col items-center space-y-2 pt-2 px-4 sm:px-8 md:px-16 lg:px-24">
                 <div className="w-full max-w-6xl flex flex-col items-center space-y-2">
                   <Button
                     variant="gradient"
