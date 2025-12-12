@@ -281,14 +281,12 @@ function DiscoverPageContent() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Force grid view on desktop (only for artwork, market and events stay as set)
+  // Force grid view on desktop (only artwork); keep events default to list
   useEffect(() => {
     if (!isMobile) {
       setArtworkView('grid');
-      // Market and Events can stay as list on desktop if user prefers, but default to grid
-      // Actually, let's keep them as grid on desktop for consistency
       setMarketView('grid');
-      setEventsView('grid');
+      setEventsView('list');
     } else {
       // On mobile, ensure correct defaults
       setArtworkView('grid');
@@ -959,16 +957,6 @@ function DiscoverPageContent() {
             {/* Search and Filter Bar */}
             <div className="mb-6 space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-                      type="text"
-                    placeholder="Search events by location (e.g., New York, London, Paris)..."
-                    value={selectedEventLocation}
-                    onChange={(e) => setSelectedEventLocation(e.target.value)}
-                    className="pl-10"
-                    />
-          </div>
                 {isMobile ? (
                   <div className="flex gap-2">
           <Button
@@ -993,7 +981,17 @@ function DiscoverPageContent() {
 
               {/* Filters Panel */}
               {showEventFilters && (
-                <Card className="p-4">
+                <Card className="p-4 space-y-4">
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search events by location (e.g., New York, London, Paris)..."
+                      value={selectedEventLocation}
+                      onChange={(e) => setSelectedEventLocation(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Event Type</label>
