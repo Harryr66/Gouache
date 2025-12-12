@@ -145,7 +145,7 @@ export default function RootPage() {
         </header>
 
         {/* Main Content */}
-        <main className="flex flex-col items-center justify-start pt-4 pb-4 sm:pt-8 sm:pb-5 relative">
+        <main className="flex flex-col items-center justify-start pt-4 pb-32 sm:pt-8 sm:pb-48 relative">
           <div className="w-full max-w-4xl space-y-2 sm:space-y-4 relative z-10 px-4">
             <div className="text-center space-y-2 sm:space-y-4">
               {/* Hero Image - replaces welcome text */}
