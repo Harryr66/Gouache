@@ -106,9 +106,9 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   }
 
   try {
-    // Extract metadata for platform donation tracking
-    const platformDonationAmount = parseInt(paymentIntent.metadata.platformDonationAmount || '0');
-    const platformDonationPercentage = parseFloat(paymentIntent.metadata.platformDonationPercentage || '0');
+    // Extract metadata for platform commission tracking
+    const platformCommissionAmount = parseInt(paymentIntent.metadata.platformCommissionAmount || paymentIntent.metadata.platformDonationAmount || '0');
+    const platformCommissionPercentage = parseFloat(paymentIntent.metadata.platformCommissionPercentage || paymentIntent.metadata.platformDonationPercentage || '5');
     const productAmount = parseInt(paymentIntent.metadata.productAmount || paymentIntent.amount.toString());
     
     // Record the sale in Firestore
@@ -121,8 +121,8 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
       applicationFeeAmount: paymentIntent.application_fee_amount || 0,
-      platformCommission: platformDonationAmount, // Platform donation (if artist opted in)
-      platformDonationPercentage, // Donation percentage
+      platformCommission: platformCommissionAmount, // 5% platform commission
+      platformCommissionPercentage, // 5% commission percentage
       productAmount, // Original product price
       artistPayout: paymentIntent.amount - (paymentIntent.application_fee_amount || 0),
       status: 'completed',

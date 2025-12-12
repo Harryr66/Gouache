@@ -693,7 +693,7 @@ function ProductDetailPage() {
                     : 'Buy Now'}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  Commission-free marketplace • Artists keep 100% of sales
+                  5% platform commission • Artists keep 95% of sales
                 </p>
               </div>
 

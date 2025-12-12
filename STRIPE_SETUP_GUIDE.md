@@ -72,8 +72,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...  # Your Stripe publishable key
 NEXT_PUBLIC_APP_URL=http://localhost:3000  # Development
 # NEXT_PUBLIC_APP_URL=https://yourdomain.com  # Production
 
-# Note: Platform is commission-free. Artists can optionally donate a % of sales.
-# No commission rate environment variable needed.
+# Note: Platform charges a 5% commission on all sales.
 STRIPE_APPLICATION_FEE_RATE=0.029  # 2.9% + $0.30 per transaction (Stripe's fee)
 ```
 
@@ -173,12 +172,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Platform is commission-free - artists can optionally donate a % of sales
-    // Donation percentage is stored in artist's profile (platformDonationPercentage)
-    const platformDonationPercentage = artistData.platformDonationPercentage || 0;
-    const applicationFeeAmount = platformDonationEnabled 
-      ? Math.round(amount * (platformDonationPercentage / 100))
-      : 0;
+    // Platform charges a 5% commission on all sales
+    const platformCommissionPercentage = 5; // 5% platform fee
+    const applicationFeeAmount = Math.round(amount * (platformCommissionPercentage / 100));
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount, // Already in cents

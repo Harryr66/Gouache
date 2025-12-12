@@ -133,20 +133,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if artist has opted in to donate a percentage to the platform
-    const platformDonationEnabled = artistData.platformDonationEnabled || false;
-    const platformDonationPercentage = artistData.platformDonationPercentage || 0;
+    // Calculate 5% platform commission fee
+    const platformCommissionPercentage = 5; // 5% platform fee
+    const platformCommissionAmount = Math.round(amountInCents * (platformCommissionPercentage / 100));
     
-    // Calculate platform donation (if artist opted in)
-    let platformDonationAmount = 0;
-    if (platformDonationEnabled && platformDonationPercentage > 0) {
-      // Donation is calculated from the sale amount
-      platformDonationAmount = Math.round(amountInCents * (platformDonationPercentage / 100));
-    }
-    
-    // Application fee is the platform donation (if artist opted in)
-    // Artist receives: amountInCents - platformDonationAmount
-    const applicationFeeAmount = platformDonationAmount;
+    // Application fee is the 5% platform commission
+    // Artist receives: amountInCents - platformCommissionAmount
+    const applicationFeeAmount = platformCommissionAmount;
 
     // Create payment intent on the connected account
     // Artist receives: amountInCents - platformDonationAmount (if they opted in)
@@ -154,7 +147,7 @@ export async function POST(request: NextRequest) {
       {
         amount: amountInCents,
         currency: currency.toLowerCase(),
-        application_fee_amount: applicationFeeAmount, // Platform donation (if artist opted in)
+        application_fee_amount: applicationFeeAmount, // 5% platform commission
         transfer_data: {
           destination: stripeAccountId,
         },
@@ -166,8 +159,8 @@ export async function POST(request: NextRequest) {
           itemTitle: itemData.title || 'Untitled',
           platform: 'gouache',
           productAmount: amountInCents.toString(), // Original product amount
-          platformDonationAmount: platformDonationAmount.toString(), // Platform donation (if artist opted in)
-          platformDonationPercentage: platformDonationPercentage.toString(), // Donation percentage
+          platformCommissionAmount: platformCommissionAmount.toString(), // 5% platform commission
+          platformCommissionPercentage: platformCommissionPercentage.toString(), // 5% commission percentage
         },
         description: description || `Purchase: ${itemData.title || itemType}`,
         automatic_payment_methods: {
@@ -186,10 +179,10 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
-      applicationFeeAmount, // Platform donation (if artist opted in)
+      applicationFeeAmount, // 5% platform commission
       productAmount: amountInCents,
-      platformDonationAmount,
-      platformDonationPercentage,
+      platformCommissionAmount,
+      platformCommissionPercentage,
     });
   } catch (error: any) {
     console.error('Error creating payment intent:', error);
