@@ -471,7 +471,6 @@ function SettingsPageContent() {
           <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
             <TabsList className="inline-flex w-auto min-w-full sm:min-w-0">
               <TabsTrigger value="general" className="shrink-0 whitespace-nowrap">General</TabsTrigger>
-              <TabsTrigger value="business" className="shrink-0 whitespace-nowrap text-xs sm:text-sm">Payments</TabsTrigger>
               <TabsTrigger value="support" className="shrink-0 whitespace-nowrap">Report bug</TabsTrigger>
             </TabsList>
           </div>

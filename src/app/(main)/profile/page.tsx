@@ -291,7 +291,7 @@ export default function ProfilePage() {
               userId={effectiveUser.id}
           isOwnProfile={true}
               isProfessional={isProf}
-              hideShop={effectiveUser.hideShop ?? false}
+              hideShop={true}
               hideLearn={true}
           onTabChange={setCurrentTab}
         />

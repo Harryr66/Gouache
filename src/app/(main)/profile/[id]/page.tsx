@@ -156,7 +156,7 @@ export default function ArtistProfilePage() {
           userId={profileUser.id}
           isOwnProfile={isOwnProfile}
           isProfessional={profileUser.isProfessional || false}
-          hideShop={profileUser.hideShop || false}
+          hideShop={true}
           hideLearn={true}
         />
       </div>

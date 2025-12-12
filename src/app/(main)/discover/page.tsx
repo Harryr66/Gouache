@@ -242,12 +242,12 @@ function DiscoverPageContent() {
   const { theme } = useTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialTab = (searchParams?.get?.('tab') as 'artwork' | 'events' | 'market') || 'artwork';
+  const initialTab = (searchParams?.get?.('tab') as 'artwork' | 'events') || 'artwork';
   
   useEffect(() => {
     setMounted(true);
   }, []);
-  const [activeTab, setActiveTab] = useState<'artwork' | 'events' | 'market'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'artwork' | 'events'>(initialTab === 'market' ? 'artwork' : initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedMedium, setSelectedMedium] = useState('All');
@@ -720,7 +720,7 @@ function DiscoverPageContent() {
           value={activeTab}
         onValueChange={(value) => {
             startTransition(() => {
-              setActiveTab(value as 'artwork' | 'events' | 'market');
+              setActiveTab(value as 'artwork' | 'events');
             });
             // Defer router update to avoid blocking UI
             setTimeout(() => {
@@ -729,14 +729,10 @@ function DiscoverPageContent() {
           }}
           className="mb-6"
         >
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
+          <TabsList className="grid w-full max-w-lg grid-cols-2">
             <TabsTrigger value="artwork" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               Artwork
-            </TabsTrigger>
-            <TabsTrigger value="market" className="flex items-center gap-2">
-              <ShoppingBag className="h-4 w-4" />
-              Market
             </TabsTrigger>
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
@@ -957,8 +953,8 @@ function DiscoverPageContent() {
             <div ref={loadMoreRef} className="h-10" />
           </TabsContent>
 
-          {/* Market Tab */}
-          <TabsContent value="market" className="mt-6">
+          {/* Market Tab - Hidden for now */}
+          {/* <TabsContent value="market" className="mt-6">
             {/* Search and Filter Bar */}
             <div className="mb-6 space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
@@ -1156,7 +1152,7 @@ function DiscoverPageContent() {
                 })}
               </div>
             )}
-          </TabsContent>
+          </TabsContent> */}
 
           {/* Events Tab */}
           <TabsContent value="events" className="mt-6">
