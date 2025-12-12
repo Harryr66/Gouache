@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, startTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { ProfileHeader } from '@/components/profile-header';
 import { ProfileTabs } from '@/components/profile-tabs';
@@ -23,6 +24,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [currentTab, setCurrentTab] = useState('portfolio'); // Portfolio is default tab
   const [hasPendingArtistRequest, setHasPendingArtistRequest] = useState(false);
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
@@ -32,6 +34,12 @@ export default function ProfilePage() {
 
   // Watch for pending artist request for this user
   useEffect(() => {
+    // Prevent guest (anonymous) users from accessing profile
+    if (!authLoading && user && (!user.email || user.email === '')) {
+      router.replace('/');
+      return;
+    }
+
     if (!user) return;
     const q = query(
       collection(db, 'artistRequests'),

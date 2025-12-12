@@ -22,6 +22,13 @@ export default function ArtistProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Prevent guest (anonymous) users from accessing profiles
+    if (user && (!user.email || user.email === '')) {
+      router.replace('/');
+    }
+  }, [user, router]);
+
+  useEffect(() => {
     const fetchProfile = async () => {
       try {
         let profileDocRef = doc(db, 'userProfiles', artistId);
