@@ -62,8 +62,8 @@ export default function RootPage() {
       console.error('Guest login error:', error);
       let errorMessage = "Failed to sign in as guest. Please try again.";
       
-      if (error.code === 'auth/operation-not-allowed') {
-        errorMessage = "Anonymous authentication is not enabled in Firebase. Please enable it in Firebase Console > Authentication > Sign-in method.";
+      if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/admin-restricted-operation') {
+        errorMessage = "Anonymous authentication is not enabled or is restricted. Please enable it in Firebase Console: Authentication > Sign-in method > Anonymous > Enable.";
       } else if (error.code === 'auth/network-request-failed') {
         errorMessage = "Network error. Please check your connection and try again.";
       } else if (error.message) {
