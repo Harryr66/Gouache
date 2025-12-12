@@ -295,6 +295,13 @@ function DiscoverPageContent() {
     }
   }, [isMobile]);
 
+  // Ensure events default to list on mobile when viewing events tab
+  useEffect(() => {
+    if (isMobile && activeTab === 'events') {
+      setEventsView('list');
+    }
+  }, [isMobile, activeTab]);
+
   useEffect(() => {
     const fetchArtworks = async () => {
       try {
