@@ -130,10 +130,10 @@ export default function RootPage() {
               
               {/* Buttons below hero image - constrained to hero image width */}
               <div className="flex flex-col items-center space-y-2 pt-4 px-4 sm:px-8 md:px-16 lg:px-24">
-                <div className="w-full max-w-3xl flex flex-col items-center space-y-2">
+                <div className="w-full max-w-3xl space-y-2">
                   <Button
                     variant="gradient"
-                    className="!h-7 !px-4 !rounded-full [&::before]:!rounded-full [&::before]:!inset-[1px] text-xs"
+                    className="w-full !h-7 !rounded-full [&::before]:!rounded-full [&::before]:!inset-[1px] text-xs"
                     asChild
                   >
                     <Link href="/login">
@@ -144,7 +144,7 @@ export default function RootPage() {
 
                   <Button
                     variant="outline"
-                    className="!h-7 !px-4 !rounded-full !border-2 border-border text-xs"
+                    className="w-full !h-7 !rounded-full !border-2 border-border text-xs"
                     asChild
                   >
                     <Link href="/login?tab=signup">
@@ -155,7 +155,7 @@ export default function RootPage() {
 
                   <Button
                     variant="ghost"
-                    className="!h-7 !px-4 !rounded-full text-xs"
+                    className="w-full !h-7 !rounded-full text-xs"
                     onClick={handleGuestLogin}
                     disabled={isGuestLoading}
                   >
