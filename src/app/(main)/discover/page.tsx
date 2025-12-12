@@ -955,7 +955,7 @@ function DiscoverPageContent() {
 
           {/* Market Tab - Hidden for now */}
           {/* <TabsContent value="market" className="mt-6">
-            {/* Search and Filter Bar */}
+            Search and Filter Bar
             <div className="mb-6 space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1 relative">
