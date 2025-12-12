@@ -51,14 +51,28 @@ function SettingsPageContent() {
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
   
   // Get tab from URL or default to 'general'
-  const currentTab = searchParams.get('tab') || 'general';
+  // Map old 'payments' tab to 'business' for backward compatibility
+  const getTabFromUrl = () => {
+    const tab = searchParams.get('tab') || 'general';
+    // Map old 'payments' tab to 'business'
+    if (tab === 'payments') {
+      return 'business';
+    }
+    return tab;
+  };
+  
+  const currentTab = getTabFromUrl();
   const [activeTab, setActiveTab] = useState(currentTab);
   
   // Update active tab when URL changes
   useEffect(() => {
-    const tab = searchParams.get('tab') || 'general';
+    const tab = getTabFromUrl();
     setActiveTab(tab);
-  }, [searchParams]);
+    // If URL has old 'payments' tab, update it to 'business'
+    if (searchParams.get('tab') === 'payments') {
+      router.replace(`/settings?tab=business${searchParams.get('refresh') ? '&refresh=true' : ''}${searchParams.get('success') ? '&success=true' : ''}`, { scroll: false });
+    }
+  }, [searchParams, router]);
   
   // Handle tab change
   const handleTabChange = (value: string) => {
