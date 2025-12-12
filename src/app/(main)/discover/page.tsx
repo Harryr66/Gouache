@@ -696,7 +696,7 @@ function DiscoverPageContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <ThemeLoading text="Loading discover feed..." size="lg" />
+        <ThemeLoading size="lg" />
       </div>
     );
   }
