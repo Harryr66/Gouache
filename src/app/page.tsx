@@ -119,18 +119,18 @@ export default function RootPage() {
                 <img
                   src="/assets/Gouache Hero Light.png"
                   alt="Welcome to Gouache - Discover art, connect with artists, and explore creative communities"
-                  className="w-full max-w-5xl h-auto object-contain block dark:hidden"
+                  className="w-full max-w-6xl h-auto object-contain block dark:hidden"
                 />
                 <img
                   src="/assets/Gouache Hero Dark.png"
                   alt="Welcome to Gouache - Discover art, connect with artists, and explore creative communities"
-                  className="w-full max-w-5xl h-auto object-contain hidden dark:block"
+                  className="w-full max-w-6xl h-auto object-contain hidden dark:block"
                 />
               </div>
               
               {/* Buttons below hero image - constrained to hero image width */}
               <div className="flex flex-col items-center space-y-2 pt-4 px-4 sm:px-8 md:px-16 lg:px-24">
-                <div className="w-full max-w-5xl flex flex-col items-center space-y-2">
+                <div className="w-full max-w-6xl flex flex-col items-center space-y-2">
                   <Button
                     variant="gradient"
                     className="w-3/4 !h-7 !rounded-full [&::before]:!rounded-full [&::before]:!inset-[1px] text-xs"
