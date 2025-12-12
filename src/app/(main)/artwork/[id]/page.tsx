@@ -218,13 +218,12 @@ export default function ArtworkPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-foreground">For sale:</span>
-                      <span>{artwork.isForSale ? 'Yes' : 'No'}</span>
-                    </div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Badge className="bg-blue-600 hover:bg-blue-700">
+                      {artwork.isForSale ? 'For sale' : 'Not for sale'}
+                    </Badge>
                     {artwork.price !== undefined && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="font-medium text-foreground">Price:</span>
                         <span>{artwork.currency || 'USD'} {artwork.price.toLocaleString()}</span>
                       </div>
