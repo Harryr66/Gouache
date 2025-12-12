@@ -205,10 +205,10 @@ const generateArtistContent = (artist: Artist) => ({
   return (
     <>
     <Card 
-        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full ${className || ''}`}
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full rounded-none ${className || ''}`}
         onClick={handleTileClick}
     >
-      <div className="relative aspect-square overflow-hidden">
+      <div className="relative aspect-[3/4] overflow-hidden">
         <Image
           src={artwork.imageUrl || '/assets/placeholder-light.png'}
           alt={artwork.imageAiHint}
