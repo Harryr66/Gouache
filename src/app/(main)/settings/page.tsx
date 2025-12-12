@@ -147,55 +147,93 @@ function SettingsPageContent() {
     setIsDeletingAccount(true);
     try {
       const userId = user.id;
-      const batch = writeBatch(db);
+      
+      // Helper function to execute batch in chunks (Firestore limit is 500 operations)
+      const executeBatchInChunks = async (operations: Array<{ type: 'delete', ref: any }>) => {
+        const BATCH_LIMIT = 500;
+        for (let i = 0; i < operations.length; i += BATCH_LIMIT) {
+          const chunk = operations.slice(i, i + BATCH_LIMIT);
+          const batch = writeBatch(db);
+          chunk.forEach(op => {
+            if (op.type === 'delete') {
+              batch.delete(op.ref);
+            }
+          });
+          await batch.commit();
+        }
+      };
+
+      const operations: Array<{ type: 'delete', ref: any }> = [];
 
       // 1. Delete user profile
       const userProfileRef = doc(db, 'userProfiles', userId);
-      batch.delete(userProfileRef);
+      operations.push({ type: 'delete', ref: userProfileRef });
 
       // 2. Delete handle mapping
       if (user.username) {
         const handleRef = doc(db, 'handles', user.username);
-        batch.delete(handleRef);
+        operations.push({ type: 'delete', ref: handleRef });
       }
 
       // 3. Delete user's artworks
-      const artworksQuery = query(collection(db, 'artworks'), where('artist.userId', '==', userId));
-      const artworksSnapshot = await getDocs(artworksQuery);
-      artworksSnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
+      try {
+        const artworksQuery = query(collection(db, 'artworks'), where('artist.userId', '==', userId));
+        const artworksSnapshot = await getDocs(artworksQuery);
+        artworksSnapshot.forEach((doc) => {
+          operations.push({ type: 'delete', ref: doc.ref });
+        });
+      } catch (error) {
+        console.warn('Error fetching artworks for deletion:', error);
+      }
 
       // 4. Delete user's posts
-      const postsQuery = query(collection(db, 'posts'), where('artist.id', '==', userId));
-      const postsSnapshot = await getDocs(postsQuery);
-      postsSnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
+      try {
+        const postsQuery = query(collection(db, 'posts'), where('artist.id', '==', userId));
+        const postsSnapshot = await getDocs(postsQuery);
+        postsSnapshot.forEach((doc) => {
+          operations.push({ type: 'delete', ref: doc.ref });
+        });
+      } catch (error) {
+        console.warn('Error fetching posts for deletion:', error);
+      }
 
       // 5. Delete user's courses (if any)
-      const coursesQuery = query(collection(db, 'courses'), where('instructor.userId', '==', userId));
-      const coursesSnapshot = await getDocs(coursesQuery);
-      coursesSnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
+      try {
+        const coursesQuery = query(collection(db, 'courses'), where('instructor.userId', '==', userId));
+        const coursesSnapshot = await getDocs(coursesQuery);
+        coursesSnapshot.forEach((doc) => {
+          operations.push({ type: 'delete', ref: doc.ref });
+        });
+      } catch (error) {
+        console.warn('Error fetching courses for deletion:', error);
+      }
 
       // 6. Delete user's marketplace products
-      const productsQuery = query(collection(db, 'marketplaceProducts'), where('sellerId', '==', userId));
-      const productsSnapshot = await getDocs(productsQuery);
-      productsSnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
+      try {
+        const productsQuery = query(collection(db, 'marketplaceProducts'), where('sellerId', '==', userId));
+        const productsSnapshot = await getDocs(productsQuery);
+        productsSnapshot.forEach((doc) => {
+          operations.push({ type: 'delete', ref: doc.ref });
+        });
+      } catch (error) {
+        console.warn('Error fetching marketplace products for deletion:', error);
+      }
 
       // 7. Delete user's artist request (if any)
-      const artistRequestsQuery = query(collection(db, 'artistRequests'), where('userId', '==', userId));
-      const artistRequestsSnapshot = await getDocs(artistRequestsQuery);
-      artistRequestsSnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
+      try {
+        const artistRequestsQuery = query(collection(db, 'artistRequests'), where('userId', '==', userId));
+        const artistRequestsSnapshot = await getDocs(artistRequestsQuery);
+        artistRequestsSnapshot.forEach((doc) => {
+          operations.push({ type: 'delete', ref: doc.ref });
+        });
+      } catch (error) {
+        console.warn('Error fetching artist requests for deletion:', error);
+      }
 
-      // Commit all Firestore deletions
-      await batch.commit();
+      // Commit all Firestore deletions in chunks if needed
+      if (operations.length > 0) {
+        await executeBatchInChunks(operations);
+      }
 
       // 8. Delete storage files (avatars, banners, portfolio)
       try {
@@ -244,12 +282,24 @@ function SettingsPageContent() {
       router.push('/login');
     } catch (error: any) {
       console.error('Error deleting account:', error);
+      console.error('Error details:', {
+        code: error?.code,
+        message: error?.message,
+        stack: error?.stack
+      });
       
       let errorMessage = 'Failed to delete account. Please try again.';
-      if (error.code === 'auth/requires-recent-login') {
+      
+      if (error?.code === 'auth/requires-recent-login') {
         errorMessage = 'For security, please sign out and sign back in, then try deleting your account again.';
-      } else if (error.message) {
-        errorMessage = error.message;
+      } else if (error?.code === 'permission-denied') {
+        errorMessage = 'Permission denied. Please check your account permissions or contact support.';
+      } else if (error?.code === 'unavailable') {
+        errorMessage = 'Service temporarily unavailable. Please try again in a moment.';
+      } else if (error?.message) {
+        errorMessage = `Deletion failed: ${error.message}`;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       }
 
       toast({
