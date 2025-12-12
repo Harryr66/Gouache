@@ -146,9 +146,12 @@ function SettingsPageContent() {
       return;
     }
 
-    // First, prompt for password if not already provided
-    if (!deletePassword && !showPasswordInput) {
-      setShowPasswordInput(true);
+    if (!deletePassword) {
+      toast({
+        title: 'Password required',
+        description: 'Please enter your password to confirm account deletion.',
+        variant: 'destructive'
+      });
       return;
     }
 
@@ -605,13 +608,18 @@ function SettingsPageContent() {
                   </Button>
                 </div>
 
-                <AlertDialog open={showDeleteAccountDialog} onOpenChange={(open) => {
-                  setShowDeleteAccountDialog(open);
-                  if (!open) {
-                    setShowPasswordInput(false);
-                    setDeletePassword('');
-                  }
-                }}>
+                <AlertDialog 
+                  open={showDeleteAccountDialog} 
+                  onOpenChange={(open) => {
+                    if (!isDeletingAccount) {
+                      setShowDeleteAccountDialog(open);
+                      if (!open) {
+                        setShowPasswordInput(false);
+                        setDeletePassword('');
+                      }
+                    }
+                  }}
+                >
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
@@ -666,11 +674,12 @@ function SettingsPageContent() {
                         Cancel
                       </AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => {
+                        onClick={async (e) => {
+                          e.preventDefault();
                           if (!showPasswordInput) {
                             setShowPasswordInput(true);
-                          } else {
-                            handleDeleteAccount();
+                          } else if (deletePassword) {
+                            await handleDeleteAccount();
                           }
                         }}
                         disabled={isDeletingAccount || (showPasswordInput && !deletePassword)}
