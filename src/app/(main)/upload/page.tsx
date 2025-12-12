@@ -429,7 +429,7 @@ export default function UploadPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        {/* Artwork/Product */}
+        {/* Portfolio Artwork */}
         <Card 
           className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
           onClick={() => setSelectedType('artwork-product')}
@@ -438,9 +438,9 @@ export default function UploadPage() {
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
               <Image className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle>Artwork/Product</CardTitle>
+            <CardTitle>Portfolio Artwork</CardTitle>
             <CardDescription>
-              Upload images. Choose to display in your portfolio, shop, or both.
+              Upload images to showcase in your portfolio.
             </CardDescription>
           </CardHeader>
           <CardContent>

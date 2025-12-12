@@ -80,7 +80,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   const router = useRouter();
   
   // Check if this is a product upload (not artwork/portfolio)
-  const isProductUpload = titleText?.toLowerCase().includes('product') || false;
+  const isProductUpload = false;
   
   const [formData, setFormData] = useState({
     title: initialFormData?.title || '',
@@ -89,14 +89,8 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
     medium: initialFormData?.medium || '',
     dimensions: initialFormData?.dimensions || { width: '', height: '', unit: 'cm' as const },
     tags: initialFormData?.tags || '',
-    // Stage 1: Is this item for sale or not
+    // Sale tagging only (platform no longer sells)
     isForSale: initialFormData?.isForSale ?? false,
-    // Stage 2: Identify item type
-    itemType: null as 'original' | 'print' | 'merchandise' | null,
-    // Stage 3: Show in portfolio
-    showInPortfolio: true,
-    // Stage 4: Show in shop
-    showInShop: false,
     price: initialFormData?.price || '',
     currency: initialFormData?.currency || 'USD',
     isAI: initialFormData?.isAI ?? false,
@@ -168,46 +162,6 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
     e.preventDefault();
     if (!files.length || !user) return;
 
-    // Validate agreement to terms (only required for original artworks and prints, not merchandise)
-    if (formData.itemType !== 'merchandise' && !agreedToTerms) {
-      toast({
-        title: "Agreement Required",
-        description: "You must agree to the terms regarding AI-generated artwork before uploading.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate item type is selected (Stage 2)
-    if (!formData.itemType) {
-      toast({
-        title: "Item Type Required",
-        description: "Please identify the item type (Original artwork, Print, or Merchandise product).",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate that showInShop requires isForSale
-    if (formData.showInShop && !formData.isForSale) {
-      toast({
-        title: "Invalid Selection",
-        description: "Items must be marked for sale to appear in your shop.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate at least one display option is selected
-    if (!formData.showInPortfolio && !formData.showInShop) {
-      toast({
-        title: "Display Location Required",
-        description: "Please select at least one option: show in portfolio or show in shop.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     // Use chip-based tags (optional)
     const tags = tagsList;
 
@@ -251,12 +205,10 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         tags: tags,
         currency: formData.currency,
         isForSale: formData.isForSale,
-        // Stage 2: Item type
-        type: formData.itemType || 'original',
-        // Stage 3: Show in portfolio
-        showInPortfolio: formData.showInPortfolio,
-        // Stage 4: Show in shop
-        showInShop: formData.showInShop,
+        // Treat all uploads as portfolio artwork
+        type: 'artwork',
+        showInPortfolio: true,
+        showInShop: false,
         dimensions: {
           width: parseFloat(formData.dimensions.width) || 0,
           height: parseFloat(formData.dimensions.height) || 0,
@@ -312,9 +264,9 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         supportingImages: supportingImages, // Store all images for carousel
         title: formData.title,
         description: formData.description || '',
-        type: newArtwork.type,
-        showInPortfolio: newArtwork.showInPortfolio,
-        showInShop: newArtwork.showInShop,
+        type: 'artwork',
+        showInPortfolio: true,
+        showInShop: false,
         dimensions: formData.dimensions.width && formData.dimensions.height 
           ? `${formData.dimensions.width} x ${formData.dimensions.height} ${formData.dimensions.unit}`
           : '',
@@ -405,7 +357,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       <Card>
         <CardContent className="p-6">
           <div className="text-center">
-            <p className="text-muted-foreground">{isProductUpload ? "Please log in to upload products." : "Please log in to upload artwork."}</p>
+            <p className="text-muted-foreground">Please log in to upload artwork.</p>
           </div>
         </CardContent>
       </Card>
@@ -583,7 +535,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder={isProductUpload ? "Enter product title" : "Enter artwork title"}
+              placeholder="Enter artwork title"
               required
             />
           </div>
@@ -595,12 +547,12 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder={isProductUpload ? "Describe your product..." : "Describe your artwork..."}
+              placeholder="Describe your artwork..."
               rows={3}
             />
           </div>
 
-          {/* Mark this item for sale */}
+          {/* Mark this item for sale (tag only; platform does not sell) */}
           <div className="space-y-4 p-4 border rounded-lg">
             <div className="flex items-center space-x-2">
               <Switch
@@ -609,9 +561,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                 onCheckedChange={(checked) => {
                   setFormData({ 
                     ...formData, 
-                    isForSale: checked,
-                    // If unchecking "for sale", also uncheck "show in shop"
-                    showInShop: checked ? formData.showInShop : false
+                    isForSale: checked
                   });
                 }}
               />
@@ -619,90 +569,11 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                 Mark this item for sale
               </Label>
             </div>
+            <p className="text-xs text-muted-foreground">
+              This tags the artwork as for sale; checkout is not handled on platform.
+            </p>
           </div>
 
-          {/* Identify item type */}
-          <div className="space-y-4 p-4 border rounded-lg">
-            <Label className="text-base font-semibold">Identify item</Label>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="itemType-original"
-                  name="itemType"
-                  checked={formData.itemType === 'original'}
-                  onChange={() => setFormData({ ...formData, itemType: 'original' })}
-                  className="h-4 w-4"
-                />
-                <Label htmlFor="itemType-original" className="cursor-pointer font-normal">
-                  Original artwork
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="itemType-print"
-                  name="itemType"
-                  checked={formData.itemType === 'print'}
-                  onChange={() => setFormData({ ...formData, itemType: 'print' })}
-                  className="h-4 w-4"
-                />
-                <Label htmlFor="itemType-print" className="cursor-pointer font-normal">
-                  Print
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="itemType-merchandise"
-                  name="itemType"
-                  checked={formData.itemType === 'merchandise'}
-                  onChange={() => setFormData({ ...formData, itemType: 'merchandise' })}
-                  className="h-4 w-4"
-                />
-                <Label htmlFor="itemType-merchandise" className="cursor-pointer font-normal">
-                  Merchandise product
-                </Label>
-              </div>
-            </div>
-          </div>
-
-          {/* Show in portfolio */}
-          <div className="space-y-4 p-4 border rounded-lg">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="showInPortfolio"
-                checked={formData.showInPortfolio}
-                onCheckedChange={(checked) => setFormData({ ...formData, showInPortfolio: checked as boolean })}
-              />
-              <Label htmlFor="showInPortfolio" className="cursor-pointer text-base font-semibold">
-                I want this to appear under my portfolio
-              </Label>
-            </div>
-            </div>
-
-          {/* Show in shop */}
-          <div className="space-y-4 p-4 border rounded-lg">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="showInShop"
-                checked={formData.showInShop}
-                disabled={!formData.isForSale}
-                onCheckedChange={(checked) => setFormData({ ...formData, showInShop: checked as boolean })}
-              />
-              <Label 
-                htmlFor="showInShop" 
-                className={`cursor-pointer text-base font-semibold ${!formData.isForSale ? 'text-muted-foreground' : ''}`}
-              >
-                I want this to appear in my shop
-              </Label>
-            </div>
-            {!formData.isForSale && (
-              <p className="text-sm text-muted-foreground ml-6">
-                You must mark this item for sale first
-              </p>
-            )}
-          </div>
 
           {/* Dimensions */}
           <div className="space-y-2">
@@ -867,23 +738,21 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             </div>
           )}
 
-          {/* Terms Agreement - Only show for original artworks and prints, not merchandise */}
-          {formData.itemType !== 'merchandise' && (
-            <div className="flex items-start space-x-3 p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
-              <Checkbox
-                id="agreeToTerms"
-                checked={agreedToTerms}
-                onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
-                className="mt-1"
-              />
-              <label htmlFor="agreeToTerms" className="text-sm leading-relaxed cursor-pointer">
-                I confirm that this artwork is not AI-generated and is my own original creative work.
-              </label>
-            </div>
-          )}
+          {/* Terms Agreement */}
+          <div className="flex items-start space-x-3 p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
+            <Checkbox
+              id="agreeToTerms"
+              checked={agreedToTerms}
+              onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+              className="mt-1"
+            />
+            <label htmlFor="agreeToTerms" className="text-sm leading-relaxed cursor-pointer">
+              I confirm that this artwork is not AI-generated and is my own original creative work.
+            </label>
+          </div>
 
           {/* Submit Button */}
-          <Button type="submit" disabled={loading || !files.length || (formData.itemType !== 'merchandise' && !agreedToTerms)}>
+          <Button type="submit" disabled={loading || !files.length || !agreedToTerms}>
             {loading 
               ? `Uploading ${files.length} file(s)...` 
               : `Upload ${files.length > 1 ? `${files.length} Files` : 'Image'}`
