@@ -1045,12 +1045,24 @@ function DiscoverPageContent() {
             {/* Filtered Events */}
             {(() => {
               const filteredEvents = events.filter((event: any) => {
-                // Location filter
+                // Location filter - check tags first, then fallback to location text
                 if (selectedEventLocation.trim()) {
                   const searchTerm = selectedEventLocation.toLowerCase().trim();
+                  // Check tags array for location tag
+                  const eventTags = Array.isArray(event.tags) ? event.tags : [];
+                  const hasLocationTag = eventTags.some((tag: string) => 
+                    tag.toLowerCase().includes(searchTerm)
+                  );
+                  // Also check locationTag field
+                  const locationTagMatch = event.locationTag && 
+                    event.locationTag.toLowerCase().includes(searchTerm);
+                  // Fallback to location text fields
                   const eventLocation = (event.location || event.locationName || event.locationAddress || '').toLowerCase();
                   const eventVenue = ((event as any).venue || '').toLowerCase();
-                  if (!eventLocation.includes(searchTerm) && !eventVenue.includes(searchTerm)) {
+                  
+                  if (!hasLocationTag && !locationTagMatch && 
+                      !eventLocation.includes(searchTerm) && 
+                      !eventVenue.includes(searchTerm)) {
                     return false;
                   }
                 }

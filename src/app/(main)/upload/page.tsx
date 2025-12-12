@@ -13,6 +13,8 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -32,6 +34,7 @@ export default function UploadPage() {
     endDate: '',
     time: '',
     location: '',
+    locationTag: '',
     venue: '',
     description: '',
     price: '',
@@ -137,10 +140,10 @@ export default function UploadPage() {
 
   const handleEventSubmit = async () => {
     if (!user) return;
-    if (!eventForm.title || !eventForm.startDate || !eventForm.location || !eventImageFile) {
+    if (!eventForm.title || !eventForm.startDate || !eventForm.locationTag || !eventImageFile) {
       toast({
         title: 'Missing required fields',
-        description: 'Title, start date, location, and an image are required.',
+        description: 'Title, start date, location tag, and an image are required.',
         variant: 'destructive',
       });
       return;
@@ -167,6 +170,8 @@ export default function UploadPage() {
         title: eventForm.title,
         description: eventForm.description,
         location: eventForm.location,
+        locationTag: eventForm.locationTag,
+        tags: [eventForm.locationTag], // Save location tag in tags array for search
         venue: eventForm.venue,
         date: startDateTime.toISOString(),
         endDate: endDateTime?.toISOString(),
@@ -193,6 +198,7 @@ export default function UploadPage() {
         endDate: '',
         time: '',
         location: '',
+        locationTag: '',
         venue: '',
         description: '',
         price: '',
@@ -318,8 +324,63 @@ export default function UploadPage() {
               value={eventForm.venue}
               onChange={(e) => setEventForm((p) => ({ ...p, venue: e.target.value }))}
             />
+            <div className="md:col-span-2">
+              <Label htmlFor="location-tag" className="text-sm font-medium text-foreground">
+                Location Tag <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={eventForm.locationTag}
+                onValueChange={(value) => setEventForm((p) => ({ ...p, locationTag: value }))}
+              >
+                <SelectTrigger id="location-tag">
+                  <SelectValue placeholder="Select location tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="New York, USA">New York, USA</SelectItem>
+                  <SelectItem value="Los Angeles, USA">Los Angeles, USA</SelectItem>
+                  <SelectItem value="Chicago, USA">Chicago, USA</SelectItem>
+                  <SelectItem value="San Francisco, USA">San Francisco, USA</SelectItem>
+                  <SelectItem value="Miami, USA">Miami, USA</SelectItem>
+                  <SelectItem value="London, UK">London, UK</SelectItem>
+                  <SelectItem value="Paris, France">Paris, France</SelectItem>
+                  <SelectItem value="Berlin, Germany">Berlin, Germany</SelectItem>
+                  <SelectItem value="Amsterdam, Netherlands">Amsterdam, Netherlands</SelectItem>
+                  <SelectItem value="Barcelona, Spain">Barcelona, Spain</SelectItem>
+                  <SelectItem value="Madrid, Spain">Madrid, Spain</SelectItem>
+                  <SelectItem value="Rome, Italy">Rome, Italy</SelectItem>
+                  <SelectItem value="Milan, Italy">Milan, Italy</SelectItem>
+                  <SelectItem value="Vienna, Austria">Vienna, Austria</SelectItem>
+                  <SelectItem value="Zurich, Switzerland">Zurich, Switzerland</SelectItem>
+                  <SelectItem value="Brussels, Belgium">Brussels, Belgium</SelectItem>
+                  <SelectItem value="Copenhagen, Denmark">Copenhagen, Denmark</SelectItem>
+                  <SelectItem value="Stockholm, Sweden">Stockholm, Sweden</SelectItem>
+                  <SelectItem value="Oslo, Norway">Oslo, Norway</SelectItem>
+                  <SelectItem value="Tokyo, Japan">Tokyo, Japan</SelectItem>
+                  <SelectItem value="Seoul, South Korea">Seoul, South Korea</SelectItem>
+                  <SelectItem value="Hong Kong">Hong Kong</SelectItem>
+                  <SelectItem value="Singapore">Singapore</SelectItem>
+                  <SelectItem value="Shanghai, China">Shanghai, China</SelectItem>
+                  <SelectItem value="Beijing, China">Beijing, China</SelectItem>
+                  <SelectItem value="Sydney, Australia">Sydney, Australia</SelectItem>
+                  <SelectItem value="Melbourne, Australia">Melbourne, Australia</SelectItem>
+                  <SelectItem value="Toronto, Canada">Toronto, Canada</SelectItem>
+                  <SelectItem value="Vancouver, Canada">Vancouver, Canada</SelectItem>
+                  <SelectItem value="Montreal, Canada">Montreal, Canada</SelectItem>
+                  <SelectItem value="Mexico City, Mexico">Mexico City, Mexico</SelectItem>
+                  <SelectItem value="São Paulo, Brazil">São Paulo, Brazil</SelectItem>
+                  <SelectItem value="Buenos Aires, Argentina">Buenos Aires, Argentina</SelectItem>
+                  <SelectItem value="Dubai, UAE">Dubai, UAE</SelectItem>
+                  <SelectItem value="Tel Aviv, Israel">Tel Aviv, Israel</SelectItem>
+                  <SelectItem value="Istanbul, Turkey">Istanbul, Turkey</SelectItem>
+                  <SelectItem value="Mumbai, India">Mumbai, India</SelectItem>
+                  <SelectItem value="Delhi, India">Delhi, India</SelectItem>
+                  <SelectItem value="Bangkok, Thailand">Bangkok, Thailand</SelectItem>
+                  <SelectItem value="Online">Online</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Input
-              placeholder="Location (city, country)"
+              placeholder="Additional location details (optional)"
               value={eventForm.location}
               onChange={(e) => setEventForm((p) => ({ ...p, location: e.target.value }))}
               className="md:col-span-2"
