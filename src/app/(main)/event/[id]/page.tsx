@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Share2, ArrowLeft, Calendar, MapPin, Users, Clock, Bookmark, Flag, Ticket } from 'lucide-react';
+import { Heart, ArrowLeft, Calendar, MapPin, Users, Clock, Ticket } from 'lucide-react';
 import { Event } from '@/lib/types';
 import Image from 'next/image';
 import { AboutTheArtist } from '@/components/about-the-artist';
@@ -22,8 +22,6 @@ export default function EventDetailPage() {
   
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isAttending, setIsAttending] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -118,20 +116,6 @@ export default function EventDetailPage() {
     ? null
     : (typeof event.price === 'number' ? `$${event.price}` : `${event.price}`);
 
-  const handleBookmark = () => setIsBookmarked(!isBookmarked);
-  const handleAttend = () => setIsAttending(!isAttending);
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: event.title,
-        text: event.description,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6">
@@ -154,33 +138,6 @@ export default function EventDetailPage() {
                   priority
                   sizes="(max-width: 1024px) 100vw, 50vw"
                 />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center space-x-4">
-                <Button
-                  variant={isAttending ? "default" : "outline"}
-                  onClick={handleAttend}
-                  className="flex items-center space-x-2"
-                >
-                  <Users className="h-4 w-4" />
-                  <span>{isAttending ? 'Attending' : 'Attend Event'}</span>
-                </Button>
-                <Button variant="outline" onClick={handleShare}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleBookmark}
-                  className={isBookmarked ? 'text-yellow-500' : ''}
-                >
-                  <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <Flag className="h-4 w-4" />
-                </Button>
               </div>
             </div>
 

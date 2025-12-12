@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, MapPin, Users, Clock, Share2, Bookmark, Flag, MoreHorizontal } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock } from 'lucide-react';
 import { Event, Discussion } from '@/lib/types';
 import { useAuth } from '@/providers/auth-provider';
 import { useContent } from '@/providers/content-provider';
@@ -22,32 +22,11 @@ interface ExpandedEventViewProps {
 export function ExpandedEventView({ event, discussion, onClose }: ExpandedEventViewProps) {
     const { user } = useAuth();
     const { updateDiscussion } = useContent();
-    const [isBookmarked, setIsBookmarked] = useState(false);
-    const [isAttending, setIsAttending] = useState(false);
 
     const isCreator = useMemo(() => {
         if (!user || !discussion) return false;
         return user.id === discussion.author.id;
     }, [user, discussion]);
-
-    const handleBookmark = () => setIsBookmarked(!isBookmarked);
-    const handleAttend = () => setIsAttending(!isAttending);
-    const handleShare = () => {
-        if (navigator.share) {
-            navigator.share({
-                title: event.title,
-                text: event.description,
-                url: window.location.href,
-            });
-        } else {
-            navigator.clipboard.writeText(window.location.href);
-        }
-    };
-
-    const handleReport = () => {
-        // Handle report logic
-        console.log('Report event:', event.id);
-    };
 
     const renderDiscussion = () => {
         if (!discussion) return null;
@@ -176,40 +155,6 @@ export function ExpandedEventView({ event, discussion, onClose }: ExpandedEventV
 
                             {/* Discussion */}
                             {renderDiscussion()}
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="p-4 border-t">
-                        <div className="flex items-center justify-between">
-                            <div className="flex space-x-2">
-                                <Button
-                                    variant={isAttending ? "default" : "outline"}
-                                    onClick={handleAttend}
-                                >
-                                    {isAttending ? 'Attending' : 'Attend Event'}
-                                </Button>
-                                <Button variant="outline" onClick={handleShare}>
-                                    <Share2 className="h-4 w-4 mr-1" />
-                                    Share
-                                </Button>
-                            </div>
-                            <div className="flex space-x-1">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleBookmark}
-                                    className={isBookmarked ? 'text-yellow-500' : ''}
-                                >
-                                    <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={handleReport}>
-                                    <Flag className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </div>
                         </div>
                     </div>
                 </div>
