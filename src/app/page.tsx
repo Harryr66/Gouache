@@ -137,7 +137,6 @@ export default function RootPage() {
                     asChild
                   >
                     <Link href="/login">
-                      <LogIn className="mr-1.5 h-3 w-3" />
                       Login
                     </Link>
                   </Button>
@@ -148,7 +147,6 @@ export default function RootPage() {
                     asChild
                   >
                     <Link href="/login?tab=signup">
-                      <UserPlus className="mr-1.5 h-3 w-3" />
                       Create Account
                     </Link>
                   </Button>
@@ -165,10 +163,7 @@ export default function RootPage() {
                         Signing in...
                       </>
                     ) : (
-                      <>
-                        <User className="mr-1.5 h-3 w-3" />
-                        Login as Guest
-                      </>
+                      'Login as Guest'
                     )}
                   </Button>
                 </div>
