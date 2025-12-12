@@ -22,7 +22,7 @@ import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { useAuth } from '@/providers/auth-provider';
 import { db, auth, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, query, where, getDocs, writeBatch, onSnapshot } from 'firebase/firestore';
-import { signOut as firebaseSignOut, deleteUser } from 'firebase/auth';
+import { signOut as firebaseSignOut, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { ref, listAll, deleteObject } from 'firebase/storage';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,6 +51,8 @@ function SettingsPageContent() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
   
   // Get tab from URL or default to 'general'
@@ -144,7 +146,46 @@ function SettingsPageContent() {
       return;
     }
 
+    // First, prompt for password if not already provided
+    if (!deletePassword && !showPasswordInput) {
+      setShowPasswordInput(true);
+      return;
+    }
+
     setIsDeletingAccount(true);
+    
+    // Re-authenticate user before deletion
+    try {
+      if (!auth.currentUser?.email) {
+        throw new Error('User email not found');
+      }
+      
+      const credential = EmailAuthProvider.credential(
+        auth.currentUser.email,
+        deletePassword
+      );
+      
+      await reauthenticateWithCredential(auth.currentUser, credential);
+    } catch (reauthError: any) {
+      setIsDeletingAccount(false);
+      let errorMessage = 'Re-authentication failed. Please check your password.';
+      
+      if (reauthError?.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (reauthError?.code === 'auth/invalid-credential') {
+        errorMessage = 'Invalid credentials. Please check your password.';
+      } else if (reauthError?.message) {
+        errorMessage = `Re-authentication failed: ${reauthError.message}`;
+      }
+      
+      toast({
+        title: 'Authentication failed',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+      setDeletePassword('');
+      return;
+    }
     let errorStep = '';
     try {
       const userId = user.id;
@@ -327,6 +368,12 @@ function SettingsPageContent() {
         description: 'Your account and all associated data have been permanently deleted.',
       });
 
+      deletionSuccessful = true;
+
+      // Reset state
+      setDeletePassword('');
+      setShowPasswordInput(false);
+
       // Redirect to login
       router.push('/login');
     } catch (error: any) {
@@ -365,7 +412,12 @@ function SettingsPageContent() {
       });
     } finally {
       setIsDeletingAccount(false);
-      setShowDeleteAccountDialog(false);
+      // Only close dialog on success - let user try again on error
+      if (deletionSuccessful) {
+        setShowDeleteAccountDialog(false);
+        setShowPasswordInput(false);
+        setDeletePassword('');
+      }
     }
   };
   
@@ -537,7 +589,11 @@ function SettingsPageContent() {
                   </div>
                   <Button 
                     variant="destructive"
-                    onClick={() => setShowDeleteAccountDialog(true)}
+                    onClick={() => {
+                      setShowDeleteAccountDialog(true);
+                      setShowPasswordInput(false);
+                      setDeletePassword('');
+                    }}
                     disabled={isDeletingAccount}
                     className="w-full sm:w-auto shrink-0"
                     size="sm"
@@ -547,7 +603,13 @@ function SettingsPageContent() {
                   </Button>
                 </div>
 
-                <AlertDialog open={showDeleteAccountDialog} onOpenChange={setShowDeleteAccountDialog}>
+                <AlertDialog open={showDeleteAccountDialog} onOpenChange={(open) => {
+                  setShowDeleteAccountDialog(open);
+                  if (!open) {
+                    setShowPasswordInput(false);
+                    setDeletePassword('');
+                  }
+                }}>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
@@ -571,16 +633,48 @@ function SettingsPageContent() {
                         <p className="font-semibold text-destructive mt-2">
                           This action is permanent and irreversible.
                         </p>
+                        {showPasswordInput && (
+                          <div className="mt-4 space-y-2">
+                            <Label htmlFor="delete-password">Enter your password to confirm:</Label>
+                            <Input
+                              id="delete-password"
+                              type="password"
+                              value={deletePassword}
+                              onChange={(e) => setDeletePassword(e.target.value)}
+                              placeholder="Your password"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && deletePassword) {
+                                  handleDeleteAccount();
+                                }
+                              }}
+                            />
+                          </div>
+                        )}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel disabled={isDeletingAccount}>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteAccount}
+                      <AlertDialogCancel 
                         disabled={isDeletingAccount}
+                        onClick={() => {
+                          setShowPasswordInput(false);
+                          setDeletePassword('');
+                        }}
+                      >
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          if (!showPasswordInput) {
+                            setShowPasswordInput(true);
+                          } else {
+                            handleDeleteAccount();
+                          }
+                        }}
+                        disabled={isDeletingAccount || (showPasswordInput && !deletePassword)}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        {isDeletingAccount ? 'Deleting...' : 'Yes, delete my account'}
+                        {isDeletingAccount ? 'Deleting...' : showPasswordInput ? 'Confirm & Delete' : 'Yes, delete my account'}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
