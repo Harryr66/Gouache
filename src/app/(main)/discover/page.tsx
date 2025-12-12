@@ -639,10 +639,8 @@ function DiscoverPageContent() {
       }
     };
     
-    if (activeTab === 'market') {
-      fetchMarketplaceProducts();
-    }
-  }, [activeTab, theme, mounted]);
+    // Marketplace tab is hidden; skip fetching marketplace products.
+  }, [theme, mounted]);
 
   useEffect(() => {
     if (!mounted) return;
