@@ -132,8 +132,8 @@ export default function RootPage() {
               <div className="space-y-3 pt-4">
                 <Button
                   variant="gradient"
-                  className="w-full"
-                  size="lg"
+                  className="w-full rounded-full"
+                  size="default"
                   asChild
                 >
                   <Link href="/login">
@@ -144,8 +144,8 @@ export default function RootPage() {
 
                 <Button
                   variant="outline"
-                  className="w-full"
-                  size="lg"
+                  className="w-full rounded-full"
+                  size="default"
                   asChild
                 >
                   <Link href="/login?tab=signup">
@@ -156,8 +156,8 @@ export default function RootPage() {
 
                 <Button
                   variant="ghost"
-                  className="w-full"
-                  size="lg"
+                  className="w-full rounded-full"
+                  size="default"
                   onClick={handleGuestLogin}
                   disabled={isGuestLoading}
                 >
