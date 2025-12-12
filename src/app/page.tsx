@@ -83,8 +83,24 @@ export default function RootPage() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex items-center justify-center p-4">
-          <div className="w-full max-w-md space-y-6">
+        <main className="flex-1 flex flex-col items-center justify-center p-4 relative">
+          {/* Hero Image */}
+          <div className="absolute inset-0 overflow-hidden -z-10">
+            <img
+              src="/assets/Gouache Hero Light.png"
+              alt="Gouache Hero"
+              className="w-full h-full object-cover block dark:hidden"
+            />
+            <img
+              src="/assets/Gouache Hero Dark.png"
+              alt="Gouache Hero"
+              className="w-full h-full object-cover hidden dark:block"
+            />
+            {/* Overlay for better text readability */}
+            <div className="absolute inset-0 bg-background/60 dark:bg-background/70" />
+          </div>
+
+          <div className="w-full max-w-md space-y-6 relative z-10">
             <div className="text-center space-y-2">
               <h1 className="text-4xl font-bold tracking-tight">Welcome to Gouache</h1>
               <p className="text-muted-foreground">
@@ -92,7 +108,7 @@ export default function RootPage() {
               </p>
             </div>
 
-            <Card>
+            <Card className="bg-background/95 backdrop-blur">
               <CardHeader>
                 <CardTitle className="text-center">Get Started</CardTitle>
                 <CardDescription className="text-center">
