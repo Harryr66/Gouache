@@ -761,7 +761,7 @@ function DiscoverPageContent() {
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
-                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="shrink-0" />
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="shrink-0 md:hidden" />
                   </div>
                 )}
               </div>
