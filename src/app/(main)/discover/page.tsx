@@ -259,7 +259,8 @@ function DiscoverPageContent() {
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(12);
+  // Initialize with a reasonable default that will be adjusted based on screen size
+  const [visibleCount, setVisibleCount] = useState(18); // Start with 3 rows of 6 items
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market & Events list (single tile) on mobile
@@ -591,6 +592,37 @@ function DiscoverPageContent() {
     return Array.isArray(sorted) ? sorted : [];
   }, [marketplaceProducts, marketSearchQuery, selectedMarketCategory, marketSortBy]);
 
+  // Calculate items per row based on screen size
+  const getItemsPerRow = useMemo(() => {
+    return () => {
+      if (typeof window === 'undefined') return 6; // Default for SSR
+      const width = window.innerWidth;
+      if (width >= 1280) return 6; // xl:grid-cols-6
+      if (width >= 1024) return 5; // lg:grid-cols-5
+      if (width >= 768) return 4;  // md:grid-cols-4
+      return 3; // sm:grid-cols-3 (mobile)
+    };
+  }, []);
+
+  // Track items per row with state to handle window resize
+  const [itemsPerRow, setItemsPerRow] = useState(6);
+  
+  useEffect(() => {
+    const updateItemsPerRow = () => {
+      const newItemsPerRow = getItemsPerRow();
+      setItemsPerRow(newItemsPerRow);
+      // Ensure visibleCount is a multiple of itemsPerRow when it changes
+      setVisibleCount((prev) => {
+        const completeRows = Math.floor(prev / newItemsPerRow);
+        return Math.max(newItemsPerRow, completeRows * newItemsPerRow);
+      });
+    };
+    
+    updateItemsPerRow();
+    window.addEventListener('resize', updateItemsPerRow);
+    return () => window.removeEventListener('resize', updateItemsPerRow);
+  }, [getItemsPerRow]);
+
   // Infinite scroll observer for artworks
   useEffect(() => {
     const sentinel = loadMoreRef.current;
@@ -600,7 +632,12 @@ function DiscoverPageContent() {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           startTransition(() => {
-            setVisibleCount((prev) => Math.min(prev + 8, filteredAndSortedArtworks.length || prev + 8));
+            setVisibleCount((prev) => {
+              const newCount = prev + itemsPerRow; // Load one complete row at a time
+              const maxCount = filteredAndSortedArtworks.length || newCount;
+              // Ensure we never exceed available items, and always maintain complete rows
+              return Math.min(newCount, maxCount);
+            });
           });
         }
       });
@@ -608,18 +645,38 @@ function DiscoverPageContent() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [filteredAndSortedArtworks]);
+  }, [filteredAndSortedArtworks, itemsPerRow]);
 
   const visibleFilteredArtworks = useMemo(() => {
-    const limitCount = Math.max(visibleCount, 12);
+    const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
+    
+    if (totalItems === 0) return [];
+    
+    // Calculate how many complete rows are available in total (round down)
+    const availableCompleteRows = Math.floor(totalItems / itemsPerRow);
+    
+    // If we don't have at least one complete row, show nothing
+    if (availableCompleteRows === 0) return [];
+    
+    // Calculate how many complete rows we want to show based on visibleCount
+    const requestedCompleteRows = Math.floor(visibleCount / itemsPerRow);
+    
+    // Show the minimum of what we requested and what's available (always complete rows)
+    const rowsToShow = Math.min(requestedCompleteRows, availableCompleteRows);
+    
+    // Calculate final count: always a multiple of itemsPerRow (complete rows only)
+    const finalCount = rowsToShow * itemsPerRow;
+    
     return Array.isArray(filteredAndSortedArtworks)
-      ? filteredAndSortedArtworks.slice(0, limitCount)
+      ? filteredAndSortedArtworks.slice(0, finalCount)
       : [];
-  }, [filteredAndSortedArtworks, visibleCount]);
+  }, [filteredAndSortedArtworks, visibleCount, itemsPerRow]);
 
   useEffect(() => {
-    setVisibleCount(12);
-  }, [searchQuery, selectedMedium, sortBy, selectedEventLocation]);
+    // Reset to initial complete rows when filters change
+    const initialRows = 3; // Start with 3 complete rows
+    setVisibleCount(initialRows * itemsPerRow);
+  }, [searchQuery, selectedMedium, sortBy, selectedEventLocation, itemsPerRow]);
 
   useEffect(() => {
     const fetchMarketplaceProducts = async () => {

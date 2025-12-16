@@ -22,11 +22,12 @@ export default function ArtistProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Prevent guest (anonymous) users from accessing profiles
-    if (user && (!user.email || user.email === '')) {
+    // Only prevent guest (anonymous) users from viewing their own profile
+    // Guest users can view other artists' profiles
+    if (user && (!user.email || user.email === '') && user.id === artistId) {
       router.replace('/');
     }
-  }, [user, router]);
+  }, [user, router, artistId]);
 
   useEffect(() => {
     const fetchProfile = async () => {
