@@ -725,16 +725,38 @@ function DiscoverPageContent() {
           }}
           className="mb-6"
         >
-          <TabsList className="grid w-full max-w-lg grid-cols-2">
-            <TabsTrigger value="artwork" className="flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              Artwork
-            </TabsTrigger>
-            <TabsTrigger value="events" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Events
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center gap-4 flex-wrap">
+            <TabsList className="grid w-full max-w-lg grid-cols-2 md:w-auto">
+              <TabsTrigger value="artwork" className="flex items-center gap-2">
+                <Palette className="h-4 w-4" />
+                Artwork
+              </TabsTrigger>
+              <TabsTrigger value="events" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Events
+              </TabsTrigger>
+            </TabsList>
+            {/* Desktop Filter Button - positioned next to tabs */}
+            <div className="hidden md:flex">
+              {activeTab === 'artwork' ? (
+                <Button
+                  variant="outline"
+                  onClick={() => startTransition(() => setShowFilters(!showFilters))}
+                  className="shrink-0"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
+                  className="shrink-0"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
 
           {/* Artwork Tab */}
           <TabsContent value="artwork" className="mt-6">
@@ -753,7 +775,7 @@ function DiscoverPageContent() {
                     <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1 justify-center" />
                   </div>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 md:hidden">
                     <Button
                       variant="outline"
                       onClick={() => startTransition(() => setShowFilters(!showFilters))}
@@ -761,7 +783,7 @@ function DiscoverPageContent() {
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
-                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="shrink-0 md:hidden" />
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="shrink-0" />
                   </div>
                 )}
               </div>
@@ -972,7 +994,7 @@ function DiscoverPageContent() {
                   <Button
                     variant="outline"
                     onClick={() => setShowEventFilters(!showEventFilters)}
-                    className="shrink-0"
+                    className="shrink-0 md:hidden"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
