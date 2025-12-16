@@ -3,12 +3,13 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition } from 'react';
-import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin } from 'lucide-react';
+import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
 import { Artwork, MarketplaceProduct, Event as EventType } from '@/lib/types';
 import { db } from '@/lib/firebase';
+import { useLikes } from '@/providers/likes-provider';
 import { collection, query, getDocs, orderBy, limit, where } from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -24,6 +25,8 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
+import { engagementTracker } from '@/lib/engagement-tracker';
+import { engagementScorer } from '@/lib/engagement-scorer';
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   const placeholderImage = theme === 'dark' 
@@ -233,11 +236,13 @@ function DiscoverPageContent() {
   const log = (...args: any[]) => { if (isDev) console.log(...args); };
   const warn = (...args: any[]) => { if (isDev) console.warn(...args); };
   const error = (...args: any[]) => { if (isDev) console.error(...args); };
+  const { toggleLike, isLiked } = useLikes();
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [artworkEngagements, setArtworkEngagements] = useState<Map<string, any>>(new Map());
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
@@ -413,6 +418,18 @@ function DiscoverPageContent() {
         }
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
+        
+        // Fetch engagement metrics for all artworks
+        if (finalArtworks.length > 0) {
+          try {
+            const artworkIds = finalArtworks.map(a => a.id);
+            const engagements = await engagementTracker.getArtworkEngagements(artworkIds);
+            setArtworkEngagements(engagements);
+            log(`📊 Discover: Loaded engagement metrics for ${engagements.size} artworks`);
+          } catch (err) {
+            warn('⚠️ Error fetching engagement metrics:', err);
+          }
+        }
       } catch (err) {
         error('❌ Error fetching artworks from artist profiles:', err);
         // Even on error, show placeholder artworks
@@ -461,24 +478,45 @@ function DiscoverPageContent() {
       filtered = filtered.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
     }
 
-    // Sort
-    const sorted = Array.isArray(filtered) ? [...filtered] : [];
-    switch (sortBy) {
-      case 'newest':
-        sorted.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-        break;
-      case 'oldest':
-        sorted.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
-        break;
-      case 'popular':
-        sorted.sort((a, b) => (b.likes || 0) - (a.likes || 0));
-        break;
-      default:
-        break;
+    // Sort using engagement-based algorithm when 'popular' is selected
+    let sorted = Array.isArray(filtered) ? [...filtered] : [];
+    
+    if (sortBy === 'popular' && artworkEngagements.size > 0) {
+      // Use engagement-based scoring algorithm
+      const scoredArtworks = engagementScorer.scoreArtworks(sorted, artworkEngagements);
+      const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
+      sorted = engagementScorer.sortByScore(withDiversity);
+    } else {
+      // Traditional sorting for other options
+      switch (sortBy) {
+        case 'newest':
+          sorted.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+          break;
+        case 'oldest':
+          sorted.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+          break;
+        case 'likes':
+          sorted.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+          break;
+        case 'recent':
+          sorted.sort((a, b) => (b.updatedAt?.getTime() || b.createdAt?.getTime() || 0) - (a.updatedAt?.getTime() || a.createdAt?.getTime() || 0));
+          break;
+        default:
+          // Default: Use engagement-based ranking if we have engagement data
+          if (artworkEngagements.size > 0) {
+            const scoredArtworks = engagementScorer.scoreArtworks(sorted, artworkEngagements);
+            const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
+            sorted = engagementScorer.sortByScore(withDiversity);
+          } else {
+            // Fallback to newest if no engagement data
+            sorted.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+          }
+          break;
+      }
     }
 
     return Array.isArray(sorted) ? sorted : [];
-  }, [artworks, deferredSearchQuery, selectedCategory, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt]);
+  }, [artworks, deferredSearchQuery, selectedCategory, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
@@ -702,15 +740,6 @@ function DiscoverPageContent() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
-            Discover
-          </h1>
-          <p className="text-muted-foreground">
-            Discover New Artists, Upcoming Exhibitions, Events & More
-          </p>
-        </div>
-
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
           value={activeTab}
@@ -725,13 +754,13 @@ function DiscoverPageContent() {
           }}
           className="mb-6"
         >
-          <div className="flex items-center gap-4 flex-wrap">
-            <TabsList className="grid w-full max-w-lg grid-cols-2 md:w-auto">
-              <TabsTrigger value="artwork" className="flex items-center gap-2">
+          <div className="flex items-center gap-3 w-full">
+            <TabsList className="grid w-full grid-cols-2 md:flex md:flex-1 md:max-w-none md:gap-0">
+              <TabsTrigger value="artwork" className="flex items-center justify-center gap-2 flex-1 md:flex-1 md:px-6">
                 <Palette className="h-4 w-4" />
                 Artwork
               </TabsTrigger>
-              <TabsTrigger value="events" className="flex items-center gap-2">
+              <TabsTrigger value="events" className="flex items-center justify-center gap-2 flex-1 md:flex-1 md:px-6">
                 <Calendar className="h-4 w-4" />
                 Events
               </TabsTrigger>
@@ -742,7 +771,7 @@ function DiscoverPageContent() {
                 <Button
                   variant="outline"
                   onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                  className="shrink-0"
+                  className="shrink-0 h-10 px-3"
                 >
                   <Filter className="h-4 w-4" />
                 </Button>
@@ -750,7 +779,7 @@ function DiscoverPageContent() {
                 <Button
                   variant="outline"
                   onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
-                  className="shrink-0"
+                  className="shrink-0 h-10 px-3"
                 >
                   <Filter className="h-4 w-4" />
                 </Button>
@@ -936,37 +965,59 @@ function DiscoverPageContent() {
                     ? '/assets/placeholder-dark.png'
                     : '/assets/placeholder-light.png';
                   
+                  const liked = isLiked(artwork.id);
+                  
                   return (
-                    <Link key={artwork.id} href={`/artwork/${artwork.id}`}>
-                      <Card className="group relative aspect-square overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
-                        <Image
-                          src={artworkImage}
-                          alt={artwork.imageAiHint || artwork.title}
-                          fill
-                          className="object-cover"
-                        />
-                        <div className="absolute inset-x-0 bottom-0 bg-background/80 backdrop-blur-sm p-3 flex items-center gap-2">
-                          <Avatar className="h-9 w-9 flex-shrink-0">
-                            <AvatarImage src={artwork.artist.avatarUrl || avatarPlaceholder} />
-                            <AvatarFallback>{artwork.artist.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">by {artwork.artist.name}</p>
-                            {artwork.artist.location && (
-                              <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                                <MapPin className="h-3 w-3" />
-                                {artwork.artist.location}
-                              </p>
+                    <div key={artwork.id} className="relative group">
+                      <Link href={`/artwork/${artwork.id}`}>
+                        <Card className="relative aspect-square overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                          <Image
+                            src={artworkImage}
+                            alt={artwork.imageAiHint || artwork.title}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-x-0 bottom-0 bg-background/80 backdrop-blur-sm p-3 flex items-center gap-2">
+                            <Avatar className="h-9 w-9 flex-shrink-0">
+                              <AvatarImage src={artwork.artist.avatarUrl || avatarPlaceholder} />
+                              <AvatarFallback>{artwork.artist.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">by {artwork.artist.name}</p>
+                              {artwork.artist.location && (
+                                <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                                  <MapPin className="h-3 w-3" />
+                                  {artwork.artist.location}
+                                </p>
+                              )}
+                            </div>
+                            {artwork.isForSale && artwork.price && (
+                              <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 flex-shrink-0">
+                                ${artwork.price.toLocaleString()}
+                              </Badge>
                             )}
                           </div>
-                          {artwork.isForSale && artwork.price && (
-                            <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 flex-shrink-0">
-                              ${artwork.price.toLocaleString()}
-                            </Badge>
-                          )}
-                        </div>
-                      </Card>
-                    </Link>
+                        </Card>
+                      </Link>
+                      {/* Upvote Button - positioned on the tile */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`absolute top-3 right-3 h-10 w-10 rounded-full bg-background/90 backdrop-blur-sm border-2 transition-all ${
+                          liked 
+                            ? 'border-primary text-primary bg-primary/10' 
+                            : 'border-border hover:border-primary/50 hover:text-primary'
+                        }`}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          await toggleLike(artwork.id);
+                        }}
+                        aria-label={liked ? 'Remove upvote' : 'Upvote artwork'}
+                      >
+                        <ArrowUp className={`h-5 w-5 ${liked ? 'fill-current' : ''}`} />
+                      </Button>
+                    </div>
                   );
                 })}
               </div>

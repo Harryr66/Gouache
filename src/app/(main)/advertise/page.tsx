@@ -51,7 +51,7 @@ export default function AdvertisePage() {
         <div className="mb-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
-              <CardHeader>
+          <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
                   <Megaphone className="h-5 w-5 text-primary" />
                   <CardTitle>Targeted Audience</CardTitle>
@@ -77,8 +77,8 @@ export default function AdvertisePage() {
                 <CardDescription>Exhibitions, newsletters, social and more.</CardDescription>
               </CardHeader>
             </Card>
-          </div>
-        </div>
+                  </div>
+                </div>
 
         {/* Contact */}
         <div className="text-center space-y-3">
