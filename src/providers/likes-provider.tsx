@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { getAuth } from 'firebase/auth';
 import { arrayRemove, arrayUnion, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { engagementTracker } from '@/lib/engagement-tracker';
 
 type LikesContextValue = {
   likedArtworkIds: Set<string>;
@@ -70,6 +71,8 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
         await updateDoc(profileRef, {
           likedArtworks: arrayRemove(artworkId),
         });
+        // Track unlike engagement
+        await engagementTracker.recordLike(artworkId, false);
       } else {
         currentlyLiked.add(artworkId);
         if (snapshot.exists()) {
@@ -83,6 +86,8 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
             { merge: true }
           );
         }
+        // Track like engagement
+        await engagementTracker.recordLike(artworkId, true);
       }
 
       setLikedArtworkIds(new Set(currentlyLiked));

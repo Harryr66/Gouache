@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLikes } from '@/providers/likes-provider';
 import { ReportDialog } from '@/components/report-dialog';
+import { engagementTracker } from '@/lib/engagement-tracker';
 import { 
   UserPlus, 
   UserCheck, 
@@ -56,6 +57,8 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const handleTileClick = () => {
     // Navigate to artwork detail page only if we have an artwork id
     if (artwork?.id) {
+      // Record click engagement
+      engagementTracker.recordClick(artwork.id);
       router.push(`/artwork/${encodeURIComponent(artwork.id)}`);
       if (onClick) onClick();
     }
@@ -165,6 +168,44 @@ const generateArtistContent = (artist: Artist) => ({
   const [isBannerExpanded, setIsBannerExpanded] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const tileRef = useRef<HTMLDivElement>(null);
+
+  // Track view time using IntersectionObserver
+  useEffect(() => {
+    if (!tileRef.current || !artwork?.id) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Start tracking view time
+            engagementTracker.startTracking(artwork.id);
+          } else {
+            // Stop tracking when not visible
+            engagementTracker.stopTracking(artwork.id);
+          }
+        });
+      },
+      {
+        threshold: 0.5, // Consider visible when 50% is in viewport
+        rootMargin: '0px',
+      }
+    );
+
+    observer.observe(tileRef.current);
+
+    return () => {
+      observer.disconnect();
+      engagementTracker.stopTracking(artwork.id);
+    };
+  }, [artwork.id]);
+
+  // Track like engagement
+  useEffect(() => {
+    if (liked && artwork?.id) {
+      engagementTracker.recordLike(artwork.id, true);
+    }
+  }, [liked, artwork.id]);
   // Use artist ID for profile link - this should be the Firestore document ID
   const profileSlug = artwork.artist.id;
   const handleViewProfile = () => {
@@ -205,6 +246,7 @@ const generateArtistContent = (artist: Artist) => ({
   return (
     <>
     <Card 
+        ref={tileRef}
         className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full rounded-none ${className || ''}`}
         onClick={handleTileClick}
     >
