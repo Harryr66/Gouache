@@ -405,13 +405,23 @@ function DiscoverPageContent() {
         const safeArtworks = Array.isArray(fetchedArtworks) ? fetchedArtworks : [];
         const limitedArtworks = safeArtworks.slice(0, 50);
         
-        log(`🎯 Discover: Final artworks count: ${limitedArtworks.length}`);
+        log(`🎯 Discover: Real artworks count: ${limitedArtworks.length}`);
         
+        // Always generate placeholder artworks to fill the feed
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
-        const finalArtworks = limitedArtworks.length > 0 ? limitedArtworks : placeholderArtworks;
+        
+        // Combine real artworks with placeholders
+        // If we have real artworks, mix them with placeholders. If not, show only placeholders.
+        const finalArtworks = limitedArtworks.length > 0 
+          ? [...limitedArtworks, ...placeholderArtworks]
+          : placeholderArtworks;
+        
+        log(`🎯 Discover: Final artworks count (real + placeholders): ${finalArtworks.length}`);
         
         if (limitedArtworks.length === 0) {
-        warn('⚠️ Discover: No artworks found, showing placeholders');
+          warn('⚠️ Discover: No real artworks found, showing only placeholders');
+        } else {
+          log(`✅ Discover: Showing ${limitedArtworks.length} real artworks + ${placeholderArtworks.length} placeholder artworks`);
         }
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
