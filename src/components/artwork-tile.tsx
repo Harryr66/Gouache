@@ -252,7 +252,7 @@ const generateArtistContent = (artist: Artist) => ({
     >
       <div className="relative aspect-[3/4] overflow-hidden">
         <Image
-          src={artwork.imageUrl || '/assets/placeholder-light.png'}
+          src={artwork.imageUrl || 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800'}
           alt={artwork.imageAiHint}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
