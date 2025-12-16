@@ -29,9 +29,8 @@ import { engagementTracker } from '@/lib/engagement-tracker';
 import { engagementScorer } from '@/lib/engagement-scorer';
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
-  const placeholderImage = theme === 'dark' 
-    ? '/assets/placeholder-dark.png' 
-    : '/assets/placeholder-light.png';
+  // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
+  const placeholderImage = 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
   
   const artistNames = [
     'Alexandra Chen', 'Marcus Rivera', 'Sophie Laurent', 'David Kim', 'Emma Thompson',
@@ -220,8 +219,7 @@ const generatePlaceholderProducts = (theme: string | undefined, count: number = 
   }));
 };
 
-const CATEGORIES = ['All', 'Painting', 'Drawing', 'Digital', 'Mixed Media', 'Photography', 'Sculpture', 'Printmaking', 'Textile'];
-const MEDIUMS = ['All', 'Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Digital', 'Ink', 'Pencil', 'Pastel', 'Mixed'];
+const MEDIUMS = ['All', 'Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Ink', 'Pencil', 'Pastel', 'Mixed'];
 const MARKET_CATEGORIES = ['All', 'Original Artworks', 'Limited Edition Prints', 'All Prints', 'Books'];
 const EVENT_TYPES = ['All Events', 'Exhibition', 'Gallery', 'Meet and greet', 'Pop up event'];
 const SORT_OPTIONS = [
@@ -255,7 +253,6 @@ function DiscoverPageContent() {
   }, []);
   const [activeTab, setActiveTab] = useState<'artwork' | 'events'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedMedium, setSelectedMedium] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
@@ -463,11 +460,6 @@ function DiscoverPageContent() {
       });
     }
 
-    // Category filter
-    if (selectedCategory !== 'All') {
-      filtered = filtered.filter(artwork => artwork.category === selectedCategory);
-    }
-
     // Medium filter
     if (selectedMedium !== 'All') {
       filtered = filtered.filter(artwork => artwork.medium === selectedMedium);
@@ -516,7 +508,7 @@ function DiscoverPageContent() {
     }
 
     return Array.isArray(sorted) ? sorted : [];
-  }, [artworks, deferredSearchQuery, selectedCategory, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
+  }, [artworks, deferredSearchQuery, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
@@ -617,7 +609,7 @@ function DiscoverPageContent() {
 
   useEffect(() => {
     setVisibleCount(12);
-  }, [searchQuery, selectedCategory, selectedMedium, sortBy, selectedEventLocation]);
+  }, [searchQuery, selectedMedium, sortBy, selectedEventLocation]);
 
   useEffect(() => {
     const fetchMarketplaceProducts = async () => {
@@ -830,22 +822,7 @@ function DiscoverPageContent() {
                       className="pl-10"
                     />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Category</label>
-                      <Select value={selectedCategory} onValueChange={(value) => startTransition(() => setSelectedCategory(value))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIES.map((cat) => (
-                            <SelectItem key={cat} value={cat}>
-                              {cat}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Medium</label>
                       <Select value={selectedMedium} onValueChange={(value) => startTransition(() => setSelectedMedium(value))}>
@@ -883,7 +860,6 @@ function DiscoverPageContent() {
                       size="sm"
                       onClick={() => {
                         startTransition(() => {
-                          setSelectedCategory('All');
                           setSelectedMedium('All');
                           setSortBy('newest');
                           setSearchQuery('');
@@ -898,19 +874,13 @@ function DiscoverPageContent() {
               )}
 
               {/* Active Filters Display */}
-              {(selectedCategory !== 'All' || selectedMedium !== 'All' || searchQuery) && (
+              {(selectedMedium !== 'All' || searchQuery) && (
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-sm text-muted-foreground">Active filters:</span>
                   {searchQuery && (
                     <Badge variant="secondary" className="gap-1">
                       Search: {searchQuery}
                       <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setSearchQuery(''))} />
-                    </Badge>
-                  )}
-                  {selectedCategory !== 'All' && (
-                    <Badge variant="secondary" className="gap-1">
-                      Category: {selectedCategory}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setSelectedCategory('All'))} />
                     </Badge>
                   )}
                   {selectedMedium !== 'All' && (
@@ -929,16 +899,15 @@ function DiscoverPageContent() {
                 <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">No artworks found</h2>
                 <p className="text-muted-foreground mb-4">
-                  {searchQuery || selectedCategory !== 'All' || selectedMedium !== 'All'
+                  {searchQuery || selectedMedium !== 'All'
                     ? 'Try adjusting your filters to see more results.'
                     : 'Check back later for new content.'}
                 </p>
-                {(searchQuery || selectedCategory !== 'All' || selectedMedium !== 'All') && (
+                {(searchQuery || selectedMedium !== 'All') && (
                   <Button
                     variant="outline"
                     onClick={() => {
                       startTransition(() => {
-                        setSelectedCategory('All');
                         setSelectedMedium('All');
                         setSearchQuery('');
                       });
@@ -957,9 +926,8 @@ function DiscoverPageContent() {
             ) : (
                 <div className="space-y-3">
                 {visibleFilteredArtworks.map((artwork) => {
-                  const placeholderImage = theme === 'dark' 
-                    ? '/assets/placeholder-dark.png' 
-                    : '/assets/placeholder-light.png';
+                  // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
+                  const placeholderImage = 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
                   const artworkImage = artwork.imageUrl || placeholderImage;
                   const avatarPlaceholder = theme === 'dark'
                     ? '/assets/placeholder-dark.png'
