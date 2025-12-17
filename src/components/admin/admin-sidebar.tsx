@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Megaphone, ShoppingCart, Package, AlertCircle } from 'lucide-react';
+import { Users, Megaphone, ShoppingCart, Package, AlertCircle, BookOpen } from 'lucide-react';
 
 interface AdminSidebarProps {
   selectedView: string;
@@ -121,45 +121,6 @@ export function AdminSidebar(props: AdminSidebarProps) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4" />
-            Gallery
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <button
-            onClick={() => props.setSelectedView('marketplace-products')}
-            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-              props.selectedView === 'marketplace-products' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-            }`}
-          >
-            <span className="text-sm">Products</span>
-            <Badge variant={props.selectedView === 'marketplace-products' ? 'secondary' : 'outline'}>({props.marketplaceProducts.length})</Badge>
-          </button>
-          <button
-            onClick={() => props.setSelectedView('marketplace-requests')}
-            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-              props.selectedView === 'marketplace-requests' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-            }`}
-          >
-            <span className="text-sm">Requests</span>
-            <Badge variant={props.selectedView === 'marketplace-requests' ? 'secondary' : 'outline'}>({props.affiliateRequests.filter(req => req.status === 'pending').length})</Badge>
-          </button>
-          <button
-            onClick={() => props.setSelectedView('marketplace-archived')}
-            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-              props.selectedView === 'marketplace-archived' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-            }`}
-          >
-            <span className="text-sm">Archived</span>
-            <Badge variant={props.selectedView === 'marketplace-archived' ? 'secondary' : 'outline'}>(0)</Badge>
-          </button>
-        </CardContent>
-      </Card>
-
-      {/* Marketplace Products */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
             <Package className="h-4 w-4" />
             Marketplace
           </CardTitle>
@@ -229,12 +190,12 @@ export function AdminSidebar(props: AdminSidebarProps) {
         </CardContent>
       </Card>
 
-      {/* Marketplace - Shop Products */}
+      {/* Learn - Course Management */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4" />
-            Marketplace
+            <BookOpen className="h-4 w-4" />
+            Learn
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -244,8 +205,8 @@ export function AdminSidebar(props: AdminSidebarProps) {
               props.selectedView === 'marketplace-shop' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
             }`}
           >
-            <span className="text-sm">Shop Products</span>
-            <Badge variant={props.selectedView === 'marketplace-shop' ? 'secondary' : 'outline'}>({props.shopProducts?.length || 0})</Badge>
+            <span className="text-sm">Courses</span>
+            <Badge variant={props.selectedView === 'marketplace-shop' ? 'secondary' : 'outline'}>({props.shopProducts?.filter((p: any) => p.type === 'course').length || 0})</Badge>
           </button>
         </CardContent>
       </Card>
