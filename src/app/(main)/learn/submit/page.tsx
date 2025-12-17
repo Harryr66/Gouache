@@ -69,7 +69,6 @@ export default function CourseSubmissionPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    longDescription: '',
     category: '',
     subcategory: '',
     difficulty: '',
@@ -442,7 +441,6 @@ export default function CourseSubmissionPage() {
       const courseData = {
         title: formData.title,
         description: formData.description,
-        longDescription: formData.longDescription,
         instructor: instructorData,
         thumbnail: thumbnailUrl,
         previewVideoUrl: trailerUrl,
