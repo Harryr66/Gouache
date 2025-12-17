@@ -256,7 +256,7 @@ export default function CourseSubmissionPage() {
       
       toast({
         title: "Tags Generated",
-        description: `${mockTags.length} suggested tags generated based on your course content.`
+        description: `${mockTags.length} suggested tags generated based on your course title and description.`
       });
     } catch (error) {
       toast({
@@ -1126,20 +1126,6 @@ export default function CourseSubmissionPage() {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Discoverability</h3>
                     <p className="text-sm text-muted-foreground">Help students find your course by optimizing search and adding relevant tags.</p>
-                    
-                    {/* Course Description - Acts as prompt for AI tags */}
-                    <div className="space-y-2">
-                      <Label>Course Description</Label>
-                      <Textarea 
-                        value={formData.description} 
-                        onChange={(e)=>handleInputChange('description', e.target.value)} 
-                        placeholder="Describe your course in detail. This description will be used to generate relevant tags automatically." 
-                        rows={4} 
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        A detailed description helps our AI generate better tag suggestions for your course.
-                      </p>
-                    </div>
                     
                     {/* Tags Section */}
                     <div className="space-y-4">
