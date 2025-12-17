@@ -859,7 +859,7 @@ function DiscoverPageContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
           value={activeTab}

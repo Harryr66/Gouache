@@ -302,7 +302,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-background border-b border-border">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <Link href="/marketplace">
               <Button variant="ghost" size="sm" className="shrink-0">
@@ -328,8 +328,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Course Header */}
@@ -637,8 +637,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     </div>
                   ) : (
                     <>
-                      <Button 
-                        className="w-full gradient-button" 
+                      <Button
+                        className="w-full gradient-button text-sm sm:text-base"
                         size="lg"
                         onClick={handleEnroll}
                       >
