@@ -236,8 +236,8 @@ export default function ProfileEditPage() {
           hideCard: user.isProfessional ? (user.hideCard || false) : false,
           hideShowcaseLocations: user.isProfessional ? ((user as any).hideShowcaseLocations || false) : false,
           // Default to hidden (true) when field is undefined
-          hideShop: user.isProfessional ? (((user as any).hideShop ?? true)) : true,
-          hideLearn: user.isProfessional ? (((user as any).hideLearn ?? true)) : true,
+          hideShop: ((user as any).hideShop ?? true),
+          hideLearn: ((user as any).hideLearn ?? true),
           bannerImageUrl: user.isProfessional ? (user.bannerImageUrl || '') : '',
           eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
           eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
