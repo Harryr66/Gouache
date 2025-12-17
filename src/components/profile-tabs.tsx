@@ -103,20 +103,25 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
         {availableCourses.map((course) => {
           const isEnrolled = enrolledCourseIds.includes(course.id);
           return (
-            <Card key={course.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-              <div className="relative aspect-video">
+            <Card 
+              key={course.id} 
+              className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
+              onClick={() => router.push(`/learn/${course.id}`)}
+            >
+              <div className="relative aspect-video overflow-hidden">
                 {course.thumbnail ? (
                   <Image
                     src={course.thumbnail}
                     alt={course.title}
                     fill
-                    className="object-cover"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center">
                     <BookOpen className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
               </div>
               <CardContent className="p-4">
                 <CardTitle className="text-lg mb-2 line-clamp-2">{course.title}</CardTitle>
@@ -147,14 +152,20 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                   {isEnrolled ? (
                     <Button
                       variant="outline"
-                      onClick={() => router.push(`/learn/${course.id}`)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/learn/${course.id}`);
+                      }}
                     >
                       Access Course
                     </Button>
                   ) : (
                     <Button
                       variant="gradient"
-                      onClick={() => router.push(`/learn/${course.id}`)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/learn/${course.id}`);
+                      }}
                     >
                       {course.price > 0 ? 'Purchase' : 'Enroll'}
                     </Button>
@@ -537,20 +548,25 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {purchasedCourses.map((course) => (
-              <Card key={course.id} className="group hover:shadow-lg transition-shadow">
-                <div className="relative aspect-video">
+              <Card 
+                key={course.id} 
+                className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
+                onClick={() => router.push(`/learn/${course.id}`)}
+              >
+                <div className="relative aspect-video overflow-hidden">
                   {course.thumbnail ? (
                     <Image
                       src={course.thumbnail}
                       alt={course.title}
                       fill
-                      className="object-cover rounded-t-lg"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full bg-muted flex items-center justify-center">
                       <BookOpen className="h-12 w-12 text-muted-foreground" />
                     </div>
                   )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
                 </div>
                 <CardContent className="p-4">
                   <CardTitle className="text-lg mb-2">{course.title}</CardTitle>
@@ -560,7 +576,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                   <Button
                     variant="gradient"
                     className="w-full"
-                    onClick={() => router.push(`/learn/${course.id}`)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/learn/${course.id}`);
+                    }}
                   >
                     <Play className="h-4 w-4 mr-2" />
                     Continue Learning
