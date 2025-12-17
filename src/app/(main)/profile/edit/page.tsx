@@ -121,10 +121,7 @@ export default function ProfileEditPage() {
     artistStatement: '',
     experience: '',
     socialLinks: {
-      instagram: '',
-      x: '',
-      website: '',
-      tiktok: ''
+      website: ''
     }
   });
 
@@ -739,17 +736,8 @@ export default function ProfileEditPage() {
 
       // Build socialLinks object only with defined values
       const socialLinks: any = {};
-      if (artistRequestData.socialLinks.instagram?.trim()) {
-        socialLinks.instagram = artistRequestData.socialLinks.instagram.trim();
-      }
-      if (artistRequestData.socialLinks.x?.trim()) {
-        socialLinks.x = artistRequestData.socialLinks.x.trim();
-      }
       if (artistRequestData.socialLinks.website?.trim()) {
         socialLinks.website = artistRequestData.socialLinks.website.trim();
-      }
-      if (artistRequestData.socialLinks.tiktok?.trim()) {
-        socialLinks.tiktok = artistRequestData.socialLinks.tiktok.trim();
       }
 
       const artistRequest: any = {
@@ -785,7 +773,7 @@ export default function ProfileEditPage() {
       setArtistRequestData({
         artistStatement: '',
         experience: '',
-        socialLinks: { instagram: '', x: '', website: '', tiktok: '' }
+        socialLinks: { website: '' }
       });
     } catch (error) {
       console.error('Error submitting artist request:', error);
@@ -2069,31 +2057,7 @@ export default function ProfileEditPage() {
                     <Label>Social Media Links</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="instagram">Instagram</Label>
-                        <Input
-                          id="instagram"
-                          value={artistRequestData.socialLinks.instagram}
-                          onChange={(e) => setArtistRequestData(prev => ({ 
-                            ...prev, 
-                            socialLinks: { ...prev.socialLinks, instagram: e.target.value }
-                          }))}
-                          placeholder="@username or URL"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="x">X (formerly Twitter)</Label>
-                        <Input
-                          id="x"
-                          value={artistRequestData.socialLinks.x}
-                          onChange={(e) => setArtistRequestData(prev => ({ 
-                            ...prev, 
-                            socialLinks: { ...prev.socialLinks, x: e.target.value }
-                          }))}
-                          placeholder="@username or URL"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="website">Website</Label>
+                        <Label htmlFor="website">Website (optional)</Label>
                         <Input
                           id="website"
                           value={artistRequestData.socialLinks.website}
@@ -2102,18 +2066,6 @@ export default function ProfileEditPage() {
                             socialLinks: { ...prev.socialLinks, website: e.target.value }
                           }))}
                           placeholder="https://yourwebsite.com"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="tiktok">TikTok</Label>
-                        <Input
-                          id="tiktok"
-                          value={artistRequestData.socialLinks.tiktok}
-                          onChange={(e) => setArtistRequestData(prev => ({ 
-                            ...prev, 
-                            socialLinks: { ...prev.socialLinks, tiktok: e.target.value }
-                          }))}
-                          placeholder="@username or URL"
                         />
                       </div>
                     </div>

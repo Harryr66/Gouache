@@ -23,10 +23,6 @@ import {
   Calendar,
   MapPin,
   Globe,
-  Instagram,
-  Twitter,
-  Youtube,
-  Facebook,
   ShoppingBag,
   ExternalLink
 } from 'lucide-react';
@@ -454,20 +450,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                             <Globe className="h-4 w-4" />
                             <a href={course.instructor.website} className="hover:text-primary">Website</a>
                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Instagram className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Twitter className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Youtube className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Facebook className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
                     </div>
