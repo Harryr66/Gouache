@@ -413,7 +413,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     <div>
                       <h4 className="font-semibold mb-2">What You'll Learn</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {course.skills.map((skill, index) => (
+                        {course.skills.map((skill: string, index: number) => (
                           <div key={index} className="flex items-center gap-2">
                             <CheckCircle className="h-4 w-4 text-green-500" />
                             <span className="text-sm">{skill}</span>
