@@ -51,17 +51,18 @@ export function ExpandedArtworkView({ artwork, discussion, onClose }: ExpandedAr
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-background rounded-lg max-w-5xl w-full max-h-[85vh] overflow-hidden">
+            <div className="bg-background rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden">
                 <div className="flex flex-col lg:flex-row h-full">
                     {/* Image Section */}
                     <div className="lg:w-2/3 bg-muted flex items-center justify-center p-4">
-                        <div className="relative max-w-full max-h-full">
+                        <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
                             <Image
                                 src={artwork.imageUrl}
                                 alt={artwork.imageAiHint}
                                 width={800}
                                 height={600}
-                                className="max-w-full max-h-full object-contain rounded-lg"
+                                className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
+                                style={{ maxWidth: '100%', maxHeight: '100%' }}
                             />
                         </div>
                     </div>
