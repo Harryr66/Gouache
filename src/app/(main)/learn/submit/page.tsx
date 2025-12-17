@@ -1393,7 +1393,7 @@ export default function CourseSubmissionPage() {
                         setActiveStep(steps[currentIndex + 1].id);
                       }
                     }}
-                    className="gradient-button"
+                    className="gradient-button w-full sm:w-auto"
                     size="lg"
                   >
                     Next
@@ -1402,7 +1402,7 @@ export default function CourseSubmissionPage() {
                   <Button 
                     type="submit" 
                     disabled={isSubmitting} 
-                    className="gradient-button" 
+                    className="gradient-button w-full sm:w-auto" 
                     size="lg"
                   >
                     {isSubmitting ? 'Submitting...' : 'Submit Course'}
