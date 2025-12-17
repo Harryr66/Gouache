@@ -335,11 +335,11 @@ export default function CourseSubmissionPage() {
           {
             id: `${Date.now()}`,
             title: lessonFormData.title.trim(),
-            description: lessonFormData.notes.trim() || undefined,
+            ...(lessonFormData.notes.trim() ? { description: lessonFormData.notes.trim() } : {}),
             type: 'video' as const,
-            duration: lessonFormData.duration.trim() || undefined,
+            ...(lessonFormData.duration.trim() ? { duration: lessonFormData.duration.trim() } : {}),
             videoUrl: videoUrl,
-            content: lessonFormData.notes.trim() || undefined,
+            ...(lessonFormData.notes.trim() ? { content: lessonFormData.notes.trim() } : {}),
             order: lessonOrder,
             isPreview: prev.curriculum.length === 0 // First lesson is preview
           }
@@ -377,7 +377,7 @@ export default function CourseSubmissionPage() {
           id: `${Date.now()}`, 
           item: newSupplyItem.trim(), 
           brand: newSupplyBrand.trim(),
-          affiliateLink: newSupplyAffiliateLink.trim() || undefined
+          ...(newSupplyAffiliateLink.trim() ? { affiliateLink: newSupplyAffiliateLink.trim() } : {})
         }
       ]
     }));
@@ -508,7 +508,7 @@ export default function CourseSubmissionPage() {
         description: formData.description,
         instructor: instructorData,
         thumbnail: thumbnailUrl,
-        previewVideoUrl: trailerUrl,
+        ...(trailerUrl ? { previewVideoUrl: trailerUrl } : {}),
         price: parseFloat(formData.price),
         currency: 'USD',
         category: formData.category,
