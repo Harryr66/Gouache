@@ -1264,10 +1264,7 @@ export default function CourseSubmissionPage() {
                         <Label htmlFor="price">Price (USD) *</Label>
                         <Input id="price" type="number" step="0.01" value={formData.price} onChange={(e)=>handleInputChange('price', e.target.value)} placeholder="0.00" required />
                       </div>
-                      <div className="space-y-2">
-                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">Tip: Use an original price to show a discounted launch offer.</p>
                   </div>
                 )}
 
