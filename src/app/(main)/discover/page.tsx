@@ -453,16 +453,30 @@ function DiscoverPageContent() {
 
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = Array.isArray(artworks) ? artworks : [];
+    
+    log('🔍 filteredAndSortedArtworks - Input:', {
+      totalArtworks: filtered.length,
+      artworkIds: filtered.slice(0, 10).map((a: any) => a.id)
+    });
 
     // Helper function to identify placeholders by hidden tag
     const isPlaceholder = (artwork: any): boolean => {
       const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
-      return tags.includes('_placeholder');
+      const hasPlaceholderTag = tags.includes('_placeholder');
+      // Also check by ID pattern as fallback
+      const hasPlaceholderId = artwork.id?.startsWith('placeholder-');
+      return hasPlaceholderTag || hasPlaceholderId;
     };
     
     // Separate real artworks from placeholders BEFORE filtering
     const allRealArtworks = filtered.filter((artwork: any) => !isPlaceholder(artwork));
     const allPlaceholderArtworks = filtered.filter((artwork: any) => isPlaceholder(artwork));
+    
+    log('🔍 Separated artworks:', {
+      allRealArtworks: allRealArtworks.length,
+      allPlaceholderArtworks: allPlaceholderArtworks.length,
+      placeholderIds: allPlaceholderArtworks.slice(0, 5).map((a: any) => a.id)
+    });
 
     // Apply filters only to real artworks
     let realArtworks = [...allRealArtworks];
