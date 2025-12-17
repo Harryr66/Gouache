@@ -156,8 +156,8 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
       await refreshUser();
       await loadStripeStatus();
       
-      // Poll for status updates
-      startStatusPolling();
+      // Poll for status updates using the newly created account ID
+      startStatusPolling(data.accountId);
     } catch (error: any) {
       console.error('Error connecting Stripe:', error);
       toast({
@@ -174,17 +174,18 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
   const handleContinueOnboarding = () => {
     if (stripeStatus.onboardingUrl) {
       window.open(stripeStatus.onboardingUrl, '_blank', 'width=800,height=600');
-      startStatusPolling();
+      startStatusPolling(stripeStatus.accountId);
     }
   };
 
-  const startStatusPolling = () => {
-    if (!stripeStatus.accountId) return;
+  const startStatusPolling = (accountId?: string) => {
+    const targetAccountId = accountId || stripeStatus.accountId;
+    if (!targetAccountId) return;
     
     // Poll every 5 seconds for status updates
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/stripe/connect/account-status?accountId=${stripeStatus.accountId}`);
+        const response = await fetch(`/api/stripe/connect/account-status?accountId=${targetAccountId}`);
         if (response.ok) {
           const data = await response.json();
           
@@ -210,12 +211,12 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
             }
           } else {
             // Update status
-            setStripeStatus({
-              ...stripeStatus,
+            setStripeStatus((prev) => ({
+              ...prev,
               onboardingStatus: data.onboardingStatus,
               chargesEnabled: data.chargesEnabled,
               payoutsEnabled: data.payoutsEnabled,
-            });
+            }));
           }
         }
       } catch (error) {
