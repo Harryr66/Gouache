@@ -781,6 +781,7 @@ export interface User {
   hideFlags?: boolean;
   hideCard?: boolean;
   hideShowcaseLocations?: boolean;
+  hideUpcomingEvents?: boolean;
   hideShop?: boolean;
   hideLearn?: boolean;
   eventCity?: string;
