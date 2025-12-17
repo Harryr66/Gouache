@@ -719,7 +719,7 @@ export default function CourseSubmissionPage() {
                     />
                     <Label htmlFor="course-type-affiliate" className="font-normal cursor-pointer flex-1">
                       <div>
-                        <div className="font-medium">Affiliate Course (External Link)</div>
+                        <div className="font-medium">Course link</div>
                         <div className="text-xs text-muted-foreground">
                           Your course is hosted elsewhere (YouTube, Teachable, your website, etc.). 
                           Students will be redirected to your external URL after payment.
@@ -753,7 +753,7 @@ export default function CourseSubmissionPage() {
                   </div>
                 </div>
                 
-                {/* External URL Input for Affiliate Courses */}
+                {/* External URL Input for Course Links */}
                 {formData.courseType === 'affiliate' && (
                   <div className="mt-4 space-y-4">
                     <div className="space-y-2">
@@ -924,7 +924,7 @@ export default function CourseSubmissionPage() {
                     {formData.courseType === 'affiliate' ? (
                       <div className="p-6 border rounded-lg bg-muted/30 text-center">
                         <p className="text-muted-foreground">
-                          Curriculum building is not required for affiliate courses. 
+                          Curriculum building is not required for course links. 
                           Your course content is hosted externally at the URL you provided.
                         </p>
                         <p className="text-sm text-muted-foreground mt-2">
