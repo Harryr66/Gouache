@@ -264,6 +264,7 @@ export default function AdminPanel() {
       collection(db, 'artworks'),
       where('isForSale', '==', true)
     );
+    // Fetch all courses (including pending) for admin review
     const coursesQuery = query(
       collection(db, 'courses'),
       orderBy('createdAt', 'desc')
@@ -410,27 +411,25 @@ export default function AdminPanel() {
           });
         });
 
-        // Add courses - only show published and approved courses
+        // Add courses - include all courses for admin review (pending, approved, etc.)
         coursesSnapshot.docs.forEach((doc: any) => {
           const data = doc.data();
-          // Only include courses that are published and approved
-          if (data.isPublished === true && data.status === 'approved') {
-            shopProductsList.push({
-              id: doc.id,
-              type: 'course',
-              title: data.title || 'Untitled Course',
-              description: data.description,
-              price: data.price || 0,
-              currency: data.currency || 'USD',
-              imageUrl: data.thumbnail || data.thumbnailUrl,
-              sellerId: data.instructor?.userId || data.userId,
-              sellerName: data.instructor?.name || 'Unknown',
-              isAvailable: data.isActive !== false,
-              category: data.category,
-              createdAt: data.createdAt?.toDate() || new Date(),
-              isPublished: data.isPublished || false
-            });
-          }
+          shopProductsList.push({
+            id: doc.id,
+            type: 'course',
+            title: data.title || 'Untitled Course',
+            description: data.description,
+            price: data.price || 0,
+            currency: data.currency || 'USD',
+            imageUrl: data.thumbnail || data.thumbnailUrl,
+            sellerId: data.instructor?.userId || data.userId,
+            sellerName: data.instructor?.name || 'Unknown',
+            isAvailable: data.isActive !== false,
+            category: data.category,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            isPublished: data.isPublished || false,
+            status: data.status || 'pending' // Include status for admin review
+          });
         });
 
         // Add books
@@ -1331,14 +1330,15 @@ export default function AdminPanel() {
   const handleCoursePublish = async (courseId: string) => {
     try {
       await updateDoc(doc(db, 'courses', courseId), {
+        status: 'approved',
         isPublished: true,
         publishedAt: new Date(),
         updatedAt: new Date(),
       });
       
       toast({
-        title: "Course Published",
-        description: "The course has been published successfully.",
+        title: "Course Approved & Published",
+        description: "The course has been approved and published successfully.",
       });
     } catch (error) {
       console.error('Error publishing course:', error);
