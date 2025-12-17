@@ -532,7 +532,7 @@ export default function CourseSubmissionPage() {
         skills: [],
         curriculum: formData.courseType === 'hosted' ? [{
           week: 1,
-          title: 'Course Lessons',
+          title: 'Lessons',
           description: '',
           lessons: formData.curriculum.map(lesson => ({
             id: lesson.id,
