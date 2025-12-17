@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { useCourses } from '@/providers/course-provider';
 import { toast } from '@/hooks/use-toast';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 import { storage, db } from '@/lib/firebase';
 import { collection, doc, getDocs, query, setDoc, where, serverTimestamp } from 'firebase/firestore';
 
@@ -86,8 +86,8 @@ export default function CourseSubmissionPage() {
     metaTitle: '',
     metaDescription: '',
     slug: '',
-    // Curriculum
-    curriculum: [] as Array<{ id: string; title: string; description?: string; type: 'video' | 'reading' | 'assignment'; duration?: string }>,
+    // Curriculum - structured as weeks with lessons
+    curriculum: [] as Array<{ week: number; title: string; description?: string; lessons: Array<{ id: string; title: string; description?: string; type: 'video' | 'reading' | 'assignment'; duration?: string; videoUrl?: string; content?: string; order: number; isPreview: boolean }> }>,
     // Supply List
     supplyList: [] as Array<{ id: string; item: string; brand: string; affiliateLink?: string }>,
     // Course hosting type
@@ -102,9 +102,15 @@ export default function CourseSubmissionPage() {
   const [newTag, setNewTag] = useState('');
   const [newSkill, setNewSkill] = useState('');
   const [newSpecialty, setNewSpecialty] = useState('');
+  // Curriculum builder state
+  const [currentWeek, setCurrentWeek] = useState(1);
+  const [weekTitle, setWeekTitle] = useState('');
   const [newLessonTitle, setNewLessonTitle] = useState('');
   const [newLessonType, setNewLessonType] = useState<'video' | 'reading' | 'assignment'>('video');
   const [newLessonDuration, setNewLessonDuration] = useState('');
+  const [newLessonDescription, setNewLessonDescription] = useState('');
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
   // Supply list state
   const [newSupplyItem, setNewSupplyItem] = useState('');
   const [newSupplyBrand, setNewSupplyBrand] = useState('');
@@ -291,21 +297,122 @@ export default function CourseSubmissionPage() {
     }
   };
 
-  const addLesson = () => {
-    if (!newLessonTitle.trim()) return;
+  const addWeek = () => {
+    if (!weekTitle.trim()) {
+      toast({
+        title: "Week title required",
+        description: "Please enter a title for this week.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setFormData(prev => {
+      const weekNumber = prev.curriculum.length + 1;
+      return {
+        ...prev,
+        curriculum: [
+          ...prev.curriculum,
+          { week: weekNumber, title: weekTitle.trim(), description: '', lessons: [] }
+        ]
+      };
+    });
+    setWeekTitle('');
+  };
+
+  const removeWeek = (weekNumber: number) => {
     setFormData(prev => ({
       ...prev,
-      curriculum: [
-        ...prev.curriculum,
-        { id: `${Date.now()}`, title: newLessonTitle.trim(), type: newLessonType, duration: newLessonDuration }
-      ]
+      curriculum: prev.curriculum
+        .filter(w => w.week !== weekNumber)
+        .map((w, idx) => ({ ...w, week: idx + 1 })) // Renumber weeks
     }));
+  };
+
+  const addLesson = async (weekNumber: number) => {
+    if (!newLessonTitle.trim()) {
+      toast({
+        title: "Lesson title required",
+        description: "Please enter a title for this lesson.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    let videoUrl = '';
+    
+    // Upload video if it's a video lesson and file is selected
+    if (newLessonType === 'video' && selectedVideoFile) {
+      setUploadingVideo(true);
+      try {
+        if (!user) throw new Error('User not authenticated');
+        const videoRef = ref(storage, `courses/${user.id}/${Date.now()}_${selectedVideoFile.name}`);
+        await uploadBytes(videoRef, selectedVideoFile);
+        videoUrl = await getDownloadURL(videoRef);
+        toast({
+          title: "Video uploaded",
+          description: "Your video has been uploaded successfully.",
+        });
+      } catch (error) {
+        console.error('Error uploading video:', error);
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload video. Please try again.",
+          variant: "destructive",
+        });
+        setUploadingVideo(false);
+        return;
+      }
+      setUploadingVideo(false);
+    }
+
+    setFormData(prev => {
+      const updatedCurriculum = prev.curriculum.map(week => {
+        if (week.week === weekNumber) {
+          const lessonOrder = week.lessons.length + 1;
+          return {
+            ...week,
+            lessons: [
+              ...week.lessons,
+              {
+                id: `${Date.now()}`,
+                title: newLessonTitle.trim(),
+                description: newLessonDescription.trim() || undefined,
+                type: newLessonType,
+                duration: newLessonDuration.trim() || undefined,
+                videoUrl: videoUrl || undefined,
+                content: newLessonType !== 'video' ? newLessonDescription.trim() || undefined : undefined,
+                order: lessonOrder,
+                isPreview: week.lessons.length === 0 && newLessonType === 'video' // First video lesson is preview
+              }
+            ]
+          };
+        }
+        return week;
+      });
+      return { ...prev, curriculum: updatedCurriculum };
+    });
+
+    // Reset form
     setNewLessonTitle('');
+    setNewLessonDescription('');
     setNewLessonDuration('');
     setNewLessonType('video');
+    setSelectedVideoFile(null);
   };
-  const removeLesson = (lessonId: string) => {
-    setFormData(prev => ({ ...prev, curriculum: prev.curriculum.filter(l => l.id !== lessonId) }));
+
+  const removeLesson = (weekNumber: number, lessonId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      curriculum: prev.curriculum.map(week => {
+        if (week.week === weekNumber) {
+          const updatedLessons = week.lessons
+            .filter(l => l.id !== lessonId)
+            .map((l, idx) => ({ ...l, order: idx + 1 })); // Renumber lessons
+          return { ...week, lessons: updatedLessons };
+        }
+        return week;
+      })
+    }));
   };
 
   const addSupplyItem = () => {
@@ -352,6 +459,27 @@ export default function CourseSubmissionPage() {
 
     // Validate required fields (based on step)
     const requiredFields = ['title', 'description', 'category', 'subcategory', 'difficulty', 'duration', 'format', 'price', 'instructorBio'];
+    
+    // For hosted courses, validate curriculum
+    if (formData.courseType === 'hosted') {
+      if (formData.curriculum.length === 0) {
+        toast({
+          title: "Curriculum required",
+          description: "Please add at least one week with lessons for hosted courses.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const hasLessons = formData.curriculum.some(week => week.lessons.length > 0);
+      if (!hasLessons) {
+        toast({
+          title: "Lessons required",
+          description: "Please add at least one lesson to your curriculum.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
@@ -465,7 +593,22 @@ export default function CourseSubmissionPage() {
         isPublished: true,
         tags: formData.tags,
         skills: formData.skills,
-        curriculum: formData.courseType === 'hosted' ? [] : [], // Will be populated later for hosted courses
+        curriculum: formData.courseType === 'hosted' ? formData.curriculum.map(week => ({
+          week: week.week,
+          title: week.title,
+          description: week.description,
+          lessons: week.lessons.map(lesson => ({
+            id: lesson.id,
+            title: lesson.title,
+            description: lesson.description,
+            type: lesson.type,
+            duration: lesson.duration,
+            videoUrl: lesson.videoUrl,
+            content: lesson.content,
+            order: lesson.order,
+            isPreview: lesson.isPreview
+          }))
+        })) : [],
         reviews: [],
         discussions: [],
         enrollmentCount: 0,
@@ -630,7 +773,6 @@ export default function CourseSubmissionPage() {
                         <div className="font-medium">Hosted Course (On Platform)</div>
                         <div className="text-xs text-muted-foreground">
                           Your course will be hosted directly on Gouache. You&apos;ll upload videos and content in the curriculum step.
-                          <span className="text-primary font-semibold"> (Premium feature - coming soon)</span>
                         </div>
                       </div>
                     </Label>
@@ -882,66 +1024,173 @@ export default function CourseSubmissionPage() {
                     ) : (
                       <>
                         <h3 className="text-lg font-semibold">Curriculum Builder</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Build your course curriculum by adding lessons. This feature is coming soon for hosted courses.
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Organize your course content into weeks and lessons. Add videos, readings, and assignments.
                         </p>
-                      </>
-                    )}
-                    {formData.courseType === 'hosted' && (
-                      <>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                          <Input placeholder="Lesson title" value={newLessonTitle} onChange={(e)=>setNewLessonTitle(e.target.value)} />
-                          <Select value={newLessonType} onValueChange={(v: any)=>setNewLessonType(v)}>
-                            <SelectTrigger><SelectValue placeholder="Type"/></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="video">Video</SelectItem>
-                              <SelectItem value="reading">Reading</SelectItem>
-                              <SelectItem value="assignment">Assignment</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <div className="flex gap-2">
-                            <Input placeholder="Duration (e.g., 8 min)" value={newLessonDuration} onChange={(e)=>setNewLessonDuration(e.target.value)} />
-                            <Button type="button" onClick={addLesson} size="sm"><Plus className="h-4 w-4"/></Button>
+
+                        {/* Add Week Section */}
+                        <div className="mb-6 p-4 border rounded-lg bg-muted/30">
+                          <div className="flex gap-2 items-end">
+                            <div className="flex-1">
+                              <Label htmlFor="weekTitle">Week/Module Title</Label>
+                              <Input
+                                id="weekTitle"
+                                placeholder="e.g., Week 1: Introduction to Oil Painting"
+                                value={weekTitle}
+                                onChange={(e) => setWeekTitle(e.target.value)}
+                              />
+                            </div>
+                            <Button type="button" onClick={addWeek} size="sm">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Week
+                            </Button>
                           </div>
                         </div>
-                        <div className="space-y-2">
+
+                        {/* Weeks List */}
+                        <div className="space-y-4">
                           {formData.curriculum.length === 0 && (
-                            <p className="text-sm text-muted-foreground">No lessons added yet.</p>
-                          )}
-                          <ul className="space-y-2">
-                            {formData.curriculum.map(lesson => (
-                          <li
-                            key={lesson.id}
-                            className="flex items-center justify-between rounded-md border p-2"
-                            draggable
-                            onDragStart={() => (window as any)._dnd = lesson.id}
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={() => {
-                              const from = (window as any)._dnd as string | undefined;
-                              if (!from || from === lesson.id) return;
-                              setFormData(prev => {
-                                const items = [...prev.curriculum];
-                                const fromIdx = items.findIndex(i => i.id === from);
-                                const toIdx = items.findIndex(i => i.id === lesson.id);
-                                if (fromIdx === -1 || toIdx === -1) return prev;
-                                const [moved] = items.splice(fromIdx, 1);
-                                items.splice(toIdx, 0, moved);
-                                return { ...prev, curriculum: items };
-                              });
-                            }}
-                          >
-                            <div className="flex items-center gap-2">
-                              <ListChecks className="h-4 w-4"/>
-                              <span className="font-medium">{lesson.title}</span>
-                              <Badge variant="outline" className="ml-2">{lesson.type}</Badge>
-                              {lesson.duration && <span className="text-xs text-muted-foreground">{lesson.duration}</span>}
+                            <div className="p-6 border rounded-lg text-center text-muted-foreground">
+                              <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p>No weeks added yet. Start by adding your first week/module above.</p>
                             </div>
-                            <Button type="button" variant="ghost" size="icon" onClick={()=>removeLesson(lesson.id)}>
-                              <Trash2 className="h-4 w-4"/>
-                            </Button>
-                          </li>
-                            ))}
-                          </ul>
+                          )}
+
+                          {formData.curriculum.map((week) => (
+                            <Card key={week.week} className="overflow-hidden">
+                              <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <CardTitle className="text-base">Week {week.week}: {week.title}</CardTitle>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                      {week.lessons.length} {week.lessons.length === 1 ? 'lesson' : 'lessons'}
+                                    </p>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeWeek(week.week)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                {/* Add Lesson Form */}
+                                <div className="p-3 border rounded-lg bg-background space-y-3">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <Input
+                                      placeholder="Lesson title"
+                                      value={newLessonTitle}
+                                      onChange={(e) => setNewLessonTitle(e.target.value)}
+                                    />
+                                    <Select value={newLessonType} onValueChange={(v: any) => setNewLessonType(v)}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Type" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="video">Video</SelectItem>
+                                        <SelectItem value="reading">Reading</SelectItem>
+                                        <SelectItem value="assignment">Assignment</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <Input
+                                      placeholder="Duration (e.g., 8 min)"
+                                      value={newLessonDuration}
+                                      onChange={(e) => setNewLessonDuration(e.target.value)}
+                                    />
+                                    {newLessonType === 'video' && (
+                                      <div>
+                                        <Input
+                                          type="file"
+                                          accept="video/*"
+                                          onChange={(e) => setSelectedVideoFile(e.target.files?.[0] || null)}
+                                          className="text-sm"
+                                        />
+                                        {selectedVideoFile && (
+                                          <p className="text-xs text-muted-foreground mt-1">
+                                            Selected: {selectedVideoFile.name}
+                                          </p>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {(newLessonType === 'reading' || newLessonType === 'assignment') && (
+                                    <Textarea
+                                      placeholder="Lesson content/description"
+                                      value={newLessonDescription}
+                                      onChange={(e) => setNewLessonDescription(e.target.value)}
+                                      rows={3}
+                                    />
+                                  )}
+                                  <Button
+                                    type="button"
+                                    onClick={() => addLesson(week.week)}
+                                    size="sm"
+                                    disabled={uploadingVideo || !newLessonTitle.trim()}
+                                  >
+                                    {uploadingVideo ? (
+                                      <>Uploading...</>
+                                    ) : (
+                                      <>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Lesson to Week {week.week}
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+
+                                {/* Lessons List */}
+                                <div className="space-y-2">
+                                  {week.lessons.length === 0 && (
+                                    <p className="text-sm text-muted-foreground text-center py-2">
+                                      No lessons in this week yet.
+                                    </p>
+                                  )}
+                                  {week.lessons
+                                    .sort((a, b) => a.order - b.order)
+                                    .map((lesson) => (
+                                      <div
+                                        key={lesson.id}
+                                        className="flex items-center justify-between rounded-md border p-3"
+                                      >
+                                        <div className="flex items-center gap-3 flex-1">
+                                          <ListChecks className="h-4 w-4 text-muted-foreground" />
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-medium">{lesson.title}</span>
+                                              {lesson.isPreview && (
+                                                <Badge variant="secondary" className="text-xs">Preview</Badge>
+                                              )}
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              <Badge variant="outline" className="text-xs">{lesson.type}</Badge>
+                                              {lesson.duration && (
+                                                <span className="text-xs text-muted-foreground">{lesson.duration}</span>
+                                              )}
+                                              {lesson.videoUrl && (
+                                                <span className="text-xs text-green-600">✓ Video uploaded</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => removeLesson(week.week, lesson.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
                         </div>
                       </>
                     )}

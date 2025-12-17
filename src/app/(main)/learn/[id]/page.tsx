@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
+import { useCourses } from '@/providers/course-provider';
+import { useAuth } from '@/providers/auth-provider';
+import { toast } from '@/hooks/use-toast';
 
 // Mock course data - in real app, this would come from API
 const mockCourse = {
@@ -184,8 +188,15 @@ The course includes live demonstrations, step-by-step tutorials, and personalize
 };
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState('overview');
+  const router = useRouter();
+  const courseId = params.id as string;
+  const { getCourse, enrollInCourse, courseEnrollments } = useCourses();
+  const { user } = useAuth();
+  
+  const [course, setCourse] = useState<any>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
   const [newComment, setNewComment] = useState('');
   const [newDiscussion, setNewDiscussion] = useState({ title: '', content: '' });
   
@@ -193,59 +204,92 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const placeholderUrl = generatePlaceholderUrl(800, 450);
   const avatarPlaceholder = generateAvatarPlaceholderUrl(60, 60);
 
-  const course = {
-    ...mockCourse,
-    thumbnail: placeholderUrl,
-    instructor: {
-      ...mockCourse.instructor,
-      avatar: avatarPlaceholder
-    },
-    reviews: mockCourse.reviews.map(review => ({
-      ...review,
-      user: {
-        ...review.user,
-        avatar: avatarPlaceholder
+  useEffect(() => {
+    const loadCourse = async () => {
+      try {
+        const courseData = await getCourse(courseId);
+        if (courseData) {
+          setCourse(courseData);
+          
+          // Check enrollment status
+          if (user) {
+            const enrollment = courseEnrollments.find(
+              e => e.courseId === courseId && e.userId === user.id
+            );
+            setIsEnrolled(!!enrollment);
+          }
+        }
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading course:', error);
+        setIsLoading(false);
       }
-    })),
-    discussions: mockCourse.discussions.map(discussion => ({
-      ...discussion,
-      user: {
-        ...discussion.user,
-        avatar: avatarPlaceholder
-      }
-    }))
-  };
+    };
 
-  const handleEnroll = () => {
-    // For affiliate courses, redirect to external URL after payment
-    // For hosted courses, enroll and show course content
-    if (course.courseType === 'affiliate' && course.externalUrl) {
-      // In real app, this would process payment first, then redirect
-      // For now, we'll show a confirmation and redirect
-      const platformName = course.hostingPlatform 
-        ? course.hostingPlatform.charAt(0).toUpperCase() + course.hostingPlatform.slice(1)
-        : 'external platform';
-      
-      let message = `You will be redirected to ${platformName} to access this course.`;
-      
-      if (course.linkType === 'enrollment') {
-        message += ' You will be automatically enrolled.';
-      } else if (course.linkType === 'affiliate') {
-        message += ' You may need to complete enrollment on the platform.';
+    if (courseId) {
+      loadCourse();
+    }
+  }, [courseId, user, courseEnrollments, getCourse]);
+
+  const handleEnroll = async () => {
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please log in to enroll in this course.",
+        variant: "destructive",
+      });
+      router.push('/login');
+      return;
+    }
+
+    try {
+      // For affiliate courses, redirect to external URL after payment
+      if (course?.courseType === 'affiliate' && course.externalUrl) {
+        const platformName = course.hostingPlatform 
+          ? course.hostingPlatform.charAt(0).toUpperCase() + course.hostingPlatform.slice(1)
+          : 'external platform';
+        
+        let message = `You will be redirected to ${platformName} to access this course.`;
+        
+        if (course.linkType === 'enrollment') {
+          message += ' You will be automatically enrolled.';
+        } else if (course.linkType === 'affiliate') {
+          message += ' You may need to complete enrollment on the platform.';
+        } else {
+          message += ' You may need to sign in or enroll manually.';
+        }
+        
+        message += '\n\nContinue?';
+        
+        if (confirm(message)) {
+          window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
+        }
+      } else if (course?.courseType === 'hosted') {
+        // For hosted courses, enroll and redirect to player
+        await enrollInCourse(courseId);
+        setIsEnrolled(true);
+        router.push(`/learn/${courseId}/player`);
       } else {
-        message += ' You may need to sign in or enroll manually.';
+        // Fallback: try to enroll anyway
+        await enrollInCourse(courseId);
+        setIsEnrolled(true);
       }
-      
-      message += '\n\nContinue?';
-      
-      if (confirm(message)) {
-        window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
-      }
-    } else {
-      setIsEnrolled(true);
-      // In real app, this would handle payment and enrollment for hosted courses
+    } catch (error) {
+      console.error('Error enrolling:', error);
+      // Error toast is handled by enrollInCourse
     }
   };
+
+  if (isLoading || !course) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+          <p className="text-muted-foreground">Loading course...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -692,7 +736,10 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                         size="lg"
                         onClick={handleEnroll}
                       >
-                        {course.courseType === 'affiliate' ? 'Purchase & Access Course' : 'Enroll Now'}
+                        {isEnrolled 
+                          ? (course.courseType === 'hosted' ? 'Continue Learning' : 'Access Course')
+                          : (course.courseType === 'affiliate' ? 'Purchase & Access Course' : 'Enroll Now')
+                        }
                       </Button>
                       {course.courseType === 'affiliate' && course.externalUrl && (
                         <p className="text-xs text-muted-foreground text-center mt-2">
