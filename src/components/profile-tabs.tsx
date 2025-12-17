@@ -167,7 +167,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                         router.push(`/learn/${course.id}`);
                       }}
                     >
-                      {course.price > 0 ? 'Purchase' : 'Enroll'}
+                      Preview
                     </Button>
                   )}
                 </div>
