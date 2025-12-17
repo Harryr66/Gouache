@@ -1283,11 +1283,50 @@ export default function CourseSubmissionPage() {
             </div>
             )}
 
-            {/* Save Button */}
-            <div className="flex justify-end pt-6 border-t">
-              <Button type="submit" disabled={isSubmitting} className="gradient-button" size="lg">
-                {isSubmitting ? 'Saving...' : 'Save Course'}
-              </Button>
+            {/* Navigation Buttons */}
+            <div className="flex items-center justify-between pt-6 border-t">
+              <div className="flex gap-2">
+                {steps.findIndex(s => s.id === activeStep) > 0 && (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      const currentIndex = steps.findIndex(s => s.id === activeStep);
+                      if (currentIndex > 0) {
+                        setActiveStep(steps[currentIndex - 1].id);
+                      }
+                    }}
+                  >
+                    Back
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {activeStep !== 'publish' ? (
+                  <Button 
+                    type="button" 
+                    onClick={() => {
+                      const currentIndex = steps.findIndex(s => s.id === activeStep);
+                      if (currentIndex < steps.length - 1) {
+                        setActiveStep(steps[currentIndex + 1].id);
+                      }
+                    }}
+                    className="gradient-button"
+                    size="lg"
+                  >
+                    Next
+                  </Button>
+                ) : (
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting} 
+                    className="gradient-button" 
+                    size="lg"
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save Course'}
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
             </CardContent>
