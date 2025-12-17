@@ -317,12 +317,12 @@ const generateArtistContent = (artist: Artist) => ({
         setShowArtistPreview(open);
         if (!open) setIsBannerExpanded(false);
       }}>
-        <DialogContent className="max-w-6xl w-full h-full md:h-auto p-0 md:p-6 overflow-hidden border-0 md:border-border rounded-none md:rounded-lg">
+        <DialogContent className="max-w-4xl w-full h-full md:h-auto p-0 md:p-6 overflow-hidden border-0 md:border-border rounded-none md:rounded-lg">
           <DialogHeader className="sr-only">
             <DialogTitle>Artist Profile</DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col md:flex-row h-full md:max-h-[90vh]">
+          <div className="flex flex-col md:flex-row h-full md:max-h-[80vh]">
             {/* Hero Artwork - Fullscreen on mobile */}
             <div className={`relative w-full h-full md:w-3/5 flex flex-col ${
               (resolvedTheme || theme) === 'dark' 
@@ -340,7 +340,7 @@ const generateArtistContent = (artist: Artist) => ({
               </Button>
               
               <div className="flex-1 flex items-center justify-center p-0 md:p-6 relative">
-                <div className="relative w-full h-full md:max-h-[85vh] md:max-w-full md:rounded-2xl overflow-hidden">
+                <div className="relative w-full h-full md:max-h-[75vh] md:max-w-full md:rounded-2xl overflow-hidden">
                   <Image
                     src={artwork.imageUrl}
                     alt={artwork.title || artwork.imageAiHint}
