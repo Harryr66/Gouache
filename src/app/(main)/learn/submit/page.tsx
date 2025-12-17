@@ -92,16 +92,13 @@ export default function CourseSubmissionPage() {
   });
 
   const [newTag, setNewTag] = useState('');
-  // Curriculum builder state
-  const [currentWeek, setCurrentWeek] = useState(1);
-  const [weekTitle, setWeekTitle] = useState('');
-  // Lesson form state per week - each week has its own lesson form data
-  const [lessonFormData, setLessonFormData] = useState<Record<number, {
-    title: string;
-    duration: string; // Will be extracted from video
-    notes: string; // Optional notes that display alongside the course
-    videoFile: File | null;
-  }>>({});
+  // Curriculum builder state - simplified to single lesson form
+  const [lessonFormData, setLessonFormData] = useState({
+    title: '',
+    duration: '', // Will be extracted from video
+    notes: '', // Optional notes that display alongside the course
+    videoFile: null as File | null,
+  });
   
   // Helper function to extract video duration
   const getVideoDuration = (file: File): Promise<string> => {
