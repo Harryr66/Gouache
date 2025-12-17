@@ -1378,45 +1378,6 @@ export default function CourseSubmissionPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="credentials">Credentials & Experience</Label>
-                <Textarea
-                  id="credentials"
-                  value={formData.credentials}
-                  onChange={(e) => handleInputChange('credentials', e.target.value)}
-                  placeholder="Your education, certifications, exhibitions, publications, etc."
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Specialties</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={newSpecialty}
-                    onChange={(e) => setNewSpecialty(e.target.value)}
-                    placeholder="Add a specialty"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSpecialty())}
-                  />
-                  <Button type="button" onClick={addSpecialty} size="sm">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.specialties.map((specialty) => (
-                    <Badge key={specialty} variant="secondary" className="flex items-center gap-1">
-                      {specialty}
-                      <button
-                        type="button"
-                        onClick={() => removeSpecialty(specialty)}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
             </div>
             )}
 
