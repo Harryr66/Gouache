@@ -420,13 +420,29 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Course management operations
+  // Helper function to remove undefined values from objects (Firestore doesn't allow undefined)
+  const cleanObject = (obj: any): any => {
+    const cleaned: any = {};
+    for (const key in obj) {
+      if (obj[key] !== undefined) {
+        if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key]) && !(obj[key] instanceof Date)) {
+          cleaned[key] = cleanObject(obj[key]);
+        } else {
+          cleaned[key] = obj[key];
+        }
+      }
+    }
+    return cleaned;
+  };
+
   const createCourse = async (courseData: Omit<Course, 'id'>): Promise<void> => {
     try {
-      await addDoc(collection(db, 'courses'), {
+      const cleanedData = cleanObject({
         ...courseData,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+      await addDoc(collection(db, 'courses'), cleanedData);
 
       toast({
         title: "Course Created",
