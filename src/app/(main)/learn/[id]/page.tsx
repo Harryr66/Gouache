@@ -503,7 +503,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {course.curriculum.map((week, weekIndex) => (
+                      {course.curriculum.map((week: any, weekIndex: number) => (
                         <div key={weekIndex} className="border rounded-lg p-4">
                           <h4 className="font-semibold mb-3">{week.title}</h4>
                           <div className="space-y-2">
