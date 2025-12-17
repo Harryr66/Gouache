@@ -454,10 +454,23 @@ function DiscoverPageContent() {
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = Array.isArray(artworks) ? artworks : [];
 
+    // Helper function to identify placeholders by hidden tag
+    const isPlaceholder = (artwork: any): boolean => {
+      const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
+      return tags.includes('_placeholder');
+    };
+    
+    // Separate real artworks from placeholders BEFORE filtering
+    const allRealArtworks = filtered.filter((artwork: any) => !isPlaceholder(artwork));
+    const allPlaceholderArtworks = filtered.filter((artwork: any) => isPlaceholder(artwork));
+
+    // Apply filters only to real artworks
+    let realArtworks = [...allRealArtworks];
+
     // Search filter
     if (deferredSearchQuery) {
       const queryLower = deferredSearchQuery.toLowerCase();
-      filtered = filtered.filter(artwork => {
+      realArtworks = realArtworks.filter(artwork => {
         const title = (artwork.title || '').toLowerCase();
         const description = (artwork.description || '').toLowerCase();
         const artistName = (artwork.artist?.name || '').toLowerCase();
@@ -473,23 +486,13 @@ function DiscoverPageContent() {
 
     // Medium filter
     if (selectedMedium !== 'All') {
-      filtered = filtered.filter(artwork => artwork.medium === selectedMedium);
+      realArtworks = realArtworks.filter(artwork => artwork.medium === selectedMedium);
     }
 
     // Apply discover settings filters
     if (discoverSettings.hideAiAssistedArt) {
-      filtered = filtered.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
+      realArtworks = realArtworks.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
     }
-
-    // Helper function to identify placeholders by hidden tag
-    const isPlaceholder = (artwork: any): boolean => {
-      const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
-      return tags.includes('_placeholder');
-    };
-    
-    // Separate real artworks from placeholders - always prioritize real artworks
-    const realArtworks = filtered.filter((artwork: any) => !isPlaceholder(artwork));
-    const placeholderArtworks = filtered.filter((artwork: any) => isPlaceholder(artwork));
     
     // Sort using engagement-based algorithm when 'popular' is selected
     let sorted = Array.isArray(realArtworks) ? [...realArtworks] : [];
@@ -528,13 +531,19 @@ function DiscoverPageContent() {
       }
     }
 
-    // Only show placeholders if there's no real media, otherwise return only real artworks
-    if (sorted.length === 0 && placeholderArtworks.length > 0) {
-      // No real media exists, show placeholders
-      return placeholderArtworks;
+    // Show placeholders only if:
+    // 1. There's no real media in the database at all, OR
+    // 2. All real artworks were filtered out (as fallback to show something)
+    if (sorted.length === 0) {
+      // No real artworks match filters, show placeholders as fallback
+      if (allPlaceholderArtworks.length > 0) {
+        return allPlaceholderArtworks;
+      }
+      // If no placeholders either, return empty array
+      return [];
     }
     
-    // Return only real artworks (placeholders hidden when real media exists)
+    // Return filtered and sorted real artworks (placeholders hidden when real media exists)
     return sorted;
   }, [artworks, deferredSearchQuery, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
