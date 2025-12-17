@@ -279,21 +279,14 @@ export default function CourseSubmissionPage() {
   };
 
   const addWeek = () => {
-    if (!weekTitle.trim()) {
-      toast({
-        title: "Week title required",
-        description: "Please enter a title for this week.",
-        variant: "destructive",
-      });
-      return;
-    }
     setFormData(prev => {
       const weekNumber = prev.curriculum.length + 1;
+      const title = weekTitle.trim() || `Week ${weekNumber}`;
       return {
         ...prev,
         curriculum: [
           ...prev.curriculum,
-          { week: weekNumber, title: weekTitle.trim(), description: '', lessons: [] }
+          { week: weekNumber, title: title, description: '', lessons: [] }
         ]
       };
     });
@@ -977,7 +970,7 @@ export default function CourseSubmissionPage() {
                               <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <CardTitle className="text-base">Week {week.week}: {week.title}</CardTitle>
+                                    <CardTitle className="text-base">{week.title}</CardTitle>
                                     <p className="text-sm text-muted-foreground mt-1">
                                       {week.lessons.length} {week.lessons.length === 1 ? 'lesson' : 'lessons'}
                                     </p>
