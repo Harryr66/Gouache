@@ -507,7 +507,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                         <div key={weekIndex} className="border rounded-lg p-4">
                           <h4 className="font-semibold mb-3">{week.title}</h4>
                           <div className="space-y-2">
-                            {week.lessons.map((lesson) => (
+                            {week.lessons.map((lesson: any) => (
                               <div key={lesson.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
                                 <div className="flex items-center gap-3">
                                   {lesson.type === 'video' ? (
@@ -542,7 +542,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                         Here are the supplies you&apos;ll need for this course. Click on any item to purchase through our affiliate links.
                       </p>
                       <div className="space-y-3">
-                        {course.supplyList.map((supply) => (
+                        {course.supplyList.map((supply: any) => (
                           <div
                             key={supply.id}
                             className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors"
