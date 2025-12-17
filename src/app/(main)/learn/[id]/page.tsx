@@ -442,7 +442,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     <div className="flex items-start gap-4">
                       <Avatar className="h-16 w-16">
                         <AvatarImage src={course.instructor.avatar} alt={course.instructor.name} />
-                        <AvatarFallback>{course.instructor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        <AvatarFallback>{course.instructor.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2">
