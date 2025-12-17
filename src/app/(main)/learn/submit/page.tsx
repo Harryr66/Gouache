@@ -147,16 +147,21 @@ export default function CourseSubmissionPage() {
       const draft = localStorage.getItem('soma-course-draft');
       if (draft) {
         const parsed = JSON.parse(draft);
-        setFormData((prev) => ({ ...prev, ...parsed }));
+        // Always reset originalityDisclaimer to false when loading draft (should never be pre-checked)
+        setFormData((prev) => ({ ...prev, ...parsed, originalityDisclaimer: false }));
       }
     } catch {}
+    // Always reset isSubmitting to false on mount
+    setIsSubmitting(false);
   }, []);
   useEffect(() => {
     const timeout = setTimeout(() => {
       try {
-        localStorage.setItem('soma-course-draft', JSON.stringify(formData));
+        // Don't save originalityDisclaimer to draft (should always start unchecked)
+        const draftData = { ...formData, originalityDisclaimer: false };
+        localStorage.setItem('soma-course-draft', JSON.stringify(draftData));
         if (user) {
-          setDoc(doc(db, 'courseDrafts', user.id), { formData, updatedAt: serverTimestamp() }, { merge: true }).catch(()=>{});
+          setDoc(doc(db, 'courseDrafts', user.id), { formData: draftData, updatedAt: serverTimestamp() }, { merge: true }).catch(()=>{});
         }
       } catch {}
     }, 500);
