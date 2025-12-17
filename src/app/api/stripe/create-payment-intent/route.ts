@@ -133,13 +133,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate 5% platform commission fee
-    const platformCommissionPercentage = 5; // 5% platform fee
-    const platformCommissionAmount = Math.round(amountInCents * (platformCommissionPercentage / 100));
+    // 0% platform commission - artist receives full payment
+    const platformCommissionPercentage = 0; // 0% platform fee - artist gets 100%
+    const platformCommissionAmount = 0; // No commission
     
-    // Application fee is the 5% platform commission
-    // Artist receives: amountInCents - platformCommissionAmount
-    const applicationFeeAmount = platformCommissionAmount;
+    // No application fee - artist receives full amount
+    const applicationFeeAmount = 0;
 
     // Create payment intent on the connected account
     // Artist receives: amountInCents - platformDonationAmount (if they opted in)
@@ -147,7 +146,7 @@ export async function POST(request: NextRequest) {
       {
         amount: amountInCents,
         currency: currency.toLowerCase(),
-        application_fee_amount: applicationFeeAmount, // 5% platform commission
+        // No application fee - artist receives 100% of payment
         transfer_data: {
           destination: stripeAccountId,
         },
@@ -159,8 +158,8 @@ export async function POST(request: NextRequest) {
           itemTitle: itemData.title || 'Untitled',
           platform: 'gouache',
           productAmount: amountInCents.toString(), // Original product amount
-          platformCommissionAmount: platformCommissionAmount.toString(), // 5% platform commission
-          platformCommissionPercentage: platformCommissionPercentage.toString(), // 5% commission percentage
+          platformCommissionAmount: platformCommissionAmount.toString(), // 0% platform commission
+          platformCommissionPercentage: platformCommissionPercentage.toString(), // 0% commission - artist gets 100%
         },
         description: description || `Purchase: ${itemData.title || itemType}`,
         automatic_payment_methods: {
@@ -179,7 +178,7 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
-      applicationFeeAmount, // 5% platform commission
+      applicationFeeAmount, // 0% platform commission - artist receives 100%
       productAmount: amountInCents,
       platformCommissionAmount,
       platformCommissionPercentage,

@@ -299,9 +299,8 @@ export default function ProfilePage() {
               userId={effectiveUser.id}
           isOwnProfile={true}
               isProfessional={isProf}
-              hideShop={true}
-              hideLearn={true}
-              hideUpcomingEvents={effectiveUser.hideUpcomingEvents || false}
+              hideShop={effectiveUser.hideShop ?? true}
+              hideLearn={effectiveUser.hideLearn ?? true}
           onTabChange={setCurrentTab}
         />
           );

@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/providers/auth-provider';
 import { useContent } from '@/providers/content-provider';
 import { useRouter } from 'next/navigation';
-import { Upload, Image as ImageIcon, Video, FileText, X, AlertCircle } from 'lucide-react';
+import { Upload, Image as ImageIcon, Video, FileText, X, AlertCircle, Mail } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, getDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
@@ -92,6 +92,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
     // Sale tagging only (platform no longer sells)
     isForSale: initialFormData?.isForSale ?? false,
     price: initialFormData?.price || '',
+    priceType: (initialFormData?.priceType as 'fixed' | 'contact') || 'fixed',
     currency: initialFormData?.currency || 'USD',
     isAI: initialFormData?.isAI ?? false,
     aiAssistance: initialFormData?.aiAssistance || ('none' as 'none' | 'assisted'),
@@ -223,14 +224,20 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       };
 
       // Only add optional fields if they have values
-      if (formData.isForSale && formData.price) {
-        newArtwork.price = parseFloat(formData.price);
-      }
-      if (formData.isForSale && formData.deliveryScope) {
-        newArtwork.deliveryScope = formData.deliveryScope;
-      }
-      if (formData.isForSale && formData.deliveryCountries) {
-        newArtwork.deliveryCountries = formData.deliveryCountries;
+      if (formData.isForSale) {
+        if (formData.priceType === 'fixed' && formData.price) {
+          newArtwork.price = parseFloat(formData.price) * 100; // Convert to cents
+          newArtwork.currency = formData.currency || 'USD';
+        } else if (formData.priceType === 'contact') {
+          newArtwork.priceType = 'contact';
+          newArtwork.contactForPrice = true;
+        }
+        if (formData.deliveryScope) {
+          newArtwork.deliveryScope = formData.deliveryScope;
+        }
+        if (formData.deliveryCountries) {
+          newArtwork.deliveryCountries = formData.deliveryCountries;
+        }
       }
 
       // Create post object
@@ -552,9 +559,17 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             />
           </div>
 
-          {/* Mark this item for sale (tag only; platform does not sell) */}
+          {/* Mark this item for sale */}
           <div className="space-y-4 p-4 border rounded-lg">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="isForSale" className="cursor-pointer text-base font-semibold">
+                  Mark this item for sale
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Enable this to list this artwork in your shop. Make sure your Shop tab is enabled in Profile Settings.
+                </p>
+              </div>
               <Switch
                 id="isForSale"
                 checked={formData.isForSale}
@@ -565,13 +580,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                   });
                 }}
               />
-              <Label htmlFor="isForSale" className="cursor-pointer text-base font-semibold">
-                Mark this item for sale
-              </Label>
             </div>
-            <p className="text-xs text-muted-foreground">
-              This tags the artwork as for sale; checkout is not handled on platform.
-            </p>
           </div>
 
 
@@ -616,37 +625,71 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
 
           {/* Price and Delivery (only shown if for sale) */}
           {formData.isForSale && (
-            <div className="space-y-4 p-4 border rounded-lg">
+            <div className="space-y-4 p-4 border rounded-lg border-l-2">
               <Label className="text-base font-semibold mb-4 block">Pricing & Delivery</Label>
-          <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
+                {/* Price Type */}
                 <div className="space-y-2">
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select 
-                    value={formData.currency} 
-                    onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                  <Label>Pricing</Label>
+                  <Select
+                    value={formData.priceType}
+                    onValueChange={(value: 'fixed' | 'contact') => setFormData({ ...formData, priceType: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
+                      <SelectItem value="fixed">Set Price</SelectItem>
+                      <SelectItem value="contact">Contact Artist</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                </div>
+
+                {/* Fixed Price Fields */}
+                {formData.priceType === 'fixed' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="price">Price *</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="currency">Currency</Label>
+                      <Select 
+                        value={formData.currency} 
+                        onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD ($)</SelectItem>
+                          <SelectItem value="GBP">GBP (£)</SelectItem>
+                          <SelectItem value="EUR">EUR (€)</SelectItem>
+                          <SelectItem value="CAD">CAD (C$)</SelectItem>
+                          <SelectItem value="AUD">AUD (A$)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact Artist Note */}
+                {formData.priceType === 'contact' && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Customers will be prompted to email you to inquire about pricing. Make sure your email is set in your profile.
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Available for delivery</Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

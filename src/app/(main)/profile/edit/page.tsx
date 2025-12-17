@@ -21,6 +21,7 @@ import { db, storage, auth } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { ArtistRequest, ShowcaseLocation } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
+import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
 
 // Countries list for dropdowns
 const COUNTRIES = [
@@ -104,8 +105,8 @@ export default function ProfileEditPage() {
     hideFlags: false,
     hideCard: false,
     hideShowcaseLocations: false,
-    hideShop: false,   // Enabled by default
-    hideLearn: true,   // Hidden by default for MVP
+    hideShop: true,   // Hidden by default
+    hideLearn: true,   // Hidden by default
     bannerImageUrl: '',
     // Upcoming event fields
     eventCity: '',
@@ -158,7 +159,7 @@ export default function ProfileEditPage() {
             hideCard: user.isProfessional ? (changes.hideCard || user.hideCard || false) : false,
             hideShowcaseLocations: user.isProfessional ? (changes.hideShowcaseLocations || user.hideShowcaseLocations || false) : false,
             // If undefined, default to hidden (true) until artist explicitly disables
-            hideShop: user.isProfessional ? (changes.hideShop ?? (user.hideShop ?? false)) : false,
+            hideShop: user.isProfessional ? (changes.hideShop ?? (user.hideShop ?? true)) : true,
             hideLearn: user.isProfessional ? (changes.hideLearn ?? (user.hideLearn ?? true)) : true,
             bannerImageUrl: user.isProfessional ? (changes.bannerImageUrl || user.bannerImageUrl || '') : '',
             eventCity: user.isProfessional ? (changes.eventCity || user.eventCity || '') : '',
@@ -238,7 +239,7 @@ export default function ProfileEditPage() {
           hideCard: user.isProfessional ? (user.hideCard || false) : false,
           hideShowcaseLocations: user.isProfessional ? ((user as any).hideShowcaseLocations || false) : false,
           // Default to hidden (true) when field is undefined
-          hideShop: user.isProfessional ? (((user as any).hideShop ?? false)) : false,
+          hideShop: user.isProfessional ? (((user as any).hideShop ?? true)) : true,
           hideLearn: user.isProfessional ? (((user as any).hideLearn ?? true)) : true,
           bannerImageUrl: user.isProfessional ? (user.bannerImageUrl || '') : '',
           eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
@@ -900,7 +901,7 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = false;
           updateData.hideCard = false;
           updateData.hideShowcaseLocations = false;
-          updateData.hideShop = false;
+          updateData.hideShop = true;
           updateData.hideLearn = true;
           updateData.newsletterLink = null;
           updateData.eventCity = null;
@@ -1631,11 +1632,48 @@ export default function ProfileEditPage() {
                     />
                   </div>
 
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label>Enable Learn Tab</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Show the "Learn" tab on your public profile to display your courses
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!formData.hideLearn}
+                      onCheckedChange={(checked) => {
+                        if (!checked) {
+                          const confirmDisable = window.confirm(
+                            'Are you sure you want to disable your Learn tab? Customers will no longer see your courses on your profile.'
+                          );
+                          if (!confirmDisable) return;
+                        }
+                        handleInputChange('hideLearn', !checked);
+                      }}
+                    />
+                  </div>
+
                 </>
               )}
             </div>
           </CardContent>
         </Card>
+
+        {/* Stripe Payment Setup - Only for professional artists */}
+        {isArtistAccount && (
+          <Card id="stripe-integration">
+            <CardHeader>
+              <CardTitle>Payment Setup</CardTitle>
+              <CardDescription>
+                Connect your Stripe account to accept payments for your artwork, prints, books, and courses. 
+                You'll receive 100% of sales directly to your Stripe account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <StripeIntegrationWizard />
+            </CardContent>
+          </Card>
+        )}
 
         {isArtistAccount && (
           <Card id="showcase-locations">

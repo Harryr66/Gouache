@@ -94,7 +94,7 @@ export default function ArtistProfilePage() {
             hideUpcomingEvents: data.hideUpcomingEvents || false,
             hideShowcaseLocations: data.hideShowcaseLocations || false,
             // Default to hidden until explicitly enabled
-            hideShop: data.hideShop ?? false,
+            hideShop: data.hideShop ?? true,
             hideLearn: data.hideLearn ?? true,
             eventCity: data.eventCity || undefined,
             eventCountry: data.eventCountry || undefined,
@@ -292,9 +292,8 @@ export default function ArtistProfilePage() {
           userId={profileUser.id}
           isOwnProfile={isOwnProfile}
           isProfessional={profileUser.isProfessional || false}
-          hideShop={true}
-          hideLearn={true}
-          hideUpcomingEvents={profileUser.hideUpcomingEvents || false}
+          hideShop={profileUser.hideShop ?? true}
+          hideLearn={profileUser.hideLearn ?? true}
         />
       </div>
     </div>
