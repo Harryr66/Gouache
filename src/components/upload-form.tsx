@@ -29,6 +29,7 @@ type UploadInitialForm = Partial<{
   tags: string;
   isForSale: boolean;
   price: string;
+  priceType: 'fixed' | 'contact';
   currency: string;
   isAI: boolean;
   aiAssistance: 'none' | 'assisted';
