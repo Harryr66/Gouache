@@ -352,7 +352,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     const visibleTabs = [
       { value: 'portfolio', label: 'Portfolio', icon: Palette },
       ...(hideShop ? [] : [{ value: 'shop', label: 'Shop', icon: ShoppingBag }]),
-      ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: BookOpen }]),
+      ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: Brain }]),
     ];
     
     const defaultTab = visibleTabs[0]?.value || 'portfolio';
@@ -425,7 +425,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
   const visibleTabs = [
     { value: 'liked', label: 'Liked', icon: Heart },
     { value: 'following', label: 'Following', icon: Users },
-    ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: BookOpen }]),
+    ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: Brain }]),
   ];
   
   const gridCols = visibleTabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
