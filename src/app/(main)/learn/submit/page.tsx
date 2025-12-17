@@ -566,7 +566,7 @@ export default function CourseSubmissionPage() {
 
       toast({
         title: "Course Submitted",
-        description: "Your course has been submitted for review. You'll be notified once it's approved.",
+        description: "Your course has been submitted for admin review. It will not be available until approved by an administrator.",
       });
 
       // Clear draft data after successful submission

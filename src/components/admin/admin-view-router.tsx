@@ -2241,51 +2241,96 @@ export function AdminViewRouter(props: any) {
                           </div>
                         </div>
                         <div className="flex gap-2 items-center">
-                          <Badge variant={product.isAvailable ? 'default' : 'secondary'}>
-                            {product.isAvailable ? 'Available' : 'Unavailable'}
-                          </Badge>
+                          {product.status === 'pending' && (
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                              Pending Approval
+                            </Badge>
+                          )}
+                          {product.status === 'approved' && product.isPublished && (
+                            <Badge variant="default" className="bg-green-50 text-green-700 border-green-300">
+                              Published
+                            </Badge>
+                          )}
+                          {product.status === 'approved' && !product.isPublished && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                              Approved (Unpublished)
+                            </Badge>
+                          )}
                           {product.type === 'course' && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                  <Trash2 className="h-4 w-4" />
+                            <div className="flex gap-1">
+                              {product.status === 'pending' && (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={async () => {
+                                    try {
+                                      await updateDoc(doc(db, 'courses', product.id), {
+                                        status: 'approved',
+                                        isPublished: true,
+                                        publishedAt: new Date(),
+                                        updatedAt: new Date(),
+                                      });
+                                      toast({
+                                        title: "Course Approved",
+                                        description: "The course has been approved and published.",
+                                      });
+                                      window.location.reload();
+                                    } catch (error) {
+                                      console.error('Error approving course:', error);
+                                      toast({
+                                        title: "Approval Failed",
+                                        description: "Failed to approve course. Please try again.",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Approve
                                 </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Course</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete "{product.title}"? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={async () => {
-                                      try {
-                                        await deleteDoc(doc(db, 'courses', product.id));
-                                        toast({
-                                          title: "Course Deleted",
-                                          description: "The course has been deleted successfully.",
-                                        });
-                                        // Refresh the page to update the list
-                                        window.location.reload();
-                                      } catch (error) {
-                                        console.error('Error deleting course:', error);
-                                        toast({
-                                          title: "Delete Failed",
-                                          description: "Failed to delete course. Please try again.",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    }}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                              )}
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete "{product.title}"? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={async () => {
+                                        try {
+                                          await deleteDoc(doc(db, 'courses', product.id));
+                                          toast({
+                                            title: "Course Deleted",
+                                            description: "The course has been deleted successfully.",
+                                          });
+                                          window.location.reload();
+                                        } catch (error) {
+                                          console.error('Error deleting course:', error);
+                                          toast({
+                                            title: "Delete Failed",
+                                            description: "Failed to delete course. Please try again.",
+                                            variant: "destructive",
+                                          });
+                                        }
+                                      }}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           )}
                         </div>
                       </div>
