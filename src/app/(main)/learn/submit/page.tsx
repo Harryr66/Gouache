@@ -1308,6 +1308,47 @@ export default function CourseSubmissionPage() {
                     onClick={() => {
                       const currentIndex = steps.findIndex(s => s.id === activeStep);
                       if (currentIndex < steps.length - 1) {
+                        // Basic validation before moving to next step
+                        if (activeStep === 'basics') {
+                          if (!formData.title || !formData.description || !formData.category || !formData.subcategory || !formData.difficulty || !formData.duration || !formData.instructorBio) {
+                            toast({
+                              title: "Missing Information",
+                              description: "Please fill in all required fields in the Basics section.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                        }
+                        if (activeStep === 'curriculum' && formData.courseType === 'hosted') {
+                          if (formData.curriculum.length === 0) {
+                            toast({
+                              title: "Lessons Required",
+                              description: "Please add at least one lesson for hosted courses.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                        }
+                        if (activeStep === 'pricing') {
+                          if (!formData.price) {
+                            toast({
+                              title: "Price Required",
+                              description: "Please enter a price for your course.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                        }
+                        if (activeStep === 'discoverability' && formData.courseType === 'affiliate') {
+                          if (!formData.externalUrl || !formData.hostingPlatform) {
+                            toast({
+                              title: "Course Link Required",
+                              description: "Please provide the external URL and hosting platform for course links.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                        }
                         setActiveStep(steps[currentIndex + 1].id);
                       }
                     }}
