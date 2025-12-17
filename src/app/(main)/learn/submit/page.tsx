@@ -37,10 +37,6 @@ const COURSE_CATEGORIES = {
   'styles': {
     name: 'Styles',
     subcategories: ['Abstract', 'Realism', 'Impressionism', 'Expressionism', 'Surrealism', 'Minimalism', 'Contemporary', 'Pop Art', 'Cubism', 'Street Art']
-  },
-  'books': {
-    name: 'Books',
-    subcategories: ['Art Techniques', 'Art History', 'Artist Biographies', 'Art Theory', 'Coffee Table Books', 'Exhibition Catalogs']
   }
 };
 
@@ -73,7 +69,6 @@ export default function CourseSubmissionPage() {
     subcategory: '',
     difficulty: '',
     duration: '',
-    format: '',
     price: '',
     originalPrice: '',
     tags: [] as string[],
@@ -458,7 +453,7 @@ export default function CourseSubmissionPage() {
     }
 
     // Validate required fields (based on step)
-    const requiredFields = ['title', 'description', 'category', 'subcategory', 'difficulty', 'duration', 'format', 'price', 'instructorBio'];
+    const requiredFields = ['title', 'description', 'category', 'subcategory', 'difficulty', 'duration', 'price', 'instructorBio'];
     
     // For hosted courses, validate curriculum
     if (formData.courseType === 'hosted') {
@@ -580,7 +575,7 @@ export default function CourseSubmissionPage() {
         supplyList: formData.supplyList,
         difficulty: formData.difficulty as 'Beginner' | 'Intermediate' | 'Advanced',
         duration: formData.duration,
-        format: formData.format as 'Self-Paced' | 'Live Sessions' | 'Hybrid' | 'E-Book',
+        format: 'Self-Paced' as const,
         students: 0,
         lessons: formData.courseType === 'hosted' ? formData.curriculum.length : 0,
         rating: 0,
@@ -937,7 +932,7 @@ export default function CourseSubmissionPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="difficulty">Difficulty *</Label>
                   <Select value={formData.difficulty} onValueChange={(value) => handleInputChange('difficulty', value)}>
@@ -961,21 +956,6 @@ export default function CourseSubmissionPage() {
                     placeholder="e.g., 6 weeks, 8 hours"
                     required
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="format">Format *</Label>
-                  <Select value={formData.format} onValueChange={(value) => handleInputChange('format', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select format" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Self-Paced">Self-Paced</SelectItem>
-                      <SelectItem value="Live Sessions">Live Sessions</SelectItem>
-                      <SelectItem value="Hybrid">Hybrid</SelectItem>
-                      <SelectItem value="E-Book">E-Book</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 
