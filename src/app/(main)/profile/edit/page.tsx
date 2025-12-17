@@ -794,7 +794,12 @@ export default function ProfileEditPage() {
       setArtistRequestData({
         artistStatement: '',
         experience: '',
-        socialLinks: { website: '' }
+        socialLinks: {
+          website: '',
+          instagram: '',
+          x: '',
+          tiktok: ''
+        }
       });
     } catch (error) {
       console.error('Error submitting artist request:', error);
