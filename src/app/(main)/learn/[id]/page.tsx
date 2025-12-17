@@ -710,10 +710,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-primary">${course.price}</span>
+                    <span className="text-2xl font-bold text-primary">
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: course.currency || 'USD'
+                      }).format(course.price)}
+                    </span>
                     {course.originalPrice && (
                       <span className="text-lg text-muted-foreground line-through">
-                        ${course.originalPrice}
+                        {new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: course.currency || 'USD'
+                        }).format(course.originalPrice)}
                       </span>
                     )}
                   </div>
