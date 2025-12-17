@@ -1058,7 +1058,7 @@ export default function CourseSubmissionPage() {
                                         />
                                         {lessonFormData[week.week]?.videoFile && (
                                           <p className="text-xs text-muted-foreground mt-1">
-                                            Selected: {lessonFormData[week.week].videoFile.name}
+                                            Selected: {lessonFormData[week.week]?.videoFile?.name}
                                           </p>
                                         )}
                                       </div>
