@@ -73,8 +73,6 @@ export default function CourseSubmissionPage() {
     tags: [] as string[],
     // Instructor info
     instructorBio: '',
-    credentials: '',
-    specialties: [] as string[],
     // SEO
     metaTitle: '',
     metaDescription: '',
@@ -93,7 +91,6 @@ export default function CourseSubmissionPage() {
   });
 
   const [newTag, setNewTag] = useState('');
-  const [newSpecialty, setNewSpecialty] = useState('');
   // Curriculum builder state
   const [currentWeek, setCurrentWeek] = useState(1);
   const [weekTitle, setWeekTitle] = useState('');
@@ -205,22 +202,6 @@ export default function CourseSubmissionPage() {
   };
 
 
-  const addSpecialty = () => {
-    if (newSpecialty.trim() && !formData.specialties.includes(newSpecialty.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        specialties: [...prev.specialties, newSpecialty.trim()]
-      }));
-      setNewSpecialty('');
-    }
-  };
-
-  const removeSpecialty = (specialtyToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      specialties: prev.specialties.filter(specialty => specialty !== specialtyToRemove)
-    }));
-  };
 
   // AI tag generation function
   const generateAITags = async () => {
@@ -503,8 +484,8 @@ export default function CourseSubmissionPage() {
         students: 0,
         courses: 1,
         verified: false,
-        credentials: formData.credentials,
-        specialties: formData.specialties,
+        credentials: '',
+        specialties: [],
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
