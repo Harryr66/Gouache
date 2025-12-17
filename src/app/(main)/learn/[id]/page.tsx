@@ -303,23 +303,25 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       {/* Header */}
       <div className="bg-background border-b border-border">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             <Link href="/marketplace">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="shrink-0">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Courses
+                <span className="hidden sm:inline">Back to Courses</span>
+                <span className="sm:hidden">Back</span>
               </Button>
             </Link>
-            <Badge variant="outline">{course.category}</Badge>
-            <Badge variant="outline">{course.difficulty}</Badge>
+            <Badge variant="outline" className="shrink-0">{course.category}</Badge>
+            <Badge variant="outline" className="shrink-0">{course.difficulty}</Badge>
             {course.courseType === 'affiliate' && (
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 shrink-0 text-xs">
                 External Course
               </Badge>
             )}
             {course.courseType === 'hosted' && (
-              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                Hosted on Platform
+              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 shrink-0 text-xs">
+                <span className="hidden sm:inline">Hosted on Platform</span>
+                <span className="sm:hidden">Hosted</span>
               </Badge>
             )}
           </div>
@@ -334,18 +336,19 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             <div className="space-y-4">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <h1 className="text-3xl font-bold text-foreground">{course.title}</h1>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground break-words">{course.title}</h1>
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 shrink-0">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       <span className="font-medium">{course.rating}</span>
-                      <span>({course.reviewCount} reviews)</span>
+                      <span className="hidden sm:inline">({course.reviewCount} reviews)</span>
+                      <span className="sm:hidden">({course.reviewCount})</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <Users className="h-4 w-4" />
-                      <span>{course.students.toLocaleString()} students</span>
+                      <span>{course.students.toLocaleString()} <span className="hidden sm:inline">students</span></span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <Clock className="h-4 w-4" />
                       <span>{course.duration}</span>
                     </div>
@@ -422,29 +425,33 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{course.instructor.bio}</p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1 shrink-0">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                             <span>{course.instructor.rating}</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <Users className="h-4 w-4" />
-                            <span>{course.instructor.students.toLocaleString()} students</span>
+                            <span>{course.instructor.students.toLocaleString()} <span className="hidden sm:inline">students</span></span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <BookOpen className="h-4 w-4" />
-                            <span>{course.instructor.courses} courses</span>
+                            <span>{course.instructor.courses} <span className="hidden sm:inline">courses</span></span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{course.instructor.location}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Globe className="h-4 w-4" />
-                            <a href={course.instructor.website} className="hover:text-primary">Website</a>
-                          </div>
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
+                          {course.instructor.location && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <MapPin className="h-4 w-4" />
+                              <span className="break-words">{course.instructor.location}</span>
+                            </div>
+                          )}
+                          {course.instructor.website && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Globe className="h-4 w-4" />
+                              <a href={course.instructor.website} className="hover:text-primary break-all">Website</a>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -635,7 +642,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                         size="lg"
                         onClick={handleEnroll}
                       >
-                        {course.courseType === 'affiliate' ? 'Purchase & Access Course' : 'Enroll Now'}
+                        <span className="hidden sm:inline">{course.courseType === 'affiliate' ? 'Purchase & Access Course' : 'Enroll Now'}</span>
+                        <span className="sm:hidden">{course.courseType === 'affiliate' ? 'Purchase' : 'Enroll'}</span>
                       </Button>
                       {course.courseType === 'affiliate' && course.externalUrl && (
                         <p className="text-xs text-muted-foreground text-center mt-2">
