@@ -294,6 +294,7 @@ export default function ArtistProfilePage() {
           isProfessional={profileUser.isProfessional || false}
           hideShop={true}
           hideLearn={true}
+          hideUpcomingEvents={profileUser.hideUpcomingEvents || false}
         />
       </div>
     </div>

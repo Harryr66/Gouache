@@ -36,6 +36,19 @@ export class EngagementScorer {
     const oneDayMs = 24 * 60 * 60 * 1000;
 
     return artworks.map((artwork) => {
+      // Check for hidden _placeholder tag
+      const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
+      const isPlaceholder = tags.includes('_placeholder');
+      
+      // Placeholders always get a score of 0
+      if (isPlaceholder) {
+        return {
+          ...artwork,
+          engagementScore: 0,
+          finalScore: 0,
+        };
+      }
+
       const engagement = engagements.get(artwork.id) || {
         artworkId: artwork.id,
         totalViewTime: 0,
@@ -59,9 +72,15 @@ export class EngagementScorer {
       const recencyScore = this.calculateRecencyScore(ageInDays);
 
       // Combine scores
-      const finalScore =
+      let finalScore =
         normalizedEngagement * this.ENGAGEMENT_WEIGHT +
         recencyScore * this.RECENCY_WEIGHT;
+      
+      // Ensure legitimate accounts get a minimum score of 1
+      // This ensures they always rank above placeholders (which have score 0)
+      if (finalScore < 1.0) {
+        finalScore = 1.0;
+      }
 
       return {
         ...artwork,
@@ -87,9 +106,23 @@ export class EngagementScorer {
 
   /**
    * Sort artworks by final score (highest first)
+   * Always prioritizes real artworks over placeholders
    */
   sortByScore(scoredArtworks: ScoredArtwork[]): ScoredArtwork[] {
     return [...scoredArtworks].sort((a, b) => {
+      // Check for hidden _placeholder tag
+      const aTags = Array.isArray(a.tags) ? a.tags : [];
+      const bTags = Array.isArray(b.tags) ? b.tags : [];
+      const aIsPlaceholder = aTags.includes('_placeholder');
+      const bIsPlaceholder = bTags.includes('_placeholder');
+      
+      // First, separate real artworks from placeholders
+      
+      // Real artworks always come before placeholders
+      if (aIsPlaceholder && !bIsPlaceholder) return 1;
+      if (!aIsPlaceholder && bIsPlaceholder) return -1;
+      
+      // If both are placeholders or both are real, sort by score
       // Primary sort: final score (descending)
       if (b.finalScore !== a.finalScore) {
         return b.finalScore - a.finalScore;

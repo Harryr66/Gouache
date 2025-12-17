@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play, Calendar, MapPin, Pin, PinOff, Trash2 } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { PortfolioManager } from './portfolio-manager';
 import { ShopDisplay } from './shop-display';
@@ -13,7 +13,7 @@ import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from './theme-loading';
 import { useLikes } from '@/providers/likes-provider';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Artwork, Course } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -27,10 +27,11 @@ interface ProfileTabsProps {
   isProfessional: boolean;
   hideShop?: boolean;
   hideLearn?: boolean;
+  hideUpcomingEvents?: boolean;
   onTabChange?: (tab: string) => void;
 }
 
-export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = false, hideLearn = true, onTabChange }: ProfileTabsProps) {
+export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = false, hideLearn = true, hideUpcomingEvents = false, onTabChange }: ProfileTabsProps) {
   const { courses, courseEnrollments, isLoading: coursesLoading } = useCourses();
   const { likedArtworkIds, loading: likesLoading } = useLikes();
   const [likedArtworks, setLikedArtworks] = useState<Artwork[]>([]);
@@ -137,6 +138,185 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
     };
   }, [likesLoading, likedIds]);
 
+  // Events state and loading
+  const [events, setEvents] = useState<any[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+
+  // Load events for this artist
+  useEffect(() => {
+    if (!isProfessional || hideUpcomingEvents) return;
+    
+    const loadEvents = async () => {
+      try {
+        setEventsLoading(true);
+        const snap = await getDocs(
+          query(collection(db, 'events'), where('artistId', '==', userId))
+        );
+        const now = new Date();
+        const list = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((event: any) => {
+            // Filter to only show upcoming/current events (not past events)
+            if (event.endDate) {
+              const endDate = new Date(event.endDate);
+              return endDate >= now;
+            } else if (event.date) {
+              const startDate = new Date(event.date);
+              return startDate >= now;
+            }
+            return true;
+          });
+        // Sort pinned first (pinnedAt desc), then by start date desc
+        list.sort((a: any, b: any) => {
+          const ap = a.pinnedAt?.toMillis?.() || a.pinnedAt?.seconds || 0;
+          const bp = b.pinnedAt?.toMillis?.() || b.pinnedAt?.seconds || 0;
+          if (ap !== bp) return bp - ap;
+          return (b.date ? new Date(b.date).getTime() : 0) - (a.date ? new Date(a.date).getTime() : 0);
+        });
+        setEvents(list);
+      } catch (error) {
+        console.error('Error loading events:', error);
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+    loadEvents();
+  }, [userId, isProfessional, hideUpcomingEvents]);
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await deleteDoc(doc(db, 'events', eventId));
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    } catch (error) {
+      console.error('Failed to delete event', error);
+    }
+  };
+
+  const handlePinEvent = async (eventId: string, pin: boolean) => {
+    try {
+      const ref = doc(db, 'events', eventId);
+      await updateDoc(ref, {
+        pinned: pin,
+        pinnedAt: pin ? serverTimestamp() : null,
+      });
+      setEvents((prev) =>
+        prev
+          .map((e) => (e.id === eventId ? { ...e, pinned: pin, pinnedAt: pin ? new Date() : null } : e))
+          .sort((a: any, b: any) => {
+            const ap = a.pinnedAt?.toMillis?.() || a.pinnedAt?.seconds || (a.pinnedAt instanceof Date ? a.pinnedAt.getTime() : 0);
+            const bp = b.pinnedAt?.toMillis?.() || b.pinnedAt?.seconds || (b.pinnedAt instanceof Date ? b.pinnedAt.getTime() : 0);
+            if (ap !== bp) return bp - ap;
+            return (b.date ? new Date(b.date).getTime() : 0) - (a.date ? new Date(a.date).getTime() : 0);
+          })
+      );
+    } catch (error) {
+      console.error('Failed to pin/unpin event', error);
+    }
+  };
+
+  // Component to display events
+  function EventsDisplay({ userId, isOwnProfile }: { userId: string; isOwnProfile: boolean }) {
+    if (eventsLoading) {
+      return (
+        <div className="flex justify-center py-8">
+          <ThemeLoading text="" size="sm" />
+        </div>
+      );
+    }
+
+    if (events.length === 0) {
+      return (
+        <Card className="p-8 text-center">
+          <CardContent>
+            <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <CardTitle className="mb-2">No upcoming events</CardTitle>
+            <CardDescription className="mb-4">
+              {isOwnProfile 
+                ? "You haven't created any upcoming events yet."
+                : "This artist doesn't have any upcoming events."}
+            </CardDescription>
+            {isOwnProfile && (
+              <Button asChild variant="gradient">
+                <a href="/upload">Create Event</a>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {events.map((event) => (
+          <Card key={event.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
+            <div className="relative h-48 w-full bg-muted">
+              {event.imageUrl ? (
+                <Image
+                  src={event.imageUrl}
+                  alt={event.title || 'Event'}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">
+                  No image
+                </div>
+              )}
+              {isOwnProfile && (
+                <div className="absolute top-2 right-2">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background"
+                      onClick={() => handlePinEvent(event.id, !event.pinned)}
+                    >
+                      {event.pinned ? (
+                        <PinOff className="h-4 w-4" />
+                      ) : (
+                        <Pin className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background text-red-400 hover:text-red-500"
+                      onClick={() => handleDeleteEvent(event.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                {event.pinned && <Pin className="h-3 w-3 text-muted-foreground" />}
+                <CardTitle className="text-lg line-clamp-2">{event.title || 'Untitled event'}</CardTitle>
+              </div>
+              {event.date && (
+                <p className="text-sm text-muted-foreground flex items-center gap-1 mb-1">
+                  <Calendar className="h-4 w-4" />
+                  {new Date(event.date).toLocaleDateString()}
+                  {event.endDate ? ` → ${new Date(event.endDate).toLocaleDateString()}` : ''}
+                </p>
+              )}
+              {event.location && (
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  {event.location}
+                </p>
+              )}
+              {event.description && (
+                <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{event.description}</p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   // Component to display other user's portfolio
   function PortfolioDisplay({ userId }: { userId: string }) {
     const [portfolio, setPortfolio] = useState<any[]>([]);
@@ -224,14 +404,15 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
   console.log('🎯 ProfileTabs render:', { isProfessional, userId, isOwnProfile, hideShop });
 
   if (isProfessional) {
-    // For professional artists, show tabs: Portfolio, Shop (if not hidden), Learn (if not hidden)
+    // For professional artists, show tabs: Portfolio, Events (if not hidden), Shop (if not hidden), Learn (if not hidden)
     const visibleTabs = [
       { value: 'portfolio', label: 'Portfolio', icon: Palette },
+      ...(hideUpcomingEvents ? [] : [{ value: 'events', label: 'Upcoming Events', icon: Calendar }]),
       ...(hideShop ? [] : [{ value: 'shop', label: 'Shop', icon: ShoppingBag }]),
     ];
     
     const defaultTab = visibleTabs[0]?.value || 'portfolio';
-    const gridCols = visibleTabs.length === 1 ? 'grid-cols-1' : visibleTabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
+    const gridCols = visibleTabs.length === 1 ? 'grid-cols-1' : visibleTabs.length === 2 ? 'grid-cols-2' : visibleTabs.length === 3 ? 'grid-cols-3' : 'grid-cols-4';
     
     console.log('✅ ProfileTabs: Rendering professional artist tabs', { visibleTabs: visibleTabs.map(t => t.value), defaultTab });
     
@@ -261,6 +442,13 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = f
             }
           })()}
         </TabsContent>
+
+        {/* Upcoming Events Tab */}
+        {!hideUpcomingEvents && (
+          <TabsContent value="events" className="space-y-4">
+            <EventsDisplay userId={userId} isOwnProfile={isOwnProfile} />
+          </TabsContent>
+        )}
 
         {/* Shop Tab */}
         {!hideShop && (

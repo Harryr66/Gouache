@@ -70,7 +70,7 @@ const generatePlaceholderArtworks = (theme: string | undefined, count: number = 
     updatedAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
     category: ['Painting', 'Drawing', 'Digital', 'Mixed Media'][i % 4],
     medium: ['Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Digital'][i % 5],
-    tags: ['art', 'creative', 'contemporary', 'modern'],
+    tags: ['art', 'creative', 'contemporary', 'modern', '_placeholder'], // Hidden tag to identify placeholders
     aiAssistance: 'none' as const,
     isAI: false,
   }));
@@ -481,8 +481,18 @@ function DiscoverPageContent() {
       filtered = filtered.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
     }
 
+    // Helper function to identify placeholders by hidden tag
+    const isPlaceholder = (artwork: any): boolean => {
+      const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
+      return tags.includes('_placeholder');
+    };
+    
+    // Separate real artworks from placeholders - always prioritize real artworks
+    const realArtworks = filtered.filter((artwork: any) => !isPlaceholder(artwork));
+    const placeholderArtworks = filtered.filter((artwork: any) => isPlaceholder(artwork));
+    
     // Sort using engagement-based algorithm when 'popular' is selected
-    let sorted = Array.isArray(filtered) ? [...filtered] : [];
+    let sorted = Array.isArray(realArtworks) ? [...realArtworks] : [];
     
     if (sortBy === 'popular' && artworkEngagements.size > 0) {
       // Use engagement-based scoring algorithm
@@ -518,7 +528,14 @@ function DiscoverPageContent() {
       }
     }
 
-    return Array.isArray(sorted) ? sorted : [];
+    // Only show placeholders if there's no real media, otherwise return only real artworks
+    if (sorted.length === 0 && placeholderArtworks.length > 0) {
+      // No real media exists, show placeholders
+      return placeholderArtworks;
+    }
+    
+    // Return only real artworks (placeholders hidden when real media exists)
+    return sorted;
   }, [artworks, deferredSearchQuery, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
   // Filter and sort marketplace products

@@ -301,6 +301,7 @@ export default function ProfilePage() {
               isProfessional={isProf}
               hideShop={true}
               hideLearn={true}
+              hideUpcomingEvents={effectiveUser.hideUpcomingEvents || false}
           onTabChange={setCurrentTab}
         />
           );
