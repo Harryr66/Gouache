@@ -531,23 +531,18 @@ function DiscoverPageContent() {
       }
     }
 
-    // Show placeholders only if:
-    // 1. There's no real media in the database at all, OR
-    // 2. All real artworks were filtered out (as fallback to show something)
-    if (sorted.length === 0) {
-      // No real artworks match filters, show placeholders as fallback
-      if (allPlaceholderArtworks.length > 0) {
-        log('📋 Discover: No real artworks match filters, showing placeholders:', allPlaceholderArtworks.length);
-        return allPlaceholderArtworks;
-      }
-      // If no placeholders either, return empty array
-      log('⚠️ Discover: No artworks to display (real or placeholder)');
-      return [];
+    // Always show real artworks first, then append placeholders to fill the grid
+    // Placeholders have score 0 so they'll always rank below real artworks
+    if (sorted.length === 0 && allPlaceholderArtworks.length > 0) {
+      // No real artworks match filters, show only placeholders
+      log('📋 Discover: No real artworks match filters, showing placeholders:', allPlaceholderArtworks.length);
+      return allPlaceholderArtworks;
     }
     
-    // Return filtered and sorted real artworks (placeholders hidden when real media exists)
-    log('✅ Discover: Returning', sorted.length, 'real artworks');
-    return sorted;
+    // Return real artworks first, then placeholders to fill remaining space
+    const result = [...sorted, ...allPlaceholderArtworks];
+    log('✅ Discover: Returning', sorted.length, 'real artworks +', allPlaceholderArtworks.length, 'placeholders');
+    return result;
   }, [artworks, deferredSearchQuery, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
   // Filter and sort marketplace products
