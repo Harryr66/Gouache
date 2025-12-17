@@ -299,14 +299,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     }
   };
 
-  const handleSubmitDiscussion = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newDiscussion.title.trim() && newDiscussion.content.trim()) {
-      // In real app, this would submit to API
-      console.log('New discussion:', newDiscussion);
-      setNewDiscussion({ title: '', content: '' });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
