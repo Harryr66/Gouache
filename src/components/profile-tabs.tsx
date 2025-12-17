@@ -334,7 +334,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     );
   }
 
-  console.log('🎯 ProfileTabs render:', { isProfessional, userId, isOwnProfile });
+  console.log('🎯 ProfileTabs render:', { isProfessional, userId, isOwnProfile, hideShop, hideLearn });
 
   if (isProfessional) {
     // For professional artists, show tabs: Portfolio, Shop (if enabled), Learn (if enabled)
@@ -347,7 +347,16 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     const defaultTab = visibleTabs[0]?.value || 'portfolio';
     const gridCols = visibleTabs.length === 1 ? 'grid-cols-1' : visibleTabs.length === 2 ? 'grid-cols-2' : visibleTabs.length === 3 ? 'grid-cols-3' : 'grid-cols-4';
     
-    console.log('✅ ProfileTabs: Rendering professional artist tabs', { visibleTabs: visibleTabs.map(t => t.value), defaultTab, hideShop, hideLearn });
+    console.log('✅ ProfileTabs: Rendering professional artist tabs', { 
+      visibleTabs: visibleTabs.map(t => t.value), 
+      defaultTab, 
+      hideShop, 
+      hideLearn,
+      hideShopType: typeof hideShop,
+      hideLearnType: typeof hideLearn,
+      hideShopValue: hideShop,
+      hideLearnValue: hideLearn
+    });
     
     return (
       <Tabs defaultValue={defaultTab} className="w-full" onValueChange={onTabChange}>

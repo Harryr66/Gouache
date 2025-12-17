@@ -303,6 +303,14 @@ export default function ProfilePage() {
               hideLearn={effectiveUser.hideLearn ?? true}
           onTabChange={setCurrentTab}
         />
+        {console.log('🔍 Own ProfileTabs props passed:', {
+          userId: effectiveUser.id,
+          isProfessional: isProf,
+          hideShop: effectiveUser.hideShop ?? true,
+          hideLearn: effectiveUser.hideLearn ?? true,
+          hideShopRaw: effectiveUser.hideShop,
+          hideLearnRaw: effectiveUser.hideLearn
+        })}
           );
         })()}
       </div>
