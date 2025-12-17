@@ -97,10 +97,33 @@ export default function CourseSubmissionPage() {
   const [lessonFormData, setLessonFormData] = useState<Record<number, {
     title: string;
     type: 'video' | 'reading' | 'assignment';
-    duration: string;
+    duration: string; // Will be extracted from video
     description: string;
     videoFile: File | null;
   }>>({});
+  
+  // Helper function to extract video duration
+  const getVideoDuration = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        const duration = video.duration;
+        const minutes = Math.floor(duration / 60);
+        const seconds = Math.floor(duration % 60);
+        resolve(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+      };
+      
+      video.onerror = () => {
+        window.URL.revokeObjectURL(video.src);
+        reject(new Error('Failed to load video metadata'));
+      };
+      
+      video.src = URL.createObjectURL(file);
+    });
+  };
   const [uploadingVideo, setUploadingVideo] = useState<Record<number, boolean>>({});
   // Supply list state
   const [newSupplyItem, setNewSupplyItem] = useState('');
@@ -998,40 +1021,58 @@ export default function CourseSubmissionPage() {
                                       </SelectContent>
                                     </Select>
                                   </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <Input
-                                      placeholder="Duration (e.g., 8 min)"
-                                      value={lessonFormData[week.week]?.duration || ''}
-                                      onChange={(e) => setLessonFormData(prev => ({
-                                        ...prev,
-                                        [week.week]: {
-                                          ...(prev[week.week] || { title: '', type: 'video', duration: '', description: '', videoFile: null }),
-                                          duration: e.target.value
-                                        }
-                                      }))}
-                                    />
-                                    {(lessonFormData[week.week]?.type || 'video') === 'video' && (
-                                      <div>
-                                        <Input
-                                          type="file"
-                                          accept="video/*"
-                                          onChange={(e) => setLessonFormData(prev => ({
-                                            ...prev,
-                                            [week.week]: {
-                                              ...(prev[week.week] || { title: '', type: 'video', duration: '', description: '', videoFile: null }),
-                                              videoFile: e.target.files?.[0] || null
+                                  {(lessonFormData[week.week]?.type || 'video') === 'video' && (
+                                    <div className="space-y-2">
+                                      <Input
+                                        type="file"
+                                        accept="video/*"
+                                        onChange={async (e) => {
+                                          const file = e.target.files?.[0] || null;
+                                          if (file) {
+                                            try {
+                                              const duration = await getVideoDuration(file);
+                                              setLessonFormData(prev => ({
+                                                ...prev,
+                                                [week.week]: {
+                                                  ...(prev[week.week] || { title: '', type: 'video', duration: '', description: '', videoFile: null }),
+                                                  videoFile: file,
+                                                  duration: duration
+                                                }
+                                              }));
+                                            } catch (error) {
+                                              console.error('Error extracting video duration:', error);
+                                              setLessonFormData(prev => ({
+                                                ...prev,
+                                                [week.week]: {
+                                                  ...(prev[week.week] || { title: '', type: 'video', duration: '', description: '', videoFile: null }),
+                                                  videoFile: file,
+                                                  duration: ''
+                                                }
+                                              }));
                                             }
-                                          }))}
-                                          className="text-sm"
-                                        />
-                                        {lessonFormData[week.week]?.videoFile && (
-                                          <p className="text-xs text-muted-foreground mt-1">
-                                            Selected: {lessonFormData[week.week]?.videoFile?.name}
-                                          </p>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
+                                          } else {
+                                            setLessonFormData(prev => ({
+                                              ...prev,
+                                              [week.week]: {
+                                                ...(prev[week.week] || { title: '', type: 'video', duration: '', description: '', videoFile: null }),
+                                                videoFile: null,
+                                                duration: ''
+                                              }
+                                            }));
+                                          }
+                                        }}
+                                        className="text-sm"
+                                      />
+                                      {lessonFormData[week.week]?.videoFile && (
+                                        <div className="text-xs text-muted-foreground space-y-1">
+                                          <p>Selected: {lessonFormData[week.week]?.videoFile?.name}</p>
+                                          {lessonFormData[week.week]?.duration && (
+                                            <p className="text-primary font-medium">Duration: {lessonFormData[week.week].duration}</p>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                   {((lessonFormData[week.week]?.type || 'video') === 'reading' || (lessonFormData[week.week]?.type || 'video') === 'assignment') && (
                                     <Textarea
                                       placeholder="Lesson content/description"
