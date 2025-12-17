@@ -251,7 +251,7 @@ export default function ArtworkPage() {
 
       {/* Fullscreen image dialog */}
       <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-        <DialogContent className="max-w-5xl w-[90vw] p-0 overflow-hidden">
+        <DialogContent className="max-w-3xl w-[90vw] max-w-[90vw] p-0 overflow-hidden">
           <button
             aria-label="Close"
             className="absolute top-3 right-3 z-10 rounded-full bg-black/60 text-white p-1 hover:bg-black/80"
