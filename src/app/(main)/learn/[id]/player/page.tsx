@@ -224,9 +224,7 @@ export default function CoursePlayerPage() {
                                 }`}
                               >
                                 <div className="flex items-center gap-2">
-                                  {lesson.type === 'video' && <Video className="h-4 w-4 text-muted-foreground" />}
-                                  {lesson.type === 'reading' && <FileText className="h-4 w-4 text-muted-foreground" />}
-                                  {lesson.type === 'assignment' && <ClipboardList className="h-4 w-4 text-muted-foreground" />}
+                                  <Video className="h-4 w-4 text-muted-foreground" />
                                   <span className={`text-sm flex-1 ${isSelected ? 'font-medium' : ''}`}>
                                     {lesson.title}
                                   </span>
@@ -279,7 +277,7 @@ export default function CoursePlayerPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {currentLesson.type === 'video' && currentLesson.videoUrl ? (
+                  {currentLesson.videoUrl ? (
                     <div className="aspect-video bg-black rounded-lg overflow-hidden">
                       <VideoPlayer
                         videoUrl={currentLesson.videoUrl}
@@ -288,25 +286,23 @@ export default function CoursePlayerPage() {
                         autoplay={false}
                       />
                     </div>
-                  ) : currentLesson.type === 'reading' || currentLesson.type === 'assignment' ? (
-                    <div className="prose max-w-none p-6 bg-muted/30 rounded-lg">
-                      {currentLesson.content ? (
-                        <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
-                      ) : (
-                        <p className="text-muted-foreground">No content available for this lesson.</p>
-                      )}
-                    </div>
                   ) : (
                     <div className="p-12 text-center text-muted-foreground">
                       <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No content available for this lesson.</p>
+                      <p>No video available for this lesson.</p>
                     </div>
                   )}
 
-                  {currentLesson.description && (
+                  {(currentLesson.description || currentLesson.content) && (
                     <div className="p-4 bg-muted/30 rounded-lg">
-                      <h3 className="font-medium mb-2">About this lesson</h3>
-                      <p className="text-sm text-muted-foreground">{currentLesson.description}</p>
+                      <h3 className="font-medium mb-2">Notes</h3>
+                      <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
+                        {currentLesson.description ? (
+                          <p className="whitespace-pre-wrap">{currentLesson.description}</p>
+                        ) : currentLesson.content ? (
+                          <div dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
+                        ) : null}
+                      </div>
                     </div>
                   )}
 
