@@ -263,7 +263,7 @@ function DiscoverPageContent() {
   const [visibleCount, setVisibleCount] = useState(18); // Start with 3 rows of 6 items
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  // Default views: Artwork grid, Market & Events list (single tile) on mobile
+  // Default views: Artwork grid, Market list, Events grid on mobile
   const [artworkView, setArtworkView] = useState<'grid' | 'list'>('grid');
   const [marketView, setMarketView] = useState<'grid' | 'list'>('list');
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
@@ -284,7 +284,7 @@ function DiscoverPageContent() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Force grid view on desktop (only artwork); events list default only on mobile
+  // Force grid view on desktop (only artwork); events grid default on mobile too
   useEffect(() => {
     if (!isMobile) {
       setArtworkView('grid');
@@ -294,7 +294,7 @@ function DiscoverPageContent() {
       // On mobile, ensure correct defaults
       setArtworkView('grid');
       setMarketView('list');
-      setEventsView('list');
+      setEventsView('grid'); // Events use grid view on mobile
     }
   }, [isMobile]);
 
