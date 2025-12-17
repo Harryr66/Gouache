@@ -94,12 +94,15 @@ export default function CourseSubmissionPage() {
   // Curriculum builder state
   const [currentWeek, setCurrentWeek] = useState(1);
   const [weekTitle, setWeekTitle] = useState('');
-  const [newLessonTitle, setNewLessonTitle] = useState('');
-  const [newLessonType, setNewLessonType] = useState<'video' | 'reading' | 'assignment'>('video');
-  const [newLessonDuration, setNewLessonDuration] = useState('');
-  const [newLessonDescription, setNewLessonDescription] = useState('');
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
+  // Lesson form state per week - each week has its own lesson form data
+  const [lessonFormData, setLessonFormData] = useState<Record<number, {
+    title: string;
+    type: 'video' | 'reading' | 'assignment';
+    duration: string;
+    description: string;
+    videoFile: File | null;
+  }>>({});
+  const [uploadingVideo, setUploadingVideo] = useState<Record<number, boolean>>({});
   // Supply list state
   const [newSupplyItem, setNewSupplyItem] = useState('');
   const [newSupplyBrand, setNewSupplyBrand] = useState('');
@@ -286,7 +289,9 @@ export default function CourseSubmissionPage() {
   };
 
   const addLesson = async (weekNumber: number) => {
-    if (!newLessonTitle.trim()) {
+    const weekFormData = lessonFormData[weekNumber] || { title: '', type: 'video' as const, duration: '', description: '', videoFile: null };
+    
+    if (!weekFormData.title.trim()) {
       toast({
         title: "Lesson title required",
         description: "Please enter a title for this lesson.",
@@ -298,12 +303,12 @@ export default function CourseSubmissionPage() {
     let videoUrl = '';
     
     // Upload video if it's a video lesson and file is selected
-    if (newLessonType === 'video' && selectedVideoFile) {
-      setUploadingVideo(true);
+    if (weekFormData.type === 'video' && weekFormData.videoFile) {
+      setUploadingVideo(prev => ({ ...prev, [weekNumber]: true }));
       try {
         if (!user) throw new Error('User not authenticated');
-        const videoRef = ref(storage, `courses/${user.id}/${Date.now()}_${selectedVideoFile.name}`);
-        await uploadBytes(videoRef, selectedVideoFile);
+        const videoRef = ref(storage, `courses/${user.id}/${Date.now()}_${weekFormData.videoFile.name}`);
+        await uploadBytes(videoRef, weekFormData.videoFile);
         videoUrl = await getDownloadURL(videoRef);
         toast({
           title: "Video uploaded",
@@ -316,10 +321,10 @@ export default function CourseSubmissionPage() {
           description: "Failed to upload video. Please try again.",
           variant: "destructive",
         });
-        setUploadingVideo(false);
+        setUploadingVideo(prev => ({ ...prev, [weekNumber]: false }));
         return;
       }
-      setUploadingVideo(false);
+      setUploadingVideo(prev => ({ ...prev, [weekNumber]: false }));
     }
 
     setFormData(prev => {
@@ -332,14 +337,14 @@ export default function CourseSubmissionPage() {
               ...week.lessons,
               {
                 id: `${Date.now()}`,
-                title: newLessonTitle.trim(),
-                description: newLessonDescription.trim() || undefined,
-                type: newLessonType,
-                duration: newLessonDuration.trim() || undefined,
+                title: weekFormData.title.trim(),
+                description: weekFormData.description.trim() || undefined,
+                type: weekFormData.type,
+                duration: weekFormData.duration.trim() || undefined,
                 videoUrl: videoUrl || undefined,
-                content: newLessonType !== 'video' ? newLessonDescription.trim() || undefined : undefined,
+                content: weekFormData.type !== 'video' ? weekFormData.description.trim() || undefined : undefined,
                 order: lessonOrder,
-                isPreview: week.lessons.length === 0 && newLessonType === 'video' // First video lesson is preview
+                isPreview: week.lessons.length === 0 && weekFormData.type === 'video' // First video lesson is preview
               }
             ]
           };
@@ -349,12 +354,11 @@ export default function CourseSubmissionPage() {
       return { ...prev, curriculum: updatedCurriculum };
     });
 
-    // Reset form
-    setNewLessonTitle('');
-    setNewLessonDescription('');
-    setNewLessonDuration('');
-    setNewLessonType('video');
-    setSelectedVideoFile(null);
+    // Reset form for this week
+    setLessonFormData(prev => ({
+      ...prev,
+      [weekNumber]: { title: '', type: 'video', duration: '', description: '', videoFile: null }
+    }));
   };
 
   const removeLesson = (weekNumber: number, lessonId: string) => {
@@ -1013,10 +1017,25 @@ export default function CourseSubmissionPage() {
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     <Input
                                       placeholder="Lesson title"
-                                      value={newLessonTitle}
-                                      onChange={(e) => setNewLessonTitle(e.target.value)}
+                                      value={lessonFormData[week.week]?.title || ''}
+                                      onChange={(e) => setLessonFormData(prev => ({
+                                        ...prev,
+                                        [week.week]: {
+                                          ...(prev[week.week] || { title: '', type: 'video', duration: '', description: '', videoFile: null }),
+                                          title: e.target.value
+                                        }
+                                      }))}
                                     />
-                                    <Select value={newLessonType} onValueChange={(v: any) => setNewLessonType(v)}>
+                                    <Select 
+                                      value={lessonFormData[week.week]?.type || 'video'} 
+                                      onValueChange={(v: any) => setLessonFormData(prev => ({
+                                        ...prev,
+                                        [week.week]: {
+                                          ...(prev[week.week] || { title: '', type: 'video', duration: '', description: '', videoFile: null }),
+                                          type: v
+                                        }
+                                      }))}
+                                    >
                                       <SelectTrigger>
                                         <SelectValue placeholder="Type" />
                                       </SelectTrigger>
@@ -1030,30 +1049,48 @@ export default function CourseSubmissionPage() {
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     <Input
                                       placeholder="Duration (e.g., 8 min)"
-                                      value={newLessonDuration}
-                                      onChange={(e) => setNewLessonDuration(e.target.value)}
+                                      value={lessonFormData[week.week]?.duration || ''}
+                                      onChange={(e) => setLessonFormData(prev => ({
+                                        ...prev,
+                                        [week.week]: {
+                                          ...(prev[week.week] || { title: '', type: 'video', duration: '', description: '', videoFile: null }),
+                                          duration: e.target.value
+                                        }
+                                      }))}
                                     />
-                                    {newLessonType === 'video' && (
+                                    {(lessonFormData[week.week]?.type || 'video') === 'video' && (
                                       <div>
                                         <Input
                                           type="file"
                                           accept="video/*"
-                                          onChange={(e) => setSelectedVideoFile(e.target.files?.[0] || null)}
+                                          onChange={(e) => setLessonFormData(prev => ({
+                                            ...prev,
+                                            [week.week]: {
+                                              ...(prev[week.week] || { title: '', type: 'video', duration: '', description: '', videoFile: null }),
+                                              videoFile: e.target.files?.[0] || null
+                                            }
+                                          }))}
                                           className="text-sm"
                                         />
-                                        {selectedVideoFile && (
+                                        {lessonFormData[week.week]?.videoFile && (
                                           <p className="text-xs text-muted-foreground mt-1">
-                                            Selected: {selectedVideoFile.name}
+                                            Selected: {lessonFormData[week.week].videoFile.name}
                                           </p>
                                         )}
                                       </div>
                                     )}
                                   </div>
-                                  {(newLessonType === 'reading' || newLessonType === 'assignment') && (
+                                  {((lessonFormData[week.week]?.type || 'video') === 'reading' || (lessonFormData[week.week]?.type || 'video') === 'assignment') && (
                                     <Textarea
                                       placeholder="Lesson content/description"
-                                      value={newLessonDescription}
-                                      onChange={(e) => setNewLessonDescription(e.target.value)}
+                                      value={lessonFormData[week.week]?.description || ''}
+                                      onChange={(e) => setLessonFormData(prev => ({
+                                        ...prev,
+                                        [week.week]: {
+                                          ...(prev[week.week] || { title: '', type: 'video', duration: '', description: '', videoFile: null }),
+                                          description: e.target.value
+                                        }
+                                      }))}
                                       rows={3}
                                     />
                                   )}
@@ -1061,9 +1098,9 @@ export default function CourseSubmissionPage() {
                                     type="button"
                                     onClick={() => addLesson(week.week)}
                                     size="sm"
-                                    disabled={uploadingVideo || !newLessonTitle.trim()}
+                                    disabled={uploadingVideo[week.week] || !(lessonFormData[week.week]?.title || '').trim()}
                                   >
-                                    {uploadingVideo ? (
+                                    {uploadingVideo[week.week] ? (
                                       <>Uploading...</>
                                     ) : (
                                       <>
