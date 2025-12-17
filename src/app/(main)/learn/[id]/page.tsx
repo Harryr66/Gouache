@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Star, 
   Users, 
@@ -193,6 +194,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [newComment, setNewComment] = useState('');
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(800, 450);
@@ -358,7 +360,20 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   className="w-full h-64 object-cover"
                 />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <Button size="lg" className="bg-background hover:bg-background/90 text-foreground border-2 border-foreground/20 shadow-lg">
+                  <Button 
+                    size="lg" 
+                    className="bg-background hover:bg-background/90 text-foreground border-2 border-foreground/20 shadow-lg"
+                    onClick={() => {
+                      if (course.previewVideoUrl) {
+                        setShowPreviewModal(true);
+                      } else {
+                        toast({
+                          title: "No preview available",
+                          description: "This course doesn't have a preview video yet.",
+                        });
+                      }
+                    }}
+                  >
                     <Play className="h-5 w-5 mr-2" />
                     Preview Course
                   </Button>
@@ -694,6 +709,27 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
           </div>
         </div>
       </div>
+
+      {/* Preview Video Modal */}
+      <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
+        <DialogContent className="max-w-4xl w-full">
+          <DialogHeader>
+            <DialogTitle>Course Preview</DialogTitle>
+          </DialogHeader>
+          {course.previewVideoUrl && (
+            <div className="aspect-video w-full">
+              <video
+                src={course.previewVideoUrl}
+                controls
+                autoPlay
+                className="w-full h-full rounded-lg"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
