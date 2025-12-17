@@ -505,7 +505,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     <div className="space-y-4">
                       {course.curriculum.map((week: any, weekIndex: number) => (
                         <div key={weekIndex} className="border rounded-lg p-4">
-                          <h4 className="font-semibold mb-3">{week.title}</h4>
+                          {week.title !== 'Lessons' && <h4 className="font-semibold mb-3">{week.title}</h4>}
                           <div className="space-y-2">
                             {week.lessons.map((lesson: any) => (
                               <div key={lesson.id} className="flex items-center justify-between p-2 rounded bg-muted/50">

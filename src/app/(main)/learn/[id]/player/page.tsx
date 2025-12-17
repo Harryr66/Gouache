@@ -205,8 +205,7 @@ export default function CoursePlayerPage() {
                   {course.curriculum?.map((week: any) => (
                     <div key={week.week} className="border-b last:border-b-0">
                       <div className="p-3 bg-muted/30">
-                        <h3 className="font-medium text-sm">Week {week.week}</h3>
-                        <p className="text-xs text-muted-foreground">{week.title}</p>
+                        <h3 className="font-medium text-sm">{week.title}</h3>
                       </div>
                       <div className="space-y-1">
                         {week.lessons
@@ -261,7 +260,7 @@ export default function CoursePlayerPage() {
                     <div>
                       <CardTitle>{currentLesson.title}</CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Week {selectedWeek} • {currentWeek?.title}
+                        {currentWeek?.title || 'Lessons'}
                       </p>
                     </div>
                     {!enrollment.completedLessons.includes(currentLesson.id) && (
