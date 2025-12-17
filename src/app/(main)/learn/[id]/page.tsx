@@ -720,10 +720,25 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   
                   {isEnrolled ? (
                     <div className="space-y-3">
-                      <Button className="w-full gradient-button" size="lg">
-                        <Play className="h-4 w-4 mr-2" />
-                        Continue Learning
-                      </Button>
+                      {course.courseType === 'hosted' ? (
+                        <Button 
+                          className="w-full gradient-button" 
+                          size="lg"
+                          onClick={() => router.push(`/learn/${courseId}/player`)}
+                        >
+                          <Play className="h-4 w-4 mr-2" />
+                          Continue Learning
+                        </Button>
+                      ) : (
+                        <Button 
+                          className="w-full gradient-button" 
+                          size="lg"
+                          onClick={() => course.externalUrl && window.open(course.externalUrl, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Access Course
+                        </Button>
+                      )}
                       <Button variant="outline" className="w-full">
                         <Download className="h-4 w-4 mr-2" />
                         Download Materials
@@ -736,14 +751,16 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                         size="lg"
                         onClick={handleEnroll}
                       >
-                        {isEnrolled 
-                          ? (course.courseType === 'hosted' ? 'Continue Learning' : 'Access Course')
-                          : (course.courseType === 'affiliate' ? 'Purchase & Access Course' : 'Enroll Now')
-                        }
+                        {course.courseType === 'affiliate' ? 'Purchase & Access Course' : 'Enroll Now'}
                       </Button>
                       {course.courseType === 'affiliate' && course.externalUrl && (
                         <p className="text-xs text-muted-foreground text-center mt-2">
                           This course is hosted externally. You&apos;ll be redirected after purchase.
+                        </p>
+                      )}
+                      {course.courseType === 'hosted' && (
+                        <p className="text-xs text-muted-foreground text-center mt-2">
+                          This course is hosted on Gouache. You&apos;ll have full access to all lessons and materials.
                         </p>
                       )}
                     </>
