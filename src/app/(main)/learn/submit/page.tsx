@@ -87,6 +87,8 @@ export default function CourseSubmissionPage() {
     hostingPlatform: '',
     // Publish options
     isPublished: false,
+    // Originality disclaimer
+    originalityDisclaimer: false,
   });
 
   const [newTag, setNewTag] = useState('');
@@ -399,7 +401,7 @@ export default function CourseSubmissionPage() {
     }
 
     // Validate required fields (based on step)
-    const requiredFields = ['title', 'description', 'category', 'subcategory', 'difficulty', 'duration', 'price', 'instructorBio'];
+    const requiredFields = ['title', 'description', 'category', 'subcategory', 'difficulty', 'duration', 'price', 'instructorBio', 'originalityDisclaimer'];
     
     // For hosted courses, validate curriculum
     if (formData.courseType === 'hosted') {
@@ -418,6 +420,16 @@ export default function CourseSubmissionPage() {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate originality disclaimer
+    if (!formData.originalityDisclaimer) {
+      toast({
+        title: "Originality Confirmation Required",
+        description: "Please confirm that this is your own original work and that AI has not been used.",
         variant: "destructive",
       });
       return;
@@ -1231,11 +1243,20 @@ export default function CourseSubmissionPage() {
                 {activeStep === 'publish' && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Publish Settings</h3>
-                    <div className="flex items-center gap-3">
-                      <input id="publish-toggle" type="checkbox" checked={formData.isPublished} onChange={(e)=>handleInputChange('isPublished', e.target.checked)} />
-                      <Label htmlFor="publish-toggle">Publish immediately after approval</Label>
+                    <div className="flex items-start gap-3 p-4 border rounded-lg bg-muted/30">
+                      <input 
+                        id="originality-disclaimer" 
+                        type="checkbox" 
+                        checked={formData.originalityDisclaimer} 
+                        onChange={(e)=>handleInputChange('originalityDisclaimer', e.target.checked)}
+                        required
+                        className="mt-1"
+                      />
+                      <Label htmlFor="originality-disclaimer" className="flex-1 cursor-pointer">
+                        I confirm that this is my own original work and that AI has not been used to create the content of this course.
+                      </Label>
                     </div>
-                    <p className="text-sm text-muted-foreground">Your course will be reviewed by Gouache. If approved, it will be published automatically if enabled.</p>
+                    <p className="text-sm text-muted-foreground">Your course will be reviewed by Gouache. If approved, it will be published automatically.</p>
                   </div>
                 )}
 
