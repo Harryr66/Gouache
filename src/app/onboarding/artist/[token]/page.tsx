@@ -50,6 +50,10 @@ interface FormState {
   bio: string;
   location: string;
   website: string;
+  aboutInstructor: string;
+  instagram: string;
+  tiktok: string;
+  x: string;
 }
 
 interface PortfolioImage {
@@ -120,7 +124,11 @@ export default function ArtistOnboardingPage() {
     email: '',
     bio: '',
     location: '',
-    website: ''
+    website: '',
+    aboutInstructor: '',
+    instagram: '',
+    tiktok: '',
+    x: ''
   });
   const [portfolioImages, setPortfolioImages] = useState<PortfolioImage[]>([]);
   const [pendingEvent, setPendingEvent] = useState<EventDraft>({
@@ -916,6 +924,13 @@ export default function ArtistOnboardingPage() {
           bio: formData.bio.trim() || null,
           location: formData.location.trim() || null,
           website: formData.website.trim() || null,
+          aboutInstructor: formData.aboutInstructor.trim() || null,
+          socialLinks: {
+            ...(formData.instagram.trim() ? { instagram: formData.instagram.trim() } : {}),
+            ...(formData.x.trim() ? { x: formData.x.trim() } : {}),
+            ...(formData.tiktok.trim() ? { tiktok: formData.tiktok.trim() } : {}),
+            ...(formData.website.trim() ? { website: formData.website.trim() } : {})
+          },
           accountRole: 'artist',
           isProfessional: true,
           tipJarEnabled: true,
@@ -1291,6 +1306,64 @@ export default function ArtistOnboardingPage() {
                   value={formData.website}
                   onChange={(event) => setFormData((previous) => ({ ...previous, website: event.target.value }))}
                 />
+              </div>
+            </div>
+
+            {/* About the Instructor Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="text-lg font-semibold text-foreground">About the Instructor</h3>
+              <p className="text-sm text-muted-foreground">This information will appear on your course pages. All fields are optional.</p>
+              
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="aboutInstructor">Short Description (optional, max 2 sentences)</label>
+                <Textarea
+                  id="aboutInstructor"
+                  placeholder="Write a brief description about yourself as an instructor..."
+                  value={formData.aboutInstructor}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    // Limit to 2 sentences
+                    const sentences = value.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                    if (sentences.length <= 2) {
+                      setFormData((previous) => ({ ...previous, aboutInstructor: value }));
+                    }
+                  }}
+                  rows={3}
+                  maxLength={300}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {formData.aboutInstructor.split(/[.!?]+/).filter(s => s.trim().length > 0).length}/2 sentences
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="instagram">Instagram (optional)</label>
+                  <Input
+                    id="instagram"
+                    placeholder="@username or URL"
+                    value={formData.instagram}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, instagram: event.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="x">X / Twitter (optional)</label>
+                  <Input
+                    id="x"
+                    placeholder="@username or URL"
+                    value={formData.x}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, x: event.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="tiktok">TikTok (optional)</label>
+                  <Input
+                    id="tiktok"
+                    placeholder="@username or URL"
+                    value={formData.tiktok}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, tiktok: event.target.value }))}
+                  />
+                </div>
               </div>
             </div>
           )}

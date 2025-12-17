@@ -406,12 +406,16 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
             </div>
 
             <Button
-              onClick={handleContinueOnboarding}
-              className="w-full"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleContinueOnboarding();
+              }}
+              className="w-full gradient-button"
               size="lg"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
-              Continue Onboarding
+              Set up Stripe
             </Button>
           </div>
         )}
