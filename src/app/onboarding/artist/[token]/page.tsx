@@ -1247,125 +1247,127 @@ export default function ArtistOnboardingPage() {
           )}
 
           {currentStep === 1 && (
-            <div className="grid gap-6">
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-foreground" htmlFor="displayName">Artist name</label>
-                <Input
-                  id="displayName"
-                  placeholder="Elena Vance"
-                  value={formData.displayName}
-                  onChange={(event) => setFormData((previous) => ({ ...previous, displayName: event.target.value }))}
-                />
-              </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-foreground" htmlFor="handle">Public handle</label>
-                <Input
-                  id="handle"
-                  placeholder="elena_vance"
-                  value={formData.handle}
-                  onChange={(event) => setFormData((previous) => ({ ...previous, handle: event.target.value }))}
-                />
-                <p className="text-xs text-muted-foreground">We recommend something short and memorable. You can change it later.</p>
-              </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-foreground" htmlFor="email">Email Address *</label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={formData.email}
-                  onChange={(event) => setFormData((previous) => ({ ...previous, email: event.target.value }))}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">Required for customer inquiries and course access links.</p>
-              </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-foreground" htmlFor="bio">Short bio</label>
-                <Textarea
-                  id="bio"
-                  placeholder="Share what drives your practice, recurring themes, or the mediums you work with."
-                  value={formData.bio}
-                  onChange={(event) => setFormData((previous) => ({ ...previous, bio: event.target.value }))}
-                  rows={6}
-                />
-              </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-foreground" htmlFor="location">Primary location</label>
-                <Input
-                  id="location"
-                  placeholder="City, Country"
-                  value={formData.location}
-                  onChange={(event) => setFormData((previous) => ({ ...previous, location: event.target.value }))}
-                />
-              </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-foreground" htmlFor="website">Website (optional)</label>
-                <Input
-                  id="website"
-                  placeholder="https://yourwebsite.com"
-                  value={formData.website}
-                  onChange={(event) => setFormData((previous) => ({ ...previous, website: event.target.value }))}
-                />
-              </div>
-            </div>
-
-            {/* About the Instructor Section */}
-            <div className="space-y-4 pt-4 border-t">
-              <h3 className="text-lg font-semibold text-foreground">About the Instructor</h3>
-              <p className="text-sm text-muted-foreground">This information will appear on your course pages. All fields are optional.</p>
-              
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-foreground" htmlFor="aboutInstructor">Short Description (optional, max 2 sentences)</label>
-                <Textarea
-                  id="aboutInstructor"
-                  placeholder="Write a brief description about yourself as an instructor..."
-                  value={formData.aboutInstructor}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    // Limit to 2 sentences
-                    const sentences = value.split(/[.!?]+/).filter(s => s.trim().length > 0);
-                    if (sentences.length <= 2) {
-                      setFormData((previous) => ({ ...previous, aboutInstructor: value }));
-                    }
-                  }}
-                  rows={3}
-                  maxLength={300}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {formData.aboutInstructor.split(/[.!?]+/).filter(s => s.trim().length > 0).length}/2 sentences
-                </p>
+            <>
+              <div className="grid gap-6">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="displayName">Artist name</label>
+                  <Input
+                    id="displayName"
+                    placeholder="Elena Vance"
+                    value={formData.displayName}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, displayName: event.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="handle">Public handle</label>
+                  <Input
+                    id="handle"
+                    placeholder="elena_vance"
+                    value={formData.handle}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, handle: event.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">We recommend something short and memorable. You can change it later.</p>
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="email">Email Address *</label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={formData.email}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, email: event.target.value }))}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Required for customer inquiries and course access links.</p>
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="bio">Short bio</label>
+                  <Textarea
+                    id="bio"
+                    placeholder="Share what drives your practice, recurring themes, or the mediums you work with."
+                    value={formData.bio}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, bio: event.target.value }))}
+                    rows={6}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="location">Primary location</label>
+                  <Input
+                    id="location"
+                    placeholder="City, Country"
+                    value={formData.location}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, location: event.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="website">Website (optional)</label>
+                  <Input
+                    id="website"
+                    placeholder="https://yourwebsite.com"
+                    value={formData.website}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, website: event.target.value }))}
+                  />
+                </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              {/* About the Instructor Section */}
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-lg font-semibold text-foreground">About the Instructor</h3>
+                <p className="text-sm text-muted-foreground">This information will appear on your course pages. All fields are optional.</p>
+                
                 <div className="grid gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="instagram">Instagram (optional)</label>
-                  <Input
-                    id="instagram"
-                    placeholder="@username or URL"
-                    value={formData.instagram}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, instagram: event.target.value }))}
+                  <label className="text-sm font-medium text-foreground" htmlFor="aboutInstructor">Short Description (optional, max 2 sentences)</label>
+                  <Textarea
+                    id="aboutInstructor"
+                    placeholder="Write a brief description about yourself as an instructor..."
+                    value={formData.aboutInstructor}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      // Limit to 2 sentences
+                      const sentences = value.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                      if (sentences.length <= 2) {
+                        setFormData((previous) => ({ ...previous, aboutInstructor: value }));
+                      }
+                    }}
+                    rows={3}
+                    maxLength={300}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    {formData.aboutInstructor.split(/[.!?]+/).filter(s => s.trim().length > 0).length}/2 sentences
+                  </p>
                 </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="x">X / Twitter (optional)</label>
-                  <Input
-                    id="x"
-                    placeholder="@username or URL"
-                    value={formData.x}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, x: event.target.value }))}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="tiktok">TikTok (optional)</label>
-                  <Input
-                    id="tiktok"
-                    placeholder="@username or URL"
-                    value={formData.tiktok}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, tiktok: event.target.value }))}
-                  />
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium text-foreground" htmlFor="instagram">Instagram (optional)</label>
+                    <Input
+                      id="instagram"
+                      placeholder="@username or URL"
+                      value={formData.instagram}
+                      onChange={(event) => setFormData((previous) => ({ ...previous, instagram: event.target.value }))}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium text-foreground" htmlFor="x">X / Twitter (optional)</label>
+                    <Input
+                      id="x"
+                      placeholder="@username or URL"
+                      value={formData.x}
+                      onChange={(event) => setFormData((previous) => ({ ...previous, x: event.target.value }))}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium text-foreground" htmlFor="tiktok">TikTok (optional)</label>
+                    <Input
+                      id="tiktok"
+                      placeholder="@username or URL"
+                      value={formData.tiktok}
+                      onChange={(event) => setFormData((previous) => ({ ...previous, tiktok: event.target.value }))}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
 
           {currentStep === 0 && user && (
