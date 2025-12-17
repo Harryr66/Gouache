@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Trash2, Edit, Save, X, Upload } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, X, Upload, Mail } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, serverTimestamp, collection, addDoc, setDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/auth-provider';
@@ -81,7 +81,13 @@ export function PortfolioManager() {
     medium: '',
     dimensions: '',
     year: '',
-    tags: ''
+    tags: '',
+    isForSale: false,
+    price: '',
+    priceType: 'fixed' as 'fixed' | 'contact', // 'fixed' = set price, 'contact' = contact artist
+    currency: 'USD',
+    deliveryScope: 'worldwide' as 'worldwide' | 'specific',
+    deliveryCountries: ''
   });
 
   useEffect(() => {
@@ -282,8 +288,25 @@ export function PortfolioManager() {
         tags: newItem.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
         createdAt: now, // Use Date object instead of serverTimestamp to avoid placeholder issues
         showInPortfolio: true,
-        deleted: false
+        deleted: false,
+        isForSale: newItem.isForSale || false,
+        showInShop: newItem.isForSale || false,
       };
+
+      // Add sale-related fields if for sale
+      if (newItem.isForSale) {
+        if (newItem.priceType === 'fixed' && newItem.price) {
+          portfolioItem.price = parseFloat(newItem.price) * 100; // Convert to cents
+          portfolioItem.currency = newItem.currency || 'USD';
+        } else if (newItem.priceType === 'contact') {
+          portfolioItem.priceType = 'contact';
+          portfolioItem.contactForPrice = true;
+        }
+        portfolioItem.deliveryScope = newItem.deliveryScope || 'worldwide';
+        if (newItem.deliveryScope === 'specific' && newItem.deliveryCountries) {
+          portfolioItem.deliveryCountries = newItem.deliveryCountries;
+        }
+      }
 
       console.log('📤 Uploading portfolio item:', {
         userId: user.id,
@@ -369,6 +392,55 @@ export function PortfolioManager() {
           updatedAt: now
         });
         console.log('✅ Firestore updateDoc completed successfully');
+
+        // If marked for sale, also add to artworks collection
+        if (newItem.isForSale) {
+          try {
+            const artworkData: any = {
+              id: portfolioItem.id,
+              title: portfolioItem.title,
+              description: portfolioItem.description,
+              imageUrl: portfolioItem.imageUrl,
+              artist: {
+                userId: user.id,
+                name: user.displayName || user.username || 'Artist',
+                handle: user.username || user.handle,
+                avatarUrl: user.avatarUrl || null,
+              },
+              tags: portfolioItem.tags,
+              isForSale: true,
+              showInShop: true,
+              category: portfolioItem.medium || 'Other',
+              medium: portfolioItem.medium,
+              dimensions: portfolioItem.dimensions,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+              views: 0,
+              likes: 0,
+              commentsCount: 0,
+            };
+
+            // Add sale-related fields
+            if (newItem.priceType === 'fixed' && newItem.price) {
+              artworkData.price = parseFloat(newItem.price) * 100; // Convert to cents
+              artworkData.currency = newItem.currency || 'USD';
+            } else if (newItem.priceType === 'contact') {
+              artworkData.priceType = 'contact';
+              artworkData.contactForPrice = true;
+            }
+            artworkData.deliveryScope = newItem.deliveryScope || 'worldwide';
+            if (newItem.deliveryScope === 'specific' && newItem.deliveryCountries) {
+              artworkData.deliveryCountries = newItem.deliveryCountries;
+            }
+
+            // Use setDoc with the artwork ID to ensure it uses the same ID
+            await setDoc(doc(db, 'artworks', portfolioItem.id), artworkData);
+            console.log('✅ Artwork added to artworks collection for shop');
+          } catch (artworkError) {
+            console.error('⚠️ Failed to add artwork to artworks collection (non-critical):', artworkError);
+            // Don't throw - portfolio save is more important
+          }
+        }
       } catch (updateError) {
         console.error('❌ Firestore updateDoc failed:', updateError);
         throw updateError;
@@ -439,7 +511,13 @@ export function PortfolioManager() {
         medium: '',
         dimensions: '',
         year: '',
-        tags: ''
+        tags: '',
+        isForSale: false,
+        price: '',
+        priceType: 'fixed',
+        currency: 'USD',
+        deliveryScope: 'worldwide',
+        deliveryCountries: ''
       });
       setShowAddForm(false);
 
@@ -674,10 +752,133 @@ export function PortfolioManager() {
               />
             </div>
 
+            {/* For Sale Toggle */}
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Mark as For Sale</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable this to list this artwork in your shop. Make sure your Shop tab is enabled in Profile Settings.
+                  </p>
+                </div>
+                <Switch
+                  checked={newItem.isForSale}
+                  onCheckedChange={(checked) => setNewItem(prev => ({ ...prev, isForSale: checked }))}
+                />
+              </div>
+
+              {newItem.isForSale && (
+                <div className="space-y-4 pl-4 border-l-2">
+                  {/* Price Type */}
+                  <div className="space-y-2">
+                    <Label>Pricing</Label>
+                    <Select
+                      value={newItem.priceType}
+                      onValueChange={(value: 'fixed' | 'contact') => setNewItem(prev => ({ ...prev, priceType: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Set Price</SelectItem>
+                        <SelectItem value="contact">Contact Artist</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Fixed Price Fields */}
+                  {newItem.priceType === 'fixed' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="price">Price *</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={newItem.price}
+                          onChange={(e) => setNewItem(prev => ({ ...prev, price: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="currency">Currency</Label>
+                        <Select
+                          value={newItem.currency}
+                          onValueChange={(value) => setNewItem(prev => ({ ...prev, currency: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">USD ($)</SelectItem>
+                            <SelectItem value="GBP">GBP (£)</SelectItem>
+                            <SelectItem value="EUR">EUR (€)</SelectItem>
+                            <SelectItem value="CAD">CAD (C$)</SelectItem>
+                            <SelectItem value="AUD">AUD (A$)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Contact Artist Note */}
+                  {newItem.priceType === 'contact' && (
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Customers will be prompted to email you to inquire about pricing.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Delivery Location */}
+                  <div className="space-y-2">
+                    <Label>Delivery Location</Label>
+                    <Select
+                      value={newItem.deliveryScope}
+                      onValueChange={(value: 'worldwide' | 'specific') => setNewItem(prev => ({ ...prev, deliveryScope: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="worldwide">Worldwide</SelectItem>
+                        <SelectItem value="specific">Specific Countries</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {newItem.deliveryScope === 'specific' && (
+                      <Input
+                        placeholder="Enter countries (comma-separated)"
+                        value={newItem.deliveryCountries}
+                        onChange={(e) => setNewItem(prev => ({ ...prev, deliveryCountries: e.target.value }))}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowAddForm(false);
+                  setNewItem({
+                    title: '',
+                    description: '',
+                    medium: '',
+                    dimensions: '',
+                    year: '',
+                    tags: '',
+                    isForSale: false,
+                    price: '',
+                    priceType: 'fixed',
+                    currency: 'USD',
+                    deliveryScope: 'worldwide',
+                    deliveryCountries: ''
+                  });
+                }}
               >
                 Cancel
               </Button>

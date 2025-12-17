@@ -84,8 +84,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           isAdmin: false,
           tipJarEnabled: false,        // Coffee/tips hidden by default
           suggestionsEnabled: false,   // Suggestions hidden by default
-          hideShop: false,   // Tabs enabled by default
-          hideLearn: true,   // Learn hidden by default for MVP
+          hideShop: true,   // Shop hidden by default
+          hideLearn: true,   // Learn hidden by default
           socialLinks: {},
           showcaseLocations: [],
           preferences: {

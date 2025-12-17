@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, collection, addDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, increment } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
   // Initialize Stripe inside the handler to avoid build-time initialization
@@ -108,8 +108,11 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   try {
     // Extract metadata for platform commission tracking
     const platformCommissionAmount = parseInt(paymentIntent.metadata.platformCommissionAmount || paymentIntent.metadata.platformDonationAmount || '0');
-    const platformCommissionPercentage = parseFloat(paymentIntent.metadata.platformCommissionPercentage || paymentIntent.metadata.platformDonationPercentage || '5');
+    const platformCommissionPercentage = parseFloat(paymentIntent.metadata.platformCommissionPercentage || paymentIntent.metadata.platformDonationPercentage || '0');
     const productAmount = parseInt(paymentIntent.metadata.productAmount || paymentIntent.amount.toString());
+    
+    // Artist receives full payment (0% commission)
+    const artistPayoutAmount = paymentIntent.amount - (paymentIntent.application_fee_amount || 0);
     
     // Record the sale in Firestore
     await addDoc(collection(db, 'sales'), {
@@ -121,10 +124,10 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
       applicationFeeAmount: paymentIntent.application_fee_amount || 0,
-      platformCommission: platformCommissionAmount, // 5% platform commission
-      platformCommissionPercentage, // 5% commission percentage
+      platformCommission: platformCommissionAmount, // 0% platform commission - artist gets 100%
+      platformCommissionPercentage, // 0% commission percentage
       productAmount, // Original product price
-      artistPayout: paymentIntent.amount - (paymentIntent.application_fee_amount || 0),
+      artistPayout: artistPayoutAmount, // Full amount (100% to artist)
       status: 'completed',
       itemTitle: itemTitle || 'Untitled',
       createdAt: new Date(),
@@ -134,6 +137,9 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     // Update item status based on type
     if (itemType === 'course') {
       const courseRef = doc(db, 'courses', itemId);
+      const courseDoc = await getDoc(courseRef);
+      const courseData = courseDoc.data();
+      
       await updateDoc(courseRef, {
         enrollments: increment(1),
         updatedAt: new Date(),
@@ -146,6 +152,54 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         paymentIntentId: paymentIntent.id,
         enrolledAt: new Date(),
       });
+
+      // Send course access email to customer
+      try {
+        const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
+        const buyerData = buyerDoc.data();
+        const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
+        
+        if (buyerEmail && courseData?.externalUrl) {
+          const { Resend } = await import('resend');
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          
+          const courseAccessUrl = courseData.externalUrl;
+          const courseTitle = courseData.title || itemTitle || 'Course';
+          
+          await resend.emails.send({
+            from: process.env.ARTIST_INVITE_FROM_EMAIL || 'Gouache <noreply@gouache.art>',
+            to: buyerEmail,
+            subject: `Access Your Course: ${courseTitle}`,
+            html: `
+              <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #111827;">
+                <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">Course Purchase Confirmed</h1>
+                <p style="font-size: 16px; line-height: 1.5;">Thank you for your purchase!</p>
+                <p style="font-size: 16px; line-height: 1.5; margin-top: 16px;">
+                  You now have access to: <strong>${courseTitle}</strong>
+                </p>
+                <p style="margin: 24px 0;">
+                  <a
+                    href="${courseAccessUrl}"
+                    style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 20px; border-radius: 999px; font-weight: 600; text-decoration: none;"
+                  >
+                    Access Course
+                  </a>
+                </p>
+                <p style="font-size: 14px; line-height: 1.6; color: #6b7280;">
+                  If the button above does not work, copy and paste this link into your browser:<br />
+                  <a href="${courseAccessUrl}" style="color: #2563eb;">${courseAccessUrl}</a>
+                </p>
+                <p style="font-size: 16px; line-height: 1.5; margin-top: 32px;">Happy learning!</p>
+                <p style="font-size: 16px; font-weight: 600;">Team Gouache</p>
+              </div>
+            `,
+          });
+          console.log(`✅ Course access email sent to ${buyerEmail} for course ${itemId}`);
+        }
+      } catch (emailError) {
+        console.error('Error sending course access email:', emailError);
+        // Don't throw - email failure shouldn't break the payment flow
+      }
     } else if (itemType === 'original' || itemType === 'print') {
       const artworkRef = doc(db, 'artworks', itemId);
       await updateDoc(artworkRef, {

@@ -12,7 +12,8 @@ import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { AboutTheArtist } from '@/components/about-the-artist';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { X } from 'lucide-react';
+import { X, Mail } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface ArtworkView {
   id: string;
@@ -23,11 +24,16 @@ interface ArtworkView {
   price?: number;
   currency?: string;
   isForSale?: boolean;
+  priceType?: 'fixed' | 'contact';
+  contactForPrice?: boolean;
+  deliveryScope?: 'worldwide' | 'specific';
+  deliveryCountries?: string;
   artist?: {
     id?: string;
     name?: string;
     handle?: string;
     avatarUrl?: string | null;
+    email?: string;
   };
 }
 
@@ -60,6 +66,19 @@ export default function ArtworkPage() {
             setLoading(false);
             return;
           }
+          // Get artist email if available
+          let artistEmail = null;
+          if (data.artist?.userId || data.artist?.id) {
+            try {
+              const artistDoc = await getDoc(doc(db, 'userProfiles', data.artist?.userId || data.artist?.id));
+              if (artistDoc.exists()) {
+                artistEmail = artistDoc.data().email;
+              }
+            } catch (err) {
+              console.warn('Could not fetch artist email:', err);
+            }
+          }
+
           setArtwork({
             id: artworkId,
             title: data.title || 'Untitled',
@@ -69,11 +88,16 @@ export default function ArtworkPage() {
             price: data.price,
             currency: data.currency || 'USD',
             isForSale: data.isForSale,
+            priceType: data.priceType || (data.contactForPrice ? 'contact' : 'fixed'),
+            contactForPrice: data.contactForPrice || data.priceType === 'contact',
+            deliveryScope: data.deliveryScope,
+            deliveryCountries: data.deliveryCountries,
             artist: {
               id: data.artist?.userId || data.artist?.id,
               name: data.artist?.name,
               handle: data.artist?.handle,
               avatarUrl: data.artist?.avatarUrl ?? null,
+              email: artistEmail,
             },
           });
           setLoading(false);
@@ -101,11 +125,16 @@ export default function ArtworkPage() {
             price: match.price,
             currency: match.currency || 'USD',
             isForSale: match.isForSale,
+            priceType: match.priceType || (match.contactForPrice ? 'contact' : 'fixed'),
+            contactForPrice: match.contactForPrice || match.priceType === 'contact',
+            deliveryScope: match.deliveryScope,
+            deliveryCountries: match.deliveryCountries,
             artist: {
               id: userDoc.id,
               name: userData.displayName || userData.name || userData.username,
               handle: userData.username || userData.handle,
               avatarUrl: userData.avatarUrl ?? null,
+              email: userData.email,
             },
           });
         });
@@ -171,10 +200,31 @@ export default function ArtworkPage() {
                 />
               </div>
 
-              {artwork.isForSale && artwork.price !== undefined && (
+              {artwork.isForSale && artwork.priceType === 'contact' && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (artwork.artist?.email) {
+                        window.location.href = `mailto:${artwork.artist.email}?subject=Inquiry about ${encodeURIComponent(artwork.title)}&body=Hello, I'm interested in learning more about "${artwork.title}". Could you please provide pricing and availability information?`;
+                      } else {
+                        toast({
+                          title: 'Email not available',
+                          description: 'The artist has not provided an email address.',
+                          variant: 'destructive'
+                        });
+                      }
+                    }}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Contact Artist for Price
+                  </Button>
+                </div>
+              )}
+              {artwork.isForSale && artwork.price !== undefined && artwork.priceType !== 'contact' && (
                 <div className="flex items-center gap-2 text-sm">
                   <Badge className="bg-green-600 hover:bg-green-700 text-sm px-3 py-1">
-                    {artwork.currency || 'USD'} {artwork.price.toLocaleString()}
+                    {artwork.currency || 'USD'} {(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Badge>
                   <span className="text-muted-foreground">Available</span>
                 </div>
@@ -224,10 +274,40 @@ export default function ArtworkPage() {
                         For sale
                       </Badge>
                     )}
-                    {artwork.price !== undefined && (
+                    {artwork.isForSale && artwork.priceType === 'contact' && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            if (artwork.artist?.email) {
+                              window.location.href = `mailto:${artwork.artist.email}?subject=Inquiry about ${encodeURIComponent(artwork.title)}&body=Hello, I'm interested in learning more about "${artwork.title}". Could you please provide pricing and availability information?`;
+                            } else {
+                              toast({
+                                title: 'Email not available',
+                                description: 'The artist has not provided an email address.',
+                                variant: 'destructive'
+                              });
+                            }
+                          }}
+                        >
+                          <Mail className="h-4 w-4 mr-2" />
+                          Contact Artist for Price
+                        </Button>
+                      </div>
+                    )}
+                    {artwork.isForSale && artwork.price !== undefined && artwork.priceType !== 'contact' && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="font-medium text-foreground">Price:</span>
-                        <span>{artwork.currency || 'USD'} {artwork.price.toLocaleString()}</span>
+                        <span>{artwork.currency || 'USD'} {(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                    {artwork.deliveryScope && (
+                      <div className="text-xs text-muted-foreground">
+                        {artwork.deliveryScope === 'worldwide' 
+                          ? 'Worldwide delivery available'
+                          : artwork.deliveryCountries 
+                            ? `Delivery to: ${artwork.deliveryCountries}`
+                            : 'Delivery location specified'}
                       </div>
                     )}
                   </div>

@@ -19,6 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
 
 const STEPS = [
   'Account',
@@ -28,6 +29,7 @@ const STEPS = [
   'Events',
   'Products & Books',
   'Courses',
+  'Payment Setup',
   'Review & launch'
 ];
 
@@ -44,6 +46,7 @@ const getSupportEmail = (): string => {
 interface FormState {
   displayName: string;
   handle: string;
+  email: string;
   bio: string;
   location: string;
   website: string;
@@ -117,6 +120,7 @@ export default function ArtistOnboardingPage() {
   const [formData, setFormData] = useState<FormState>({
     displayName: '',
     handle: '',
+    email: '',
     bio: '',
     location: '',
     website: '',
@@ -313,26 +317,38 @@ export default function ArtistOnboardingPage() {
       return;
     }
 
-    // Step 1 is Welcome
+    // Step 1 is Welcome/Personal details - validate required fields (NOT skippable)
     if (currentStep === 1) {
-      setCurrentStep(2);
-      return;
-    }
-
-    // Step 2 is Personal details - validate required fields
-    if (currentStep === 2) {
-      if (!formData.displayName.trim() || !formData.handle.trim()) {
+      if (!formData.displayName.trim() || !formData.handle.trim() || !formData.email.trim()) {
         toast({
-          title: 'Add your name and handle',
-          description: 'We need both a display name and handle before moving on.',
+          title: 'Complete required fields',
+          description: 'We need your name, handle, and email address before moving on.',
           variant: 'destructive'
         });
         return;
       }
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        toast({
+          title: 'Invalid email',
+          description: 'Please enter a valid email address.',
+          variant: 'destructive'
+        });
+        return;
+      }
+      setCurrentStep(2);
+      return;
+    }
+
+    // Step 2 is Portfolio - required (NOT skippable)
+    if (currentStep === 2) {
       setCurrentStep(3);
       return;
     }
 
+    // All other steps (3, 4, 5, 6, 7) are optional and can be skipped
+    // Step 8 (Review & launch) is required and handled separately
     if (currentStep < STEPS.length - 1) {
       setCurrentStep((prev) => prev + 1);
     }
@@ -874,10 +890,21 @@ export default function ArtistOnboardingPage() {
       return;
     }
 
-    if (!formData.displayName.trim() || !formData.handle.trim()) {
+    if (!formData.displayName.trim() || !formData.handle.trim() || !formData.email.trim()) {
       toast({
-        title: 'Add your name and handle',
-        description: 'We need both a display name and handle before publishing your profile.',
+        title: 'Complete required fields',
+        description: 'We need your name, handle, and email address before publishing your profile.',
+        variant: 'destructive'
+      });
+      setCurrentStep(1);
+      return;
+    }
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      toast({
+        title: 'Invalid email',
+        description: 'Please enter a valid email address.',
         variant: 'destructive'
       });
       setCurrentStep(1);
@@ -894,6 +921,7 @@ export default function ArtistOnboardingPage() {
           name: formData.displayName.trim(),
           displayName: formData.displayName.trim(),
           handle: formData.handle.trim(),
+          email: formData.email.trim(),
           bio: formData.bio.trim() || null,
           location: formData.location.trim() || null,
           website: formData.website.trim() || null,
@@ -1105,13 +1133,13 @@ export default function ArtistOnboardingPage() {
             <CardTitle className="text-2xl font-semibold text-slate-900">{currentStepLabel}</CardTitle>
             <CardDescription className="text-slate-600">
             {currentStep === 0 && 'Create your artist account to begin. This invite is reserved for your email address.'}
-            {currentStep === 1 && "Welcome to Gouache! Let's launch your profile in just a few quick steps."}
-            {currentStep === 2 && 'Tell us how you want your personal details to appear across Gouache. Name and handle are required.'}
-            {currentStep === 3 && 'Upload highlight pieces for your portfolio. You can add images now or update your profile later.'}
-            {currentStep === 4 && 'Share any upcoming events. You can leave this empty and add events later from your profile.'}
-            {currentStep === 5 && 'List products or books you sell. You can leave this empty and add products later from your profile.'}
-            {currentStep === 6 && 'Share any courses you currently offer. You can leave this empty and add courses later from your profile.'}
-            {currentStep === 7 && 'Review everything at a glance before publishing your artist profile.'}
+            {currentStep === 1 && "Welcome to Gouache! Let's set up your profile. Name and handle are required."}
+            {currentStep === 2 && 'Upload highlight pieces for your portfolio. You can add images now or update your profile later.'}
+            {currentStep === 4 && 'Share any upcoming events. This step is optional—you can skip it and add events later from your profile.'}
+            {currentStep === 5 && 'List products or books you sell. This step is optional—you can skip it and add products later from your profile.'}
+            {currentStep === 6 && 'Share any courses you currently offer. This step is optional—you can skip it and add courses later from your profile.'}
+            {currentStep === 7 && 'Connect your Stripe account to accept payments. You can skip this and set it up later from your profile settings.'}
+            {currentStep === 8 && 'Review everything at a glance before publishing your artist profile.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 px-6 py-8 text-slate-700">
@@ -1237,6 +1265,18 @@ export default function ArtistOnboardingPage() {
                   onChange={(event) => setFormData((previous) => ({ ...previous, handle: event.target.value }))}
                 />
                 <p className="text-xs text-muted-foreground">We recommend something short and memorable. You can change it later.</p>
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="email">Email Address *</label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={formData.email}
+                  onChange={(event) => setFormData((previous) => ({ ...previous, email: event.target.value }))}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">Required for customer inquiries and course access links.</p>
               </div>
               <div className="grid gap-2">
                 <label className="text-sm font-medium text-foreground" htmlFor="bio">Short bio</label>
@@ -1592,7 +1632,7 @@ export default function ArtistOnboardingPage() {
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Products & Books</h3>
                 <p className="text-sm text-muted-foreground">
-                  List any products, prints, or books subscribers can purchase. Optional—skip if you don&apos;t have any yet.
+                  List any products, prints, or books subscribers can purchase. This step is optional—you can skip it and add products later from your profile.
                 </p>
               </div>
               <div className="space-y-3">
@@ -1823,6 +1863,21 @@ export default function ArtistOnboardingPage() {
 
           {currentStep === 7 && (
             <div className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-2">Payment Setup</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Connect your Stripe account to start accepting payments for your artwork, prints, books, and courses. 
+                    You'll receive 100% of sales directly to your Stripe account. You can skip this step and set it up later from your profile settings.
+                  </p>
+                </div>
+                <StripeIntegrationWizard />
+              </div>
+            </div>
+          )}
+
+          {currentStep === 8 && (
+            <div className="space-y-6">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Artist profile</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -1909,6 +1964,21 @@ export default function ArtistOnboardingPage() {
                 )}
               </div>
               <Separator />
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Payment Setup</h3>
+                {user?.stripeAccountId && user?.stripeOnboardingStatus === 'complete' && 
+                 user?.stripeChargesEnabled && user?.stripePayoutsEnabled ? (
+                  <p className="text-sm text-muted-foreground">
+                    <Check className="inline h-3 w-3 mr-2 text-primary" />
+                    Stripe account connected
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Not set up yet. You can add this later from your profile settings.
+                  </p>
+                )}
+              </div>
+              <Separator />
               <p className="text-xs text-muted-foreground">
                 By clicking “Publish my profile” you agree to Gouache’s community guidelines and confirm you’re ready to
                 be discovered by the Gouache community.
@@ -1953,10 +2023,20 @@ export default function ArtistOnboardingPage() {
               </Button>
             )}
             {currentStep > 0 && currentStep < STEPS.length - 1 && (
-              <Button variant="gradient" onClick={handleNextStep} className="justify-center">
-                Continue
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                {/* Skip buttons for optional steps: Events (4), Products & Books (5), Courses (6), Payment Setup (7) */}
+                {/* Note: Step 1 (Personal details), Step 2 (Portfolio), and Step 8 (Review) are required and not skippable */}
+                {(currentStep === 4 || currentStep === 5 || currentStep === 6 || currentStep === 7) && (
+                  <Button variant="outline" onClick={handleNextStep} className="justify-center">
+                    Skip for now
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+                <Button variant="gradient" onClick={handleNextStep} className="justify-center">
+                  Continue
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             )}
             {currentStep === STEPS.length - 1 && (
               <Button
