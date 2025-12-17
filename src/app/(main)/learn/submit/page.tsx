@@ -514,15 +514,6 @@ export default function CourseSubmissionPage() {
           setIsSubmitting(false);
           return;
         }
-        if (!formData.linkType) {
-          toast({
-            title: "Link Type Required",
-            description: "Please select the type of link you're providing.",
-            variant: "destructive",
-          });
-          setIsSubmitting(false);
-          return;
-        }
       }
 
       // Create course data
@@ -769,29 +760,7 @@ export default function CourseSubmissionPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="linkType">Link Type *</Label>
-                      <Select 
-                        value={formData.linkType} 
-                        onValueChange={(value) => handleInputChange('linkType', value as 'direct' | 'enrollment' | 'affiliate')}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select link type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="enrollment">Enrollment Link (Recommended)</SelectItem>
-                          <SelectItem value="affiliate">Affiliate/Referral Link</SelectItem>
-                          <SelectItem value="direct">Direct Course Link</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <p><strong>Enrollment Link:</strong> Automatically enrolls students (best for paid courses)</p>
-                        <p><strong>Affiliate Link:</strong> Tracks referrals and may auto-enroll</p>
-                        <p><strong>Direct Link:</strong> Takes students to course page (may require manual enrollment)</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="externalUrl">Course URL *</Label>
+                      <Label htmlFor="externalUrl">Course Link *</Label>
                       <Input
                         id="externalUrl"
                         type="url"
