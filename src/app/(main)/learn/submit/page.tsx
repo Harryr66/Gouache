@@ -122,7 +122,7 @@ export default function CourseSubmissionPage() {
       video.src = URL.createObjectURL(file);
     });
   };
-  const [uploadingVideo, setUploadingVideo] = useState<Record<number, boolean>>({});
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   // Supply list state
   const [newSupplyItem, setNewSupplyItem] = useState('');
   const [newSupplyBrand, setNewSupplyBrand] = useState('');
