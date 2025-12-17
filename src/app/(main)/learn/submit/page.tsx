@@ -564,6 +564,15 @@ export default function CourseSubmissionPage() {
         description: "Your course has been submitted for review. You'll be notified once it's approved.",
       });
 
+      // Clear draft data after successful submission
+      try {
+        localStorage.removeItem('soma-course-draft');
+        if (user) {
+          const draftRef = doc(db, 'courseDrafts', user.id);
+          await setDoc(draftRef, { formData: null }, { merge: true });
+        }
+      } catch {}
+
       router.push('/profile');
 
     } catch (error) {
