@@ -93,7 +93,12 @@ export default function CourseSubmissionPage() {
 
   const [newTag, setNewTag] = useState('');
   // Curriculum builder state - simplified to single lesson form
-  const [lessonFormData, setLessonFormData] = useState({
+  const [lessonFormData, setLessonFormData] = useState<{
+    title: string;
+    duration: string;
+    notes: string;
+    videoFile: File | null;
+  }>({
     title: '',
     duration: '', // Will be extracted from video
     notes: '', // Optional notes that display alongside the course
