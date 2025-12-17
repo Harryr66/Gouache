@@ -1557,64 +1557,62 @@ export default function ProfileEditPage() {
               </div>
 
               {isArtistAccount && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label>Hide Events & Locations</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Hide the "Events & Locations" carousel from your public profile
-                      </p>
-                    </div>
-                    <Switch
-                      checked={formData.hideShowcaseLocations}
-                      onCheckedChange={(checked) => handleInputChange('hideShowcaseLocations', checked)}
-                    />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Hide Events & Locations</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Hide the "Events & Locations" carousel from your public profile
+                    </p>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label>Enable shop</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Show the "Shop" tab on your public profile
-                      </p>
-                    </div>
-                    <Switch
-                      checked={!formData.hideShop}
-                      onCheckedChange={(checked) => {
-                        if (!checked) {
-                          const confirmDisable = window.confirm(
-                            'Are you sure you want to disable your Shop tab? Customers will no longer see your shop on your profile.'
-                          );
-                          if (!confirmDisable) return;
-                        }
-                        handleInputChange('hideShop', !checked);
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label>Enable Learn</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Show the "Learn" tab on your public profile to display your courses
-                      </p>
-                    </div>
-                    <Switch
-                      checked={!formData.hideLearn}
-                      onCheckedChange={(checked) => {
-                        if (!checked) {
-                          const confirmDisable = window.confirm(
-                            'Are you sure you want to disable your Learn tab? Customers will no longer see your courses on your profile.'
-                          );
-                          if (!confirmDisable) return;
-                        }
-                        handleInputChange('hideLearn', !checked);
-                      }}
-                    />
-                  </div>
-
-                </>
+                  <Switch
+                    checked={formData.hideShowcaseLocations}
+                    onCheckedChange={(checked) => handleInputChange('hideShowcaseLocations', checked)}
+                  />
+                </div>
               )}
+
+              {/* Shop and Learn toggles - visible for all users */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Enable shop</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Show the "Shop" tab on your public profile
+                  </p>
+                </div>
+                <Switch
+                  checked={!formData.hideShop}
+                  onCheckedChange={(checked) => {
+                    if (!checked) {
+                      const confirmDisable = window.confirm(
+                        'Are you sure you want to disable your Shop tab? Customers will no longer see your shop on your profile.'
+                      );
+                      if (!confirmDisable) return;
+                    }
+                    handleInputChange('hideShop', !checked);
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Enable Learn</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Show the "Learn" tab on your public profile to display your courses
+                  </p>
+                </div>
+                <Switch
+                  checked={!formData.hideLearn}
+                  onCheckedChange={(checked) => {
+                    if (!checked) {
+                      const confirmDisable = window.confirm(
+                        'Are you sure you want to disable your Learn tab? Customers will no longer see your courses on your profile.'
+                      );
+                      if (!confirmDisable) return;
+                    }
+                    handleInputChange('hideLearn', !checked);
+                  }}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
