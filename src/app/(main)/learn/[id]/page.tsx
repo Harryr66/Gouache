@@ -198,7 +198,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [newComment, setNewComment] = useState('');
-  const [newDiscussion, setNewDiscussion] = useState({ title: '', content: '' });
   
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(800, 450);
@@ -392,14 +391,13 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className={`grid w-full ${isEnrolled && course.supplyList && course.supplyList.length > 0 ? 'grid-cols-5' : 'grid-cols-4'}`}>
+              <TabsList className={`grid w-full ${isEnrolled && course.supplyList && course.supplyList.length > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
                 {isEnrolled && course.supplyList && course.supplyList.length > 0 && (
                   <TabsTrigger value="supplies">Supplies</TabsTrigger>
                 )}
                 <TabsTrigger value="reviews">Reviews</TabsTrigger>
-                <TabsTrigger value="discussions">Discussions</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
@@ -620,86 +618,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 </Card>
               </TabsContent>
 
-              <TabsContent value="discussions" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Course Discussions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {/* New Discussion Form */}
-                    {isEnrolled && (
-                      <Card className="mb-6">
-                        <CardHeader>
-                          <CardTitle className="text-lg">Start a Discussion</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <form onSubmit={handleSubmitDiscussion} className="space-y-4">
-                            <div>
-                              <input
-                                type="text"
-                                placeholder="Discussion title"
-                                value={newDiscussion.title}
-                                onChange={(e) => setNewDiscussion({ ...newDiscussion, title: e.target.value })}
-                                className="w-full p-2 border rounded-md"
-                                required
-                              />
-                            </div>
-                            <div>
-                              <Textarea
-                                placeholder="What would you like to discuss?"
-                                value={newDiscussion.content}
-                                onChange={(e) => setNewDiscussion({ ...newDiscussion, content: e.target.value })}
-                                className="min-h-[100px]"
-                                required
-                              />
-                            </div>
-                            <Button type="submit" className="gradient-button">
-                              Post Discussion
-                            </Button>
-                          </form>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Discussions List */}
-                    <div className="space-y-4">
-                      {course.discussions.map((discussion: any) => (
-                        <Card key={discussion.id}>
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-3">
-                              <Avatar>
-                                <AvatarImage src={discussion.user.avatar} alt={discussion.user.name} />
-                                <AvatarFallback>{discussion.user.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-medium">{discussion.user.name}</span>
-                                  {discussion.user.verified && (
-                                    <Award className="h-3 w-3 text-primary" />
-                                  )}
-                                  <span className="text-xs text-muted-foreground">{discussion.date}</span>
-                                </div>
-                                <h4 className="font-semibold mb-2">{discussion.title}</h4>
-                                <p className="text-sm text-muted-foreground mb-3">{discussion.content}</p>
-                                <div className="flex items-center gap-4">
-                                  <Button variant="ghost" size="sm" className="h-6 px-2">
-                                    <MessageCircle className="h-3 w-3 mr-1" />
-                                    {discussion.replies} replies
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="h-6 px-2">
-                                    <Heart className="h-3 w-3 mr-1" />
-                                    {discussion.likes}
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
             </Tabs>
           </div>
 
