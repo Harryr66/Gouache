@@ -51,7 +51,7 @@ export function ExpandedArtworkView({ artwork, discussion, onClose }: ExpandedAr
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 md:p-6">
-            <div className="bg-background rounded-lg max-w-3xl w-full max-h-[75vh] overflow-hidden shadow-2xl">
+            <div className="bg-background rounded-lg max-w-2xl w-full max-h-[70vh] overflow-hidden shadow-2xl">
                 <div className="flex flex-col lg:flex-row h-full">
                     {/* Image Section */}
                     <div className="lg:w-2/3 bg-muted flex items-center justify-center p-4">
