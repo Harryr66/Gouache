@@ -916,11 +916,6 @@ export default function ArtistOnboardingPage() {
           bio: formData.bio.trim() || null,
           location: formData.location.trim() || null,
           website: formData.website.trim() || null,
-          socialLinks: {
-            instagram: formData.instagram.trim() || null,
-            x: formData.x.trim() || null,
-            tiktok: formData.tiktok.trim() || null
-          },
           accountRole: 'artist',
           isProfessional: true,
           tipJarEnabled: true,
