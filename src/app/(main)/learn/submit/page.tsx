@@ -1364,7 +1364,7 @@ export default function CourseSubmissionPage() {
                     className="gradient-button" 
                     size="lg"
                   >
-                    {isSubmitting ? 'Saving...' : 'Save Course'}
+                    {isSubmitting ? 'Submitting...' : 'Submit Course'}
                   </Button>
                 )}
               </div>
