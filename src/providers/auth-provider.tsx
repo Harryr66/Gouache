@@ -191,7 +191,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             tipJarEnabled: userData.tipJarEnabled ?? false,
             suggestionsEnabled: userData.suggestionsEnabled ?? false,
             // Tabs are hidden by default until explicitly enabled
-            hideShop: userData.hideShop ?? false,
+            hideShop: userData.hideShop ?? true,
             hideLearn: userData.hideLearn ?? true,
             hideShowcaseLocations: userData.hideShowcaseLocations || false,
             newsletterLink: userData.newsletterLink || '',
