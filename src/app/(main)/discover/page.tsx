@@ -533,6 +533,13 @@ function DiscoverPageContent() {
 
     // Always show real artworks first, then append placeholders to fill the grid
     // Placeholders have score 0 so they'll always rank below real artworks
+    log('🔍 filteredAndSortedArtworks:', {
+      totalFiltered: filtered.length,
+      allRealArtworks: allRealArtworks.length,
+      allPlaceholderArtworks: allPlaceholderArtworks.length,
+      sortedRealArtworks: sorted.length
+    });
+    
     if (sorted.length === 0 && allPlaceholderArtworks.length > 0) {
       // No real artworks match filters, show only placeholders
       log('📋 Discover: No real artworks match filters, showing placeholders:', allPlaceholderArtworks.length);
@@ -541,7 +548,7 @@ function DiscoverPageContent() {
     
     // Return real artworks first, then placeholders to fill remaining space
     const result = [...sorted, ...allPlaceholderArtworks];
-    log('✅ Discover: Returning', sorted.length, 'real artworks +', allPlaceholderArtworks.length, 'placeholders');
+    log('✅ Discover: Returning', sorted.length, 'real artworks +', allPlaceholderArtworks.length, 'placeholders =', result.length, 'total');
     return result;
   }, [artworks, deferredSearchQuery, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
@@ -674,10 +681,20 @@ function DiscoverPageContent() {
   const visibleFilteredArtworks = useMemo(() => {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
     
+    // Check how many placeholders are in the array
+    const placeholderCount = Array.isArray(filteredAndSortedArtworks) 
+      ? filteredAndSortedArtworks.filter((a: any) => {
+          const tags = Array.isArray(a.tags) ? a.tags : [];
+          return tags.includes('_placeholder');
+        }).length
+      : 0;
+    
     log('🔍 visibleFilteredArtworks calculation:', {
       totalItems,
       visibleCount,
-      filteredAndSortedArtworksLength: filteredAndSortedArtworks?.length
+      placeholderCount,
+      filteredAndSortedArtworksLength: filteredAndSortedArtworks?.length,
+      firstFewIds: filteredAndSortedArtworks?.slice(0, 5).map((a: any) => a.id)
     });
     
     if (totalItems === 0) {
@@ -693,7 +710,12 @@ function DiscoverPageContent() {
       ? filteredAndSortedArtworks.slice(0, finalCount)
       : [];
     
-    log('✅ visibleFilteredArtworks: Returning', result.length, 'items');
+    const resultPlaceholderCount = result.filter((a: any) => {
+      const tags = Array.isArray(a.tags) ? a.tags : [];
+      return tags.includes('_placeholder');
+    }).length;
+    
+    log('✅ visibleFilteredArtworks: Returning', result.length, 'items (', resultPlaceholderCount, 'placeholders)');
     return result;
   }, [filteredAndSortedArtworks, visibleCount]);
 
