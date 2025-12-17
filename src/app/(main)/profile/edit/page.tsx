@@ -895,8 +895,7 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = false;
           updateData.hideCard = false;
           updateData.hideShowcaseLocations = false;
-          updateData.hideShop = true;
-          updateData.hideLearn = true;
+          // Note: hideShop and hideLearn are saved above for all users
           updateData.newsletterLink = null;
           updateData.eventCity = null;
           updateData.eventCountry = null;
@@ -1176,6 +1175,7 @@ export default function ProfileEditPage() {
         updateData.tipJarEnabled = false;
         updateData.hideCard = false;
         updateData.hideShowcaseLocations = false;
+        // Note: hideShop and hideLearn are saved above for all users
         updateData.newsletterLink = null;
         updateData.eventCity = null;
         updateData.eventCountry = null;
