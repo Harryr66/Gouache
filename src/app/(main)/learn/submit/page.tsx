@@ -70,7 +70,6 @@ export default function CourseSubmissionPage() {
     difficulty: '',
     duration: '',
     price: '',
-    originalPrice: '',
     tags: [] as string[],
     skills: [] as string[],
     // Instructor info
@@ -568,7 +567,7 @@ export default function CourseSubmissionPage() {
         thumbnail: thumbnailUrl,
         previewVideoUrl: trailerUrl,
         price: parseFloat(formData.price),
-        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+        originalPrice: undefined,
         currency: 'USD',
         category: formData.category,
         subcategory: formData.subcategory,
@@ -580,7 +579,7 @@ export default function CourseSubmissionPage() {
         lessons: formData.courseType === 'hosted' ? formData.curriculum.length : 0,
         rating: 0,
         reviewCount: 0,
-        isOnSale: !!formData.originalPrice,
+        isOnSale: false,
         isNew: true,
         isFeatured: false,
         // Auto-publish affiliate courses for quick launch (can add admin approval later)
@@ -973,17 +972,6 @@ export default function CourseSubmissionPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="originalPrice">Original Price (optional)</Label>
-                  <Input
-                    id="originalPrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.originalPrice}
-                    onChange={(e) => handleInputChange('originalPrice', e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
               </div>
             </div>
                   </>
@@ -1277,8 +1265,6 @@ export default function CourseSubmissionPage() {
                         <Input id="price" type="number" step="0.01" value={formData.price} onChange={(e)=>handleInputChange('price', e.target.value)} placeholder="0.00" required />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="originalPrice">Original Price (optional)</Label>
-                        <Input id="originalPrice" type="number" step="0.01" value={formData.originalPrice} onChange={(e)=>handleInputChange('originalPrice', e.target.value)} placeholder="0.00" />
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground">Tip: Use an original price to show a discounted launch offer.</p>
