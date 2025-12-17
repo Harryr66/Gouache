@@ -158,7 +158,7 @@ export default function ArtworkPage() {
             {/* Artwork image + actions */}
             <div className="space-y-4">
               <div
-                className="relative w-full max-h-[60vh] min-h-[300px] lg:min-h-[400px] rounded-lg overflow-hidden bg-muted cursor-zoom-in"
+                className="relative w-full max-h-[60vh] min-h-[300px] lg:min-h-[400px] rounded-lg overflow-hidden bg-background cursor-zoom-in"
                 onClick={() => setShowImageModal(true)}
               >
                 <Image
