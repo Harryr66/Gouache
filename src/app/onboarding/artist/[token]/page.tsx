@@ -50,9 +50,6 @@ interface FormState {
   bio: string;
   location: string;
   website: string;
-  instagram: string;
-  x: string;
-  tiktok: string;
 }
 
 interface PortfolioImage {
@@ -123,10 +120,7 @@ export default function ArtistOnboardingPage() {
     email: '',
     bio: '',
     location: '',
-    website: '',
-    instagram: '',
-    x: '',
-    tiktok: ''
+    website: ''
   });
   const [portfolioImages, setPortfolioImages] = useState<PortfolioImage[]>([]);
   const [pendingEvent, setPendingEvent] = useState<EventDraft>({
@@ -285,10 +279,7 @@ export default function ArtistOnboardingPage() {
       handle: user.username || previous.handle,
       bio: previous.bio,
       location: user.location || previous.location,
-      website: user.website || previous.website,
-      instagram: user.socialLinks?.instagram || previous.instagram,
-      x: user.socialLinks?.x || previous.x,
-      tiktok: user.socialLinks?.tiktok || previous.tiktok
+      website: user.website || previous.website
     }));
   }, [user, invite]);
 
@@ -1298,42 +1289,13 @@ export default function ArtistOnboardingPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <label className="text-sm font-medium text-foreground" htmlFor="website">Website or portfolio</label>
+                <label className="text-sm font-medium text-foreground" htmlFor="website">Website (optional)</label>
                 <Input
                   id="website"
-                  placeholder="https://"
+                  placeholder="https://yourwebsite.com"
                   value={formData.website}
                   onChange={(event) => setFormData((previous) => ({ ...previous, website: event.target.value }))}
                 />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="instagram">Instagram</label>
-                  <Input
-                    id="instagram"
-                    placeholder="@username"
-                    value={formData.instagram}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, instagram: event.target.value }))}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="xHandle">X / Twitter</label>
-                  <Input
-                    id="xHandle"
-                    placeholder="@username"
-                    value={formData.x}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, x: event.target.value }))}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="tiktok">TikTok</label>
-                  <Input
-                    id="tiktok"
-                    placeholder="@username"
-                    value={formData.tiktok}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, tiktok: event.target.value }))}
-                  />
-                </div>
               </div>
             </div>
           )}
