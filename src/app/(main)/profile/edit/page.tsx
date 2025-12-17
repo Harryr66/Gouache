@@ -106,6 +106,9 @@ export default function ProfileEditPage() {
     hideShowcaseLocations: false,
     hideShop: true,   // Hidden by default
     hideLearn: true,   // Hidden by default
+    hideSocialIcons: false,
+    hideAboutArtist: false,
+    aboutInstructor: '',
     bannerImageUrl: '',
     // Upcoming event fields
     eventCity: '',
@@ -121,7 +124,10 @@ export default function ProfileEditPage() {
     artistStatement: '',
     experience: '',
     socialLinks: {
-      website: ''
+      website: '',
+      instagram: '',
+      x: '',
+      tiktok: ''
     }
   });
 
@@ -739,6 +745,15 @@ export default function ProfileEditPage() {
       if (artistRequestData.socialLinks.website?.trim()) {
         socialLinks.website = artistRequestData.socialLinks.website.trim();
       }
+      if (artistRequestData.socialLinks.instagram?.trim()) {
+        socialLinks.instagram = artistRequestData.socialLinks.instagram.trim();
+      }
+      if (artistRequestData.socialLinks.x?.trim()) {
+        socialLinks.x = artistRequestData.socialLinks.x.trim();
+      }
+      if (artistRequestData.socialLinks.tiktok?.trim()) {
+        socialLinks.tiktok = artistRequestData.socialLinks.tiktok.trim();
+      }
 
       const artistRequest: any = {
         userId: user.id,
@@ -1280,15 +1295,16 @@ export default function ProfileEditPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="flex items-center gap-4 mb-8">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-4xl">
+      <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-8">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
+          className="shrink-0"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          <ArrowLeft className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Back</span>
         </Button>
         <h1 className="text-3xl font-bold">Edit Profile</h1>
         {saveStatus === 'saving' && (
@@ -1599,6 +1615,32 @@ export default function ProfileEditPage() {
                     }
                     handleInputChange('hideLearn', !checked);
                   }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Hide social icons</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Hide social media icons in the "About the Instructor" section on course pages
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.hideSocialIcons}
+                  onCheckedChange={(checked) => handleInputChange('hideSocialIcons', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Hide full About Artist section</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Hide the entire "About the Instructor" section on course pages
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.hideAboutArtist}
+                  onCheckedChange={(checked) => handleInputChange('hideAboutArtist', checked)}
                 />
               </div>
             </div>
@@ -2055,18 +2097,77 @@ export default function ProfileEditPage() {
                   {/* Social Links */}
                   <div className="space-y-4">
                     <Label>Social Media Links</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="website">Website (optional)</Label>
-                        <Input
-                          id="website"
-                          value={artistRequestData.socialLinks.website}
-                          onChange={(e) => setArtistRequestData(prev => ({ 
-                            ...prev, 
-                            socialLinks: { ...prev.socialLinks, website: e.target.value }
-                          }))}
-                          placeholder="https://yourwebsite.com"
+                        <Label htmlFor="aboutInstructor">About the Instructor (optional, max 2 sentences)</Label>
+                        <Textarea
+                          id="aboutInstructor"
+                          value={formData.aboutInstructor}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const sentences = value.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                            if (sentences.length <= 2) {
+                              handleInputChange('aboutInstructor', value);
+                            }
+                          }}
+                          placeholder="Write a brief description about yourself as an instructor..."
+                          rows={3}
+                          maxLength={300}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          {formData.aboutInstructor.split(/[.!?]+/).filter(s => s.trim().length > 0).length}/2 sentences
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="website">Website (optional)</Label>
+                          <Input
+                            id="website"
+                            value={artistRequestData.socialLinks.website}
+                            onChange={(e) => setArtistRequestData(prev => ({ 
+                              ...prev, 
+                              socialLinks: { ...prev.socialLinks, website: e.target.value }
+                            }))}
+                            placeholder="https://yourwebsite.com"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="instagram">Instagram (optional)</Label>
+                          <Input
+                            id="instagram"
+                            value={artistRequestData.socialLinks.instagram}
+                            onChange={(e) => setArtistRequestData(prev => ({ 
+                              ...prev, 
+                              socialLinks: { ...prev.socialLinks, instagram: e.target.value }
+                            }))}
+                            placeholder="@username or URL"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="x">X / Twitter (optional)</Label>
+                          <Input
+                            id="x"
+                            value={artistRequestData.socialLinks.x}
+                            onChange={(e) => setArtistRequestData(prev => ({ 
+                              ...prev, 
+                              socialLinks: { ...prev.socialLinks, x: e.target.value }
+                            }))}
+                            placeholder="@username or URL"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="tiktok">TikTok (optional)</Label>
+                          <Input
+                            id="tiktok"
+                            value={artistRequestData.socialLinks.tiktok}
+                            onChange={(e) => setArtistRequestData(prev => ({ 
+                              ...prev, 
+                              socialLinks: { ...prev.socialLinks, tiktok: e.target.value }
+                            }))}
+                            placeholder="@username or URL"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

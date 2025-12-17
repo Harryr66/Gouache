@@ -594,12 +594,12 @@ export default function CourseSubmissionPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <Button variant="outline" onClick={() => router.back()} className="mb-6">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-5xl">
+      <Button variant="outline" onClick={() => router.back()} className="mb-4 sm:mb-6">
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back
+        <span className="hidden sm:inline">Back</span>
       </Button>
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-6">
         {/* Sidebar Steps */}
         <div className="md:col-span-2 lg:col-span-1">
           <Card>
@@ -1324,7 +1324,7 @@ export default function CourseSubmissionPage() {
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-between pt-6 border-t">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-6 border-t">
               <div className="flex gap-2">
                 {steps.findIndex(s => s.id === activeStep) > 0 && (
                   <Button 
@@ -1336,6 +1336,7 @@ export default function CourseSubmissionPage() {
                         setActiveStep(steps[currentIndex - 1].id);
                       }
                     }}
+                    className="w-full sm:w-auto"
                   >
                     Back
                   </Button>

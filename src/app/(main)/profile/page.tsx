@@ -160,7 +160,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-6xl">
       <div className="space-y-8">
         {hasPendingArtistRequest && (
           <div className="flex items-center gap-3 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3">
@@ -214,7 +214,7 @@ export default function ProfilePage() {
                       {events.map((event) => (
                         <div
                           key={event.id}
-                          className="min-w-[360px] max-w-[400px] border rounded-lg overflow-hidden shadow-sm bg-card relative"
+                          className="w-full sm:min-w-[360px] sm:max-w-[400px] border rounded-lg overflow-hidden shadow-sm bg-card relative"
                         >
                           <div className="relative h-28 w-full bg-muted">
                             {event.imageUrl ? (
