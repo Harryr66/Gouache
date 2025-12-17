@@ -71,7 +71,6 @@ export default function CourseSubmissionPage() {
     duration: '',
     price: '',
     tags: [] as string[],
-    skills: [] as string[],
     // Instructor info
     instructorBio: '',
     credentials: '',
@@ -94,7 +93,6 @@ export default function CourseSubmissionPage() {
   });
 
   const [newTag, setNewTag] = useState('');
-  const [newSkill, setNewSkill] = useState('');
   const [newSpecialty, setNewSpecialty] = useState('');
   // Curriculum builder state
   const [currentWeek, setCurrentWeek] = useState(1);
@@ -206,22 +204,6 @@ export default function CourseSubmissionPage() {
     }));
   };
 
-  const addSkill = () => {
-    if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        skills: [...prev.skills, newSkill.trim()]
-      }));
-      setNewSkill('');
-    }
-  };
-
-  const removeSkill = (skillToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      skills: prev.skills.filter(skill => skill !== skillToRemove)
-    }));
-  };
 
   const addSpecialty = () => {
     if (newSpecialty.trim() && !formData.specialties.includes(newSpecialty.trim())) {
@@ -586,7 +568,7 @@ export default function CourseSubmissionPage() {
         status: 'approved' as const,
         isPublished: true,
         tags: formData.tags,
-        skills: formData.skills,
+        skills: [],
         curriculum: formData.courseType === 'hosted' ? formData.curriculum.map(week => ({
           week: week.week,
           title: week.title,
@@ -1398,42 +1380,6 @@ export default function CourseSubmissionPage() {
                 )}
 
             {/* Skills Section - Tags moved to Discoverability step */}
-            {activeStep === 'basics' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Skills Students Will Learn</h3>
-              
-
-              <div className="space-y-2">
-                <Label>Skills Students Will Learn</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={newSkill}
-                    onChange={(e) => setNewSkill(e.target.value)}
-                    placeholder="Add a skill"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                  />
-                  <Button type="button" onClick={addSkill} size="sm">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.skills.map((skill) => (
-                    <Badge key={skill} variant="outline" className="flex items-center gap-1">
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => removeSkill(skill)}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-            )}
-
             {/* Instructor Information */}
             {activeStep === 'basics' && (
             <div className="space-y-4">
