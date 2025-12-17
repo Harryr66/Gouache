@@ -404,7 +404,7 @@ export function PortfolioManager() {
               artist: {
                 userId: user.id,
                 name: user.displayName || user.username || 'Artist',
-                handle: user.username || user.handle,
+                handle: user.username || undefined,
                 avatarUrl: user.avatarUrl || null,
               },
               tags: portfolioItem.tags,
