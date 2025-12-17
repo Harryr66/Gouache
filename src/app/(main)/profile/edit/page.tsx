@@ -94,7 +94,6 @@ export default function ProfileEditPage() {
     name: '',
     handle: '',
     email: '',
-    bio: '',
     artistType: '',
     location: '',
     countryOfOrigin: '',
@@ -143,7 +142,6 @@ export default function ProfileEditPage() {
             name: changes.name || user.displayName || '',
             handle: changes.handle || user.username || '',
             email: changes.email || user.email || '',
-            bio: changes.bio || user.bio || '',
             artistType: changes.artistType || user.artistType || '',
             location: changes.location || user.location || '',
             countryOfOrigin: changes.countryOfOrigin || user.countryOfOrigin || '',
@@ -225,7 +223,6 @@ export default function ProfileEditPage() {
             name: user.displayName || '',
             handle: user.username || '',
             email: currentEmail,
-            bio: user.bio || '',
             artistType: user.artistType || '',
             location: user.location || '',
             countryOfOrigin: user.countryOfOrigin || '',
@@ -725,7 +722,6 @@ export default function ProfileEditPage() {
         email: user.email || '',
         displayName: user.displayName || '',
         ...(user.avatarUrl && { avatarUrl: user.avatarUrl }),
-        ...(user.bio && { bio: user.bio }),
         ...(user.location && { location: user.location }),
         ...(user.website && { website: user.website }),
         followerCount: user.followerCount || 0,
@@ -825,7 +821,6 @@ export default function ProfileEditPage() {
       const hasChanges = 
         formData.name !== initialFormDataRef.current.name ||
         formData.email !== initialFormDataRef.current.email ||
-        formData.bio !== initialFormDataRef.current.bio ||
         formData.artistType !== initialFormDataRef.current.artistType ||
         formData.location !== initialFormDataRef.current.location ||
         formData.countryOfOrigin !== initialFormDataRef.current.countryOfOrigin ||
@@ -874,7 +869,6 @@ export default function ProfileEditPage() {
         name: formData.name,
         displayName: formData.name, // Also update displayName (used by profile display) - same as handleSubmit
         email: emailToSave, // Use synced email - same as handleSubmit
-        bio: formData.bio,
         location: formData.location,
         countryOfOrigin: formData.countryOfOrigin,
         countryOfResidence: formData.countryOfResidence,
@@ -970,7 +964,6 @@ export default function ProfileEditPage() {
   }, [
     formData.name,
     formData.email,
-    formData.bio,
     formData.isProfessional,
     formData.tipJarEnabled,
     formData.hideLocation,
@@ -1090,7 +1083,6 @@ export default function ProfileEditPage() {
         displayName: formData.name, // Also update displayName (used by profile display)
         handle: formData.handle,
         email: emailToSave, // Always use Firebase Auth email or verified email
-        bio: formData.bio,
         location: formData.location,
         countryOfOrigin: formData.countryOfOrigin,
         countryOfResidence: formData.countryOfResidence,
@@ -1484,38 +1476,6 @@ export default function ProfileEditPage() {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bio">Bio {user?.isProfessional ? '(extended biography for artists)' : '(up to 5 sentences)'}</Label>
-              <Textarea
-                id="bio"
-                value={formData.bio}
-                onChange={(e) => {
-                  if (user?.isProfessional) {
-                    // Professional artists can have extended biographies
-                    handleInputChange('bio', e.target.value);
-                  } else {
-                    // Regular users limited to 5 sentences
-                    const sentences = e.target.value.split(/[.!?]+/).filter(s => s.trim());
-                    if (sentences.length <= 5) {
-                      handleInputChange('bio', e.target.value);
-                    }
-                  }
-                }}
-                placeholder={user?.isProfessional 
-                  ? "Share your artistic journey, inspirations, and story..." 
-                  : "Tell your story in up to 5 sentences..."
-                }
-                rows={user?.isProfessional ? 8 : 5}
-                className="resize-none"
-              />
-              <p className="text-xs text-muted-foreground">
-                {user?.isProfessional 
-                  ? `${formData.bio.length} characters`
-                  : `${formData.bio.split(/[.!?]+/).filter(s => s.trim()).length} / 5 sentences`
-                }
-              </p>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="countryOfOrigin">Country of Origin</Label>
@@ -1613,7 +1573,7 @@ export default function ProfileEditPage() {
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <Label>Enable Shop Tab</Label>
+                      <Label>Enable shop</Label>
                       <p className="text-sm text-muted-foreground">
                         Show the "Shop" tab on your public profile
                       </p>
@@ -1634,7 +1594,7 @@ export default function ProfileEditPage() {
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <Label>Enable Learn Tab</Label>
+                      <Label>Enable Learn</Label>
                       <p className="text-sm text-muted-foreground">
                         Show the "Learn" tab on your public profile to display your courses
                       </p>
