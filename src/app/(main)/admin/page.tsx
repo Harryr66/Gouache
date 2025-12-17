@@ -410,24 +410,27 @@ export default function AdminPanel() {
           });
         });
 
-        // Add courses
+        // Add courses - only show published and approved courses
         coursesSnapshot.docs.forEach((doc: any) => {
           const data = doc.data();
-          shopProductsList.push({
-            id: doc.id,
-            type: 'course',
-            title: data.title || 'Untitled Course',
-            description: data.description,
-            price: data.price || 0,
-            currency: data.currency || 'USD',
-            imageUrl: data.thumbnail || data.thumbnailUrl,
-            sellerId: data.instructor?.userId || data.userId,
-            sellerName: data.instructor?.name || 'Unknown',
-            isAvailable: data.isActive !== false,
-            category: data.category,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            isPublished: data.isPublished || false
-          });
+          // Only include courses that are published and approved
+          if (data.isPublished === true && data.status === 'approved') {
+            shopProductsList.push({
+              id: doc.id,
+              type: 'course',
+              title: data.title || 'Untitled Course',
+              description: data.description,
+              price: data.price || 0,
+              currency: data.currency || 'USD',
+              imageUrl: data.thumbnail || data.thumbnailUrl,
+              sellerId: data.instructor?.userId || data.userId,
+              sellerName: data.instructor?.name || 'Unknown',
+              isAvailable: data.isActive !== false,
+              category: data.category,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              isPublished: data.isPublished || false
+            });
+          }
         });
 
         // Add books
