@@ -510,7 +510,6 @@ export default function CourseSubmissionPage() {
         thumbnail: thumbnailUrl,
         previewVideoUrl: trailerUrl,
         price: parseFloat(formData.price),
-        originalPrice: undefined,
         currency: 'USD',
         category: formData.category,
         subcategory: formData.subcategory,
