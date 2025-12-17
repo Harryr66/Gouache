@@ -243,7 +243,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     }
 
     try {
-      // For affiliate courses, redirect to external URL after payment
+      // For course links, redirect to external URL after payment
       if (course?.courseType === 'affiliate' && course.externalUrl) {
         const platformName = course.hostingPlatform 
           ? course.hostingPlatform.charAt(0).toUpperCase() + course.hostingPlatform.slice(1)
