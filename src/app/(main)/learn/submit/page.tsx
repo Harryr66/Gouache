@@ -550,9 +550,8 @@ export default function CourseSubmissionPage() {
         enrollmentCount: 0,
         completionRate: 0,
         courseType: formData.courseType,
-        externalUrl: formData.courseType === 'affiliate' ? formData.externalUrl.trim() : undefined,
-        linkType: undefined,
-        hostingPlatform: formData.courseType === 'affiliate' ? formData.hostingPlatform : undefined,
+        ...(formData.courseType === 'affiliate' && formData.externalUrl.trim() ? { externalUrl: formData.externalUrl.trim() } : {}),
+        ...(formData.courseType === 'affiliate' && formData.hostingPlatform ? { hostingPlatform: formData.hostingPlatform } : {}),
         createdAt: new Date(),
         updatedAt: new Date(),
       };
