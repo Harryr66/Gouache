@@ -537,13 +537,16 @@ function DiscoverPageContent() {
     if (sorted.length === 0) {
       // No real artworks match filters, show placeholders as fallback
       if (allPlaceholderArtworks.length > 0) {
+        log('📋 Discover: No real artworks match filters, showing placeholders:', allPlaceholderArtworks.length);
         return allPlaceholderArtworks;
       }
       // If no placeholders either, return empty array
+      log('⚠️ Discover: No artworks to display (real or placeholder)');
       return [];
     }
     
     // Return filtered and sorted real artworks (placeholders hidden when real media exists)
+    log('✅ Discover: Returning', sorted.length, 'real artworks');
     return sorted;
   }, [artworks, deferredSearchQuery, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
@@ -676,33 +679,34 @@ function DiscoverPageContent() {
   const visibleFilteredArtworks = useMemo(() => {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
     
-    if (totalItems === 0) return [];
+    log('🔍 visibleFilteredArtworks calculation:', {
+      totalItems,
+      visibleCount,
+      filteredAndSortedArtworksLength: filteredAndSortedArtworks?.length
+    });
     
-    // Calculate how many complete rows are available in total (round down)
-    const availableCompleteRows = Math.floor(totalItems / itemsPerRow);
+    if (totalItems === 0) {
+      log('⚠️ visibleFilteredArtworks: No items to display');
+      return [];
+    }
     
-    // If we don't have at least one complete row, show nothing
-    if (availableCompleteRows === 0) return [];
+    // Show items up to visibleCount, but don't require complete rows
+    // This ensures items display even if there are fewer than itemsPerRow
+    const finalCount = Math.min(visibleCount, totalItems);
     
-    // Calculate how many complete rows we want to show based on visibleCount
-    const requestedCompleteRows = Math.floor(visibleCount / itemsPerRow);
-    
-    // Show the minimum of what we requested and what's available (always complete rows)
-    const rowsToShow = Math.min(requestedCompleteRows, availableCompleteRows);
-    
-    // Calculate final count: always a multiple of itemsPerRow (complete rows only)
-    const finalCount = rowsToShow * itemsPerRow;
-    
-    return Array.isArray(filteredAndSortedArtworks)
+    const result = Array.isArray(filteredAndSortedArtworks)
       ? filteredAndSortedArtworks.slice(0, finalCount)
       : [];
-  }, [filteredAndSortedArtworks, visibleCount, itemsPerRow]);
+    
+    log('✅ visibleFilteredArtworks: Returning', result.length, 'items');
+    return result;
+  }, [filteredAndSortedArtworks, visibleCount]);
 
   useEffect(() => {
-    // Reset to initial complete rows when filters change
-    const initialRows = 3; // Start with 3 complete rows
-    setVisibleCount(initialRows * itemsPerRow);
-  }, [searchQuery, selectedMedium, sortBy, selectedEventLocation, itemsPerRow]);
+    // Reset to initial count when filters change
+    const initialCount = 18; // Start with 18 items (works for various screen sizes)
+    setVisibleCount(initialCount);
+  }, [searchQuery, selectedMedium, sortBy, selectedEventLocation]);
 
   useEffect(() => {
     const fetchMarketplaceProducts = async () => {
