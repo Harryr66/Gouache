@@ -295,14 +295,6 @@ export default function ArtistProfilePage() {
           hideShop={profileUser.hideShop ?? true}
           hideLearn={profileUser.hideLearn ?? true}
         />
-        {console.log('🔍 ProfileTabs props passed:', {
-          userId: profileUser.id,
-          isProfessional: profileUser.isProfessional || false,
-          hideShop: profileUser.hideShop ?? true,
-          hideLearn: profileUser.hideLearn ?? true,
-          hideShopRaw: profileUser.hideShop,
-          hideLearnRaw: profileUser.hideLearn
-        })}
       </div>
     </div>
   );
