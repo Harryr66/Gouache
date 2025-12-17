@@ -577,12 +577,12 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {course.reviews.map((review) => (
+                      {course.reviews.map((review: any) => (
                         <div key={review.id} className="border-b pb-4 last:border-b-0">
                           <div className="flex items-start gap-3">
                             <Avatar>
                               <AvatarImage src={review.user.avatar} alt={review.user.name} />
-                              <AvatarFallback>{review.user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                              <AvatarFallback>{review.user.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
@@ -591,7 +591,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                                   <Award className="h-3 w-3 text-primary" />
                                 )}
                                 <div className="flex">
-                                  {Array.from({ length: 5 }).map((_, i) => (
+                                  {Array.from({ length: 5 }).map((_: any, i: number) => (
                                     <Star
                                       key={i}
                                       className={`h-3 w-3 ${
@@ -663,13 +663,13 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
                     {/* Discussions List */}
                     <div className="space-y-4">
-                      {course.discussions.map((discussion) => (
+                      {course.discussions.map((discussion: any) => (
                         <Card key={discussion.id}>
                           <CardContent className="p-4">
                             <div className="flex items-start gap-3">
                               <Avatar>
                                 <AvatarImage src={discussion.user.avatar} alt={discussion.user.name} />
-                                <AvatarFallback>{discussion.user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                <AvatarFallback>{discussion.user.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                               </Avatar>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
