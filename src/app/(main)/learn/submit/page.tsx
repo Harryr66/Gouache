@@ -567,25 +567,14 @@ export default function CourseSubmissionPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Short Description *</Label>
+                <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Brief description of your course"
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="longDescription">Detailed Description</Label>
-                <Textarea
-                  id="longDescription"
-                  value={formData.longDescription}
-                  onChange={(e) => handleInputChange('longDescription', e.target.value)}
-                  placeholder="Detailed description of what students will learn"
+                  placeholder="Describe what students will learn in this course"
                   rows={6}
+                  required
                 />
               </div>
 
