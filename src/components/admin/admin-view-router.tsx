@@ -2155,17 +2155,65 @@ export function AdminViewRouter(props: any) {
         {/* Marketplace - Shop Products from Profiles */}
         {props.selectedView === 'marketplace-shop' && (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Shop Products from Profiles</h2>
-            {!props.shopProducts || props.shopProducts.length === 0 ? (
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Courses</h2>
+              {props.shopProducts && props.shopProducts.filter((p: any) => p.type === 'course').length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete All Courses
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete All Courses</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete ALL courses? This will permanently delete {props.shopProducts.filter((p: any) => p.type === 'course').length} courses. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={async () => {
+                          try {
+                            const coursesToDelete = props.shopProducts.filter((p: any) => p.type === 'course');
+                            for (const course of coursesToDelete) {
+                              await deleteDoc(doc(db, 'courses', course.id));
+                            }
+                            toast({
+                              title: "All Courses Deleted",
+                              description: `Successfully deleted ${coursesToDelete.length} courses.`,
+                            });
+                            window.location.reload();
+                          } catch (error) {
+                            console.error('Error deleting courses:', error);
+                            toast({
+                              title: "Delete Failed",
+                              description: "Failed to delete courses. Please try again.",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+            {!props.shopProducts || props.shopProducts.filter((p: any) => p.type === 'course').length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Package className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No shop products found</p>
+                  <p className="text-muted-foreground">No courses found</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-3">
-                {props.shopProducts.map((product: any) => (
+                {props.shopProducts.filter((p: any) => p.type === 'course').map((product: any) => (
                   <Card key={product.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -2192,10 +2240,53 @@ export function AdminViewRouter(props: any) {
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
                           <Badge variant={product.isAvailable ? 'default' : 'secondary'}>
                             {product.isAvailable ? 'Available' : 'Unavailable'}
                           </Badge>
+                          {product.type === 'course' && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{product.title}"? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={async () => {
+                                      try {
+                                        await deleteDoc(doc(db, 'courses', product.id));
+                                        toast({
+                                          title: "Course Deleted",
+                                          description: "The course has been deleted successfully.",
+                                        });
+                                        // Refresh the page to update the list
+                                        window.location.reload();
+                                      } catch (error) {
+                                        console.error('Error deleting course:', error);
+                                        toast({
+                                          title: "Delete Failed",
+                                          description: "Failed to delete course. Please try again.",
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    }}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </div>
                     </CardContent>
