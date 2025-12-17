@@ -4,12 +4,17 @@
 import { useParams, notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, startTransition } from 'react';
 import { ProfileHeader } from '@/components/profile-header';
 import { ProfileTabs } from '@/components/profile-tabs';
 import { useAuth } from '@/providers/auth-provider';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
+import { Loader2, MapPin, Calendar as CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export default function ArtistProfilePage() {
   const params = useParams();
@@ -20,6 +25,9 @@ export default function ArtistProfilePage() {
   const [profileUser, setProfileUser] = useState<any>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<any[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [showEvents, setShowEvents] = useState(true); // Expanded by default for public view
 
   useEffect(() => {
     // Only prevent guest (anonymous) users from viewing their own profile
@@ -122,6 +130,46 @@ export default function ArtistProfilePage() {
     }
   }, [artistId]);
 
+  // Load events for this artist (visible to all users including guests)
+  useEffect(() => {
+    const loadEvents = async () => {
+      if (!profileUser?.id) return;
+      try {
+        setEventsLoading(true);
+        const snap = await getDocs(
+          query(collection(db, 'events'), where('artistId', '==', profileUser.id))
+        );
+        const now = new Date();
+        const list = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((event: any) => {
+            // Filter to only show upcoming/current events (not past events)
+            if (event.endDate) {
+              const endDate = new Date(event.endDate);
+              return endDate >= now; // Event hasn't ended yet
+            } else if (event.date) {
+              const startDate = new Date(event.date);
+              return startDate >= now; // Event hasn't started yet or is today
+            }
+            return true; // If no date, show it (shouldn't happen but safe fallback)
+          });
+        // Sort pinned first (pinnedAt desc), then by start date desc
+        list.sort((a: any, b: any) => {
+          const ap = a.pinnedAt?.toMillis?.() || a.pinnedAt?.seconds || 0;
+          const bp = b.pinnedAt?.toMillis?.() || b.pinnedAt?.seconds || 0;
+          if (ap !== bp) return bp - ap;
+          return (b.date ? new Date(b.date).getTime() : 0) - (a.date ? new Date(a.date).getTime() : 0);
+        });
+        setEvents(list);
+      } catch (error) {
+        console.error('Error loading events:', error);
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+    loadEvents();
+  }, [profileUser?.id]);
+
   const handleFollowToggle = async () => {
     // TODO: Implement follow/unfollow logic
     setIsFollowing(!isFollowing);
@@ -159,6 +207,86 @@ export default function ArtistProfilePage() {
           isFollowing={isFollowing}
           onFollowToggle={handleFollowToggle}
         />
+
+        {/* Events Carousel - Visible to all users including guests */}
+        {!profileUser.hideUpcomingEvents && (
+          eventsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading events…
+            </div>
+          ) : events.length > 0 ? (
+            <Collapsible 
+              open={showEvents} 
+              onOpenChange={(open) => {
+                startTransition(() => {
+                  setShowEvents(open);
+                });
+              }}
+            >
+              <Card>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="flex flex-row items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <CardTitle>Upcoming Events</CardTitle>
+                      <Badge variant="secondary">{events.length}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {showEvents ? (
+                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>
+                    <div className="flex gap-4 overflow-x-auto pb-2">
+                      {events.map((event) => (
+                        <div
+                          key={event.id}
+                          className="min-w-[360px] max-w-[400px] border rounded-lg overflow-hidden shadow-sm bg-card relative"
+                        >
+                          <div className="relative h-28 w-full bg-muted">
+                            {event.imageUrl ? (
+                              <Image
+                                src={event.imageUrl}
+                                alt={event.title || 'Event'}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">
+                                No image
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-2 space-y-1">
+                            <p className="font-semibold text-sm line-clamp-1">{event.title || 'Untitled event'}</p>
+                            {event.date && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <CalendarIcon className="h-3 w-3" />
+                                {new Date(event.date).toLocaleDateString()}
+                                {event.endDate ? ` → ${new Date(event.endDate).toLocaleDateString()}` : ''}
+                              </p>
+                            )}
+                            {event.location && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {event.location}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          ) : null
+        )}
 
         <ProfileTabs
           userId={profileUser.id}

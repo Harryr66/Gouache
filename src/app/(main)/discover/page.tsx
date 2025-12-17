@@ -53,6 +53,7 @@ const generatePlaceholderArtworks = (theme: string | undefined, count: number = 
     description: 'A beautiful artwork showcasing artistic expression and creativity.',
     imageUrl: placeholderImage,
     imageAiHint: 'Placeholder artwork',
+    isPlaceholder: true, // Mark as placeholder for prioritization
     artist: {
       id: `placeholder-artist-${i + 1}`,
       name: artistNames[i % artistNames.length],
@@ -481,8 +482,12 @@ function DiscoverPageContent() {
       filtered = filtered.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
     }
 
+    // Separate real artworks from placeholders - always prioritize real artworks
+    const realArtworks = filtered.filter((artwork: any) => !artwork.isPlaceholder);
+    const placeholderArtworks = filtered.filter((artwork: any) => artwork.isPlaceholder);
+    
     // Sort using engagement-based algorithm when 'popular' is selected
-    let sorted = Array.isArray(filtered) ? [...filtered] : [];
+    let sorted = Array.isArray(realArtworks) ? [...realArtworks] : [];
     
     if (sortBy === 'popular' && artworkEngagements.size > 0) {
       // Use engagement-based scoring algorithm
@@ -518,7 +523,8 @@ function DiscoverPageContent() {
       }
     }
 
-    return Array.isArray(sorted) ? sorted : [];
+    // Always return real artworks first, then placeholders at the end
+    return [...sorted, ...placeholderArtworks];
   }, [artworks, deferredSearchQuery, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
   // Filter and sort marketplace products
@@ -631,29 +637,45 @@ function DiscoverPageContent() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          startTransition(() => {
-            setVisibleCount((prev) => {
-              const newCount = prev + itemsPerRow; // Load one complete row at a time
-              const maxCount = filteredAndSortedArtworks.length || newCount;
-              // Ensure we never exceed available items, and always maintain complete rows
-              return Math.min(newCount, maxCount);
+          const totalItems = filteredAndSortedArtworks.length;
+          const currentVisible = visibleFilteredArtworks.length;
+          
+          // Only load more if there are more items to show
+          if (currentVisible < totalItems) {
+            startTransition(() => {
+              setVisibleCount((prev) => {
+                const newCount = prev + itemsPerRow; // Load one complete row at a time
+                const maxCount = totalItems;
+                // Ensure we never exceed available items, and always maintain complete rows
+                return Math.min(newCount, maxCount);
+              });
             });
-          });
+          }
         }
       });
-    }, { rootMargin: '200px' });
+    }, { 
+      rootMargin: '300px', // Trigger earlier to load before user reaches bottom
+      threshold: 0.1 
+    });
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [filteredAndSortedArtworks, itemsPerRow]);
+  }, [filteredAndSortedArtworks, itemsPerRow, visibleFilteredArtworks.length]);
 
   const visibleFilteredArtworks = useMemo(() => {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
     
     if (totalItems === 0) return [];
     
+    // Separate real artworks from placeholders
+    const realArtworks = filteredAndSortedArtworks.filter((artwork: any) => !artwork.isPlaceholder);
+    const placeholderArtworks = filteredAndSortedArtworks.filter((artwork: any) => artwork.isPlaceholder);
+    
+    // Always prioritize real artworks - they come first
+    const prioritizedArtworks = [...realArtworks, ...placeholderArtworks];
+    
     // Calculate how many complete rows are available in total (round down)
-    const availableCompleteRows = Math.floor(totalItems / itemsPerRow);
+    const availableCompleteRows = Math.floor(prioritizedArtworks.length / itemsPerRow);
     
     // If we don't have at least one complete row, show nothing
     if (availableCompleteRows === 0) return [];
@@ -667,9 +689,8 @@ function DiscoverPageContent() {
     // Calculate final count: always a multiple of itemsPerRow (complete rows only)
     const finalCount = rowsToShow * itemsPerRow;
     
-    return Array.isArray(filteredAndSortedArtworks)
-      ? filteredAndSortedArtworks.slice(0, finalCount)
-      : [];
+    // Return prioritized artworks (real first, then placeholders)
+    return prioritizedArtworks.slice(0, finalCount);
   }, [filteredAndSortedArtworks, visibleCount, itemsPerRow]);
 
   useEffect(() => {
