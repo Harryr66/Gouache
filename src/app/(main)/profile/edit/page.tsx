@@ -874,6 +874,8 @@ export default function ProfileEditPage() {
         countryOfResidence: formData.countryOfResidence,
         hideLocation: formData.hideLocation,
         hideFlags: formData.hideFlags,
+        hideShop: formData.hideShop,
+        hideLearn: formData.hideLearn,
         updatedAt: new Date(),
         isProfessional: allowArtistFields, // Save the toggle value
       };
@@ -883,8 +885,6 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = formData.tipJarEnabled;
           updateData.hideCard = formData.hideCard;
           updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
-          updateData.hideShop = formData.hideShop;
-          updateData.hideLearn = formData.hideLearn;
           updateData.newsletterLink = formData.newsletterLink || null;
           updateData.eventCity = formData.eventCity || null;
           updateData.eventCountry = formData.eventCountry || null;
@@ -1088,6 +1088,8 @@ export default function ProfileEditPage() {
         countryOfResidence: formData.countryOfResidence,
         hideLocation: formData.hideLocation,
         hideFlags: formData.hideFlags,
+        hideShop: formData.hideShop,
+        hideLearn: formData.hideLearn,
         updatedAt: new Date(),
         isProfessional: allowArtistFields, // Save the toggle value
       };
@@ -1162,8 +1164,6 @@ export default function ProfileEditPage() {
         updateData.tipJarEnabled = formData.tipJarEnabled;
         updateData.hideCard = formData.hideCard;
         updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
-        updateData.hideShop = formData.hideShop;
-        updateData.hideLearn = formData.hideLearn;
         updateData.newsletterLink = formData.newsletterLink || null;
         updateData.eventCity = formData.eventCity || null;
         updateData.eventCountry = formData.eventCountry || null;
