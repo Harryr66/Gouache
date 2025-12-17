@@ -15,7 +15,8 @@ import {
   Clock, 
   Play, 
   Award, 
-  BookOpen, 
+  BookOpen,
+  Brain, 
   MessageCircle, 
   Heart, 
   Download,
@@ -280,7 +281,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+          <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
           <p className="text-muted-foreground">Loading course...</p>
         </div>
       </div>
