@@ -70,6 +70,7 @@ export default function CourseSubmissionPage() {
     difficulty: '',
     duration: '',
     price: '',
+    currency: 'USD',
     tags: [] as string[],
     // Instructor info
     instructorBio: '',
@@ -514,8 +515,8 @@ export default function CourseSubmissionPage() {
         instructor: instructorData,
         thumbnail: thumbnailUrl,
         ...(trailerUrl ? { previewVideoUrl: trailerUrl } : {}),
-        price: parseFloat(formData.price),
-        currency: 'USD',
+        price: parseFloat(formData.price) || 0,
+        currency: formData.currency || 'USD',
         category: formData.category,
         subcategory: formData.subcategory,
         supplyList: formData.supplyList,
@@ -1141,9 +1142,36 @@ export default function CourseSubmissionPage() {
                 {activeStep === 'pricing' && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Pricing & Offers</h3>
-                    <div className="space-y-2 max-w-md">
-                      <Label htmlFor="price">Price (USD) *</Label>
-                      <Input id="price" type="number" step="0.01" value={formData.price} onChange={(e)=>handleInputChange('price', e.target.value)} placeholder="0.00" required />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md">
+                      <div className="space-y-2">
+                        <Label htmlFor="currency">Currency *</Label>
+                        <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">USD ($)</SelectItem>
+                            <SelectItem value="EUR">EUR (€)</SelectItem>
+                            <SelectItem value="GBP">GBP (£)</SelectItem>
+                            <SelectItem value="CAD">CAD (C$)</SelectItem>
+                            <SelectItem value="AUD">AUD (A$)</SelectItem>
+                            <SelectItem value="JPY">JPY (¥)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="price">Price *</Label>
+                        <Input 
+                          id="price" 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          value={formData.price} 
+                          onChange={(e)=>handleInputChange('price', e.target.value)} 
+                          placeholder="0.00" 
+                          required 
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

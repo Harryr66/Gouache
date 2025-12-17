@@ -130,13 +130,13 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                         {new Intl.NumberFormat('en-US', {
                           style: 'currency',
                           currency: course.currency || 'USD'
-                        }).format(course.price / 100)}
+                        }).format(course.price)}
                         {course.originalPrice && course.originalPrice > course.price && (
                           <span className="text-sm text-muted-foreground line-through ml-2">
                             {new Intl.NumberFormat('en-US', {
                               style: 'currency',
                               currency: course.currency || 'USD'
-                            }).format(course.originalPrice / 100)}
+                            }).format(course.originalPrice)}
                           </span>
                         )}
                       </>
