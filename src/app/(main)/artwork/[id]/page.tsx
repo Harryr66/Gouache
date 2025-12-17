@@ -158,14 +158,14 @@ export default function ArtworkPage() {
             {/* Artwork image + actions */}
             <div className="space-y-4">
               <div
-                className="relative w-full min-h-[400px] lg:min-h-[560px] rounded-lg overflow-hidden bg-muted cursor-zoom-in"
+                className="relative w-full max-h-[60vh] min-h-[300px] lg:min-h-[400px] rounded-lg overflow-hidden bg-muted cursor-zoom-in"
                 onClick={() => setShowImageModal(true)}
               >
                 <Image
                   src={artwork.imageUrl}
                   alt={artwork.title}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   priority
                 />
@@ -251,7 +251,7 @@ export default function ArtworkPage() {
 
       {/* Fullscreen image dialog */}
       <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-        <DialogContent className="max-w-3xl w-full p-0 overflow-hidden">
+        <DialogContent className="max-w-2xl w-full max-h-[70vh] p-0 overflow-hidden">
           <button
             aria-label="Close"
             className="absolute top-3 right-3 z-10 rounded-full bg-black/60 text-white p-1 hover:bg-black/80"
@@ -259,13 +259,13 @@ export default function ArtworkPage() {
           >
             <X className="h-5 w-5" />
           </button>
-          <div className="relative w-full aspect-[4/3] bg-black">
+          <div className="relative w-full max-h-[70vh] bg-black flex items-center justify-center">
             <Image
               src={artwork.imageUrl}
               alt={artwork.title}
-              fill
-              className="object-contain"
-              sizes="100vw"
+              width={800}
+              height={600}
+              className="max-w-full max-h-[70vh] w-auto h-auto object-contain"
               priority
             />
           </div>
