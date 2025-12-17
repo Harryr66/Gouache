@@ -162,6 +162,9 @@ export default function ProfileEditPage() {
             // If undefined, default to hidden (true) until artist explicitly disables
             hideShop: user.isProfessional ? (changes.hideShop ?? (user.hideShop ?? true)) : true,
             hideLearn: user.isProfessional ? (changes.hideLearn ?? (user.hideLearn ?? true)) : true,
+            hideSocialIcons: user.isProfessional ? (changes.hideSocialIcons ?? ((user as any).hideSocialIcons ?? false)) : false,
+            hideAboutArtist: user.isProfessional ? (changes.hideAboutArtist ?? ((user as any).hideAboutArtist ?? false)) : false,
+            aboutInstructor: user.isProfessional ? (changes.aboutInstructor || (user as any).aboutInstructor || '') : '',
             bannerImageUrl: user.isProfessional ? (changes.bannerImageUrl || user.bannerImageUrl || '') : '',
             eventCity: user.isProfessional ? (changes.eventCity || user.eventCity || '') : '',
             eventCountry: user.isProfessional ? (changes.eventCountry || user.eventCountry || '') : '',
@@ -241,6 +244,9 @@ export default function ProfileEditPage() {
           // Default to hidden (true) when field is undefined
           hideShop: ((user as any).hideShop ?? true),
           hideLearn: ((user as any).hideLearn ?? true),
+          hideSocialIcons: user.isProfessional ? (((user as any).hideSocialIcons ?? false)) : false,
+          hideAboutArtist: user.isProfessional ? (((user as any).hideAboutArtist ?? false)) : false,
+          aboutInstructor: user.isProfessional ? (((user as any).aboutInstructor || '')) : '',
           bannerImageUrl: user.isProfessional ? (user.bannerImageUrl || '') : '',
           eventCity: user.isProfessional ? ((user as any).eventCity || '') : '',
           eventCountry: user.isProfessional ? ((user as any).eventCountry || '') : '',
@@ -835,6 +841,9 @@ export default function ProfileEditPage() {
         formData.hideShowcaseLocations !== initialFormDataRef.current.hideShowcaseLocations ||
         formData.hideShop !== initialFormDataRef.current.hideShop ||
         formData.hideLearn !== initialFormDataRef.current.hideLearn ||
+        formData.hideSocialIcons !== initialFormDataRef.current.hideSocialIcons ||
+        formData.hideAboutArtist !== initialFormDataRef.current.hideAboutArtist ||
+        formData.aboutInstructor !== initialFormDataRef.current.aboutInstructor ||
         formData.newsletterLink !== initialFormDataRef.current.newsletterLink ||
         formData.eventCity !== initialFormDataRef.current.eventCity ||
         formData.eventCountry !== initialFormDataRef.current.eventCountry ||
@@ -888,6 +897,9 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = formData.tipJarEnabled;
           updateData.hideCard = formData.hideCard;
           updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
+          updateData.hideSocialIcons = formData.hideSocialIcons;
+          updateData.hideAboutArtist = formData.hideAboutArtist;
+          updateData.aboutInstructor = formData.aboutInstructor || null;
           updateData.newsletterLink = formData.newsletterLink || null;
           updateData.eventCity = formData.eventCity || null;
           updateData.eventCountry = formData.eventCountry || null;
@@ -898,6 +910,9 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = false;
           updateData.hideCard = false;
           updateData.hideShowcaseLocations = false;
+          updateData.hideSocialIcons = false;
+          updateData.hideAboutArtist = false;
+          updateData.aboutInstructor = null;
           // Note: hideShop and hideLearn are saved above for all users
           updateData.newsletterLink = null;
           updateData.eventCity = null;
@@ -974,18 +989,13 @@ export default function ProfileEditPage() {
     formData.hideShowcaseLocations,
     formData.hideShop,
     formData.hideLearn,
+    formData.hideSocialIcons,
+    formData.hideAboutArtist,
+    formData.aboutInstructor,
     formData.artistType,
     formData.location,
     formData.countryOfOrigin,
     formData.countryOfResidence,
-    formData.isProfessional,
-    formData.tipJarEnabled,
-    formData.hideLocation,
-    formData.hideFlags,
-    formData.hideCard,
-    formData.hideShowcaseLocations,
-    formData.hideShop,
-    formData.hideLearn,
     formData.newsletterLink,
     formData.eventCity,
     formData.eventCountry,
@@ -1166,6 +1176,9 @@ export default function ProfileEditPage() {
         updateData.tipJarEnabled = formData.tipJarEnabled;
         updateData.hideCard = formData.hideCard;
         updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
+        updateData.hideSocialIcons = formData.hideSocialIcons;
+        updateData.hideAboutArtist = formData.hideAboutArtist;
+        updateData.aboutInstructor = formData.aboutInstructor || null;
         updateData.newsletterLink = formData.newsletterLink || null;
         updateData.eventCity = formData.eventCity || null;
         updateData.eventCountry = formData.eventCountry || null;
@@ -1178,6 +1191,9 @@ export default function ProfileEditPage() {
         updateData.tipJarEnabled = false;
         updateData.hideCard = false;
         updateData.hideShowcaseLocations = false;
+        updateData.hideSocialIcons = false;
+        updateData.hideAboutArtist = false;
+        updateData.aboutInstructor = null;
         // Note: hideShop and hideLearn are saved above for all users
         updateData.newsletterLink = null;
         updateData.eventCity = null;
