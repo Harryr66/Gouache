@@ -171,10 +171,74 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
     }
   };
 
-  const handleContinueOnboarding = () => {
-    if (stripeStatus.onboardingUrl) {
-      window.open(stripeStatus.onboardingUrl, '_blank', 'width=800,height=600');
+  const handleContinueOnboarding = async () => {
+    if (!stripeStatus.accountId) {
+      toast({
+        title: "Account not found",
+        description: "Please connect your Stripe account first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Get a fresh onboarding URL from the API
+      const response = await fetch('/api/stripe/connect/refresh-onboarding', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accountId: stripeStatus.accountId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to refresh onboarding URL');
+      }
+
+      const data = await response.json();
+      
+      if (!data.onboardingUrl) {
+        throw new Error('No onboarding URL received from server');
+      }
+
+      // Update Firestore with the new onboarding URL
+      await updateDoc(doc(db, 'userProfiles', user!.id), {
+        stripeOnboardingUrl: data.onboardingUrl,
+      });
+
+      // Open the fresh onboarding URL
+      const onboardingWindow = window.open(data.onboardingUrl, '_blank', 'width=800,height=600');
+      
+      if (!onboardingWindow) {
+        toast({
+          title: "Popup blocked",
+          description: "Please allow popups for this site and try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Opening Stripe onboarding",
+          description: "Complete the onboarding process in the new window. We'll check your status automatically.",
+        });
+      }
+
+      // Refresh status and start polling
+      await loadStripeStatus();
       startStatusPolling(stripeStatus.accountId);
+    } catch (error: any) {
+      console.error('Error refreshing onboarding URL:', error);
+      toast({
+        title: "Failed to open onboarding",
+        description: error.message || "Failed to refresh onboarding URL. Please try again.",
+        variant: "destructive",
+        duration: 10000
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -414,9 +478,19 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
               }}
               className="w-full gradient-button"
               size="lg"
+              disabled={loading}
             >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Set up Stripe
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Opening...
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Set up Stripe
+                </>
+              )}
             </Button>
           </div>
         )}
