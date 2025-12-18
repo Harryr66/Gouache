@@ -626,7 +626,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                       setCountryMismatch(false);
                       toast({
                         title: "Account reset",
-                        description: "You can now create a new Stripe account with the correct country.",
+                        description: "Stripe account connection has been cleared. You can now connect a new account.",
                       });
                     } catch (error) {
                       console.error('Error resetting account:', error);
