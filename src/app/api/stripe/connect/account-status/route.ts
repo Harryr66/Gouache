@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       payoutsEnabled,
       detailsSubmitted,
       accountType: account.type,
+      country: account.country, // Include country in response
     });
   } catch (error: any) {
     console.error('Error checking Stripe account status:', error);
