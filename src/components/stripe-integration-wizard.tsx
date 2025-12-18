@@ -579,28 +579,70 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
               </div>
             </div>
 
-            <Button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleContinueOnboarding();
-              }}
-              className="w-full gradient-button"
-              size="lg"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Opening...
-                </>
-              ) : (
-                <>
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Set up Stripe
-                </>
+            <div className="space-y-3">
+              <Button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleContinueOnboarding();
+                }}
+                className="w-full gradient-button"
+                size="lg"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Opening...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Set up Stripe
+                  </>
+                )}
+              </Button>
+              
+              {/* Always show reset option if account exists */}
+              {stripeStatus.accountId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (!user || !stripeStatus.accountId) return;
+                    if (!confirm('Are you sure you want to reset your Stripe account connection? You will need to create a new account.')) {
+                      return;
+                    }
+                    try {
+                      await updateDoc(doc(db, 'userProfiles', user.id), {
+                        stripeAccountId: null,
+                        stripeOnboardingStatus: null,
+                        stripeOnboardingUrl: null,
+                        stripeChargesEnabled: null,
+                        stripePayoutsEnabled: null,
+                      });
+                      await refreshUser();
+                      await loadStripeStatus();
+                      setCountryMismatch(false);
+                      toast({
+                        title: "Account reset",
+                        description: "You can now create a new Stripe account with the correct country.",
+                      });
+                    } catch (error) {
+                      console.error('Error resetting account:', error);
+                      toast({
+                        title: "Reset failed",
+                        description: "Could not reset account. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="w-full text-sm"
+                >
+                  Reset Account Connection
+                </Button>
               )}
-            </Button>
+            </div>
           </div>
         )}
 
