@@ -38,7 +38,9 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
     chargesEnabled?: boolean;
     payoutsEnabled?: boolean;
     accountType?: 'express' | 'standard' | 'custom';
+    country?: string; // Stripe account country
   }>({});
+  const [countryMismatch, setCountryMismatch] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -54,14 +56,49 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
       const userDoc = await getDoc(doc(db, 'userProfiles', user.id));
       if (userDoc.exists()) {
         const data = userDoc.data();
+        const accountId = data.stripeAccountId;
+        
         setStripeStatus({
-          accountId: data.stripeAccountId,
+          accountId,
           onboardingStatus: data.stripeOnboardingStatus,
           onboardingUrl: data.stripeOnboardingUrl,
           chargesEnabled: data.stripeChargesEnabled,
           payoutsEnabled: data.stripePayoutsEnabled,
           accountType: data.stripeAccountType,
         });
+
+        // Check for country mismatch if account exists
+        if (accountId) {
+          try {
+            const response = await fetch(`/api/stripe/connect/account-status?accountId=${accountId}`);
+            if (response.ok) {
+              const accountData = await response.json();
+              const stripeCountry = accountData.country;
+              const userCountry = data.countryOfResidence || data.countryOfOrigin;
+              
+              // Map country names to codes for comparison
+              const countryNameToCode: { [key: string]: string } = {
+                'United States': 'US', 'United Kingdom': 'GB', 'Canada': 'CA', 'Australia': 'AU',
+                'Germany': 'DE', 'France': 'FR', 'Italy': 'IT', 'Spain': 'ES', 'Netherlands': 'NL',
+                'Belgium': 'BE', 'Switzerland': 'CH', 'Austria': 'AT', 'Sweden': 'SE', 'Norway': 'NO',
+                'Denmark': 'DK', 'Finland': 'FI', 'Ireland': 'IE', 'Portugal': 'PT', 'Greece': 'GR',
+                'Poland': 'PL', 'Japan': 'JP', 'South Korea': 'KR', 'China': 'CN', 'India': 'IN',
+                'Singapore': 'SG', 'Brazil': 'BR', 'Mexico': 'MX', 'New Zealand': 'NZ',
+              };
+              
+              const userCountryCode = userCountry ? (countryNameToCode[userCountry] || userCountry) : null;
+              
+              if (userCountryCode && stripeCountry && stripeCountry !== userCountryCode) {
+                setCountryMismatch(true);
+                setStripeStatus(prev => ({ ...prev, country: stripeCountry }));
+              } else {
+                setCountryMismatch(false);
+              }
+            }
+          } catch (error) {
+            console.error('Error checking account country:', error);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading Stripe status:', error);
@@ -280,7 +317,27 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
               onboardingStatus: data.onboardingStatus,
               chargesEnabled: data.chargesEnabled,
               payoutsEnabled: data.payoutsEnabled,
+              country: data.country,
             }));
+            
+            // Check for country mismatch
+            if (data.country && user) {
+              const userDoc = await getDoc(doc(db, 'userProfiles', user.id));
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                const userCountry = userData.countryOfResidence || userData.countryOfOrigin;
+                const countryNameToCode: { [key: string]: string } = {
+                  'United States': 'US', 'United Kingdom': 'GB', 'Canada': 'CA', 'Australia': 'AU',
+                  'Germany': 'DE', 'France': 'FR', 'Italy': 'IT', 'Spain': 'ES', 'Netherlands': 'NL',
+                  'Belgium': 'BE', 'Switzerland': 'CH', 'Austria': 'AT', 'Sweden': 'SE', 'Norway': 'NO',
+                  'Denmark': 'DK', 'Finland': 'FI', 'Ireland': 'IE', 'Portugal': 'PT', 'Greece': 'GR',
+                  'Poland': 'PL', 'Japan': 'JP', 'South Korea': 'KR', 'China': 'CN', 'India': 'IN',
+                  'Singapore': 'SG', 'Brazil': 'BR', 'Mexico': 'MX', 'New Zealand': 'NZ',
+                };
+                const userCountryCode = userCountry ? (countryNameToCode[userCountry] || userCountry) : null;
+                setCountryMismatch(userCountryCode && data.country !== userCountryCode);
+              }
+            }
           }
         }
       } catch (error) {
@@ -428,6 +485,58 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
           </div>
         ) : (
           <div className="space-y-4">
+            {countryMismatch && (
+              <Alert className="border-amber-500 bg-amber-500/10">
+                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <AlertTitle className="text-amber-500">Country Mismatch Detected</AlertTitle>
+                <AlertDescription className="space-y-3">
+                  <p>
+                    Your Stripe account was created with the wrong country (US) but your profile indicates you're in the UK. 
+                    Stripe accounts cannot have their country changed after creation.
+                  </p>
+                  <p className="font-semibold">
+                    To fix this, you need to:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 ml-2">
+                    <li>Delete your current Stripe account in the Stripe Dashboard</li>
+                    <li>Click "Reset Account" below to clear the connection</li>
+                    <li>Create a new account with the correct country</li>
+                  </ol>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!user || !stripeStatus.accountId) return;
+                      try {
+                        await updateDoc(doc(db, 'userProfiles', user.id), {
+                          stripeAccountId: null,
+                          stripeOnboardingStatus: null,
+                          stripeOnboardingUrl: null,
+                          stripeChargesEnabled: null,
+                          stripePayoutsEnabled: null,
+                        });
+                        await refreshUser();
+                        await loadStripeStatus();
+                        toast({
+                          title: "Account reset",
+                          description: "You can now create a new Stripe account with the correct country.",
+                        });
+                      } catch (error) {
+                        console.error('Error resetting account:', error);
+                        toast({
+                          title: "Reset failed",
+                          description: "Could not reset account. Please try again.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="mt-2"
+                  >
+                    Reset Account
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Complete Onboarding</AlertTitle>
