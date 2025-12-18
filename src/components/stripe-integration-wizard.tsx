@@ -129,6 +129,17 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
       return;
     }
 
+    // Check if account exists with wrong country - must reset first
+    if (stripeStatus.accountId && countryMismatch) {
+      toast({
+        title: "Account country mismatch",
+        description: "Your existing Stripe account was created with the wrong country. Please click 'Reset Account Connection' first, then create a new account with the correct country.",
+        variant: "destructive",
+        duration: 10000
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Call API to create Stripe Connect account
@@ -146,9 +157,62 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
 
       if (!response.ok) {
         let errorMessage = 'Failed to create Stripe account';
+        let helpUrl = null;
         try {
           const error = await response.json();
           errorMessage = error.error || error.message || errorMessage;
+          helpUrl = error.helpUrl;
+          
+          // Handle country not set error
+          if (errorMessage.includes('Country not set in profile') || errorMessage.includes('country') && errorMessage.includes('profile')) {
+            toast({
+              title: "Country not set",
+              description: "Please set your Country of Residence in your profile settings first, then try connecting Stripe again.",
+              variant: "destructive",
+              duration: 15000,
+              action: (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.href = '/profile/edit'}
+                >
+                  Go to Profile Settings
+                </Button>
+              )
+            });
+            return;
+          }
+          
+          // Handle Connect profile incomplete error
+          if (error.code === 'CONNECT_PROFILE_INCOMPLETE' || 
+              errorMessage.includes('responsibilities of managing losses') ||
+              errorMessage.includes('platform profile') ||
+              errorMessage.includes('platform-profile')) {
+            toast({
+              title: "Stripe Connect setup required",
+              description: "Please complete your Stripe Connect platform profile setup in the Stripe Dashboard.",
+              variant: "destructive",
+              duration: 15000,
+              action: helpUrl ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(helpUrl, '_blank')}
+                >
+                  Complete Setup
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open('https://dashboard.stripe.com/settings/connect/platform-profile', '_blank')}
+                >
+                  Complete Setup
+                </Button>
+              )
+            });
+          }
+          
           console.error('Stripe account creation error:', error);
         } catch (parseError) {
           console.error('Failed to parse error response:', parseError);
