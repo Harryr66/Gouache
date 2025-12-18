@@ -217,20 +217,131 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch user profile to get country information
-    let countryCode = 'US'; // Default fallback
+    // Check if user already has a Stripe account
     try {
       const userDoc = await getDoc(doc(db, 'userProfiles', userId));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        // Prefer countryOfResidence, fallback to countryOfOrigin
-        const countryName = userData.countryOfResidence || userData.countryOfOrigin;
-        countryCode = getCountryCode(countryName);
-        console.log(`Using country code ${countryCode} for user ${userId} (from: ${countryName || 'default'})`);
+        const existingAccountId = userData.stripeAccountId;
+        
+        if (existingAccountId) {
+          // Check if existing account has wrong country
+          try {
+            const account = await stripe.accounts.retrieve(existingAccountId);
+            const existingCountry = account.country;
+            
+            // Get user's expected country
+            const countryName = userData.countryOfResidence || userData.countryOfOrigin;
+            const expectedCountryCode = getCountryCode(countryName);
+            
+            if (expectedCountryCode && existingCountry !== expectedCountryCode) {
+              return NextResponse.json(
+                { 
+                  error: 'Existing Stripe account has wrong country',
+                  message: `Your existing Stripe account was created with country ${existingCountry}, but your profile indicates ${countryName}. Please reset your account connection and create a new account with the correct country.`,
+                  existingCountry,
+                  expectedCountry: expectedCountryCode,
+                  helpUrl: 'https://dashboard.stripe.com/settings/connect/platform-profile'
+                },
+                { status: 400 }
+              );
+            }
+          } catch (accountError: any) {
+            // If account doesn't exist in Stripe, continue to create new one
+            if (accountError.code !== 'resource_missing') {
+              console.error('Error checking existing account:', accountError);
+            }
+          }
+        }
       }
     } catch (error) {
+      console.error('Error checking existing account:', error);
+      // Continue to create account if check fails
+    }
+
+    // Fetch user profile to get country information
+    let countryCode: string | null = null;
+    try {
+      const userDoc = await getDoc(doc(db, 'userProfiles', userId));
+      if (!userDoc.exists()) {
+        return NextResponse.json(
+          { 
+            error: 'User profile not found',
+            message: 'Unable to find your user profile. Please try again.'
+          },
+          { status: 404 }
+        );
+      }
+      
+      const userData = userDoc.data();
+      // Prefer countryOfResidence, fallback to countryOfOrigin
+      let countryName = userData.countryOfResidence || userData.countryOfOrigin;
+      
+      // If still no country, try to infer from location field
+      if (!countryName && userData.location) {
+        const location = userData.location.toLowerCase();
+        if (location.includes('uk') || location.includes('united kingdom') || location.includes('england') || location.includes('scotland') || location.includes('wales') || location.includes('london') || location.includes('manchester') || location.includes('birmingham')) {
+          countryName = 'United Kingdom';
+        } else if (location.includes('usa') || location.includes('united states') || location.includes('us,')) {
+          countryName = 'United States';
+        }
+      }
+      
+      // If no country is set, return error - user MUST set their country
+      if (!countryName) {
+        return NextResponse.json(
+          { 
+            error: 'Country not set in profile',
+            message: 'Please set your "Country of Residence" in your profile settings before connecting Stripe. Go to Profile → Edit → Personal Details and select your country.',
+            helpUrl: '/profile/edit'
+          },
+          { status: 400 }
+        );
+      }
+      
+      countryCode = getCountryCode(countryName);
+      
+      // If country couldn't be mapped, return error
+      if (countryCode === 'US' && countryName !== 'United States') {
+        return NextResponse.json(
+          { 
+            error: 'Country mapping failed',
+            message: `Unable to map country "${countryName}" to Stripe country code. Please ensure your profile has a valid country set (e.g., "United Kingdom", "United States", etc.).`,
+            detectedCountry: countryName,
+            helpUrl: '/profile/edit'
+          },
+          { status: 400 }
+        );
+      }
+      
+      console.log(`[Stripe Account Creation] User ${userId}:`, {
+        countryOfResidence: userData.countryOfResidence,
+        countryOfOrigin: userData.countryOfOrigin,
+        location: userData.location,
+        detectedCountryName: countryName,
+        finalCountryCode: countryCode
+      });
+    } catch (error) {
       console.error('Error fetching user country:', error);
-      // Continue with default 'US' if fetch fails
+      return NextResponse.json(
+        { 
+          error: 'Failed to fetch user profile',
+          message: 'Unable to retrieve your profile information. Please try again.'
+        },
+        { status: 500 }
+      );
+    }
+    
+    // Ensure we have a valid country code
+    if (!countryCode) {
+      return NextResponse.json(
+        { 
+          error: 'Country code not determined',
+          message: 'Unable to determine your country. Please set your Country of Residence in your profile settings.',
+          helpUrl: '/profile/edit'
+        },
+        { status: 400 }
+      );
     }
 
     // Create a Stripe Connect Express account
@@ -275,6 +386,20 @@ export async function POST(request: NextRequest) {
       code: error.code,
       statusCode: error.statusCode,
     });
+    
+    // Handle specific Stripe Connect setup errors
+    if (error.message && error.message.includes('responsibilities of managing losses')) {
+      return NextResponse.json(
+        { 
+          error: 'Stripe Connect platform profile not completed',
+          message: 'Please complete your Stripe Connect platform profile setup in the Stripe Dashboard. Go to Settings → Connect → Platform Profile and accept the responsibilities.',
+          helpUrl: 'https://dashboard.stripe.com/settings/connect/platform-profile',
+          code: 'CONNECT_PROFILE_INCOMPLETE'
+        },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       { 
         error: error.message || 'Failed to create Stripe account',
