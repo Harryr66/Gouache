@@ -157,7 +157,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
 
       if (!response.ok) {
         let errorMessage = 'Failed to create Stripe account';
-        let helpUrl = null;
+        let helpUrl: string | null = null;
         try {
           const error = await response.json();
           errorMessage = error.error || error.message || errorMessage;
@@ -197,7 +197,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(helpUrl, '_blank')}
+                  onClick={() => window.open(helpUrl!, '_blank')}
                 >
                   Complete Setup
                 </Button>
