@@ -481,10 +481,21 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                 for originals, prints, books, and courses. You receive 100% of sales directly to your Stripe account - no platform commission.
               </AlertDescription>
             </Alert>
+
+            <Alert className="border-amber-500 bg-amber-500/10">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <AlertTitle className="text-amber-500">Setup Required</AlertTitle>
+              <AlertDescription>
+                Before connecting Stripe, please ensure your <strong>Country of Residence</strong> is set in your profile. 
+                Go to <strong>Profile → Edit → Personal Details</strong> and select your country. 
+                Stripe requires your country to create your account correctly.
+              </AlertDescription>
+            </Alert>
             
             <div className="space-y-2">
               <h4 className="font-semibold">What you'll need:</h4>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                <li>Country of Residence set in your profile (required)</li>
                 <li>Business information (name, address, tax ID if applicable)</li>
                 <li>Bank account details for payouts</li>
                 <li>Identity verification documents</li>

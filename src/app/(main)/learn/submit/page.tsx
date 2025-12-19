@@ -6,16 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Upload, Plus, Trash2, BookOpen, ListChecks, Image as ImageIcon, DollarSign, Search, Rocket, Video, Save, Clock } from 'lucide-react';
+import { ArrowLeft, Upload, Plus, Trash2, BookOpen, ListChecks, Image as ImageIcon, DollarSign, Search, Rocket, Video, Save, Clock, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { useCourses } from '@/providers/course-provider';
 import { toast } from '@/hooks/use-toast';
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 import { storage, db } from '@/lib/firebase';
-import { collection, doc, getDocs, query, setDoc, where, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDocs, query, setDoc, where, serverTimestamp, getDoc } from 'firebase/firestore';
 
 const COURSE_CATEGORIES = {
   'painting': {
@@ -45,6 +46,10 @@ export default function CourseSubmissionPage() {
   const { user } = useAuth();
   const { createCourse, createInstructor } = useCourses();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState<{
+    hasStripe: boolean;
+    isComplete: boolean;
+  } | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [trailerFile, setTrailerFile] = useState<File | null>(null);
@@ -141,6 +146,35 @@ export default function CourseSubmissionPage() {
   // Slug state & validation
   const [slug, setSlug] = useState('');
   const [isSlugUnique, setIsSlugUnique] = useState(true);
+
+  // Check Stripe connection status
+  useEffect(() => {
+    if (!user) return;
+    
+    const checkStripeStatus = async () => {
+      try {
+        const userDocRef = doc(db, 'userProfiles', user.id);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          const hasStripe = !!userData.stripeAccountId;
+          const isComplete = hasStripe && 
+            userData.stripeOnboardingStatus === 'complete' &&
+            userData.stripeChargesEnabled === true &&
+            userData.stripePayoutsEnabled === true;
+          
+          setStripeStatus({ hasStripe, isComplete });
+        } else {
+          setStripeStatus({ hasStripe: false, isComplete: false });
+        }
+      } catch (error) {
+        console.error('Error checking Stripe status:', error);
+        setStripeStatus({ hasStripe: false, isComplete: false });
+      }
+    };
+    
+    checkStripeStatus();
+  }, [user]);
 
   // Restore draft from localStorage (Kajabi-like autosave) and save to Firestore for cross-device
   useEffect(() => {
@@ -408,6 +442,26 @@ export default function CourseSubmissionPage() {
       return;
     }
 
+    // Check Stripe connection before allowing course submission
+    if (!stripeStatus?.isComplete) {
+      toast({
+        title: "Stripe connection required",
+        description: "Please connect your Stripe account in Settings → Business before submitting a course. This is required to receive payments for course sales.",
+        variant: "destructive",
+        duration: 10000,
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/settings?tab=business')}
+          >
+            Go to Settings
+          </Button>
+        )
+      });
+      return;
+    }
+
     // Validate required fields (based on step)
     const requiredFields = ['title', 'description', 'category', 'subcategory', 'difficulty', 'duration', 'price', 'instructorBio', 'originalityDisclaimer'];
     
@@ -599,6 +653,29 @@ export default function CourseSubmissionPage() {
         <ArrowLeft className="mr-2 h-4 w-4" />
         <span className="hidden sm:inline">Back</span>
       </Button>
+
+      {/* Stripe Connection Warning */}
+      {stripeStatus && !stripeStatus.isComplete && (
+        <Alert className="mb-6 border-amber-500 bg-amber-500/10">
+          <AlertCircle className="h-4 w-4 text-amber-500" />
+          <AlertTitle className="text-amber-500">Stripe Connection Required</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>
+              You must connect your Stripe account before you can submit a course. 
+              This is required to receive payments for course sales.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/settings?tab=business')}
+              className="mt-2"
+            >
+              Connect Stripe Account
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-6">
         {/* Sidebar Steps */}
         <div className="md:col-span-2 lg:col-span-1">
