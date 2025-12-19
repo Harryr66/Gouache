@@ -177,10 +177,46 @@ const COUNTRY_NAME_TO_CODE: { [key: string]: string } = {
   'Western Sahara': 'EH',
 };
 
-// Convert country name to ISO code, fallback to 'US' if not found
-function getCountryCode(countryName?: string): string {
-  if (!countryName) return 'US';
-  return COUNTRY_NAME_TO_CODE[countryName] || 'US';
+// Normalize country name for matching (case-insensitive, handle common aliases)
+function normalizeCountryName(countryName: string): string {
+  const normalized = countryName.trim();
+  
+  // Common aliases and variations
+  const aliases: { [key: string]: string } = {
+    'uk': 'United Kingdom',
+    'u.k.': 'United Kingdom',
+    'u.k': 'United Kingdom',
+    'great britain': 'United Kingdom',
+    'gb': 'United Kingdom',
+    'usa': 'United States',
+    'u.s.a.': 'United States',
+    'u.s.a': 'United States',
+    'u.s.': 'United States',
+    'u.s': 'United States',
+    'us': 'United States',
+    'america': 'United States',
+    'united states of america': 'United States',
+  };
+  
+  const lower = normalized.toLowerCase();
+  if (aliases[lower]) {
+    return aliases[lower];
+  }
+  
+  // Try case-insensitive match in the main map
+  const matchedKey = Object.keys(COUNTRY_NAME_TO_CODE).find(
+    key => key.toLowerCase() === normalized.toLowerCase()
+  );
+  
+  return matchedKey || normalized;
+}
+
+// Convert country name to ISO code, return null if not found (no default to US)
+function getCountryCode(countryName?: string): string | null {
+  if (!countryName) return null;
+  
+  const normalized = normalizeCountryName(countryName);
+  return COUNTRY_NAME_TO_CODE[normalized] || null;
 }
 
 export async function POST(request: NextRequest) {
@@ -234,6 +270,7 @@ export async function POST(request: NextRequest) {
             const countryName = userData.countryOfResidence || userData.countryOfOrigin;
             const expectedCountryCode = getCountryCode(countryName);
             
+            // Only check mismatch if we have a valid expected country code
             if (expectedCountryCode && existingCountry !== expectedCountryCode) {
               return NextResponse.json(
                 { 
@@ -301,12 +338,12 @@ export async function POST(request: NextRequest) {
       
       countryCode = getCountryCode(countryName);
       
-      // If country couldn't be mapped, return error
-      if (countryCode === 'US' && countryName !== 'United States') {
+      // If country couldn't be mapped, return error (no default to US)
+      if (!countryCode) {
         return NextResponse.json(
           { 
             error: 'Country mapping failed',
-            message: `Unable to map country "${countryName}" to Stripe country code. Please ensure your profile has a valid country set (e.g., "United Kingdom", "United States", etc.).`,
+            message: `Unable to map country "${countryName}" to a Stripe country code. Please ensure your profile has a valid country set (e.g., "United Kingdom", "United States", etc.). Go to Profile → Edit → Personal Details to update your country.`,
             detectedCountry: countryName,
             helpUrl: '/profile/edit'
           },
