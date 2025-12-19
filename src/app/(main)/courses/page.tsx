@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,10 +8,23 @@ import { Brain, Star, Users, Clock } from 'lucide-react';
 import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from '@/components/theme-loading';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function CoursesPage() {
   const router = useRouter();
   const { courses, isLoading } = useCourses();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   if (isLoading) {
     return (
@@ -30,10 +43,10 @@ export default function CoursesPage() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Brain className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Course Marketplace</h1>
+            <h1 className="text-3xl font-bold">Gouache Learn</h1>
           </div>
           <p className="text-muted-foreground">
-            Discover and enroll in courses from expert instructors
+            Learn directly from your favourite artists
           </p>
         </div>
 
@@ -46,69 +59,56 @@ export default function CoursesPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
             {publishedCourses.map((course) => (
-              <Card
-                key={course.id}
-                className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
-                onClick={() => router.push(`/learn/${course.id}`)}
-              >
-                <div className="relative aspect-video overflow-hidden">
-                  {course.thumbnail ? (
-                    <Image
-                      src={course.thumbnail}
-                      alt={course.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <Brain className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                    {course.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                    {course.description}
-                  </p>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">{course.rating.toFixed(1)}</span>
-                      <span className="text-xs text-muted-foreground">({course.reviewCount})</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      <span>{course.students}</span>
-                    </div>
+              <Link key={course.id} href={`/learn/${course.id}`}>
+                <Card className={`group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full ${isMobile ? 'flex flex-row min-h-[140px]' : 'flex flex-col'}`}>
+                  <div className={`${isMobile ? 'relative w-36 sm:w-40 h-full aspect-[3/2] flex-shrink-0' : 'relative aspect-[4/3]'} overflow-hidden`}>
+                    {course.thumbnail ? (
+                      <Image
+                        src={course.thumbnail}
+                        alt={course.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <Brain className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {course.isOnSale && course.originalPrice && (
-                        <span className="text-sm text-muted-foreground line-through">
-                          {new Intl.NumberFormat('en-US', {
-                            style: 'currency',
-                            currency: course.currency || 'USD',
-                          }).format(course.originalPrice)}
-                        </span>
-                      )}
-                      <span className="text-lg font-bold">
+                  <div className="p-4 flex flex-col flex-grow">
+                    <Badge variant="secondary" className="mb-2 text-xs w-fit">{course.difficulty}</Badge>
+                    <h3 className="font-medium text-sm mb-1 line-clamp-2">{course.title}</h3>
+                    <div className="space-y-1 text-xs text-muted-foreground flex-grow">
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <span>{course.rating.toFixed(1)} ({course.reviewCount})</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>{course.students} students</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-auto pt-2">
+                      <span className="font-semibold text-foreground text-sm">
+                        {course.isOnSale && course.originalPrice && (
+                          <span className="text-muted-foreground line-through mr-2">
+                            {new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: course.currency || 'USD',
+                            }).format(course.originalPrice)}
+                          </span>
+                        )}
                         {new Intl.NumberFormat('en-US', {
                           style: 'currency',
                           currency: course.currency || 'USD',
                         }).format(course.price)}
                       </span>
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {course.difficulty}
-                    </Badge>
                   </div>
-                </CardContent>
-              </Card>
+                </Card>
+              </Link>
             ))}
           </div>
         )}
