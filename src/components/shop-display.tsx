@@ -76,19 +76,19 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
           
           // Only include artworks (originals and prints) - products are fetched separately
           if (itemType !== 'merchandise') {
-            results.push({
-              id: doc.id,
+          results.push({
+            id: doc.id,
               type: itemType === 'print' ? 'print' : 'original',
-              title: data.title || 'Untitled',
-              description: data.description,
-              price: data.price || 0,
-              currency: data.currency || 'USD',
-              imageUrl: data.imageUrl,
-              isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
-              stock: data.stock,
-              category: data.category,
-              createdAt: data.createdAt?.toDate?.() || new Date(),
-            });
+            title: data.title || 'Untitled',
+            description: data.description,
+            price: data.price || 0,
+            currency: data.currency || 'USD',
+            imageUrl: data.imageUrl,
+            isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
+            stock: data.stock,
+            category: data.category,
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+          });
           }
         });
 
@@ -213,12 +213,12 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               )}
               {isStripeIntegrated && (
                 <div className="space-y-2">
-                  <Button asChild variant="gradient">
+            <Button asChild variant="gradient">
                     <a href="/profile">
-                      <ImageIcon className="h-4 w-4 mr-2" />
+                <ImageIcon className="h-4 w-4 mr-2" />
                       Add Artwork to Portfolio
-                    </a>
-                  </Button>
+              </a>
+            </Button>
                   <p className="text-xs text-muted-foreground">
                     Go to your Portfolio tab, click "Add New Artwork", and toggle "Mark as For Sale"
                   </p>

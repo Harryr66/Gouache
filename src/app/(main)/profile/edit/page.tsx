@@ -1582,41 +1582,41 @@ export default function ProfileEditPage() {
               </div>
 
               {isArtistAccount && (
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>Hide Events & Locations</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Hide the "Events & Locations" carousel from your public profile
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label>Hide Events & Locations</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Hide the "Events & Locations" carousel from your public profile
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.hideShowcaseLocations}
+                      onCheckedChange={(checked) => handleInputChange('hideShowcaseLocations', checked)}
+                    />
                   </div>
-                  <Switch
-                    checked={formData.hideShowcaseLocations}
-                    onCheckedChange={(checked) => handleInputChange('hideShowcaseLocations', checked)}
-                  />
-                </div>
               )}
 
               {/* Shop and Learn toggles - visible for all users */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
                   <Label>Enable shop</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Show the "Shop" tab on your public profile
-                  </p>
-                </div>
-                <Switch
-                  checked={!formData.hideShop}
-                  onCheckedChange={(checked) => {
-                    if (!checked) {
-                      const confirmDisable = window.confirm(
-                        'Are you sure you want to disable your Shop tab? Customers will no longer see your shop on your profile.'
-                      );
-                      if (!confirmDisable) return;
-                    }
-                    handleInputChange('hideShop', !checked);
-                  }}
-                />
-              </div>
+                      <p className="text-sm text-muted-foreground">
+                        Show the "Shop" tab on your public profile
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!formData.hideShop}
+                      onCheckedChange={(checked) => {
+                        if (!checked) {
+                          const confirmDisable = window.confirm(
+                            'Are you sure you want to disable your Shop tab? Customers will no longer see your shop on your profile.'
+                          );
+                          if (!confirmDisable) return;
+                        }
+                        handleInputChange('hideShop', !checked);
+                      }}
+                    />
+                  </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -2140,8 +2140,8 @@ export default function ProfileEditPage() {
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
                           <Label htmlFor="website">Website (optional)</Label>
                           <Input
                             id="website"
@@ -2155,39 +2155,39 @@ export default function ProfileEditPage() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="instagram">Instagram (optional)</Label>
-                          <Input
-                            id="instagram"
-                            value={artistRequestData.socialLinks.instagram}
-                            onChange={(e) => setArtistRequestData(prev => ({ 
-                              ...prev, 
-                              socialLinks: { ...prev.socialLinks, instagram: e.target.value }
-                            }))}
-                            placeholder="@username or URL"
-                          />
-                        </div>
-                        <div className="space-y-2">
+                        <Input
+                          id="instagram"
+                          value={artistRequestData.socialLinks.instagram}
+                          onChange={(e) => setArtistRequestData(prev => ({ 
+                            ...prev, 
+                            socialLinks: { ...prev.socialLinks, instagram: e.target.value }
+                          }))}
+                          placeholder="@username or URL"
+                        />
+                      </div>
+                      <div className="space-y-2">
                           <Label htmlFor="x">X / Twitter (optional)</Label>
-                          <Input
-                            id="x"
-                            value={artistRequestData.socialLinks.x}
-                            onChange={(e) => setArtistRequestData(prev => ({ 
-                              ...prev, 
-                              socialLinks: { ...prev.socialLinks, x: e.target.value }
-                            }))}
-                            placeholder="@username or URL"
-                          />
-                        </div>
-                        <div className="space-y-2">
+                        <Input
+                          id="x"
+                          value={artistRequestData.socialLinks.x}
+                          onChange={(e) => setArtistRequestData(prev => ({ 
+                            ...prev, 
+                            socialLinks: { ...prev.socialLinks, x: e.target.value }
+                          }))}
+                          placeholder="@username or URL"
+                        />
+                      </div>
+                      <div className="space-y-2">
                           <Label htmlFor="tiktok">TikTok (optional)</Label>
-                          <Input
-                            id="tiktok"
-                            value={artistRequestData.socialLinks.tiktok}
-                            onChange={(e) => setArtistRequestData(prev => ({ 
-                              ...prev, 
-                              socialLinks: { ...prev.socialLinks, tiktok: e.target.value }
-                            }))}
-                            placeholder="@username or URL"
-                          />
+                        <Input
+                          id="tiktok"
+                          value={artistRequestData.socialLinks.tiktok}
+                          onChange={(e) => setArtistRequestData(prev => ({ 
+                            ...prev, 
+                            socialLinks: { ...prev.socialLinks, tiktok: e.target.value }
+                          }))}
+                          placeholder="@username or URL"
+                        />
                         </div>
                       </div>
                     </div>

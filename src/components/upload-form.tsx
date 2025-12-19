@@ -234,10 +234,10 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
           newArtwork.contactForPrice = true;
         }
         if (formData.deliveryScope) {
-          newArtwork.deliveryScope = formData.deliveryScope;
-        }
+        newArtwork.deliveryScope = formData.deliveryScope;
+      }
         if (formData.deliveryCountries) {
-          newArtwork.deliveryCountries = formData.deliveryCountries;
+        newArtwork.deliveryCountries = formData.deliveryCountries;
         }
       }
 
@@ -628,7 +628,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
           {formData.isForSale && (
             <div className="space-y-4 p-4 border rounded-lg border-l-2">
               <Label className="text-base font-semibold mb-4 block">Pricing & Delivery</Label>
-              <div className="space-y-4">
+          <div className="space-y-4">
                 {/* Price Type */}
                 <div className="space-y-2">
                   <Label>Pricing</Label>
@@ -651,35 +651,35 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="price">Price *</Label>
-                      <Input
-                        id="price"
-                        type="number"
+                  <Input
+                    id="price"
+                    type="number"
                         min="0"
                         step="0.01"
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="currency">Currency</Label>
-                      <Select 
-                        value={formData.currency} 
-                        onValueChange={(value) => setFormData({ ...formData, currency: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select 
+                    value={formData.currency} 
+                    onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
                           <SelectItem value="USD">USD ($)</SelectItem>
                           <SelectItem value="GBP">GBP (£)</SelectItem>
                           <SelectItem value="EUR">EUR (€)</SelectItem>
                           <SelectItem value="CAD">CAD (C$)</SelectItem>
                           <SelectItem value="AUD">AUD (A$)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                    </SelectContent>
+                  </Select>
+                </div>
+                </div>
                 )}
 
                 {/* Contact Artist Note */}

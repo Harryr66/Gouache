@@ -15,7 +15,7 @@ import {
   Clock, 
   Play, 
   Award, 
-  BookOpen,
+  BookOpen, 
   Brain, 
   MessageCircle, 
   Heart, 
@@ -214,7 +214,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               e => e.courseId === courseId && e.userId === user.id
             );
             setIsEnrolled(!!enrollment);
-          }
+      }
         }
         setIsLoading(false);
       } catch (error) {
@@ -242,34 +242,34 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     try {
       // For course links, redirect to external URL after payment
       if (course?.courseType === 'affiliate' && course.externalUrl) {
-        const platformName = course.hostingPlatform 
-          ? course.hostingPlatform.charAt(0).toUpperCase() + course.hostingPlatform.slice(1)
-          : 'external platform';
-        
-        let message = `You will be redirected to ${platformName} to access this course.`;
-        
-        if (course.linkType === 'enrollment') {
-          message += ' You will be automatically enrolled.';
-        } else if (course.linkType === 'affiliate') {
-          message += ' You may need to complete enrollment on the platform.';
-        } else {
-          message += ' You may need to sign in or enroll manually.';
-        }
-        
-        message += '\n\nContinue?';
-        
-        if (confirm(message)) {
-          window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
-        }
+      const platformName = course.hostingPlatform 
+        ? course.hostingPlatform.charAt(0).toUpperCase() + course.hostingPlatform.slice(1)
+        : 'external platform';
+      
+      let message = `You will be redirected to ${platformName} to access this course.`;
+      
+      if (course.linkType === 'enrollment') {
+        message += ' You will be automatically enrolled.';
+      } else if (course.linkType === 'affiliate') {
+        message += ' You may need to complete enrollment on the platform.';
+      } else {
+        message += ' You may need to sign in or enroll manually.';
+      }
+      
+      message += '\n\nContinue?';
+      
+      if (confirm(message)) {
+        window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
+      }
       } else if (course?.courseType === 'hosted') {
         // For hosted courses, enroll and redirect to player
         await enrollInCourse(courseId);
         setIsEnrolled(true);
         router.push(`/learn/${courseId}/player`);
-      } else {
+    } else {
         // Fallback: try to enroll anyway
         await enrollInCourse(courseId);
-        setIsEnrolled(true);
+      setIsEnrolled(true);
       }
     } catch (error) {
       console.error('Error enrolling:', error);
@@ -442,15 +442,15 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                         <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
                           {course.instructor.location && (
                             <div className="flex items-center gap-1 shrink-0">
-                              <MapPin className="h-4 w-4" />
+                            <MapPin className="h-4 w-4" />
                               <span className="break-words">{course.instructor.location}</span>
-                            </div>
+                          </div>
                           )}
                           {course.instructor.website && (
                             <div className="flex items-center gap-1 shrink-0">
-                              <Globe className="h-4 w-4" />
+                            <Globe className="h-4 w-4" />
                               <a href={course.instructor.website} className="hover:text-primary break-all">Website</a>
-                            </div>
+                          </div>
                           )}
                         </div>
                       </div>
@@ -617,9 +617,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                           size="lg"
                           onClick={() => router.push(`/learn/${courseId}/player`)}
                         >
-                          <Play className="h-4 w-4 mr-2" />
-                          Continue Learning
-                        </Button>
+                        <Play className="h-4 w-4 mr-2" />
+                        Continue Learning
+                      </Button>
                       ) : (
                         <Button 
                           className="w-full gradient-button" 
@@ -637,7 +637,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     </div>
                   ) : (
                     <>
-                      <Button
+                      <Button 
                         className="w-full gradient-button text-sm sm:text-base"
                         size="lg"
                         onClick={handleEnroll}
