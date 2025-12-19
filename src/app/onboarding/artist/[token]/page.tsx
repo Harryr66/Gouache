@@ -324,8 +324,8 @@ export default function ArtistOnboardingPage() {
           description: 'We need your name, handle, and email address before moving on.',
           variant: 'destructive'
         });
-        return;
-      }
+      return;
+    }
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email.trim())) {
@@ -1248,26 +1248,26 @@ export default function ArtistOnboardingPage() {
 
           {currentStep === 1 && (
             <>
-              <div className="grid gap-6">
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="displayName">Artist name</label>
-                  <Input
-                    id="displayName"
-                    placeholder="Elena Vance"
-                    value={formData.displayName}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, displayName: event.target.value }))}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="handle">Public handle</label>
-                  <Input
-                    id="handle"
-                    placeholder="elena_vance"
-                    value={formData.handle}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, handle: event.target.value }))}
-                  />
-                  <p className="text-xs text-muted-foreground">We recommend something short and memorable. You can change it later.</p>
-                </div>
+            <div className="grid gap-6">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="displayName">Artist name</label>
+                <Input
+                  id="displayName"
+                  placeholder="Elena Vance"
+                  value={formData.displayName}
+                  onChange={(event) => setFormData((previous) => ({ ...previous, displayName: event.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="handle">Public handle</label>
+                <Input
+                  id="handle"
+                  placeholder="elena_vance"
+                  value={formData.handle}
+                  onChange={(event) => setFormData((previous) => ({ ...previous, handle: event.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground">We recommend something short and memorable. You can change it later.</p>
+              </div>
                 <div className="grid gap-2">
                   <label className="text-sm font-medium text-foreground" htmlFor="email">Email Address *</label>
                   <Input
@@ -1280,34 +1280,34 @@ export default function ArtistOnboardingPage() {
                   />
                   <p className="text-xs text-muted-foreground">Required for customer inquiries and course access links.</p>
                 </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="bio">Short bio</label>
-                  <Textarea
-                    id="bio"
-                    placeholder="Share what drives your practice, recurring themes, or the mediums you work with."
-                    value={formData.bio}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, bio: event.target.value }))}
-                    rows={6}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-foreground" htmlFor="location">Primary location</label>
-                  <Input
-                    id="location"
-                    placeholder="City, Country"
-                    value={formData.location}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, location: event.target.value }))}
-                  />
-                </div>
-                <div className="grid gap-2">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="bio">Short bio</label>
+                <Textarea
+                  id="bio"
+                  placeholder="Share what drives your practice, recurring themes, or the mediums you work with."
+                  value={formData.bio}
+                  onChange={(event) => setFormData((previous) => ({ ...previous, bio: event.target.value }))}
+                  rows={6}
+                />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-foreground" htmlFor="location">Primary location</label>
+                <Input
+                  id="location"
+                  placeholder="City, Country"
+                  value={formData.location}
+                  onChange={(event) => setFormData((previous) => ({ ...previous, location: event.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
                   <label className="text-sm font-medium text-foreground" htmlFor="website">Website (optional)</label>
-                  <Input
-                    id="website"
+                <Input
+                  id="website"
                     placeholder="https://yourwebsite.com"
-                    value={formData.website}
-                    onChange={(event) => setFormData((previous) => ({ ...previous, website: event.target.value }))}
-                  />
-                </div>
+                  value={formData.website}
+                  onChange={(event) => setFormData((previous) => ({ ...previous, website: event.target.value }))}
+                />
+              </div>
               </div>
 
               {/* About the Instructor Section */}
@@ -1337,36 +1337,36 @@ export default function ArtistOnboardingPage() {
                   </p>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="grid gap-2">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-2">
                     <label className="text-sm font-medium text-foreground" htmlFor="instagram">Instagram (optional)</label>
-                    <Input
-                      id="instagram"
+                  <Input
+                    id="instagram"
                       placeholder="@username or URL"
-                      value={formData.instagram}
-                      onChange={(event) => setFormData((previous) => ({ ...previous, instagram: event.target.value }))}
-                    />
-                  </div>
-                  <div className="grid gap-2">
+                    value={formData.instagram}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, instagram: event.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
                     <label className="text-sm font-medium text-foreground" htmlFor="x">X / Twitter (optional)</label>
-                    <Input
+                  <Input
                       id="x"
                       placeholder="@username or URL"
-                      value={formData.x}
-                      onChange={(event) => setFormData((previous) => ({ ...previous, x: event.target.value }))}
-                    />
-                  </div>
-                  <div className="grid gap-2">
+                    value={formData.x}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, x: event.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
                     <label className="text-sm font-medium text-foreground" htmlFor="tiktok">TikTok (optional)</label>
-                    <Input
-                      id="tiktok"
+                  <Input
+                    id="tiktok"
                       placeholder="@username or URL"
-                      value={formData.tiktok}
-                      onChange={(event) => setFormData((previous) => ({ ...previous, tiktok: event.target.value }))}
-                    />
-                  </div>
+                    value={formData.tiktok}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, tiktok: event.target.value }))}
+                  />
                 </div>
               </div>
+            </div>
             </>
           )}
 
@@ -2064,10 +2064,10 @@ export default function ArtistOnboardingPage() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}
-                <Button variant="gradient" onClick={handleNextStep} className="justify-center">
-                  Continue
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+              <Button variant="gradient" onClick={handleNextStep} className="justify-center">
+                Continue
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
               </div>
             )}
             {currentStep === STEPS.length - 1 && (

@@ -507,7 +507,7 @@ function DiscoverPageContent() {
     if (discoverSettings.hideAiAssistedArt) {
       realArtworks = realArtworks.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
     }
-    
+
     // Sort using engagement-based algorithm when 'popular' is selected
     let sorted = Array.isArray(realArtworks) ? [...realArtworks] : [];
     

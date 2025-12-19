@@ -289,14 +289,14 @@ export default function ProfilePage() {
         {(() => {
           const isProf = effectiveUser.isProfessional || hasApprovedArtistRequest || false;
           return (
-            <ProfileTabs
+        <ProfileTabs
               userId={effectiveUser.id}
-              isOwnProfile={true}
+          isOwnProfile={true}
               isProfessional={isProf}
               hideShop={effectiveUser.hideShop ?? true}
               hideLearn={effectiveUser.hideLearn ?? true}
-              onTabChange={setCurrentTab}
-            />
+          onTabChange={setCurrentTab}
+        />
           );
         })()}
       </div>

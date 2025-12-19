@@ -335,9 +335,9 @@ export default function CourseSubmissionPage() {
     setFormData(prev => {
       const lessonOrder = prev.curriculum.length + 1;
       return {
-        ...prev,
-        curriculum: [
-          ...prev.curriculum,
+      ...prev,
+      curriculum: [
+        ...prev.curriculum,
           {
             id: `${Date.now()}`,
             title: lessonFormData.title.trim(),
@@ -963,9 +963,9 @@ export default function CourseSubmissionPage() {
                                 {lessonFormData.duration && (
                                   <p className="text-primary font-medium">Duration: {lessonFormData.duration}</p>
                                 )}
-                              </div>
-                            )}
                           </div>
+                            )}
+                        </div>
                           <div className="space-y-2">
                             <Label>Notes (Optional)</Label>
                             <Textarea
@@ -1007,18 +1007,18 @@ export default function CourseSubmissionPage() {
                             .sort((a, b) => a.order - b.order)
                             .map((lesson) => (
                               <div
-                                key={lesson.id}
+                            key={lesson.id}
                                 className="flex items-center justify-between rounded-md border p-3"
                               >
                                 <div className="flex items-center gap-3 flex-1">
                                   <ListChecks className="h-4 w-4 text-muted-foreground" />
                                   <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium">{lesson.title}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{lesson.title}</span>
                                       {lesson.isPreview && (
                                         <Badge variant="secondary" className="text-xs">Preview</Badge>
                                       )}
-                                    </div>
+                            </div>
                                     <div className="flex items-center gap-2 mt-1">
                                       {lesson.duration && (
                                         <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -1039,7 +1039,7 @@ export default function CourseSubmissionPage() {
                                   onClick={() => removeLesson(lesson.id)}
                                 >
                                   <Trash2 className="h-4 w-4" />
-                                </Button>
+                            </Button>
                               </div>
                             ))}
                         </div>
@@ -1297,10 +1297,10 @@ export default function CourseSubmissionPage() {
                       <Label htmlFor="originality-disclaimer" className="flex-1 cursor-pointer">
                         I confirm that this is my own original work and that AI has not been used to create the content of this course.
                       </Label>
-                    </div>
+                </div>
                     <p className="text-sm text-muted-foreground">Your course will be reviewed by Gouache. If approved, it will be published automatically.</p>
-                  </div>
-                )}
+            </div>
+            )}
 
             {/* Skills Section - Tags moved to Discoverability step */}
             {/* Instructor Information */}
@@ -1320,15 +1320,15 @@ export default function CourseSubmissionPage() {
                 />
               </div>
 
-            </div>
+              </div>
             )}
 
             {/* Navigation Buttons */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-6 border-t">
-              <div className="flex gap-2">
+                <div className="flex gap-2">
                 {steps.findIndex(s => s.id === activeStep) > 0 && (
                   <Button 
-                    type="button" 
+                        type="button"
                     variant="outline" 
                     onClick={() => {
                       const currentIndex = steps.findIndex(s => s.id === activeStep);

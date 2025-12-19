@@ -2244,7 +2244,7 @@ export function AdminViewRouter(props: any) {
                           {product.status === 'pending' && (
                             <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
                               Pending Approval
-                            </Badge>
+                          </Badge>
                           )}
                           {product.status === 'approved' && product.isPublished && (
                             <Badge variant="default" className="bg-green-50 text-green-700 border-green-300">
