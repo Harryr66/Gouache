@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 const mobileNavItems = [
   { href: '/news', icon: Globe, label: 'News' },
   { href: '/discover', icon: Eye, label: 'Discover' },
-  { href: '/courses', icon: Brain, label: 'Courses' },
+  { href: '/courses', icon: Brain, label: 'Learn' },
 ];
 
 export function MobileBottomNav() {
