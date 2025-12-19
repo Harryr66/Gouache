@@ -9,7 +9,7 @@ import { Eye, Fingerprint, Globe, Brain } from 'lucide-react';
 const navigation = [
   { name: 'News', href: '/news', icon: Globe },
   { name: 'Discover', href: '/discover', icon: Eye },
-  { name: 'Courses', href: '/courses', icon: Brain },
+  { name: 'Learn', href: '/courses', icon: Brain },
   { name: 'Profile', href: '/profile', icon: Fingerprint },
 ];
 
