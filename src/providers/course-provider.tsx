@@ -62,7 +62,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Load courses
+  // Load courses - only published and approved courses
   useEffect(() => {
     const coursesQuery = query(
       collection(db, 'courses'),
@@ -73,42 +73,47 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onSnapshot(
       coursesQuery, 
       (snapshot) => {
-        const coursesData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date(),
-            publishedAt: data.publishedAt?.toDate(),
-            instructor: {
-              ...data.instructor,
-              createdAt: data.instructor?.createdAt?.toDate() || new Date(),
-              updatedAt: data.instructor?.updatedAt?.toDate() || new Date(),
-            },
-            reviews: data.reviews?.map((review: any) => ({
-              ...review,
-              createdAt: review.createdAt?.toDate() || new Date(),
-            })) || [],
-            discussions: data.discussions?.map((discussion: any) => ({
-              ...discussion,
-              createdAt: discussion.createdAt?.toDate() || new Date(),
-              updatedAt: discussion.updatedAt?.toDate() || new Date(),
-              replies: discussion.replies?.map((reply: any) => ({
-                ...reply,
-                createdAt: reply.createdAt?.toDate() || new Date(),
+        const coursesData = snapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              updatedAt: data.updatedAt?.toDate() || new Date(),
+              publishedAt: data.publishedAt?.toDate(),
+              instructor: {
+                ...data.instructor,
+                createdAt: data.instructor?.createdAt?.toDate() || new Date(),
+                updatedAt: data.instructor?.updatedAt?.toDate() || new Date(),
+              },
+              reviews: data.reviews?.map((review: any) => ({
+                ...review,
+                createdAt: review.createdAt?.toDate() || new Date(),
               })) || [],
-            })) || [],
-            curriculum: data.curriculum?.map((week: any) => ({
-              ...week,
-              lessons: week.lessons?.map((lesson: any) => ({
-                ...lesson,
-                isCompleted: false, // Will be updated based on user enrollment
+              discussions: data.discussions?.map((discussion: any) => ({
+                ...discussion,
+                createdAt: discussion.createdAt?.toDate() || new Date(),
+                updatedAt: discussion.updatedAt?.toDate() || new Date(),
+                replies: discussion.replies?.map((reply: any) => ({
+                  ...reply,
+                  createdAt: reply.createdAt?.toDate() || new Date(),
+                })) || [],
               })) || [],
-            })) || [],
-          };
-        }) as Course[];
+              curriculum: data.curriculum?.map((week: any) => ({
+                ...week,
+                lessons: week.lessons?.map((lesson: any) => ({
+                  ...lesson,
+                  isCompleted: false, // Will be updated based on user enrollment
+                })) || [],
+              })) || [],
+            };
+          })
+          // Filter to only show approved courses (or courses with no status, which are legacy approved)
+          .filter((course: any) => 
+            !course.status || course.status === 'approved'
+          ) as Course[];
 
         setCourses(coursesData);
         setIsLoading(false);
