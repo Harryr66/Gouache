@@ -54,7 +54,7 @@ export function ExpandedArtworkView({ artwork, discussion, onClose }: ExpandedAr
             <div className="bg-background rounded-lg max-w-2xl w-full max-h-[70vh] overflow-hidden shadow-2xl">
                 <div className="flex flex-col lg:flex-row h-full">
                     {/* Image Section */}
-                    <div className="lg:w-2/3 bg-muted flex items-center justify-center p-4">
+                    <div className="lg:w-2/3 bg-muted flex items-center justify-center p-4 allow-pinch-zoom">
                         <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
                             <Image
                                 src={artwork.imageUrl}

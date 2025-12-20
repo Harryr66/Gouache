@@ -516,11 +516,16 @@ export function HueChatbot() {
       <div
         ref={orbRef}
         className={cn(
-          "relative pointer-events-auto cursor-grab active:cursor-grabbing touch-none",
+          "relative pointer-events-auto cursor-grab active:cursor-grabbing",
           isExpanded ? "w-0 h-0 opacity-0" : "w-12 h-12", // Fixed smaller size for both mobile and desktop
           hasError && !isExpanded && "animate-pulse"
         )}
         style={{
+          // Prevent pinch zoom when dragging Hue
+          touchAction: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          userSelect: 'none',
           // Fixed size to prevent fluctuation
           width: isExpanded ? 0 : '48px',
           height: isExpanded ? 0 : '48px',
