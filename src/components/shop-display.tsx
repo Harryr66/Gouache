@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, Book, GraduationCap, Image as ImageIcon, AlertCircle, Link2, CreditCard, Edit } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -24,6 +25,8 @@ interface ShopItem {
   description?: string;
   price: number;
   currency: string;
+  priceType?: 'fixed' | 'contact';
+  contactForPrice?: boolean;
   imageUrl?: string;
   thumbnailUrl?: string;
   isAvailable: boolean;
@@ -247,6 +250,8 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               description: data.description,
               price: price,
               currency: data.currency || 'USD',
+              priceType: data.priceType || (data.contactForPrice ? 'contact' : 'fixed'),
+              contactForPrice: data.contactForPrice || data.priceType === 'contact',
               imageUrl: data.imageUrl,
               isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
               stock: data.stock,
@@ -405,13 +410,20 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Artworks Section */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <ImageIcon className="h-5 w-5" />
+    <Tabs defaultValue="artworks" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsTrigger value="artworks" className="flex items-center gap-2">
+          <ImageIcon className="h-4 w-4" />
           Artworks
-        </h3>
+        </TabsTrigger>
+        <TabsTrigger value="products" className="flex items-center gap-2">
+          <Package className="h-4 w-4" />
+          Products
+        </TabsTrigger>
+      </TabsList>
+
+      {/* Artworks Tab */}
+      <TabsContent value="artworks" className="space-y-4">
         {artworks.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {artworks.map((item) => (
@@ -454,7 +466,11 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                   )}
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-lg">
-                      {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
+                      {item.priceType === 'contact' || item.contactForPrice ? (
+                        <span className="text-muted-foreground">Contact for pricing</span>
+                      ) : (
+                        <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
+                      )}
                     </span>
                     <div className="flex items-center gap-2">
                       {isOwnProfile && (
@@ -485,16 +501,22 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground text-center py-8">No artworks for sale yet.</p>
+          <Card className="p-8 text-center">
+            <CardContent>
+              <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <CardTitle className="mb-2">No artworks for sale yet</CardTitle>
+              <CardDescription>
+                {isOwnProfile
+                  ? "Mark artworks as 'For Sale' in your portfolio to list them here."
+                  : "This artist hasn't listed any artworks for sale yet."}
+              </CardDescription>
+            </CardContent>
+          </Card>
         )}
-      </div>
+      </TabsContent>
 
-      {/* Products Section */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          Products
-        </h3>
+      {/* Products Tab */}
+      <TabsContent value="products" className="space-y-4">
         {products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map((item) => (
@@ -543,11 +565,20 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground text-center py-8">No products for sale yet.</p>
+          <Card className="p-8 text-center">
+            <CardContent>
+              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <CardTitle className="mb-2">No products for sale yet</CardTitle>
+              <CardDescription>
+                {isOwnProfile
+                  ? "Add products through the marketplace to list them here."
+                  : "This artist hasn't listed any products for sale yet."}
+              </CardDescription>
+            </CardContent>
+          </Card>
         )}
-      </div>
-
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }
 

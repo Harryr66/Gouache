@@ -7,6 +7,7 @@ import { CourseProvider } from '@/providers/course-provider';
 import { DiscoverSettingsProvider } from '@/providers/discover-settings-provider';
 import { LikesProvider } from '@/providers/likes-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { HueChatbot } from '@/components/hue-chatbot';
 import { cn } from '@/lib/utils';
 
 const fontHeadline = Belleza({
@@ -58,6 +59,7 @@ export default function RootLayout({
                 <DiscoverSettingsProvider>
                   {children}
                   <Toaster />
+                  <HueChatbot />
                 </DiscoverSettingsProvider>
               </CourseProvider>
             </LikesProvider>

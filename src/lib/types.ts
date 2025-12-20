@@ -444,6 +444,9 @@ export interface Artwork {
   price?: number;
   currency?: string;
   isForSale?: boolean;
+  sold?: boolean;
+  priceType?: 'fixed' | 'contact';
+  contactForPrice?: boolean;
   isAuction?: boolean;
   auctionId?: string;
   category?: string;
