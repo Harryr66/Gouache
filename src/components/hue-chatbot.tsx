@@ -43,7 +43,19 @@ export function HueChatbot() {
   const [showGreeting, setShowGreeting] = useState(true);
   const orbRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wasExpandedRef = useRef(false);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+  // Reset conversation state when closing Hue
+  const resetConversation = () => {
+    setQuestion('');
+    setAnswer('');
+    setDisplayedAnswer('');
+    setPlaceholderText('');
+    setIsAsking(false);
+    setIsSubmitted(false);
+    setShowGreeting(true);
+  };
 
   // Load user preference for Hue visibility
   useEffect(() => {
@@ -342,6 +354,7 @@ export function HueChatbot() {
           setErrorReport(null);
           setUserContext('');
           setIsSubmitted(false);
+          resetConversation(); // Reset conversation state after error report
         }, 3000);
       } else {
         console.error('Failed to submit error report');
@@ -426,6 +439,7 @@ export function HueChatbot() {
 
       setHueEnabled(false);
       setIsExpanded(false);
+      resetConversation(); // Reset conversation state when hiding
       
       toast({
         title: 'Hue hidden',
@@ -445,6 +459,15 @@ export function HueChatbot() {
   const wordCount = userContext.trim() ? userContext.trim().split(/\s+/).filter(Boolean).length : 0;
   const maxWords = 100;
   const isOverLimit = wordCount > maxWords;
+
+  // Reset conversation when Hue is closed (only when transitioning from expanded to collapsed)
+  useEffect(() => {
+    if (wasExpandedRef.current && !isExpanded && !hasError) {
+      // Reset conversation state when transitioning from expanded to collapsed (but not if error is active)
+      resetConversation();
+    }
+    wasExpandedRef.current = isExpanded;
+  }, [isExpanded, hasError]);
 
   // Typewriter effect for placeholder text
   useEffect(() => {
@@ -588,6 +611,7 @@ export function HueChatbot() {
                     if (!hasError) {
                       setErrorReport(null);
                       setUserContext('');
+                      resetConversation(); // Reset conversation state when closing
                     }
                   }}
                 >
