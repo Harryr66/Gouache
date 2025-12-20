@@ -73,18 +73,20 @@ export default function UploadPage() {
   // Wait for Firestore data to load after initial auth
   // Simplified approach: only process once per user ID change
   useEffect(() => {
+    // Don't do anything while loading
     if (loading) {
-      setIsCheckingUser(true);
       return;
     }
     
     if (!user?.id) {
-      setIsCheckingUser(false);
-      processedUserIdRef.current = null;
+      if (processedUserIdRef.current !== null) {
+        processedUserIdRef.current = null;
+        setIsCheckingUser(false);
+      }
       return;
     }
 
-    // If we've already processed this user ID, skip entirely
+    // If we've already processed this user ID, skip entirely - no state updates
     if (processedUserIdRef.current === user.id) {
       return;
     }
