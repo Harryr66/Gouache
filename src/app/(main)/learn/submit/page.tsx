@@ -721,7 +721,7 @@ function CourseSubmissionPageContent() {
 
       if (isEditing && editingCourseId && existingCourse) {
         // Update existing course - preserve existing fields
-        const updateData = {
+        const updateData: any = {
           ...courseData,
           // Preserve existing stats and metadata
           students: existingCourse.students || 0,
@@ -737,8 +737,12 @@ function CourseSubmissionPageContent() {
           enrollmentCount: existingCourse.enrollmentCount || 0,
           completionRate: existingCourse.completionRate || 0,
           createdAt: existingCourse.createdAt || new Date(),
-          publishedAt: existingCourse.publishedAt,
         };
+        
+        // Only include publishedAt if it exists (Firestore doesn't allow undefined)
+        if (existingCourse.publishedAt !== undefined) {
+          updateData.publishedAt = existingCourse.publishedAt;
+        }
 
         await updateCourse(editingCourseId, updateData);
 

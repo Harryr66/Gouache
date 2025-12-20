@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Package, Book, GraduationCap, Image as ImageIcon, AlertCircle, Link2, CreditCard, Edit } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ThemeLoading } from './theme-loading';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -209,20 +209,22 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             artistId: data.artistId
           });
           
-          // Skip if explicitly marked as not for shop
-          if (data.showInShop === false) {
-            console.log('Shop Display - Skipping artwork (showInShop=false):', id);
-            return;
-          }
-          
           // Skip if not for sale
           if (data.isForSale !== true) {
             console.log('Shop Display - Skipping artwork (isForSale is not true):', id, 'isForSale:', data.isForSale);
             return;
           }
           
-          // Include if isForSale is true and showInShop is not explicitly false
-          // (showInShop can be true, undefined, or missing - all are valid if isForSale is true)
+          // If isForSale is true, include it in shop (showInShop=false is ignored if isForSale=true)
+          // This ensures artworks marked for sale always appear in shop
+          // Also auto-fix the showInShop field if it's incorrectly set to false
+          if (data.showInShop === false && data.isForSale === true) {
+            console.log('Shop Display - Including artwork despite showInShop=false because isForSale=true:', id);
+            // Auto-fix: update showInShop to true in the background (don't wait for it)
+            updateDoc(doc(db, 'artworks', id), { showInShop: true }).catch((err) => {
+              console.warn('Failed to auto-fix showInShop field:', err);
+            });
+          }
           
           // Use the type field from Stage 2, or determine from category/legacy fields
           let itemType = data.type;
