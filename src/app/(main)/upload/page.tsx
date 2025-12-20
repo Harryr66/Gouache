@@ -26,9 +26,7 @@ export default function UploadPage() {
   const router = useRouter();
   const [selectedType, setSelectedType] = useState<'artwork' | 'event' | 'product' | 'course' | null>(null);
   const [isCheckingUser, setIsCheckingUser] = useState(true);
-  const initialLoadCompleteRef = useRef(false);
-  const previousUserRef = useRef<User | null>(null);
-  const processedUserStateRef = useRef<string>('');
+  const processedUserIdRef = useRef<string | null>(null);
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
   const [eventForm, setEventForm] = useState({
     title: '',
@@ -58,11 +56,8 @@ export default function UploadPage() {
   const [productImages, setProductImages] = useState<File[]>([]);
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
 
-  // Create a stable user signature using useMemo to prevent unnecessary re-renders
-  const userSignature = useMemo(() => {
-    if (!user) return null;
-    return `${user.id}-${user.isProfessional}-${user.updatedAt?.getTime() || 'no-update'}`;
-  }, [user?.id, user?.isProfessional, user?.updatedAt?.getTime()]);
+  // Track which user ID we've already processed to prevent re-processing
+  const processedUserIdRef = useRef<string | null>(null);
 
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
@@ -79,71 +74,47 @@ export default function UploadPage() {
   }, [user?.id]);
 
   // Wait for Firestore data to load after initial auth
-  // The auth provider sets loading=false immediately but loads Firestore data asynchronously
-  // We track when user object changes significantly to detect when Firestore data has loaded
+  // Simplified approach: only process once per user ID change
   useEffect(() => {
     if (loading) {
       setIsCheckingUser(true);
-      initialLoadCompleteRef.current = false;
-      previousUserRef.current = null;
-      processedUserStateRef.current = '';
       return;
     }
     
-    if (!user || !userSignature) {
+    if (!user?.id) {
       setIsCheckingUser(false);
-      initialLoadCompleteRef.current = false;
-      previousUserRef.current = null;
-      processedUserStateRef.current = '';
+      processedUserIdRef.current = null;
       return;
     }
 
-    // If we've already processed this exact state, skip
-    if (processedUserStateRef.current === userSignature && initialLoadCompleteRef.current) {
-      setIsCheckingUser(false);
+    // If we've already processed this user ID, skip
+    if (processedUserIdRef.current === user.id) {
+      // Check if we need to update based on isProfessional status
+      if (user.isProfessional !== undefined || user.updatedAt) {
+        setIsCheckingUser(false);
+      }
       return;
     }
     
-    // Use user.id as stable identifier instead of entire user object
-    const currentUserId = user.id;
-    const previousUserId = previousUserRef.current?.id || null;
+    // New user ID - mark as processed and start checking
+    processedUserIdRef.current = user.id;
+    setIsCheckingUser(true);
     
-    // Check if this is the first time we're seeing this user
-    const isFirstLoad = previousUserId === null || previousUserId !== currentUserId;
-    
-    if (isFirstLoad) {
-      // First load - set a minimum wait time to allow Firestore to load
-      previousUserRef.current = user;
-      processedUserStateRef.current = userSignature;
-      const timer = setTimeout(() => {
-        // After minimum wait, check if isProfessional has been explicitly set
-        // If it's still undefined, wait a bit more
-        if (user.isProfessional === undefined && !user.updatedAt) {
-          // Still loading Firestore data, wait more
-          setTimeout(() => {
-            initialLoadCompleteRef.current = true;
-            setIsCheckingUser(false);
-          }, 1000);
-        } else {
-          initialLoadCompleteRef.current = true;
+    // Set a timer to wait for Firestore data
+    const timer = setTimeout(() => {
+      // After wait, check if isProfessional has been set
+      if (user.isProfessional === undefined && !user.updatedAt) {
+        // Still loading, wait a bit more
+        setTimeout(() => {
           setIsCheckingUser(false);
-        }
-      }, 2000); // 2 second minimum wait
-      return () => clearTimeout(timer);
-    }
+        }, 1000);
+      } else {
+        setIsCheckingUser(false);
+      }
+    }, 2000);
     
-    // User object has changed - check if it's been updated with Firestore data
-    const previousStateSignature = processedUserStateRef.current;
-    const userChanged = previousStateSignature !== userSignature;
-    
-    if (userChanged && !isFirstLoad) {
-      // User object has been updated (likely with Firestore data)
-      previousUserRef.current = user;
-      processedUserStateRef.current = userSignature;
-      initialLoadCompleteRef.current = true;
-      setIsCheckingUser(false);
-    }
-  }, [loading, userSignature]);
+    return () => clearTimeout(timer);
+  }, [loading, user?.id]);
 
   // Show loading animation while auth is loading or we're checking user status
   const isProfessionalLoaded = user?.isProfessional !== undefined || user?.updatedAt !== undefined || hasApprovedArtistRequest;
