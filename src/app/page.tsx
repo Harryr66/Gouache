@@ -32,12 +32,12 @@ export default function RootPage() {
     return () => unsubscribe();
   }, []);
 
-  // Redirect logged-in users (but not anonymous) to news page
+  // Redirect logged-in users (but not anonymous) to discover page
   useEffect(() => {
     if (!loading && user && !isAnonymousUser) {
       // Only redirect if user has an email (not anonymous)
       if (user.email && user.email !== '') {
-        router.replace('/news');
+        router.replace('/discover');
       }
     }
   }, [user, loading, isAnonymousUser, router]);
@@ -56,8 +56,8 @@ export default function RootPage() {
         description: "You're now browsing as a guest. You can explore the platform, but some features require an account.",
       });
       
-      // Force redirect to news page - don't wait for state updates
-      window.location.href = '/news';
+      // Force redirect to discover page - don't wait for state updates
+      window.location.href = '/discover';
     } catch (error: any) {
       console.error('Guest login error:', error);
       console.error('Error code:', error.code);
