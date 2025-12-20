@@ -440,7 +440,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             // Mobile: List view (like discover events)
             <div className="space-y-4">
               {artworks.map((item) => (
-                <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => router.push(`/artwork/${item.id}`)}>
+                <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
                   <div className="flex flex-col md:flex-row gap-4 p-4">
                     <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
                       {item.imageUrl ? (
@@ -460,48 +460,43 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                           <Badge variant="destructive">Sold Out</Badge>
                         </div>
                       )}
+                      {/* Edit button overlay - only for owner */}
+                      {isOwnProfile && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background/90 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/profile?editArtwork=${item.id}`);
+                          }}
+                          title="Edit artwork"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                     <div className="flex-1 flex flex-col">
-                      <div className="flex items-start gap-3 mb-3">
+                      <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {getTypeIcon(item.type)}
-                            </Badge>
-                          </div>
-                          <h3 className="font-semibold text-lg mb-1">{item.title}</h3>
-                          {item.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{item.description}</p>
-                          )}
-                          {item.stock !== undefined && (
-                            <p className="text-xs text-muted-foreground mb-2">
-                              {item.stock} in stock
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <span className="font-bold text-lg">
+                          <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
+                          <span className="font-bold text-lg block mb-3">
                             {item.priceType === 'contact' || item.contactForPrice ? (
                               <span className="text-muted-foreground text-sm">Contact for pricing</span>
                             ) : (
                               <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
                             )}
                           </span>
-                          {isOwnProfile && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/profile?editArtwork=${item.id}`);
-                              }}
-                              title="Edit artwork"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
                         </div>
                       </div>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => router.push(`/artwork/${item.id}`)}
+                        disabled={!item.isAvailable}
+                      >
+                        View Details
+                      </Button>
                     </div>
                   </div>
                 </Card>
@@ -530,56 +525,42 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                         <Badge variant="destructive">Sold Out</Badge>
                       </div>
                     )}
+                    {/* Edit button overlay - only for owner */}
+                    {isOwnProfile && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background/90 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/profile?editArtwork=${item.id}`);
+                        }}
+                        title="Edit artwork"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-sm line-clamp-1 flex-1">{item.title}</h4>
-                      <Badge variant="secondary" className="ml-2">
-                        {getTypeIcon(item.type)}
-                      </Badge>
-                    </div>
-                    {item.description && (
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                        {item.description}
-                      </p>
-                    )}
-                    {item.stock !== undefined && (
-                      <p className="text-xs text-muted-foreground mb-2">
-                        {item.stock} in stock
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold text-sm mb-2 line-clamp-1">{item.title}</h4>
+                    <div className="flex items-center justify-between gap-2 mb-3">
                       <span className="font-bold text-lg">
                         {item.priceType === 'contact' || item.contactForPrice ? (
-                          <span className="text-muted-foreground">Contact for pricing</span>
+                          <span className="text-muted-foreground text-sm">Contact for pricing</span>
                         ) : (
                           <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
                         )}
                       </span>
-                      <div className="flex items-center gap-2">
-                        {isOwnProfile && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/profile?editArtwork=${item.id}`);
-                            }}
-                            title="Edit artwork"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push(`/artwork/${item.id}`)}
-                          disabled={!item.isAvailable}
-                        >
-                          View Details
-                        </Button>
-                      </div>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => router.push(`/artwork/${item.id}`)}
+                      disabled={!item.isAvailable}
+                    >
+                      View Details
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
@@ -607,7 +588,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             // Mobile: List view (like discover events)
             <div className="space-y-4">
               {products.map((item) => (
-                <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => router.push(`/shop/book/${item.id}`)}>
+                <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
                   <div className="flex flex-col md:flex-row gap-4 p-4">
                     <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
                       {item.imageUrl ? (
@@ -627,42 +608,39 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                           <Badge variant="destructive">Sold Out</Badge>
                         </div>
                       )}
+                      {/* Edit button overlay - only for owner */}
+                      {isOwnProfile && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background/90 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/marketplace/${item.id}?edit=true`);
+                          }}
+                          title="Edit product"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                     <div className="flex-1 flex flex-col">
-                      <div className="flex items-start gap-3 mb-3">
+                      <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {getTypeIcon(item.type)}
-                            </Badge>
-                          </div>
-                          <h3 className="font-semibold text-lg mb-1">{item.title}</h3>
-                          {item.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{item.description}</p>
-                          )}
-                          {item.stock !== undefined && (
-                            <p className="text-xs text-muted-foreground mb-2">
-                              {item.stock} in stock
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <span className="font-bold text-lg">
+                          <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
+                          <span className="font-bold text-lg block mb-3">
                             {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
                           </span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/shop/book/${item.id}`);
-                            }}
-                            disabled={!item.isAvailable}
-                          >
-                            View
-                          </Button>
                         </div>
                       </div>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => router.push(`/shop/book/${item.id}`)}
+                        disabled={!item.isAvailable}
+                      >
+                        View Details
+                      </Button>
                     </div>
                   </div>
                 </Card>
@@ -691,27 +669,38 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                         <Badge variant="destructive">Sold Out</Badge>
                       </div>
                     )}
+                    {/* Edit button overlay - only for owner */}
+                    {isOwnProfile && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background/90 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/marketplace/${item.id}?edit=true`);
+                        }}
+                        title="Edit product"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-sm line-clamp-1 flex-1">{item.title}</h4>
-                      <Badge variant="secondary" className="ml-2">
-                        {getTypeIcon(item.type)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm mb-2 line-clamp-1">{item.title}</h4>
+                    <div className="flex items-center justify-between gap-2 mb-3">
                       <span className="font-bold text-lg">
                         {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
                       </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push(`/shop/book/${item.id}`)}
-                        disabled={!item.isAvailable}
-                      >
-                        View
-                      </Button>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => router.push(`/shop/book/${item.id}`)}
+                      disabled={!item.isAvailable}
+                    >
+                      View Details
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
