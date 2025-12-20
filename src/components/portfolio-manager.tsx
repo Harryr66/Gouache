@@ -16,7 +16,7 @@ import { doc, updateDoc, getDoc, serverTimestamp, collection, addDoc, setDoc } f
 import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/auth-provider';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface PortfolioItem {
   id: string;
@@ -33,6 +33,7 @@ interface PortfolioItem {
 export function PortfolioManager() {
   const { user, refreshUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
@@ -91,6 +92,55 @@ export function PortfolioManager() {
     deliveryScope: 'worldwide' as 'worldwide' | 'specific',
     deliveryCountries: ''
   });
+
+  // Check for editArtwork URL parameter and open edit form
+  useEffect(() => {
+    const editArtworkId = searchParams?.get('editArtwork');
+    if (editArtworkId && portfolioItems.length > 0) {
+      const itemToEdit = portfolioItems.find(item => item.id === editArtworkId);
+      if (itemToEdit) {
+        setEditingItem(itemToEdit);
+        // Populate form with item data
+        setNewItem({
+          title: itemToEdit.title || '',
+          description: itemToEdit.description || '',
+          medium: itemToEdit.medium || '',
+          dimensions: itemToEdit.dimensions || '',
+          year: itemToEdit.year || '',
+          tags: itemToEdit.tags?.join(', ') || '',
+          isForSale: false, // Will be loaded from artworks collection
+          price: '',
+          priceType: 'fixed' as 'fixed' | 'contact',
+          currency: 'USD',
+          deliveryScope: 'worldwide' as 'worldwide' | 'specific',
+          deliveryCountries: ''
+        });
+        // Load sale info from artworks collection if it exists
+        const loadSaleInfo = async () => {
+          try {
+            const artworkDoc = await getDoc(doc(db, 'artworks', editArtworkId));
+            if (artworkDoc.exists()) {
+              const artworkData = artworkDoc.data();
+              setNewItem(prev => ({
+                ...prev,
+                isForSale: artworkData.isForSale || false,
+                price: artworkData.price ? (artworkData.price > 1000 ? (artworkData.price / 100).toString() : artworkData.price.toString()) : '',
+                currency: artworkData.currency || 'USD',
+                priceType: artworkData.priceType || (artworkData.price ? 'fixed' : 'contact'),
+                deliveryScope: artworkData.deliveryScope || 'worldwide',
+                deliveryCountries: artworkData.deliveryCountries?.join(', ') || ''
+              }));
+            }
+          } catch (error) {
+            console.error('Error loading sale info:', error);
+          }
+        };
+        loadSaleInfo();
+        // Remove the query parameter from URL
+        router.replace('/profile', { scroll: false });
+      }
+    }
+  }, [searchParams, portfolioItems, router]);
 
   useEffect(() => {
     const loadPortfolio = async () => {

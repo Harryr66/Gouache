@@ -10,13 +10,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Upload, Plus, Trash2, BookOpen, ListChecks, Image as ImageIcon, DollarSign, Search, Rocket, Video, Save, Clock, AlertCircle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { useCourses } from '@/providers/course-provider';
 import { toast } from '@/hooks/use-toast';
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 import { storage, db } from '@/lib/firebase';
-import { collection, doc, getDocs, query, setDoc, where, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, query, setDoc, where, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 
 const COURSE_CATEGORIES = {
   'painting': {
@@ -43,9 +43,13 @@ const COURSE_CATEGORIES = {
 
 export default function CourseSubmissionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
-  const { createCourse, createInstructor } = useCourses();
+  const { createCourse, createInstructor, updateCourse, getCourse } = useCourses();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const [isLoadingCourse, setIsLoadingCourse] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<{
     hasStripe: boolean;
     isComplete: boolean;
@@ -147,6 +151,90 @@ export default function CourseSubmissionPage() {
   const [slug, setSlug] = useState('');
   const [isSlugUnique, setIsSlugUnique] = useState(true);
 
+  // Load course data if editing
+  useEffect(() => {
+    const loadCourseForEdit = async () => {
+      const editId = searchParams?.get('edit');
+      if (editId && user) {
+        setIsLoadingCourse(true);
+        setIsEditing(true);
+        setEditingCourseId(editId);
+        try {
+          const courseData = await getCourse(editId);
+          if (courseData) {
+            // Verify user owns the course
+            if (courseData.instructor?.userId !== user.id) {
+              toast({
+                title: "Access Denied",
+                description: "You can only edit your own courses.",
+                variant: "destructive",
+              });
+              router.push('/learn');
+              return;
+            }
+
+            // Populate form with course data
+            setFormData({
+              title: courseData.title || '',
+              description: courseData.description || '',
+              category: courseData.category || '',
+              subcategory: courseData.subcategory || '',
+              difficulty: courseData.difficulty || '',
+              duration: courseData.duration || '',
+              price: courseData.price?.toString() || '',
+              currency: courseData.currency || 'USD',
+              tags: courseData.tags || [],
+              instructorBio: courseData.instructor?.bio || '',
+              metaTitle: courseData.metaTitle || '',
+              metaDescription: courseData.metaDescription || '',
+              slug: courseData.slug || '',
+              curriculum: courseData.curriculum?.[0]?.lessons?.map((lesson: any, index: number) => ({
+                id: lesson.id || `lesson-${index}`,
+                title: lesson.title || '',
+                description: lesson.description || '',
+                type: lesson.type || 'video',
+                duration: lesson.duration || '',
+                videoUrl: lesson.videoUrl || '',
+                content: lesson.content || '',
+                order: index,
+                isPreview: lesson.isPreview || false,
+              })) || [],
+              supplyList: courseData.supplyList || [],
+              courseType: courseData.courseType || 'affiliate',
+              externalUrl: courseData.externalUrl || '',
+              hostingPlatform: courseData.hostingPlatform || '',
+              isPublished: courseData.isPublished || false,
+              originalityDisclaimer: true,
+            });
+
+            // Set preview URLs if they exist
+            if (courseData.thumbnail) {
+              setThumbnailPreview(courseData.thumbnail);
+            }
+            if (courseData.previewVideoUrl) {
+              setTrailerPreviewUrl(courseData.previewVideoUrl);
+            }
+
+            setSlug(courseData.slug || '');
+          }
+        } catch (error) {
+          console.error('Error loading course:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load course data.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoadingCourse(false);
+        }
+      }
+    };
+
+    if (user) {
+      loadCourseForEdit();
+    }
+  }, [searchParams, user, getCourse, router]);
+
   // Check Stripe connection status
   useEffect(() => {
     if (!user) return;
@@ -203,16 +291,18 @@ export default function CourseSubmissionPage() {
     return () => clearTimeout(timeout);
   }, [formData]);
 
-  // Auto-generate slug from title and validate
+  // Auto-generate slug from title and validate (only for new courses)
   useEffect(() => {
-    const next = formData.title
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-');
-    setSlug(next);
-  }, [formData.title]);
+    if (!isEditing) {
+      const next = formData.title
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+      setSlug(next);
+    }
+  }, [formData.title, isEditing]);
 
   useEffect(() => {
     let cancelled = false;
@@ -221,14 +311,22 @@ export default function CourseSubmissionPage() {
       try {
         const q = query(collection(db, 'courses'), where('slug', '==', slug));
         const snap = await getDocs(q);
-        if (!cancelled) setIsSlugUnique(snap.empty);
+        if (!cancelled) {
+          // If editing, allow the same slug for the current course
+          if (isEditing && editingCourseId) {
+            const matchingDocs = snap.docs.filter(doc => doc.id !== editingCourseId);
+            setIsSlugUnique(matchingDocs.length === 0);
+          } else {
+            setIsSlugUnique(snap.empty);
+          }
+        }
       } catch {
         if (!cancelled) setIsSlugUnique(true);
       }
     };
     run();
     return () => { cancelled = true; };
-  }, [slug]);
+  }, [slug, isEditing, editingCourseId]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -497,7 +595,8 @@ export default function CourseSubmissionPage() {
       return;
     }
 
-    if (!thumbnailFile) {
+    // For editing, thumbnail is optional if preview exists
+    if (!isEditing && !thumbnailFile) {
       toast({
         title: "Thumbnail Required",
         description: "Please upload a course thumbnail image.",
@@ -509,17 +608,26 @@ export default function CourseSubmissionPage() {
     setIsSubmitting(true);
 
     try {
-      // Upload thumbnail
-      const thumbnailRef = ref(storage, `course-thumbnails/${user.id}/${Date.now()}_${thumbnailFile.name}`);
-      await uploadBytes(thumbnailRef, thumbnailFile);
-      const thumbnailUrl = await getDownloadURL(thumbnailRef);
+      // Upload thumbnail (only if new file provided)
+      let thumbnailUrl: string | undefined;
+      if (thumbnailFile) {
+        const thumbnailRef = ref(storage, `course-thumbnails/${user.id}/${Date.now()}_${thumbnailFile.name}`);
+        await uploadBytes(thumbnailRef, thumbnailFile);
+        thumbnailUrl = await getDownloadURL(thumbnailRef);
+      } else if (isEditing && thumbnailPreview) {
+        // Keep existing thumbnail if no new one uploaded
+        thumbnailUrl = thumbnailPreview;
+      }
 
-      // Upload optional trailer
+      // Upload optional trailer (only if new file provided)
       let trailerUrl: string | undefined;
       if (trailerFile) {
         const trailerRef = ref(storage, `course-trailers/${user.id}/${Date.now()}_${trailerFile.name}`);
         await uploadBytes(trailerRef, trailerFile);
         trailerUrl = await getDownloadURL(trailerRef);
+      } else if (isEditing && trailerPreviewUrl) {
+        // Keep existing trailer if no new one uploaded
+        trailerUrl = trailerPreviewUrl;
       }
 
       // Create instructor profile if needed
@@ -562,8 +670,14 @@ export default function CourseSubmissionPage() {
         }
       }
 
+      // Get existing course data if editing
+      let existingCourse: any = null;
+      if (isEditing && editingCourseId) {
+        existingCourse = await getCourse(editingCourseId);
+      }
+
       // Create course data
-      const courseData = {
+      const courseData: any = {
         title: formData.title,
         description: formData.description,
         instructor: instructorData,
@@ -577,16 +691,7 @@ export default function CourseSubmissionPage() {
         difficulty: formData.difficulty as 'Beginner' | 'Intermediate' | 'Advanced',
         duration: formData.duration,
         format: 'Self-Paced' as const,
-        students: 0,
         lessons: formData.courseType === 'hosted' ? formData.curriculum.length : 0,
-        rating: 0,
-        reviewCount: 0,
-        isOnSale: false,
-        isNew: true,
-        isFeatured: false,
-        // Courses require admin approval before being published
-        status: 'pending' as const,
-        isPublished: false,
         tags: formData.tags,
         skills: [],
         curriculum: formData.courseType === 'hosted' ? [{
@@ -605,33 +710,79 @@ export default function CourseSubmissionPage() {
             isPreview: lesson.isPreview
           }))
         }] : [],
-        reviews: [],
-        discussions: [],
-        enrollmentCount: 0,
-        completionRate: 0,
         courseType: formData.courseType,
         ...(formData.courseType === 'affiliate' && formData.externalUrl.trim() ? { externalUrl: formData.externalUrl.trim() } : {}),
         ...(formData.courseType === 'affiliate' && formData.hostingPlatform ? { hostingPlatform: formData.hostingPlatform } : {}),
-        createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      // Create the course
-      await createCourse(courseData);
+      if (isEditing && editingCourseId && existingCourse) {
+        // Update existing course - preserve existing fields
+        const updateData = {
+          ...courseData,
+          // Preserve existing stats and metadata
+          students: existingCourse.students || 0,
+          rating: existingCourse.rating || 0,
+          reviewCount: existingCourse.reviewCount || 0,
+          isOnSale: existingCourse.isOnSale || false,
+          isNew: existingCourse.isNew || false,
+          isFeatured: existingCourse.isFeatured || false,
+          status: existingCourse.status || 'pending',
+          isPublished: existingCourse.isPublished || false,
+          reviews: existingCourse.reviews || [],
+          discussions: existingCourse.discussions || [],
+          enrollmentCount: existingCourse.enrollmentCount || 0,
+          completionRate: existingCourse.completionRate || 0,
+          createdAt: existingCourse.createdAt || new Date(),
+          publishedAt: existingCourse.publishedAt,
+        };
 
-      toast({
-        title: "Course Submitted",
-        description: "Your course has been submitted for admin review. It will not be available until approved by an administrator.",
-      });
+        await updateCourse(editingCourseId, updateData);
 
-      // Clear draft data after successful submission
-      try {
-        localStorage.removeItem('soma-course-draft');
-        if (user) {
-          const draftRef = doc(db, 'courseDrafts', user.id);
-          await setDoc(draftRef, { formData: null }, { merge: true });
-        }
-      } catch {}
+        toast({
+          title: "Course Updated",
+          description: "Your course has been updated successfully.",
+        });
+
+        router.push(`/learn/${editingCourseId}`);
+      } else {
+        // Create new course
+        const newCourseData = {
+          ...courseData,
+          students: 0,
+          lessons: formData.courseType === 'hosted' ? formData.curriculum.length : 0,
+          rating: 0,
+          reviewCount: 0,
+          isOnSale: false,
+          isNew: true,
+          isFeatured: false,
+          status: 'pending' as const,
+          isPublished: false,
+          reviews: [],
+          discussions: [],
+          enrollmentCount: 0,
+          completionRate: 0,
+          createdAt: new Date(),
+        };
+
+        await createCourse(newCourseData);
+
+        toast({
+          title: "Course Submitted",
+          description: "Your course has been submitted for admin review. It will not be available until approved by an administrator.",
+        });
+      }
+
+      // Clear draft data after successful submission (only for new courses)
+      if (!isEditing) {
+        try {
+          localStorage.removeItem('soma-course-draft');
+          if (user) {
+            const draftRef = doc(db, 'courseDrafts', user.id);
+            await setDoc(draftRef, { formData: null }, { merge: true });
+          }
+        } catch {}
+      }
 
       router.push('/profile');
 
@@ -681,7 +832,7 @@ export default function CourseSubmissionPage() {
         <div className="md:col-span-2 lg:col-span-1">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Create Course</CardTitle>
+              <CardTitle className="text-base">{isEditing ? 'Edit Course' : 'Create Course'}</CardTitle>
               <CardDescription>Step {steps.findIndex(s=>s.id===activeStep)+1} of {steps.length}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -1482,7 +1633,7 @@ export default function CourseSubmissionPage() {
                     className="gradient-button w-full sm:w-auto" 
                     size="lg"
                   >
-                    {isSubmitting ? 'Submitting...' : 'Submit Course'}
+                    {isSubmitting ? (isEditing ? 'Updating...' : 'Submitting...') : (isEditing ? 'Update Course' : 'Submit Course')}
                   </Button>
                 )}
               </div>
