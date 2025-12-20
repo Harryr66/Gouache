@@ -27,8 +27,10 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center p-3 rounded-md transition-colors text-foreground w-16 border-2 border-transparent',
-                isActive && 'gradient-border'
+                'flex flex-col items-center justify-center p-3 rounded-lg transition-all text-foreground w-16',
+                isActive
+                  ? 'gradient-border'
+                  : 'border-2 border-transparent hover:gradient-border'
               )}
             >
               <item.icon className="h-7 w-7" />
