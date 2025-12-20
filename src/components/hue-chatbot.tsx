@@ -316,13 +316,20 @@ export function HueChatbot() {
 
       if (response.ok) {
         const data = await response.json();
-        setAnswer(data.answer || 'I apologize, but I couldn\'t generate an answer. Please try rephrasing your question.');
+        if (data.error) {
+          console.error('API returned error:', data.error, data.details);
+          setAnswer(`I apologize, but I encountered an error: ${data.error}. ${data.details ? `Details: ${data.details}` : 'Please check that the GOOGLE_GENAI_API_KEY is set in your environment variables.'}`);
+        } else {
+          setAnswer(data.answer || 'I apologize, but I couldn\'t generate an answer. Please try rephrasing your question.');
+        }
       } else {
-        setAnswer('I apologize, but I encountered an error. Please try again or check the Settings page for help.');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API request failed:', response.status, errorData);
+        setAnswer(`I apologize, but I encountered an error (${response.status}). ${errorData.error || errorData.details || 'Please check that the GOOGLE_GENAI_API_KEY is set in Vercel environment variables and redeploy.'}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error asking question:', error);
-      setAnswer('I apologize, but I encountered an error. Please try again or check the Settings page for help.');
+      setAnswer(`I apologize, but I encountered an error: ${error.message || 'Network error'}. Please check that the GOOGLE_GENAI_API_KEY is configured in your Vercel environment variables.`);
     } finally {
       setIsAsking(false);
     }
