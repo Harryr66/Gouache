@@ -206,15 +206,15 @@ export function HueChatbot() {
         onClick={() => !isDragging && setIsExpanded(true)}
       >
         <div className={cn(
-          "w-full h-full rounded-full flex items-center justify-center relative overflow-hidden",
-          hasError 
-            ? "bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 shadow-lg shadow-red-500/50 animate-pulse" 
-            : "bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 shadow-lg shadow-blue-500/30 hue-orb-idle"
+          "w-full h-full rounded-full flex items-center justify-center story-gradient-border",
+          hasError ? "animate-pulse" : "hue-orb-idle"
         )}>
-          {/* Chrome gradient effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/20 rounded-full" />
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-full" />
-          <Sparkles className="h-8 w-8 text-white relative z-10 drop-shadow-lg" />
+          <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
+            <Sparkles className={cn(
+              "h-6 w-6 transition-colors",
+              hasError ? "text-destructive" : "text-foreground"
+            )} />
+          </div>
         </div>
       </div>
 

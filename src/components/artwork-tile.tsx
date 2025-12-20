@@ -266,7 +266,7 @@ const generateArtistContent = (artist: Artist) => ({
           </div>
         ) : artwork.isForSale ? (
           <div className="absolute top-2 left-2 z-10">
-            <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
+            <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1">
               {artwork.priceType === 'contact' || artwork.contactForPrice ? 'For Sale' : artwork.price ? `$${artwork.price.toLocaleString()}` : 'For Sale'}
             </Badge>
           </div>
@@ -364,7 +364,7 @@ const generateArtistContent = (artist: Artist) => ({
                     </div>
                   ) : artwork.isForSale ? (
                     <div className="absolute top-3 left-3 z-10">
-                      <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
+                      <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1">
                         {artwork.priceType === 'contact' || artwork.contactForPrice ? 'For Sale' : artwork.price ? `$${artwork.price.toLocaleString()}` : 'For Sale'}
                       </Badge>
                     </div>
