@@ -66,21 +66,21 @@ export function HueChatbot() {
     if (typeof window !== 'undefined') {
       const savedPosition = localStorage.getItem('hue-position');
       if (savedPosition) {
-        try {
-          const { x, y } = JSON.parse(savedPosition);
-          // Validate saved position is still within viewport
-          const orbSize = isMobile ? 48 : 64;
-          const padding = isMobile ? 8 : 16;
-          const maxX = window.innerWidth - orbSize - padding;
-          const maxY = window.innerHeight - (isMobile ? 160 : 80);
-          
-          if (x >= 0 && x <= maxX && y >= 0 && y <= maxY) {
-            setPosition({ x, y });
-            return; // Use saved position
+          try {
+            const { x, y } = JSON.parse(savedPosition);
+            // Validate saved position is still within viewport
+            const orbSize = 48; // Fixed smaller size for both mobile and desktop
+            const padding = isMobile ? 8 : 16;
+            const maxX = window.innerWidth - orbSize - padding;
+            const maxY = window.innerHeight - (isMobile ? 160 : 80);
+            
+            if (x >= 0 && x <= maxX && y >= 0 && y <= maxY) {
+              setPosition({ x, y });
+              return; // Use saved position
+            }
+          } catch (e) {
+            console.warn('Failed to parse saved Hue position:', e);
           }
-        } catch (e) {
-          console.warn('Failed to parse saved Hue position:', e);
-        }
       }
       
       // No valid saved position, use default
@@ -92,7 +92,7 @@ export function HueChatbot() {
           const appNavHeight = 60; // App navigation bar height
           const padding = 20; // Extra padding for safety
           const totalOffset = browserNavHeight + appNavHeight + padding;
-          const orbSize = 48; // Mobile orb size (w-12 h-12 = 48px)
+          const orbSize = 48; // Fixed smaller size for both mobile and desktop (w-12 h-12 = 48px)
           
           const defaultPos = {
             x: window.innerWidth - orbSize - 8, // Position orb 8px from right edge (accounting for orb width)
@@ -102,8 +102,8 @@ export function HueChatbot() {
           // Save default position
           localStorage.setItem('hue-position', JSON.stringify(defaultPos));
         } else {
-          // Desktop: bottom-right corner
-          const orbSize = 64; // Desktop orb size (w-16 h-16 = 64px)
+          // Desktop: bottom-right corner (using same smaller size)
+          const orbSize = 48; // Fixed smaller size for both mobile and desktop
           const defaultPos = {
             x: window.innerWidth - orbSize - 16, // Position orb 16px from right edge
             y: window.innerHeight - 80
@@ -212,8 +212,8 @@ export function HueChatbot() {
         const newY = e.clientY - dragStart.y;
         
         // Keep within viewport bounds
-        // On mobile, ensure Hue stays above navigation bars
-        const orbSize = isMobile ? 48 : 64;
+        // Fixed smaller size for both mobile and desktop
+        const orbSize = 48; // Fixed size
         const padding = isMobile ? 8 : 16; // Padding from right edge
         const maxX = window.innerWidth - orbSize - padding;
         const minX = 0;
@@ -253,8 +253,8 @@ export function HueChatbot() {
         const newY = touch.clientY - dragStart.y;
         
         // Keep within viewport bounds
-        // On mobile, ensure Hue stays above navigation bars
-        const orbSize = isMobile ? 48 : 64;
+        // Fixed smaller size for both mobile and desktop
+        const orbSize = 48; // Fixed size
         const padding = isMobile ? 8 : 16; // Padding from right edge
         const maxX = window.innerWidth - orbSize - padding;
         const minX = 0;
@@ -434,7 +434,7 @@ export function HueChatbot() {
   useEffect(() => {
     if (!isExpanded || hasError) return;
     
-    const fullPlaceholder = "Have an issue? Here's a tissue... I'm here to help with any questions or issues, let me know if you need any assistance";
+    const fullPlaceholder = "Have an issue? Here's a tissue... I'm here to help with questions or issues";
     setPlaceholderText('');
     setShowGreeting(false); // No separate greeting, it's in the placeholder
     
@@ -490,6 +490,9 @@ export function HueChatbot() {
         } : {
           left: `${position.x}px`,
           top: `${position.y}px`,
+          // Fixed positioning to prevent jolts
+          position: 'fixed',
+          willChange: 'transform',
         })
       }}
     >
@@ -497,10 +500,19 @@ export function HueChatbot() {
       <div
         ref={orbRef}
         className={cn(
-          "relative pointer-events-auto cursor-grab active:cursor-grabbing transition-all duration-300 touch-none",
-          isExpanded ? "w-0 h-0 opacity-0" : isMobile ? "w-12 h-12" : "w-16 h-16",
-          hasError && !isExpanded && "animate-pulse scale-110"
+          "relative pointer-events-auto cursor-grab active:cursor-grabbing touch-none",
+          isExpanded ? "w-0 h-0 opacity-0" : "w-12 h-12", // Fixed smaller size for both mobile and desktop
+          hasError && !isExpanded && "animate-pulse"
         )}
+        style={{
+          // Fixed size to prevent fluctuation
+          width: isExpanded ? 0 : '48px',
+          height: isExpanded ? 0 : '48px',
+          minWidth: isExpanded ? 0 : '48px',
+          minHeight: isExpanded ? 0 : '48px',
+          maxWidth: isExpanded ? 0 : '48px',
+          maxHeight: isExpanded ? 0 : '48px',
+        }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         onClick={(e) => {
@@ -525,25 +537,25 @@ export function HueChatbot() {
           hasError ? "border-red-500/50" : "border-primary/50"
         )}>
           <CardHeader className="relative">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 pr-8">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 flex-1 min-w-0">
                 <div className={cn(
-                  "w-10 h-10 rounded-full story-gradient-border flex items-center justify-center"
+                  "w-8 h-8 rounded-full story-gradient-border flex items-center justify-center flex-shrink-0"
                 )}>
                   <div className="w-full h-full rounded-full bg-background" />
                 </div>
-                <span>Hey, I'm Hue</span>
+                <span className="text-base whitespace-nowrap">Hey, I'm Hue</span>
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 {!hasError && (
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={handleHideHue}
-                    className="text-xs"
+                    className="h-6 w-6"
+                    title="Hide Hue"
                   >
-                    <EyeOff className="h-4 w-4 mr-1" />
-                    Hide Hue
+                    <EyeOff className="h-4 w-4" />
                   </Button>
                 )}
                 <Button
@@ -654,8 +666,8 @@ export function HueChatbot() {
                         setDisplayedAnswer('');
                       }
                     }}
-                    placeholder={placeholderText || "Have an issue? Here's a tissue... I'm here to help with any questions or issues, let me know if you need any assistance"}
-                    className="min-h-[80px] resize-none"
+                    placeholder={placeholderText || "Have an issue? Here's a tissue... I'm here to help with questions or issues"}
+                    className="min-h-[80px] resize-none text-sm"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && question.trim()) {
                         e.preventDefault();
