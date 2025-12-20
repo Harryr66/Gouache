@@ -27,6 +27,15 @@ interface ErrorReport {
 export function HueChatbot() {
   const { user } = useAuth();
   const router = useRouter();
+  
+  // Only show Hue for authenticated users (not anonymous/guests)
+  // Check if user exists and has an email (not anonymous)
+  const isAuthenticated = user?.id && user?.email && user.email !== '';
+  
+  // Don't render Hue UI if user is not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorReport, setErrorReport] = useState<ErrorReport | null>(null);
@@ -142,10 +151,20 @@ export function HueChatbot() {
             // Use document.documentElement.clientWidth for accurate viewport width (excludes scrollbar)
             const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
             const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
-            const maxX = Math.max(0, viewportWidth - orbSize - padding);
-            const maxY = Math.max(0, viewportHeight - (isMobile ? 160 : 80));
             
-            if (x >= 0 && x <= maxX && y >= 0 && y <= maxY) {
+            // Define header heights
+            const headerHeight = isMobile ? 56 : 64; // h-14 (56px) for mobile, h-16 (64px) for desktop
+            const minY = headerHeight + 8; // 8px padding below header
+            
+            // Define bottom constraints
+            const browserNavHeight = isMobile ? 80 : 0;
+            const appNavHeight = isMobile ? 60 : 0;
+            const bottomPadding = isMobile ? 10 : 16; // Reduced from 20 to 10 for mobile to allow lower position
+            const maxY = Math.max(0, viewportHeight - browserNavHeight - appNavHeight - bottomPadding);
+            
+            const maxX = Math.max(0, viewportWidth - orbSize - padding);
+            
+            if (x >= 0 && x <= maxX && y >= minY && y <= maxY) {
               setPosition({ x, y });
               return; // Use saved position
             }
@@ -156,35 +175,37 @@ export function HueChatbot() {
       
       // No valid saved position, use default
       const updatePosition = () => {
+        const orbSize = 48; // Fixed smaller size for both mobile and desktop
+        // Use document.documentElement.clientWidth for accurate viewport width (excludes scrollbar)
+        const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+        const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+        
+        // Define header heights
+        const headerHeight = isMobile ? 56 : 64; // h-14 (56px) for mobile, h-16 (64px) for desktop
+        const minY = headerHeight + 8; // 8px padding below header
+        
         if (isMobile) {
-          // Mobile: position well above nav bar and browser controls
-          // Account for: app nav bar (~60px) + browser nav bar (~80px) + padding
+          // Mobile: position above nav bar and browser controls, but allow lower position
           const browserNavHeight = 80; // Browser navigation bar height
           const appNavHeight = 60; // App navigation bar height
-          const padding = 20; // Extra padding for safety
-          const totalOffset = browserNavHeight + appNavHeight + padding;
-          const orbSize = 48; // Fixed smaller size for both mobile and desktop (w-12 h-12 = 48px)
-          
-          // Use document.documentElement.clientWidth for accurate viewport width (excludes scrollbar)
-          const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
-          const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+          const bottomPadding = 10; // Reduced from 20 to allow Hue to come lower
+          const maxY = Math.max(0, viewportHeight - browserNavHeight - appNavHeight - bottomPadding);
           
           const defaultPos = {
             x: Math.max(0, viewportWidth - orbSize - 8), // Ensure never negative, 8px from right edge
-            y: Math.max(0, viewportHeight - totalOffset) // Well above all navigation bars
+            y: Math.max(minY, Math.min(maxY, viewportHeight * 0.7)) // Position in lower 30% of viewport, but within constraints
           };
           setPosition(defaultPos);
           // Save default position
           localStorage.setItem('hue-position', JSON.stringify(defaultPos));
         } else {
           // Desktop: bottom-right corner (using same smaller size)
-          const orbSize = 48; // Fixed smaller size for both mobile and desktop
-          // Use document.documentElement.clientWidth for accurate viewport width (excludes scrollbar)
-          const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
-          const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+          const bottomPadding = 16;
+          const maxY = Math.max(0, viewportHeight - bottomPadding);
+          
           const defaultPos = {
             x: Math.max(0, viewportWidth - orbSize - 16), // Position orb 16px from right edge, ensure never negative
-            y: Math.max(0, viewportHeight - 80)
+            y: Math.max(minY, Math.min(maxY, viewportHeight - 80))
           };
           setPosition(defaultPos);
           // Save default position
@@ -336,18 +357,21 @@ export function HueChatbot() {
         const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
         const maxX = Math.max(0, viewportWidth - orbSize - padding);
         const minX = 0;
-        let maxY, minY;
         
+        // Define header heights
+        const headerHeight = isMobile ? 56 : 64; // h-14 (56px) for mobile, h-16 (64px) for desktop
+        const minY = headerHeight + 8; // 8px padding below header to prevent overlap
+        
+        let maxY;
         if (isMobile) {
-          // Mobile: prevent going below navigation bars
+          // Mobile: prevent going below navigation bars, but allow lower position
           const browserNavHeight = 80;
           const appNavHeight = 60;
-          const verticalPadding = 20;
-          maxY = Math.max(0, viewportHeight - browserNavHeight - appNavHeight - verticalPadding);
-          minY = 0;
+          const bottomPadding = 10; // Reduced from 20 to allow Hue to come lower
+          maxY = Math.max(0, viewportHeight - browserNavHeight - appNavHeight - bottomPadding);
         } else {
-          maxY = Math.max(0, viewportHeight - orbSize);
-          minY = 0;
+          const bottomPadding = 16;
+          maxY = Math.max(0, viewportHeight - bottomPadding);
         }
         
         const newPosition = {
@@ -380,18 +404,21 @@ export function HueChatbot() {
         const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
         const maxX = Math.max(0, viewportWidth - orbSize - padding);
         const minX = 0;
-        let maxY, minY;
         
+        // Define header heights
+        const headerHeight = isMobile ? 56 : 64; // h-14 (56px) for mobile, h-16 (64px) for desktop
+        const minY = headerHeight + 8; // 8px padding below header to prevent overlap
+        
+        let maxY;
         if (isMobile) {
-          // Mobile: prevent going below navigation bars
+          // Mobile: prevent going below navigation bars, but allow lower position
           const browserNavHeight = 80;
           const appNavHeight = 60;
-          const verticalPadding = 20;
-          maxY = Math.max(0, viewportHeight - browserNavHeight - appNavHeight - verticalPadding);
-          minY = 0;
+          const bottomPadding = 10; // Reduced from 20 to allow Hue to come lower
+          maxY = Math.max(0, viewportHeight - browserNavHeight - appNavHeight - bottomPadding);
         } else {
-          maxY = Math.max(0, viewportHeight - orbSize);
-          minY = 0;
+          const bottomPadding = 16;
+          maxY = Math.max(0, viewportHeight - bottomPadding);
         }
         
         const newPosition = {
