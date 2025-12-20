@@ -25,8 +25,6 @@ export default function UploadPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [selectedType, setSelectedType] = useState<'artwork' | 'event' | 'product' | 'course' | null>(null);
-  const [isCheckingUser, setIsCheckingUser] = useState(true);
-  const processedUserIdRef = useRef<string | null>(null);
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
   const [eventForm, setEventForm] = useState({
     title: '',
@@ -58,7 +56,10 @@ export default function UploadPage() {
 
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setHasApprovedArtistRequest(false);
+      return;
+    }
     const q = query(
       collection(db, 'artistRequests'),
       where('userId', '==', user.id),
@@ -70,44 +71,9 @@ export default function UploadPage() {
     return () => unsub();
   }, [user?.id]);
 
-  // Wait for Firestore data to load after initial auth
-  // Simplified approach: only process once per user ID change
-  useEffect(() => {
-    // Don't do anything while loading
-    if (loading) {
-      return;
-    }
-    
-    if (!user?.id) {
-      if (processedUserIdRef.current !== null) {
-        processedUserIdRef.current = null;
-        setIsCheckingUser(false);
-      }
-      return;
-    }
-
-    // If we've already processed this user ID, skip entirely - no state updates
-    if (processedUserIdRef.current === user.id) {
-      return;
-    }
-    
-    // New user ID - mark as processed and start checking
-    processedUserIdRef.current = user.id;
-    setIsCheckingUser(true);
-    
-    // Set a timer to wait for Firestore data
-    const timer = setTimeout(() => {
-      // After wait, always stop checking
-      setIsCheckingUser(false);
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, [loading, user?.id]);
-
-  // Show loading animation while auth is loading or we're checking user status
-  const isProfessionalLoaded = user?.isProfessional !== undefined || user?.updatedAt !== undefined || hasApprovedArtistRequest;
-  
-  if (loading || !user || isCheckingUser || !isProfessionalLoaded) {
+  // Show loading animation while auth is loading
+  // Simplified: just wait for loading to complete and user to be available
+  if (loading || !user) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <ThemeLoading size="lg" text="" />
