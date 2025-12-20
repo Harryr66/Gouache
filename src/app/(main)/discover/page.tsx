@@ -31,12 +31,9 @@ import { engagementScorer } from '@/lib/engagement-scorer';
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
   const placeholderImage = 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
-  // Landscape placeholder images for full-width tiles
-  const landscapeImages = [
-    'https://images.pexels.com/photos/1070536/pexels-photo-1070536.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    'https://images.pexels.com/photos/1193743/pexels-photo-1193743.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    'https://images.pexels.com/photos/1323712/pexels-photo-1323712.jpeg?auto=compress&cs=tinysrgb&w=1200',
-  ];
+  // Landscape placeholder - use same blue placeholder, fallback to taped banana
+  const landscapeImage = 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=1200';
+  const landscapeFallback = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200'; // Taped banana placeholder
   
   const artistNames = [
     'Alexandra Chen', 'Marcus Rivera', 'Sophie Laurent', 'David Kim', 'Emma Thompson',
@@ -61,8 +58,9 @@ const generatePlaceholderArtworks = (theme: string | undefined, count: number = 
   return Array.from({ length: count }, (_, i) => {
     // Every 5th item is a landscape image (roughly 20% landscape)
     const isLandscape = i % 5 === 0 && i > 0;
+    // Use same blue placeholder for landscape, fallback to taped banana if needed
     const imageUrl = isLandscape 
-      ? landscapeImages[i % landscapeImages.length]
+      ? landscapeImage
       : placeholderImage;
     const title = isLandscape
       ? landscapeTitles[i % landscapeTitles.length]
@@ -1165,10 +1163,9 @@ function DiscoverPageContent() {
                     const aspectRatio = artwork.dimensions.width / artwork.dimensions.height;
                     isLandscape = aspectRatio > 1.3; // Landscape threshold
                   } else if (artwork.imageUrl) {
-                    // Check for known landscape placeholder URLs
-                    isLandscape = artwork.imageUrl.includes('1070536') || 
-                                 artwork.imageUrl.includes('1193743') || 
-                                 artwork.imageUrl.includes('1323712');
+                    // Check for known landscape placeholder URLs (blue placeholder or taped banana fallback)
+                    isLandscape = artwork.imageUrl.includes('1546249') || 
+                                 artwork.imageUrl.includes('1308881');
                   }
                   
                   return (
