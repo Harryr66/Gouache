@@ -156,9 +156,9 @@ export default function PartnersPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-4xl">
+    <div className="container mx-auto px-4 py-12 max-w-4xl w-full max-w-full overflow-x-hidden">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4">Partner with Gouache</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 break-words">Partner with Gouache</h1>
         <p className="text-muted-foreground text-lg">
           Create a Gallery account to list events and artworks for sale
         </p>

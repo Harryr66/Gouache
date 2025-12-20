@@ -74,7 +74,7 @@ export default function AuctionsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div>
-            <h1 className="text-3xl font-bold">Auctions</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold break-words">Auctions</h1>
             <p className="text-muted-foreground">
               Discover and bid on unique artworks from talented artists
             </p>

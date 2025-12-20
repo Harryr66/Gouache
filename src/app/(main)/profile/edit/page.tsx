@@ -1352,7 +1352,7 @@ export default function ProfileEditPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-4xl">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-4xl w-full max-w-full overflow-x-hidden">
       <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-8">
         <Button
           variant="ghost"

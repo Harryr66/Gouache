@@ -468,7 +468,7 @@ function SettingsPageContent() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-4 sm:py-6 max-w-6xl">
+    <div className="container mx-auto px-4 py-4 sm:py-6 max-w-6xl w-full max-w-full overflow-x-hidden">
       <div className="flex flex-col space-y-4 sm:space-y-6">
         {/* Header */}
         <div>

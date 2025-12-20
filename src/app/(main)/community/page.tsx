@@ -96,7 +96,7 @@ export default function CommunityPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div>
-            <h1 className="text-3xl font-bold">Communities</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold break-words">Communities</h1>
             <p className="text-muted-foreground">
               Discover and join communities of artists and art enthusiasts
             </p>
