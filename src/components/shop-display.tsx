@@ -427,8 +427,9 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                         onClick={() => router.push(`/marketplace/${item.id}`)}
                         disabled={!item.isAvailable}
                       >
-                      View
-                    </Button>
+                        View Details
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
