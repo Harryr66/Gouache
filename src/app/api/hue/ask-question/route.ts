@@ -84,9 +84,15 @@ Current page/route: ${route || 'Unknown'}
 
 User Question: ${question}
 
-Provide a helpful, concise answer. If the question is about finding a feature, include the specific page/route. Be friendly and conversational. If you're not sure about something, suggest where they might find it or recommend contacting support.
+**Response Guidelines:**
+- Be CONCISE and direct - aim for 2-4 sentences maximum
+- Get straight to the point with the answer
+- If the question is about finding a feature, include the specific page/route
+- Always end with a brief, polite sign-off (e.g., "Hope that helps!", "Let me know if you need anything else!", "Happy creating!")
+- Be friendly but brief - no lengthy explanations unless absolutely necessary
+- If you're not sure, suggest where they might find it or recommend contacting support
 
-Keep your response under 300 words and be specific about where to find things.`;
+Keep your response under 150 words. Prioritize clarity and brevity while remaining helpful and polite.`;
 
         console.log('Calling Genkit AI generate...');
         const response = await ai.generate({
@@ -94,7 +100,7 @@ Keep your response under 300 words and be specific about where to find things.`;
           prompt: prompt,
           config: {
             temperature: 0.7,
-            maxOutputTokens: 500,
+            maxOutputTokens: 300, // Reduced for more concise responses
           },
         });
         
