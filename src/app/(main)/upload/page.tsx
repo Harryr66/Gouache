@@ -255,12 +255,7 @@ export default function UploadPage() {
 
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
-      toast({
-        title: 'Product created',
-        description: 'Your product has been created and will appear in your shop.',
-      });
-
-      // Reset form and go back
+      // Reset form first
       setProductForm({
         title: '',
         description: '',
@@ -273,7 +268,17 @@ export default function UploadPage() {
         newTag: '',
       });
       setProductImages([]);
-      setSelectedType(null);
+      
+      // Show toast and navigate after state updates
+      toast({
+        title: 'Product created',
+        description: 'Your product has been created and will appear in your shop.',
+      });
+
+      // Navigate back to upload options after a brief delay to avoid render conflicts
+      setTimeout(() => {
+        setSelectedType(null);
+      }, 100);
     } catch (error) {
       console.error('Error creating product:', error);
       toast({

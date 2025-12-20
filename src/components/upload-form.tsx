@@ -342,7 +342,10 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         variant: "default",
       });
 
-      router.push('/profile?tab=portfolio');
+      // Defer navigation to avoid React error #300 (updating component during render)
+      setTimeout(() => {
+        router.push('/profile?tab=portfolio');
+      }, 100);
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
       toast({
