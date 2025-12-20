@@ -71,8 +71,11 @@ export function HueChatbot() {
             // Validate saved position is still within viewport
             const orbSize = 48; // Fixed smaller size for both mobile and desktop
             const padding = isMobile ? 8 : 16;
-            const maxX = window.innerWidth - orbSize - padding;
-            const maxY = window.innerHeight - (isMobile ? 160 : 80);
+            // Use document.documentElement.clientWidth for accurate viewport width (excludes scrollbar)
+            const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+            const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+            const maxX = Math.max(0, viewportWidth - orbSize - padding);
+            const maxY = Math.max(0, viewportHeight - (isMobile ? 160 : 80));
             
             if (x >= 0 && x <= maxX && y >= 0 && y <= maxY) {
               setPosition({ x, y });
@@ -94,9 +97,13 @@ export function HueChatbot() {
           const totalOffset = browserNavHeight + appNavHeight + padding;
           const orbSize = 48; // Fixed smaller size for both mobile and desktop (w-12 h-12 = 48px)
           
+          // Use document.documentElement.clientWidth for accurate viewport width (excludes scrollbar)
+          const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+          const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+          
           const defaultPos = {
-            x: window.innerWidth - orbSize - 8, // Position orb 8px from right edge (accounting for orb width)
-            y: window.innerHeight - totalOffset // Well above all navigation bars
+            x: Math.max(0, viewportWidth - orbSize - 8), // Ensure never negative, 8px from right edge
+            y: Math.max(0, viewportHeight - totalOffset) // Well above all navigation bars
           };
           setPosition(defaultPos);
           // Save default position
@@ -104,9 +111,12 @@ export function HueChatbot() {
         } else {
           // Desktop: bottom-right corner (using same smaller size)
           const orbSize = 48; // Fixed smaller size for both mobile and desktop
+          // Use document.documentElement.clientWidth for accurate viewport width (excludes scrollbar)
+          const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+          const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
           const defaultPos = {
-            x: window.innerWidth - orbSize - 16, // Position orb 16px from right edge
-            y: window.innerHeight - 80
+            x: Math.max(0, viewportWidth - orbSize - 16), // Position orb 16px from right edge, ensure never negative
+            y: Math.max(0, viewportHeight - 80)
           };
           setPosition(defaultPos);
           // Save default position
@@ -215,7 +225,10 @@ export function HueChatbot() {
         // Fixed smaller size for both mobile and desktop
         const orbSize = 48; // Fixed size
         const padding = isMobile ? 8 : 16; // Padding from right edge
-        const maxX = window.innerWidth - orbSize - padding;
+        // Use document.documentElement.clientWidth for accurate viewport width (excludes scrollbar)
+        const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+        const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+        const maxX = Math.max(0, viewportWidth - orbSize - padding);
         const minX = 0;
         let maxY, minY;
         
@@ -224,10 +237,10 @@ export function HueChatbot() {
           const browserNavHeight = 80;
           const appNavHeight = 60;
           const verticalPadding = 20;
-          maxY = window.innerHeight - browserNavHeight - appNavHeight - verticalPadding;
+          maxY = Math.max(0, viewportHeight - browserNavHeight - appNavHeight - verticalPadding);
           minY = 0;
         } else {
-          maxY = window.innerHeight - orbSize;
+          maxY = Math.max(0, viewportHeight - orbSize);
           minY = 0;
         }
         
@@ -256,7 +269,10 @@ export function HueChatbot() {
         // Fixed smaller size for both mobile and desktop
         const orbSize = 48; // Fixed size
         const padding = isMobile ? 8 : 16; // Padding from right edge
-        const maxX = window.innerWidth - orbSize - padding;
+        // Use document.documentElement.clientWidth for accurate viewport width (excludes scrollbar)
+        const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+        const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+        const maxX = Math.max(0, viewportWidth - orbSize - padding);
         const minX = 0;
         let maxY, minY;
         
@@ -265,10 +281,10 @@ export function HueChatbot() {
           const browserNavHeight = 80;
           const appNavHeight = 60;
           const verticalPadding = 20;
-          maxY = window.innerHeight - browserNavHeight - appNavHeight - verticalPadding;
+          maxY = Math.max(0, viewportHeight - browserNavHeight - appNavHeight - verticalPadding);
           minY = 0;
         } else {
-          maxY = window.innerHeight - orbSize;
+          maxY = Math.max(0, viewportHeight - orbSize);
           minY = 0;
         }
         

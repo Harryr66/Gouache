@@ -31,6 +31,12 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico?v=1',
     apple: '/favicon.ico?v=1',
   },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
 };
 
 export default function RootLayout({
@@ -39,10 +45,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-  <html lang="en" suppressHydrationWarning>
+  <html lang="en" suppressHydrationWarning className="overflow-x-hidden">
       <body
         className={cn(
-          'min-h-screen bg-background font-body antialiased',
+          'min-h-screen w-full max-w-full overflow-x-hidden bg-background font-body antialiased',
           fontHeadline.variable,
           fontBody.variable
         )}
