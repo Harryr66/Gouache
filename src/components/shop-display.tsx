@@ -280,6 +280,10 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
     }
   };
 
+  // Group items: Artworks (originals + prints) and Products (merchandise)
+  const artworks = items.filter(item => item.type === 'original' || item.type === 'print');
+  const products = items.filter(item => item.type === 'merchandise');
+
   if (loading || checkingStripe) {
     return (
       <div className="flex justify-center py-12">
@@ -350,10 +354,6 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
       </Card>
     );
   }
-
-  // Group items: Artworks (originals + prints) and Products (merchandise)
-  const artworks = items.filter(item => item.type === 'original' || item.type === 'print');
-  const products = items.filter(item => item.type === 'merchandise');
 
   return (
     <div className="space-y-8">
