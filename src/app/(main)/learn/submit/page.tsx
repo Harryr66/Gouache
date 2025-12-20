@@ -623,6 +623,16 @@ function CourseSubmissionPageContent() {
     setIsSubmitting(true);
 
     try {
+      // For editing mode, fetch existing course data first
+      let existingCourse: any = null;
+      if (isEditing && editingCourseId) {
+        try {
+          existingCourse = await getCourse(editingCourseId);
+        } catch (error) {
+          console.error('Error fetching existing course:', error);
+        }
+      }
+
       // Upload thumbnail (only if new file provided)
       let thumbnailUrl: string | undefined;
       if (thumbnailFile) {
@@ -688,12 +698,6 @@ function CourseSubmissionPageContent() {
           setIsSubmitting(false);
           return;
         }
-      }
-
-      // Get existing course data if editing
-      let existingCourse: any = null;
-      if (isEditing && editingCourseId) {
-        existingCourse = await getCourse(editingCourseId);
       }
 
       // Create course data
