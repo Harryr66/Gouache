@@ -325,24 +325,26 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       });
       console.log('✅ UploadForm: Added to user portfolio');
 
-      // Set loading to false first to complete the async operation
-      setLoading(false);
+      // Use Promise.resolve().then() to ensure we're in a new event loop tick
+      // This ensures all state updates happen after the current render cycle
+      Promise.resolve().then(() => {
+        // Set loading to false
+        setLoading(false);
+        
+        // Show toast
+        toast({
+          title: "Upload complete",
+          description: isProductUpload 
+            ? "Your product was uploaded and added to your shop."
+            : "Your artwork was uploaded and added to your portfolio.",
+          variant: "default",
+        });
 
-      // Show toast immediately (toast is safe to call)
-      toast({
-        title: "Upload complete",
-        description: isProductUpload 
-          ? "Your product was uploaded and added to your shop."
-          : "Your artwork was uploaded and added to your portfolio.",
-        variant: "default",
+        // Navigate after a brief delay to ensure state updates have completed
+        setTimeout(() => {
+          router.push('/profile?tab=portfolio');
+        }, 500);
       });
-
-      // Defer navigation and refresh to avoid React error #300
-      // Skip refreshUser() to avoid render conflicts - portfolio is already in Firestore
-      // It will be loaded when user navigates to profile
-      setTimeout(() => {
-        router.push('/profile?tab=portfolio');
-      }, 500);
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
       setLoading(false);

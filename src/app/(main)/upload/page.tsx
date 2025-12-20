@@ -255,32 +255,36 @@ export default function UploadPage() {
 
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
-      // Set submitting to false first
-      setIsSubmittingProduct(false);
-
-      // Show toast
-      toast({
-        title: 'Product created',
-        description: 'Your product has been created and will appear in your shop.',
-      });
-
-      // Defer form reset and navigation to avoid React error #300
-      setTimeout(() => {
-        // Reset form
-        setProductForm({
-          title: '',
-          description: '',
-          price: '',
-          originalPrice: '',
-          category: 'art-prints',
-          subcategory: 'fine-art-prints',
-          stock: '1',
-          tags: [],
-          newTag: '',
+      // Use Promise.resolve().then() to ensure we're in a new event loop tick
+      // This ensures all state updates happen after the current render cycle
+      Promise.resolve().then(() => {
+        // Set submitting to false
+        setIsSubmittingProduct(false);
+        
+        // Show toast
+        toast({
+          title: 'Product created',
+          description: 'Your product has been created and will appear in your shop.',
         });
-        setProductImages([]);
-        setSelectedType(null);
-      }, 500);
+
+        // Defer form reset and navigation to avoid React error #300
+        setTimeout(() => {
+          // Reset form
+          setProductForm({
+            title: '',
+            description: '',
+            price: '',
+            originalPrice: '',
+            category: 'art-prints',
+            subcategory: 'fine-art-prints',
+            stock: '1',
+            tags: [],
+            newTag: '',
+          });
+          setProductImages([]);
+          setSelectedType(null);
+        }, 500);
+      });
     } catch (error) {
       console.error('Error creating product:', error);
       setIsSubmittingProduct(false);
