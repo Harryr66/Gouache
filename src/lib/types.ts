@@ -375,6 +375,10 @@ export interface Course {
   linkType?: 'direct' | 'enrollment' | 'affiliate';
   // Platform where course is hosted (for better UX and future integrations)
   hostingPlatform?: string;
+  // SEO fields
+  metaTitle?: string;
+  metaDescription?: string;
+  slug?: string;
   createdAt: Date;
   updatedAt: Date;
   publishedAt?: Date;
