@@ -38,9 +38,8 @@ export function DesktopHeader() {
       
       <nav className="hidden md:flex items-center space-x-6">
         {navigation.map((item) => {
-          const isActive = item.href === '/learn' ? pathname === '/learn' || pathname.startsWith('/learn/') 
-            : item.href === '/courses' ? pathname === '/courses' || pathname.startsWith('/courses/')
-            : pathname === item.href;
+          // Check if pathname matches the href or starts with it (for nested routes)
+          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link
               key={item.name}
