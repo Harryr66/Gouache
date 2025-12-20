@@ -53,6 +53,7 @@ export default function UploadPage() {
   });
   const [productImages, setProductImages] = useState<File[]>([]);
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
+  const [productUploadSuccess, setProductUploadSuccess] = useState(false);
 
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
@@ -70,6 +71,36 @@ export default function UploadPage() {
     });
     return () => unsub();
   }, [user?.id]);
+
+  // Handle product upload success
+  useEffect(() => {
+    if (productUploadSuccess) {
+      toast({
+        title: 'Product created',
+        description: 'Your product has been created and will appear in your shop.',
+      });
+
+      // Reset form and navigation
+      setProductUploadSuccess(false);
+      const timer = setTimeout(() => {
+        setProductForm({
+          title: '',
+          description: '',
+          price: '',
+          originalPrice: '',
+          category: 'art-prints',
+          subcategory: 'fine-art-prints',
+          stock: '1',
+          tags: [],
+          newTag: '',
+        });
+        setProductImages([]);
+        setSelectedType(null);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [productUploadSuccess]);
 
   // Show loading animation while auth is loading
   // Simplified: just wait for loading to complete and user to be available
@@ -255,36 +286,9 @@ export default function UploadPage() {
 
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
-      // Use Promise.resolve().then() to ensure we're in a new event loop tick
-      // This ensures all state updates happen after the current render cycle
-      Promise.resolve().then(() => {
-        // Set submitting to false
-        setIsSubmittingProduct(false);
-        
-        // Show toast
-        toast({
-          title: 'Product created',
-          description: 'Your product has been created and will appear in your shop.',
-        });
-
-        // Defer form reset and navigation to avoid React error #300
-        setTimeout(() => {
-          // Reset form
-          setProductForm({
-            title: '',
-            description: '',
-            price: '',
-            originalPrice: '',
-            category: 'art-prints',
-            subcategory: 'fine-art-prints',
-            stock: '1',
-            tags: [],
-            newTag: '',
-          });
-          setProductImages([]);
-          setSelectedType(null);
-        }, 500);
-      });
+      // Set submitting to false and success flag
+      setIsSubmittingProduct(false);
+      setProductUploadSuccess(true);
     } catch (error) {
       console.error('Error creating product:', error);
       setIsSubmittingProduct(false);
