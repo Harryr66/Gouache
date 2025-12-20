@@ -61,85 +61,96 @@ export default function ArtworkPage() {
         if (snap.exists()) {
           const data = snap.data();
           const imageUrl = data.imageUrl || data.supportingImages?.[0] || data.images?.[0] || '';
-          if (!imageUrl) {
-            setError('Artwork image not available.');
+          
+          // Only proceed if we have an imageUrl, otherwise fall through to portfolio fallback
+          if (imageUrl) {
+            // Get artist email if available
+            let artistEmail = null;
+            if (data.artist?.userId || data.artist?.id) {
+              try {
+                const artistDoc = await getDoc(doc(db, 'userProfiles', data.artist?.userId || data.artist?.id));
+                if (artistDoc.exists()) {
+                  artistEmail = artistDoc.data().email;
+                }
+              } catch (err) {
+                console.warn('Could not fetch artist email:', err);
+              }
+            }
+
+            setArtwork({
+              id: artworkId,
+              title: data.title || 'Untitled',
+              description: data.description || '',
+              imageUrl,
+              tags: Array.isArray(data.tags) ? data.tags : [],
+              price: data.price,
+              currency: data.currency || 'USD',
+              isForSale: data.isForSale,
+              priceType: data.priceType || (data.contactForPrice ? 'contact' : 'fixed'),
+              contactForPrice: data.contactForPrice || data.priceType === 'contact',
+              deliveryScope: data.deliveryScope,
+              deliveryCountries: data.deliveryCountries,
+              artist: {
+                id: data.artist?.userId || data.artist?.id,
+                name: data.artist?.name,
+                handle: data.artist?.handle,
+                avatarUrl: data.artist?.avatarUrl ?? null,
+                email: artistEmail,
+              },
+            });
             setLoading(false);
             return;
           }
-          // Get artist email if available
-          let artistEmail = null;
-          if (data.artist?.userId || data.artist?.id) {
-            try {
-              const artistDoc = await getDoc(doc(db, 'userProfiles', data.artist?.userId || data.artist?.id));
-              if (artistDoc.exists()) {
-                artistEmail = artistDoc.data().email;
-              }
-            } catch (err) {
-              console.warn('Could not fetch artist email:', err);
-            }
-          }
-
-          setArtwork({
-            id: artworkId,
-            title: data.title || 'Untitled',
-            description: data.description || '',
-            imageUrl,
-            tags: Array.isArray(data.tags) ? data.tags : [],
-            price: data.price,
-            currency: data.currency || 'USD',
-            isForSale: data.isForSale,
-            priceType: data.priceType || (data.contactForPrice ? 'contact' : 'fixed'),
-            contactForPrice: data.contactForPrice || data.priceType === 'contact',
-            deliveryScope: data.deliveryScope,
-            deliveryCountries: data.deliveryCountries,
-            artist: {
-              id: data.artist?.userId || data.artist?.id,
-              name: data.artist?.name,
-              handle: data.artist?.handle,
-              avatarUrl: data.artist?.avatarUrl ?? null,
-              email: artistEmail,
-            },
-          });
-          setLoading(false);
-          return;
+          // If no imageUrl, continue to portfolio fallback
+          console.log('Artwork found in artworks collection but no imageUrl, trying portfolio fallback...');
         }
 
         // Fallback: search userProfiles portfolios for this item id
+        console.log('Searching portfolios for artwork ID:', artworkId);
         const usersSnap = await getDocs(collection(db, 'userProfiles'));
         let found = false;
-        usersSnap.forEach((userDoc) => {
-          if (found) return;
+        
+        for (const userDoc of usersSnap.docs) {
+          if (found) break;
           const userData = userDoc.data();
           const portfolio = Array.isArray(userData.portfolio) ? userData.portfolio : [];
           const match = portfolio.find((item: any) => item?.id === artworkId);
-          if (!match) return;
-          const imageUrl = match.imageUrl || match.supportingImages?.[0] || match.images?.[0] || '';
-          if (!imageUrl) return;
-          found = true;
-          setArtwork({
-            id: artworkId,
-            title: match.title || 'Untitled',
-            description: match.description || '',
-            imageUrl,
-            tags: Array.isArray(match.tags) ? match.tags : [],
-            price: match.price,
-            currency: match.currency || 'USD',
-            isForSale: match.isForSale,
-            priceType: match.priceType || (match.contactForPrice ? 'contact' : 'fixed'),
-            contactForPrice: match.contactForPrice || match.priceType === 'contact',
-            deliveryScope: match.deliveryScope,
-            deliveryCountries: match.deliveryCountries,
-            artist: {
-              id: userDoc.id,
-              name: userData.displayName || userData.name || userData.username,
-              handle: userData.username || userData.handle,
-              avatarUrl: userData.avatarUrl ?? null,
-              email: userData.email,
-            },
-          });
-        });
+          
+          if (match) {
+            const imageUrl = match.imageUrl || match.supportingImages?.[0] || match.images?.[0] || '';
+            if (imageUrl) {
+              found = true;
+              console.log('Found artwork in portfolio for user:', userDoc.id);
+              setArtwork({
+                id: artworkId,
+                title: match.title || 'Untitled',
+                description: match.description || '',
+                imageUrl,
+                tags: Array.isArray(match.tags) ? match.tags : [],
+                price: match.price,
+                currency: match.currency || 'USD',
+                isForSale: match.isForSale,
+                priceType: match.priceType || (match.contactForPrice ? 'contact' : 'fixed'),
+                contactForPrice: match.contactForPrice || match.priceType === 'contact',
+                deliveryScope: match.deliveryScope,
+                deliveryCountries: match.deliveryCountries,
+                artist: {
+                  id: userDoc.id,
+                  name: userData.displayName || userData.name || userData.username,
+                  handle: userData.username || userData.handle,
+                  avatarUrl: userData.avatarUrl ?? null,
+                  email: userData.email,
+                },
+              });
+              break;
+            } else {
+              console.log('Found artwork in portfolio but no imageUrl:', artworkId, 'user:', userDoc.id);
+            }
+          }
+        }
 
         if (!found) {
+          console.error('Artwork not found in artworks collection or any portfolio:', artworkId);
           setError('Artwork not found.');
         }
       } catch (err) {

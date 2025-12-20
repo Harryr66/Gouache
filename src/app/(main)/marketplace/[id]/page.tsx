@@ -305,54 +305,7 @@ function ProductDetailPage() {
           productData = placeholderProducts.find(p => p.id === productId) || 
                        marketPlaceholderProducts.find(p => p.id === productId) || null;
         }
-        // Check if it's an artwork (try artworks collection first if no prefix)
-        else {
-          // First check if it's an artwork (artworks collection)
-          const artworkDoc = await getDoc(doc(db, 'artworks', productId));
-          if (artworkDoc.exists()) {
-            const data = artworkDoc.data();
-            const artist = data.artist || {};
-            productData = {
-              id: `artwork-${artworkDoc.id}`,
-              title: data.title || 'Untitled Artwork',
-              description: data.description || '',
-              price: data.price || 0,
-              currency: data.currency || 'USD',
-              category: 'Artwork',
-              subcategory: data.category || 'Original',
-              images: data.imageUrl ? [data.imageUrl] : [],
-              sellerId: artist.userId || artist.id || '',
-              sellerName: artist.name || 'Unknown Artist',
-              sellerWebsite: artist.website,
-              isAffiliate: false,
-              isActive: !data.sold && (data.stock === undefined || data.stock > 0),
-              stock: data.stock || 1,
-              rating: 0,
-              reviewCount: 0,
-              tags: data.tags || [],
-              createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-              updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
-              salesCount: 0,
-              isOnSale: false,
-              isApproved: true,
-              status: 'approved',
-              dimensions: data.dimensions
-            } as MarketplaceProduct;
-          } else {
-            // If not an artwork, check marketplaceProducts collection
-            const productDoc = await getDoc(doc(db, 'marketplaceProducts', productId));
-            if (productDoc.exists()) {
-              const data = productDoc.data();
-              productData = {
-                id: productDoc.id,
-                ...data,
-                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now())
-              } as MarketplaceProduct;
-            }
-          }
-        }
-        // Check if it's an artwork
+        // Check if it's an artwork (with prefix)
         else if (productId.startsWith('artwork-')) {
           const artworkId = productId.replace('artwork-', '');
           const artworkDoc = await getDoc(doc(db, 'artworks', artworkId));
@@ -421,6 +374,53 @@ function ProductDetailPage() {
               isApproved: true,
               status: 'approved'
             } as MarketplaceProduct;
+          }
+        }
+        // Check if it's an artwork without prefix (try artworks collection first, then marketplaceProducts)
+        else {
+          // First check if it's an artwork (artworks collection)
+          const artworkDoc = await getDoc(doc(db, 'artworks', productId));
+          if (artworkDoc.exists()) {
+            const data = artworkDoc.data();
+            const artist = data.artist || {};
+            productData = {
+              id: `artwork-${artworkDoc.id}`,
+              title: data.title || 'Untitled Artwork',
+              description: data.description || '',
+              price: data.price || 0,
+              currency: data.currency || 'USD',
+              category: 'Artwork',
+              subcategory: data.category || 'Original',
+              images: data.imageUrl ? [data.imageUrl] : [],
+              sellerId: artist.userId || artist.id || '',
+              sellerName: artist.name || 'Unknown Artist',
+              sellerWebsite: artist.website,
+              isAffiliate: false,
+              isActive: !data.sold && (data.stock === undefined || data.stock > 0),
+              stock: data.stock || 1,
+              rating: 0,
+              reviewCount: 0,
+              tags: data.tags || [],
+              createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+              updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+              salesCount: 0,
+              isOnSale: false,
+              isApproved: true,
+              status: 'approved',
+              dimensions: data.dimensions
+            } as MarketplaceProduct;
+          } else {
+            // If not an artwork, check marketplaceProducts collection
+            const productDoc = await getDoc(doc(db, 'marketplaceProducts', productId));
+            if (productDoc.exists()) {
+              const data = productDoc.data();
+              productData = {
+                id: productDoc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now())
+              } as MarketplaceProduct;
+            }
           }
         }
 

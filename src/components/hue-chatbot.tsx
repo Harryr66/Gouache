@@ -661,7 +661,7 @@ export function HueChatbot() {
   useEffect(() => {
     if (!isExpanded || hasError) return;
     
-    const fullPlaceholder = "Have an issue? Here's a tissue... I'm here to help with questions or issues";
+    const fullPlaceholder = "Have an issue? Here's a tissue... I'm here to assist with any questions or queries";
     setPlaceholderText('');
     setShowGreeting(false); // No separate greeting, it's in the placeholder
     
@@ -896,7 +896,7 @@ export function HueChatbot() {
                         setDisplayedAnswer('');
                       }
                     }}
-                    placeholder={placeholderText || "Have an issue? Here's a tissue... I'm here to help with questions or issues"}
+                    placeholder={placeholderText || "Have an issue? Here's a tissue... I'm here to assist with any questions or queries"}
                     className="min-h-[80px] resize-none text-sm"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && question.trim()) {
