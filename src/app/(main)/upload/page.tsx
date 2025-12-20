@@ -53,7 +53,6 @@ export default function UploadPage() {
   });
   const [productImages, setProductImages] = useState<File[]>([]);
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
-  const [productUploadSuccess, setProductUploadSuccess] = useState(false);
 
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
@@ -71,36 +70,6 @@ export default function UploadPage() {
     });
     return () => unsub();
   }, [user?.id]);
-
-  // Handle product upload success
-  useEffect(() => {
-    if (productUploadSuccess) {
-      toast({
-        title: 'Product created',
-        description: 'Your product has been created and will appear in your shop.',
-      });
-
-      // Reset form and navigation
-      setProductUploadSuccess(false);
-      const timer = setTimeout(() => {
-        setProductForm({
-          title: '',
-          description: '',
-          price: '',
-          originalPrice: '',
-          category: 'art-prints',
-          subcategory: 'fine-art-prints',
-          stock: '1',
-          tags: [],
-          newTag: '',
-        });
-        setProductImages([]);
-        setSelectedType(null);
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [productUploadSuccess]);
 
   // Show loading animation while auth is loading
   // Simplified: just wait for loading to complete and user to be available
@@ -286,9 +255,31 @@ export default function UploadPage() {
 
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
-      // Set submitting to false and success flag
+      // Set submitting to false
       setIsSubmittingProduct(false);
-      setProductUploadSuccess(true);
+
+      // Show toast and reset form
+      toast({
+        title: 'Product created',
+        description: 'Your product has been created and will appear in your shop.',
+      });
+
+      // Reset form and navigation after delay
+      setTimeout(() => {
+        setProductForm({
+          title: '',
+          description: '',
+          price: '',
+          originalPrice: '',
+          category: 'art-prints',
+          subcategory: 'fine-art-prints',
+          stock: '1',
+          tags: [],
+          newTag: '',
+        });
+        setProductImages([]);
+        setSelectedType(null);
+      }, 500);
     } catch (error) {
       console.error('Error creating product:', error);
       setIsSubmittingProduct(false);

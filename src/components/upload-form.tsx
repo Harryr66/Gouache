@@ -110,7 +110,6 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [tagInput, setTagInput] = useState('');
-  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [tagsList, setTagsList] = useState<string[]>(
     (initialFormData?.tags || '')
       .split(',')
@@ -126,26 +125,6 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   );
   const [countrySearch, setCountrySearch] = useState('');
 
-  // Handle navigation after successful upload
-  useEffect(() => {
-    if (uploadSuccess) {
-      toast({
-        title: "Upload complete",
-        description: isProductUpload 
-          ? "Your product was uploaded and added to your shop."
-          : "Your artwork was uploaded and added to your portfolio.",
-        variant: "default",
-      });
-      
-      // Reset flag and navigate
-      setUploadSuccess(false);
-      const timer = setTimeout(() => {
-        router.push('/profile?tab=portfolio');
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [uploadSuccess, router, isProductUpload]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -347,9 +326,22 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       });
       console.log('✅ UploadForm: Added to user portfolio');
 
-      // Set loading to false and success flag
+      // Set loading to false
       setLoading(false);
-      setUploadSuccess(true);
+
+      // Show toast
+      toast({
+        title: "Upload complete",
+        description: isProductUpload 
+          ? "Your product was uploaded and added to your shop."
+          : "Your artwork was uploaded and added to your portfolio.",
+        variant: "default",
+      });
+
+      // Navigate after delay
+      setTimeout(() => {
+        router.push('/profile?tab=portfolio');
+      }, 500);
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
       setLoading(false);
