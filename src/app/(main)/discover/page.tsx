@@ -31,6 +31,12 @@ import { engagementScorer } from '@/lib/engagement-scorer';
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
   const placeholderImage = 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
+  // Landscape placeholder images for full-width tiles
+  const landscapeImages = [
+    'https://images.pexels.com/photos/1070536/pexels-photo-1070536.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/1193743/pexels-photo-1193743.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'https://images.pexels.com/photos/1323712/pexels-photo-1323712.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  ];
   
   const artistNames = [
     'Alexandra Chen', 'Marcus Rivera', 'Sophie Laurent', 'David Kim', 'Emma Thompson',
@@ -47,33 +53,52 @@ const generatePlaceholderArtworks = (theme: string | undefined, count: number = 
     'Oil Painting', 'Charcoal Drawing', 'Acrylic Piece', 'Ink Illustration'
   ];
   
-  return Array.from({ length: count }, (_, i) => ({
-    id: `placeholder-${i + 1}`,
-    title: titles[i % titles.length],
-    description: 'A beautiful artwork showcasing artistic expression and creativity.',
-    imageUrl: placeholderImage,
-    imageAiHint: 'Placeholder artwork',
-    artist: {
-      id: `placeholder-artist-${i + 1}`,
-      name: artistNames[i % artistNames.length],
-      handle: `artist${i + 1}`,
-      avatarUrl: null,
-      isVerified: i % 3 === 0,
-      isProfessional: true,
-      followerCount: Math.floor(Math.random() * 5000) + 100,
-      followingCount: Math.floor(Math.random() * 500) + 50,
+  const landscapeTitles = [
+    'Panoramic Cityscape', 'Wide Horizon', 'Expansive Landscape', 'Urban Panorama',
+    'Coastal Vista', 'Mountain Range', 'Desert Sunset', 'Forest Path'
+  ];
+  
+  return Array.from({ length: count }, (_, i) => {
+    // Every 5th item is a landscape image (roughly 20% landscape)
+    const isLandscape = i % 5 === 0 && i > 0;
+    const imageUrl = isLandscape 
+      ? landscapeImages[i % landscapeImages.length]
+      : placeholderImage;
+    const title = isLandscape
+      ? landscapeTitles[i % landscapeTitles.length]
+      : titles[i % titles.length];
+    
+    return {
+      id: `placeholder-${i + 1}`,
+      title: title,
+      description: isLandscape 
+        ? 'A stunning landscape artwork showcasing the beauty of nature and urban environments.'
+        : 'A beautiful artwork showcasing artistic expression and creativity.',
+      imageUrl: imageUrl,
+      imageAiHint: isLandscape ? 'Landscape placeholder artwork' : 'Placeholder artwork',
+      isLandscape: isLandscape, // Add flag to identify landscape images
+      artist: {
+        id: `placeholder-artist-${i + 1}`,
+        name: artistNames[i % artistNames.length],
+        handle: `artist${i + 1}`,
+        avatarUrl: null,
+        isVerified: i % 3 === 0,
+        isProfessional: true,
+        followerCount: Math.floor(Math.random() * 5000) + 100,
+        followingCount: Math.floor(Math.random() * 500) + 50,
+        createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
+      },
+      likes: Math.floor(Math.random() * 500) + 10,
+      commentsCount: Math.floor(Math.random() * 50) + 2,
       createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
-    },
-    likes: Math.floor(Math.random() * 500) + 10,
-    commentsCount: Math.floor(Math.random() * 50) + 2,
-    createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
-    updatedAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
-    category: ['Painting', 'Drawing', 'Digital', 'Mixed Media'][i % 4],
-    medium: ['Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Digital'][i % 5],
-    tags: ['art', 'creative', 'contemporary', 'modern', '_placeholder'], // Hidden tag to identify placeholders
-    aiAssistance: 'none' as const,
-    isAI: false,
-  }));
+      updatedAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
+      category: ['Painting', 'Drawing', 'Digital', 'Mixed Media'][i % 4],
+      medium: ['Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Digital'][i % 5],
+      tags: ['art', 'creative', 'contemporary', 'modern', '_placeholder'], // Hidden tag to identify placeholders
+      aiAssistance: 'none' as const,
+      isAI: false,
+    };
+  });
 };
 
 const generatePlaceholderEvents = (theme: string | undefined, count: number = 12) => {
@@ -1126,9 +1151,35 @@ function DiscoverPageContent() {
               </div>
             ) : (artworkView === 'grid' || !isMobile) ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1">
-                {visibleFilteredArtworks.map((artwork) => (
-                  <ArtworkTile key={artwork.id} artwork={artwork} hideBanner={isMobile && artworkView === 'grid'} />
-                ))}
+                {visibleFilteredArtworks.map((artwork) => {
+                  // Detect landscape images: 
+                  // 1. Check if artwork has isLandscape flag (for placeholders)
+                  // 2. Check if dimensions suggest landscape (width > height * 1.3)
+                  // 3. Check for known landscape placeholder URLs
+                  let isLandscape = false;
+                  
+                  if ((artwork as any).isLandscape === true) {
+                    isLandscape = true;
+                  } else if (artwork.dimensions && artwork.dimensions.width && artwork.dimensions.height) {
+                    // Check aspect ratio: landscape if width is significantly greater than height
+                    const aspectRatio = artwork.dimensions.width / artwork.dimensions.height;
+                    isLandscape = aspectRatio > 1.3; // Landscape threshold
+                  } else if (artwork.imageUrl) {
+                    // Check for known landscape placeholder URLs
+                    isLandscape = artwork.imageUrl.includes('1070536') || 
+                                 artwork.imageUrl.includes('1193743') || 
+                                 artwork.imageUrl.includes('1323712');
+                  }
+                  
+                  return (
+                    <ArtworkTile 
+                      key={artwork.id} 
+                      artwork={artwork} 
+                      hideBanner={isMobile && artworkView === 'grid'}
+                      isLandscape={isLandscape && isMobile} // Only apply landscape layout on mobile (2-column grid)
+                    />
+                  );
+                })}
               </div>
             ) : (
                 <div className="space-y-3">

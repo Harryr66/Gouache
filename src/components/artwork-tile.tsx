@@ -44,9 +44,10 @@ interface ArtworkTileProps {
   onClick?: () => void;
   className?: string;
   hideBanner?: boolean;
+  isLandscape?: boolean; // For full-width landscape images
 }
 
-export function ArtworkTile({ artwork, onClick, className, hideBanner = false }: ArtworkTileProps) {
+export function ArtworkTile({ artwork, onClick, className, hideBanner = false, isLandscape = false }: ArtworkTileProps) {
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
@@ -247,10 +248,10 @@ const generateArtistContent = (artist: Artist) => ({
     <>
     <Card 
         ref={tileRef}
-        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full rounded-lg ${className || ''}`}
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full rounded-lg ${isLandscape ? 'col-span-2' : ''} ${className || ''}`}
         onClick={handleTileClick}
     >
-      <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg">
+      <div className={`relative overflow-hidden rounded-t-lg ${isLandscape ? 'aspect-[16/9]' : 'aspect-[3/4]'}`}>
         <Image
           src={artwork.imageUrl || 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800'}
           alt={artwork.imageAiHint}
