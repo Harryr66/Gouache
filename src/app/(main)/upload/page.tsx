@@ -56,9 +56,6 @@ export default function UploadPage() {
   const [productImages, setProductImages] = useState<File[]>([]);
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
 
-  // Track which user ID we've already processed to prevent re-processing
-  const processedUserIdRef = useRef<string | null>(null);
-
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
     if (!user?.id) return;
