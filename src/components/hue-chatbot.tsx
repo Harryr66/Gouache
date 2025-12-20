@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Send, AlertCircle, Sparkles } from 'lucide-react';
+import { X, Send, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ErrorReport {
@@ -209,12 +209,7 @@ export function HueChatbot() {
           "w-full h-full rounded-full flex items-center justify-center story-gradient-border",
           hasError ? "animate-pulse" : "hue-orb-idle"
         )}>
-          <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
-            <Sparkles className={cn(
-              "h-6 w-6 transition-colors",
-              hasError ? "text-destructive" : "text-foreground"
-            )} />
-          </div>
+          <div className="w-full h-full rounded-full bg-background" />
         </div>
       </div>
 
@@ -241,11 +236,9 @@ export function HueChatbot() {
             </Button>
             <CardTitle className="flex items-center gap-2 pr-8">
               <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center",
+                "w-10 h-10 rounded-full",
                 hasError ? "bg-gradient-to-br from-red-500 to-pink-500" : "bg-gradient-to-br from-blue-500 to-purple-500"
-              )}>
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
+              )} />
               <span>Hey, I'm Hue</span>
             </CardTitle>
           </CardHeader>
