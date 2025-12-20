@@ -1,6 +1,8 @@
 # Hue AI Chatbot Setup Guide
 
-Hue is an AI-powered error detection and reporting system that helps users report bugs and automatically generates fixes.
+Hue is an AI-powered assistant that helps users with:
+1. **Error Detection & Reporting**: Automatically detects errors and generates fixes
+2. **Customer Service Q&A**: Answers questions about the platform, features, and navigation
 
 ## Environment Variables
 
@@ -37,6 +39,7 @@ GOOGLE_GENAI_API_KEY=your_google_genai_api_key_here
 
 ## How It Works
 
+### Error Detection & Reporting
 1. **Error Detection**: Hue automatically catches all uncaught JavaScript errors and unhandled promise rejections
 2. **User Notification**: When an error occurs, the Hue orb glows and expands to alert the user
 3. **Context Collection**: Hue asks the user what they were trying to do (100 word limit)
@@ -46,14 +49,24 @@ GOOGLE_GENAI_API_KEY=your_google_genai_api_key_here
    - User context
    - AI-generated fix suggestion
 
+### Customer Service Q&A
+1. **Platform Knowledge**: Hue is pre-trained with comprehensive knowledge about Gouache platform features, pages, navigation, and functionality
+2. **Question Input**: Users can ask questions via text input when Hue is expanded
+3. **AI Response**: Hue uses Genkit AI to provide helpful, context-aware answers
+4. **Typewriter Effect**: Answers are displayed with a smooth typewriter animation
+
 ## Features
 
-- **Draggable Orb**: Users can drag Hue to any position on the screen
-- **Chrome Gradient**: Beautiful gradient orb that pulses when idle
-- **Error Detection**: Catches all uncaught errors automatically
-- **Smart Filtering**: Word limit enforcement (100 words max)
+- **Draggable Orb**: Users can drag Hue to any position on the screen (desktop & mobile)
+- **Gradient Border**: Theme-aware gradient border ring matching platform design
+- **Error Detection**: Catches all uncaught errors automatically (always active, even when hidden)
+- **Customer Service Q&A**: Answers questions about platform features, navigation, and functionality
+- **Platform Knowledge**: Pre-trained with knowledge about all Gouache features, pages, and account types
+- **Typewriter Effects**: Smooth typewriter animations for placeholder text and answers
+- **Smart Filtering**: Word limit enforcement (100 words max for error reports)
 - **AI-Powered Fixes**: Automatically generates code fixes using Genkit AI
 - **Email Reports**: Sends formatted email reports with all details
+- **Hide/Show**: Users can hide Hue and reactivate it in Settings > Hue tab
 
 ## Testing
 
@@ -71,10 +84,12 @@ To test Hue:
 - Verify `RESEND_FROM_EMAIL` format: `Name <email@domain.com>`
 - Check Resend dashboard for delivery status
 
-### AI fix not generating
-- Verify `GOOGLE_GENAI_API_KEY` is set
-- Check API key has proper permissions
+### AI fix not generating / Q&A not working
+- **Most Common Issue**: `GOOGLE_GENAI_API_KEY` is not set in environment variables
+- Verify `GOOGLE_GENAI_API_KEY` is set in Vercel environment variables (for production) or `.env.local` (for local development)
+- Check API key has proper permissions in Google AI Studio
 - Review server logs for AI generation errors
+- **Note**: Hue's platform knowledge is already embedded in the code - you just need the API key to activate it
 
 ### Hue not appearing
 - Check browser console for errors
