@@ -40,8 +40,19 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
   const [loading, setLoading] = useState(true);
   const [isStripeIntegrated, setIsStripeIntegrated] = useState(false);
   const [checkingStripe, setCheckingStripe] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // Fetch Stripe status directly from Firestore and verify with Stripe API
   useEffect(() => {
@@ -425,81 +436,155 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
       {/* Artworks Tab */}
       <TabsContent value="artworks" className="space-y-4">
         {artworks.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {artworks.map((item) => (
-              <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                <div className="relative aspect-square">
-                  {item.imageUrl ? (
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                  {!item.isAvailable && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Badge variant="destructive">Sold Out</Badge>
-                    </div>
-                  )}
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-sm line-clamp-1 flex-1">{item.title}</h4>
-                    <Badge variant="secondary" className="ml-2">
-                      {getTypeIcon(item.type)}
-                    </Badge>
-                  </div>
-                  {item.description && (
-                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                      {item.description}
-                    </p>
-                  )}
-                  {item.stock !== undefined && (
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {item.stock} in stock
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-lg">
-                      {item.priceType === 'contact' || item.contactForPrice ? (
-                        <span className="text-muted-foreground">Contact for pricing</span>
+          isMobile ? (
+            // Mobile: List view (like discover events)
+            <div className="space-y-4">
+              {artworks.map((item) => (
+                <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => router.push(`/artwork/${item.id}`)}>
+                  <div className="flex flex-col md:flex-row gap-4 p-4">
+                    <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
+                      {item.imageUrl ? (
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.title}
+                          fill
+                          className="object-cover"
+                        />
                       ) : (
-                        <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                        </div>
                       )}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {isOwnProfile && (
+                      {!item.isAvailable && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <Badge variant="destructive">Sold Out</Badge>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {getTypeIcon(item.type)}
+                            </Badge>
+                          </div>
+                          <h3 className="font-semibold text-lg mb-1">{item.title}</h3>
+                          {item.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{item.description}</p>
+                          )}
+                          {item.stock !== undefined && (
+                            <p className="text-xs text-muted-foreground mb-2">
+                              {item.stock} in stock
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <span className="font-bold text-lg">
+                            {item.priceType === 'contact' || item.contactForPrice ? (
+                              <span className="text-muted-foreground text-sm">Contact for pricing</span>
+                            ) : (
+                              <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
+                            )}
+                          </span>
+                          {isOwnProfile && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/profile?editArtwork=${item.id}`);
+                              }}
+                              title="Edit artwork"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            // Desktop: Grid view
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {artworks.map((item) => (
+                <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
+                  <div className="relative aspect-square">
+                    {item.imageUrl ? (
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    {!item.isAvailable && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <Badge variant="destructive">Sold Out</Badge>
+                      </div>
+                    )}
+                  </div>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-sm line-clamp-1 flex-1">{item.title}</h4>
+                      <Badge variant="secondary" className="ml-2">
+                        {getTypeIcon(item.type)}
+                      </Badge>
+                    </div>
+                    {item.description && (
+                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                        {item.description}
+                      </p>
+                    )}
+                    {item.stock !== undefined && (
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {item.stock} in stock
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-lg">
+                        {item.priceType === 'contact' || item.contactForPrice ? (
+                          <span className="text-muted-foreground">Contact for pricing</span>
+                        ) : (
+                          <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
+                        )}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {isOwnProfile && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/profile?editArtwork=${item.id}`);
+                            }}
+                            title="Edit artwork"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/profile?editArtwork=${item.id}`);
-                          }}
-                          title="Edit artwork"
+                          variant="outline"
+                          onClick={() => router.push(`/artwork/${item.id}`)}
+                          disabled={!item.isAvailable}
                         >
-                          <Edit className="h-4 w-4" />
+                          View Details
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push(`/artwork/${item.id}`)}
-                        disabled={!item.isAvailable}
-                      >
-                        View Details
-                      </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
         ) : (
           <Card className="p-8 text-center">
             <CardContent>
@@ -518,52 +603,120 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
       {/* Products Tab */}
       <TabsContent value="products" className="space-y-4">
         {products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map((item) => (
-              <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                <div className="relative aspect-[3/4]">
-                  {item.imageUrl ? (
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <Book className="h-12 w-12 text-muted-foreground" />
+          isMobile ? (
+            // Mobile: List view (like discover events)
+            <div className="space-y-4">
+              {products.map((item) => (
+                <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => router.push(`/shop/book/${item.id}`)}>
+                  <div className="flex flex-col md:flex-row gap-4 p-4">
+                    <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
+                      {item.imageUrl ? (
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.title}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <Book className="h-12 w-12 text-muted-foreground" />
+                        </div>
+                      )}
+                      {!item.isAvailable && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <Badge variant="destructive">Sold Out</Badge>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {!item.isAvailable && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Badge variant="destructive">Sold Out</Badge>
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {getTypeIcon(item.type)}
+                            </Badge>
+                          </div>
+                          <h3 className="font-semibold text-lg mb-1">{item.title}</h3>
+                          {item.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{item.description}</p>
+                          )}
+                          {item.stock !== undefined && (
+                            <p className="text-xs text-muted-foreground mb-2">
+                              {item.stock} in stock
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <span className="font-bold text-lg">
+                            {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/shop/book/${item.id}`);
+                            }}
+                            disabled={!item.isAvailable}
+                          >
+                            View
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-sm line-clamp-1 flex-1">{item.title}</h4>
-                    <Badge variant="secondary" className="ml-2">
-                      {getTypeIcon(item.type)}
-                    </Badge>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-lg">
-                      {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => router.push(`/shop/book/${item.id}`)}
-                      disabled={!item.isAvailable}
-                    >
-                      View
-                    </Button>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            // Desktop: Grid view
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {products.map((item) => (
+                <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
+                  <div className="relative aspect-[3/4]">
+                    {item.imageUrl ? (
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <Book className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    {!item.isAvailable && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <Badge variant="destructive">Sold Out</Badge>
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-sm line-clamp-1 flex-1">{item.title}</h4>
+                      <Badge variant="secondary" className="ml-2">
+                        {getTypeIcon(item.type)}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-lg">
+                        {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push(`/shop/book/${item.id}`)}
+                        disabled={!item.isAvailable}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
         ) : (
           <Card className="p-8 text-center">
             <CardContent>
