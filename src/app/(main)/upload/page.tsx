@@ -84,12 +84,8 @@ export default function UploadPage() {
       return;
     }
 
-    // If we've already processed this user ID, skip
+    // If we've already processed this user ID, skip entirely
     if (processedUserIdRef.current === user.id) {
-      // Check if we need to update based on isProfessional status
-      if (user.isProfessional !== undefined || user.updatedAt) {
-        setIsCheckingUser(false);
-      }
       return;
     }
     
@@ -99,15 +95,8 @@ export default function UploadPage() {
     
     // Set a timer to wait for Firestore data
     const timer = setTimeout(() => {
-      // After wait, check if isProfessional has been set
-      if (user.isProfessional === undefined && !user.updatedAt) {
-        // Still loading, wait a bit more
-        setTimeout(() => {
-          setIsCheckingUser(false);
-        }, 1000);
-      } else {
-        setIsCheckingUser(false);
-      }
+      // After wait, always stop checking
+      setIsCheckingUser(false);
     }, 2000);
     
     return () => clearTimeout(timer);
