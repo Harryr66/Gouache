@@ -4,8 +4,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Send, AlertCircle } from 'lucide-react';
+import { X, Send, AlertCircle, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/providers/auth-provider';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { toast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 interface ErrorReport {
   message: string;
@@ -17,6 +22,8 @@ interface ErrorReport {
 }
 
 export function HueChatbot() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorReport, setErrorReport] = useState<ErrorReport | null>(null);
@@ -26,26 +33,59 @@ export function HueChatbot() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [hueEnabled, setHueEnabled] = useState(true);
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [isAsking, setIsAsking] = useState(false);
+  const [placeholderText, setPlaceholderText] = useState('');
+  const [displayedAnswer, setDisplayedAnswer] = useState('');
+  const [showGreeting, setShowGreeting] = useState(true);
   const orbRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+  // Load user preference for Hue visibility
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const userRef = doc(db, 'userProfiles', user.id);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        const enabled = userData.preferences?.hueEnabled !== false; // Default to true
+        setHueEnabled(enabled);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user?.id]);
 
   // Initialize position on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Position in bottom-right corner with some padding
       const updatePosition = () => {
-        setPosition({
-          x: window.innerWidth - 80,
-          y: window.innerHeight - 80
-        });
+        if (isMobile) {
+          // Mobile: position above nav bar (assuming nav bar is ~60px from bottom)
+          setPosition({
+            x: window.innerWidth - 60,
+            y: window.innerHeight - 100 // Above nav bar
+          });
+        } else {
+          // Desktop: bottom-right corner
+          setPosition({
+            x: window.innerWidth - 80,
+            y: window.innerHeight - 80
+          });
+        }
       };
       updatePosition();
       window.addEventListener('resize', updatePosition);
       return () => window.removeEventListener('resize', updatePosition);
     }
-  }, []);
+  }, [isMobile]);
 
-  // Global error handler
+  // Global error handler - ALWAYS ACTIVE even when hidden
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
       const error = event.error || event;
@@ -64,6 +104,8 @@ export function HueChatbot() {
       setErrorReport(report);
       setHasError(true);
       setIsExpanded(true);
+      // Force show Hue when error detected
+      setHueEnabled(true);
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -83,6 +125,8 @@ export function HueChatbot() {
       setErrorReport(report);
       setHasError(true);
       setIsExpanded(true);
+      // Force show Hue when error detected
+      setHueEnabled(true);
     };
 
     window.addEventListener('error', handleError);
@@ -94,7 +138,7 @@ export function HueChatbot() {
     };
   }, []);
 
-  // Handle dragging
+  // Handle mouse dragging (desktop)
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isExpanded) {
       setIsDragging(true);
@@ -105,6 +149,20 @@ export function HueChatbot() {
     }
   };
 
+  // Handle touch dragging (mobile)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isExpanded && e.touches.length === 1) {
+      const touch = e.touches[0];
+      setIsDragging(true);
+      setTouchStart({ x: touch.clientX, y: touch.clientY });
+      setDragStart({
+        x: touch.clientX - position.x,
+        y: touch.clientY - position.y
+      });
+    }
+  };
+
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging && !isExpanded) {
@@ -112,8 +170,8 @@ export function HueChatbot() {
         const newY = e.clientY - dragStart.y;
         
         // Keep within viewport bounds
-        const maxX = window.innerWidth - 64;
-        const maxY = window.innerHeight - 64;
+        const maxX = window.innerWidth - (isMobile ? 48 : 64);
+        const maxY = window.innerHeight - (isMobile ? 48 : 64);
         const minX = 0;
         const minY = 0;
         
@@ -128,16 +186,45 @@ export function HueChatbot() {
       setIsDragging(false);
     };
 
+    const handleTouchMoveGlobal = (e: TouchEvent) => {
+      if (isDragging && touchStart && e.touches.length === 1 && !isExpanded) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const newX = touch.clientX - dragStart.x;
+        const newY = touch.clientY - dragStart.y;
+        
+        // Keep within viewport bounds
+        const maxX = window.innerWidth - (isMobile ? 48 : 64);
+        const maxY = window.innerHeight - (isMobile ? 48 : 64);
+        const minX = 0;
+        const minY = 0;
+        
+        setPosition({
+          x: Math.max(minX, Math.min(maxX, newX)),
+          y: Math.max(minY, Math.min(maxY, newY))
+        });
+      }
+    };
+
+    const handleTouchEndGlobal = () => {
+      setIsDragging(false);
+      setTouchStart(null);
+    };
+
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMoveGlobal, { passive: false });
+      window.addEventListener('touchend', handleTouchEndGlobal);
     }
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMoveGlobal);
+      window.removeEventListener('touchend', handleTouchEndGlobal);
     };
-  }, [isDragging, dragStart, isExpanded]);
+  }, [isDragging, dragStart, isExpanded, isMobile, touchStart]);
 
   const handleSend = async () => {
     if (!errorReport || !userContext.trim() || isSubmitting) return;
@@ -174,10 +261,128 @@ export function HueChatbot() {
     }
   };
 
+  const handleAskQuestion = async () => {
+    if (!question.trim() || isAsking) return;
+
+    setIsAsking(true);
+    setAnswer('');
+    try {
+      const response = await fetch('/api/hue/ask-question', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: question.trim(),
+          route: window.location.pathname,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAnswer(data.answer || 'I apologize, but I couldn\'t generate an answer. Please try rephrasing your question.');
+      } else {
+        setAnswer('I apologize, but I encountered an error. Please try again or check the Settings page for help.');
+      }
+    } catch (error) {
+      console.error('Error asking question:', error);
+      setAnswer('I apologize, but I encountered an error. Please try again or check the Settings page for help.');
+    } finally {
+      setIsAsking(false);
+    }
+  };
+
+  const handleHideHue = async () => {
+    if (!user?.id) {
+      toast({
+        title: 'Not signed in',
+        description: 'Please sign in to change Hue settings.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const userRef = doc(db, 'userProfiles', user.id);
+      const userDoc = await getDoc(userRef);
+      const currentData = userDoc.data() || {};
+      
+      await updateDoc(userRef, {
+        preferences: {
+          ...currentData.preferences,
+          hueEnabled: false
+        }
+      });
+
+      setHueEnabled(false);
+      setIsExpanded(false);
+      
+      toast({
+        title: 'Hue hidden',
+        description: 'Hue can be reactivated in general settings.',
+      });
+    } catch (error) {
+      console.error('Error hiding Hue:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to hide Hue. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   // Count words (split by whitespace and filter empty strings)
   const wordCount = userContext.trim() ? userContext.trim().split(/\s+/).filter(Boolean).length : 0;
   const maxWords = 100;
   const isOverLimit = wordCount > maxWords;
+
+  // Typewriter effect for placeholder
+  useEffect(() => {
+    if (!isExpanded || hasError) return;
+    
+    const fullPlaceholder = "Ask me anything about the platform... (e.g., 'How do I sell artwork?', 'Where is my profile?', 'How do I create a course?')";
+    setPlaceholderText('');
+    setShowGreeting(true);
+    
+    let currentIndex = 0;
+    const typeInterval = setInterval(() => {
+      if (currentIndex < fullPlaceholder.length) {
+        setPlaceholderText(fullPlaceholder.slice(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        clearInterval(typeInterval);
+      }
+    }, 30); // 30ms per character for smooth typing
+
+    return () => clearInterval(typeInterval);
+  }, [isExpanded, hasError]);
+
+  // Typewriter effect for answer
+  useEffect(() => {
+    if (!answer) {
+      setDisplayedAnswer('');
+      return;
+    }
+
+    setDisplayedAnswer('');
+    setShowGreeting(false);
+    let currentIndex = 0;
+    const typeInterval = setInterval(() => {
+      if (currentIndex < answer.length) {
+        setDisplayedAnswer(answer.slice(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        clearInterval(typeInterval);
+      }
+    }, 20); // 20ms per character for answer typing
+
+    return () => clearInterval(typeInterval);
+  }, [answer]);
+
+  // Don't render if disabled (unless error detected)
+  if (!hueEnabled && !hasError) {
+    return null;
+  }
 
   return (
     <div
@@ -198,12 +403,18 @@ export function HueChatbot() {
       <div
         ref={orbRef}
         className={cn(
-          "relative pointer-events-auto cursor-grab active:cursor-grabbing transition-all duration-300",
-          isExpanded ? "w-0 h-0 opacity-0" : "w-16 h-16",
+          "relative pointer-events-auto cursor-grab active:cursor-grabbing transition-all duration-300 touch-none",
+          isExpanded ? "w-0 h-0 opacity-0" : isMobile ? "w-12 h-12" : "w-16 h-16",
           hasError && !isExpanded && "animate-pulse scale-110"
         )}
         onMouseDown={handleMouseDown}
-        onClick={() => !isDragging && setIsExpanded(true)}
+        onTouchStart={handleTouchStart}
+        onClick={(e) => {
+          if (!isDragging) {
+            e.preventDefault();
+            setIsExpanded(true);
+          }
+        }}
       >
         <div className={cn(
           "w-full h-full rounded-full flex items-center justify-center story-gradient-border",
@@ -220,27 +431,43 @@ export function HueChatbot() {
           hasError ? "border-red-500/50" : "border-primary/50"
         )}>
           <CardHeader className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 h-6 w-6"
-              onClick={() => {
-                setIsExpanded(false);
-                if (!hasError) {
-                  setErrorReport(null);
-                  setUserContext('');
-                }
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            <CardTitle className="flex items-center gap-2 pr-8">
-              <div className={cn(
-                "w-10 h-10 rounded-full",
-                hasError ? "bg-gradient-to-br from-red-500 to-pink-500" : "bg-gradient-to-br from-blue-500 to-purple-500"
-              )} />
-              <span>Hey, I'm Hue</span>
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 pr-8">
+                <div className={cn(
+                  "w-10 h-10 rounded-full story-gradient-border flex items-center justify-center"
+                )}>
+                  <div className="w-full h-full rounded-full bg-background" />
+                </div>
+                <span>Hey, I'm Hue</span>
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {!hasError && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleHideHue}
+                    className="text-xs"
+                  >
+                    <EyeOff className="h-4 w-4 mr-1" />
+                    Hide Hue
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => {
+                    setIsExpanded(false);
+                    if (!hasError) {
+                      setErrorReport(null);
+                      setUserContext('');
+                    }
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {isSubmitted ? (
@@ -308,10 +535,56 @@ export function HueChatbot() {
                 </Button>
               </>
             ) : (
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground">
-                  I'm here to help if something goes wrong!
-                </p>
+              <div className="space-y-4">
+                {/* Greeting or Answer Display */}
+                {showGreeting && !displayedAnswer ? (
+                  <div className="text-center py-2 min-h-[60px] flex items-center justify-center">
+                    <p className="text-sm text-muted-foreground">
+                      Have an issue? Here's a tissue... I'm here to help with any questions or issues, let me know if you need any assistance
+                    </p>
+                  </div>
+                ) : displayedAnswer ? (
+                  <div className="p-3 bg-muted/50 border border-border rounded-lg min-h-[60px]">
+                    <p className="text-sm whitespace-pre-wrap">
+                      {displayedAnswer}
+                      {displayedAnswer.length < answer.length && (
+                        <span className="animate-pulse">|</span>
+                      )}
+                    </p>
+                  </div>
+                ) : null}
+                
+                {/* Question Input */}
+                <div className="space-y-2">
+                  <Textarea
+                    value={question}
+                    onChange={(e) => {
+                      setQuestion(e.target.value);
+                      // Clear answer when typing a new question
+                      if (answer) {
+                        setAnswer('');
+                        setDisplayedAnswer('');
+                        setShowGreeting(true);
+                      }
+                    }}
+                    placeholder={placeholderText}
+                    className="min-h-[80px] resize-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && question.trim()) {
+                        e.preventDefault();
+                        handleAskQuestion();
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={handleAskQuestion}
+                    disabled={!question.trim() || isAsking}
+                    className="w-full gradient-button"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {isAsking ? 'Thinking...' : 'Ask Question'}
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

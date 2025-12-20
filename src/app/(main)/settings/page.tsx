@@ -483,6 +483,7 @@ function SettingsPageContent() {
           <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
             <TabsList className="inline-flex w-auto min-w-full sm:min-w-0">
               <TabsTrigger value="general" className="shrink-0 whitespace-nowrap">General</TabsTrigger>
+              <TabsTrigger value="hue" className="shrink-0 whitespace-nowrap">Hue</TabsTrigger>
               <TabsTrigger value="business" className="shrink-0 whitespace-nowrap">Business</TabsTrigger>
               <TabsTrigger value="support" className="shrink-0 whitespace-nowrap">Report bug</TabsTrigger>
             </TabsList>
@@ -637,6 +638,88 @@ function SettingsPageContent() {
               <h2 className="text-lg font-semibold mb-4">Payments & Payouts</h2>
               <StripeIntegrationWizard />
             </div>
+          </TabsContent>
+
+          <TabsContent value="hue" className="mt-4 sm:mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+                  <span>Hue Assistant</span>
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Manage your Hue AI assistant settings. Hue helps detect errors and provides customer support.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm sm:text-base">Enable Hue</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Show the Hue assistant on your screen. Hue will always detect errors even when hidden.
+                    </p>
+                  </div>
+                  <Button 
+                    variant="default"
+                    onClick={async () => {
+                      if (!user?.id) {
+                        toast({
+                          title: 'Not signed in',
+                          description: 'Please sign in to change Hue settings.',
+                          variant: 'destructive'
+                        });
+                        return;
+                      }
+
+                      try {
+                        const userRef = doc(db, 'userProfiles', user.id);
+                        const userDoc = await getDoc(userRef);
+                        const currentData = userDoc.data() || {};
+                        
+                        await updateDoc(userRef, {
+                          preferences: {
+                            ...currentData.preferences,
+                            hueEnabled: true
+                          }
+                        });
+
+                        toast({
+                          title: 'Hue enabled',
+                          description: 'Hue assistant is now visible on your screen.',
+                        });
+
+                        if (refreshUser) {
+                          await refreshUser();
+                        }
+                      } catch (error) {
+                        console.error('Error enabling Hue:', error);
+                        toast({
+                          title: 'Error',
+                          description: 'Failed to enable Hue. Please try again.',
+                          variant: 'destructive'
+                        });
+                      }
+                    }}
+                    className="w-full sm:w-auto shrink-0"
+                    size="sm"
+                  >
+                    Enable Hue
+                  </Button>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-start space-x-3">
+                    <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-sm">About Hue</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Hue is an AI-powered assistant that helps detect errors and provides customer support. 
+                        Even when hidden, Hue continues to monitor for errors and will automatically appear if an issue is detected.
+                        You can drag Hue to reposition it on your screen.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="support" className="mt-4 sm:mt-6">
