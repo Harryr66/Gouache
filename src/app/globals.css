@@ -178,3 +178,19 @@ button[type="button"] {
   border-radius: 50% !important;
   background-clip: padding-box !important;
 }
+
+/* Hue chatbot orb idle pulse animation */
+@keyframes hue-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.hue-orb-idle {
+  animation: hue-pulse 3s ease-in-out infinite;
+}

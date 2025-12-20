@@ -1385,19 +1385,13 @@ function CourseSubmissionPageContent() {
                             <div className="relative inline-block">
                               <video className="mx-auto w-full max-w-md rounded-lg" src={trailerPreviewUrl} controls />
                             </div>
-                            <div className="flex items-center justify-center gap-2">
-                              <label htmlFor="trailer-upload" className="cursor-pointer">
-                                <Button type="button" variant="outline" size="sm">
-                                  <Upload className="h-4 w-4 mr-2" />
-                                  Replace Trailer
-                                </Button>
-                              </label>
+                            <div className="flex items-center justify-center">
                               <Button type="button" variant="outline" size="sm" onClick={handleRemoveTrailer}>
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Remove
+                                Remove Trailer
                               </Button>
                             </div>
-                            <p className="text-xs text-muted-foreground">Click "Replace Trailer" to upload a new video</p>
+                            <p className="text-xs text-muted-foreground">Remove the trailer to upload a new one</p>
                           </div>
                         ) : (
                           <label htmlFor="trailer-upload" className="cursor-pointer block">

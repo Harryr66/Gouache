@@ -90,17 +90,20 @@ export function PortfolioManager() {
     priceType: 'fixed' as 'fixed' | 'contact', // 'fixed' = set price, 'contact' = contact artist
     currency: 'USD',
     deliveryScope: 'worldwide' as 'worldwide' | 'specific',
-    deliveryCountries: ''
+    deliveryCountries: '',
+    artworkType: 'original' as 'original' | 'print'
   });
 
   // State for editing item's sale info
   const [editingItemSaleInfo, setEditingItemSaleInfo] = useState<{
     isForSale: boolean;
+    sold: boolean;
     price: string;
     priceType: 'fixed' | 'contact';
     currency: string;
     deliveryScope: 'worldwide' | 'specific';
     deliveryCountries: string;
+    artworkType: 'original' | 'print';
   } | null>(null);
 
   // Check for editArtwork URL parameter and open edit form
@@ -123,7 +126,8 @@ export function PortfolioManager() {
           priceType: 'fixed' as 'fixed' | 'contact',
           currency: 'USD',
           deliveryScope: 'worldwide' as 'worldwide' | 'specific',
-          deliveryCountries: ''
+          deliveryCountries: '',
+          artworkType: 'original' as 'original' | 'print'
         });
         // Load sale info from artworks collection if it exists
         const loadSaleInfo = async () => {
@@ -131,24 +135,33 @@ export function PortfolioManager() {
             const artworkDoc = await getDoc(doc(db, 'artworks', editArtworkId));
             if (artworkDoc.exists()) {
               const artworkData = artworkDoc.data();
+              // Determine artwork type from tags or default to 'original'
+              const hasPrintTag = artworkData.tags?.includes('print') || artworkData.type === 'print';
+              const hasOriginalTag = artworkData.tags?.includes('original') || artworkData.type === 'original';
+              const artworkType = hasPrintTag ? 'print' : (hasOriginalTag ? 'original' : 'original');
+              
               const saleInfo = {
                 isForSale: artworkData.isForSale || false,
+                sold: artworkData.sold || false,
                 price: artworkData.price ? (artworkData.price > 1000 ? (artworkData.price / 100).toString() : artworkData.price.toString()) : '',
                 currency: artworkData.currency || 'USD',
                 priceType: (artworkData.priceType || (artworkData.price ? 'fixed' : 'contact')) as 'fixed' | 'contact',
                 deliveryScope: (artworkData.deliveryScope || 'worldwide') as 'worldwide' | 'specific',
-                deliveryCountries: artworkData.deliveryCountries?.join(', ') || ''
+                deliveryCountries: artworkData.deliveryCountries?.join(', ') || '',
+                artworkType: artworkType as 'original' | 'print'
               };
               setNewItem(prev => ({ ...prev, ...saleInfo }));
               setEditingItemSaleInfo(saleInfo);
             } else {
               setEditingItemSaleInfo({
                 isForSale: false,
+                sold: false,
                 price: '',
                 priceType: 'fixed',
                 currency: 'USD',
                 deliveryScope: 'worldwide',
-                deliveryCountries: ''
+                deliveryCountries: '',
+                artworkType: 'original'
               });
             }
           } catch (error) {
@@ -178,22 +191,31 @@ export function PortfolioManager() {
           const artworkDoc = await getDoc(doc(db, 'artworks', editingItem.id));
           if (artworkDoc.exists()) {
             const artworkData = artworkDoc.data();
+            // Determine artwork type from tags or default to 'original'
+            const hasPrintTag = artworkData.tags?.includes('print') || artworkData.type === 'print';
+            const hasOriginalTag = artworkData.tags?.includes('original') || artworkData.type === 'original';
+            const artworkType = hasPrintTag ? 'print' : (hasOriginalTag ? 'original' : 'original');
+            
             setEditingItemSaleInfo({
               isForSale: artworkData.isForSale || false,
+              sold: artworkData.sold || false,
               price: artworkData.price ? (artworkData.price > 1000 ? (artworkData.price / 100).toString() : artworkData.price.toString()) : '',
               currency: artworkData.currency || 'USD',
               priceType: (artworkData.priceType || (artworkData.price ? 'fixed' : 'contact')) as 'fixed' | 'contact',
               deliveryScope: (artworkData.deliveryScope || 'worldwide') as 'worldwide' | 'specific',
-              deliveryCountries: artworkData.deliveryCountries?.join(', ') || ''
+              deliveryCountries: artworkData.deliveryCountries?.join(', ') || '',
+              artworkType: artworkType as 'original' | 'print'
             });
           } else {
             setEditingItemSaleInfo({
               isForSale: false,
+              sold: false,
               price: '',
               priceType: 'fixed',
               currency: 'USD',
               deliveryScope: 'worldwide',
-              deliveryCountries: ''
+              deliveryCountries: '',
+              artworkType: 'original'
             });
           }
         } catch (error) {
@@ -409,7 +431,18 @@ export function PortfolioManager() {
         medium: newItem.medium || '',
         dimensions: newItem.dimensions || '',
         year: newItem.year || '',
-        tags: newItem.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        tags: (() => {
+          const baseTags = newItem.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+          // Add print/original tag if marked for sale
+          if (newItem.isForSale && newItem.artworkType) {
+            // Remove existing print/original tags
+            const filteredTags = baseTags.filter(tag => tag.toLowerCase() !== 'print' && tag.toLowerCase() !== 'original');
+            // Add the selected type
+            filteredTags.push(newItem.artworkType);
+            return filteredTags;
+          }
+          return baseTags;
+        })(),
         createdAt: now, // Use Date object instead of serverTimestamp to avoid placeholder issues
         showInPortfolio: true,
         deleted: false,
@@ -531,12 +564,13 @@ export function PortfolioManager() {
                 handle: user.username || undefined,
                 avatarUrl: user.avatarUrl || null,
               },
-              tags: portfolioItem.tags,
+              tags: portfolioItem.tags, // Already includes print/original tag
               isForSale: true,
               showInShop: true,
               category: portfolioItem.medium || 'Other',
               medium: portfolioItem.medium,
               dimensions: portfolioItem.dimensions,
+              type: newItem.artworkType || 'original', // Store type for easy filtering
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
               views: 0,
@@ -641,7 +675,8 @@ export function PortfolioManager() {
         priceType: 'fixed',
         currency: 'USD',
         deliveryScope: 'worldwide',
-        deliveryCountries: ''
+        deliveryCountries: '',
+        artworkType: 'original'
       });
       setShowAddForm(false);
 
@@ -675,8 +710,23 @@ export function PortfolioManager() {
     if (!user) return;
 
     try {
+      // Update tags to include print/original based on artworkType
+      let updatedTags = [...item.tags];
+      if (editingItemSaleInfo?.artworkType) {
+        // Remove existing print/original tags
+        updatedTags = updatedTags.filter(tag => tag.toLowerCase() !== 'print' && tag.toLowerCase() !== 'original');
+        // Add the selected type tag
+        updatedTags.push(editingItemSaleInfo.artworkType);
+      }
+      
+      // Create updated item with new tags
+      const updatedItem = {
+        ...item,
+        tags: updatedTags
+      };
+      
       // Remove old item and add updated item
-      const updatedItems = portfolioItems.map(p => p.id === item.id ? item : p);
+      const updatedItems = portfolioItems.map(p => p.id === item.id ? updatedItem : p);
       
       await updateDoc(doc(db, 'userProfiles', user.id), {
         portfolio: updatedItems,
@@ -701,12 +751,13 @@ export function PortfolioManager() {
               handle: user.username || undefined,
               avatarUrl: user.avatarUrl || null,
             },
-            tags: item.tags,
+            tags: updatedTags, // Use updated tags with print/original
             isForSale: true,
             showInShop: true,
             category: item.medium || 'Other',
             medium: item.medium,
             dimensions: item.dimensions,
+            type: editingItemSaleInfo.artworkType, // Store type for easy filtering
             updatedAt: serverTimestamp(),
             views: artworkDoc.exists() ? (artworkDoc.data().views || 0) : 0,
             likes: artworkDoc.exists() ? (artworkDoc.data().likes || 0) : 0,
@@ -742,6 +793,15 @@ export function PortfolioManager() {
             });
             console.log('✅ Artwork removed from shop');
           }
+        }
+        
+        // Update sold status
+        if (artworkDoc.exists()) {
+          await updateDoc(artworkRef, {
+            sold: editingItemSaleInfo.sold || false,
+            updatedAt: serverTimestamp()
+          });
+          console.log('✅ Artwork sold status updated:', editingItemSaleInfo.sold);
         }
       }
 
@@ -1019,31 +1079,51 @@ export function PortfolioManager() {
                     </div>
                   )}
 
-                  {/* Delivery Location */}
-                  <div className="space-y-2">
-                    <Label>Delivery Location</Label>
-                    <Select
-                      value={newItem.deliveryScope}
-                      onValueChange={(value: 'worldwide' | 'specific') => setNewItem(prev => ({ ...prev, deliveryScope: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="worldwide">Worldwide</SelectItem>
-                        <SelectItem value="specific">Specific Countries</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {newItem.deliveryScope === 'specific' && (
-                      <Input
-                        placeholder="Enter countries (comma-separated)"
-                        value={newItem.deliveryCountries}
-                        onChange={(e) => setNewItem(prev => ({ ...prev, deliveryCountries: e.target.value }))}
-                      />
-                    )}
+                    {/* Delivery Location */}
+                    <div className="space-y-2">
+                      <Label>Delivery Location</Label>
+                      <Select
+                        value={newItem.deliveryScope}
+                        onValueChange={(value: 'worldwide' | 'specific') => setNewItem(prev => ({ ...prev, deliveryScope: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="worldwide">Worldwide</SelectItem>
+                          <SelectItem value="specific">Specific Countries</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {newItem.deliveryScope === 'specific' && (
+                        <Input
+                          placeholder="Enter countries (comma-separated)"
+                          value={newItem.deliveryCountries}
+                          onChange={(e) => setNewItem(prev => ({ ...prev, deliveryCountries: e.target.value }))}
+                        />
+                      )}
+                    </div>
+
+                    {/* Artwork Type - Print or Original */}
+                    <div className="space-y-2">
+                      <Label>Artwork Type</Label>
+                      <Select
+                        value={newItem.artworkType}
+                        onValueChange={(value: 'original' | 'print') => setNewItem(prev => ({ ...prev, artworkType: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="original">Original</SelectItem>
+                          <SelectItem value="print">Print</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Select whether this is an original artwork or a print. This helps customers filter artworks in the discover page.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             <div className="flex gap-2">
@@ -1063,7 +1143,8 @@ export function PortfolioManager() {
                     priceType: 'fixed',
                     currency: 'USD',
                     deliveryScope: 'worldwide',
-                    deliveryCountries: ''
+                    deliveryCountries: '',
+                    artworkType: 'original'
                   });
                 }}
               >
@@ -1394,6 +1475,42 @@ export function PortfolioManager() {
                         />
                       )}
                     </div>
+
+                    {/* Artwork Type - Print or Original */}
+                    <div className="space-y-2">
+                      <Label>Artwork Type</Label>
+                      <Select
+                        value={editingItemSaleInfo.artworkType}
+                        onValueChange={(value: 'original' | 'print') => setEditingItemSaleInfo(prev => prev ? { ...prev, artworkType: value } : null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="original">Original</SelectItem>
+                          <SelectItem value="print">Print</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Select whether this is an original artwork or a print. This helps customers filter artworks in the discover page.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Mark as Sold Toggle */}
+                {editingItemSaleInfo.isForSale && (
+                  <div className="flex items-center justify-between border-t pt-4 mt-4">
+                    <div className="space-y-1">
+                      <Label>Mark as Sold</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Mark this artwork as sold. This will show a "Sold" tag on the artwork.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={editingItemSaleInfo.sold}
+                      onCheckedChange={(checked) => setEditingItemSaleInfo(prev => prev ? { ...prev, sold: checked } : null)}
+                    />
                   </div>
                 )}
               </div>

@@ -257,13 +257,20 @@ const generateArtistContent = (artist: Artist) => ({
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        {artwork.isForSale && artwork.price && (
-          <div className="absolute top-2 left-2">
-            <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
-              ${artwork.price.toLocaleString()}
+        {/* Sale status badge */}
+        {artwork.sold ? (
+          <div className="absolute top-2 left-2 z-10">
+            <Badge variant="destructive" className="text-xs px-2 py-1">
+              Sold
             </Badge>
           </div>
-        )}
+        ) : artwork.isForSale ? (
+          <div className="absolute top-2 left-2 z-10">
+            <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
+              {artwork.priceType === 'contact' || artwork.contactForPrice ? 'For Sale' : artwork.price ? `$${artwork.price.toLocaleString()}` : 'For Sale'}
+            </Badge>
+          </div>
+        ) : null}
 
         {/* AI badge */}
         {artwork.isAI && (
@@ -348,13 +355,20 @@ const generateArtistContent = (artist: Artist) => ({
                     priority
                     className="object-contain"
                   />
-                  {artwork.isForSale && artwork.price && (
+                  {/* Sale status badge */}
+                  {artwork.sold ? (
                     <div className="absolute top-3 left-3 z-10">
-                      <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
-                        ${artwork.price.toLocaleString()}
+                      <Badge variant="destructive" className="text-xs px-2 py-1">
+                        Sold
                       </Badge>
                     </div>
-                  )}
+                  ) : artwork.isForSale ? (
+                    <div className="absolute top-3 left-3 z-10">
+                      <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
+                        {artwork.priceType === 'contact' || artwork.contactForPrice ? 'For Sale' : artwork.price ? `$${artwork.price.toLocaleString()}` : 'For Sale'}
+                      </Badge>
+                    </div>
+                  ) : null}
                 </div>
               </div>
               

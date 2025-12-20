@@ -10,7 +10,7 @@ import { ArtworkTile } from '@/components/artwork-tile';
 import { Artwork, MarketplaceProduct, Event as EventType } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { useLikes } from '@/providers/likes-provider';
-import { collection, query, getDocs, orderBy, limit, where } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, limit, where, doc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
@@ -220,6 +220,7 @@ const generatePlaceholderProducts = (theme: string | undefined, count: number = 
 };
 
 const MEDIUMS = ['All', 'Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Ink', 'Pencil', 'Pastel', 'Mixed'];
+const ARTWORK_TYPES = ['All', 'Original', 'Print'];
 const MARKET_CATEGORIES = ['All', 'Original Artworks', 'Limited Edition Prints', 'All Prints', 'Books'];
 const EVENT_TYPES = ['All Events', 'Exhibition', 'Gallery', 'Meet and greet', 'Pop up event'];
 const SORT_OPTIONS = [
@@ -254,6 +255,7 @@ function DiscoverPageContent() {
   const [activeTab, setActiveTab] = useState<'artwork' | 'events'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMedium, setSelectedMedium] = useState('All');
+  const [selectedArtworkType, setSelectedArtworkType] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
@@ -333,18 +335,18 @@ function DiscoverPageContent() {
           
           log(`🎨 Discover: Processing artist ${artistData.displayName || artistData.username || artistDoc.id} - ${portfolio.length} portfolio items`);
           
-          // Process each portfolio item
-          portfolio.forEach((item: any, index: number) => {
+          // Process each portfolio item - use for loop to handle async
+          for (const [index, item] of portfolio.entries()) {
             // Skip deleted or explicitly hidden from portfolio
             if (item.deleted === true || item.showInPortfolio === false) {
               skippedShowInPortfolioFalse++;
-              return; // Skip items explicitly marked as not for portfolio
+              continue; // Skip items explicitly marked as not for portfolio
             }
             
             // Apply discover settings filters for AI content
             if (discoverSettings.hideAiAssistedArt && (item.aiAssistance === 'assisted' || item.aiAssistance === 'generated' || item.isAI)) {
               skippedAI++;
-              return; // Skip AI-assisted/generated artworks if hidden
+              continue; // Skip AI-assisted/generated artworks if hidden
             }
             
             // Get image URL (support multiple fallbacks)
@@ -354,8 +356,36 @@ function DiscoverPageContent() {
             if (!imageUrl) {
               skippedNoImage++;
               log(`⚠️ Discover: Skipping item "${item.title || 'Untitled'}" from ${artistData.displayName || artistDoc.id} - no image URL`);
-      return;
-    }
+              continue;
+            }
+
+            // Check artworks collection for sale status
+            let saleStatus: { isForSale?: boolean; sold?: boolean; price?: number; priceType?: string; contactForPrice?: boolean } = {
+              isForSale: item.isForSale || false,
+              sold: item.sold || false,
+              price: item.price,
+              priceType: item.priceType,
+              contactForPrice: item.contactForPrice || item.priceType === 'contact',
+            };
+            
+            if (item.id) {
+              try {
+                const artworkDoc = await getDoc(doc(db, 'artworks', item.id));
+                if (artworkDoc.exists()) {
+                  const artworkData = artworkDoc.data();
+                  saleStatus = {
+                    isForSale: artworkData.isForSale || false,
+                    sold: artworkData.sold || false,
+                    price: artworkData.price,
+                    priceType: artworkData.priceType,
+                    contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
+                  };
+                }
+              } catch (err) {
+                // If artwork doesn't exist in artworks collection, use portfolio data (already set above)
+                log(`⚠️ Discover: Could not fetch artwork data for ${item.id}, using portfolio data`);
+              }
+            }
 
             // Convert portfolio item to Artwork object
             const artwork: Artwork = {
@@ -384,11 +414,16 @@ function DiscoverPageContent() {
               tags: item.tags || [],
               aiAssistance: item.aiAssistance || 'none',
               isAI: item.isAI || false,
+              isForSale: saleStatus.isForSale,
+              sold: saleStatus.sold,
+              price: saleStatus.price ? (saleStatus.price > 1000 ? saleStatus.price / 100 : saleStatus.price) : undefined,
+              priceType: saleStatus.priceType as 'fixed' | 'contact' | undefined,
+              contactForPrice: saleStatus.contactForPrice,
             };
             
             fetchedArtworks.push(artwork);
             log(`✅ Discover: Added artwork "${artwork.title}" from ${artwork.artist.name} (imageUrl: ${artwork.imageUrl.substring(0, 50)}...)`);
-          });
+          }
         }
         
         log(`📊 Discover: Summary - Total portfolio items: ${totalPortfolioItems}, Added: ${fetchedArtworks.length}, Skipped (no portfolio): ${skippedNoPortfolio}, Skipped (showInPortfolio=false): ${skippedShowInPortfolioFalse}, Skipped (no image): ${skippedNoImage}, Skipped (AI): ${skippedAI}`);
@@ -503,6 +538,27 @@ function DiscoverPageContent() {
       realArtworks = realArtworks.filter(artwork => artwork.medium === selectedMedium);
     }
 
+    // Artwork Type filter (Original/Print) - only shows artworks for sale
+    if (selectedArtworkType !== 'All') {
+      realArtworks = realArtworks.filter(artwork => {
+        // Only show artworks that are for sale when filtering by type
+        if (!artwork.isForSale) return false;
+        
+        // Check tags for 'print' or 'original'
+        const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
+        const hasPrintTag = tags.some(tag => tag.toLowerCase() === 'print');
+        const hasOriginalTag = tags.some(tag => tag.toLowerCase() === 'original');
+        
+        if (selectedArtworkType === 'Print') {
+          return hasPrintTag;
+        } else if (selectedArtworkType === 'Original') {
+          // If no tags found, default to original for artworks for sale
+          return !hasPrintTag || hasOriginalTag;
+        }
+        return true;
+      });
+    }
+
     // Apply discover settings filters
     if (discoverSettings.hideAiAssistedArt) {
       realArtworks = realArtworks.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
@@ -564,7 +620,7 @@ function DiscoverPageContent() {
     const result = [...sorted, ...allPlaceholderArtworks];
     log('✅ Discover: Returning', sorted.length, 'real artworks +', allPlaceholderArtworks.length, 'placeholders =', result.length, 'total');
     return result;
-  }, [artworks, deferredSearchQuery, selectedMedium, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
+  }, [artworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
@@ -737,7 +793,7 @@ function DiscoverPageContent() {
     // Reset to initial count when filters change
     const initialCount = 18; // Start with 18 items (works for various screen sizes)
     setVisibleCount(initialCount);
-  }, [searchQuery, selectedMedium, sortBy, selectedEventLocation]);
+  }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation]);
 
   useEffect(() => {
     const fetchMarketplaceProducts = async () => {
@@ -950,7 +1006,7 @@ function DiscoverPageContent() {
                       className="pl-10"
                     />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Medium</label>
                       <Select value={selectedMedium} onValueChange={(value) => startTransition(() => setSelectedMedium(value))}>
@@ -961,6 +1017,21 @@ function DiscoverPageContent() {
                           {MEDIUMS.map((med) => (
                             <SelectItem key={med} value={med}>
                               {med}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Type</label>
+                      <Select value={selectedArtworkType} onValueChange={(value) => startTransition(() => setSelectedArtworkType(value))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ARTWORK_TYPES.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -989,6 +1060,7 @@ function DiscoverPageContent() {
                       onClick={() => {
                         startTransition(() => {
                           setSelectedMedium('All');
+                          setSelectedArtworkType('All');
                           setSortBy('newest');
                           setSearchQuery('');
                         });
@@ -1002,7 +1074,7 @@ function DiscoverPageContent() {
               )}
 
               {/* Active Filters Display */}
-              {(selectedMedium !== 'All' || searchQuery) && (
+              {(selectedMedium !== 'All' || selectedArtworkType !== 'All' || searchQuery) && (
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-sm text-muted-foreground">Active filters:</span>
                   {searchQuery && (
@@ -1017,6 +1089,12 @@ function DiscoverPageContent() {
                       <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setSelectedMedium('All'))} />
                     </Badge>
                   )}
+                  {selectedArtworkType !== 'All' && (
+                    <Badge variant="secondary" className="gap-1">
+                      Type: {selectedArtworkType}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setSelectedArtworkType('All'))} />
+                    </Badge>
+                  )}
                         </div>
               )}
                       </div>
@@ -1027,16 +1105,17 @@ function DiscoverPageContent() {
                 <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">No artworks found</h2>
                 <p className="text-muted-foreground mb-4">
-                  {searchQuery || selectedMedium !== 'All'
+                  {(searchQuery || selectedMedium !== 'All' || selectedArtworkType !== 'All')
                     ? 'Try adjusting your filters to see more results.'
                     : 'Check back later for new content.'}
                 </p>
-                {(searchQuery || selectedMedium !== 'All') && (
+                {(searchQuery || selectedMedium !== 'All' || selectedArtworkType !== 'All') && (
                   <Button
                     variant="outline"
                     onClick={() => {
                       startTransition(() => {
                         setSelectedMedium('All');
+                        setSelectedArtworkType('All');
                         setSearchQuery('');
                       });
                     }}
@@ -1087,11 +1166,15 @@ function DiscoverPageContent() {
                                 </p>
                               )}
                             </div>
-                            {artwork.isForSale && artwork.price && (
-                              <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 flex-shrink-0">
-                                ${artwork.price.toLocaleString()}
+                            {artwork.sold ? (
+                              <Badge variant="destructive" className="text-xs px-2 py-1 flex-shrink-0">
+                                Sold
                               </Badge>
-                            )}
+                            ) : artwork.isForSale ? (
+                              <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 flex-shrink-0">
+                                {artwork.priceType === 'contact' || artwork.contactForPrice ? 'For Sale' : artwork.price ? `$${artwork.price.toLocaleString()}` : 'For Sale'}
+                              </Badge>
+                            ) : null}
                           </div>
                         </Card>
                       </Link>
