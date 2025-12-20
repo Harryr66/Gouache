@@ -318,7 +318,7 @@ export default function ArtworkPage() {
           >
             <X className="h-5 w-5" />
           </button>
-          <div className="relative w-full max-h-[70vh] bg-black flex items-center justify-center">
+          <div className="relative w-full max-h-[70vh] bg-black flex items-center justify-center allow-pinch-zoom">
             <Image
               src={artwork.imageUrl}
               alt={artwork.title}

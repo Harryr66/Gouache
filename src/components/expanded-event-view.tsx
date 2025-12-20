@@ -74,7 +74,7 @@ export function ExpandedEventView({ event, discussion, onClose }: ExpandedEventV
                     {/* Content */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-6">
                         {/* Event Image */}
-                        <div className="relative h-64 rounded-lg overflow-hidden">
+                        <div className="relative h-64 rounded-lg overflow-hidden allow-pinch-zoom">
                             <Image
                                 src={event.imageUrl}
                                 alt={event.imageAiHint}

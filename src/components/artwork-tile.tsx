@@ -656,7 +656,7 @@ const generateArtistContent = (artist: Artist) => ({
             
             <div className="space-y-6">
               {/* Image */}
-              <div className="relative">
+              <div className="relative allow-pinch-zoom">
                 <Image
                   src={selectedPortfolioItem.imageUrl}
                   alt={selectedPortfolioItem.title}
