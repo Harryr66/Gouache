@@ -117,61 +117,84 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
       setLoading(true);
       try {
         const results: ShopItem[] = [];
+        
+        console.log('Shop Display - Starting fetch for userId:', userId, 'isOwnProfile:', isOwnProfile);
 
         // Fetch artworks marked for sale (originals and prints)
         // Try multiple query patterns to handle different data structures
         let artworksFound: any[] = [];
         
-        try {
-          // Primary query: artworks with nested artist.userId
-          const artworksQuery = query(
-            collection(db, 'artworks'),
-            where('artist.userId', '==', userId),
-            where('isForSale', '==', true)
-          );
-          const artworksSnapshot = await getDocs(artworksQuery);
-          artworksSnapshot.forEach((doc) => {
-            artworksFound.push({ id: doc.id, data: doc.data() });
-          });
-          console.log('Shop Display - Primary query found', artworksFound.length, 'artworks');
-        } catch (queryError) {
-          console.warn('Primary query failed, trying alternative:', queryError);
-        }
-        
-        // Fallback: query all artworks with isForSale and filter client-side
-        // Always run fallback query to catch any artworks that might not match the primary query
+        // Strategy 1: Query all artworks with isForSale=true and filter client-side
+        // This is more reliable than nested field queries
         try {
           const allArtworksQuery = query(
             collection(db, 'artworks'),
             where('isForSale', '==', true)
           );
           const allArtworks = await getDocs(allArtworksQuery);
-          console.log('Shop Display - Fallback query found', allArtworks.size, 'total artworks with isForSale=true');
+          console.log('Shop Display - Found', allArtworks.size, 'total artworks with isForSale=true');
           
           allArtworks.forEach((doc) => {
             const data = doc.data();
-            // Check if this artwork belongs to the user
-            const belongsToUser = data.artist?.userId === userId || 
-                                  data.artistId === userId || 
-                                  data.artist?.id === userId;
+            // Check if this artwork belongs to the user - try multiple field patterns
+            const belongsToUser = 
+              data.artist?.userId === userId || 
+              data.artistId === userId || 
+              data.artist?.id === userId ||
+              (typeof data.artist === 'string' && data.artist === userId);
             
             if (belongsToUser) {
-              // Check if we already have this artwork from primary query
-              const alreadyFound = artworksFound.some(a => a.id === doc.id);
-              if (!alreadyFound) {
-                artworksFound.push({ id: doc.id, data });
-                console.log('Shop Display - Fallback query added artwork:', {
-                  id: doc.id,
-                  title: data.title,
-                  artistUserId: data.artist?.userId,
-                  artistId: data.artistId
-                });
-              }
+              artworksFound.push({ id: doc.id, data });
+              console.log('Shop Display - Found artwork for user:', {
+                id: doc.id,
+                title: data.title,
+                isForSale: data.isForSale,
+                showInShop: data.showInShop,
+                artistUserId: data.artist?.userId,
+                artistId: data.artistId,
+                artist: data.artist
+              });
             }
           });
-          console.log('Shop Display - After fallback query, total artworks found:', artworksFound.length);
-        } catch (fallbackError) {
-          console.error('Fallback query also failed:', fallbackError);
+        } catch (queryError) {
+          console.error('Error querying artworks:', queryError);
+        }
+        
+        // Strategy 2: If no artworks found, check portfolio directly and sync missing ones
+        if (artworksFound.length === 0) {
+          console.log('Shop Display - No artworks found in artworks collection, checking portfolio...');
+          try {
+            const userDoc = await getDoc(doc(db, 'userProfiles', userId));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              const portfolio = Array.isArray(userData.portfolio) ? userData.portfolio : [];
+              const portfolioItemsForSale = portfolio.filter((item: any) => item.isForSale === true);
+              
+              console.log('Shop Display - Found', portfolioItemsForSale.length, 'portfolio items marked for sale');
+              
+              // For each portfolio item marked for sale, check if it exists in artworks collection
+              for (const portfolioItem of portfolioItemsForSale) {
+                if (!portfolioItem.id) continue;
+                
+                try {
+                  const artworkDoc = await getDoc(doc(db, 'artworks', portfolioItem.id));
+                  if (artworkDoc.exists()) {
+                    const artworkData = artworkDoc.data();
+                    artworksFound.push({ id: portfolioItem.id, data: artworkData });
+                    console.log('Shop Display - Found artwork from portfolio check:', portfolioItem.id);
+                  } else {
+                    // Artwork doesn't exist in artworks collection - this is a sync issue
+                    console.warn('Shop Display - Portfolio item marked for sale but not in artworks collection:', portfolioItem.id);
+                    // We could sync it here, but for now just log it
+                  }
+                } catch (err) {
+                  console.error('Error checking artwork for portfolio item:', err);
+                }
+              }
+            }
+          } catch (portfolioError) {
+            console.error('Error checking portfolio:', portfolioError);
+          }
         }
         
         console.log('Shop Display - Total artworks found for userId', userId, ':', artworksFound.length);
@@ -186,18 +209,20 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             artistId: data.artistId
           });
           
-          // Only include items where showInShop is true (or undefined for backward compatibility)
-          // If showInShop is explicitly false, skip it. Otherwise, include if isForSale is true
+          // Skip if explicitly marked as not for shop
           if (data.showInShop === false) {
             console.log('Shop Display - Skipping artwork (showInShop=false):', id);
-            return; // Skip items explicitly marked as not for shop
-          }
-          
-          // If showInShop is undefined but isForSale is true, include it (backward compatibility)
-          if (data.showInShop === undefined && !data.isForSale) {
-            console.log('Shop Display - Skipping artwork (isForSale=false and showInShop undefined):', id);
             return;
           }
+          
+          // Skip if not for sale
+          if (data.isForSale !== true) {
+            console.log('Shop Display - Skipping artwork (isForSale is not true):', id, 'isForSale:', data.isForSale);
+            return;
+          }
+          
+          // Include if isForSale is true and showInShop is not explicitly false
+          // (showInShop can be true, undefined, or missing - all are valid if isForSale is true)
           
           // Use the type field from Stage 2, or determine from category/legacy fields
           let itemType = data.type;
