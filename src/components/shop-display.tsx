@@ -333,12 +333,12 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               )}
               {isStripeIntegrated && (
                 <div className="space-y-2">
-            <Button asChild variant="gradient">
+                  <Button asChild variant="gradient">
                     <a href="/profile">
-                <ImageIcon className="h-4 w-4 mr-2" />
+                      <ImageIcon className="h-4 w-4 mr-2" />
                       Add Artwork to Portfolio
-              </a>
-            </Button>
+                    </a>
+                  </Button>
                   <p className="text-xs text-muted-foreground">
                     Go to your Portfolio tab, click "Add New Artwork", and toggle "Mark as For Sale"
                   </p>
