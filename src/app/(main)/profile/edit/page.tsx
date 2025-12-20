@@ -118,6 +118,12 @@ export default function ProfileEditPage() {
     eventEndDate: '',
     showcaseLocations: [] as ShowcaseLocation[],
     newsletterLink: '',
+    socialLinks: {
+      website: '',
+      instagram: '',
+      x: '',
+      tiktok: ''
+    }
   });
 
   const [artistRequestData, setArtistRequestData] = useState({
@@ -175,6 +181,12 @@ export default function ProfileEditPage() {
               ? (changes.showcaseLocations || user.showcaseLocations || [])
               : [],
             newsletterLink: user.isProfessional ? (changes.newsletterLink || user.newsletterLink || '') : '',
+            socialLinks: {
+              website: changes.socialLinks?.website || user.socialLinks?.website || '',
+              instagram: changes.socialLinks?.instagram || user.socialLinks?.instagram || '',
+              x: changes.socialLinks?.x || user.socialLinks?.x || '',
+              tiktok: changes.socialLinks?.tiktok || user.socialLinks?.tiktok || ''
+            }
           };
           setFormData(nextFormData);
           // Store initial form data for change detection
@@ -225,6 +237,9 @@ export default function ProfileEditPage() {
             ? formData.email
             : firebaseAuthEmail;
           
+          // Get socialLinks from profileData if available, otherwise from user object
+          const socialLinks = (userProfileDoc.exists() && profileData?.socialLinks) || user.socialLinks || {};
+          
           const nextFormData = {
             name: user.displayName || '',
             handle: user.username || '',
@@ -255,6 +270,12 @@ export default function ProfileEditPage() {
           eventEndDate: user.isProfessional ? ((user as any).eventEndDate || '') : '',
           showcaseLocations: user.isProfessional ? (user.showcaseLocations || []) : [],
           newsletterLink: user.isProfessional ? ((user as any).newsletterLink || '') : '',
+          socialLinks: {
+            website: socialLinks.website || '',
+            instagram: socialLinks.instagram || '',
+            x: socialLinks.x || '',
+            tiktok: socialLinks.tiktok || ''
+          }
           };
           setFormData(nextFormData);
           // Store initial form data for change detection
@@ -855,7 +876,8 @@ export default function ProfileEditPage() {
         formData.eventDate !== initialFormDataRef.current.eventDate ||
         formData.eventStartDate !== initialFormDataRef.current.eventStartDate ||
         formData.eventEndDate !== initialFormDataRef.current.eventEndDate ||
-        JSON.stringify(formData.showcaseLocations) !== JSON.stringify(initialFormDataRef.current.showcaseLocations);
+        JSON.stringify(formData.showcaseLocations) !== JSON.stringify(initialFormDataRef.current.showcaseLocations) ||
+        JSON.stringify(formData.socialLinks) !== JSON.stringify(initialFormDataRef.current.socialLinks);
       
       if (!hasChanges) {
         // No actual changes, don't save
@@ -895,6 +917,12 @@ export default function ProfileEditPage() {
         hideLearn: formData.hideLearn,
         updatedAt: new Date(),
         isProfessional: allowArtistFields, // Save the toggle value
+        socialLinks: {
+          ...(formData.socialLinks.website.trim() ? { website: formData.socialLinks.website.trim() } : {}),
+          ...(formData.socialLinks.instagram.trim() ? { instagram: formData.socialLinks.instagram.trim() } : {}),
+          ...(formData.socialLinks.x.trim() ? { x: formData.socialLinks.x.trim() } : {}),
+          ...(formData.socialLinks.tiktok.trim() ? { tiktok: formData.socialLinks.tiktok.trim() } : {})
+        }
       };
 
         if (allowArtistFields) {
@@ -1109,6 +1137,12 @@ export default function ProfileEditPage() {
         hideLearn: formData.hideLearn,
         updatedAt: new Date(),
         isProfessional: allowArtistFields, // Save the toggle value
+        socialLinks: {
+          ...(formData.socialLinks.website.trim() ? { website: formData.socialLinks.website.trim() } : {}),
+          ...(formData.socialLinks.instagram.trim() ? { instagram: formData.socialLinks.instagram.trim() } : {}),
+          ...(formData.socialLinks.x.trim() ? { x: formData.socialLinks.x.trim() } : {}),
+          ...(formData.socialLinks.tiktok.trim() ? { tiktok: formData.socialLinks.tiktok.trim() } : {})
+        }
       };
 
       // Update email in Firebase Auth if it has changed
@@ -1639,6 +1673,58 @@ export default function ProfileEditPage() {
                 />
               </div>
 
+              {/* Social Media Links */}
+              {isArtistAccount && (
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="text-lg font-semibold">Social Media Links</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Add your social media links. These will appear in the "About the Instructor" section on course pages unless you hide them below.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="social-website">Website (optional)</Label>
+                      <Input
+                        id="social-website"
+                        type="url"
+                        value={formData.socialLinks.website}
+                        onChange={(e) => handleInputChange('socialLinks', { ...formData.socialLinks, website: e.target.value })}
+                        placeholder="https://yourwebsite.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="social-instagram">Instagram (optional)</Label>
+                      <Input
+                        id="social-instagram"
+                        type="text"
+                        value={formData.socialLinks.instagram}
+                        onChange={(e) => handleInputChange('socialLinks', { ...formData.socialLinks, instagram: e.target.value })}
+                        placeholder="@username or URL"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="social-x">X / Twitter (optional)</Label>
+                      <Input
+                        id="social-x"
+                        type="text"
+                        value={formData.socialLinks.x}
+                        onChange={(e) => handleInputChange('socialLinks', { ...formData.socialLinks, x: e.target.value })}
+                        placeholder="@username or URL"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="social-tiktok">TikTok (optional)</Label>
+                      <Input
+                        id="social-tiktok"
+                        type="text"
+                        value={formData.socialLinks.tiktok}
+                        onChange={(e) => handleInputChange('socialLinks', { ...formData.socialLinks, tiktok: e.target.value })}
+                        placeholder="@username or URL"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label>Hide social icons</Label>
@@ -1649,19 +1735,6 @@ export default function ProfileEditPage() {
                 <Switch
                   checked={formData.hideSocialIcons}
                   onCheckedChange={(checked) => handleInputChange('hideSocialIcons', checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Hide full About Artist section</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Hide the entire "About the Instructor" section on course pages
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.hideAboutArtist}
-                  onCheckedChange={(checked) => handleInputChange('hideAboutArtist', checked)}
                 />
               </div>
             </div>
