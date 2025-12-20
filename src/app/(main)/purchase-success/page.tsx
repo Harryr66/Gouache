@@ -43,7 +43,7 @@ function PurchaseSuccessContent() {
 
   if (status === 'loading') {
     return (
-      <div className="container mx-auto px-4 py-12 max-w-2xl">
+      <div className="container mx-auto px-4 py-12 max-w-2xl w-full max-w-full overflow-x-hidden">
         <Card>
           <CardContent className="p-12 text-center">
             <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
@@ -57,7 +57,7 @@ function PurchaseSuccessContent() {
 
   if (status === 'error') {
     return (
-      <div className="container mx-auto px-4 py-12 max-w-2xl">
+      <div className="container mx-auto px-4 py-12 max-w-2xl w-full max-w-full overflow-x-hidden">
         <Card>
           <CardContent className="p-12 text-center">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
@@ -138,7 +138,7 @@ export default function PurchaseSuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="container mx-auto px-4 py-12 max-w-2xl">
+        <div className="container mx-auto px-4 py-12 max-w-2xl w-full max-w-full overflow-x-hidden">
           <Card>
             <CardContent className="p-12 text-center">
               <ThemeLoading size="lg" text="" />

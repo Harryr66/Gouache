@@ -276,7 +276,7 @@ export default function NewsPage() {
       ) : (
         <>
           {/* Hero Media Tile + Grid */}
-          <div className="space-y-12">
+          <div className="space-y-4 md:space-y-12">
             {/* Hero Tile - First Article */}
             {filteredArticles.length > 0 && (
               <div>

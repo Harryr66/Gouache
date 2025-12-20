@@ -107,9 +107,9 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8 w-full max-w-full overflow-x-hidden">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-          <h1 className="text-2xl font-bold mb-4">Please log in to view your profile</h1>
-          <p className="text-muted-foreground mb-6">You need to be logged in to access this page.</p>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-2">
+          <h1 className="text-xl sm:text-2xl font-bold mb-4 break-words">Please log in to view your profile</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mb-6 px-2">You need to be logged in to access this page.</p>
           <div className="flex flex-col sm:flex-row gap-4">
             <Button asChild variant="gradient" size="lg">
               <Link href="/login">Log In</Link>

@@ -12,6 +12,19 @@ html, body {
   -ms-touch-action: pan-x pan-y;
 }
 
+/* Prevent text overflow on mobile */
+h1, h2, h3, h4, h5, h6 {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Ensure containers respect mobile viewport */
+.container {
+  width: 100%;
+  max-width: 100%;
+}
+
 /* Prevent pinch zoom globally on mobile */
 * {
   touch-action: pan-x pan-y;

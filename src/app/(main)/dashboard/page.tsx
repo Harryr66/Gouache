@@ -92,7 +92,7 @@ export default function DashboardPage() {
       <div className="flex flex-col space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold break-words">Admin Dashboard</h1>
           <p className="text-muted-foreground">
             Monitor and manage your Gouache platform
           </p>
