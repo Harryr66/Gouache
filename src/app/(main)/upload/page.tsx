@@ -124,12 +124,9 @@ export default function UploadPage() {
         previousUserRef.current = user;
         setInitialLoadComplete(true);
         setIsCheckingUser(false);
-      } else if (initialLoadComplete) {
-        // Already completed initial load, no need to keep checking
-        setIsCheckingUser(false);
       }
     }
-  }, [loading, user, initialLoadComplete]);
+  }, [loading, user]);
 
   // Show loading animation while auth is loading or we're checking user status
   const isProfessionalLoaded = user?.isProfessional !== undefined || user?.updatedAt !== undefined || hasApprovedArtistRequest;
@@ -496,7 +493,7 @@ export default function UploadPage() {
     if (selectedType === 'course') {
       router.push('/learn/submit');
     }
-  }, [selectedType, router]);
+  }, [selectedType]);
 
   if (selectedType === 'course') {
     return (
