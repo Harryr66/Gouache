@@ -26,7 +26,8 @@ import {
   MapPin,
   Globe,
   ShoppingBag,
-  ExternalLink
+  ExternalLink,
+  Edit
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
@@ -200,6 +201,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [newComment, setNewComment] = useState('');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [hideAboutInstructor, setHideAboutInstructor] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(800, 450);
@@ -211,6 +213,11 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         const courseData = await getCourse(courseId);
         if (courseData) {
           setCourse(courseData);
+          
+          // Check if user is the course owner
+          if (user && courseData.instructor?.userId === user.id) {
+            setIsOwner(true);
+          }
           
           // Check enrollment status
           if (user) {
@@ -318,13 +325,27 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       <div className="bg-background border-b border-border">
         <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <Link href="/marketplace">
-              <Button variant="ghost" size="sm" className="shrink-0">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Back to Courses</span>
-                <span className="sm:hidden">Back</span>
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/marketplace">
+                <Button variant="ghost" size="sm" className="shrink-0">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Back to Courses</span>
+                  <span className="sm:hidden">Back</span>
+                </Button>
+              </Link>
+              {isOwner && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="shrink-0"
+                  onClick={() => router.push(`/learn/submit?edit=${courseId}`)}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Edit Course</span>
+                  <span className="sm:hidden">Edit</span>
+                </Button>
+              )}
+            </div>
             <Badge variant="outline" className="shrink-0">{course.category}</Badge>
             <Badge variant="outline" className="shrink-0">{course.difficulty}</Badge>
             {course.courseType === 'affiliate' && (

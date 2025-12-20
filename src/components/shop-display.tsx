@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Package, Book, GraduationCap, Image as ImageIcon, AlertCircle, Link2, CreditCard } from 'lucide-react';
+import { Package, Book, GraduationCap, Image as ImageIcon, AlertCircle, Link2, CreditCard, Edit } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { ThemeLoading } from './theme-loading';
@@ -119,18 +119,61 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
         const results: ShopItem[] = [];
 
         // Fetch artworks marked for sale (originals and prints)
-        const artworksQuery = query(
-          collection(db, 'artworks'),
-          where('artist.userId', '==', userId),
-          where('isForSale', '==', true)
-        );
-        const artworksSnapshot = await getDocs(artworksQuery);
+        // Try multiple query patterns to handle different data structures
+        let artworksFound: any[] = [];
         
-        artworksSnapshot.forEach((doc) => {
-          const data = doc.data();
+        try {
+          // Primary query: artworks with nested artist.userId
+          const artworksQuery = query(
+            collection(db, 'artworks'),
+            where('artist.userId', '==', userId),
+            where('isForSale', '==', true)
+          );
+          const artworksSnapshot = await getDocs(artworksQuery);
+          artworksSnapshot.forEach((doc) => {
+            artworksFound.push({ id: doc.id, data: doc.data() });
+          });
+          console.log('Shop Display - Primary query found', artworksFound.length, 'artworks');
+        } catch (queryError) {
+          console.warn('Primary query failed, trying alternative:', queryError);
+        }
+        
+        // Fallback: query all artworks with isForSale and filter client-side
+        if (artworksFound.length === 0) {
+          try {
+            const allArtworksQuery = query(
+              collection(db, 'artworks'),
+              where('isForSale', '==', true)
+            );
+            const allArtworks = await getDocs(allArtworksQuery);
+            allArtworks.forEach((doc) => {
+              const data = doc.data();
+              // Check if this artwork belongs to the user
+              if (data.artist?.userId === userId || data.artistId === userId || data.artist?.id === userId) {
+                artworksFound.push({ id: doc.id, data });
+              }
+            });
+            console.log('Shop Display - Fallback query found', artworksFound.length, 'artworks');
+          } catch (fallbackError) {
+            console.error('Fallback query also failed:', fallbackError);
+          }
+        }
+        
+        console.log('Shop Display - Total artworks found for userId', userId, ':', artworksFound.length);
+        
+        artworksFound.forEach(({ id, data }) => {
+          console.log('Shop Display - Processing artwork:', {
+            id,
+            title: data.title,
+            isForSale: data.isForSale,
+            showInShop: data.showInShop,
+            artistUserId: data.artist?.userId,
+            artistId: data.artistId
+          });
           
           // Only include items where showInShop is true (or undefined for backward compatibility)
           if (data.showInShop === false) {
+            console.log('Shop Display - Skipping artwork (showInShop=false):', id);
             return; // Skip items explicitly marked as not for shop
           }
           
@@ -144,21 +187,29 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
           
           // Only include artworks (originals and prints) - products are fetched separately
           if (itemType !== 'merchandise') {
-          results.push({
-            id: doc.id,
+            // Convert price from cents to dollars if stored in cents (price > 1000 suggests cents)
+            const rawPrice = data.price || 0;
+            const price = rawPrice > 1000 ? rawPrice / 100 : rawPrice;
+            
+            results.push({
+              id: id,
               type: itemType === 'print' ? 'print' : 'original',
-            title: data.title || 'Untitled',
-            description: data.description,
-            price: data.price || 0,
-            currency: data.currency || 'USD',
-            imageUrl: data.imageUrl,
-            isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
-            stock: data.stock,
-            category: data.category,
-            createdAt: data.createdAt?.toDate?.() || new Date(),
-          });
+              title: data.title || 'Untitled',
+              description: data.description,
+              price: price,
+              currency: data.currency || 'USD',
+              imageUrl: data.imageUrl,
+              isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
+              stock: data.stock,
+              category: data.category,
+              createdAt: data.createdAt?.toDate?.() || new Date(),
+            });
+            
+            console.log('Shop Display - Added artwork to results:', id, data.title);
           }
         });
+        
+        console.log('Shop Display - Total artworks added to results:', results.length);
 
         // Fetch products from marketplaceProducts collection
         try {
@@ -307,12 +358,12 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
   return (
     <div className="space-y-8">
       {/* Artworks Section */}
-      {artworks.length > 0 && (
-        <div>
-          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <ImageIcon className="h-5 w-5" />
-            Artworks
-          </h3>
+      <div>
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <ImageIcon className="h-5 w-5" />
+          Artworks
+        </h3>
+        {artworks.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {artworks.map((item) => (
               <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
@@ -352,16 +403,30 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                       {item.stock} in stock
                     </p>
                   )}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-lg">
                       {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
                     </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => router.push(`/marketplace/${item.id}`)}
-                      disabled={!item.isAvailable}
-                    >
+                    <div className="flex items-center gap-2">
+                      {isOwnProfile && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/profile?editArtwork=${item.id}`);
+                          }}
+                          title="Edit artwork"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push(`/marketplace/${item.id}`)}
+                        disabled={!item.isAvailable}
+                      >
                       View
                     </Button>
                   </div>
@@ -369,16 +434,18 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               </Card>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-muted-foreground text-center py-8">No artworks for sale yet.</p>
+        )}
+      </div>
 
       {/* Products Section */}
-      {products.length > 0 && (
-        <div>
-          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Products
-          </h3>
+      <div>
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Package className="h-5 w-5" />
+          Products
+        </h3>
+        {products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map((item) => (
               <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
@@ -425,8 +492,10 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               </Card>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-muted-foreground text-center py-8">No products for sale yet.</p>
+        )}
+      </div>
 
     </div>
   );
