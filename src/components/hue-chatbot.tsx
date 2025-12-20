@@ -72,15 +72,17 @@ export function HueChatbot() {
           const appNavHeight = 60; // App navigation bar height
           const padding = 20; // Extra padding for safety
           const totalOffset = browserNavHeight + appNavHeight + padding;
+          const orbSize = 48; // Mobile orb size (w-12 h-12 = 48px)
           
           setPosition({
-            x: window.innerWidth - 60, // 60px from right edge
+            x: window.innerWidth - orbSize - 8, // Position orb 8px from right edge (accounting for orb width)
             y: window.innerHeight - totalOffset // Well above all navigation bars
           });
         } else {
           // Desktop: bottom-right corner
+          const orbSize = 64; // Desktop orb size (w-16 h-16 = 64px)
           setPosition({
-            x: window.innerWidth - 80,
+            x: window.innerWidth - orbSize - 16, // Position orb 16px from right edge
             y: window.innerHeight - 80
           });
         }
@@ -178,7 +180,8 @@ export function HueChatbot() {
         // Keep within viewport bounds
         // On mobile, ensure Hue stays above navigation bars
         const orbSize = isMobile ? 48 : 64;
-        const maxX = window.innerWidth - orbSize;
+        const padding = isMobile ? 8 : 16; // Padding from right edge
+        const maxX = window.innerWidth - orbSize - padding;
         const minX = 0;
         let maxY, minY;
         
@@ -186,8 +189,8 @@ export function HueChatbot() {
           // Mobile: prevent going below navigation bars
           const browserNavHeight = 80;
           const appNavHeight = 60;
-          const padding = 20;
-          maxY = window.innerHeight - browserNavHeight - appNavHeight - padding;
+          const verticalPadding = 20;
+          maxY = window.innerHeight - browserNavHeight - appNavHeight - verticalPadding;
           minY = 0;
         } else {
           maxY = window.innerHeight - orbSize;
@@ -215,7 +218,8 @@ export function HueChatbot() {
         // Keep within viewport bounds
         // On mobile, ensure Hue stays above navigation bars
         const orbSize = isMobile ? 48 : 64;
-        const maxX = window.innerWidth - orbSize;
+        const padding = isMobile ? 8 : 16; // Padding from right edge
+        const maxX = window.innerWidth - orbSize - padding;
         const minX = 0;
         let maxY, minY;
         
@@ -223,8 +227,8 @@ export function HueChatbot() {
           // Mobile: prevent going below navigation bars
           const browserNavHeight = 80;
           const appNavHeight = 60;
-          const padding = 20;
-          maxY = window.innerHeight - browserNavHeight - appNavHeight - padding;
+          const verticalPadding = 20;
+          maxY = window.innerHeight - browserNavHeight - appNavHeight - verticalPadding;
           minY = 0;
         } else {
           maxY = window.innerHeight - orbSize;
