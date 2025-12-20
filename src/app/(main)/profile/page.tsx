@@ -95,7 +95,7 @@ export default function ProfilePage() {
   // Show loading only if auth is still loading and no user
   if (authLoading && !user) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 w-full max-w-full overflow-x-hidden">
         <div className="animate-pulse space-y-4">
           <div className="h-32 bg-muted rounded"></div>
           <div className="h-64 bg-muted rounded"></div>
@@ -106,7 +106,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 w-full max-w-full overflow-x-hidden">
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
           <h1 className="text-2xl font-bold mb-4">Please log in to view your profile</h1>
           <p className="text-muted-foreground mb-6">You need to be logged in to access this page.</p>
@@ -161,7 +161,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-6xl">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-6xl w-full overflow-x-hidden">
       <div className="space-y-8">
         {hasPendingArtistRequest && (
           <div className="flex items-center gap-3 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3">

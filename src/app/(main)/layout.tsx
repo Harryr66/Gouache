@@ -15,7 +15,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <ContentProvider>
           <WatchlistProvider>
             <FollowProvider>
-              <div className="flex min-h-screen w-full bg-background flex-col">
+              <div className="flex min-h-screen w-full max-w-full overflow-x-hidden bg-background flex-col">
         {/* Desktop Header */}
         <div className="hidden md:block">
           <DesktopHeader />
@@ -26,7 +26,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <MobileHeader />
         </div>
         
-        <main className="flex-1 overflow-auto pb-16 md:pb-0">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0 w-full max-w-full">
           {children}
         </main>
         <SiteFooter />

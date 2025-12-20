@@ -27,6 +27,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
 import { BusinessManager } from '@/components/business-manager';
 import { ThemeLoading } from '@/components/theme-loading';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,24 +52,19 @@ function SettingsPageContent() {
   const [showPasswordInput, setShowPasswordInput] = useState(false);
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
 
-  // Block guest (anonymous) users from accessing settings
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser && (firebaseUser.isAnonymous || !firebaseUser.email)) {
-        // User is anonymous/guest - redirect to homepage
-        router.replace('/');
-      }
-    });
-    return () => unsubscribe();
-  }, [router]);
+  // Allow guests to access settings, but grey out sign-in required tabs
   
-  // Get tab from URL or default to 'general'
+  // Get tab from URL or default to 'general' (or 'hue' for guests)
   // Map old 'payments' tab to 'business' for backward compatibility
   const getTabFromUrl = () => {
-    const tab = searchParams.get('tab') || 'general';
+    const tab = searchParams.get('tab') || (user ? 'general' : 'hue');
     // Map old 'payments' tab to 'business'
     if (tab === 'payments') {
       return 'business';
+    }
+    // Redirect guests away from sign-in required tabs
+    if (!user && (tab === 'general' || tab === 'business')) {
+      return 'hue';
     }
     return tab;
   };
@@ -84,10 +80,23 @@ function SettingsPageContent() {
     if (searchParams.get('tab') === 'payments') {
       router.replace(`/settings?tab=business${searchParams.get('refresh') ? '&refresh=true' : ''}${searchParams.get('success') ? '&success=true' : ''}`, { scroll: false });
     }
-  }, [searchParams, router]);
+    // Redirect guests away from sign-in required tabs
+    if (!user && (tab === 'general' || tab === 'business')) {
+      router.replace('/settings?tab=hue', { scroll: false });
+    }
+  }, [searchParams, router, user]);
   
   // Handle tab change
   const handleTabChange = (value: string) => {
+    // Prevent switching to sign-in required tabs if user is not signed in
+    if ((value === 'general' || value === 'business') && !user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to access this section.",
+        variant: "destructive"
+      });
+      return;
+    }
     setActiveTab(value);
     router.push(`/settings?tab=${value}`, { scroll: false });
   };
@@ -419,15 +428,6 @@ function SettingsPageContent() {
   
   
   const handleSubmitReport = async () => {
-    if (!user) {
-      toast({
-        title: "Not signed in",
-        description: "Please sign in to submit a report.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     if (!reportMessage.trim()) {
       toast({
         title: "Message required",
@@ -440,10 +440,10 @@ function SettingsPageContent() {
     setIsSubmittingReport(true);
     try {
       await addDoc(collection(db, 'userReports'), {
-        userId: user.id,
-        userEmail: user.email || '',
-        username: user.username || '',
-        displayName: user.displayName || '',
+        userId: user?.id || 'guest',
+        userEmail: user?.email || 'guest@anonymous.com',
+        username: user?.username || 'guest',
+        displayName: user?.displayName || 'Guest User',
         message: reportMessage.trim(),
         status: 'pending',
         submittedAt: serverTimestamp(),
@@ -482,25 +482,56 @@ function SettingsPageContent() {
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
             <TabsList className="inline-flex w-auto min-w-full sm:min-w-0">
-              <TabsTrigger value="general" className="shrink-0 whitespace-nowrap">General</TabsTrigger>
+              <TabsTrigger 
+                value="general" 
+                className={cn(
+                  "shrink-0 whitespace-nowrap",
+                  !user && "opacity-50 cursor-not-allowed"
+                )}
+                disabled={!user}
+              >
+                General
+              </TabsTrigger>
               <TabsTrigger value="hue" className="shrink-0 whitespace-nowrap">Hue</TabsTrigger>
-              <TabsTrigger value="business" className="shrink-0 whitespace-nowrap">Business</TabsTrigger>
-              <TabsTrigger value="support" className="shrink-0 whitespace-nowrap">Report bug</TabsTrigger>
+              <TabsTrigger 
+                value="business" 
+                className={cn(
+                  "shrink-0 whitespace-nowrap",
+                  !user && "opacity-50 cursor-not-allowed"
+                )}
+                disabled={!user}
+              >
+                Business
+              </TabsTrigger>
+              <TabsTrigger value="support" className="shrink-0 whitespace-nowrap">Manual Report Bug</TabsTrigger>
             </TabsList>
           </div>
           
           <TabsContent value="general" className="mt-4 sm:mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
-                  <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span>General Settings</span>
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Manage your account and preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            {!user ? (
+              <Card>
+                <CardContent className="py-8">
+                  <div className="text-center space-y-2">
+                    <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground" />
+                    <h3 className="text-lg font-semibold">Sign in required</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Please sign in to access general settings.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+                    <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span>General Settings</span>
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Manage your account and preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg border-destructive/50">
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm sm:text-base">Sign Out</h4>
@@ -625,9 +656,24 @@ function SettingsPageContent() {
                 </AlertDialog>
               </CardContent>
             </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="business" className="mt-4 sm:mt-6 space-y-6">
+            {!user ? (
+              <Card>
+                <CardContent className="py-8">
+                  <div className="text-center space-y-2">
+                    <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground" />
+                    <h3 className="text-lg font-semibold">Sign in required</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Please sign in to access business settings.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
             {(user?.isProfessional || hasApprovedArtistRequest) && (
               <div>
                 <h2 className="text-lg font-semibold mb-4">Business Management</h2>
@@ -638,6 +684,8 @@ function SettingsPageContent() {
               <h2 className="text-lg font-semibold mb-4">Payments & Payouts</h2>
               <StripeIntegrationWizard />
             </div>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="hue" className="mt-4 sm:mt-6">
@@ -651,60 +699,75 @@ function SettingsPageContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm sm:text-base">Enable Hue</h4>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Show the Hue assistant on your screen. Hue will always detect errors even when hidden.
-                    </p>
+                {!user && (
+                  <div className="p-4 bg-muted/50 border border-border rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-sm">Guest Mode</h4>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Hue is always active for error detection. Sign in to customize Hue settings and enable/disable the assistant.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <Button 
-                    variant="default"
-                    onClick={async () => {
-                      if (!user?.id) {
-                        toast({
-                          title: 'Not signed in',
-                          description: 'Please sign in to change Hue settings.',
-                          variant: 'destructive'
-                        });
-                        return;
-                      }
-
-                      try {
-                        const userRef = doc(db, 'userProfiles', user.id);
-                        const userDoc = await getDoc(userRef);
-                        const currentData = userDoc.data() || {};
-                        
-                        await updateDoc(userRef, {
-                          preferences: {
-                            ...currentData.preferences,
-                            hueEnabled: true
-                          }
-                        });
-
-                        toast({
-                          title: 'Hue enabled',
-                          description: 'Hue assistant is now visible on your screen.',
-                        });
-
-                        if (refreshUser) {
-                          await refreshUser();
+                )}
+                {user && (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm sm:text-base">Enable Hue</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Show the Hue assistant on your screen. Hue will always detect errors even when hidden.
+                      </p>
+                    </div>
+                    <Button 
+                      variant="default"
+                      onClick={async () => {
+                        if (!user?.id) {
+                          toast({
+                            title: 'Not signed in',
+                            description: 'Please sign in to change Hue settings.',
+                            variant: 'destructive'
+                          });
+                          return;
                         }
-                      } catch (error) {
-                        console.error('Error enabling Hue:', error);
-                        toast({
-                          title: 'Error',
-                          description: 'Failed to enable Hue. Please try again.',
-                          variant: 'destructive'
-                        });
-                      }
-                    }}
-                    className="w-full sm:w-auto shrink-0"
-                    size="sm"
-                  >
-                    Enable Hue
-                  </Button>
-                </div>
+
+                        try {
+                          const userRef = doc(db, 'userProfiles', user.id);
+                          const userDoc = await getDoc(userRef);
+                          const currentData = userDoc.data() || {};
+                          
+                          await updateDoc(userRef, {
+                            preferences: {
+                              ...currentData.preferences,
+                              hueEnabled: true
+                            }
+                          });
+
+                          toast({
+                            title: 'Hue enabled',
+                            description: 'Hue assistant is now visible on your screen.',
+                          });
+
+                          if (refreshUser) {
+                            await refreshUser();
+                          }
+                        } catch (error) {
+                          console.error('Error enabling Hue:', error);
+                          toast({
+                            title: 'Error',
+                            description: 'Failed to enable Hue. Please try again.',
+                            variant: 'destructive'
+                          });
+                        }
+                      }}
+                      className="w-full sm:w-auto shrink-0"
+                      size="sm"
+                    >
+                      Enable Hue
+                    </Button>
+                  </div>
+                )}
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-start space-x-3">
                     <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -727,7 +790,7 @@ function SettingsPageContent() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
                   <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span>Report Bug or System Problem</span>
+                  <span>Manual Report Bug</span>
                 </CardTitle>
                 <CardDescription className="text-sm">
                   Found a bug or experiencing a system problem? Report it to our admin team and we'll investigate.
