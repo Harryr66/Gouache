@@ -325,15 +325,10 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       });
       console.log('✅ UploadForm: Added to user portfolio');
 
-      // Refresh user data to sync with Firestore then go to portfolio tab
-      try {
-        await new Promise(resolve => setTimeout(resolve, 800)); // brief wait for Firestore write
-        await refreshUser();
-        console.log('✅ UploadForm: User data refreshed, portfolio synced');
-      } catch (refreshError) {
-        console.error('⚠️ UploadForm: Error refreshing user data:', refreshError);
-      }
+      // Set loading to false first to complete the async operation
+      setLoading(false);
 
+      // Show toast immediately (toast is safe to call)
       toast({
         title: "Upload complete",
         description: isProductUpload 
@@ -342,21 +337,25 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         variant: "default",
       });
 
-      // Defer navigation to avoid React error #300 (updating component during render)
+      // Defer navigation and refresh to avoid React error #300
+      // Skip refreshUser() to avoid render conflicts - portfolio is already in Firestore
+      // It will be loaded when user navigates to profile
       setTimeout(() => {
         router.push('/profile?tab=portfolio');
-      }, 100);
+      }, 500);
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
-      toast({
-        title: "Upload failed",
-        description: isProductUpload
-          ? "We couldn't save your product. Please try again."
-          : "We couldn't save your artwork. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
       setLoading(false);
+      // Defer toast to avoid render conflicts
+      setTimeout(() => {
+        toast({
+          title: "Upload failed",
+          description: isProductUpload
+            ? "We couldn't save your product. Please try again."
+            : "We couldn't save your artwork. Please try again.",
+          variant: "destructive",
+        });
+      }, 0);
     }
   };
 

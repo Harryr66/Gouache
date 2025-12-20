@@ -255,39 +255,43 @@ export default function UploadPage() {
 
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
-      // Reset form first
-      setProductForm({
-        title: '',
-        description: '',
-        price: '',
-        originalPrice: '',
-        category: 'art-prints',
-        subcategory: 'fine-art-prints',
-        stock: '1',
-        tags: [],
-        newTag: '',
-      });
-      setProductImages([]);
-      
-      // Show toast and navigate after state updates
+      // Set submitting to false first
+      setIsSubmittingProduct(false);
+
+      // Show toast
       toast({
         title: 'Product created',
         description: 'Your product has been created and will appear in your shop.',
       });
 
-      // Navigate back to upload options after a brief delay to avoid render conflicts
+      // Defer form reset and navigation to avoid React error #300
       setTimeout(() => {
+        // Reset form
+        setProductForm({
+          title: '',
+          description: '',
+          price: '',
+          originalPrice: '',
+          category: 'art-prints',
+          subcategory: 'fine-art-prints',
+          stock: '1',
+          tags: [],
+          newTag: '',
+        });
+        setProductImages([]);
         setSelectedType(null);
-      }, 100);
+      }, 500);
     } catch (error) {
       console.error('Error creating product:', error);
-      toast({
-        title: 'Product creation failed',
-        description: 'Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
       setIsSubmittingProduct(false);
+      // Defer toast to avoid render conflicts
+      setTimeout(() => {
+        toast({
+          title: 'Product creation failed',
+          description: 'Please try again.',
+          variant: 'destructive',
+        });
+      }, 0);
     }
   };
 
