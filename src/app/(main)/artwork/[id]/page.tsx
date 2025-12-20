@@ -200,27 +200,6 @@ export default function ArtworkPage() {
                 />
               </div>
 
-              {artwork.isForSale && artwork.priceType === 'contact' && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (artwork.artist?.email) {
-                        window.location.href = `mailto:${artwork.artist.email}?subject=Inquiry about ${encodeURIComponent(artwork.title)}&body=Hello, I'm interested in learning more about "${artwork.title}". Could you please provide pricing and availability information?`;
-                      } else {
-                        toast({
-                          title: 'Email not available',
-                          description: 'The artist has not provided an email address.',
-                          variant: 'destructive'
-                        });
-                      }
-                    }}
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Contact Artist for Price
-                  </Button>
-                </div>
-              )}
               {artwork.isForSale && artwork.price !== undefined && artwork.priceType !== 'contact' && (
                 <div className="flex items-center gap-2 text-sm">
                   <Badge className="bg-green-600 hover:bg-green-700 text-sm px-3 py-1">
@@ -277,7 +256,7 @@ export default function ArtworkPage() {
                     {artwork.isForSale && artwork.priceType === 'contact' && (
                       <div className="flex items-center gap-2">
                         <Button
-                          variant="outline"
+                          variant="gradient"
                           onClick={() => {
                             if (artwork.artist?.email) {
                               window.location.href = `mailto:${artwork.artist.email}?subject=Inquiry about ${encodeURIComponent(artwork.title)}&body=Hello, I'm interested in learning more about "${artwork.title}". Could you please provide pricing and availability information?`;
