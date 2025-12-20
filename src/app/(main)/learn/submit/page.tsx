@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+// Force dynamic rendering since we use useSearchParams
+export const dynamic = 'force-dynamic';
+
+import React, { useEffect, useMemo, useState, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,7 +44,7 @@ const COURSE_CATEGORIES = {
   }
 };
 
-export default function CourseSubmissionPage() {
+function CourseSubmissionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -1644,5 +1647,22 @@ export default function CourseSubmissionPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CourseSubmissionPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-5xl">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <CourseSubmissionPageContent />
+    </Suspense>
   );
 }
