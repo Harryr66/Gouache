@@ -14,7 +14,7 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <ThemeLoading text="Loading marketplace..." size="lg" />
+      <ThemeLoading text="" size="lg" />
     </div>
   );
 }

@@ -29,7 +29,7 @@ export default function CoursesPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <ThemeLoading text="Loading courses..." size="lg" />
+        <ThemeLoading text="" size="lg" />
       </div>
     );
   }

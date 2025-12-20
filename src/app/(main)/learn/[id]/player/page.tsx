@@ -21,6 +21,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { VideoPlayer } from '@/components/video-player';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { ThemeLoading } from '@/components/theme-loading';
 
 export default function CoursePlayerPage() {
   const params = useParams();
@@ -154,10 +155,7 @@ export default function CoursePlayerPage() {
   if (isLoading || !course || !enrollment) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-          <p className="text-muted-foreground">Loading course...</p>
-        </div>
+        <ThemeLoading size="lg" text="" />
       </div>
     );
   }

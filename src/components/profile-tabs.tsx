@@ -448,7 +448,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       <TabsContent value="liked" className="space-y-4">
         {(likesLoading || likedFetchLoading) && (
           <div className="flex justify-center py-12">
-            <ThemeLoading text="Loading liked artworks..." size="md" />
+            <ThemeLoading text="" size="md" />
           </div>
         )}
 
@@ -530,7 +530,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       <TabsContent value="learn" className="space-y-4">
         {coursesLoading ? (
           <div className="flex justify-center py-12">
-            <ThemeLoading text="Loading courses..." size="md" />
+            <ThemeLoading text="" size="md" />
           </div>
         ) : purchasedCourses.length === 0 ? (
           <Card className="p-8 text-center">

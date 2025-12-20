@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { ThemeLoading } from '@/components/theme-loading';
 
 function PurchaseSuccessContent() {
   const searchParams = useSearchParams();
@@ -140,9 +141,7 @@ export default function PurchaseSuccessPage() {
         <div className="container mx-auto px-4 py-12 max-w-2xl">
           <Card>
             <CardContent className="p-12 text-center">
-              <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-              <CardTitle className="mb-2">Loading...</CardTitle>
-              <CardDescription>Please wait...</CardDescription>
+              <ThemeLoading size="lg" text="" />
             </CardContent>
           </Card>
         </div>

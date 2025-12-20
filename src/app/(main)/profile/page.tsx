@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ThemeLoading } from '@/components/theme-loading';
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -176,10 +177,7 @@ export default function ProfilePage() {
 
         {/* Events Carousel */}
         {eventsLoading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading events…
-          </div>
+          <ThemeLoading text="" size="sm" />
         ) : (
           <Collapsible 
             open={showEvents} 

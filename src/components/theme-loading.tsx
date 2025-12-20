@@ -10,7 +10,7 @@ interface ThemeLoadingProps {
   fullScreen?: boolean;
 }
 
-export function ThemeLoading({ text = 'Loading...', size = 'md', fullScreen = false }: ThemeLoadingProps) {
+export function ThemeLoading({ text = '', size = 'md', fullScreen = false }: ThemeLoadingProps) {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 

@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Loader2, MapPin, Calendar as CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ThemeLoading } from '@/components/theme-loading';
 
 export default function ArtistProfilePage() {
   const params = useParams();
@@ -211,10 +212,7 @@ export default function ArtistProfilePage() {
         {/* Events Carousel - Visible to all users including guests */}
         {!profileUser.hideUpcomingEvents && (
           eventsLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading events…
-            </div>
+            <ThemeLoading text="" size="sm" />
           ) : events.length > 0 ? (
             <Collapsible 
               open={showEvents} 

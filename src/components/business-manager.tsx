@@ -158,7 +158,7 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
   if (loading && !balance) {
     return (
       <div className="flex justify-center py-12">
-        <ThemeLoading text="Loading payout data..." size="md" />
+        <ThemeLoading text="" size="md" />
       </div>
     );
   }

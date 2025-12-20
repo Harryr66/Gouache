@@ -161,7 +161,6 @@ export default function VerifyEmailPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-8">
             <ThemeLoading size="lg" text="" />
-            <p className="mt-4 text-sm text-muted-foreground">Loading verification...</p>
           </CardContent>
         </Card>
       </div>

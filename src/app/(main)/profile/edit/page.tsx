@@ -1346,7 +1346,7 @@ export default function ProfileEditPage() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <ThemeLoading text="Loading profile..." size="lg" />
+        <ThemeLoading text="" size="lg" />
       </div>
     );
   }

@@ -17,6 +17,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { Gallery } from '@/lib/types';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ThemeLoading } from '@/components/theme-loading';
 
 export default function GalleryDashboard() {
   const { user } = useAuth();
@@ -486,8 +487,8 @@ export default function GalleryDashboard() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center">Loading...</div>
+      <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-screen">
+        <ThemeLoading size="lg" text="" />
       </div>
     );
   }

@@ -284,7 +284,6 @@ export default function ResetPasswordPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-8">
             <ThemeLoading size="lg" text="" />
-            <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
           </CardContent>
         </Card>
       </div>
