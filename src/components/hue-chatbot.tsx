@@ -8,7 +8,7 @@ import { X, Send, AlertCircle, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -19,6 +19,8 @@ interface ErrorReport {
   timestamp: string;
   userAgent: string;
   userContext?: string;
+  errorType?: string;
+  errorCode?: string;
 }
 
 export function HueChatbot() {
@@ -57,20 +59,73 @@ export function HueChatbot() {
     setShowGreeting(true);
   };
 
+  // Reset all Hue state including errors
+  const resetAllState = () => {
+    resetConversation();
+    setHasError(false);
+    setErrorReport(null);
+    setUserContext('');
+  };
+
   // Load user preference for Hue visibility
   useEffect(() => {
-    if (!user?.id) return;
+    if (typeof window === 'undefined') return;
 
-    const userRef = doc(db, 'userProfiles', user.id);
-    const unsubscribe = onSnapshot(userRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const userData = docSnap.data();
-        const enabled = userData.preferences?.hueEnabled !== false; // Default to true
-        setHueEnabled(enabled);
+    const loadHuePreference = () => {
+      // For guests (no user.id), use localStorage
+      if (!user?.id) {
+        const savedPreference = localStorage.getItem('hue-enabled');
+        if (savedPreference !== null) {
+          setHueEnabled(savedPreference === 'true');
+        } else {
+          // Default to true for guests
+          setHueEnabled(true);
+        }
+        return;
       }
-    });
 
-    return () => unsubscribe();
+      // For authenticated users, use Firestore
+      const userRef = doc(db, 'userProfiles', user.id);
+      const unsubscribe = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          const enabled = userData.preferences?.hueEnabled !== false; // Default to true
+          setHueEnabled(enabled);
+        }
+      });
+
+      return unsubscribe;
+    };
+
+    const unsubscribe = loadHuePreference();
+
+    // Listen for localStorage changes (for guests)
+    if (!user?.id) {
+      const handleStorageChange = (e: StorageEvent | Event) => {
+        if (e instanceof StorageEvent && e.key === 'hue-enabled') {
+          setHueEnabled(e.newValue === 'true');
+        } else if (e.type === 'hue-preference-changed') {
+          // Custom event from settings page
+          const savedPreference = localStorage.getItem('hue-enabled');
+          if (savedPreference !== null) {
+            setHueEnabled(savedPreference === 'true');
+          }
+        }
+      };
+
+      window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('hue-preference-changed', handleStorageChange);
+
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('hue-preference-changed', handleStorageChange);
+        if (unsubscribe) unsubscribe();
+      };
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [user?.id]);
 
   // Load saved position from localStorage
@@ -149,48 +204,85 @@ export function HueChatbot() {
     }
   }, [isMobile]);
 
+  // Global error handler function - catches ALL errors
+  const handleErrorReport = (error: Error | any, context?: string, errorType?: string, errorCode?: string) => {
+    const route = window.location.pathname;
+    const timestamp = new Date().toISOString();
+    const userAgent = navigator.userAgent;
+
+    // Build comprehensive error message
+    let errorMessage = error?.message || String(error) || 'Unknown error';
+    if (error?.code) {
+      errorMessage = `[${error.code}] ${errorMessage}`;
+    }
+    if (context) {
+      errorMessage = `${errorMessage} (Context: ${context})`;
+    }
+
+    const report: ErrorReport = {
+      message: errorMessage,
+      stack: error?.stack || 'No stack trace available',
+      route,
+      timestamp,
+      userAgent,
+      errorType: errorType || 'JavaScript Error',
+      errorCode: errorCode || error?.code,
+    };
+
+    console.error('Hue detected error:', report);
+
+    setErrorReport(report);
+    setHasError(true);
+    setIsExpanded(true);
+    // Clear any previous user context to ensure fresh input
+    setUserContext('');
+    // Force show Hue when error detected
+    setHueEnabled(true);
+  };
+
+  // Set global error handler so it can be called from anywhere
+  useEffect(() => {
+    setHueErrorHandler(handleErrorReport);
+    return () => {
+      setHueErrorHandler(null);
+    };
+  }, []);
+
   // Global error handler - ALWAYS ACTIVE even when hidden
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
       const error = event.error || event;
-      const route = window.location.pathname;
-      const timestamp = new Date().toISOString();
-      const userAgent = navigator.userAgent;
-
-      const report: ErrorReport = {
-        message: error?.message || event.message || 'Unknown error',
-        stack: error?.stack || event.filename || 'No stack trace available',
-        route,
-        timestamp,
-        userAgent,
-      };
-
-      setErrorReport(report);
-      setHasError(true);
-      setIsExpanded(true);
-      // Force show Hue when error detected
-      setHueEnabled(true);
+      handleErrorReport(error, undefined, 'JavaScript Error');
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const error = event.reason;
-      const route = window.location.pathname;
-      const timestamp = new Date().toISOString();
-      const userAgent = navigator.userAgent;
+      handleErrorReport(error, undefined, 'Unhandled Promise Rejection');
+    };
 
-      const report: ErrorReport = {
-        message: error?.message || String(error) || 'Unhandled promise rejection',
-        stack: error?.stack || 'No stack trace available',
-        route,
-        timestamp,
-        userAgent,
-      };
-
-      setErrorReport(report);
-      setHasError(true);
-      setIsExpanded(true);
-      // Force show Hue when error detected
-      setHueEnabled(true);
+    // Intercept fetch errors - only catch actual errors, not intentional non-200 responses
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      try {
+        const response = await originalFetch(...args);
+        
+        // Only report 5xx server errors as actual errors (4xx are usually intentional)
+        if (response.status >= 500) {
+          const error = new Error(`Server Error ${response.status}: ${response.statusText}`);
+          (error as any).code = `HTTP_${response.status}`;
+          (error as any).status = response.status;
+          handleErrorReport(error, `API call to ${args[0]}`, 'Server Error', `HTTP_${response.status}`);
+        }
+        
+        return response;
+      } catch (error: any) {
+        // Network errors, CORS errors, timeout, etc.
+        // Only report if it's not a user-initiated abort
+        if (error?.name !== 'AbortError') {
+          handleErrorReport(error, `API call to ${args[0]}`, 'Network Error', error?.code || error?.name);
+        }
+        throw error; // Re-throw to maintain original behavior
+      }
     };
 
     window.addEventListener('error', handleError);
@@ -199,6 +291,7 @@ export function HueChatbot() {
     return () => {
       window.removeEventListener('error', handleError);
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.fetch = originalFetch; // Restore original fetch
     };
   }, []);
 
@@ -350,11 +443,7 @@ export function HueChatbot() {
         setIsSubmitted(true);
         setTimeout(() => {
           setIsExpanded(false);
-          setHasError(false);
-          setErrorReport(null);
-          setUserContext('');
-          setIsSubmitted(false);
-          resetConversation(); // Reset conversation state after error report
+          resetAllState(); // Reset all state after error report is submitted
         }, 3000);
       } else {
         console.error('Failed to submit error report');
@@ -409,6 +498,12 @@ export function HueChatbot() {
       }
     } catch (error: any) {
       console.error('Error asking question:', error);
+      
+      // Report error to Hue for critical issues
+      if (error?.message?.includes('Network') || error?.code === 'NETWORK_ERROR' || !error?.message) {
+        handleErrorReport(error, 'Asking Hue a question', 'Hue Q&A Error', error?.code);
+      }
+      
       setAnswer(`I apologize, but I encountered an error: ${error.message || 'Network error'}. Please check that the GOOGLE_GENAI_API_KEY is configured in your Vercel environment variables.`);
     } finally {
       setIsAsking(false);
@@ -416,35 +511,60 @@ export function HueChatbot() {
   };
 
   const handleHideHue = async () => {
+    // For guests (no user.id), use localStorage
     if (!user?.id) {
-      toast({
-        title: 'Not signed in',
-        description: 'Please sign in to change Hue settings.',
-        variant: 'destructive'
-      });
-      return;
+      try {
+        localStorage.setItem('hue-enabled', 'false');
+        setHueEnabled(false);
+        setIsExpanded(false);
+        resetAllState(); // Reset all state when hiding
+        
+        // Dispatch event to notify other components (though not needed here, for consistency)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('hue-preference-changed'));
+        }
+        
+        toast({
+          title: 'Hue hidden',
+          description: 'Hue can be reactivated in general settings.',
+        });
+        return;
+      } catch (error: any) {
+        console.error('Error saving Hue preference to localStorage:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to save preference. Please try again.',
+          variant: 'destructive'
+        });
+        return;
+      }
     }
 
+    // For authenticated users, use Firestore
     try {
       const userRef = doc(db, 'userProfiles', user.id);
       const userDoc = await getDoc(userRef);
       
-      if (!userDoc.exists()) {
-        throw new Error('User profile not found');
-      }
+      // Get existing preferences or create empty object
+      const currentData = userDoc.exists() ? (userDoc.data() || {}) : {};
+      const existingPreferences = currentData.preferences || {};
       
-      const currentData = userDoc.data() || {};
+      // Merge preferences safely - this preserves all nested preference objects
+      const updatedPreferences = {
+        ...existingPreferences,
+        hueEnabled: false
+      };
       
-      await updateDoc(userRef, {
-        preferences: {
-          ...currentData.preferences,
-          hueEnabled: false
-        }
-      });
+      // Use setDoc with merge: true to only update the preferences field
+      // This ensures we don't overwrite other document fields
+      await setDoc(userRef, {
+        preferences: updatedPreferences
+      }, { merge: true });
 
+      // Update local state immediately for better UX
       setHueEnabled(false);
       setIsExpanded(false);
-      resetConversation(); // Reset conversation state when hiding
+      resetAllState(); // Reset all state when hiding
       
       toast({
         title: 'Hue hidden',
@@ -460,42 +580,35 @@ export function HueChatbot() {
         stack: error?.stack,
         userId: user?.id,
         timestamp: new Date().toISOString(),
-        route: window.location.pathname
+        route: window.location.pathname,
+        errorName: error?.name
       };
       
       console.error('Hue hide error details:', errorDetails);
       
-      // Determine if this is a critical error that should trigger Hue's error detection
-      const isCriticalError = error?.code === 'permission-denied' || 
-                             error?.code === 'unavailable' || 
-                             error?.code === 'failed-precondition' ||
-                             error?.code === 'not-found' ||
-                             !error?.code; // Unknown errors are also critical
+      // Always report errors to Hue for debugging
+      handleErrorReport(
+        error, 
+        'Attempting to hide Hue by clicking the hide button', 
+        'Hue Settings Error', 
+        error?.code || error?.name
+      );
       
-      if (isCriticalError) {
-        // Manually trigger Hue's error detection by creating an error report
-        const route = window.location.pathname;
-        const timestamp = new Date().toISOString();
-        const userAgent = navigator.userAgent;
-        
-        const report: ErrorReport = {
-          message: `Failed to hide Hue: ${error?.message || error?.code || 'Unknown error'}`,
-          stack: error?.stack || `Error code: ${error?.code || 'unknown'}`,
-          route,
-          timestamp,
-          userAgent,
-        };
-        
-        // Set error state to trigger Hue's error UI
-        setErrorReport(report);
-        setHasError(true);
-        setIsExpanded(true);
-        setHueEnabled(true); // Force show Hue for error reporting
+      // Show user-friendly error message
+      let errorMessage = 'Failed to hide Hue. Please try again.';
+      if (error?.code === 'permission-denied') {
+        errorMessage = 'Permission denied. Please check your account permissions.';
+      } else if (error?.code === 'unavailable') {
+        errorMessage = 'Service unavailable. Please check your connection and try again.';
+      } else if (error?.code === 'failed-precondition') {
+        errorMessage = 'Operation failed. Please refresh the page and try again.';
+      } else if (error?.message) {
+        errorMessage = error.message;
       }
       
       toast({
         title: 'Error',
-        description: error?.message || error?.code || 'Failed to hide Hue. Please try again.',
+        description: errorMessage,
         variant: 'destructive'
       });
     }
@@ -506,14 +619,15 @@ export function HueChatbot() {
   const maxWords = 100;
   const isOverLimit = wordCount > maxWords;
 
-  // Reset conversation when Hue is closed (only when transitioning from expanded to collapsed)
+  // Reset all state when Hue is closed (only when transitioning from expanded to collapsed)
   useEffect(() => {
-    if (wasExpandedRef.current && !isExpanded && !hasError) {
-      // Reset conversation state when transitioning from expanded to collapsed (but not if error is active)
-      resetConversation();
+    if (wasExpandedRef.current && !isExpanded) {
+      // Reset all state when transitioning from expanded to collapsed
+      // This ensures a fresh start when Hue is reopened
+      resetAllState();
     }
     wasExpandedRef.current = isExpanded;
-  }, [isExpanded, hasError]);
+  }, [isExpanded]);
 
   // Typewriter effect for placeholder text
   useEffect(() => {
@@ -654,11 +768,8 @@ export function HueChatbot() {
                   className="h-6 w-6"
                   onClick={() => {
                     setIsExpanded(false);
-                    if (!hasError) {
-                      setErrorReport(null);
-                      setUserContext('');
-                      resetConversation(); // Reset conversation state when closing
-                    }
+                    // Always reset all state when closing, including error states
+                    resetAllState();
                   }}
                 >
                   <X className="h-4 w-4" />

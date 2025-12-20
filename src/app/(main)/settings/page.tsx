@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
 import { db, auth, storage } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, query, where, getDocs, writeBatch, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, query, where, getDocs, writeBatch, onSnapshot, setDoc } from 'firebase/firestore';
 import { signOut as firebaseSignOut, deleteUser, reauthenticateWithCredential, EmailAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import { ref, listAll, deleteObject } from 'firebase/storage';
 import { toast } from '@/hooks/use-toast';
@@ -722,45 +722,63 @@ function SettingsPageContent() {
                     </div>
                     <Button 
                       variant="default"
-                      onClick={async () => {
-                        if (!user?.id) {
-                          toast({
-                            title: 'Not signed in',
-                            description: 'Please sign in to change Hue settings.',
-                            variant: 'destructive'
-                          });
-                          return;
-                        }
-
+                    onClick={async () => {
+                      // For guests (no user.id), use localStorage
+                      if (!user?.id) {
                         try {
-                          const userRef = doc(db, 'userProfiles', user.id);
-                          const userDoc = await getDoc(userRef);
-                          const currentData = userDoc.data() || {};
-                          
-                          await updateDoc(userRef, {
-                            preferences: {
-                              ...currentData.preferences,
-                              hueEnabled: true
-                            }
-                          });
-
+                          localStorage.setItem('hue-enabled', 'true');
+                          // Dispatch custom event to notify Hue component
+                          if (typeof window !== 'undefined') {
+                            window.dispatchEvent(new Event('hue-preference-changed'));
+                          }
                           toast({
                             title: 'Hue enabled',
                             description: 'Hue assistant is now visible on your screen.',
                           });
-
-                          if (refreshUser) {
-                            await refreshUser();
-                          }
+                          return;
                         } catch (error) {
-                          console.error('Error enabling Hue:', error);
+                          console.error('Error saving Hue preference to localStorage:', error);
                           toast({
                             title: 'Error',
                             description: 'Failed to enable Hue. Please try again.',
                             variant: 'destructive'
                           });
+                          return;
                         }
-                      }}
+                      }
+
+                      // For authenticated users, use Firestore
+                      try {
+                        const userRef = doc(db, 'userProfiles', user.id);
+                        const userDoc = await getDoc(userRef);
+                        const currentData = userDoc.exists() ? (userDoc.data() || {}) : {};
+                        const existingPreferences = currentData.preferences || {};
+                        
+                        // Use setDoc with merge: true to only update the preferences field
+                        await setDoc(userRef, {
+                          preferences: {
+                            ...existingPreferences,
+                            hueEnabled: true
+                          }
+                        }, { merge: true });
+
+                        toast({
+                          title: 'Hue enabled',
+                          description: 'Hue assistant is now visible on your screen.',
+                        });
+
+                        if (refreshUser) {
+                          await refreshUser();
+                        }
+                      } catch (error) {
+                        console.error('Error enabling Hue:', error);
+                        toast({
+                          title: 'Error',
+                          description: 'Failed to enable Hue. Please try again.',
+                          variant: 'destructive'
+                        });
+                      }
+                    }}
                       className="w-full sm:w-auto shrink-0"
                       size="sm"
                     >
