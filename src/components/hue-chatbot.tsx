@@ -354,8 +354,20 @@ export function HueChatbot() {
         }),
       });
 
+      console.log('API response status:', response.status);
+      const responseText = await response.text();
+      console.log('API response text:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse API response as JSON:', responseText);
+        setAnswer('I apologize, but I received an invalid response from the server. Please check Vercel logs for details.');
+        return;
+      }
+      
       if (response.ok) {
-        const data = await response.json();
         if (data.error) {
           console.error('API returned error:', data.error, data.details);
           setAnswer(`I apologize, but I encountered an error: ${data.error}. ${data.details ? `Details: ${data.details}` : 'Please check that the GOOGLE_GENAI_API_KEY is set in your environment variables.'}`);
@@ -363,9 +375,8 @@ export function HueChatbot() {
           setAnswer(data.answer || 'I apologize, but I couldn\'t generate an answer. Please try rephrasing your question.');
         }
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('API request failed:', response.status, errorData);
-        setAnswer(`I apologize, but I encountered an error (${response.status}). ${errorData.error || errorData.details || 'Please check that the GOOGLE_GENAI_API_KEY is set in Vercel environment variables and redeploy.'}`);
+        console.error('API request failed:', response.status, data);
+        setAnswer(`I apologize, but I encountered an error (${response.status}). ${data.error || data.details || 'Please check that the GOOGLE_GENAI_API_KEY is set in Vercel environment variables and redeploy.'}`);
       }
     } catch (error: any) {
       console.error('Error asking question:', error);
@@ -419,13 +430,13 @@ export function HueChatbot() {
   const maxWords = 100;
   const isOverLimit = wordCount > maxWords;
 
-  // Typewriter effect for placeholder
+  // Typewriter effect for placeholder text
   useEffect(() => {
     if (!isExpanded || hasError) return;
     
-    const fullPlaceholder = "Ask me anything about the platform... (e.g., 'How do I sell artwork?', 'Where is my profile?', 'How do I create a course?')";
+    const fullPlaceholder = "Have an issue? Here's a tissue... I'm here to help with any questions or issues, let me know if you need any assistance";
     setPlaceholderText('');
-    setShowGreeting(true);
+    setShowGreeting(false); // No separate greeting, it's in the placeholder
     
     let currentIndex = 0;
     const typeInterval = setInterval(() => {
@@ -619,14 +630,8 @@ export function HueChatbot() {
               </>
             ) : (
               <div className="space-y-4">
-                {/* Greeting or Answer Display */}
-                {showGreeting && !displayedAnswer ? (
-                  <div className="text-center py-2 min-h-[60px] flex items-center justify-center">
-                    <p className="text-sm text-muted-foreground">
-                      Have an issue? Here's a tissue... I'm here to help with any questions or issues, let me know if you need any assistance
-                    </p>
-                  </div>
-                ) : displayedAnswer ? (
+                {/* Answer Display */}
+                {displayedAnswer ? (
                   <div className="p-3 bg-muted/50 border border-border rounded-lg min-h-[60px]">
                     <p className="text-sm whitespace-pre-wrap">
                       {displayedAnswer}
@@ -647,10 +652,9 @@ export function HueChatbot() {
                       if (answer) {
                         setAnswer('');
                         setDisplayedAnswer('');
-                        setShowGreeting(true);
                       }
                     }}
-                    placeholder={placeholderText}
+                    placeholder={placeholderText || "Have an issue? Here's a tissue... I'm here to help with any questions or issues, let me know if you need any assistance"}
                     className="min-h-[80px] resize-none"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && question.trim()) {
