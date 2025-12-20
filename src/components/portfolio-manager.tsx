@@ -168,11 +168,13 @@ export function PortfolioManager() {
             console.error('Error loading sale info:', error);
             setEditingItemSaleInfo({
               isForSale: false,
+              sold: false,
               price: '',
               priceType: 'fixed',
               currency: 'USD',
               deliveryScope: 'worldwide',
-              deliveryCountries: ''
+              deliveryCountries: '',
+              artworkType: 'original'
             });
           }
         };
@@ -222,11 +224,13 @@ export function PortfolioManager() {
           console.error('Error loading sale info:', error);
           setEditingItemSaleInfo({
             isForSale: false,
+            sold: false,
             price: '',
             priceType: 'fixed',
             currency: 'USD',
             deliveryScope: 'worldwide',
-            deliveryCountries: ''
+            deliveryCountries: '',
+            artworkType: 'original'
           });
         }
       };
