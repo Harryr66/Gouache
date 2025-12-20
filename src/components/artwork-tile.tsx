@@ -247,10 +247,10 @@ const generateArtistContent = (artist: Artist) => ({
     <>
     <Card 
         ref={tileRef}
-        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full rounded-none ${className || ''}`}
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full rounded-lg ${className || ''}`}
         onClick={handleTileClick}
     >
-      <div className="relative aspect-[3/4] overflow-hidden">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg">
         <Image
           src={artwork.imageUrl || 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800'}
           alt={artwork.imageAiHint}
