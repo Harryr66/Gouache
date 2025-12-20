@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,18 @@ const navigation = [
 
 export function DesktopHeader() {
   const pathname = usePathname();
+  
+  // Memoize active states to prevent re-computation during scroll
+  // Normalize pathname to handle query params and ensure stable comparison
+  const activeStates = useMemo(() => {
+    // Remove query params and hash from pathname for comparison
+    const normalizedPathname = pathname.split('?')[0].split('#')[0];
+    
+    return navigation.map(item => ({
+      ...item,
+      isActive: normalizedPathname === item.href || normalizedPathname.startsWith(item.href + '/')
+    }));
+  }, [pathname]);
 
   return (
     <div className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6">
@@ -37,18 +49,17 @@ export function DesktopHeader() {
       </Link>
       
       <nav className="hidden md:flex items-center space-x-6">
-        {navigation.map((item) => {
-          // Check if pathname matches the href or starts with it (for nested routes)
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+        {activeStates.map((item) => {
           return (
             <Link
               key={item.name}
               href={item.href}
               className={cn(
                 'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
-                isActive
-                  ? 'gradient-border text-foreground'
-                  : 'text-foreground border-2 border-transparent hover:gradient-border'
+                {
+                  'gradient-border text-foreground': item.isActive,
+                  'text-foreground border-2 border-transparent hover:gradient-border': !item.isActive
+                }
               )}
             >
               <item.icon className="h-4 w-4" />

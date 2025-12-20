@@ -172,6 +172,18 @@ html {
     border-radius: 0.75rem !important;
   }
   
+  /* Ensure gradient-border persists on navigation links */
+  a.gradient-border,
+  Link.gradient-border,
+  [class*="gradient-border"].gradient-border {
+    border: 3px solid transparent !important;
+    background:
+      linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+      var(--gradient-border) border-box !important;
+    background-clip: padding-box, border-box !important;
+    border-radius: 0.75rem !important;
+  }
+  
   .hover\:gradient-border:hover {
     @apply gradient-border;
   }
