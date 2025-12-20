@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 import { doc, updateDoc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { setHueErrorHandler } from '@/lib/hue-error-reporter';
 
 interface ErrorReport {
   message: string;
