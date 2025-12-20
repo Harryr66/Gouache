@@ -351,6 +351,18 @@ function CourseSubmissionPageContent() {
       const url = URL.createObjectURL(file);
       setTrailerPreviewUrl(url);
     }
+    // Reset the input so the same file can be selected again if needed
+    event.target.value = '';
+  };
+
+  const handleRemoveTrailer = () => {
+    setTrailerFile(null);
+    setTrailerPreviewUrl(null);
+    // Reset the file input
+    const input = document.getElementById('trailer-upload') as HTMLInputElement;
+    if (input) {
+      input.value = '';
+    }
   };
 
   const addTag = () => {
@@ -622,16 +634,21 @@ function CourseSubmissionPageContent() {
         thumbnailUrl = thumbnailPreview;
       }
 
-      // Upload optional trailer (only if new file provided)
+      // Upload optional trailer
       let trailerUrl: string | undefined;
       if (trailerFile) {
+        // New file uploaded - upload it
         const trailerRef = ref(storage, `course-trailers/${user.id}/${Date.now()}_${trailerFile.name}`);
         await uploadBytes(trailerRef, trailerFile);
         trailerUrl = await getDownloadURL(trailerRef);
-      } else if (isEditing && trailerPreviewUrl) {
-        // Keep existing trailer if no new one uploaded
+      } else if (isEditing && existingCourse?.previewVideoUrl && trailerPreviewUrl) {
+        // Editing mode: keep existing trailer if:
+        // 1. Course had a previewVideoUrl originally
+        // 2. trailerPreviewUrl still exists (user didn't remove it)
+        // This preserves the existing trailer when editing other fields
         trailerUrl = trailerPreviewUrl;
       }
+      // If trailerPreviewUrl is null/undefined (user clicked Remove), trailerUrl stays undefined (trailer will be removed)
 
       // Create instructor profile if needed
       const instructorData = {
@@ -1357,18 +1374,36 @@ function CourseSubmissionPageContent() {
                     <h3 className="text-lg font-semibold">Media</h3>
                     <div className="space-y-2">
                       <Label>Optional Trailer Video</Label>
-                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center relative">
                         <input type="file" accept="video/*" id="trailer-upload" className="hidden" onChange={handleTrailerUpload} />
-                        <label htmlFor="trailer-upload" className="cursor-pointer">
-                          {trailerPreviewUrl ? (
-                            <video className="mx-auto w-full max-w-md rounded-lg" src={trailerPreviewUrl} controls />
-                          ) : (
+                        {trailerPreviewUrl ? (
+                          <div className="space-y-3">
+                            <div className="relative inline-block">
+                              <video className="mx-auto w-full max-w-md rounded-lg" src={trailerPreviewUrl} controls />
+                            </div>
+                            <div className="flex items-center justify-center gap-2">
+                              <label htmlFor="trailer-upload" className="cursor-pointer">
+                                <Button type="button" variant="outline" size="sm">
+                                  <Upload className="h-4 w-4 mr-2" />
+                                  Replace Trailer
+                                </Button>
+                              </label>
+                              <Button type="button" variant="outline" size="sm" onClick={handleRemoveTrailer}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Remove
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">Click "Replace Trailer" to upload a new video</p>
+                          </div>
+                        ) : (
+                          <label htmlFor="trailer-upload" className="cursor-pointer block">
                             <div className="space-y-2">
                               <Video className="h-12 w-12 mx-auto text-muted-foreground" />
                               <p className="text-sm">Upload an optional trailer video</p>
+                              <p className="text-xs text-muted-foreground">Click to select a video file</p>
                             </div>
-                          )}
-                        </label>
+                          </label>
+                        )}
                       </div>
                     </div>
                   </div>
