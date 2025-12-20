@@ -86,6 +86,7 @@ Provide a helpful, concise answer. If the question is about finding a feature, i
 
 Keep your response under 300 words and be specific about where to find things.`;
 
+        console.log('Calling Genkit AI generate...');
         const response = await ai.generate({
           model: 'googleai/gemini-2.0-flash',
           prompt: prompt,
@@ -93,6 +94,12 @@ Keep your response under 300 words and be specific about where to find things.`;
             temperature: 0.7,
             maxOutputTokens: 500,
           },
+        });
+        
+        console.log('Genkit AI response received:', {
+          hasText: !!response.text,
+          textLength: response.text?.length || 0,
+          responseKeys: Object.keys(response)
         });
         
         answer = response.text || 'I apologize, but I couldn\'t generate an answer. Please try rephrasing your question or check the Settings page for more information.';
@@ -103,16 +110,31 @@ Keep your response under 300 words and be specific about where to find things.`;
       }
     } catch (aiError: any) {
       console.error('Failed to generate AI answer:', aiError);
+      console.error('Error details:', {
+        message: aiError?.message,
+        code: aiError?.code,
+        status: aiError?.status,
+        statusCode: aiError?.statusCode,
+        response: aiError?.response,
+        stack: aiError?.stack,
+        fullError: JSON.stringify(aiError, Object.getOwnPropertyNames(aiError))
+      });
+      
       const errorMessage = aiError?.message || String(aiError);
-      const errorCode = aiError?.code || 'unknown';
+      const errorCode = aiError?.code || aiError?.statusCode || 'unknown';
+      const errorStatus = aiError?.status || aiError?.statusCode;
       
       // Provide more specific error messages
-      if (errorCode === 'API_KEY_NOT_FOUND' || errorMessage.includes('API key')) {
+      if (errorCode === 'API_KEY_NOT_FOUND' || errorMessage.includes('API key') || errorMessage.includes('API_KEY')) {
         answer = 'I apologize, but the AI service is not configured. Please ensure GOOGLE_GENAI_API_KEY is set in your Vercel environment variables and redeploy the application.';
-      } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
-        answer = 'I apologize, but the AI service has reached its rate limit. Please try again in a few moments.';
+      } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit') || errorMessage.includes('429') || errorStatus === 429) {
+        answer = 'I apologize, but the AI service has reached its rate limit. Please try again in a few moments. If this persists, check your Google AI Studio quota.';
+      } else if (errorMessage.includes('403') || errorStatus === 403) {
+        answer = 'I apologize, but the AI service access was denied. Please check that your API key is valid and has the correct permissions in Google AI Studio.';
+      } else if (errorMessage.includes('401') || errorStatus === 401) {
+        answer = 'I apologize, but the API key is invalid or expired. Please verify your GOOGLE_GENAI_API_KEY in Vercel environment variables.';
       } else {
-        answer = `I apologize, but I encountered an error while processing your question: ${errorMessage}. Please try again or check the Settings page for help.`;
+        answer = `I apologize, but I encountered an error while processing your question: ${errorMessage} (Code: ${errorCode}). Please try again or check the Settings page for help.`;
       }
     }
 

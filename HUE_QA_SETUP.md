@@ -58,6 +58,7 @@ You don't need to train Hue - the knowledge is already in the code! You just nee
 ## Troubleshooting
 
 **Still seeing the error message?**
+- See **HUE_TROUBLESHOOTING.md** for a complete step-by-step troubleshooting guide
 - Wait a few minutes after redeploying (environment variables can take time to propagate)
 - Check Vercel deployment logs for any errors
 - Verify the API key is correct (no extra spaces, complete key)
@@ -67,3 +68,18 @@ You don't need to train Hue - the knowledge is already in the code! You just nee
 - Google AI Studio provides free tier with rate limits
 - Check your usage in Google AI Studio dashboard
 - Upgrade if needed for production use
+
+**Quick Diagnostic:**
+Run this in your browser console on your deployed site:
+```javascript
+fetch('/api/hue/ask-question', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ question: 'test', route: window.location.pathname })
+})
+.then(r => r.json())
+.then(console.log)
+.catch(console.error)
+```
+
+This will show you the exact API response and help identify the issue.
