@@ -428,6 +428,11 @@ export function HueChatbot() {
     try {
       const userRef = doc(db, 'userProfiles', user.id);
       const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        throw new Error('User profile not found');
+      }
+      
       const currentData = userDoc.data() || {};
       
       await updateDoc(userRef, {
@@ -445,11 +450,52 @@ export function HueChatbot() {
         title: 'Hue hidden',
         description: 'Hue can be reactivated in general settings.',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error hiding Hue:', error);
+      
+      // Log detailed error information
+      const errorDetails = {
+        message: error?.message || String(error),
+        code: error?.code,
+        stack: error?.stack,
+        userId: user?.id,
+        timestamp: new Date().toISOString(),
+        route: window.location.pathname
+      };
+      
+      console.error('Hue hide error details:', errorDetails);
+      
+      // Determine if this is a critical error that should trigger Hue's error detection
+      const isCriticalError = error?.code === 'permission-denied' || 
+                             error?.code === 'unavailable' || 
+                             error?.code === 'failed-precondition' ||
+                             error?.code === 'not-found' ||
+                             !error?.code; // Unknown errors are also critical
+      
+      if (isCriticalError) {
+        // Manually trigger Hue's error detection by creating an error report
+        const route = window.location.pathname;
+        const timestamp = new Date().toISOString();
+        const userAgent = navigator.userAgent;
+        
+        const report: ErrorReport = {
+          message: `Failed to hide Hue: ${error?.message || error?.code || 'Unknown error'}`,
+          stack: error?.stack || `Error code: ${error?.code || 'unknown'}`,
+          route,
+          timestamp,
+          userAgent,
+        };
+        
+        // Set error state to trigger Hue's error UI
+        setErrorReport(report);
+        setHasError(true);
+        setIsExpanded(true);
+        setHueEnabled(true); // Force show Hue for error reporting
+      }
+      
       toast({
         title: 'Error',
-        description: 'Failed to hide Hue. Please try again.',
+        description: error?.message || error?.code || 'Failed to hide Hue. Please try again.',
         variant: 'destructive'
       });
     }
