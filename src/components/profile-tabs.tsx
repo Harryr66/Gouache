@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play, Edit } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { PortfolioManager } from './portfolio-manager';
 import { ShopDisplay } from './shop-display';
@@ -102,6 +102,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {availableCourses.map((course) => {
           const isEnrolled = enrolledCourseIds.includes(course.id);
+          const isCourseOwner = isOwnProfile && course.instructor.userId === user?.id;
           return (
             <Card 
               key={course.id} 
@@ -122,13 +123,28 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                {isCourseOwner && (
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/learn/submit?edit=${course.id}`);
+                      }}
+                      title="Edit course"
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
               <CardContent className="p-4">
                 <CardTitle className="text-lg mb-2 line-clamp-2">{course.title}</CardTitle>
                 <CardDescription className="line-clamp-2 mb-4 text-sm">
                   {course.description}
                 </CardDescription>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <div className="text-lg font-semibold">
                     {course.price > 0 ? (
                       <>
@@ -149,27 +165,44 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                       <span className="text-muted-foreground">Free</span>
                     )}
                   </div>
-                  {isEnrolled ? (
-                    <Button
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/learn/${course.id}`);
-                      }}
-                    >
-                      Access Course
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="gradient"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/learn/${course.id}`);
-                      }}
-                    >
-                      Preview
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {isCourseOwner && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/learn/submit?edit=${course.id}`);
+                        }}
+                        title="Edit course"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {isEnrolled ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/learn/${course.id}`);
+                        }}
+                      >
+                        Access
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="gradient"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/learn/${course.id}`);
+                        }}
+                      >
+                        Preview
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
