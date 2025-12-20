@@ -26,7 +26,7 @@ export default function UploadPage() {
   const router = useRouter();
   const [selectedType, setSelectedType] = useState<'artwork' | 'event' | 'product' | 'course' | null>(null);
   const [isCheckingUser, setIsCheckingUser] = useState(true);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const initialLoadCompleteRef = useRef(false);
   const previousUserRef = useRef<User | null>(null);
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
   const [eventForm, setEventForm] = useState({
@@ -77,20 +77,30 @@ export default function UploadPage() {
   useEffect(() => {
     if (loading) {
       setIsCheckingUser(true);
-      setInitialLoadComplete(false);
+      initialLoadCompleteRef.current = false;
       previousUserRef.current = null;
       return;
     }
     
     if (!user) {
       setIsCheckingUser(false);
-      setInitialLoadComplete(false);
+      initialLoadCompleteRef.current = false;
       previousUserRef.current = null;
       return;
     }
 
+    // Use user.id as stable identifier instead of entire user object
+    const currentUserId = user.id;
+    const previousUserId = previousUserRef.current?.id || null;
+    
     // Check if this is the first time we're seeing this user
-    const isFirstLoad = previousUserRef.current === null;
+    const isFirstLoad = previousUserId === null || previousUserId !== currentUserId;
+    
+    // If already completed for this user, don't re-check
+    if (initialLoadCompleteRef.current && previousUserId === currentUserId) {
+      setIsCheckingUser(false);
+      return;
+    }
     
     if (isFirstLoad) {
       // First load - set a minimum wait time to allow Firestore to load
@@ -101,11 +111,11 @@ export default function UploadPage() {
         if (user.isProfessional === undefined && !user.updatedAt) {
           // Still loading Firestore data, wait more
           setTimeout(() => {
-            setInitialLoadComplete(true);
+            initialLoadCompleteRef.current = true;
             setIsCheckingUser(false);
           }, 1000);
         } else {
-          setInitialLoadComplete(true);
+          initialLoadCompleteRef.current = true;
           setIsCheckingUser(false);
         }
       }, 2000); // 2 second minimum wait
@@ -113,20 +123,18 @@ export default function UploadPage() {
     }
     
     // User object has changed - check if it's been updated with Firestore data
-    if (previousUserRef.current) {
-      const userChanged = previousUserRef.current.id !== user.id || 
-                         previousUserRef.current.isProfessional !== user.isProfessional ||
-                         previousUserRef.current.updatedAt?.getTime() !== user.updatedAt?.getTime() ||
-                         (user.portfolio && user.portfolio.length !== (previousUserRef.current.portfolio?.length || 0));
-      
-      if (userChanged) {
-        // User object has been updated (likely with Firestore data)
-        previousUserRef.current = user;
-        setInitialLoadComplete(true);
-        setIsCheckingUser(false);
-      }
+    // Only check if user ID changed or if isProfessional/updatedAt changed
+    const userChanged = previousUserId !== currentUserId || 
+                       previousUserRef.current?.isProfessional !== user.isProfessional ||
+                       previousUserRef.current?.updatedAt?.getTime() !== user.updatedAt?.getTime();
+    
+    if (userChanged && !isFirstLoad) {
+      // User object has been updated (likely with Firestore data)
+      previousUserRef.current = user;
+      initialLoadCompleteRef.current = true;
+      setIsCheckingUser(false);
     }
-  }, [loading, user]);
+  }, [loading, user?.id, user?.isProfessional, user?.updatedAt]);
 
   // Show loading animation while auth is loading or we're checking user status
   const isProfessionalLoaded = user?.isProfessional !== undefined || user?.updatedAt !== undefined || hasApprovedArtistRequest;
