@@ -33,6 +33,8 @@ import { usePlaceholder } from '@/hooks/use-placeholder';
 import { useCourses } from '@/providers/course-provider';
 import { useAuth } from '@/providers/auth-provider';
 import { toast } from '@/hooks/use-toast';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Mock course data - in real app, this would come from API
 const mockCourse = {
@@ -196,6 +198,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [activeTab, setActiveTab] = useState('overview');
   const [newComment, setNewComment] = useState('');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [hideAboutInstructor, setHideAboutInstructor] = useState(false);
   
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(800, 450);
@@ -214,7 +217,20 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               e => e.courseId === courseId && e.userId === user.id
             );
             setIsEnrolled(!!enrollment);
-      }
+          }
+          
+          // Fetch instructor's profile to check hideAboutArtist setting
+          if (courseData.instructor?.userId) {
+            try {
+              const instructorProfileDoc = await getDoc(doc(db, 'userProfiles', courseData.instructor.userId));
+              if (instructorProfileDoc.exists()) {
+                const instructorData = instructorProfileDoc.data();
+                setHideAboutInstructor(instructorData.hideAboutArtist === true);
+              }
+            } catch (error) {
+              console.error('Error fetching instructor profile:', error);
+            }
+          }
         }
         setIsLoading(false);
       } catch (error) {
@@ -407,6 +423,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 </Card>
 
                 {/* Instructor */}
+                {!hideAboutInstructor && (
                 <Card>
                   <CardHeader>
                     <CardTitle>About the Instructor</CardTitle>
@@ -457,6 +474,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     </div>
                   </CardContent>
                 </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="curriculum" className="space-y-4">

@@ -211,12 +211,17 @@ export default function ProfileEditPage() {
         // Fetch email from Firestore first (source of truth), then fallback to Firebase Auth
         const loadUserData = async () => {
           let userEmail = '';
+          let socialLinks = user.socialLinks || {};
           try {
             const userProfileDoc = await getDoc(doc(db, 'userProfiles', user.id));
             if (userProfileDoc.exists()) {
               const profileData = userProfileDoc.data();
               // Prioritize Firestore email (our source of truth for profile)
               userEmail = profileData.email || auth.currentUser?.email || user.email || '';
+              // Get socialLinks from profileData if available
+              if (profileData?.socialLinks) {
+                socialLinks = profileData.socialLinks;
+              }
             } else {
               // If no Firestore doc, use Firebase Auth email
               userEmail = auth.currentUser?.email || user.email || '';
@@ -236,9 +241,6 @@ export default function ProfileEditPage() {
           const currentEmail = formData.email && formData.email.toLowerCase() === firebaseAuthEmail.toLowerCase()
             ? formData.email
             : firebaseAuthEmail;
-          
-          // Get socialLinks from profileData if available, otherwise from user object
-          const socialLinks = (userProfileDoc.exists() && profileData?.socialLinks) || user.socialLinks || {};
           
           const nextFormData = {
             name: user.displayName || '',
