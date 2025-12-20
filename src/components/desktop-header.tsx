@@ -46,10 +46,10 @@ export function DesktopHeader() {
               key={item.name}
               href={item.href}
               className={cn(
-                'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
                 isActive
                   ? 'gradient-border text-foreground'
-                  : 'text-foreground hover:text-foreground hover:bg-muted/50'
+                  : 'text-foreground border-2 border-transparent hover:gradient-border'
               )}
             >
               <item.icon className="h-4 w-4" />
