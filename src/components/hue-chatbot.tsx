@@ -61,9 +61,29 @@ export function HueChatbot() {
     return () => unsubscribe();
   }, [user?.id]);
 
-  // Initialize position on mount
+  // Load saved position from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const savedPosition = localStorage.getItem('hue-position');
+      if (savedPosition) {
+        try {
+          const { x, y } = JSON.parse(savedPosition);
+          // Validate saved position is still within viewport
+          const orbSize = isMobile ? 48 : 64;
+          const padding = isMobile ? 8 : 16;
+          const maxX = window.innerWidth - orbSize - padding;
+          const maxY = window.innerHeight - (isMobile ? 160 : 80);
+          
+          if (x >= 0 && x <= maxX && y >= 0 && y <= maxY) {
+            setPosition({ x, y });
+            return; // Use saved position
+          }
+        } catch (e) {
+          console.warn('Failed to parse saved Hue position:', e);
+        }
+      }
+      
+      // No valid saved position, use default
       const updatePosition = () => {
         if (isMobile) {
           // Mobile: position well above nav bar and browser controls
@@ -74,22 +94,36 @@ export function HueChatbot() {
           const totalOffset = browserNavHeight + appNavHeight + padding;
           const orbSize = 48; // Mobile orb size (w-12 h-12 = 48px)
           
-          setPosition({
+          const defaultPos = {
             x: window.innerWidth - orbSize - 8, // Position orb 8px from right edge (accounting for orb width)
             y: window.innerHeight - totalOffset // Well above all navigation bars
-          });
+          };
+          setPosition(defaultPos);
+          // Save default position
+          localStorage.setItem('hue-position', JSON.stringify(defaultPos));
         } else {
           // Desktop: bottom-right corner
           const orbSize = 64; // Desktop orb size (w-16 h-16 = 64px)
-          setPosition({
+          const defaultPos = {
             x: window.innerWidth - orbSize - 16, // Position orb 16px from right edge
             y: window.innerHeight - 80
-          });
+          };
+          setPosition(defaultPos);
+          // Save default position
+          localStorage.setItem('hue-position', JSON.stringify(defaultPos));
         }
       };
       updatePosition();
-      window.addEventListener('resize', updatePosition);
-      return () => window.removeEventListener('resize', updatePosition);
+      
+      // Only update on resize if no saved position exists
+      const handleResize = () => {
+        const saved = localStorage.getItem('hue-position');
+        if (!saved) {
+          updatePosition();
+        }
+      };
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
     }
   }, [isMobile]);
 
@@ -197,10 +231,13 @@ export function HueChatbot() {
           minY = 0;
         }
         
-        setPosition({
+        const newPosition = {
           x: Math.max(minX, Math.min(maxX, newX)),
           y: Math.max(minY, Math.min(maxY, newY))
-        });
+        };
+        setPosition(newPosition);
+        // Save position in real-time during drag
+        localStorage.setItem('hue-position', JSON.stringify(newPosition));
       }
     };
 
@@ -235,10 +272,13 @@ export function HueChatbot() {
           minY = 0;
         }
         
-        setPosition({
+        const newPosition = {
           x: Math.max(minX, Math.min(maxX, newX)),
           y: Math.max(minY, Math.min(maxY, newY))
-        });
+        };
+        setPosition(newPosition);
+        // Save position in real-time during drag
+        localStorage.setItem('hue-position', JSON.stringify(newPosition));
       }
     };
 
