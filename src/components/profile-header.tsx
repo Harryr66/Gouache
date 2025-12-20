@@ -28,6 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ThemeLoading } from '@/components/theme-loading';
 import { TipDialog } from './tip-dialog';
 import { CountryFlag } from './country-flag';
 import { ShowcaseLocation } from '@/lib/types';
@@ -85,11 +86,8 @@ export function ProfileHeader({
   // Early return if user is not properly loaded
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Loading profile...</h1>
-          <p className="text-muted-foreground">Please wait while we load your profile data.</p>
-        </div>
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[200px]">
+        <ThemeLoading size="lg" text="" />
       </div>
     );
   }

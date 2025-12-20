@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
 import { BusinessManager } from '@/components/business-manager';
+import { ThemeLoading } from '@/components/theme-loading';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -707,10 +708,7 @@ export default function SettingsPage() {
     <Suspense fallback={
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Settings className="h-8 w-8 mx-auto mb-4 text-muted-foreground animate-pulse" />
-            <p className="text-muted-foreground">Loading settings...</p>
-          </div>
+          <ThemeLoading size="lg" text="" />
         </div>
       </div>
     }>

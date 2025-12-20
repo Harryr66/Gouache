@@ -35,14 +35,82 @@ interface ShopItem {
 export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
   const [items, setItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isStripeIntegrated, setIsStripeIntegrated] = useState(false);
+  const [checkingStripe, setCheckingStripe] = useState(true);
   const router = useRouter();
   const { user } = useAuth();
   
-  // Check if Stripe is integrated and ready
-  const isStripeIntegrated = user?.stripeAccountId && 
-    user?.stripeOnboardingStatus === 'complete' && 
-    user?.stripeChargesEnabled && 
-    user?.stripePayoutsEnabled;
+  // Fetch Stripe status directly from Firestore and verify with Stripe API
+  useEffect(() => {
+    const checkStripeStatus = async () => {
+      if (!userId) {
+        setCheckingStripe(false);
+        return;
+      }
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'userProfiles', userId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const accountId = userData.stripeAccountId;
+          
+          if (accountId) {
+            // Verify status with Stripe API for most up-to-date information
+            try {
+              const response = await fetch(`/api/stripe/connect/account-status?accountId=${accountId}`);
+              if (response.ok) {
+                const accountData = await response.json();
+                const isComplete = accountData.onboardingStatus === 'complete' &&
+                  accountData.chargesEnabled === true &&
+                  accountData.payoutsEnabled === true;
+                
+                console.log('Shop Display - Stripe status from API:', {
+                  accountId,
+                  onboardingStatus: accountData.onboardingStatus,
+                  chargesEnabled: accountData.chargesEnabled,
+                  payoutsEnabled: accountData.payoutsEnabled,
+                  isComplete
+                });
+                
+                setIsStripeIntegrated(isComplete);
+              } else {
+                // Fallback to Firestore data if API call fails
+                const isComplete = userData.stripeOnboardingStatus === 'complete' &&
+                  userData.stripeChargesEnabled === true &&
+                  userData.stripePayoutsEnabled === true;
+                setIsStripeIntegrated(isComplete);
+              }
+            } catch (apiError) {
+              // Fallback to Firestore data if API call fails
+              console.warn('Failed to verify Stripe status via API, using Firestore data:', apiError);
+              const isComplete = userData.stripeOnboardingStatus === 'complete' &&
+                userData.stripeChargesEnabled === true &&
+                userData.stripePayoutsEnabled === true;
+              setIsStripeIntegrated(isComplete);
+            }
+          } else {
+            setIsStripeIntegrated(false);
+          }
+        } else {
+          setIsStripeIntegrated(false);
+        }
+      } catch (error) {
+        console.error('Error checking Stripe status:', error);
+        setIsStripeIntegrated(false);
+      } finally {
+        setCheckingStripe(false);
+      }
+    };
+    
+    if (isOwnProfile) {
+      checkStripeStatus();
+    } else {
+      // For other users' profiles, assume Stripe is integrated if they have items
+      // This allows viewing other artists' shops
+      setIsStripeIntegrated(true);
+      setCheckingStripe(false);
+    }
+  }, [userId, isOwnProfile]);
 
   useEffect(() => {
     const fetchShopItems = async () => {
@@ -161,16 +229,17 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
     }
   };
 
-  if (loading) {
+  if (loading || checkingStripe) {
     return (
       <div className="flex justify-center py-12">
-        <ThemeLoading text="Loading shop items..." size="md" />
+        <ThemeLoading text="" size="md" />
       </div>
     );
   }
 
   if (items.length === 0) {
     // If it's the user's own profile and Stripe is not integrated, show integration prompt
+    // Only show this if we've checked Stripe status and it's confirmed not integrated
     if (isOwnProfile && !isStripeIntegrated) {
       return (
         <Card className="p-8 text-center">
@@ -182,7 +251,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             </CardDescription>
             <Button 
               variant="gradient"
-              onClick={() => router.push('/settings?tab=payments')}
+              onClick={() => router.push('/settings?tab=business')}
             >
               <CreditCard className="h-4 w-4 mr-2" />
               Connect Stripe Account

@@ -261,7 +261,7 @@ export default function NewsPage() {
 
       {isLoading ? (
         <div className="flex justify-center py-20">
-          <ThemeLoading text="Loading today&apos;s headlines…" size="lg" />
+          <ThemeLoading text="" size="lg" />
         </div>
       ) : filteredArticles.length === 0 && (filteredCategory !== 'All' || articles.length > 0) ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">

@@ -104,7 +104,7 @@ export function AboutTheArtist({ artistId, artistName, artistHandle, className, 
       <Card className={className}>
         <CardContent className="p-6">
           <div className="flex items-center justify-center py-8">
-            <ThemeLoading text="Loading artist info..." size="sm" />
+            <ThemeLoading text="" size="sm" />
           </div>
         </CardContent>
       </Card>

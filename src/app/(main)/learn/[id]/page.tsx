@@ -35,6 +35,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { toast } from '@/hooks/use-toast';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { ThemeLoading } from '@/components/theme-loading';
 
 // Mock course data - in real app, this would come from API
 const mockCourse = {
@@ -296,10 +297,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   if (isLoading || !course) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-          <p className="text-muted-foreground">Loading course...</p>
-        </div>
+        <ThemeLoading size="lg" text="" />
       </div>
     );
   }

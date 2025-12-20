@@ -407,7 +407,7 @@ function ProductDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <ThemeLoading text="Loading product..." size="lg" />
+        <ThemeLoading text="" size="lg" />
       </div>
     );
   }
@@ -720,7 +720,7 @@ function ProductDetailPageWrapper() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <ThemeLoading text="Loading product..." size="lg" />
+        <ThemeLoading text="" size="lg" />
       </div>
     }>
       <ProductDetailPage />
