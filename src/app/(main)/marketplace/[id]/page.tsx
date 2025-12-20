@@ -305,17 +305,51 @@ function ProductDetailPage() {
           productData = placeholderProducts.find(p => p.id === productId) || 
                        marketPlaceholderProducts.find(p => p.id === productId) || null;
         }
-        // Check if it's a marketplace product (starts with marketplace- or doesn't have prefix)
-        else if (!productId.startsWith('artwork-') && !productId.startsWith('book-')) {
-          const productDoc = await getDoc(doc(db, 'marketplaceProducts', productId));
-          if (productDoc.exists()) {
-            const data = productDoc.data();
+        // Check if it's an artwork (try artworks collection first if no prefix)
+        else {
+          // First check if it's an artwork (artworks collection)
+          const artworkDoc = await getDoc(doc(db, 'artworks', productId));
+          if (artworkDoc.exists()) {
+            const data = artworkDoc.data();
+            const artist = data.artist || {};
             productData = {
-              id: productDoc.id,
-              ...data,
+              id: `artwork-${artworkDoc.id}`,
+              title: data.title || 'Untitled Artwork',
+              description: data.description || '',
+              price: data.price || 0,
+              currency: data.currency || 'USD',
+              category: 'Artwork',
+              subcategory: data.category || 'Original',
+              images: data.imageUrl ? [data.imageUrl] : [],
+              sellerId: artist.userId || artist.id || '',
+              sellerName: artist.name || 'Unknown Artist',
+              sellerWebsite: artist.website,
+              isAffiliate: false,
+              isActive: !data.sold && (data.stock === undefined || data.stock > 0),
+              stock: data.stock || 1,
+              rating: 0,
+              reviewCount: 0,
+              tags: data.tags || [],
               createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-              updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now())
+              updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+              salesCount: 0,
+              isOnSale: false,
+              isApproved: true,
+              status: 'approved',
+              dimensions: data.dimensions
             } as MarketplaceProduct;
+          } else {
+            // If not an artwork, check marketplaceProducts collection
+            const productDoc = await getDoc(doc(db, 'marketplaceProducts', productId));
+            if (productDoc.exists()) {
+              const data = productDoc.data();
+              productData = {
+                id: productDoc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now())
+              } as MarketplaceProduct;
+            }
           }
         }
         // Check if it's an artwork
@@ -421,9 +455,9 @@ function ProductDetailPage() {
           <p className="text-muted-foreground mb-4">
             The product you're looking for doesn't exist or has been removed.
           </p>
-          <Button onClick={() => router.push('/marketplace')}>
+          <Button onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Market
+            Go Back
           </Button>
         </div>
       </div>
@@ -492,6 +526,9 @@ function ProductDetailPage() {
             onClick={() => {
               if (cameFromDiscover) {
                 router.push('/discover?tab=market');
+              } else if (product?.sellerId) {
+                // Go to artist's profile if available
+                router.push(`/profile/${product.sellerId}`);
               } else {
                 // Try to go back in history first
                 if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -504,7 +541,7 @@ function ProductDetailPage() {
             className="mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Market
+            {product?.sellerId ? 'Back to Artist Profile' : (cameFromDiscover ? 'Back to Discover' : 'Go Back')}
           </Button>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

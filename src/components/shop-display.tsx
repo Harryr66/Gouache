@@ -489,7 +489,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => router.push(`/marketplace/${item.id}`)}
+                        onClick={() => router.push(`/artwork/${item.id}`)}
                         disabled={!item.isAvailable}
                       >
                         View Details
