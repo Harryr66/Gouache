@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, ChangeEvent, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent, useLayoutEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/providers/auth-provider';
@@ -58,9 +58,15 @@ export default function UploadPage() {
   const [productImages, setProductImages] = useState<File[]>([]);
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
 
+  // Create a stable user signature using useMemo to prevent unnecessary re-renders
+  const userSignature = useMemo(() => {
+    if (!user) return null;
+    return `${user.id}-${user.isProfessional}-${user.updatedAt?.getTime() || 'no-update'}`;
+  }, [user?.id, user?.isProfessional, user?.updatedAt?.getTime()]);
+
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     const q = query(
       collection(db, 'artistRequests'),
       where('userId', '==', user.id),
@@ -84,7 +90,7 @@ export default function UploadPage() {
       return;
     }
     
-    if (!user) {
+    if (!user || !userSignature) {
       setIsCheckingUser(false);
       initialLoadCompleteRef.current = false;
       previousUserRef.current = null;
@@ -92,11 +98,8 @@ export default function UploadPage() {
       return;
     }
 
-    // Create a stable state signature to detect actual changes
-    const currentStateSignature = `${user.id}-${user.isProfessional}-${user.updatedAt?.getTime() || 'no-update'}`;
-    
     // If we've already processed this exact state, skip
-    if (processedUserStateRef.current === currentStateSignature && initialLoadCompleteRef.current) {
+    if (processedUserStateRef.current === userSignature && initialLoadCompleteRef.current) {
       setIsCheckingUser(false);
       return;
     }
@@ -111,7 +114,7 @@ export default function UploadPage() {
     if (isFirstLoad) {
       // First load - set a minimum wait time to allow Firestore to load
       previousUserRef.current = user;
-      processedUserStateRef.current = currentStateSignature;
+      processedUserStateRef.current = userSignature;
       const timer = setTimeout(() => {
         // After minimum wait, check if isProfessional has been explicitly set
         // If it's still undefined, wait a bit more
@@ -130,17 +133,17 @@ export default function UploadPage() {
     }
     
     // User object has changed - check if it's been updated with Firestore data
-    const previousStateSignature = `${previousUserId}-${previousUserRef.current?.isProfessional}-${previousUserRef.current?.updatedAt?.getTime() || 'no-update'}`;
-    const userChanged = previousStateSignature !== currentStateSignature;
+    const previousStateSignature = processedUserStateRef.current;
+    const userChanged = previousStateSignature !== userSignature;
     
     if (userChanged && !isFirstLoad) {
       // User object has been updated (likely with Firestore data)
       previousUserRef.current = user;
-      processedUserStateRef.current = currentStateSignature;
+      processedUserStateRef.current = userSignature;
       initialLoadCompleteRef.current = true;
       setIsCheckingUser(false);
     }
-  }, [loading, user]);
+  }, [loading, userSignature]);
 
   // Show loading animation while auth is loading or we're checking user status
   const isProfessionalLoaded = user?.isProfessional !== undefined || user?.updatedAt !== undefined || hasApprovedArtistRequest;
