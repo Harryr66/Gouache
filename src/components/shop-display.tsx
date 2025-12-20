@@ -139,24 +139,39 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
         }
         
         // Fallback: query all artworks with isForSale and filter client-side
-        if (artworksFound.length === 0) {
-          try {
-            const allArtworksQuery = query(
-              collection(db, 'artworks'),
-              where('isForSale', '==', true)
-            );
-            const allArtworks = await getDocs(allArtworksQuery);
-            allArtworks.forEach((doc) => {
-              const data = doc.data();
-              // Check if this artwork belongs to the user
-              if (data.artist?.userId === userId || data.artistId === userId || data.artist?.id === userId) {
+        // Always run fallback query to catch any artworks that might not match the primary query
+        try {
+          const allArtworksQuery = query(
+            collection(db, 'artworks'),
+            where('isForSale', '==', true)
+          );
+          const allArtworks = await getDocs(allArtworksQuery);
+          console.log('Shop Display - Fallback query found', allArtworks.size, 'total artworks with isForSale=true');
+          
+          allArtworks.forEach((doc) => {
+            const data = doc.data();
+            // Check if this artwork belongs to the user
+            const belongsToUser = data.artist?.userId === userId || 
+                                  data.artistId === userId || 
+                                  data.artist?.id === userId;
+            
+            if (belongsToUser) {
+              // Check if we already have this artwork from primary query
+              const alreadyFound = artworksFound.some(a => a.id === doc.id);
+              if (!alreadyFound) {
                 artworksFound.push({ id: doc.id, data });
+                console.log('Shop Display - Fallback query added artwork:', {
+                  id: doc.id,
+                  title: data.title,
+                  artistUserId: data.artist?.userId,
+                  artistId: data.artistId
+                });
               }
-            });
-            console.log('Shop Display - Fallback query found', artworksFound.length, 'artworks');
-          } catch (fallbackError) {
-            console.error('Fallback query also failed:', fallbackError);
-          }
+            }
+          });
+          console.log('Shop Display - After fallback query, total artworks found:', artworksFound.length);
+        } catch (fallbackError) {
+          console.error('Fallback query also failed:', fallbackError);
         }
         
         console.log('Shop Display - Total artworks found for userId', userId, ':', artworksFound.length);
@@ -172,9 +187,16 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
           });
           
           // Only include items where showInShop is true (or undefined for backward compatibility)
+          // If showInShop is explicitly false, skip it. Otherwise, include if isForSale is true
           if (data.showInShop === false) {
             console.log('Shop Display - Skipping artwork (showInShop=false):', id);
             return; // Skip items explicitly marked as not for shop
+          }
+          
+          // If showInShop is undefined but isForSale is true, include it (backward compatibility)
+          if (data.showInShop === undefined && !data.isForSale) {
+            console.log('Shop Display - Skipping artwork (isForSale=false and showInShop undefined):', id);
+            return;
           }
           
           // Use the type field from Stage 2, or determine from category/legacy fields

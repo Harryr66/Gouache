@@ -93,6 +93,16 @@ export function PortfolioManager() {
     deliveryCountries: ''
   });
 
+  // State for editing item's sale info
+  const [editingItemSaleInfo, setEditingItemSaleInfo] = useState<{
+    isForSale: boolean;
+    price: string;
+    priceType: 'fixed' | 'contact';
+    currency: string;
+    deliveryScope: 'worldwide' | 'specific';
+    deliveryCountries: string;
+  } | null>(null);
+
   // Check for editArtwork URL parameter and open edit form
   useEffect(() => {
     const editArtworkId = searchParams?.get('editArtwork');
@@ -121,18 +131,36 @@ export function PortfolioManager() {
             const artworkDoc = await getDoc(doc(db, 'artworks', editArtworkId));
             if (artworkDoc.exists()) {
               const artworkData = artworkDoc.data();
-              setNewItem(prev => ({
-                ...prev,
+              const saleInfo = {
                 isForSale: artworkData.isForSale || false,
                 price: artworkData.price ? (artworkData.price > 1000 ? (artworkData.price / 100).toString() : artworkData.price.toString()) : '',
                 currency: artworkData.currency || 'USD',
-                priceType: artworkData.priceType || (artworkData.price ? 'fixed' : 'contact'),
-                deliveryScope: artworkData.deliveryScope || 'worldwide',
+                priceType: (artworkData.priceType || (artworkData.price ? 'fixed' : 'contact')) as 'fixed' | 'contact',
+                deliveryScope: (artworkData.deliveryScope || 'worldwide') as 'worldwide' | 'specific',
                 deliveryCountries: artworkData.deliveryCountries?.join(', ') || ''
-              }));
+              };
+              setNewItem(prev => ({ ...prev, ...saleInfo }));
+              setEditingItemSaleInfo(saleInfo);
+            } else {
+              setEditingItemSaleInfo({
+                isForSale: false,
+                price: '',
+                priceType: 'fixed',
+                currency: 'USD',
+                deliveryScope: 'worldwide',
+                deliveryCountries: ''
+              });
             }
           } catch (error) {
             console.error('Error loading sale info:', error);
+            setEditingItemSaleInfo({
+              isForSale: false,
+              price: '',
+              priceType: 'fixed',
+              currency: 'USD',
+              deliveryScope: 'worldwide',
+              deliveryCountries: ''
+            });
           }
         };
         loadSaleInfo();
@@ -141,6 +169,50 @@ export function PortfolioManager() {
       }
     }
   }, [searchParams, portfolioItems, router]);
+
+  // Load sale info when editing item changes
+  useEffect(() => {
+    if (editingItem) {
+      const loadSaleInfo = async () => {
+        try {
+          const artworkDoc = await getDoc(doc(db, 'artworks', editingItem.id));
+          if (artworkDoc.exists()) {
+            const artworkData = artworkDoc.data();
+            setEditingItemSaleInfo({
+              isForSale: artworkData.isForSale || false,
+              price: artworkData.price ? (artworkData.price > 1000 ? (artworkData.price / 100).toString() : artworkData.price.toString()) : '',
+              currency: artworkData.currency || 'USD',
+              priceType: (artworkData.priceType || (artworkData.price ? 'fixed' : 'contact')) as 'fixed' | 'contact',
+              deliveryScope: (artworkData.deliveryScope || 'worldwide') as 'worldwide' | 'specific',
+              deliveryCountries: artworkData.deliveryCountries?.join(', ') || ''
+            });
+          } else {
+            setEditingItemSaleInfo({
+              isForSale: false,
+              price: '',
+              priceType: 'fixed',
+              currency: 'USD',
+              deliveryScope: 'worldwide',
+              deliveryCountries: ''
+            });
+          }
+        } catch (error) {
+          console.error('Error loading sale info:', error);
+          setEditingItemSaleInfo({
+            isForSale: false,
+            price: '',
+            priceType: 'fixed',
+            currency: 'USD',
+            deliveryScope: 'worldwide',
+            deliveryCountries: ''
+          });
+        }
+      };
+      loadSaleInfo();
+    } else {
+      setEditingItemSaleInfo(null);
+    }
+  }, [editingItem?.id]);
 
   useEffect(() => {
     const loadPortfolio = async () => {
@@ -611,11 +683,74 @@ export function PortfolioManager() {
         updatedAt: serverTimestamp()
       });
 
+      // Update artworks collection if sale info changed
+      if (editingItemSaleInfo !== null) {
+        const artworkRef = doc(db, 'artworks', item.id);
+        const artworkDoc = await getDoc(artworkRef);
+        
+        if (editingItemSaleInfo.isForSale) {
+          // Add or update in artworks collection
+          const artworkData: any = {
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            imageUrl: item.imageUrl,
+            artist: {
+              userId: user.id,
+              name: user.displayName || user.username || 'Artist',
+              handle: user.username || undefined,
+              avatarUrl: user.avatarUrl || null,
+            },
+            tags: item.tags,
+            isForSale: true,
+            showInShop: true,
+            category: item.medium || 'Other',
+            medium: item.medium,
+            dimensions: item.dimensions,
+            updatedAt: serverTimestamp(),
+            views: artworkDoc.exists() ? (artworkDoc.data().views || 0) : 0,
+            likes: artworkDoc.exists() ? (artworkDoc.data().likes || 0) : 0,
+            commentsCount: artworkDoc.exists() ? (artworkDoc.data().commentsCount || 0) : 0,
+          };
+
+          // Add sale-related fields
+          if (editingItemSaleInfo.priceType === 'fixed' && editingItemSaleInfo.price) {
+            artworkData.price = parseFloat(editingItemSaleInfo.price) * 100; // Convert to cents
+            artworkData.currency = editingItemSaleInfo.currency || 'USD';
+          } else if (editingItemSaleInfo.priceType === 'contact') {
+            artworkData.priceType = 'contact';
+            artworkData.contactForPrice = true;
+          }
+          artworkData.deliveryScope = editingItemSaleInfo.deliveryScope || 'worldwide';
+          if (editingItemSaleInfo.deliveryScope === 'specific' && editingItemSaleInfo.deliveryCountries) {
+            artworkData.deliveryCountries = editingItemSaleInfo.deliveryCountries.split(',').map((c: string) => c.trim()).filter(Boolean);
+          }
+
+          if (!artworkDoc.exists()) {
+            artworkData.createdAt = serverTimestamp();
+          }
+
+          await setDoc(artworkRef, artworkData, { merge: true });
+          console.log('✅ Artwork updated in artworks collection for shop');
+        } else {
+          // Remove from shop by setting isForSale to false
+          if (artworkDoc.exists()) {
+            await updateDoc(artworkRef, {
+              isForSale: false,
+              showInShop: false,
+              updatedAt: serverTimestamp()
+            });
+            console.log('✅ Artwork removed from shop');
+          }
+        }
+      }
+
       // Refresh user data to update the portfolio in the auth context
       await refreshUser();
 
       setPortfolioItems(updatedItems);
       setEditingItem(null);
+      setEditingItemSaleInfo(null);
 
       toast({
         title: "Portfolio updated",
@@ -998,13 +1133,22 @@ export function PortfolioManager() {
                 });
               }
               return (
-              <Card key={item.id || `portfolio-item-${index}`} className="overflow-hidden group">
+              <Card 
+                key={item.id || `portfolio-item-${index}`} 
+                className="overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300"
+                onClick={() => {
+                  // Navigate to artwork detail page
+                  if (item.id) {
+                    router.push(`/artwork/${item.id}`);
+                  }
+                }}
+              >
                 <div className="relative h-64 bg-muted">
                   {item.imageUrl ? (
                     <img
                       src={imageUrl}
                       alt={item.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         console.error('❌ Image load error for item:', item.id, item.title, imageUrl);
                         (e.target as HTMLImageElement).src = '/assets/placeholder-light.png';
@@ -1016,18 +1160,24 @@ export function PortfolioManager() {
                     </div>
                   )}
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex gap-1">
+                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => setEditingItem(item)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingItem(item);
+                        }}
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => handleDeleteItem(item)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteItem(item);
+                        }}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -1140,15 +1290,131 @@ export function PortfolioManager() {
               />
             </div>
 
+            {/* For Sale Toggle */}
+            {editingItemSaleInfo !== null && (
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Mark as For Sale</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Enable this to list this artwork in your shop. Disabling will remove it from your shop.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={editingItemSaleInfo.isForSale}
+                    onCheckedChange={(checked) => setEditingItemSaleInfo(prev => prev ? { ...prev, isForSale: checked } : null)}
+                  />
+                </div>
+
+                {editingItemSaleInfo.isForSale && (
+                  <div className="space-y-4 pl-4 border-l-2">
+                    {/* Price Type */}
+                    <div className="space-y-2">
+                      <Label>Pricing</Label>
+                      <Select
+                        value={editingItemSaleInfo.priceType}
+                        onValueChange={(value: 'fixed' | 'contact') => setEditingItemSaleInfo(prev => prev ? { ...prev, priceType: value } : null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fixed">Set Price</SelectItem>
+                          <SelectItem value="contact">Contact Artist</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Fixed Price Fields */}
+                    {editingItemSaleInfo.priceType === 'fixed' && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-price">Price *</Label>
+                          <Input
+                            id="edit-price"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editingItemSaleInfo.price}
+                            onChange={(e) => setEditingItemSaleInfo(prev => prev ? { ...prev, price: e.target.value } : null)}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-currency">Currency</Label>
+                          <Select
+                            value={editingItemSaleInfo.currency}
+                            onValueChange={(value) => setEditingItemSaleInfo(prev => prev ? { ...prev, currency: value } : null)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USD">USD ($)</SelectItem>
+                              <SelectItem value="GBP">GBP (£)</SelectItem>
+                              <SelectItem value="EUR">EUR (€)</SelectItem>
+                              <SelectItem value="CAD">CAD (C$)</SelectItem>
+                              <SelectItem value="AUD">AUD (A$)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Contact Artist Note */}
+                    {editingItemSaleInfo.priceType === 'contact' && (
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-sm text-muted-foreground flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          Customers will be prompted to email you to inquire about pricing.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Delivery Location */}
+                    <div className="space-y-2">
+                      <Label>Delivery Location</Label>
+                      <Select
+                        value={editingItemSaleInfo.deliveryScope}
+                        onValueChange={(value: 'worldwide' | 'specific') => setEditingItemSaleInfo(prev => prev ? { ...prev, deliveryScope: value } : null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="worldwide">Worldwide</SelectItem>
+                          <SelectItem value="specific">Specific Countries</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {editingItemSaleInfo.deliveryScope === 'specific' && (
+                        <Input
+                          placeholder="Enter countries (comma-separated)"
+                          value={editingItemSaleInfo.deliveryCountries}
+                          onChange={(e) => setEditingItemSaleInfo(prev => prev ? { ...prev, deliveryCountries: e.target.value } : null)}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => setEditingItem(null)}
+                onClick={() => {
+                  setEditingItem(null);
+                  setEditingItemSaleInfo(null);
+                }}
               >
                 Cancel
               </Button>
               <Button
-                onClick={() => editingItem && handleUpdateItem(editingItem)}
+                onClick={() => {
+                  if (editingItem) {
+                    handleUpdateItem(editingItem);
+                  }
+                }}
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save Changes
