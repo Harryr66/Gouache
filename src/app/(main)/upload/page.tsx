@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/providers/auth-provider';
 import { User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Image, Package, Calendar, ArrowLeft } from 'lucide-react';
+import { Image, Package, Calendar, ArrowLeft, Brain, GraduationCap } from 'lucide-react';
 import { UploadForm } from '@/components/upload-form';
 import { ThemeLoading } from '@/components/theme-loading';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -23,7 +24,7 @@ import { addDoc } from 'firebase/firestore';
 export default function UploadPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [selectedType, setSelectedType] = useState<'artwork-product' | 'event' | null>(null);
+  const [selectedType, setSelectedType] = useState<'artwork' | 'event' | 'product' | 'course' | null>(null);
   const [isCheckingUser, setIsCheckingUser] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const previousUserRef = useRef<User | null>(null);
@@ -42,6 +43,19 @@ export default function UploadPage() {
   });
   const [eventImageFile, setEventImageFile] = useState<File | null>(null);
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
+  const [productForm, setProductForm] = useState({
+    title: '',
+    description: '',
+    price: '',
+    originalPrice: '',
+    category: 'art-prints',
+    subcategory: 'fine-art-prints',
+    stock: '1',
+    tags: [] as string[],
+    newTag: '',
+  });
+  const [productImages, setProductImages] = useState<File[]>([]);
+  const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
 
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
@@ -245,8 +259,96 @@ export default function UploadPage() {
     );
   }
 
+  const handleProductImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setProductImages(files);
+  };
+
+  const handleProductSubmit = async () => {
+    if (!user) return;
+    if (!productForm.title || !productForm.price || productImages.length === 0) {
+      toast({
+        title: 'Missing required fields',
+        description: 'Title, price, and at least one image are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsSubmittingProduct(true);
+
+      // Upload images
+      const uploadedImageUrls: string[] = [];
+      for (const file of productImages) {
+        const path = `marketplaceProducts/${user.id}/${Date.now()}-${file.name}`;
+        const storageRef = ref(storage, path);
+        await uploadBytes(storageRef, file);
+        const imageUrl = await getDownloadURL(storageRef);
+        uploadedImageUrls.push(imageUrl);
+      }
+
+      // Create product document in Firestore
+      const productData = {
+        title: productForm.title,
+        description: productForm.description,
+        price: parseFloat(productForm.price),
+        ...(productForm.originalPrice && { originalPrice: parseFloat(productForm.originalPrice) }),
+        currency: 'USD',
+        category: productForm.category,
+        subcategory: productForm.subcategory,
+        images: uploadedImageUrls,
+        sellerId: user.id,
+        sellerName: user.displayName || user.username || 'Artist',
+        isAffiliate: false,
+        isActive: true,
+        stock: parseInt(productForm.stock) || 1,
+        rating: 0,
+        reviewCount: 0,
+        tags: productForm.tags,
+        salesCount: 0,
+        isOnSale: false,
+        isApproved: true,
+        status: 'approved',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await addDoc(collection(db, 'marketplaceProducts'), productData);
+
+      toast({
+        title: 'Product created',
+        description: 'Your product has been created and will appear in your shop.',
+      });
+
+      // Reset form and go back
+      setProductForm({
+        title: '',
+        description: '',
+        price: '',
+        originalPrice: '',
+        category: 'art-prints',
+        subcategory: 'fine-art-prints',
+        stock: '1',
+        tags: [],
+        newTag: '',
+      });
+      setProductImages([]);
+      setSelectedType(null);
+    } catch (error) {
+      console.error('Error creating product:', error);
+      toast({
+        title: 'Product creation failed',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmittingProduct(false);
+    }
+  };
+
   // If a type is selected, show the appropriate form
-  if (selectedType === 'artwork-product') {
+  if (selectedType === 'artwork') {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <Button
@@ -259,13 +361,149 @@ export default function UploadPage() {
         </Button>
         <header className="mb-8">
           <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
-            Upload Image
+            Upload Artwork
           </h1>
           <p className="text-muted-foreground text-lg">
             Upload images to your portfolio and shop.
           </p>
         </header>
         <UploadForm />
+      </div>
+    );
+  }
+
+  if (selectedType === 'product') {
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <Button
+          variant="ghost"
+          onClick={() => setSelectedType(null)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Upload Options
+        </Button>
+        <header className="mb-8">
+          <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
+            Upload Product
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            List a product for sale in your shop.
+          </p>
+        </header>
+        <Card className="p-6 space-y-4">
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="product-title">Product Title *</Label>
+              <Input
+                id="product-title"
+                placeholder="Enter product title"
+                value={productForm.title}
+                onChange={(e) => setProductForm((p) => ({ ...p, title: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="product-description">Description</Label>
+              <Textarea
+                id="product-description"
+                placeholder="Describe your product"
+                value={productForm.description}
+                onChange={(e) => setProductForm((p) => ({ ...p, description: e.target.value }))}
+                rows={4}
+              />
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="product-price">Price (USD) *</Label>
+                <Input
+                  id="product-price"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={productForm.price}
+                  onChange={(e) => setProductForm((p) => ({ ...p, price: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="product-original-price">Original Price (optional)</Label>
+                <Input
+                  id="product-original-price"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={productForm.originalPrice}
+                  onChange={(e) => setProductForm((p) => ({ ...p, originalPrice: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="product-category">Category</Label>
+                <Select
+                  value={productForm.category}
+                  onValueChange={(value) => setProductForm((p) => ({ ...p, category: value }))}
+                >
+                  <SelectTrigger id="product-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="art-prints">Art Prints</SelectItem>
+                    <SelectItem value="books">Books</SelectItem>
+                    <SelectItem value="supplies">Art Supplies</SelectItem>
+                    <SelectItem value="merchandise">Merchandise</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="product-stock">Stock Quantity</Label>
+                <Input
+                  id="product-stock"
+                  type="number"
+                  placeholder="1"
+                  value={productForm.stock}
+                  onChange={(e) => setProductForm((p) => ({ ...p, stock: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="product-images">Product Images *</Label>
+              <Input
+                id="product-images"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleProductImageChange}
+              />
+              {productImages.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  {productImages.length} image{productImages.length !== 1 ? 's' : ''} selected
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end">
+              <Button variant="gradient" onClick={handleProductSubmit} disabled={isSubmittingProduct}>
+                {isSubmittingProduct ? 'Creating…' : 'Create Product'}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Handle course redirect
+  useEffect(() => {
+    if (selectedType === 'course') {
+      router.push('/learn/submit');
+    }
+  }, [selectedType, router]);
+
+  if (selectedType === 'course') {
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <ThemeLoading size="lg" text="" />
+        </div>
       </div>
     );
   }
@@ -429,28 +667,28 @@ export default function UploadPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        {/* Portfolio Artwork */}
+        {/* Upload Artwork */}
         <Card 
           className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
-          onClick={() => setSelectedType('artwork-product')}
+          onClick={() => setSelectedType('artwork')}
         >
           <CardHeader>
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
               <Image className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle>Portfolio Artwork</CardTitle>
+            <CardTitle>Upload Artwork</CardTitle>
             <CardDescription>
-              Upload images to showcase in your portfolio.
+              Upload images to showcase in your portfolio. Mark as for sale to appear in your shop.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              Upload Image
+              Upload Artwork
             </Button>
           </CardContent>
         </Card>
 
-        {/* Event */}
+        {/* Upload Upcoming Event */}
         <Card 
           className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
           onClick={() => setSelectedType('event')}
@@ -459,7 +697,7 @@ export default function UploadPage() {
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
               <Calendar className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle>Event</CardTitle>
+            <CardTitle>Upload Upcoming Event</CardTitle>
             <CardDescription>
               Organize a workshop, exhibition, or community event. Add visuals and event details to share with your audience.
             </CardDescription>
@@ -467,6 +705,48 @@ export default function UploadPage() {
           <CardContent>
             <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
               Create Event
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Upload Product */}
+        <Card 
+          className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
+          onClick={() => setSelectedType('product')}
+        >
+          <CardHeader>
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+              <Package className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Upload Product</CardTitle>
+            <CardDescription>
+              List products like prints, books, or merchandise for sale in your shop.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              List Product
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Upload Course */}
+        <Card 
+          className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
+          onClick={() => setSelectedType('course')}
+        >
+          <CardHeader>
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+              <Brain className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Upload Course</CardTitle>
+            <CardDescription>
+              Create and publish educational courses to share your expertise with the community.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              Create Course
             </Button>
           </CardContent>
         </Card>

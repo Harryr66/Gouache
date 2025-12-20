@@ -24,7 +24,6 @@ import {
   Building2,
   Mail,
   ExternalLink,
-  ChevronDown,
   ChevronUp,
   Package,
   Pin,
@@ -37,12 +36,6 @@ import { TipDialog } from './tip-dialog';
 import { CountryFlag } from './country-flag';
 import { ShowcaseLocation } from '@/lib/types';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 interface ProfileHeaderProps {
   user: {
@@ -196,35 +189,12 @@ export function ProfileHeader({
                     </Link>
                   </Button>
                   {user.isProfessional && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="gradient" size="sm" className="text-xs md:text-sm flex-1 sm:flex-initial min-w-[120px]">
-                          <Upload className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                          Upload
-                          <ChevronDown className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-2" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem asChild>
-                          <Link href="/upload" className="flex items-center cursor-pointer">
-                            <ImageIcon className="h-4 w-4 mr-2" />
-                            Upload Artwork
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/marketplace" className="flex items-center cursor-pointer">
-                            <Package className="h-4 w-4 mr-2" />
-                            List an Item
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/learn/submit" className="flex items-center cursor-pointer">
-                            <Brain className="h-4 w-4 mr-2" />
-                            Create Course
-                          </Link>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button asChild variant="gradient" size="sm" className="text-xs md:text-sm flex-1 sm:flex-initial min-w-[120px]">
+                      <Link href="/upload">
+                        <Upload className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                        Upload
+                      </Link>
+                    </Button>
                   )}
                   <Button
                     asChild

@@ -210,7 +210,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         // Treat all uploads as portfolio artwork
         type: 'artwork',
         showInPortfolio: true,
-        showInShop: false,
+        showInShop: formData.isForSale || false, // Show in shop if marked for sale
         dimensions: {
           width: parseFloat(formData.dimensions.width) || 0,
           height: parseFloat(formData.dimensions.height) || 0,
@@ -274,7 +274,8 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         description: formData.description || '',
         type: 'artwork',
         showInPortfolio: true,
-        showInShop: false,
+        showInShop: formData.isForSale || false, // Show in shop if marked for sale
+        isForSale: formData.isForSale || false, // Store isForSale flag
         dimensions: formData.dimensions.width && formData.dimensions.height 
           ? `${formData.dimensions.width} x ${formData.dimensions.height} ${formData.dimensions.unit}`
           : '',
@@ -282,6 +283,23 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         tags: newArtwork.tags,
         createdAt: new Date()
       };
+
+      // Add sale-related fields to portfolio item if for sale
+      if (formData.isForSale) {
+        if (formData.priceType === 'fixed' && formData.price) {
+          portfolioItem.price = parseFloat(formData.price) * 100; // Convert to cents
+          portfolioItem.currency = formData.currency || 'USD';
+        } else if (formData.priceType === 'contact') {
+          portfolioItem.priceType = 'contact';
+          portfolioItem.contactForPrice = true;
+        }
+        if (formData.deliveryScope) {
+          portfolioItem.deliveryScope = formData.deliveryScope;
+        }
+        if (formData.deliveryCountries) {
+          portfolioItem.deliveryCountries = formData.deliveryCountries;
+        }
+      }
 
       // Only add optional fields if they have values
       if (newArtwork.deliveryScope) {

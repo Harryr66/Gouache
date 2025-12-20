@@ -1204,7 +1204,7 @@ export function PortfolioManager() {
               Showing {portfolioItems.length} artwork{portfolioItems.length !== 1 ? 's' : ''}
             </div>
             <div 
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-6"
               data-portfolio-count={portfolioItems.length}
             >
               {portfolioItems.map((item, index) => {
@@ -1228,7 +1228,7 @@ export function PortfolioManager() {
                   }
                 }}
               >
-                <div className="relative h-64 bg-muted">
+                <div className="relative aspect-square bg-muted">
                   {item.imageUrl ? (
                     <img
                       src={imageUrl}
@@ -1241,10 +1241,10 @@ export function PortfolioManager() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      <Upload className="h-12 w-12" />
+                      <Upload className="h-8 w-8 md:h-12 md:w-12" />
                     </div>
                   )}
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
                     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="sm"
@@ -1269,19 +1269,19 @@ export function PortfolioManager() {
                     </div>
                   </div>
                 </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-1">{item.title}</h3>
+                <CardContent className="p-2 md:p-4 hidden md:block">
+                  <h3 className="font-semibold mb-1 text-sm md:text-base">{item.title}</h3>
                   {item.medium && (
-                    <p className="text-sm text-muted-foreground mb-2">{item.medium}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-2">{item.medium}</p>
                   )}
                   {item.dimensions && (
-                    <p className="text-sm text-muted-foreground mb-2">{item.dimensions}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-2">{item.dimensions}</p>
                   )}
                   {item.year && (
-                    <p className="text-sm text-muted-foreground mb-2">{item.year}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-2">{item.year}</p>
                   )}
                   {item.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{item.description}</p>
                   )}
                   {item.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">

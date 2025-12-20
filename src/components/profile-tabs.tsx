@@ -31,6 +31,17 @@ interface ProfileTabsProps {
 }
 
 export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = true, hideLearn = true, onTabChange }: ProfileTabsProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const { courses, courseEnrollments, isLoading: coursesLoading } = useCourses();
   const { likedArtworkIds, loading: likesLoading } = useLikes();
   const [likedArtworks, setLikedArtworks] = useState<Artwork[]>([]);
@@ -579,48 +590,103 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {purchasedCourses.map((course) => (
-              <Card 
-                key={course.id} 
-                className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
-                onClick={() => router.push(`/learn/${course.id}`)}
-              >
-                <div className="relative aspect-video overflow-hidden">
-                  {course.thumbnail ? (
-                    <Image
-                      src={course.thumbnail}
-                      alt={course.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <BookOpen className="h-12 w-12 text-muted-foreground" />
+          isMobile ? (
+            // Mobile: List view (like discover events)
+            <div className="space-y-4">
+              {purchasedCourses.map((course) => (
+                <Card 
+                  key={course.id} 
+                  className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
+                  onClick={() => router.push(`/learn/${course.id}`)}
+                >
+                  <div className="flex flex-col md:flex-row gap-4 p-4">
+                    <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
+                      {course.thumbnail ? (
+                        <Image
+                          src={course.thumbnail}
+                          alt={course.title}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <BookOpen className="h-12 w-12 text-muted-foreground" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-                </div>
-                <CardContent className="p-4">
-                  <CardTitle className="text-lg mb-2">{course.title}</CardTitle>
-                  <CardDescription className="line-clamp-2 mb-4">
-                    {course.description}
-                  </CardDescription>
-                  <Button
-                    variant="gradient"
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(`/learn/${course.id}`);
-                    }}
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    Continue Learning
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="secondary" className="text-xs">Course</Badge>
+                          </div>
+                          <h3 className="font-semibold text-lg mb-1">{course.title}</h3>
+                          {course.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{course.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="gradient"
+                        className="w-full md:w-auto mt-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/learn/${course.id}`);
+                        }}
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Continue Learning
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            // Desktop: Grid view
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {purchasedCourses.map((course) => (
+                <Card 
+                  key={course.id} 
+                  className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
+                  onClick={() => router.push(`/learn/${course.id}`)}
+                >
+                  <div className="relative aspect-video overflow-hidden">
+                    {course.thumbnail ? (
+                      <Image
+                        src={course.thumbnail}
+                        alt={course.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <BookOpen className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                  </div>
+                  <CardContent className="p-4">
+                    <CardTitle className="text-lg mb-2">{course.title}</CardTitle>
+                    <CardDescription className="line-clamp-2 mb-4">
+                      {course.description}
+                    </CardDescription>
+                    <Button
+                      variant="gradient"
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/learn/${course.id}`);
+                      }}
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Continue Learning
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
         )}
       </TabsContent>
       )}
