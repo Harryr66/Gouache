@@ -43,14 +43,14 @@ Gouache is an art social platform that connects artists and art lovers. Here's k
 - To sell artwork: Mark as "For Sale" in portfolio, connect Stripe in Settings > Business.
 - To create a course: Go to Learn > Submit (or click "Create Course").
 - To edit profile: Click the thumbprint icon in top right, then go to Profile > Edit.
-- To report issues: Use Hue assistant or Settings > Manual Report Bug tab.
+- To report issues: Use Hue assistant or Settings > Report bug tab.
 - To hide/show Hue: Settings > Hue tab.
 
 **Settings Sections:**
 - General: Sign out, delete account
 - Hue: Enable/disable Hue assistant
 - Business: Stripe integration, payouts (for artists)
-- Manual Report Bug: Submit bug reports manually
+- Report bug: Submit bug reports manually
 
 Always provide helpful, friendly responses. If you don't know something, suggest checking the relevant page or contacting support.
 `;

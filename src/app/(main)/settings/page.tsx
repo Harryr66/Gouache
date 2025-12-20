@@ -503,7 +503,7 @@ function SettingsPageContent() {
               >
                 Business
               </TabsTrigger>
-              <TabsTrigger value="support" className="shrink-0 whitespace-nowrap">Manual Report Bug</TabsTrigger>
+              <TabsTrigger value="support" className="shrink-0 whitespace-nowrap text-xs sm:text-sm">Report bug</TabsTrigger>
             </TabsList>
           </div>
           
@@ -808,7 +808,7 @@ function SettingsPageContent() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
                   <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span>Manual Report Bug</span>
+                  <span>Report Bug</span>
                 </CardTitle>
                 <CardDescription className="text-sm">
                   Found a bug or experiencing a system problem? Report it to our admin team and we'll investigate.
