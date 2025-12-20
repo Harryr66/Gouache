@@ -1200,9 +1200,6 @@ export function PortfolioManager() {
         
         return (
           <>
-            <div className="mb-4 text-sm text-muted-foreground">
-              Showing {portfolioItems.length} artwork{portfolioItems.length !== 1 ? 's' : ''}
-            </div>
             <div 
               className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-6"
               data-portfolio-count={portfolioItems.length}
