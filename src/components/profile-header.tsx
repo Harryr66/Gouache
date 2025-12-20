@@ -24,6 +24,10 @@ import {
   Building2,
   Mail,
   ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Package,
+  Pin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -32,8 +36,13 @@ import { ThemeLoading } from '@/components/theme-loading';
 import { TipDialog } from './tip-dialog';
 import { CountryFlag } from './country-flag';
 import { ShowcaseLocation } from '@/lib/types';
-import { ChevronDown, ChevronUp, Pin } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ProfileHeaderProps {
   user: {
@@ -92,33 +101,6 @@ export function ProfileHeader({
     );
   }
 
-  const getDynamicButton = () => {
-    if (!isOwnProfile || !user.isProfessional) return null;
-
-    switch (currentTab) {
-      case 'shop':
-        return (
-          <Button variant="gradient">
-            <Plus className="h-4 w-4 mr-2" />
-            List an Item
-          </Button>
-        );
-      case 'learn':
-        return (
-          <Button 
-            variant="gradient"
-            asChild
-          >
-            <a href="/learn/submit">
-              <Brain className="h-4 w-4 mr-2" />
-              Create Course
-            </a>
-          </Button>
-        );
-      default:
-        return null;
-    }
-  };
 
   return (
     <>
@@ -204,68 +186,79 @@ export function ProfileHeader({
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-col gap-2 md:flex-row md:flex-wrap">
-              {/* Primary actions row */}
-              <div className="flex flex-wrap gap-2 md:gap-3">
+            <div className="flex flex-wrap gap-2 md:gap-3 items-center">
               {isOwnProfile ? (
                 <>
-                    <Button asChild variant="outline" size="sm" className="text-xs md:text-sm">
+                  <Button asChild variant="outline" size="sm" className="text-xs md:text-sm flex-1 sm:flex-initial min-w-[120px]">
                     <Link href="/profile/edit">
-                        <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                      <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                       Edit Profile
                     </Link>
                   </Button>
                   {user.isProfessional && (
-                      <Button asChild variant="gradient" size="sm" className="text-xs md:text-sm">
-                      <a href="/upload">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="gradient" size="sm" className="text-xs md:text-sm flex-1 sm:flex-initial min-w-[120px]">
                           <Upload className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                        Upload
-                      </a>
-                    </Button>
+                          Upload
+                          <ChevronDown className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem asChild>
+                          <Link href="/upload" className="flex items-center cursor-pointer">
+                            <ImageIcon className="h-4 w-4 mr-2" />
+                            Upload Artwork
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/marketplace" className="flex items-center cursor-pointer">
+                            <Package className="h-4 w-4 mr-2" />
+                            List an Item
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/learn/submit" className="flex items-center cursor-pointer">
+                            <Brain className="h-4 w-4 mr-2" />
+                            Create Course
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                  {getDynamicButton()}
-                </>
-              ) : (
-                <Button 
-                  variant="outline"
-                    size="sm"
-                    className="text-xs md:text-sm"
-                  onClick={onFollowToggle}
-                >
-                    <Heart className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                  {isFollowing ? 'Following' : 'Follow'}
-                </Button>
-              )}
-              </div>
-
-              {/* Secondary actions row (mobile stacked) */}
-              <div className="flex flex-wrap gap-2 md:gap-3">
-                {isOwnProfile && (
                   <Button
                     asChild
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 md:h-10 md:w-10"
+                    className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0"
                     aria-label="Open general settings"
                   >
                     <Link href="/settings">
                       <Settings className="h-3 w-3 md:h-4 md:w-4" />
                     </Link>
                   </Button>
-                )}
-
-              {user.isProfessional && (user.tipJarEnabled !== false) && (
+                  {user.isProfessional && (user.tipJarEnabled !== false) && (
+                    <Button 
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0 hover:gradient-border"
+                      onClick={() => setShowTipDialog(true)}
+                    >
+                      <Coffee className="h-3 w-3 md:h-4 md:w-4" />
+                    </Button>
+                  )}
+                </>
+              ) : (
                 <Button 
                   variant="outline"
-                  size="icon"
-                    className="h-8 w-8 md:h-10 md:w-10 hover:gradient-border"
-                  onClick={() => setShowTipDialog(true)}
+                  size="sm"
+                  className="text-xs md:text-sm"
+                  onClick={onFollowToggle}
                 >
-                    <Coffee className="h-3 w-3 md:h-4 md:w-4" />
+                  <Heart className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  {isFollowing ? 'Following' : 'Follow'}
                 </Button>
               )}
-              
-              </div>
             </div>
 
             {/* Location block removed per request */}
