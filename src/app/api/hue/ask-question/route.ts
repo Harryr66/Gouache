@@ -70,8 +70,10 @@ export async function POST(request: NextRequest) {
     try {
       if (!process.env.GOOGLE_GENAI_API_KEY) {
         console.warn('GOOGLE_GENAI_API_KEY not set, skipping AI answer generation');
-        answer = 'I apologize, but I\'m currently unable to answer questions. Please check the Settings page or contact support for assistance.';
+        console.warn('Available env vars:', Object.keys(process.env).filter(k => k.includes('GENAI') || k.includes('GOOGLE')));
+        answer = 'I apologize, but I\'m currently unable to answer questions. The GOOGLE_GENAI_API_KEY environment variable is not set. Please add it to your Vercel project settings under Environment Variables, then redeploy.';
       } else {
+        console.log('GOOGLE_GENAI_API_KEY is set, attempting to generate answer...');
         const prompt = `You are Hue, a friendly and helpful AI assistant for the Gouache art platform. Your role is to help users navigate the platform, find features, and answer questions about how to use Gouache.
 
 ${PLATFORM_KNOWLEDGE}
@@ -99,9 +101,19 @@ Keep your response under 300 words and be specific about where to find things.`;
           answer = answer.trim();
         }
       }
-    } catch (aiError) {
+    } catch (aiError: any) {
       console.error('Failed to generate AI answer:', aiError);
-      answer = 'I apologize, but I encountered an error while processing your question. Please try again or check the Settings page for help.';
+      const errorMessage = aiError?.message || String(aiError);
+      const errorCode = aiError?.code || 'unknown';
+      
+      // Provide more specific error messages
+      if (errorCode === 'API_KEY_NOT_FOUND' || errorMessage.includes('API key')) {
+        answer = 'I apologize, but the AI service is not configured. Please ensure GOOGLE_GENAI_API_KEY is set in your Vercel environment variables and redeploy the application.';
+      } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+        answer = 'I apologize, but the AI service has reached its rate limit. Please try again in a few moments.';
+      } else {
+        answer = `I apologize, but I encountered an error while processing your question: ${errorMessage}. Please try again or check the Settings page for help.`;
+      }
     }
 
     return NextResponse.json({
@@ -110,8 +122,13 @@ Keep your response under 300 words and be specific about where to find things.`;
     });
   } catch (error: any) {
     console.error('Error processing question:', error);
+    const errorMessage = error?.message || String(error);
     return NextResponse.json(
-      { error: 'Failed to process question', details: error.message },
+      { 
+        error: 'Failed to process question', 
+        details: errorMessage,
+        hint: 'Check server logs and ensure GOOGLE_GENAI_API_KEY is set in environment variables'
+      },
       { status: 500 }
     );
   }
