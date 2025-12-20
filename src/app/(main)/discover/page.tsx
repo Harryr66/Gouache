@@ -1151,22 +1151,20 @@ function DiscoverPageContent() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1">
                 {visibleFilteredArtworks.map((artwork) => {
                   // Detect landscape images: 
-                  // 1. Check if artwork has isLandscape flag (for placeholders)
-                  // 2. Check if dimensions suggest landscape (width > height * 1.3)
-                  // 3. Check for known landscape placeholder URLs
+                  // 1. Check if artwork has isLandscape flag (for placeholders) - PRIMARY METHOD
+                  // 2. Check if dimensions suggest landscape (width > height * 1.3) - for real artworks
+                  // DO NOT use URL-based detection as blue placeholder is used for both regular and landscape
                   let isLandscape = false;
                   
                   if ((artwork as any).isLandscape === true) {
+                    // Placeholder with explicit landscape flag
                     isLandscape = true;
                   } else if (artwork.dimensions && artwork.dimensions.width && artwork.dimensions.height) {
                     // Check aspect ratio: landscape if width is significantly greater than height
                     const aspectRatio = artwork.dimensions.width / artwork.dimensions.height;
                     isLandscape = aspectRatio > 1.3; // Landscape threshold
-                  } else if (artwork.imageUrl) {
-                    // Check for known landscape placeholder URLs (blue placeholder or taped banana fallback)
-                    isLandscape = artwork.imageUrl.includes('1546249') || 
-                                 artwork.imageUrl.includes('1308881');
                   }
+                  // Note: We do NOT check URLs because the blue placeholder (1546249) is used for both regular and landscape
                   
                   return (
                     <ArtworkTile 
