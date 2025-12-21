@@ -37,6 +37,8 @@ export function UploadArtworkBasic() {
   const [priceType, setPriceType] = useState<'fixed' | 'contact'>('fixed');
   const [price, setPrice] = useState('');
   const [deliveryScope, setDeliveryScope] = useState<'worldwide' | 'specific'>('worldwide');
+  const [useAccountEmail, setUseAccountEmail] = useState(true);
+  const [alternativeEmail, setAlternativeEmail] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -100,6 +102,24 @@ export function UploadArtworkBasic() {
       return;
     }
 
+    if (isForSale && priceType === 'contact' && !useAccountEmail && !alternativeEmail.trim()) {
+      toast({
+        title: 'Missing email',
+        description: 'Please enter an alternative email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (isForSale && priceType === 'contact' && !useAccountEmail && alternativeEmail.trim() && !alternativeEmail.includes('@')) {
+      toast({
+        title: 'Invalid email',
+        description: 'Please enter a valid email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -151,6 +171,7 @@ export function UploadArtworkBasic() {
         } else if (priceType === 'contact') {
           portfolioItem.priceType = 'contact';
           portfolioItem.contactForPrice = true;
+          portfolioItem.contactEmail = useAccountEmail ? user.email : alternativeEmail.trim();
         }
         portfolioItem.deliveryScope = deliveryScope;
       }
@@ -202,6 +223,7 @@ export function UploadArtworkBasic() {
         } else if (priceType === 'contact') {
           artworkForShop.priceType = 'contact';
           artworkForShop.contactForPrice = true;
+          artworkForShop.contactEmail = useAccountEmail ? user.email : alternativeEmail.trim();
         }
         artworkForShop.deliveryScope = deliveryScope;
 
@@ -242,6 +264,8 @@ export function UploadArtworkBasic() {
       setPriceType('fixed');
       setPrice('');
       setDeliveryScope('worldwide');
+      setUseAccountEmail(true);
+      setAlternativeEmail('');
 
       // Navigate to portfolio
       router.push('/profile?tab=portfolio');
@@ -486,12 +510,57 @@ export function UploadArtworkBasic() {
                 </div>
               )}
 
-              {/* Contact Artist Note */}
+              {/* Contact Artist Email Options */}
               {priceType === 'contact' && (
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    Customers will be prompted to contact you for pricing. Make sure your contact information is set in your profile.
-                  </p>
+                <div className="space-y-3">
+                  <Label>Contact Email</Label>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="useAccountEmail"
+                        name="contactEmail"
+                        checked={useAccountEmail}
+                        onChange={() => {
+                          setUseAccountEmail(true);
+                          setAlternativeEmail('');
+                        }}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="useAccountEmail" className="cursor-pointer font-normal">
+                        Use account email ({user?.email || 'your email'})
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="useAlternativeEmail"
+                        name="contactEmail"
+                        checked={!useAccountEmail}
+                        onChange={() => setUseAccountEmail(false)}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="useAlternativeEmail" className="cursor-pointer font-normal">
+                        Use alternative email
+                      </Label>
+                    </div>
+                    {!useAccountEmail && (
+                      <div className="ml-6 space-y-2">
+                        <Label htmlFor="alternativeEmail">Alternative Email *</Label>
+                        <Input
+                          id="alternativeEmail"
+                          type="email"
+                          value={alternativeEmail}
+                          onChange={(e) => setAlternativeEmail(e.target.value)}
+                          placeholder="business@example.com"
+                          required={!useAccountEmail}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Customers will contact this email for pricing inquiries.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
