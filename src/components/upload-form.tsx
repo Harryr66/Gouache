@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,6 +110,8 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   const [loading, setLoading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const uploadSuccessProcessedRef = useRef(false);
+  const uploadErrorProcessedRef = useRef(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [tagsList, setTagsList] = useState<string[]>(
@@ -127,9 +129,23 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   );
   const [countrySearch, setCountrySearch] = useState('');
 
+  // Reset refs when flags are cleared
+  useEffect(() => {
+    if (!uploadSuccess) {
+      uploadSuccessProcessedRef.current = false;
+    }
+  }, [uploadSuccess]);
+
+  useEffect(() => {
+    if (!uploadError) {
+      uploadErrorProcessedRef.current = false;
+    }
+  }, [uploadError]);
+
   // Handle upload success/error side effects separately from render cycle
   useEffect(() => {
-    if (uploadSuccess) {
+    if (uploadSuccess && !uploadSuccessProcessedRef.current) {
+      uploadSuccessProcessedRef.current = true;
       // Defer all side effects to next tick
       setTimeout(() => {
         setLoading(false);
@@ -142,16 +158,17 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         });
         
         // Reset flag and navigate after additional delay
-        setUploadSuccess(false);
         setTimeout(() => {
           router.push('/profile?tab=portfolio');
+          setUploadSuccess(false);
         }, 200);
       }, 0);
     }
-  }, [uploadSuccess, isProductUpload, router]);
+  }, [uploadSuccess, isProductUpload]); // router is stable, no need in deps
 
   useEffect(() => {
-    if (uploadError) {
+    if (uploadError && !uploadErrorProcessedRef.current) {
+      uploadErrorProcessedRef.current = true;
       // Defer all side effects to next tick
       setTimeout(() => {
         setLoading(false);
