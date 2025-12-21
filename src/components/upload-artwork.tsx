@@ -23,6 +23,11 @@ export function UploadArtwork() {
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false);
 
+  // Debug: Log when component renders
+  React.useEffect(() => {
+    console.log('✅ UploadArtwork component rendered');
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     setFiles(selectedFiles);
