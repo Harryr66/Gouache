@@ -326,22 +326,24 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       });
       console.log('✅ UploadForm: Added to user portfolio');
 
-      // Set loading to false
-      setLoading(false);
+      // Defer all side effects to avoid React error #300
+      // Use Promise.resolve().then() to defer to next event loop tick
+      Promise.resolve().then(() => {
+        setLoading(false);
+        
+        toast({
+          title: "Upload complete",
+          description: isProductUpload 
+            ? "Your product was uploaded and added to your shop."
+            : "Your artwork was uploaded and added to your portfolio.",
+          variant: "default",
+        });
 
-      // Show toast
-      toast({
-        title: "Upload complete",
-        description: isProductUpload 
-          ? "Your product was uploaded and added to your shop."
-          : "Your artwork was uploaded and added to your portfolio.",
-        variant: "default",
+        // Navigate after a brief delay
+        setTimeout(() => {
+          router.push('/profile?tab=portfolio');
+        }, 300);
       });
-
-      // Navigate after delay
-      setTimeout(() => {
-        router.push('/profile?tab=portfolio');
-      }, 500);
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
       setLoading(false);

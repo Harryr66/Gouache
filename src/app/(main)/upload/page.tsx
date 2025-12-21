@@ -139,35 +139,44 @@ export default function UploadPage() {
         status: 'active',
       });
 
-      toast({
-        title: 'Event created',
-        description: 'Your event has been created and will appear in your profile and discover feed.',
-      });
+      // Defer all side effects to avoid React error #300
+      Promise.resolve().then(() => {
+        setIsSubmittingEvent(false);
+        
+        toast({
+          title: 'Event created',
+          description: 'Your event has been created and will appear in your profile and discover feed.',
+        });
 
-      // Reset form and go back
-      setEventForm({
-        title: '',
-        startDate: '',
-        endDate: '',
-        time: '',
-        location: '',
-        locationTag: '',
-        venue: '',
-        description: '',
-        price: '',
-        bookingUrl: '',
+        // Reset form and go back
+        setTimeout(() => {
+          setEventForm({
+            title: '',
+            startDate: '',
+            endDate: '',
+            time: '',
+            location: '',
+            locationTag: '',
+            venue: '',
+            description: '',
+            price: '',
+            bookingUrl: '',
+          });
+          setEventImageFile(null);
+          setSelectedType(null);
+        }, 300);
       });
-      setEventImageFile(null);
-      setSelectedType(null);
     } catch (error) {
       console.error('Error creating event:', error);
-      toast({
-        title: 'Event creation failed',
-        description: 'Please try again.',
-        variant: 'destructive',
+      // Defer side effects to avoid render conflicts
+      Promise.resolve().then(() => {
+        setIsSubmittingEvent(false);
+        toast({
+          title: 'Event creation failed',
+          description: 'Please try again.',
+          variant: 'destructive',
+        });
       });
-    } finally {
-      setIsSubmittingEvent(false);
     }
   };
 
@@ -255,42 +264,44 @@ export default function UploadPage() {
 
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
-      // Set submitting to false
-      setIsSubmittingProduct(false);
-
-      // Show toast and reset form
-      toast({
-        title: 'Product created',
-        description: 'Your product has been created and will appear in your shop.',
-      });
-
-      // Reset form and navigation after delay
-      setTimeout(() => {
-        setProductForm({
-          title: '',
-          description: '',
-          price: '',
-          originalPrice: '',
-          category: 'art-prints',
-          subcategory: 'fine-art-prints',
-          stock: '1',
-          tags: [],
-          newTag: '',
+      // Defer all side effects to avoid React error #300
+      // Use Promise.resolve().then() to defer to next event loop tick
+      Promise.resolve().then(() => {
+        setIsSubmittingProduct(false);
+        
+        toast({
+          title: 'Product created',
+          description: 'Your product has been created and will appear in your shop.',
         });
-        setProductImages([]);
-        setSelectedType(null);
-      }, 500);
+
+        // Reset form and navigation after delay
+        setTimeout(() => {
+          setProductForm({
+            title: '',
+            description: '',
+            price: '',
+            originalPrice: '',
+            category: 'art-prints',
+            subcategory: 'fine-art-prints',
+            stock: '1',
+            tags: [],
+            newTag: '',
+          });
+          setProductImages([]);
+          setSelectedType(null);
+        }, 300);
+      });
     } catch (error) {
       console.error('Error creating product:', error);
-      setIsSubmittingProduct(false);
-      // Defer toast to avoid render conflicts
-      setTimeout(() => {
+      // Defer all side effects to avoid render conflicts
+      Promise.resolve().then(() => {
+        setIsSubmittingProduct(false);
         toast({
           title: 'Product creation failed',
           description: 'Please try again.',
           variant: 'destructive',
         });
-      }, 0);
+      });
     }
   };
 
