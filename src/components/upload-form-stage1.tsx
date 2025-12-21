@@ -28,45 +28,49 @@ export function UploadFormStage1() {
 
   const handleUpload = async () => {
     if (!files.length || !user) {
-      toast({
-        title: 'Missing requirements',
-        description: 'Please select files and ensure you are logged in.',
-        variant: 'destructive',
-      });
+      console.log('Missing requirements: files or user');
       return;
     }
 
     setUploading(true);
-    try {
-      const uploadedUrls: string[] = [];
-      
-      // Upload all files to Firebase Storage
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${i}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        const fileUrl = await getDownloadURL(fileRef);
-        uploadedUrls.push(fileUrl);
+    
+    // Use setTimeout to ensure we're outside render cycle
+    setTimeout(async () => {
+      try {
+        const uploadedUrls: string[] = [];
+        
+        // Upload all files to Firebase Storage
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const fileRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${i}_${file.name}`);
+          await uploadBytes(fileRef, file);
+          const fileUrl = await getDownloadURL(fileRef);
+          uploadedUrls.push(fileUrl);
+        }
+
+        console.log('Files uploaded successfully:', uploadedUrls);
+
+        // Use setTimeout again to defer toast and state updates
+        setTimeout(() => {
+          toast({
+            title: 'Files uploaded',
+            description: `Successfully uploaded ${files.length} file(s) to storage.`,
+          });
+          setFiles([]);
+          setUploading(false);
+        }, 0);
+      } catch (error) {
+        console.error('Upload error:', error);
+        setTimeout(() => {
+          toast({
+            title: 'Upload failed',
+            description: 'Failed to upload files. Please try again.',
+            variant: 'destructive',
+          });
+          setUploading(false);
+        }, 0);
       }
-
-      // Success - just show message, no database writes
-      toast({
-        title: 'Files uploaded',
-        description: `Successfully uploaded ${files.length} file(s) to storage.`,
-      });
-
-      // Reset files
-      setFiles([]);
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: 'Upload failed',
-        description: 'Failed to upload files. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setUploading(false);
-    }
+    }, 0);
   };
 
   if (!user) {
