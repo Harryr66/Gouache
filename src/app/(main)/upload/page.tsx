@@ -140,42 +140,47 @@ export default function UploadPage() {
       });
 
       // Defer all side effects to avoid React error #300
-      Promise.resolve().then(() => {
-        setIsSubmittingEvent(false);
-        
-        toast({
-          title: 'Event created',
-          description: 'Your event has been created and will appear in your profile and discover feed.',
-        });
-
-        // Reset form and go back
+      // Use double deferral to ensure we're outside render cycle
+      requestAnimationFrame(() => {
         setTimeout(() => {
-          setEventForm({
-            title: '',
-            startDate: '',
-            endDate: '',
-            time: '',
-            location: '',
-            locationTag: '',
-            venue: '',
-            description: '',
-            price: '',
-            bookingUrl: '',
+          setIsSubmittingEvent(false);
+          
+          toast({
+            title: 'Event created',
+            description: 'Your event has been created and will appear in your profile and discover feed.',
           });
-          setEventImageFile(null);
-          setSelectedType(null);
-        }, 300);
+
+          // Reset form and go back
+          setTimeout(() => {
+            setEventForm({
+              title: '',
+              startDate: '',
+              endDate: '',
+              time: '',
+              location: '',
+              locationTag: '',
+              venue: '',
+              description: '',
+              price: '',
+              bookingUrl: '',
+            });
+            setEventImageFile(null);
+            setSelectedType(null);
+          }, 100);
+        }, 0);
       });
     } catch (error) {
       console.error('Error creating event:', error);
-      // Defer side effects to avoid render conflicts
-      Promise.resolve().then(() => {
-        setIsSubmittingEvent(false);
-        toast({
-          title: 'Event creation failed',
-          description: 'Please try again.',
-          variant: 'destructive',
-        });
+      // Defer all side effects to avoid React error #300
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          setIsSubmittingEvent(false);
+          toast({
+            title: 'Event creation failed',
+            description: 'Please try again.',
+            variant: 'destructive',
+          });
+        }, 0);
       });
     }
   };
@@ -265,31 +270,33 @@ export default function UploadPage() {
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
       // Defer all side effects to avoid React error #300
-      // Use Promise.resolve().then() to defer to next event loop tick
-      Promise.resolve().then(() => {
-        setIsSubmittingProduct(false);
-        
-        toast({
-          title: 'Product created',
-          description: 'Your product has been created and will appear in your shop.',
-        });
-
-        // Reset form and navigation after delay
+      // Use double deferral to ensure we're outside render cycle
+      requestAnimationFrame(() => {
         setTimeout(() => {
-          setProductForm({
-            title: '',
-            description: '',
-            price: '',
-            originalPrice: '',
-            category: 'art-prints',
-            subcategory: 'fine-art-prints',
-            stock: '1',
-            tags: [],
-            newTag: '',
+          setIsSubmittingProduct(false);
+          
+          toast({
+            title: 'Product created',
+            description: 'Your product has been created and will appear in your shop.',
           });
-          setProductImages([]);
-          setSelectedType(null);
-        }, 300);
+
+          // Reset form and navigation after delay
+          setTimeout(() => {
+            setProductForm({
+              title: '',
+              description: '',
+              price: '',
+              originalPrice: '',
+              category: 'art-prints',
+              subcategory: 'fine-art-prints',
+              stock: '1',
+              tags: [],
+              newTag: '',
+            });
+            setProductImages([]);
+            setSelectedType(null);
+          }, 100);
+        }, 0);
       });
     } catch (error) {
       console.error('Error creating product:', error);
