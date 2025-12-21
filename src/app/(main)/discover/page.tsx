@@ -1217,7 +1217,7 @@ function DiscoverPageContent() {
                                 Sold
                               </Badge>
                             ) : artwork.isForSale ? (
-                              <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 flex-shrink-0">
+                              <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 flex-shrink-0">
                                 {artwork.priceType === 'contact' || artwork.contactForPrice ? 'For Sale' : artwork.price ? `$${artwork.price.toLocaleString()}` : 'For Sale'}
                               </Badge>
                             ) : null}
