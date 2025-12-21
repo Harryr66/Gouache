@@ -327,11 +327,10 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       console.log('✅ UploadForm: Added to user portfolio');
 
       // Defer all side effects to avoid React error #300
-      // Use double deferral to ensure we're outside render cycle
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          setLoading(false);
-          
+      // Use queueMicrotask for reliable deferral outside render cycle
+      queueMicrotask(() => {
+        setLoading(false);
+        queueMicrotask(() => {
           toast({
             title: "Upload complete",
             description: isProductUpload 
@@ -339,20 +338,20 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
               : "Your artwork was uploaded and added to your portfolio.",
             variant: "default",
           });
-
-          // Navigate after a brief delay
-          setTimeout(() => {
+          
+          // Navigate after additional microtask
+          queueMicrotask(() => {
             router.push('/profile?tab=portfolio');
-          }, 100);
-        }, 0);
+          });
+        });
       });
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
       // Defer all side effects to avoid React error #300
-      // Use double deferral to ensure we're outside render cycle
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          setLoading(false);
+      // Use queueMicrotask for reliable deferral outside render cycle
+      queueMicrotask(() => {
+        setLoading(false);
+        queueMicrotask(() => {
           toast({
             title: "Upload failed",
             description: isProductUpload
@@ -360,7 +359,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
               : "We couldn't save your artwork. Please try again.",
             variant: "destructive",
           });
-        }, 0);
+        });
       });
     }
   };
