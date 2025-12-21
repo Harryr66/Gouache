@@ -27,15 +27,6 @@ interface ErrorReport {
 export function HueChatbot() {
   const { user } = useAuth();
   const router = useRouter();
-  
-  // Only show Hue for authenticated users (not anonymous/guests)
-  // Check if user exists and has an email (not anonymous)
-  const isAuthenticated = user?.id && user?.email && user.email !== '';
-  
-  // Don't render Hue UI if user is not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorReport, setErrorReport] = useState<ErrorReport | null>(null);
