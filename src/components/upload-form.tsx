@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -108,10 +108,6 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   const [previews, setPreviews] = useState<string[]>([]);
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const uploadSuccessProcessedRef = useRef(false);
-  const uploadErrorProcessedRef = useRef(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [tagsList, setTagsList] = useState<string[]>(
@@ -129,58 +125,6 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   );
   const [countrySearch, setCountrySearch] = useState('');
 
-  // Reset refs when flags are cleared
-  useEffect(() => {
-    if (!uploadSuccess) {
-      uploadSuccessProcessedRef.current = false;
-    }
-  }, [uploadSuccess]);
-
-  useEffect(() => {
-    if (!uploadError) {
-      uploadErrorProcessedRef.current = false;
-    }
-  }, [uploadError]);
-
-  // Handle upload success/error side effects separately from render cycle
-  useEffect(() => {
-    if (uploadSuccess && !uploadSuccessProcessedRef.current) {
-      uploadSuccessProcessedRef.current = true;
-      // Defer all side effects to next tick
-      setTimeout(() => {
-        setLoading(false);
-        toast({
-          title: "Upload complete",
-          description: isProductUpload 
-            ? "Your product was uploaded and added to your shop."
-            : "Your artwork was uploaded and added to your portfolio.",
-          variant: "default",
-        });
-        
-        // Reset flag and navigate after additional delay
-        setTimeout(() => {
-          router.push('/profile?tab=portfolio');
-          setUploadSuccess(false);
-        }, 200);
-      }, 0);
-    }
-  }, [uploadSuccess, isProductUpload]); // router is stable, no need in deps
-
-  useEffect(() => {
-    if (uploadError && !uploadErrorProcessedRef.current) {
-      uploadErrorProcessedRef.current = true;
-      // Defer all side effects to next tick
-      setTimeout(() => {
-        setLoading(false);
-        toast({
-          title: "Upload failed",
-          description: uploadError,
-          variant: "destructive",
-        });
-        setUploadError(null);
-      }, 0);
-    }
-  }, [uploadError]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -382,14 +326,41 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       });
       console.log('✅ UploadForm: Added to user portfolio');
 
-      // Set success flag - useEffect will handle all side effects
-      setUploadSuccess(true);
+      // Handle all side effects in a single deferred callback
+      // This completely avoids React render cycle conflicts
+      const successMessage = isProductUpload 
+        ? "Your product was uploaded and added to your shop."
+        : "Your artwork was uploaded and added to your portfolio.";
+      
+      // Use setTimeout to defer ALL side effects to next event loop tick
+      setTimeout(() => {
+        setLoading(false);
+        toast({
+          title: "Upload complete",
+          description: successMessage,
+          variant: "default",
+        });
+        
+        // Navigate after a brief delay
+        setTimeout(() => {
+          router.push('/profile?tab=portfolio');
+        }, 300);
+      }, 0);
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
-      // Set error flag - useEffect will handle all side effects
-      setUploadError(isProductUpload
+      const errorMessage = isProductUpload
         ? "We couldn't save your product. Please try again."
-        : "We couldn't save your artwork. Please try again.");
+        : "We couldn't save your artwork. Please try again.";
+      
+      // Handle error side effects in deferred callback
+      setTimeout(() => {
+        setLoading(false);
+        toast({
+          title: "Upload failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }, 0);
     }
   };
 
