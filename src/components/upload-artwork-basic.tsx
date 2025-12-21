@@ -12,6 +12,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { X } from 'lucide-react';
 
 /**
  * BASIC Artwork Upload - Portfolio only
@@ -25,11 +26,46 @@ export function UploadArtworkBasic() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      setFiles(selectedFiles);
+      setFiles(prev => [...prev, ...selectedFiles]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const droppedFiles = Array.from(e.dataTransfer.files).filter(
+      file => file.type.startsWith('image/')
+    );
+    
+    if (droppedFiles.length > 0) {
+      setFiles(prev => [...prev, ...droppedFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const triggerFileInput = () => {
+    const input = document.getElementById('images') as HTMLInputElement;
+    if (input) {
+      input.click();
     }
   };
 
@@ -134,31 +170,100 @@ export function UploadArtworkBasic() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Image Upload */}
           <div className="space-y-2">
-            <Label htmlFor="images">Images *</Label>
+            <Label>Images *</Label>
+            
+            {/* Hidden file input */}
             <Input
               type="file"
               id="images"
               accept="image/*"
               multiple
               onChange={handleFileChange}
-              required
+              className="hidden"
             />
-            <p className="text-xs text-muted-foreground">
-              You can select multiple images. Hold Ctrl (Windows) or Cmd (Mac) to select multiple files, or drag and select multiple files.
-            </p>
-            {files.length > 0 && (
-              <div className="space-y-1 mt-2">
-                <p className="text-sm text-muted-foreground">
-                  {files.length} image(s) selected
-                </p>
-                <div className="text-xs text-muted-foreground space-y-0.5">
-                  <p className="font-medium">Main image: {files[0]?.name}</p>
+
+            {/* Drag and drop area */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`
+                border-2 border-dashed rounded-lg p-6 transition-colors
+                ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'}
+                ${files.length === 0 ? 'cursor-pointer hover:border-primary hover:bg-primary/5' : ''}
+              `}
+              onClick={files.length === 0 ? triggerFileInput : undefined}
+            >
+              {files.length === 0 ? (
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-medium">Click or drag images here</p>
+                  <p className="text-xs text-muted-foreground">
+                    Select multiple images at once or add them one by one
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">
+                      {files.length} image(s) selected
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={triggerFileInput}
+                    >
+                      Add More Images
+                    </Button>
+                  </div>
+                  
+                  {/* Image preview tiles */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {files.map((file, index) => {
+                      const previewUrl = URL.createObjectURL(file);
+                      return (
+                        <div key={index} className="relative group">
+                          <div className="aspect-square rounded-lg overflow-hidden border-2 border-muted">
+                            <img
+                              src={previewUrl}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          {index === 0 && (
+                            <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded">
+                              Main
+                            </div>
+                          )}
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(index);
+                              URL.revokeObjectURL(previewUrl);
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                          <p className="text-xs text-muted-foreground mt-1 truncate">
+                            {file.name}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
                   {files.length > 1 && (
-                    <p>Carousel images: {files.slice(1).map(f => f.name).join(', ')}</p>
+                    <p className="text-xs text-muted-foreground text-center">
+                      First image is the main display. Others will appear in carousel.
+                    </p>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Title */}
