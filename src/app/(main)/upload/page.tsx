@@ -19,7 +19,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-// REMOVED: Firebase storage/firestore imports - not needed until rebuild
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { addDoc, collection } from 'firebase/firestore';
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
