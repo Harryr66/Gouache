@@ -10,7 +10,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { setHueErrorHandler } from '@/lib/hue-error-reporter';
 
 interface ErrorReport {
@@ -25,8 +25,17 @@ interface ErrorReport {
 }
 
 export function HueChatbot() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  
+  // Early return: Don't show Hue on the homepage or while auth is loading
+  // This prevents Hue from appearing before sign-in/auth is completed
+  const isHomepage = !pathname || pathname === '/' || pathname === '';
+  if (isHomepage || loading) {
+    return null;
+  }
+  
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorReport, setErrorReport] = useState<ErrorReport | null>(null);

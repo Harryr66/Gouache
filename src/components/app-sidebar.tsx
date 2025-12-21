@@ -9,7 +9,7 @@ import {
   Upload,
   User,
   Brain,
-  Headphones
+  Ear
 } from 'lucide-react';
 
 // Custom rounded triangle play icon
@@ -26,7 +26,7 @@ const RoundedPlayIcon = ({ className }: { className?: string }) => (
 
 const navigation = [
   { name: 'Docuseries', href: '/feed', icon: RoundedPlayIcon },
-  { name: 'News', href: '/news', icon: Headphones },
+  { name: 'News', href: '/news', icon: Ear },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Learn', href: '/learn', icon: Brain },
   { name: 'Upload Profile', href: '/upload', icon: Upload },

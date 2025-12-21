@@ -140,18 +140,17 @@ export default function UploadPage() {
       });
 
       // Defer all side effects to avoid React error #300
-      // Use double deferral to ensure we're outside render cycle
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          setIsSubmittingEvent(false);
-          
+      // Use queueMicrotask for reliable deferral outside render cycle
+      queueMicrotask(() => {
+        setIsSubmittingEvent(false);
+        queueMicrotask(() => {
           toast({
             title: 'Event created',
             description: 'Your event has been created and will appear in your profile and discover feed.',
           });
 
-          // Reset form and go back
-          setTimeout(() => {
+          // Reset form and go back after additional microtask
+          queueMicrotask(() => {
             setEventForm({
               title: '',
               startDate: '',
@@ -166,21 +165,22 @@ export default function UploadPage() {
             });
             setEventImageFile(null);
             setSelectedType(null);
-          }, 100);
-        }, 0);
+          });
+        });
       });
     } catch (error) {
       console.error('Error creating event:', error);
       // Defer all side effects to avoid React error #300
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          setIsSubmittingEvent(false);
+      // Use queueMicrotask for reliable deferral outside render cycle
+      queueMicrotask(() => {
+        setIsSubmittingEvent(false);
+        queueMicrotask(() => {
           toast({
             title: 'Event creation failed',
             description: 'Please try again.',
             variant: 'destructive',
           });
-        }, 0);
+        });
       });
     }
   };
@@ -270,18 +270,17 @@ export default function UploadPage() {
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
       // Defer all side effects to avoid React error #300
-      // Use double deferral to ensure we're outside render cycle
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          setIsSubmittingProduct(false);
-          
+      // Use queueMicrotask for reliable deferral outside render cycle
+      queueMicrotask(() => {
+        setIsSubmittingProduct(false);
+        queueMicrotask(() => {
           toast({
             title: 'Product created',
             description: 'Your product has been created and will appear in your shop.',
           });
 
-          // Reset form and navigation after delay
-          setTimeout(() => {
+          // Reset form and navigation after additional microtask
+          queueMicrotask(() => {
             setProductForm({
               title: '',
               description: '',
@@ -295,22 +294,22 @@ export default function UploadPage() {
             });
             setProductImages([]);
             setSelectedType(null);
-          }, 100);
-        }, 0);
+          });
+        });
       });
     } catch (error) {
       console.error('Error creating product:', error);
       // Defer all side effects to avoid React error #300
-      // Use double deferral to ensure we're outside render cycle
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          setIsSubmittingProduct(false);
+      // Use queueMicrotask for reliable deferral outside render cycle
+      queueMicrotask(() => {
+        setIsSubmittingProduct(false);
+        queueMicrotask(() => {
           toast({
             title: 'Product creation failed',
             description: 'Please try again.',
             variant: 'destructive',
           });
-        }, 0);
+        });
       });
     }
   };
