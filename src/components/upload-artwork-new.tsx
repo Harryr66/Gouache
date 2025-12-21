@@ -41,7 +41,10 @@ export function UploadArtworkNew() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     if (selectedFiles.length > 0) {
-      setFiles(selectedFiles);
+      // Defer state update to avoid React error #300
+      setTimeout(() => {
+        setFiles(selectedFiles);
+      }, 0);
       
       // Generate previews
       const newPreviews: string[] = [];
@@ -53,7 +56,10 @@ export function UploadArtworkNew() {
           newPreviews.push(e.target?.result as string);
           loadedCount++;
           if (loadedCount === selectedFiles.length) {
-            setPreviews(newPreviews);
+            // Defer state update to avoid React error #300
+            setTimeout(() => {
+              setPreviews(newPreviews);
+            }, 0);
           }
         };
         reader.readAsDataURL(file);
@@ -71,20 +77,24 @@ export function UploadArtworkNew() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !files.length || !title.trim()) {
-      toast({
-        title: 'Missing information',
-        description: 'Please select files and enter a title.',
-        variant: 'destructive',
-      });
+      setTimeout(() => {
+        toast({
+          title: 'Missing information',
+          description: 'Please select files and enter a title.',
+          variant: 'destructive',
+        });
+      }, 0);
       return;
     }
 
     if (isForSale && priceType === 'fixed' && !price.trim()) {
-      toast({
-        title: 'Missing price',
-        description: 'Please enter a price or select "Contact artist for pricing".',
-        variant: 'destructive',
-      });
+      setTimeout(() => {
+        toast({
+          title: 'Missing price',
+          description: 'Please enter a price or select "Contact artist for pricing".',
+          variant: 'destructive',
+        });
+      }, 0);
       return;
     }
 
@@ -211,35 +221,42 @@ export function UploadArtworkNew() {
         updatedAt: new Date(),
       });
 
-      toast({
-        title: 'Artwork uploaded',
-        description: 'Your artwork has been added to your portfolio' + (isForSale ? ' and shop.' : '.'),
-      });
-
-      // Reset form
-      setFiles([]);
-      setPreviews([]);
-      setTitle('');
-      setDescription('');
-      setIsForSale(false);
-      setIsOriginal(true);
-      setDeliveryScope('worldwide');
-      setPriceType('fixed');
-      setPrice('');
-
-      // Navigate to portfolio
+      // Defer all state updates and navigation to avoid React error #300
       setTimeout(() => {
-        router.push('/profile?tab=portfolio');
-      }, 500);
+        toast({
+          title: 'Artwork uploaded',
+          description: 'Your artwork has been added to your portfolio' + (isForSale ? ' and shop.' : '.'),
+        });
+
+        // Reset form
+        setFiles([]);
+        setPreviews([]);
+        setTitle('');
+        setDescription('');
+        setIsForSale(false);
+        setIsOriginal(true);
+        setDeliveryScope('worldwide');
+        setPriceType('fixed');
+        setPrice('');
+
+        // Navigate to portfolio
+        setTimeout(() => {
+          router.push('/profile?tab=portfolio');
+        }, 100);
+      }, 0);
     } catch (error) {
       console.error('Upload error:', error);
-      toast({
-        title: 'Upload failed',
-        description: 'Failed to upload artwork. Please try again.',
-        variant: 'destructive',
-      });
+      setTimeout(() => {
+        toast({
+          title: 'Upload failed',
+          description: 'Failed to upload artwork. Please try again.',
+          variant: 'destructive',
+        });
+      }, 0);
     } finally {
-      setUploading(false);
+      setTimeout(() => {
+        setUploading(false);
+      }, 0);
     }
   };
 

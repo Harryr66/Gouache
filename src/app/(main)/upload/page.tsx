@@ -53,7 +53,10 @@ export default function UploadPage() {
       where('status', '==', 'approved')
     );
     const unsub = onSnapshot(q, (snap) => {
-      setHasApprovedArtistRequest(!snap.empty);
+      // Defer state update to avoid React error #300
+      setTimeout(() => {
+        setHasApprovedArtistRequest(!snap.empty);
+      }, 0);
     });
     return () => unsub();
   }, [user?.id]);
