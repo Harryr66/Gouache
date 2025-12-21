@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/providers/auth-provider';
+import { useContent } from '@/providers/content-provider';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
@@ -22,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
  */
 export function UploadArtworkBasic() {
   const { user } = useAuth();
+  const { addContent } = useContent();
   const router = useRouter();
   
   const [files, setFiles] = useState<File[]>([]);
@@ -157,9 +159,70 @@ export function UploadArtworkBasic() {
         updatedAt: new Date(),
       });
 
+      // If marked for sale, also add to artworks collection for shop display
+      if (isForSale) {
+        const artworkForShop: any = {
+          id: portfolioItem.id,
+          artist: {
+            id: user.id,
+            name: user.displayName,
+            handle: user.username,
+            avatarUrl: user.avatarUrl,
+            followerCount: user.followerCount || 0,
+            followingCount: user.followingCount || 0,
+            createdAt: user.createdAt || new Date(),
+          },
+          title: title.trim(),
+          description: description.trim() || '',
+          imageUrl: primaryImageUrl,
+          supportingImages: supportingImages.length > 0 ? supportingImages : undefined,
+          imageAiHint: description.trim() || '',
+          tags: [],
+          currency: 'USD',
+          isForSale: true,
+          type: 'artwork',
+          showInPortfolio: true,
+          showInShop: true,
+          dimensions: { width: 0, height: 0, unit: 'cm' },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          views: 0,
+          likes: 0,
+          isAI: false,
+          aiAssistance: 'none' as const,
+        };
+
+        if (priceType === 'fixed' && price.trim()) {
+          artworkForShop.price = parseFloat(price) * 100;
+          artworkForShop.currency = 'USD';
+        } else if (priceType === 'contact') {
+          artworkForShop.priceType = 'contact';
+          artworkForShop.contactForPrice = true;
+        }
+        artworkForShop.deliveryScope = deliveryScope;
+
+        // Create post object for feed
+        const post = {
+          id: `post-${Date.now()}`,
+          artworkId: artworkForShop.id,
+          artist: artworkForShop.artist,
+          imageUrl: primaryImageUrl,
+          imageAiHint: artworkForShop.imageAiHint,
+          caption: description.trim() || '',
+          likes: 0,
+          commentsCount: 0,
+          timestamp: new Date().toISOString(),
+          createdAt: Date.now(),
+          tags: [],
+        };
+
+        // Add to posts/artworks collections via ContentProvider
+        await addContent(post, artworkForShop);
+      }
+
       toast({
         title: 'Artwork uploaded',
-        description: 'Your artwork has been added to your portfolio.',
+        description: 'Your artwork has been added to your portfolio' + (isForSale ? ' and shop.' : '.'),
       });
 
       // Reset form and cleanup object URLs
