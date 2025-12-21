@@ -11,16 +11,14 @@ import { Image, Package, Calendar, ArrowLeft, Brain, GraduationCap } from 'lucid
 // REMOVED: Artwork and Product upload portals - will rebuild from scratch
 // See UPLOAD_REBUILD_PLAN.md for functionality documentation
 import { ThemeLoading } from '@/components/theme-loading';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, where, addDoc } from 'firebase/firestore';
+import { db, storage } from '@/lib/firebase';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { addDoc, collection } from 'firebase/firestore';
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
