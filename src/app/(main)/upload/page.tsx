@@ -199,6 +199,7 @@ export default function UploadPage() {
 
   // NEW: Artwork and Product upload portals - built from scratch
   if (selectedType === 'artwork') {
+    console.log('🎨 Rendering UploadArtwork component');
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <Button
@@ -223,6 +224,7 @@ export default function UploadPage() {
   }
 
   if (selectedType === 'product') {
+    console.log('📦 Rendering UploadProduct component');
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <Button
