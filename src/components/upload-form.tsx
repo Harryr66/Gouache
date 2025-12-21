@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, startTransition } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -108,6 +108,8 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   const [previews, setPreviews] = useState<string[]>([]);
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [tagsList, setTagsList] = useState<string[]>(
@@ -125,6 +127,43 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
   );
   const [countrySearch, setCountrySearch] = useState('');
 
+  // Handle upload success/error side effects separately from render cycle
+  useEffect(() => {
+    if (uploadSuccess) {
+      // Defer all side effects to next tick
+      setTimeout(() => {
+        setLoading(false);
+        toast({
+          title: "Upload complete",
+          description: isProductUpload 
+            ? "Your product was uploaded and added to your shop."
+            : "Your artwork was uploaded and added to your portfolio.",
+          variant: "default",
+        });
+        
+        // Reset flag and navigate after additional delay
+        setUploadSuccess(false);
+        setTimeout(() => {
+          router.push('/profile?tab=portfolio');
+        }, 200);
+      }, 0);
+    }
+  }, [uploadSuccess, isProductUpload, router]);
+
+  useEffect(() => {
+    if (uploadError) {
+      // Defer all side effects to next tick
+      setTimeout(() => {
+        setLoading(false);
+        toast({
+          title: "Upload failed",
+          description: uploadError,
+          variant: "destructive",
+        });
+        setUploadError(null);
+      }, 0);
+    }
+  }, [uploadError]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -326,42 +365,14 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       });
       console.log('✅ UploadForm: Added to user portfolio');
 
-      // Defer all side effects to avoid React error #300
-      // Use queueMicrotask for reliable deferral outside render cycle
-      queueMicrotask(() => {
-        setLoading(false);
-        queueMicrotask(() => {
-          toast({
-            title: "Upload complete",
-            description: isProductUpload 
-              ? "Your product was uploaded and added to your shop."
-              : "Your artwork was uploaded and added to your portfolio.",
-            variant: "default",
-          });
-          
-          // Navigate after additional microtask
-          queueMicrotask(() => {
-            router.push('/profile?tab=portfolio');
-          });
-        });
-      });
+      // Set success flag - useEffect will handle all side effects
+      setUploadSuccess(true);
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
-      // Use startTransition to mark updates as non-urgent and prevent React error #300
-      startTransition(() => {
-        setLoading(false);
-      });
-      
-      // Defer toast to next tick
-      setTimeout(() => {
-        toast({
-          title: "Upload failed",
-          description: isProductUpload
-            ? "We couldn't save your product. Please try again."
-            : "We couldn't save your artwork. Please try again.",
-          variant: "destructive",
-        });
-      }, 0);
+      // Set error flag - useEffect will handle all side effects
+      setUploadError(isProductUpload
+        ? "We couldn't save your product. Please try again."
+        : "We couldn't save your artwork. Please try again.");
     }
   };
 

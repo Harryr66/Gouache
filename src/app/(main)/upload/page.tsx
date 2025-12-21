@@ -53,6 +53,8 @@ export default function UploadPage() {
   });
   const [productImages, setProductImages] = useState<File[]>([]);
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
+  const [productUploadSuccess, setProductUploadSuccess] = useState(false);
+  const [productUploadError, setProductUploadError] = useState<string | null>(null);
 
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
@@ -70,6 +72,54 @@ export default function UploadPage() {
     });
     return () => unsub();
   }, [user?.id]);
+
+  // Handle product upload success side effects separately from render cycle
+  useEffect(() => {
+    if (productUploadSuccess) {
+      // Defer all side effects to next tick
+      setTimeout(() => {
+        setIsSubmittingProduct(false);
+        toast({
+          title: 'Product created',
+          description: 'Your product has been created and will appear in your shop.',
+        });
+
+        // Reset form and navigation after additional delay
+        setTimeout(() => {
+          setProductForm({
+            title: '',
+            description: '',
+            price: '',
+            originalPrice: '',
+            category: 'art-prints',
+            subcategory: 'fine-art-prints',
+            stock: '1',
+            tags: [],
+            newTag: '',
+          });
+          setProductImages([]);
+          setSelectedType(null);
+          setProductUploadSuccess(false);
+        }, 200);
+      }, 0);
+    }
+  }, [productUploadSuccess]);
+
+  // Handle product upload error side effects separately from render cycle
+  useEffect(() => {
+    if (productUploadError) {
+      // Defer all side effects to next tick
+      setTimeout(() => {
+        setIsSubmittingProduct(false);
+        toast({
+          title: 'Product creation failed',
+          description: productUploadError,
+          variant: 'destructive',
+        });
+        setProductUploadError(null);
+      }, 0);
+    }
+  }, [productUploadError]);
 
   // Show loading animation while auth is loading
   // Simplified: just wait for loading to complete and user to be available
@@ -139,50 +189,38 @@ export default function UploadPage() {
         status: 'active',
       });
 
-      // Use startTransition to mark updates as non-urgent and prevent React error #300
-      startTransition(() => {
-        setIsSubmittingEvent(false);
+      // Set submitting to false and show success
+      setIsSubmittingEvent(false);
+      toast({
+        title: 'Event created',
+        description: 'Your event has been created and will appear in your profile and discover feed.',
       });
-      
-      // Defer toast and form reset to next tick
-      setTimeout(() => {
-        toast({
-          title: 'Event created',
-          description: 'Your event has been created and will appear in your profile and discover feed.',
-        });
 
-        setTimeout(() => {
-          setEventForm({
-            title: '',
-            startDate: '',
-            endDate: '',
-            time: '',
-            location: '',
-            locationTag: '',
-            venue: '',
-            description: '',
-            price: '',
-            bookingUrl: '',
-          });
-          setEventImageFile(null);
-          setSelectedType(null);
-        }, 100);
-      }, 0);
+      // Reset form and go back after delay
+      setTimeout(() => {
+        setEventForm({
+          title: '',
+          startDate: '',
+          endDate: '',
+          time: '',
+          location: '',
+          locationTag: '',
+          venue: '',
+          description: '',
+          price: '',
+          bookingUrl: '',
+        });
+        setEventImageFile(null);
+        setSelectedType(null);
+      }, 100);
     } catch (error) {
       console.error('Error creating event:', error);
-      // Use startTransition to mark updates as non-urgent and prevent React error #300
-      startTransition(() => {
-        setIsSubmittingEvent(false);
+      setIsSubmittingEvent(false);
+      toast({
+        title: 'Event creation failed',
+        description: 'Please try again.',
+        variant: 'destructive',
       });
-      
-      // Defer toast to next tick
-      setTimeout(() => {
-        toast({
-          title: 'Event creation failed',
-          description: 'Please try again.',
-          variant: 'destructive',
-        });
-      }, 0);
     }
   };
 
@@ -270,49 +308,12 @@ export default function UploadPage() {
 
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
-      // Use startTransition to mark updates as non-urgent and prevent React error #300
-      startTransition(() => {
-        setIsSubmittingProduct(false);
-      });
-      
-      // Defer toast and form reset to next tick
-      setTimeout(() => {
-        toast({
-          title: 'Product created',
-          description: 'Your product has been created and will appear in your shop.',
-        });
-
-        setTimeout(() => {
-          setProductForm({
-            title: '',
-            description: '',
-            price: '',
-            originalPrice: '',
-            category: 'art-prints',
-            subcategory: 'fine-art-prints',
-            stock: '1',
-            tags: [],
-            newTag: '',
-          });
-          setProductImages([]);
-          setSelectedType(null);
-        }, 100);
-      }, 0);
+      // Set success flag - useEffect will handle all side effects
+      setProductUploadSuccess(true);
     } catch (error) {
       console.error('Error creating product:', error);
-      // Use startTransition to mark updates as non-urgent and prevent React error #300
-      startTransition(() => {
-        setIsSubmittingProduct(false);
-      });
-      
-      // Defer toast to next tick
-      setTimeout(() => {
-        toast({
-          title: 'Product creation failed',
-          description: 'Please try again.',
-          variant: 'destructive',
-        });
-      }, 0);
+      // Set error flag - useEffect will handle all side effects
+      setProductUploadError('Please try again.');
     }
   };
 
