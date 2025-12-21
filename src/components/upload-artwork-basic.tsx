@@ -127,7 +127,11 @@ export function UploadArtworkBasic() {
         description: 'Your artwork has been added to your portfolio.',
       });
 
-      // Reset form
+      // Reset form and cleanup object URLs
+      files.forEach(file => {
+        const url = URL.createObjectURL(file);
+        URL.revokeObjectURL(url);
+      });
       setFiles([]);
       setTitle('');
       setDescription('');
