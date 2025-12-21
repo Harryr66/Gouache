@@ -7,7 +7,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Image, Package, Calendar, ArrowLeft, Brain, GraduationCap } from 'lucide-react';
+import { Calendar, ArrowLeft, Brain } from 'lucide-react';
 // REMOVED: Artwork and Product upload portals
 import { ThemeLoading } from '@/components/theme-loading';
 import { collection, onSnapshot, query, where, addDoc } from 'firebase/firestore';
@@ -22,7 +22,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 export default function UploadPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [selectedType, setSelectedType] = useState<'artwork' | 'event' | 'product' | 'course' | null>(null);
+  const [selectedType, setSelectedType] = useState<'event' | 'course' | null>(null);
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
   const [eventForm, setEventForm] = useState({
     title: '',
@@ -190,52 +190,7 @@ export default function UploadPage() {
 
   // REMOVED: Product upload handlers - rebuilding from scratch
 
-  // REMOVED: Artwork and Product upload portals
-  if (selectedType === 'artwork') {
-    return (
-      <div className="container mx-auto max-w-4xl px-4 py-8">
-        <Button
-          variant="ghost"
-          onClick={() => setSelectedType(null)}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Upload Options
-        </Button>
-        <Card className="p-8 text-center">
-          <CardContent>
-            <h2 className="text-2xl font-bold mb-4">Artwork Upload - Removed</h2>
-            <p className="text-muted-foreground">
-              Artwork upload portal has been removed.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (selectedType === 'product') {
-    return (
-      <div className="container mx-auto max-w-4xl px-4 py-8">
-        <Button
-          variant="ghost"
-          onClick={() => setSelectedType(null)}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Upload Options
-        </Button>
-        <Card className="p-8 text-center">
-          <CardContent>
-            <h2 className="text-2xl font-bold mb-4">Product Upload - Removed</h2>
-            <p className="text-muted-foreground">
-              Product upload portal has been removed.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // REMOVED: Artwork and Product upload portals - completely removed
 
   // Handle course redirect
   useEffect(() => {
@@ -413,27 +368,6 @@ export default function UploadPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        {/* Upload Artwork */}
-        <Card 
-          className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
-          onClick={() => setSelectedType('artwork')}
-        >
-          <CardHeader>
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-              <Image className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle>Upload Artwork</CardTitle>
-            <CardDescription>
-              Upload images to showcase in your portfolio. Mark as for sale to appear in your shop.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              Upload Artwork
-            </Button>
-          </CardContent>
-        </Card>
-
         {/* Upload Upcoming Event */}
         <Card 
           className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
@@ -451,27 +385,6 @@ export default function UploadPage() {
           <CardContent>
             <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
               Create Event
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Upload Product */}
-        <Card 
-          className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
-          onClick={() => setSelectedType('product')}
-        >
-          <CardHeader>
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-              <Package className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle>Upload Product</CardTitle>
-            <CardDescription>
-              List products like prints, books, or merchandise for sale in your shop.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              List Product
             </Button>
           </CardContent>
         </Card>
