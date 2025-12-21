@@ -15,6 +15,7 @@ import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 /**
@@ -32,6 +33,7 @@ export function UploadArtworkBasic() {
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isForSale, setIsForSale] = useState(false);
+  const [isOriginal, setIsOriginal] = useState(true); // true = original, false = print
   const [priceType, setPriceType] = useState<'fixed' | 'contact'>('fixed');
   const [price, setPrice] = useState('');
   const [deliveryScope, setDeliveryScope] = useState<'worldwide' | 'specific'>('worldwide');
@@ -131,6 +133,7 @@ export function UploadArtworkBasic() {
         showInPortfolio: true,
         showInShop: isForSale,
         isForSale: isForSale,
+        artworkType: isOriginal ? 'original' : 'print',
         createdAt: new Date(),
         updatedAt: new Date(),
         likes: 0,
@@ -183,6 +186,7 @@ export function UploadArtworkBasic() {
           type: 'artwork',
           showInPortfolio: true,
           showInShop: true,
+          artworkType: isOriginal ? 'original' : 'print',
           dimensions: { width: 0, height: 0, unit: 'cm' },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -234,6 +238,7 @@ export function UploadArtworkBasic() {
       setTitle('');
       setDescription('');
       setIsForSale(false);
+      setIsOriginal(true);
       setPriceType('fixed');
       setPrice('');
       setDeliveryScope('worldwide');
@@ -419,6 +424,33 @@ export function UploadArtworkBasic() {
           {isForSale && (
             <div className="space-y-4 p-4 border rounded-lg border-l-2">
               <Label className="text-base font-semibold mb-4 block">Pricing & Delivery</Label>
+              
+              {/* Artwork Type */}
+              <div className="space-y-2">
+                <Label>Artwork Type</Label>
+                <div className="flex items-center space-x-6">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="original"
+                      checked={isOriginal}
+                      onCheckedChange={(checked) => setIsOriginal(checked === true)}
+                    />
+                    <Label htmlFor="original" className="cursor-pointer font-normal">
+                      This is an original artwork
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="print"
+                      checked={!isOriginal}
+                      onCheckedChange={(checked) => setIsOriginal(checked !== true)}
+                    />
+                    <Label htmlFor="print" className="cursor-pointer font-normal">
+                      This is a print
+                    </Label>
+                  </div>
+                </div>
+              </div>
               
               {/* Price Type */}
               <div className="space-y-2">
