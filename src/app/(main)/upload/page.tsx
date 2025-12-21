@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, ChangeEvent, useLayoutEffect, useMemo, startTransition } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent, useLayoutEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/providers/auth-provider';
@@ -53,10 +53,6 @@ export default function UploadPage() {
   });
   const [productImages, setProductImages] = useState<File[]>([]);
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
-  const [productUploadSuccess, setProductUploadSuccess] = useState(false);
-  const [productUploadError, setProductUploadError] = useState<string | null>(null);
-  const productSuccessProcessedRef = useRef(false);
-  const productErrorProcessedRef = useRef(false);
 
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
@@ -75,68 +71,6 @@ export default function UploadPage() {
     return () => unsub();
   }, [user?.id]);
 
-  // Reset refs when flags are cleared
-  useEffect(() => {
-    if (!productUploadSuccess) {
-      productSuccessProcessedRef.current = false;
-    }
-  }, [productUploadSuccess]);
-
-  useEffect(() => {
-    if (!productUploadError) {
-      productErrorProcessedRef.current = false;
-    }
-  }, [productUploadError]);
-
-  // Handle product upload success side effects separately from render cycle
-  useEffect(() => {
-    if (productUploadSuccess && !productSuccessProcessedRef.current) {
-      productSuccessProcessedRef.current = true;
-      // Defer all side effects to next tick
-      setTimeout(() => {
-        setIsSubmittingProduct(false);
-        toast({
-          title: 'Product created',
-          description: 'Your product has been created and will appear in your shop.',
-        });
-
-        // Reset form and navigation after additional delay
-        setTimeout(() => {
-          setProductForm({
-            title: '',
-            description: '',
-            price: '',
-            originalPrice: '',
-            category: 'art-prints',
-            subcategory: 'fine-art-prints',
-            stock: '1',
-            tags: [],
-            newTag: '',
-          });
-          setProductImages([]);
-          setSelectedType(null);
-          setProductUploadSuccess(false);
-        }, 200);
-      }, 0);
-    }
-  }, [productUploadSuccess]);
-
-  // Handle product upload error side effects separately from render cycle
-  useEffect(() => {
-    if (productUploadError && !productErrorProcessedRef.current) {
-      productErrorProcessedRef.current = true;
-      // Defer all side effects to next tick
-      setTimeout(() => {
-        setIsSubmittingProduct(false);
-        toast({
-          title: 'Product creation failed',
-          description: productUploadError,
-          variant: 'destructive',
-        });
-        setProductUploadError(null);
-      }, 0);
-    }
-  }, [productUploadError]);
 
   // Show loading animation while auth is loading
   // Simplified: just wait for loading to complete and user to be available
@@ -325,12 +259,44 @@ export default function UploadPage() {
 
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
-      // Set success flag - useEffect will handle all side effects
-      setProductUploadSuccess(true);
+      // Handle all side effects in a single deferred callback
+      // This completely avoids React render cycle conflicts
+      setTimeout(() => {
+        setIsSubmittingProduct(false);
+        toast({
+          title: 'Product created',
+          description: 'Your product has been created and will appear in your shop.',
+        });
+
+        // Reset form and navigation after a brief delay
+        setTimeout(() => {
+          setProductForm({
+            title: '',
+            description: '',
+            price: '',
+            originalPrice: '',
+            category: 'art-prints',
+            subcategory: 'fine-art-prints',
+            stock: '1',
+            tags: [],
+            newTag: '',
+          });
+          setProductImages([]);
+          setSelectedType(null);
+        }, 300);
+      }, 0);
     } catch (error) {
       console.error('Error creating product:', error);
-      // Set error flag - useEffect will handle all side effects
-      setProductUploadError('Please try again.');
+      
+      // Handle error side effects in deferred callback
+      setTimeout(() => {
+        setIsSubmittingProduct(false);
+        toast({
+          title: 'Product creation failed',
+          description: 'Please try again.',
+          variant: 'destructive',
+        });
+      }, 0);
     }
   };
 
