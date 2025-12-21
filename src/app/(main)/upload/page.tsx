@@ -8,10 +8,10 @@ import { User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Image, Calendar, ArrowLeft, Brain } from 'lucide-react';
-import { UploadArtworkNew } from '@/components/upload-artwork-new';
+import { UploadArtworkSimple } from '@/components/upload-artwork-simple';
 // REMOVED: Artwork and Product upload portals
 import { ThemeLoading } from '@/components/theme-loading';
-import { collection, onSnapshot, query, where, addDoc } from 'firebase/firestore';
+import { collection, query, where, addDoc, getDocs } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,40 +41,33 @@ export default function UploadPage() {
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
   // REMOVED: Product upload state - rebuilding from scratch
 
-  // Use ref to track if component is mounted and prevent updates during render
-  const isMountedRef = useRef(false);
-  const updateRequestedRef = useRef(false);
-
-  // Listen for approved artist request as fallback when isProfessional flag is missing
+  // Listen for approved artist request - use getDocs instead of onSnapshot to avoid render issues
   useEffect(() => {
-    isMountedRef.current = true;
     if (!user?.id) {
-      if (isMountedRef.current) {
-        setHasApprovedArtistRequest(false);
-      }
+      setHasApprovedArtistRequest(false);
       return;
     }
-    const q = query(
-      collection(db, 'artistRequests'),
-      where('userId', '==', user.id),
-      where('status', '==', 'approved')
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      // Use queueMicrotask to ensure update happens after render cycle
-      if (isMountedRef.current && !updateRequestedRef.current) {
-        updateRequestedRef.current = true;
-        queueMicrotask(() => {
-          if (isMountedRef.current) {
-            setHasApprovedArtistRequest(!snap.empty);
-            updateRequestedRef.current = false;
-          }
-        });
+    
+    // Use getDocs instead of onSnapshot to avoid state updates during render
+    const checkArtistRequest = async () => {
+      try {
+        const q = query(
+          collection(db, 'artistRequests'),
+          where('userId', '==', user.id),
+          where('status', '==', 'approved')
+        );
+        const snap = await getDocs(q);
+        setHasApprovedArtistRequest(!snap.empty);
+      } catch (error) {
+        console.error('Error checking artist request:', error);
+        setHasApprovedArtistRequest(false);
       }
-    });
-    return () => {
-      isMountedRef.current = false;
-      unsub();
     };
+    
+    checkArtistRequest();
+    // Check periodically instead of using real-time listener
+    const interval = setInterval(checkArtistRequest, 30000); // Check every 30 seconds
+    return () => clearInterval(interval);
   }, [user?.id]);
 
 
@@ -230,7 +223,7 @@ export default function UploadPage() {
             Upload images to your portfolio and shop.
           </p>
         </header>
-        <UploadArtworkNew />
+        <UploadArtworkSimple />
       </div>
     );
   }
