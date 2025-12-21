@@ -8,7 +8,6 @@ import { User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Image, Package, Calendar, ArrowLeft, Brain, GraduationCap } from 'lucide-react';
-import { UploadForm } from '@/components/upload-form';
 // REMOVED: Artwork and Product upload portals - will rebuild from scratch
 // See UPLOAD_REBUILD_PLAN.md for functionality documentation
 import { ThemeLoading } from '@/components/theme-loading';
