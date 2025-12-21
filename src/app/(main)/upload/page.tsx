@@ -43,10 +43,7 @@ export default function UploadPage() {
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
     if (!user?.id) {
-      // Defer state update to prevent React error #300
-      setTimeout(() => {
-        setHasApprovedArtistRequest(false);
-      }, 0);
+      setHasApprovedArtistRequest(false);
       return;
     }
     const q = query(
@@ -55,10 +52,7 @@ export default function UploadPage() {
       where('status', '==', 'approved')
     );
     const unsub = onSnapshot(q, (snap) => {
-      // Defer state update from snapshot callback
-      setTimeout(() => {
-        setHasApprovedArtistRequest(!snap.empty);
-      }, 0);
+      setHasApprovedArtistRequest(!snap.empty);
     });
     return () => unsub();
   }, [user?.id]);
@@ -248,7 +242,7 @@ export default function UploadPage() {
     if (selectedType === 'course') {
       router.push('/learn/submit');
     }
-  }, [selectedType]);
+  }, [selectedType, router]);
 
   if (selectedType === 'course') {
     return (
