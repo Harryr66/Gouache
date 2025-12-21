@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Image, Package, Calendar, ArrowLeft, Brain, GraduationCap } from 'lucide-react';
 import { UploadForm } from '@/components/upload-form';
-import { UploadFormBarebones } from '@/components/upload-form-barebones';
-import { ProductUploadBarebones } from '@/components/product-upload-barebones';
+// REMOVED: Artwork and Product upload portals - will rebuild from scratch
+// See UPLOAD_REBUILD_PLAN.md for functionality documentation
 import { ThemeLoading } from '@/components/theme-loading';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -19,9 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { addDoc } from 'firebase/firestore';
+// REMOVED: Firebase storage/firestore imports - not needed until rebuild
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
@@ -42,19 +40,7 @@ export default function UploadPage() {
   });
   const [eventImageFile, setEventImageFile] = useState<File | null>(null);
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
-  const [productForm, setProductForm] = useState({
-    title: '',
-    description: '',
-    price: '',
-    originalPrice: '',
-    category: 'art-prints',
-    subcategory: 'fine-art-prints',
-    stock: '1',
-    tags: [] as string[],
-    newTag: '',
-  });
-  const [productImages, setProductImages] = useState<File[]>([]);
-  const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
+  // REMOVED: Product upload state - rebuilding from scratch
 
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
@@ -210,117 +196,10 @@ export default function UploadPage() {
     );
   }
 
-  const handleProductImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setProductImages(files);
-  };
+  // REMOVED: Product upload handlers - rebuilding from scratch
 
-  const handleProductSubmit = async () => {
-    if (!user) return;
-    if (!productForm.title || !productForm.price || productImages.length === 0) {
-      toast({
-        title: 'Missing required fields',
-        description: 'Title, price, and at least one image are required.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      setIsSubmittingProduct(true);
-
-      // Upload images
-      const uploadedImageUrls: string[] = [];
-      for (const file of productImages) {
-        const path = `marketplaceProducts/${user.id}/${Date.now()}-${file.name}`;
-        const storageRef = ref(storage, path);
-        await uploadBytes(storageRef, file);
-        const imageUrl = await getDownloadURL(storageRef);
-        uploadedImageUrls.push(imageUrl);
-      }
-
-      // Create product document in Firestore
-      const productData = {
-        title: productForm.title,
-        description: productForm.description,
-        price: parseFloat(productForm.price),
-        ...(productForm.originalPrice && { originalPrice: parseFloat(productForm.originalPrice) }),
-        currency: 'USD',
-        category: productForm.category,
-        subcategory: productForm.subcategory,
-        images: uploadedImageUrls,
-        sellerId: user.id,
-        sellerName: user.displayName || user.username || 'Artist',
-        isAffiliate: false,
-        isActive: true,
-        stock: parseInt(productForm.stock) || 1,
-        rating: 0,
-        reviewCount: 0,
-        tags: productForm.tags,
-        salesCount: 0,
-        isOnSale: false,
-        isApproved: true,
-        status: 'approved',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await addDoc(collection(db, 'marketplaceProducts'), productData);
-
-      // Use Promise.resolve() to queue side effects in microtask queue
-      // This ensures they run AFTER React finishes current render cycle
-      Promise.resolve().then(() => {
-        // Queue state update in microtask
-        queueMicrotask(() => {
-          setIsSubmittingProduct(false);
-        });
-        
-        // Queue toast in next microtask
-        queueMicrotask(() => {
-          toast({
-            title: 'Product created',
-            description: 'Your product has been created and will appear in your shop.',
-          });
-        });
-
-        // Reset form after a brief delay in next event loop tick
-        setTimeout(() => {
-          setProductForm({
-            title: '',
-            description: '',
-            price: '',
-            originalPrice: '',
-            category: 'art-prints',
-            subcategory: 'fine-art-prints',
-            stock: '1',
-            tags: [],
-            newTag: '',
-          });
-          setProductImages([]);
-          setSelectedType(null);
-        }, 100);
-      });
-    } catch (error) {
-      console.error('Error creating product:', error);
-      
-      // Use Promise.resolve() to queue error handling in microtask queue
-      Promise.resolve().then(() => {
-        queueMicrotask(() => {
-          setIsSubmittingProduct(false);
-        });
-        
-        queueMicrotask(() => {
-          toast({
-            title: 'Product creation failed',
-            description: 'Please try again.',
-            variant: 'destructive',
-          });
-        });
-      });
-    }
-  };
-
-  // If a type is selected, show the appropriate form
+  // REMOVED: Artwork and Product upload forms - rebuilding from scratch
+  // See UPLOAD_REBUILD_PLAN.md for functionality documentation
   if (selectedType === 'artwork') {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -332,15 +211,14 @@ export default function UploadPage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Upload Options
         </Button>
-        <header className="mb-8">
-          <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
-            Upload Artwork
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Upload images to your portfolio and shop.
-          </p>
-        </header>
-        <UploadFormBarebones />
+        <Card className="p-8 text-center">
+          <CardContent>
+            <h2 className="text-2xl font-bold mb-4">Artwork Upload - Coming Soon</h2>
+            <p className="text-muted-foreground">
+              Artwork upload is being rebuilt from scratch. See UPLOAD_REBUILD_PLAN.md for details.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -356,15 +234,14 @@ export default function UploadPage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Upload Options
         </Button>
-        <header className="mb-8">
-          <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
-            Upload Product
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            List a product for sale in your shop.
-          </p>
-        </header>
-        <ProductUploadBarebones />
+        <Card className="p-8 text-center">
+          <CardContent>
+            <h2 className="text-2xl font-bold mb-4">Product Upload - Coming Soon</h2>
+            <p className="text-muted-foreground">
+              Product upload is being rebuilt from scratch. See UPLOAD_REBUILD_PLAN.md for details.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
