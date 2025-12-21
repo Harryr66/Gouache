@@ -41,10 +41,10 @@ export function UploadArtworkNew() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     if (selectedFiles.length > 0) {
-      // Defer state update to avoid React error #300
-      setTimeout(() => {
+      // Use queueMicrotask to defer state update after render cycle
+      queueMicrotask(() => {
         setFiles(selectedFiles);
-      }, 0);
+      });
       
       // Generate previews
       const newPreviews: string[] = [];
@@ -56,10 +56,10 @@ export function UploadArtworkNew() {
           newPreviews.push(e.target?.result as string);
           loadedCount++;
           if (loadedCount === selectedFiles.length) {
-            // Defer state update to avoid React error #300
-            setTimeout(() => {
+            // Use queueMicrotask to defer state update after render cycle
+            queueMicrotask(() => {
               setPreviews(newPreviews);
-            }, 0);
+            });
           }
         };
         reader.readAsDataURL(file);
@@ -70,31 +70,34 @@ export function UploadArtworkNew() {
   const removeFile = (index: number) => {
     const newFiles = files.filter((_, i) => i !== index);
     const newPreviews = previews.filter((_, i) => i !== index);
-    setFiles(newFiles);
-    setPreviews(newPreviews);
+    // Use queueMicrotask to defer state updates
+    queueMicrotask(() => {
+      setFiles(newFiles);
+      setPreviews(newPreviews);
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !files.length || !title.trim()) {
-      setTimeout(() => {
+      queueMicrotask(() => {
         toast({
           title: 'Missing information',
           description: 'Please select files and enter a title.',
           variant: 'destructive',
         });
-      }, 0);
+      });
       return;
     }
 
     if (isForSale && priceType === 'fixed' && !price.trim()) {
-      setTimeout(() => {
+      queueMicrotask(() => {
         toast({
           title: 'Missing price',
           description: 'Please enter a price or select "Contact artist for pricing".',
           variant: 'destructive',
         });
-      }, 0);
+      });
       return;
     }
 
@@ -221,8 +224,8 @@ export function UploadArtworkNew() {
         updatedAt: new Date(),
       });
 
-      // Defer all state updates and navigation to avoid React error #300
-      setTimeout(() => {
+      // Use queueMicrotask to defer all state updates and navigation
+      queueMicrotask(() => {
         toast({
           title: 'Artwork uploaded',
           description: 'Your artwork has been added to your portfolio' + (isForSale ? ' and shop.' : '.'),
@@ -239,24 +242,24 @@ export function UploadArtworkNew() {
         setPriceType('fixed');
         setPrice('');
 
-        // Navigate to portfolio
+        // Navigate to portfolio after a brief delay
         setTimeout(() => {
           router.push('/profile?tab=portfolio');
         }, 100);
-      }, 0);
+      });
     } catch (error) {
       console.error('Upload error:', error);
-      setTimeout(() => {
+      queueMicrotask(() => {
         toast({
           title: 'Upload failed',
           description: 'Failed to upload artwork. Please try again.',
           variant: 'destructive',
         });
-      }, 0);
+      });
     } finally {
-      setTimeout(() => {
+      queueMicrotask(() => {
         setUploading(false);
-      }, 0);
+      });
     }
   };
 

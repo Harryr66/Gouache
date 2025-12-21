@@ -41,10 +41,17 @@ export default function UploadPage() {
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
   // REMOVED: Product upload state - rebuilding from scratch
 
+  // Use ref to track if component is mounted and prevent updates during render
+  const isMountedRef = useRef(false);
+  const updateRequestedRef = useRef(false);
+
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
+    isMountedRef.current = true;
     if (!user?.id) {
-      setHasApprovedArtistRequest(false);
+      if (isMountedRef.current) {
+        setHasApprovedArtistRequest(false);
+      }
       return;
     }
     const q = query(
@@ -53,12 +60,21 @@ export default function UploadPage() {
       where('status', '==', 'approved')
     );
     const unsub = onSnapshot(q, (snap) => {
-      // Defer state update to avoid React error #300
-      setTimeout(() => {
-        setHasApprovedArtistRequest(!snap.empty);
-      }, 0);
+      // Use queueMicrotask to ensure update happens after render cycle
+      if (isMountedRef.current && !updateRequestedRef.current) {
+        updateRequestedRef.current = true;
+        queueMicrotask(() => {
+          if (isMountedRef.current) {
+            setHasApprovedArtistRequest(!snap.empty);
+            updateRequestedRef.current = false;
+          }
+        });
+      }
     });
-    return () => unsub();
+    return () => {
+      isMountedRef.current = false;
+      unsub();
+    };
   }, [user?.id]);
 
 
