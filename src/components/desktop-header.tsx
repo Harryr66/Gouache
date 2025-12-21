@@ -4,10 +4,10 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Eye, Fingerprint, Ear, Brain } from 'lucide-react';
+import { Eye, Fingerprint, Globe, Brain } from 'lucide-react';
 
 const navigation = [
-  { name: 'News', href: '/news', icon: Ear },
+  { name: 'News', href: '/news', icon: Globe },
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Learn', href: '/courses', icon: Brain },
   { name: 'Profile', href: '/profile', icon: Fingerprint },
@@ -58,7 +58,7 @@ export function DesktopHeader() {
                 'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
                 {
                   'gradient-border text-foreground': item.isActive,
-                  'text-foreground border-2 border-transparent hover:gradient-border': !item.isActive
+                  'text-foreground border-[3px] border-transparent hover:gradient-border': !item.isActive
                 }
               )}
             >
