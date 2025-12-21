@@ -300,14 +300,17 @@ export default function UploadPage() {
       });
     } catch (error) {
       console.error('Error creating product:', error);
-      // Defer all side effects to avoid render conflicts
-      Promise.resolve().then(() => {
-        setIsSubmittingProduct(false);
-        toast({
-          title: 'Product creation failed',
-          description: 'Please try again.',
-          variant: 'destructive',
-        });
+      // Defer all side effects to avoid React error #300
+      // Use double deferral to ensure we're outside render cycle
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          setIsSubmittingProduct(false);
+          toast({
+            title: 'Product creation failed',
+            description: 'Please try again.',
+            variant: 'destructive',
+          });
+        }, 0);
       });
     }
   };

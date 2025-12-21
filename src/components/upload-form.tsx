@@ -349,15 +349,18 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
       // Defer all side effects to avoid React error #300
-      Promise.resolve().then(() => {
-        setLoading(false);
-        toast({
-          title: "Upload failed",
-          description: isProductUpload
-            ? "We couldn't save your product. Please try again."
-            : "We couldn't save your artwork. Please try again.",
-          variant: "destructive",
-        });
+      // Use double deferral to ensure we're outside render cycle
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          setLoading(false);
+          toast({
+            title: "Upload failed",
+            description: isProductUpload
+              ? "We couldn't save your product. Please try again."
+              : "We couldn't save your artwork. Please try again.",
+            variant: "destructive",
+          });
+        }, 0);
       });
     }
   };
