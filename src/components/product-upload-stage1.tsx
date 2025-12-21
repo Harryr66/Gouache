@@ -28,55 +28,59 @@ export function ProductUploadStage1() {
 
   const handleUpload = async () => {
     if (!files.length || !user) {
-      toast({
-        title: 'Missing requirements',
-        description: 'Please select files and ensure you are logged in.',
-        variant: 'destructive',
-      });
+      console.log('Missing requirements: files or user');
       return;
     }
 
     setUploading(true);
-    try {
-      // Upload images to Firebase Storage
-      const uploadedUrls: string[] = [];
-      for (const file of files) {
-        const path = `marketplaceProducts/${user.id}/${Date.now()}-${file.name}`;
-        const storageRef = ref(storage, path);
-        await uploadBytes(storageRef, file);
-        const imageUrl = await getDownloadURL(storageRef);
-        uploadedUrls.push(imageUrl);
+    
+    // Use setTimeout to ensure we're outside render cycle
+    setTimeout(async () => {
+      try {
+        // Upload images to Firebase Storage
+        const uploadedUrls: string[] = [];
+        for (const file of files) {
+          const path = `marketplaceProducts/${user.id}/${Date.now()}-${file.name}`;
+          const storageRef = ref(storage, path);
+          await uploadBytes(storageRef, file);
+          const imageUrl = await getDownloadURL(storageRef);
+          uploadedUrls.push(imageUrl);
+        }
+
+        // Write minimal product document to Firestore
+        const productData = {
+          images: uploadedUrls,
+          sellerId: user.id,
+          sellerName: user.displayName || user.username || 'Artist',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        await addDoc(collection(db, 'marketplaceProducts'), productData);
+
+        console.log('Product uploaded successfully');
+
+        // Use setTimeout again to defer toast and state updates
+        setTimeout(() => {
+          toast({
+            title: 'Product uploaded',
+            description: `Successfully uploaded ${files.length} image(s) and created product.`,
+          });
+          setFiles([]);
+          setUploading(false);
+        }, 0);
+      } catch (error) {
+        console.error('Upload error:', error);
+        setTimeout(() => {
+          toast({
+            title: 'Upload failed',
+            description: 'Failed to upload product. Please try again.',
+            variant: 'destructive',
+          });
+          setUploading(false);
+        }, 0);
       }
-
-      // Write minimal product document to Firestore
-      const productData = {
-        images: uploadedUrls,
-        sellerId: user.id,
-        sellerName: user.displayName || user.username || 'Artist',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await addDoc(collection(db, 'marketplaceProducts'), productData);
-
-      // Success
-      toast({
-        title: 'Product uploaded',
-        description: `Successfully uploaded ${files.length} image(s) and created product.`,
-      });
-
-      // Reset files
-      setFiles([]);
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: 'Upload failed',
-        description: 'Failed to upload product. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setUploading(false);
-    }
+    }, 0);
   };
 
   if (!user) {
