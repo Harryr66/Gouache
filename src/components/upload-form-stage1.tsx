@@ -26,16 +26,15 @@ export function UploadFormStage1() {
     setFiles(selectedFiles);
   };
 
-  const handleUpload = async () => {
+  const handleUpload = () => {
     if (!files.length || !user) {
       console.log('Missing requirements: files or user');
       return;
     }
-
-    setUploading(true);
     
-    // Use setTimeout to ensure we're outside render cycle
+    // Use setTimeout to ensure ALL state updates are outside render cycle
     setTimeout(async () => {
+      setUploading(true);
       try {
         const uploadedUrls: string[] = [];
         
