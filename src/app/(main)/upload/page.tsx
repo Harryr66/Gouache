@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, ChangeEvent, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent, useLayoutEffect, useMemo, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/providers/auth-provider';
@@ -139,49 +139,50 @@ export default function UploadPage() {
         status: 'active',
       });
 
-      // Defer all side effects to avoid React error #300
-      // Use queueMicrotask for reliable deferral outside render cycle
-      queueMicrotask(() => {
+      // Use startTransition to mark updates as non-urgent and prevent React error #300
+      startTransition(() => {
         setIsSubmittingEvent(false);
-        queueMicrotask(() => {
-          toast({
-            title: 'Event created',
-            description: 'Your event has been created and will appear in your profile and discover feed.',
-          });
-
-          // Reset form and go back after additional microtask
-          queueMicrotask(() => {
-            setEventForm({
-              title: '',
-              startDate: '',
-              endDate: '',
-              time: '',
-              location: '',
-              locationTag: '',
-              venue: '',
-              description: '',
-              price: '',
-              bookingUrl: '',
-            });
-            setEventImageFile(null);
-            setSelectedType(null);
-          });
-        });
       });
+      
+      // Defer toast and form reset to next tick
+      setTimeout(() => {
+        toast({
+          title: 'Event created',
+          description: 'Your event has been created and will appear in your profile and discover feed.',
+        });
+
+        setTimeout(() => {
+          setEventForm({
+            title: '',
+            startDate: '',
+            endDate: '',
+            time: '',
+            location: '',
+            locationTag: '',
+            venue: '',
+            description: '',
+            price: '',
+            bookingUrl: '',
+          });
+          setEventImageFile(null);
+          setSelectedType(null);
+        }, 100);
+      }, 0);
     } catch (error) {
       console.error('Error creating event:', error);
-      // Defer all side effects to avoid React error #300
-      // Use queueMicrotask for reliable deferral outside render cycle
-      queueMicrotask(() => {
+      // Use startTransition to mark updates as non-urgent and prevent React error #300
+      startTransition(() => {
         setIsSubmittingEvent(false);
-        queueMicrotask(() => {
-          toast({
-            title: 'Event creation failed',
-            description: 'Please try again.',
-            variant: 'destructive',
-          });
-        });
       });
+      
+      // Defer toast to next tick
+      setTimeout(() => {
+        toast({
+          title: 'Event creation failed',
+          description: 'Please try again.',
+          variant: 'destructive',
+        });
+      }, 0);
     }
   };
 
@@ -269,48 +270,49 @@ export default function UploadPage() {
 
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
-      // Defer all side effects to avoid React error #300
-      // Use queueMicrotask for reliable deferral outside render cycle
-      queueMicrotask(() => {
+      // Use startTransition to mark updates as non-urgent and prevent React error #300
+      startTransition(() => {
         setIsSubmittingProduct(false);
-        queueMicrotask(() => {
-          toast({
-            title: 'Product created',
-            description: 'Your product has been created and will appear in your shop.',
-          });
-
-          // Reset form and navigation after additional microtask
-          queueMicrotask(() => {
-            setProductForm({
-              title: '',
-              description: '',
-              price: '',
-              originalPrice: '',
-              category: 'art-prints',
-              subcategory: 'fine-art-prints',
-              stock: '1',
-              tags: [],
-              newTag: '',
-            });
-            setProductImages([]);
-            setSelectedType(null);
-          });
-        });
       });
+      
+      // Defer toast and form reset to next tick
+      setTimeout(() => {
+        toast({
+          title: 'Product created',
+          description: 'Your product has been created and will appear in your shop.',
+        });
+
+        setTimeout(() => {
+          setProductForm({
+            title: '',
+            description: '',
+            price: '',
+            originalPrice: '',
+            category: 'art-prints',
+            subcategory: 'fine-art-prints',
+            stock: '1',
+            tags: [],
+            newTag: '',
+          });
+          setProductImages([]);
+          setSelectedType(null);
+        }, 100);
+      }, 0);
     } catch (error) {
       console.error('Error creating product:', error);
-      // Defer all side effects to avoid React error #300
-      // Use queueMicrotask for reliable deferral outside render cycle
-      queueMicrotask(() => {
+      // Use startTransition to mark updates as non-urgent and prevent React error #300
+      startTransition(() => {
         setIsSubmittingProduct(false);
-        queueMicrotask(() => {
-          toast({
-            title: 'Product creation failed',
-            description: 'Please try again.',
-            variant: 'destructive',
-          });
-        });
       });
+      
+      // Defer toast to next tick
+      setTimeout(() => {
+        toast({
+          title: 'Product creation failed',
+          description: 'Please try again.',
+          variant: 'destructive',
+        });
+      }, 0);
     }
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -347,20 +347,21 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       });
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
-      // Defer all side effects to avoid React error #300
-      // Use queueMicrotask for reliable deferral outside render cycle
-      queueMicrotask(() => {
+      // Use startTransition to mark updates as non-urgent and prevent React error #300
+      startTransition(() => {
         setLoading(false);
-        queueMicrotask(() => {
-          toast({
-            title: "Upload failed",
-            description: isProductUpload
-              ? "We couldn't save your product. Please try again."
-              : "We couldn't save your artwork. Please try again.",
-            variant: "destructive",
-          });
-        });
       });
+      
+      // Defer toast to next tick
+      setTimeout(() => {
+        toast({
+          title: "Upload failed",
+          description: isProductUpload
+            ? "We couldn't save your product. Please try again."
+            : "We couldn't save your artwork. Please try again.",
+          variant: "destructive",
+        });
+      }, 0);
     }
   };
 
