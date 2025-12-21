@@ -55,6 +55,8 @@ export default function UploadPage() {
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
   const [productUploadSuccess, setProductUploadSuccess] = useState(false);
   const [productUploadError, setProductUploadError] = useState<string | null>(null);
+  const productSuccessProcessedRef = useRef(false);
+  const productErrorProcessedRef = useRef(false);
 
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
@@ -73,9 +75,23 @@ export default function UploadPage() {
     return () => unsub();
   }, [user?.id]);
 
+  // Reset refs when flags are cleared
+  useEffect(() => {
+    if (!productUploadSuccess) {
+      productSuccessProcessedRef.current = false;
+    }
+  }, [productUploadSuccess]);
+
+  useEffect(() => {
+    if (!productUploadError) {
+      productErrorProcessedRef.current = false;
+    }
+  }, [productUploadError]);
+
   // Handle product upload success side effects separately from render cycle
   useEffect(() => {
-    if (productUploadSuccess) {
+    if (productUploadSuccess && !productSuccessProcessedRef.current) {
+      productSuccessProcessedRef.current = true;
       // Defer all side effects to next tick
       setTimeout(() => {
         setIsSubmittingProduct(false);
@@ -107,7 +123,8 @@ export default function UploadPage() {
 
   // Handle product upload error side effects separately from render cycle
   useEffect(() => {
-    if (productUploadError) {
+    if (productUploadError && !productErrorProcessedRef.current) {
+      productErrorProcessedRef.current = true;
       // Defer all side effects to next tick
       setTimeout(() => {
         setIsSubmittingProduct(false);
