@@ -143,8 +143,11 @@ export function UploadArtworkBasic() {
               onChange={handleFileChange}
               required
             />
+            <p className="text-xs text-muted-foreground">
+              You can select multiple images. Hold Ctrl (Windows) or Cmd (Mac) to select multiple files, or drag and select multiple files.
+            </p>
             {files.length > 0 && (
-              <div className="space-y-1">
+              <div className="space-y-1 mt-2">
                 <p className="text-sm text-muted-foreground">
                   {files.length} image(s) selected
                 </p>
