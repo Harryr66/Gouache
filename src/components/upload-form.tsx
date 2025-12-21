@@ -327,28 +327,30 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       console.log('✅ UploadForm: Added to user portfolio');
 
       // Defer all side effects to avoid React error #300
-      // Use Promise.resolve().then() to defer to next event loop tick
-      Promise.resolve().then(() => {
-        setLoading(false);
-        
-        toast({
-          title: "Upload complete",
-          description: isProductUpload 
-            ? "Your product was uploaded and added to your shop."
-            : "Your artwork was uploaded and added to your portfolio.",
-          variant: "default",
-        });
-
-        // Navigate after a brief delay
+      // Use double deferral to ensure we're outside render cycle
+      requestAnimationFrame(() => {
         setTimeout(() => {
-          router.push('/profile?tab=portfolio');
-        }, 300);
+          setLoading(false);
+          
+          toast({
+            title: "Upload complete",
+            description: isProductUpload 
+              ? "Your product was uploaded and added to your shop."
+              : "Your artwork was uploaded and added to your portfolio.",
+            variant: "default",
+          });
+
+          // Navigate after a brief delay
+          setTimeout(() => {
+            router.push('/profile?tab=portfolio');
+          }, 100);
+        }, 0);
       });
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
-      setLoading(false);
-      // Defer toast to avoid render conflicts
-      setTimeout(() => {
+      // Defer all side effects to avoid React error #300
+      Promise.resolve().then(() => {
+        setLoading(false);
         toast({
           title: "Upload failed",
           description: isProductUpload
@@ -356,7 +358,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
             : "We couldn't save your artwork. Please try again.",
           variant: "destructive",
         });
-      }, 0);
+      });
     }
   };
 
