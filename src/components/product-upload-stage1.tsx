@@ -23,7 +23,10 @@ export function ProductUploadStage1() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
-    setFiles(selectedFiles);
+    // Use setTimeout to defer state update
+    setTimeout(() => {
+      setFiles(selectedFiles);
+    }, 0);
   };
 
   const handleUpload = () => {
