@@ -326,41 +326,53 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
       });
       console.log('✅ UploadForm: Added to user portfolio');
 
-      // Handle all side effects in a single deferred callback
-      // This completely avoids React render cycle conflicts
-      const successMessage = isProductUpload 
-        ? "Your product was uploaded and added to your shop."
-        : "Your artwork was uploaded and added to your portfolio.";
-      
-      // Use setTimeout to defer ALL side effects to next event loop tick
-      setTimeout(() => {
-        setLoading(false);
-        toast({
-          title: "Upload complete",
-          description: successMessage,
-          variant: "default",
+      // Use Promise.resolve() to queue side effects in microtask queue
+      // This ensures they run AFTER React finishes current render cycle
+      Promise.resolve().then(() => {
+        // Queue state update in microtask
+        queueMicrotask(() => {
+          setLoading(false);
         });
         
-        // Navigate after a brief delay
+        // Queue toast in next microtask
+        queueMicrotask(() => {
+          const successMessage = isProductUpload 
+            ? "Your product was uploaded and added to your shop."
+            : "Your artwork was uploaded and added to your portfolio.";
+          
+          toast({
+            title: "Upload complete",
+            description: successMessage,
+            variant: "default",
+          });
+        });
+        
+        // Queue navigation in next event loop tick to avoid conflicts
         setTimeout(() => {
           router.push('/profile?tab=portfolio');
-        }, 300);
-      }, 0);
+        }, 100);
+      });
     } catch (error) {
       console.error('❌ UploadForm: Error uploading artwork:', error);
-      const errorMessage = isProductUpload
-        ? "We couldn't save your product. Please try again."
-        : "We couldn't save your artwork. Please try again.";
       
-      // Handle error side effects in deferred callback
-      setTimeout(() => {
-        setLoading(false);
-        toast({
-          title: "Upload failed",
-          description: errorMessage,
-          variant: "destructive",
+      // Use Promise.resolve() to queue error handling in microtask queue
+      Promise.resolve().then(() => {
+        queueMicrotask(() => {
+          setLoading(false);
         });
-      }, 0);
+        
+        queueMicrotask(() => {
+          const errorMessage = isProductUpload
+            ? "We couldn't save your product. Please try again."
+            : "We couldn't save your artwork. Please try again.";
+          
+          toast({
+            title: "Upload failed",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        });
+      });
     }
   };
 
