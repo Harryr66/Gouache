@@ -51,6 +51,7 @@ function SettingsPageContent() {
   const [deletePassword, setDeletePassword] = useState('');
   const [showPasswordInput, setShowPasswordInput] = useState(false);
   const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
+  const [hueEnabled, setHueEnabled] = useState(true);
 
   // Allow guests to access settings, but grey out sign-in required tabs
   
@@ -85,6 +86,67 @@ function SettingsPageContent() {
       router.replace('/settings?tab=hue', { scroll: false });
     }
   }, [searchParams, router, user]);
+  
+  // Load Hue enabled state
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const loadHuePreference = () => {
+      // For guests (no user.id), use localStorage
+      if (!user?.id) {
+        const savedPreference = localStorage.getItem('hue-enabled');
+        if (savedPreference !== null) {
+          setHueEnabled(savedPreference === 'true');
+        } else {
+          // Default to true for guests
+          setHueEnabled(true);
+        }
+        return;
+      }
+
+      // For authenticated users, use Firestore
+      const userRef = doc(db, 'userProfiles', user.id);
+      const unsubscribe = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          const enabled = userData.preferences?.hueEnabled !== false; // Default to true
+          setHueEnabled(enabled);
+        }
+      });
+
+      return unsubscribe;
+    };
+
+    const unsubscribe = loadHuePreference();
+    
+    // Listen for localStorage changes (for guests)
+    if (!user?.id) {
+      const handleStorageChange = (e: StorageEvent | Event) => {
+        if (e instanceof StorageEvent && e.key === 'hue-enabled') {
+          setHueEnabled(e.newValue === 'true');
+        } else if (e.type === 'hue-preference-changed') {
+          // Custom event from settings page
+          const savedPreference = localStorage.getItem('hue-enabled');
+          if (savedPreference !== null) {
+            setHueEnabled(savedPreference === 'true');
+          }
+        }
+      };
+
+      window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('hue-preference-changed', handleStorageChange);
+
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('hue-preference-changed', handleStorageChange);
+        if (unsubscribe) unsubscribe();
+      };
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user?.id]);
   
   // Handle tab change
   const handleTabChange = (value: string) => {
@@ -699,48 +761,39 @@ function SettingsPageContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {!user && (
-                  <div className="p-4 bg-muted/50 border border-border rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-sm">Guest Mode</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Hue is always active for error detection. Sign in to customize Hue settings and enable/disable the assistant.
-                        </p>
-                      </div>
-                    </div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm sm:text-base">Enable Hue</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Show the Hue assistant on your screen. Hue will always detect errors even when hidden.
+                    </p>
                   </div>
-                )}
-                {user && (
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm sm:text-base">Enable Hue</h4>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Show the Hue assistant on your screen. Hue will always detect errors even when hidden.
-                      </p>
-                    </div>
-                    <Button 
-                      variant="default"
+                  <Button 
+                    variant={hueEnabled ? "outline" : "default"}
                     onClick={async () => {
+                      const newValue = !hueEnabled;
+                      
                       // For guests (no user.id), use localStorage
                       if (!user?.id) {
                         try {
-                          localStorage.setItem('hue-enabled', 'true');
+                          localStorage.setItem('hue-enabled', String(newValue));
                           // Dispatch custom event to notify Hue component
                           if (typeof window !== 'undefined') {
                             window.dispatchEvent(new Event('hue-preference-changed'));
                           }
+                          setHueEnabled(newValue);
                           toast({
-                            title: 'Hue enabled',
-                            description: 'Hue assistant is now visible on your screen.',
+                            title: newValue ? 'Hue enabled' : 'Hue disabled',
+                            description: newValue 
+                              ? 'Hue assistant is now visible on your screen.'
+                              : 'Hue assistant is now hidden. It will still detect errors.',
                           });
                           return;
                         } catch (error) {
                           console.error('Error saving Hue preference to localStorage:', error);
                           toast({
                             title: 'Error',
-                            description: 'Failed to enable Hue. Please try again.',
+                            description: 'Failed to update Hue preference. Please try again.',
                             variant: 'destructive'
                           });
                           return;
@@ -758,34 +811,36 @@ function SettingsPageContent() {
                         await setDoc(userRef, {
                           preferences: {
                             ...existingPreferences,
-                            hueEnabled: true
+                            hueEnabled: newValue
                           }
                         }, { merge: true });
 
+                        setHueEnabled(newValue);
                         toast({
-                          title: 'Hue enabled',
-                          description: 'Hue assistant is now visible on your screen.',
+                          title: newValue ? 'Hue enabled' : 'Hue disabled',
+                          description: newValue 
+                            ? 'Hue assistant is now visible on your screen.'
+                            : 'Hue assistant is now hidden. It will still detect errors.',
                         });
 
                         if (refreshUser) {
                           await refreshUser();
                         }
                       } catch (error) {
-                        console.error('Error enabling Hue:', error);
+                        console.error('Error updating Hue preference:', error);
                         toast({
                           title: 'Error',
-                          description: 'Failed to enable Hue. Please try again.',
+                          description: 'Failed to update Hue preference. Please try again.',
                           variant: 'destructive'
                         });
                       }
                     }}
-                      className="w-full sm:w-auto shrink-0"
-                      size="sm"
-                    >
-                      Enable Hue
-                    </Button>
-                  </div>
-                )}
+                    className="w-full sm:w-auto shrink-0"
+                    size="sm"
+                  >
+                    {hueEnabled ? 'Disable Hue' : 'Enable Hue'}
+                  </Button>
+                </div>
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-start space-x-3">
                     <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
