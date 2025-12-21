@@ -13,6 +13,8 @@ import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 /**
  * BASIC Artwork Upload - Portfolio only
@@ -27,6 +29,10 @@ export function UploadArtworkBasic() {
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isForSale, setIsForSale] = useState(false);
+  const [priceType, setPriceType] = useState<'fixed' | 'contact'>('fixed');
+  const [price, setPrice] = useState('');
+  const [deliveryScope, setDeliveryScope] = useState<'worldwide' | 'specific'>('worldwide');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -81,6 +87,15 @@ export function UploadArtworkBasic() {
       return;
     }
 
+    if (isForSale && priceType === 'fixed' && !price.trim()) {
+      toast({
+        title: 'Missing price',
+        description: 'Please enter a price or select "Contact artist for pricing".',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -104,7 +119,7 @@ export function UploadArtworkBasic() {
       const userDoc = await getDoc(userDocRef);
       const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
 
-      const portfolioItem = {
+      const portfolioItem: any = {
         id: `artwork-${Date.now()}`,
         imageUrl: primaryImageUrl,
         supportingImages: supportingImages.length > 0 ? supportingImages : undefined,
@@ -112,8 +127,28 @@ export function UploadArtworkBasic() {
         description: description.trim() || '',
         type: 'artwork',
         showInPortfolio: true,
+        showInShop: isForSale,
+        isForSale: isForSale,
         createdAt: new Date(),
+        updatedAt: new Date(),
+        likes: 0,
+        commentsCount: 0,
+        tags: [],
+        aiAssistance: 'none',
+        isAI: false,
       };
+
+      // Add sale-related fields if for sale
+      if (isForSale) {
+        if (priceType === 'fixed' && price.trim()) {
+          portfolioItem.price = parseFloat(price) * 100; // Convert to cents
+          portfolioItem.currency = 'USD';
+        } else if (priceType === 'contact') {
+          portfolioItem.priceType = 'contact';
+          portfolioItem.contactForPrice = true;
+        }
+        portfolioItem.deliveryScope = deliveryScope;
+      }
 
       const updatedPortfolio = [...currentPortfolio, portfolioItem];
       
@@ -135,6 +170,10 @@ export function UploadArtworkBasic() {
       setFiles([]);
       setTitle('');
       setDescription('');
+      setIsForSale(false);
+      setPriceType('fixed');
+      setPrice('');
+      setDeliveryScope('worldwide');
 
       // Navigate to portfolio
       router.push('/profile?tab=portfolio');
@@ -293,6 +332,101 @@ export function UploadArtworkBasic() {
               rows={3}
             />
           </div>
+
+          {/* Mark for Sale */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="isForSale" className="cursor-pointer text-base font-semibold">
+                  Mark this item for sale
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Enable this to list this artwork in your shop.
+                </p>
+              </div>
+              <Switch
+                id="isForSale"
+                checked={isForSale}
+                onCheckedChange={setIsForSale}
+              />
+            </div>
+          </div>
+
+          {/* Sale Options (only shown if for sale) */}
+          {isForSale && (
+            <div className="space-y-4 p-4 border rounded-lg border-l-2">
+              <Label className="text-base font-semibold mb-4 block">Pricing & Delivery</Label>
+              
+              {/* Price Type */}
+              <div className="space-y-2">
+                <Label>Pricing</Label>
+                <Select
+                  value={priceType}
+                  onValueChange={(value: 'fixed' | 'contact') => setPriceType(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed">Set Price</SelectItem>
+                    <SelectItem value="contact">Contact Artist</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Fixed Price Fields */}
+              {priceType === 'fixed' && (
+                <div className="space-y-2">
+                  <Label htmlFor="price">Price (USD) *</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Contact Artist Note */}
+              {priceType === 'contact' && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    Customers will be prompted to contact you for pricing. Make sure your contact information is set in your profile.
+                  </p>
+                </div>
+              )}
+
+              {/* Delivery Scope */}
+              <div className="space-y-2">
+                <Label>Available for delivery</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant={deliveryScope === 'worldwide' ? 'default' : 'outline'}
+                    onClick={() => setDeliveryScope('worldwide')}
+                  >
+                    Worldwide
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={deliveryScope === 'specific' ? 'default' : 'outline'}
+                    onClick={() => setDeliveryScope('specific')}
+                  >
+                    Specific countries
+                  </Button>
+                </div>
+                {deliveryScope === 'specific' && (
+                  <p className="text-xs text-muted-foreground">
+                    Note: Country selection will be added in a future update.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Submit Button */}
           <Button type="submit" disabled={uploading || !files.length || !title.trim()} className="w-full">
