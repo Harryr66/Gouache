@@ -11,7 +11,7 @@ import { Image, Calendar, ArrowLeft, Brain } from 'lucide-react';
 import { UploadArtworkBasic } from '@/components/upload-artwork-basic';
 // REMOVED: Artwork and Product upload portals
 import { ThemeLoading } from '@/components/theme-loading';
-import { collection, query, where, addDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,7 +24,6 @@ export default function UploadPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [selectedType, setSelectedType] = useState<'artwork' | 'event' | 'course' | null>(null);
-  const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
   const [eventForm, setEventForm] = useState({
     title: '',
     startDate: '',
@@ -40,36 +39,7 @@ export default function UploadPage() {
   const [eventImageFile, setEventImageFile] = useState<File | null>(null);
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
   // REMOVED: Product upload state - rebuilding from scratch
-
-  // Listen for approved artist request - use getDocs instead of onSnapshot to avoid render issues
-  useEffect(() => {
-    if (!user?.id) {
-      setHasApprovedArtistRequest(false);
-      return;
-    }
-    
-    // Use getDocs instead of onSnapshot to avoid state updates during render
-    const checkArtistRequest = async () => {
-      try {
-        const q = query(
-          collection(db, 'artistRequests'),
-          where('userId', '==', user.id),
-          where('status', '==', 'approved')
-        );
-        const snap = await getDocs(q);
-        setHasApprovedArtistRequest(!snap.empty);
-      } catch (error) {
-        console.error('Error checking artist request:', error);
-        setHasApprovedArtistRequest(false);
-      }
-    };
-    
-    checkArtistRequest();
-    // Check periodically instead of using real-time listener
-    const interval = setInterval(checkArtistRequest, 30000); // Check every 30 seconds
-    return () => clearInterval(interval);
-  }, [user?.id]);
-
+  // REMOVED: Artist request check - causing React error #300
 
   // Show loading animation while auth is loading
   // Simplified: just wait for loading to complete and user to be available
@@ -228,13 +198,7 @@ export default function UploadPage() {
     );
   }
 
-  // Handle course redirect
-  useEffect(() => {
-    if (selectedType === 'course') {
-      router.push('/learn/submit');
-    }
-  }, [selectedType, router]);
-
+  // Handle course redirect - use onClick instead of useEffect
   if (selectedType === 'course') {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -449,7 +413,7 @@ export default function UploadPage() {
         {/* Upload Course */}
         <Card 
           className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
-          onClick={() => setSelectedType('course')}
+          onClick={() => router.push('/learn/submit')}
         >
           <CardHeader>
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
