@@ -59,7 +59,10 @@ export default function UploadPage() {
   // Listen for approved artist request as fallback when isProfessional flag is missing
   useEffect(() => {
     if (!user?.id) {
-      setHasApprovedArtistRequest(false);
+      // Defer state update to prevent React error #300
+      setTimeout(() => {
+        setHasApprovedArtistRequest(false);
+      }, 0);
       return;
     }
     const q = query(
@@ -68,7 +71,10 @@ export default function UploadPage() {
       where('status', '==', 'approved')
     );
     const unsub = onSnapshot(q, (snap) => {
-      setHasApprovedArtistRequest(!snap.empty);
+      // Defer state update from snapshot callback
+      setTimeout(() => {
+        setHasApprovedArtistRequest(!snap.empty);
+      }, 0);
     });
     return () => unsub();
   }, [user?.id]);
