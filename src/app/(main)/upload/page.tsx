@@ -8,7 +8,7 @@ import { User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Image, Calendar, ArrowLeft, Brain } from 'lucide-react';
-import { UploadArtworkSimple } from '@/components/upload-artwork-simple';
+import { UploadArtworkMinimal } from '@/components/upload-artwork-minimal';
 // REMOVED: Artwork and Product upload portals
 import { ThemeLoading } from '@/components/theme-loading';
 import { collection, query, where, addDoc, getDocs } from 'firebase/firestore';
@@ -223,7 +223,7 @@ export default function UploadPage() {
             Upload images to your portfolio and shop.
           </p>
         </header>
-        <UploadArtworkSimple />
+        <UploadArtworkMinimal />
       </div>
     );
   }
