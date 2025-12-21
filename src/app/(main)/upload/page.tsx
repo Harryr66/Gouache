@@ -259,16 +259,23 @@ export default function UploadPage() {
 
       await addDoc(collection(db, 'marketplaceProducts'), productData);
 
-      // Handle all side effects in a single deferred callback
-      // This completely avoids React render cycle conflicts
-      setTimeout(() => {
-        setIsSubmittingProduct(false);
-        toast({
-          title: 'Product created',
-          description: 'Your product has been created and will appear in your shop.',
+      // Use Promise.resolve() to queue side effects in microtask queue
+      // This ensures they run AFTER React finishes current render cycle
+      Promise.resolve().then(() => {
+        // Queue state update in microtask
+        queueMicrotask(() => {
+          setIsSubmittingProduct(false);
+        });
+        
+        // Queue toast in next microtask
+        queueMicrotask(() => {
+          toast({
+            title: 'Product created',
+            description: 'Your product has been created and will appear in your shop.',
+          });
         });
 
-        // Reset form and navigation after a brief delay
+        // Reset form after a brief delay in next event loop tick
         setTimeout(() => {
           setProductForm({
             title: '',
@@ -283,20 +290,25 @@ export default function UploadPage() {
           });
           setProductImages([]);
           setSelectedType(null);
-        }, 300);
-      }, 0);
+        }, 100);
+      });
     } catch (error) {
       console.error('Error creating product:', error);
       
-      // Handle error side effects in deferred callback
-      setTimeout(() => {
-        setIsSubmittingProduct(false);
-        toast({
-          title: 'Product creation failed',
-          description: 'Please try again.',
-          variant: 'destructive',
+      // Use Promise.resolve() to queue error handling in microtask queue
+      Promise.resolve().then(() => {
+        queueMicrotask(() => {
+          setIsSubmittingProduct(false);
         });
-      }, 0);
+        
+        queueMicrotask(() => {
+          toast({
+            title: 'Product creation failed',
+            description: 'Please try again.',
+            variant: 'destructive',
+          });
+        });
+      });
     }
   };
 
