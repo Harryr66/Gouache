@@ -7,7 +7,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { addDoc, collection } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
-import { toast } from '@/hooks/use-toast';
+// Removed toast import - using console.log only to isolate React error #300
 
 /**
  * STAGE 1: Simplest artwork upload
@@ -49,24 +49,19 @@ export function UploadFormStage1() {
 
         console.log('Files uploaded successfully:', uploadedUrls);
 
-        // Use setTimeout again to defer toast and state updates
+        // Success - update state in next tick
         setTimeout(() => {
-          toast({
-            title: 'Files uploaded',
-            description: `Successfully uploaded ${files.length} file(s) to storage.`,
-          });
+          console.log('✅ Upload successful - updating state');
           setFiles([]);
           setUploading(false);
+          alert(`Successfully uploaded ${files.length} file(s) to storage.`);
         }, 0);
       } catch (error) {
         console.error('Upload error:', error);
         setTimeout(() => {
-          toast({
-            title: 'Upload failed',
-            description: 'Failed to upload files. Please try again.',
-            variant: 'destructive',
-          });
+          console.log('❌ Upload failed - updating state');
           setUploading(false);
+          alert('Upload failed. Please try again.');
         }, 0);
       }
     }, 0);

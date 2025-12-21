@@ -7,7 +7,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { addDoc, collection } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
-import { toast } from '@/hooks/use-toast';
+// Removed toast import - using console.log only to isolate React error #300
 
 /**
  * STAGE 1: Simplest product upload
@@ -59,24 +59,19 @@ export function ProductUploadStage1() {
 
         console.log('Product uploaded successfully');
 
-        // Use setTimeout again to defer toast and state updates
+        // Success - update state in next tick
         setTimeout(() => {
-          toast({
-            title: 'Product uploaded',
-            description: `Successfully uploaded ${files.length} image(s) and created product.`,
-          });
+          console.log('✅ Product upload successful - updating state');
           setFiles([]);
           setUploading(false);
+          alert(`Successfully uploaded ${files.length} image(s) and created product.`);
         }, 0);
       } catch (error) {
         console.error('Upload error:', error);
         setTimeout(() => {
-          toast({
-            title: 'Upload failed',
-            description: 'Failed to upload product. Please try again.',
-            variant: 'destructive',
-          });
+          console.log('❌ Product upload failed - updating state');
           setUploading(false);
+          alert('Product upload failed. Please try again.');
         }, 0);
       }
     }, 0);
