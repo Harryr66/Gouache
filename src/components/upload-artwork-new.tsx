@@ -184,6 +184,12 @@ export function UploadArtworkNew() {
         isForSale: isForSale,
         artworkType: isOriginal ? 'original' : 'print',
         createdAt: new Date(),
+        updatedAt: new Date(),
+        likes: 0,
+        commentsCount: 0,
+        tags: [],
+        aiAssistance: 'none',
+        isAI: false,
       };
 
       // Add sale-related fields to portfolio item if for sale
