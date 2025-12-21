@@ -8,8 +8,7 @@ import { User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Image, Package, Calendar, ArrowLeft, Brain, GraduationCap } from 'lucide-react';
-import { UploadArtwork } from '@/components/upload-artwork';
-import { UploadProduct } from '@/components/upload-product';
+// REMOVED: Artwork and Product upload portals
 import { ThemeLoading } from '@/components/theme-loading';
 import { collection, onSnapshot, query, where, addDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
@@ -197,9 +196,8 @@ export default function UploadPage() {
 
   // REMOVED: Product upload handlers - rebuilding from scratch
 
-  // NEW: Artwork and Product upload portals - built from scratch
+  // REMOVED: Artwork and Product upload portals
   if (selectedType === 'artwork') {
-    console.log('🎨 Rendering UploadArtwork component');
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <Button
@@ -210,21 +208,19 @@ export default function UploadPage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Upload Options
         </Button>
-        <header className="mb-8">
-          <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
-            Upload Artwork
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Upload images to your portfolio and shop.
-          </p>
-        </header>
-        <UploadArtwork />
+        <Card className="p-8 text-center">
+          <CardContent>
+            <h2 className="text-2xl font-bold mb-4">Artwork Upload - Removed</h2>
+            <p className="text-muted-foreground">
+              Artwork upload portal has been removed.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (selectedType === 'product') {
-    console.log('📦 Rendering UploadProduct component');
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <Button
@@ -235,15 +231,14 @@ export default function UploadPage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Upload Options
         </Button>
-        <header className="mb-8">
-          <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
-            Upload Product
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            List a product for sale in your shop.
-          </p>
-        </header>
-        <UploadProduct />
+        <Card className="p-8 text-center">
+          <CardContent>
+            <h2 className="text-2xl font-bold mb-4">Product Upload - Removed</h2>
+            <p className="text-muted-foreground">
+              Product upload portal has been removed.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
