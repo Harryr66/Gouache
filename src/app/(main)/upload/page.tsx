@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Image, Package, Calendar, ArrowLeft, Brain, GraduationCap } from 'lucide-react';
 import { UploadForm } from '@/components/upload-form';
-import { UploadFormStage1 } from '@/components/upload-form-stage1';
-import { ProductUploadStage1 } from '@/components/product-upload-stage1';
+import { UploadFormBarebones } from '@/components/upload-form-barebones';
+import { ProductUploadBarebones } from '@/components/product-upload-barebones';
 import { ThemeLoading } from '@/components/theme-loading';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -340,7 +340,7 @@ export default function UploadPage() {
             Upload images to your portfolio and shop.
           </p>
         </header>
-        <UploadFormStage1 />
+        <UploadFormBarebones />
       </div>
     );
   }
@@ -364,7 +364,7 @@ export default function UploadPage() {
             List a product for sale in your shop.
           </p>
         </header>
-        <ProductUploadStage1 />
+        <ProductUploadBarebones />
       </div>
     );
   }
