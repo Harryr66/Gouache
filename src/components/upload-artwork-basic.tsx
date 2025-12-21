@@ -21,24 +21,25 @@ export function UploadArtworkBasic() {
   const { user } = useAuth();
   const router = useRouter();
   
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files);
+      setFiles(selectedFiles);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !file || !title.trim()) {
+    if (!user || !files.length || !title.trim()) {
       toast({
         title: 'Missing information',
-        description: 'Please select an image and enter a title.',
+        description: 'Please select at least one image and enter a title.',
         variant: 'destructive',
       });
       return;
@@ -47,10 +48,20 @@ export function UploadArtworkBasic() {
     setUploading(true);
 
     try {
-      // Upload image to Firebase Storage
-      const fileRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${file.name}`);
-      await uploadBytes(fileRef, file);
-      const imageUrl = await getDownloadURL(fileRef);
+      // Upload all images to Firebase Storage
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${i}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        const fileUrl = await getDownloadURL(fileRef);
+        uploadedUrls.push(fileUrl);
+      }
+
+      // First image is the main display image
+      const primaryImageUrl = uploadedUrls[0];
+      // Remaining images are carousel images
+      const supportingImages = uploadedUrls.slice(1);
 
       // Update user's portfolio in Firestore
       const userDocRef = doc(db, 'userProfiles', user.id);
@@ -59,7 +70,8 @@ export function UploadArtworkBasic() {
 
       const portfolioItem = {
         id: `artwork-${Date.now()}`,
-        imageUrl: imageUrl,
+        imageUrl: primaryImageUrl,
+        supportingImages: supportingImages.length > 0 ? supportingImages : undefined,
         title: title.trim(),
         description: description.trim() || '',
         type: 'artwork',
@@ -80,7 +92,7 @@ export function UploadArtworkBasic() {
       });
 
       // Reset form
-      setFile(null);
+      setFiles([]);
       setTitle('');
       setDescription('');
 
@@ -122,18 +134,27 @@ export function UploadArtworkBasic() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Image Upload */}
           <div className="space-y-2">
-            <Label htmlFor="image">Image *</Label>
+            <Label htmlFor="images">Images *</Label>
             <Input
               type="file"
-              id="image"
+              id="images"
               accept="image/*"
+              multiple
               onChange={handleFileChange}
               required
             />
-            {file && (
-              <p className="text-sm text-muted-foreground">
-                Selected: {file.name}
-              </p>
+            {files.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  {files.length} image(s) selected
+                </p>
+                <div className="text-xs text-muted-foreground space-y-0.5">
+                  <p className="font-medium">Main image: {files[0]?.name}</p>
+                  {files.length > 1 && (
+                    <p>Carousel images: {files.slice(1).map(f => f.name).join(', ')}</p>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
@@ -162,7 +183,7 @@ export function UploadArtworkBasic() {
           </div>
 
           {/* Submit Button */}
-          <Button type="submit" disabled={uploading || !file || !title.trim()} className="w-full">
+          <Button type="submit" disabled={uploading || !files.length || !title.trim()} className="w-full">
             {uploading ? 'Uploading...' : 'Upload Artwork'}
           </Button>
         </form>
