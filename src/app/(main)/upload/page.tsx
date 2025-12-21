@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Image, Package, Calendar, ArrowLeft, Brain, GraduationCap } from 'lucide-react';
 import { UploadForm } from '@/components/upload-form';
+import { UploadFormStage1 } from '@/components/upload-form-stage1';
+import { ProductUploadStage1 } from '@/components/product-upload-stage1';
 import { ThemeLoading } from '@/components/theme-loading';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -332,7 +334,7 @@ export default function UploadPage() {
             Upload images to your portfolio and shop.
           </p>
         </header>
-        <UploadForm />
+        <UploadFormStage1 />
       </div>
     );
   }
@@ -356,102 +358,7 @@ export default function UploadPage() {
             List a product for sale in your shop.
           </p>
         </header>
-        <Card className="p-6 space-y-4">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="product-title">Product Title *</Label>
-              <Input
-                id="product-title"
-                placeholder="Enter product title"
-                value={productForm.title}
-                onChange={(e) => setProductForm((p) => ({ ...p, title: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="product-description">Description</Label>
-              <Textarea
-                id="product-description"
-                placeholder="Describe your product"
-                value={productForm.description}
-                onChange={(e) => setProductForm((p) => ({ ...p, description: e.target.value }))}
-                rows={4}
-              />
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="product-price">Price (USD) *</Label>
-                <Input
-                  id="product-price"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={productForm.price}
-                  onChange={(e) => setProductForm((p) => ({ ...p, price: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="product-original-price">Original Price (optional)</Label>
-                <Input
-                  id="product-original-price"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={productForm.originalPrice}
-                  onChange={(e) => setProductForm((p) => ({ ...p, originalPrice: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="product-category">Category</Label>
-                <Select
-                  value={productForm.category}
-                  onValueChange={(value) => setProductForm((p) => ({ ...p, category: value }))}
-                >
-                  <SelectTrigger id="product-category">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="art-prints">Art Prints</SelectItem>
-                    <SelectItem value="books">Books</SelectItem>
-                    <SelectItem value="supplies">Art Supplies</SelectItem>
-                    <SelectItem value="merchandise">Merchandise</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="product-stock">Stock Quantity</Label>
-                <Input
-                  id="product-stock"
-                  type="number"
-                  placeholder="1"
-                  value={productForm.stock}
-                  onChange={(e) => setProductForm((p) => ({ ...p, stock: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="product-images">Product Images *</Label>
-              <Input
-                id="product-images"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleProductImageChange}
-              />
-              {productImages.length > 0 && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {productImages.length} image{productImages.length !== 1 ? 's' : ''} selected
-                </p>
-              )}
-            </div>
-            <div className="flex justify-end">
-              <Button variant="gradient" onClick={handleProductSubmit} disabled={isSubmittingProduct}>
-                {isSubmittingProduct ? 'Creating…' : 'Create Product'}
-              </Button>
-            </div>
-          </div>
-        </Card>
+        <ProductUploadStage1 />
       </div>
     );
   }
