@@ -73,6 +73,7 @@ export function UploadArtworkBasic() {
   const [useAccountEmail, setUseAccountEmail] = useState(true);
   const [alternativeEmail, setAlternativeEmail] = useState('');
   const [dimensions, setDimensions] = useState({ width: '', height: '', unit: 'cm' as 'cm' | 'in' | 'px' });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -149,6 +150,15 @@ export function UploadArtworkBasic() {
       toast({
         title: 'Invalid email',
         description: 'Please enter a valid email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!agreedToTerms) {
+      toast({
+        title: 'Terms agreement required',
+        description: 'Please confirm that this artwork is not AI-generated and is your own original creative work.',
         variant: 'destructive',
       });
       return;
@@ -768,8 +778,21 @@ export function UploadArtworkBasic() {
             </div>
           )}
 
+          {/* Terms Agreement */}
+          <div className="flex items-start space-x-3 p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
+            <Checkbox
+              id="agreeToTerms"
+              checked={agreedToTerms}
+              onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+              className="mt-1"
+            />
+            <label htmlFor="agreeToTerms" className="text-sm leading-relaxed cursor-pointer">
+              I confirm that this artwork is not AI-generated and is my own original creative work.
+            </label>
+          </div>
+
           {/* Submit Button */}
-          <Button type="submit" disabled={uploading || !files.length || !title.trim()} className="w-full">
+          <Button type="submit" disabled={uploading || !files.length || !title.trim() || !agreedToTerms} className="w-full">
             {uploading ? 'Uploading...' : 'Upload Artwork'}
           </Button>
         </form>
