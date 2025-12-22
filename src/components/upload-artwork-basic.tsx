@@ -17,6 +17,36 @@ import { X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+
+// List of countries for delivery selector
+const COUNTRIES = [
+  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 'Italy', 'Spain',
+  'Netherlands', 'Belgium', 'Switzerland', 'Austria', 'Sweden', 'Norway', 'Denmark', 'Finland',
+  'Ireland', 'Portugal', 'Greece', 'Poland', 'Czech Republic', 'Hungary', 'Romania', 'Bulgaria',
+  'Croatia', 'Slovenia', 'Slovakia', 'Estonia', 'Latvia', 'Lithuania', 'Luxembourg', 'Malta',
+  'Cyprus', 'Japan', 'South Korea', 'China', 'India', 'Singapore', 'Hong Kong', 'Taiwan',
+  'Thailand', 'Malaysia', 'Indonesia', 'Philippines', 'Vietnam', 'New Zealand', 'South Africa',
+  'Brazil', 'Mexico', 'Argentina', 'Chile', 'Colombia', 'Peru', 'Uruguay', 'Ecuador',
+  'Venezuela', 'Panama', 'Costa Rica', 'Guatemala', 'Israel', 'United Arab Emirates', 'Saudi Arabia',
+  'Qatar', 'Kuwait', 'Bahrain', 'Oman', 'Jordan', 'Lebanon', 'Egypt', 'Morocco',
+  'Tunisia', 'Turkey', 'Russia', 'Ukraine', 'Belarus', 'Iceland', 'Liechtenstein', 'Monaco',
+  'Andorra', 'San Marino', 'Vatican City', 'Albania', 'Bosnia and Herzegovina', 'Serbia', 'Montenegro',
+  'North Macedonia', 'Kosovo', 'Moldova', 'Georgia', 'Armenia', 'Azerbaijan', 'Kazakhstan',
+  'Uzbekistan', 'Kyrgyzstan', 'Tajikistan', 'Turkmenistan', 'Mongolia', 'Nepal', 'Bhutan',
+  'Bangladesh', 'Sri Lanka', 'Maldives', 'Myanmar', 'Cambodia', 'Laos', 'Brunei', 'East Timor',
+  'Papua New Guinea', 'Fiji', 'Samoa', 'Tonga', 'Vanuatu', 'Solomon Islands', 'Palau',
+  'Micronesia', 'Marshall Islands', 'Kiribati', 'Tuvalu', 'Nauru', 'Mauritius', 'Seychelles',
+  'Madagascar', 'Kenya', 'Tanzania', 'Uganda', 'Rwanda', 'Ethiopia', 'Ghana', 'Nigeria',
+  'Senegal', 'Ivory Coast', 'Cameroon', 'Gabon', 'Botswana', 'Namibia', 'Zimbabwe', 'Zambia',
+  'Mozambique', 'Angola', 'Malawi', 'Lesotho', 'Swaziland', 'Djibouti', 'Eritrea', 'Sudan',
+  'Chad', 'Niger', 'Mali', 'Burkina Faso', 'Guinea', 'Sierra Leone', 'Liberia', 'Togo',
+  'Benin', 'Gambia', 'Guinea-Bissau', 'Cape Verde', 'São Tomé and Príncipe', 'Equatorial Guinea',
+  'Central African Republic', 'Democratic Republic of the Congo', 'Republic of the Congo', 'Burundi',
+  'Comoros', 'Algeria', 'Libya', 'Tunisia', 'Mauritania', 'Western Sahara', 'Afghanistan',
+  'Iran', 'Iraq', 'Syria', 'Yemen', 'Oman', 'Pakistan', 'Bangladesh', 'Myanmar',
+  'North Korea', 'Mongolia', 'Bhutan', 'Nepal', 'Sri Lanka', 'Maldives', 'Other'
+].sort();
 
 /**
  * BASIC Artwork Upload - Portfolio only
@@ -36,9 +66,13 @@ export function UploadArtworkBasic() {
   const [isOriginal, setIsOriginal] = useState(true); // true = original, false = print
   const [priceType, setPriceType] = useState<'fixed' | 'contact'>('fixed');
   const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState<'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD'>('USD');
   const [deliveryScope, setDeliveryScope] = useState<'worldwide' | 'specific'>('worldwide');
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [countrySearch, setCountrySearch] = useState('');
   const [useAccountEmail, setUseAccountEmail] = useState(true);
   const [alternativeEmail, setAlternativeEmail] = useState('');
+  const [dimensions, setDimensions] = useState({ width: '', height: '', unit: 'cm' as 'cm' | 'in' | 'px' });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -167,13 +201,25 @@ export function UploadArtworkBasic() {
       if (isForSale) {
         if (priceType === 'fixed' && price.trim()) {
           portfolioItem.price = parseFloat(price) * 100; // Convert to cents
-          portfolioItem.currency = 'USD';
+          portfolioItem.currency = currency;
         } else if (priceType === 'contact') {
           portfolioItem.priceType = 'contact';
           portfolioItem.contactForPrice = true;
           portfolioItem.contactEmail = useAccountEmail ? user.email : alternativeEmail.trim();
         }
         portfolioItem.deliveryScope = deliveryScope;
+        if (deliveryScope === 'specific' && selectedCountries.length > 0) {
+          portfolioItem.deliveryCountries = selectedCountries.join(', ');
+        }
+      }
+
+      // Add dimensions if provided
+      if (dimensions.width && dimensions.height) {
+        portfolioItem.dimensions = {
+          width: parseFloat(dimensions.width) || 0,
+          height: parseFloat(dimensions.height) || 0,
+          unit: dimensions.unit,
+        };
       }
 
       const updatedPortfolio = [...currentPortfolio, portfolioItem];
@@ -226,6 +272,18 @@ export function UploadArtworkBasic() {
           artworkForShop.contactEmail = useAccountEmail ? user.email : alternativeEmail.trim();
         }
         artworkForShop.deliveryScope = deliveryScope;
+        if (deliveryScope === 'specific' && selectedCountries.length > 0) {
+          artworkForShop.deliveryCountries = selectedCountries.join(', ');
+        }
+      }
+
+      // Add dimensions if provided
+      if (dimensions.width && dimensions.height) {
+        artworkForShop.dimensions = {
+          width: parseFloat(dimensions.width) || 0,
+          height: parseFloat(dimensions.height) || 0,
+          unit: dimensions.unit,
+        };
 
         // Create post object for feed
         const post = {
@@ -263,9 +321,13 @@ export function UploadArtworkBasic() {
       setIsOriginal(true);
       setPriceType('fixed');
       setPrice('');
+      setCurrency('USD');
       setDeliveryScope('worldwide');
+      setSelectedCountries([]);
+      setCountrySearch('');
       setUseAccountEmail(true);
       setAlternativeEmail('');
+      setDimensions({ width: '', height: '', unit: 'cm' });
 
       // Navigate to portfolio
       router.push('/profile?tab=portfolio');
@@ -425,6 +487,42 @@ export function UploadArtworkBasic() {
             />
           </div>
 
+          {/* Dimensions */}
+          <div className="space-y-2">
+            <Label>Dimensions (Optional)</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Input
+                placeholder="Width"
+                value={dimensions.width}
+                onChange={(e) => setDimensions({ ...dimensions, width: e.target.value })}
+                type="number"
+                min="0"
+                step="0.1"
+              />
+              <Input
+                placeholder="Height"
+                value={dimensions.height}
+                onChange={(e) => setDimensions({ ...dimensions, height: e.target.value })}
+                type="number"
+                min="0"
+                step="0.1"
+              />
+              <Select 
+                value={dimensions.unit} 
+                onValueChange={(value: 'cm' | 'in' | 'px') => setDimensions({ ...dimensions, unit: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cm">cm</SelectItem>
+                  <SelectItem value="in">in</SelectItem>
+                  <SelectItem value="px">px</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           {/* Mark for Sale */}
           <div className="space-y-4 p-4 border rounded-lg">
             <div className="flex items-center justify-between">
@@ -495,18 +593,38 @@ export function UploadArtworkBasic() {
 
               {/* Fixed Price Fields */}
               {priceType === 'fixed' && (
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (USD) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder="0.00"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price *</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Currency</Label>
+                    <Select 
+                      value={currency} 
+                      onValueChange={(value: 'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD') => setCurrency(value)}
+                    >
+                      <SelectTrigger id="currency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="CAD">CAD (C$)</SelectItem>
+                        <SelectItem value="AUD">AUD (A$)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
 
@@ -571,7 +689,11 @@ export function UploadArtworkBasic() {
                   <Button
                     type="button"
                     variant={deliveryScope === 'worldwide' ? 'default' : 'outline'}
-                    onClick={() => setDeliveryScope('worldwide')}
+                    onClick={() => {
+                      setDeliveryScope('worldwide');
+                      setSelectedCountries([]);
+                      setCountrySearch('');
+                    }}
                   >
                     Worldwide
                   </Button>
@@ -584,9 +706,63 @@ export function UploadArtworkBasic() {
                   </Button>
                 </div>
                 {deliveryScope === 'specific' && (
-                  <p className="text-xs text-muted-foreground">
-                    Note: Country selection will be added in a future update.
-                  </p>
+                  <div className="space-y-2 mt-3">
+                    <Label>Select countries</Label>
+                    <Input
+                      placeholder="Search countries..."
+                      value={countrySearch}
+                      onChange={(e) => setCountrySearch(e.target.value)}
+                      className="mb-2"
+                    />
+                    <div className="border rounded-lg p-4 max-h-64 overflow-y-auto space-y-2">
+                      {COUNTRIES.filter(country => 
+                        country.toLowerCase().includes(countrySearch.toLowerCase())
+                      ).map((country) => (
+                        <div key={country} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`country-${country}`}
+                            checked={selectedCountries.includes(country)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedCountries([...selectedCountries, country]);
+                              } else {
+                                setSelectedCountries(selectedCountries.filter(c => c !== country));
+                              }
+                            }}
+                          />
+                          <Label 
+                            htmlFor={`country-${country}`} 
+                            className="cursor-pointer font-normal text-sm"
+                          >
+                            {country}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                    {selectedCountries.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Selected: {selectedCountries.length} countr{selectedCountries.length === 1 ? 'y' : 'ies'}
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedCountries.map((country) => (
+                            <Badge key={country} variant="secondary" className="text-xs">
+                              {country}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedCountries(selectedCountries.filter(c => c !== country));
+                                }}
+                                className="ml-1 hover:text-destructive"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
