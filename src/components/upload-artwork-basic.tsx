@@ -74,6 +74,8 @@ export function UploadArtworkBasic() {
   const [alternativeEmail, setAlternativeEmail] = useState('');
   const [dimensions, setDimensions] = useState({ width: '', height: '', unit: 'cm' as 'cm' | 'in' | 'px' });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -114,6 +116,25 @@ export function UploadArtworkBasic() {
     if (input) {
       input.click();
     }
+  };
+
+  const handleAddTag = () => {
+    const trimmedTag = tagInput.trim();
+    if (trimmedTag && !tags.includes(trimmedTag)) {
+      setTags([...tags, trimmedTag]);
+      setTagInput('');
+    }
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -164,6 +185,15 @@ export function UploadArtworkBasic() {
       return;
     }
 
+    if (tags.length === 0) {
+      toast({
+        title: 'Tags required',
+        description: 'Please add at least one discovery tag.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -202,7 +232,7 @@ export function UploadArtworkBasic() {
         updatedAt: new Date(),
         likes: 0,
         commentsCount: 0,
-        tags: [],
+        tags: tags,
         aiAssistance: 'none',
         isAI: false,
       };
@@ -257,7 +287,7 @@ export function UploadArtworkBasic() {
           imageUrl: primaryImageUrl,
           supportingImages: supportingImages.length > 0 ? supportingImages : undefined,
           imageAiHint: description.trim() || '',
-          tags: [],
+          tags: tags,
           currency: 'USD',
           isForSale: true,
           type: 'artwork',
@@ -302,13 +332,13 @@ export function UploadArtworkBasic() {
           artist: artworkForShop.artist,
           imageUrl: primaryImageUrl,
           imageAiHint: artworkForShop.imageAiHint,
-          caption: description.trim() || '',
-          likes: 0,
-          commentsCount: 0,
-          timestamp: new Date().toISOString(),
-          createdAt: Date.now(),
-          tags: [],
-        };
+        caption: description.trim() || '',
+        likes: 0,
+        commentsCount: 0,
+        timestamp: new Date().toISOString(),
+        createdAt: Date.now(),
+        tags: tags,
+      };
 
         // Add to posts/artworks collections via ContentProvider
         await addContent(post, artworkForShop);
@@ -495,6 +525,50 @@ export function UploadArtworkBasic() {
               placeholder="Describe your artwork..."
               rows={3}
             />
+          </div>
+
+          {/* Discovery Tags */}
+          <div className="space-y-2">
+            <Label htmlFor="tags">Discovery Tags *</Label>
+            <div className="flex flex-wrap gap-2 pb-2 min-h-[2.5rem]">
+              {tags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground ml-1"
+                    onClick={() => removeTag(tag)}
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                id="tags"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                placeholder="Type a tag and press Enter or click Add Tag"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddTag}
+                disabled={!tagInput.trim() || tags.includes(tagInput.trim())}
+              >
+                Add Tag
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Add at least one tag. Tags help users discover your artwork through search and filters.
+            </p>
           </div>
 
           {/* Dimensions */}
@@ -792,7 +866,7 @@ export function UploadArtworkBasic() {
           </div>
 
           {/* Submit Button */}
-          <Button type="submit" disabled={uploading || !files.length || !title.trim() || !agreedToTerms} className="w-full">
+          <Button type="submit" disabled={uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0} className="w-full">
             {uploading ? 'Uploading...' : 'Upload Artwork'}
           </Button>
         </form>
