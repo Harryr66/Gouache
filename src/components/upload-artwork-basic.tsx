@@ -260,6 +260,8 @@ export function UploadArtworkBasic() {
           height: parseFloat(dimensions.height) || 0,
           unit: dimensions.unit,
         };
+      } else {
+        portfolioItem.dimensions = { width: 0, height: 0, unit: 'cm' };
       }
 
       const updatedPortfolio = [...currentPortfolio, portfolioItem];
@@ -315,15 +317,17 @@ export function UploadArtworkBasic() {
         if (deliveryScope === 'specific' && selectedCountries.length > 0) {
           artworkForShop.deliveryCountries = selectedCountries.join(', ');
         }
-      }
 
-      // Add dimensions if provided
-      if (dimensions.width && dimensions.height) {
-        artworkForShop.dimensions = {
-          width: parseFloat(dimensions.width) || 0,
-          height: parseFloat(dimensions.height) || 0,
-          unit: dimensions.unit,
-        };
+        // Add dimensions if provided
+        if (dimensions.width && dimensions.height) {
+          artworkForShop.dimensions = {
+            width: parseFloat(dimensions.width) || 0,
+            height: parseFloat(dimensions.height) || 0,
+            unit: dimensions.unit,
+          };
+        } else {
+          artworkForShop.dimensions = { width: 0, height: 0, unit: 'cm' };
+        }
 
         // Create post object for feed
         const post = {
@@ -332,13 +336,13 @@ export function UploadArtworkBasic() {
           artist: artworkForShop.artist,
           imageUrl: primaryImageUrl,
           imageAiHint: artworkForShop.imageAiHint,
-        caption: description.trim() || '',
-        likes: 0,
-        commentsCount: 0,
-        timestamp: new Date().toISOString(),
-        createdAt: Date.now(),
-        tags: tags,
-      };
+          caption: description.trim() || '',
+          likes: 0,
+          commentsCount: 0,
+          timestamp: new Date().toISOString(),
+          createdAt: Date.now(),
+          tags: tags,
+        };
 
         // Add to posts/artworks collections via ContentProvider
         await addContent(post, artworkForShop);
