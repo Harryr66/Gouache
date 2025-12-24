@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { NewsArticle } from '@/lib/types';
+import { NewsArticle, AdCampaign } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { NewsTile } from '@/components/news-tile';
 import { NewsletterSignup } from '@/components/newsletter-signup';
@@ -308,9 +308,12 @@ export default function NewsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {filteredArticles.slice(1).map((item, idx) => {
                   const isAd = 'type' in item && item.type === 'ad';
+                  const itemKey = isAd 
+                    ? (item as { type: 'ad'; campaign: AdCampaign }).campaign.id 
+                    : (item as NewsArticle).id;
                   return (
                     <div
-                      key={isAd ? item.campaign.id : item.id}
+                      key={itemKey}
                       className={
                         idx % 5 === 0
                           ? 'lg:col-span-2'
@@ -319,7 +322,7 @@ export default function NewsPage() {
                     >
                       {isAd ? (
                         <AdTile 
-                          campaign={item.campaign} 
+                          campaign={(item as { type: 'ad'; campaign: AdCampaign }).campaign} 
                           placement="news"
                           userId={user?.id}
                         />
