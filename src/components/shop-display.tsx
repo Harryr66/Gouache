@@ -436,6 +436,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
   }
 
   return (
+    <>
     <Tabs defaultValue="artworks" className="w-full">
       <TabsList className="grid w-full grid-cols-2 mb-6">
         <TabsTrigger value="artworks" className="flex items-center gap-2">
@@ -798,6 +799,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    </>
   );
 }
 
