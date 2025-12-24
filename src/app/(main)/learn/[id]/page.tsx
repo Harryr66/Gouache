@@ -27,14 +27,15 @@ import {
   Globe,
   ShoppingBag,
   ExternalLink,
-  Edit
+  Edit,
+  Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
 import { useCourses } from '@/providers/course-provider';
 import { useAuth } from '@/providers/auth-provider';
 import { toast } from '@/hooks/use-toast';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ThemeLoading } from '@/components/theme-loading';
 
@@ -202,6 +203,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [hideAboutInstructor, setHideAboutInstructor] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(800, 450);
@@ -318,6 +321,38 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     }
   };
 
+  const handleDeleteCourse = async () => {
+    if (!course || !user || !isOwner) return;
+    
+    setDeleting(true);
+    try {
+      // Mark course as deleted
+      await updateDoc(doc(db, 'courses', courseId), {
+        deleted: true,
+        isPublished: false,
+        updatedAt: new Date(),
+      });
+
+      toast({
+        title: 'Course deleted',
+        description: 'Your course has been deleted successfully.',
+      });
+
+      // Navigate to learn page
+      router.push('/learn');
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      toast({
+        title: 'Delete failed',
+        description: 'Failed to delete course. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -334,16 +369,28 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 </Button>
               </Link>
               {isOwner && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="shrink-0"
-                  onClick={() => router.push(`/learn/submit?edit=${courseId}`)}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Edit Course</span>
-                  <span className="sm:hidden">Edit</span>
-                </Button>
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="shrink-0"
+                    onClick={() => router.push(`/learn/submit?edit=${courseId}`)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Edit Course</span>
+                    <span className="sm:hidden">Edit</span>
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="shrink-0"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Delete</span>
+                    <span className="sm:hidden">Del</span>
+                  </Button>
+                </>
               )}
             </div>
             <Badge variant="outline" className="shrink-0">{course.category}</Badge>
@@ -776,6 +823,29 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Course?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{course?.title}"? This action cannot be undone. 
+              The course will be permanently removed and students will no longer have access.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCourse}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting...' : 'Delete Course'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

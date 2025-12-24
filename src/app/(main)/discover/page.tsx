@@ -372,13 +372,15 @@ function DiscoverPageContent() {
               continue; // Skip AI-assisted/generated artworks if hidden
             }
             
-            // Get image URL (support multiple fallbacks)
-            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
+            // Get media URL (support video or image)
+            const videoUrl = item.videoUrl || item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video' ? item.mediaUrls[0] : null;
+            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || item.mediaUrls?.[0] || '';
+            const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
             
-            // Skip items without images
-            if (!imageUrl) {
+            // Skip items without media
+            if (!imageUrl && !videoUrl) {
               skippedNoImage++;
-              log(`⚠️ Discover: Skipping item "${item.title || 'Untitled'}" from ${artistData.displayName || artistDoc.id} - no image URL`);
+              log(`⚠️ Discover: Skipping item "${item.title || 'Untitled'}" from ${artistData.displayName || artistDoc.id} - no media URL`);
               continue;
             }
 
@@ -415,8 +417,11 @@ function DiscoverPageContent() {
               id: item.id || `${artistDoc.id}-${Date.now()}-${index}`,
               title: item.title || 'Untitled',
               description: item.description || '',
-              imageUrl: imageUrl,
+              imageUrl: imageUrl || '', // Fallback for backward compatibility
               imageAiHint: item.description || '',
+              // Add video support
+              ...(videoUrl && { videoUrl: videoUrl as any }),
+              ...(mediaType && { mediaType: mediaType as any }),
               artist: {
                 id: artistDoc.id,
                 name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',

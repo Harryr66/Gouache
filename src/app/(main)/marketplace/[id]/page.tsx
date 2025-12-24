@@ -6,13 +6,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, ShoppingCart, Heart, Package, TrendingUp, Check, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, ShoppingCart, Heart, Package, TrendingUp, Check, X, Edit, Plus, Minus, Save, Trash2 } from 'lucide-react';
 import { MarketplaceProduct } from '@/lib/types';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { usePlaceholder } from '@/hooks/use-placeholder';
 import { ThemeLoading } from '@/components/theme-loading';
 import { useAuth } from '@/providers/auth-provider';
+import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AboutTheArtist } from '@/components/about-the-artist';
 
@@ -287,9 +295,70 @@ function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
   
+  // Edit mode state
+  const isEditMode = searchParams?.get('edit') === 'true';
+  const isOwner = user && product && user.id === product.sellerId;
+  
+  // Debug logging
+  useEffect(() => {
+    if (isEditMode) {
+      console.log('Edit mode active:', { 
+        isEditMode, 
+        isOwner, 
+        hasUser: !!user, 
+        hasProduct: !!product, 
+        userId: user?.id, 
+        sellerId: product?.sellerId,
+        productId: product?.id
+      });
+    }
+  }, [isEditMode, isOwner, user, product]);
+  
+  // Force edit mode if URL has edit=true and user is owner
+  useEffect(() => {
+    if (isEditMode && product && user && user.id === product.sellerId) {
+      console.log('✅ Edit mode conditions met - showing edit form');
+    } else if (isEditMode) {
+      console.warn('⚠️ Edit mode requested but conditions not met:', {
+        hasProduct: !!product,
+        hasUser: !!user,
+        userId: user?.id,
+        sellerId: product?.sellerId,
+        isOwner: user && product && user.id === product.sellerId
+      });
+    }
+  }, [isEditMode, product, user]);
+  
+  // Edit form state
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editCurrency, setEditCurrency] = useState<'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD'>('USD');
+  const [editStock, setEditStock] = useState<number | 'unlimited'>(1);
+  const [hideQuantity, setHideQuantity] = useState(false);
+  const [showUnlimitedConfirm, setShowUnlimitedConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  
   // Check if user came from discover page via query param or referrer
   const cameFromDiscover = searchParams?.get('from') === 'discover' || 
     (typeof window !== 'undefined' && document.referrer.includes('/discover'));
+  
+  // Initialize edit form when product loads and edit mode is active
+  useEffect(() => {
+    if (product && isEditMode && isOwner) {
+      setEditTitle(product.title);
+      setEditDescription(product.description || '');
+      // Price is already in currency units (converted during fetch)
+      setEditPrice((product.price || 0).toString());
+      setEditCurrency((product.currency as 'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD') || 'USD');
+      // Handle stock: if stock is very large (999999), treat as unlimited
+      setEditStock(product.stock >= 999999 ? 'unlimited' : (product.stock || 1));
+      // Handle hideQuantity setting
+      setHideQuantity((product as any).hideQuantity || false);
+    }
+  }, [product, isEditMode, isOwner]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -305,19 +374,20 @@ function ProductDetailPage() {
           productData = placeholderProducts.find(p => p.id === productId) || 
                        marketPlaceholderProducts.find(p => p.id === productId) || null;
         }
-        // Check if it's an artwork (with prefix)
-        else if (productId.startsWith('artwork-')) {
-          const artworkId = productId.replace('artwork-', '');
-          const artworkDoc = await getDoc(doc(db, 'artworks', artworkId));
-          if (artworkDoc.exists()) {
-            const data = artworkDoc.data();
-            const artist = data.artist || {};
-            productData = {
-              id: `artwork-${artworkDoc.id}`,
-              title: data.title || 'Untitled Artwork',
-              description: data.description || '',
-              price: data.price || 0,
-              currency: data.currency || 'USD',
+            // Check if it's an artwork (with prefix)
+            else if (productId.startsWith('artwork-')) {
+              const artworkId = productId.replace('artwork-', '');
+              const artworkDoc = await getDoc(doc(db, 'artworks', artworkId));
+              if (artworkDoc.exists()) {
+                const data = artworkDoc.data();
+                const artist = data.artist || {};
+                productData = {
+                  id: `artwork-${artworkDoc.id}`,
+                  title: data.title || 'Untitled Artwork',
+                  description: data.description || '',
+                  price: data.price || 0,
+                  currency: data.currency || 'USD',
+                  sellerId: artist.userId || artist.id || data.artistId || '',
               category: 'Artwork',
               subcategory: data.category || 'Original',
               images: data.imageUrl ? [data.imageUrl] : [],
@@ -414,12 +484,17 @@ function ProductDetailPage() {
             const productDoc = await getDoc(doc(db, 'marketplaceProducts', productId));
             if (productDoc.exists()) {
               const data = productDoc.data();
+              // Products are always stored in cents, convert to currency units for display
+              const priceInCurrency = data.price ? data.price / 100 : 0;
               productData = {
                 id: productDoc.id,
                 ...data,
+                price: priceInCurrency, // Display price in currency units
+                sellerId: data.sellerId || data.seller?.id || data.seller?.userId || '',
                 createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
                 updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now())
               } as MarketplaceProduct;
+              console.log('Product loaded:', { id: productDoc.id, sellerId: productData.sellerId, userId: user?.id });
             }
           }
         }
@@ -516,33 +591,143 @@ function ProductDetailPage() {
     }
   };
 
+  const handleSaveEdit = async () => {
+    if (!product || !user || user.id !== product.sellerId) return;
+
+    setSaving(true);
+    try {
+      const updateData: any = {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        currency: editCurrency,
+        updatedAt: new Date(),
+      };
+
+      // Update price (convert to cents)
+      if (editPrice.trim()) {
+        updateData.price = parseFloat(editPrice) * 100;
+      }
+
+      // Update stock
+      if (editStock === 'unlimited') {
+        updateData.stock = 999999; // Use large number to represent unlimited
+      } else {
+        updateData.stock = Math.max(0, editStock);
+      }
+
+      // Update hideQuantity setting
+      updateData.hideQuantity = hideQuantity;
+
+      // Update in Firestore
+      await updateDoc(doc(db, 'marketplaceProducts', product.id), updateData);
+
+      // Update local state
+      setProduct({
+        ...product,
+        ...updateData,
+        price: updateData.price / 100, // Convert back for display
+      });
+
+      toast({
+        title: 'Product updated',
+        description: 'Your product has been updated successfully.',
+      });
+
+      // Remove edit mode from URL
+      router.push(`/marketplace/${product.id}`);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast({
+        title: 'Update failed',
+        description: 'Failed to update product. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleQuantityChange = (delta: number) => {
+    if (editStock === 'unlimited') return;
+    const newValue = Math.max(0, (typeof editStock === 'number' ? editStock : 1) + delta);
+    setEditStock(newValue);
+  };
+
+  const handleUnlimitedClick = () => {
+    setShowUnlimitedConfirm(true);
+  };
+
+  const confirmUnlimited = () => {
+    setEditStock('unlimited');
+    setShowUnlimitedConfirm(false);
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!product || !user || user.id !== product.sellerId) return;
+
+    setDeleting(true);
+    try {
+      // Delete product from Firestore
+      await updateDoc(doc(db, 'marketplaceProducts', product.id), {
+        isActive: false,
+        deleted: true,
+        updatedAt: new Date(),
+      });
+
+      toast({
+        title: 'Product deleted',
+        description: 'Your product has been deleted successfully.',
+      });
+
+      // Navigate back to shop
+      router.push(`/profile/${user.id}?tab=shop`);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: 'Delete failed',
+        description: 'Failed to delete product. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-6xl mx-auto">
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => {
-              if (cameFromDiscover) {
-                router.push('/discover?tab=market');
-              } else if (product?.sellerId) {
-                // Go to artist's profile if available
-                router.push(`/profile/${product.sellerId}`);
-              } else {
-                // Try to go back in history first
-                if (typeof window !== 'undefined' && window.history.length > 1) {
-                  router.back();
+          {/* Back Button and Edit Mode Indicator */}
+          <div className="flex items-center justify-between mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (cameFromDiscover) {
+                  router.push('/discover?tab=market');
+                } else if (product?.sellerId) {
+                  // Go to artist's profile if available
+                  router.push(`/profile/${product.sellerId}`);
                 } else {
-                  router.push('/marketplace');
+                  // Try to go back in history first
+                  if (typeof window !== 'undefined' && window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push('/marketplace');
+                  }
                 }
-              }
-            }}
-            className="mb-6"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {product?.sellerId ? 'Back to Artist Profile' : (cameFromDiscover ? 'Back to Discover' : 'Go Back')}
-          </Button>
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {product?.sellerId ? 'Back to Artist Profile' : (cameFromDiscover ? 'Back to Discover' : 'Go Back')}
+            </Button>
+            {isEditMode && isOwner && (
+              <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                <Edit className="h-3 w-3 mr-1" />
+                Edit Mode
+              </Badge>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Image Gallery */}
@@ -563,8 +748,8 @@ function ProductDetailPage() {
                 )}
                 {product.stock === 0 && (
                   <div className="absolute top-4 right-4">
-                    <Badge variant="secondary" className="text-sm">
-                      Out of Stock
+                    <Badge variant="destructive" className="text-sm">
+                      Sold
                     </Badge>
                   </div>
                 )}
@@ -594,21 +779,196 @@ function ProductDetailPage() {
               )}
             </div>
 
-            {/* Product Info */}
+            {/* Product Info or Edit Form */}
             <div className="space-y-6">
-              {/* Title */}
-              <div>
-                <div className="flex items-start justify-between mb-4">
-                  <h1 className="text-3xl font-bold text-foreground">{product.title}</h1>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsWishlisted(!isWishlisted)}
-                    className={isWishlisted ? 'text-red-500' : ''}
-                  >
-                    <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-current' : ''}`} />
-                  </Button>
-                </div>
+              {isEditMode && isOwner ? (
+                /* Edit Form */
+                <Card>
+                  <CardContent className="p-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold">Edit Product</h2>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/marketplace/${product.id}`)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+
+                    {/* Title */}
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-title">Title *</Label>
+                      <Input
+                        id="edit-title"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Enter product title"
+                        required
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-description">Description</Label>
+                      <Textarea
+                        id="edit-description"
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        placeholder="Describe your product..."
+                        rows={4}
+                      />
+                    </div>
+
+                    {/* Price & Currency */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-price">Price *</Label>
+                        <Input
+                          id="edit-price"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={editPrice}
+                          onChange={(e) => setEditPrice(e.target.value)}
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-currency">Currency</Label>
+                        <Select
+                          value={editCurrency}
+                          onValueChange={(value: 'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD') => setEditCurrency(value)}
+                        >
+                          <SelectTrigger id="edit-currency">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">USD ($)</SelectItem>
+                            <SelectItem value="GBP">GBP (£)</SelectItem>
+                            <SelectItem value="EUR">EUR (€)</SelectItem>
+                            <SelectItem value="CAD">CAD (C$)</SelectItem>
+                            <SelectItem value="AUD">AUD (A$)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Quantity Management */}
+                    <div className="space-y-2">
+                      <Label>Quantity Available</Label>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center border rounded-lg">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="rounded-r-none border-r"
+                            onClick={() => handleQuantityChange(-1)}
+                            disabled={editStock === 'unlimited' || (typeof editStock === 'number' && editStock <= 0)}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <Input
+                            type="text"
+                            value={editStock === 'unlimited' ? '∞' : editStock.toString()}
+                            onChange={(e) => {
+                              const value = e.target.value.trim();
+                              if (value === '∞' || value === '' || value.toLowerCase() === 'unlimited') {
+                                setEditStock('unlimited');
+                              } else {
+                                const num = parseInt(value);
+                                if (!isNaN(num) && num >= 0) {
+                                  setEditStock(num);
+                                }
+                              }
+                            }}
+                            onBlur={(e) => {
+                              if (e.target.value.trim() === '' || e.target.value.trim() === '∞') {
+                                setEditStock(1);
+                              }
+                            }}
+                            className="w-24 text-center border-0 rounded-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            placeholder="1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="rounded-l-none border-l"
+                            onClick={() => handleQuantityChange(1)}
+                            disabled={editStock === 'unlimited'}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleUnlimitedClick}
+                          className={editStock === 'unlimited' ? 'bg-primary text-primary-foreground' : ''}
+                        >
+                          Unlimited
+                        </Button>
+                      </div>
+                      {editStock === 'unlimited' && (
+                        <p className="text-xs text-muted-foreground">
+                          Product will show as available until quantity is set to 0
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Hide Quantity Option */}
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="hideQuantity"
+                        checked={hideQuantity}
+                        onCheckedChange={(checked) => setHideQuantity(checked === true)}
+                      />
+                      <Label htmlFor="hideQuantity" className="cursor-pointer font-normal">
+                        Hide quantity from customers (will show as "Available" or "Sold" only)
+                      </Label>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <Button
+                        variant="gradient"
+                        onClick={handleSaveEdit}
+                        disabled={saving || !editTitle.trim() || !editPrice.trim()}
+                        className="flex-1"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={saving || deleting}
+                        className="flex-shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                /* Product Display */
+                <>
+                  {/* Title */}
+                  <div>
+                    <div className="flex items-start justify-between mb-4">
+                      <h1 className="text-3xl font-bold text-foreground">{product.title}</h1>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsWishlisted(!isWishlisted)}
+                        className={isWishlisted ? 'text-red-500' : ''}
+                      >
+                        <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-current' : ''}`} />
+                      </Button>
+                    </div>
 
                 {/* Seller Info */}
                 <div className="flex items-center gap-3 mb-4">
@@ -667,15 +1027,25 @@ function ProductDetailPage() {
                 <div className="flex items-center justify-between py-2 border-b">
                   <span className="text-sm text-muted-foreground">Availability</span>
                   <span className="font-medium">
-                    {product.stock > 0 ? (
+                    {product.stock === 0 ? (
+                      <span className="text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <X className="h-4 w-4" />
+                        Sold
+                      </span>
+                    ) : product.stock >= 999999 ? (
                       <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
                         <Check className="h-4 w-4" />
-                        {product.stock} available
+                        {((product as any).hideQuantity) ? 'Available' : 'Unlimited'}
+                      </span>
+                    ) : product.stock > 0 ? (
+                      <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
+                        <Check className="h-4 w-4" />
+                        {((product as any).hideQuantity) ? 'Available' : `${product.stock} available`}
                       </span>
                     ) : (
                       <span className="text-red-600 dark:text-red-400 flex items-center gap-1">
                         <X className="h-4 w-4" />
-                        Out of Stock
+                        Sold
                       </span>
                     )}
                   </span>
@@ -724,7 +1094,7 @@ function ProductDetailPage() {
                 >
                   <ShoppingCart className="h-5 w-5 mr-2" />
                   {product.stock === 0
-                    ? 'Out of Stock'
+                    ? 'Sold'
                     : product.isAffiliate
                     ? 'Buy Now'
                     : 'Buy Now'}
@@ -733,9 +1103,54 @@ function ProductDetailPage() {
                   5% platform commission • Artists keep 95% of sales
                 </p>
               </div>
-
+                </>
+              )}
             </div>
           </div>
+
+          {/* Unlimited Quantity Confirmation Dialog */}
+          <Dialog open={showUnlimitedConfirm} onOpenChange={setShowUnlimitedConfirm}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Set Unlimited Quantity?</DialogTitle>
+                <DialogDescription>
+                  The product will continue to show as available until you manually set the quantity to 0. 
+                  This is useful for digital products or items you can continuously produce.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowUnlimitedConfirm(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={confirmUnlimited}>
+                  Set Unlimited
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Product Confirmation Dialog */}
+          <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Product?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete "{product?.title}"? This action cannot be undone. 
+                  The product will be permanently removed from your shop.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteProduct}
+                  disabled={deleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleting ? 'Deleting...' : 'Delete Product'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* About the Artist Section */}
           {product.sellerId && (
