@@ -27,6 +27,7 @@ interface ShopItem {
   currency: string;
   priceType?: 'fixed' | 'contact';
   contactForPrice?: boolean;
+  contactEmail?: string;
   imageUrl?: string;
   thumbnailUrl?: string;
   isAvailable: boolean;
@@ -287,13 +288,20 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
           
           productsSnapshot.forEach((doc) => {
             const data = doc.data();
+            // Convert price from cents to dollars if stored in cents (price > 1000 suggests cents)
+            const rawPrice = data.price || 0;
+            const price = rawPrice > 1000 ? rawPrice / 100 : rawPrice;
+            
             results.push({
               id: doc.id,
               type: 'merchandise',
               title: data.title || 'Untitled Product',
               description: data.description,
-              price: data.price || 0,
+              price: price,
               currency: data.currency || 'USD',
+              priceType: data.priceType || (data.contactForPrice ? 'contact' : 'fixed'),
+              contactForPrice: data.contactForPrice || data.priceType === 'contact',
+              contactEmail: data.contactEmail,
               imageUrl: data.images?.[0] || data.imageUrl,
               isAvailable: data.isActive !== false && (data.stock === undefined || data.stock > 0),
               stock: data.stock,
