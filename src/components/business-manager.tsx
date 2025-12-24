@@ -375,17 +375,19 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
                       <span className="font-semibold">{sale.itemTitle || 'Untitled'}</span>
                       <Badge variant="secondary">{sale.itemType}</Badge>
                     </div>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className={`grid gap-4 text-sm ${sale.platformCommission > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
                       <div>
                         <p className="text-muted-foreground">Sale Amount</p>
                         <p className="font-semibold">{formatCurrency(sale.amount, sale.currency)}</p>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Platform Fee (5%)</p>
-                        <p className="font-semibold text-muted-foreground">
-                          -{formatCurrency(sale.platformCommission, sale.currency)}
-                        </p>
-                      </div>
+                      {sale.platformCommission > 0 && (
+                        <div>
+                          <p className="text-muted-foreground">Platform Donation</p>
+                          <p className="font-semibold text-muted-foreground">
+                            -{formatCurrency(sale.platformCommission, sale.currency)}
+                          </p>
+                        </div>
+                      )}
                       <div>
                         <p className="text-muted-foreground">Your Payout</p>
                         <p className="font-semibold text-green-600">
