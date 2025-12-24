@@ -348,12 +348,12 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
           <div className="text-lg font-bold">
             {balance ? formatCurrency(balance.available + (balance.pending || 0) + (balance.connectReserved || 0), balance.currency) : '$0.00'}
           </div>
-              {balance && (balance.pending > 0 || balance.connectReserved > 0) && (
+              {balance && (balance.pending > 0 || (balance.connectReserved && balance.connectReserved > 0)) && (
             <div className="text-xs text-muted-foreground mt-0.5 space-y-0.5">
               {balance.pending > 0 && (
                 <div>{formatCurrency(balance.pending)} pending settlement</div>
               )}
-              {balance.connectReserved > 0 && (
+              {balance.connectReserved && balance.connectReserved > 0 && (
                 <div>{formatCurrency(balance.connectReserved)} on hold</div>
               )}
             </div>
