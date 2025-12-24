@@ -296,9 +296,6 @@ export default function PartnerDashboardPage() {
                         </Badge>
                         <Badge variant="outline">{campaign.placement}</Badge>
                       </div>
-                      {campaign.description && (
-                        <p className="text-sm text-muted-foreground mb-3">{campaign.description}</p>
-                      )}
                       <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
                         <div className="flex items-center gap-1">
                           <Eye className="h-4 w-4" />

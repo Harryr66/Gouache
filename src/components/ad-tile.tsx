@@ -104,11 +104,6 @@ export function AdTile({ campaign, placement, userId }: AdTileProps) {
               </h3>
               {isVideo && <Video className="h-4 w-4 text-muted-foreground" />}
             </div>
-            {campaign.description && (
-              <p className="text-sm text-muted-foreground line-clamp-3">
-                {campaign.description}
-              </p>
-            )}
           </div>
 
           <div className="flex items-center justify-between text-xs text-muted-foreground">
