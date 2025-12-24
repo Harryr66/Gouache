@@ -23,6 +23,7 @@ import { toast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface StripeIntegrationWizardProps {
   onComplete?: () => void;
@@ -841,6 +842,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                                 platformDonationOneTimeAmount: amount * 100, // Store in cents
                                 platformDonationEnabled: true,
                                 platformDonationType: 'one-time',
+                                platformDonationOneTimeCurrency: user.platformDonationOneTimeCurrency || 'usd',
                               });
                               await refreshUser();
                             } catch (error) {
@@ -890,6 +892,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                                 platformDonationOneTimeAmount: Math.round(numValue * 100), // Convert to cents
                                 platformDonationEnabled: true,
                                 platformDonationType: 'one-time',
+                                platformDonationOneTimeCurrency: user.platformDonationOneTimeCurrency || 'usd',
                               });
                               await refreshUser();
                             } catch (error) {
@@ -897,9 +900,33 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                             }
                           }
                         }}
-                        className="w-32"
+                        className="w-40"
                       />
-                      <span className="text-sm text-muted-foreground">USD</span>
+                      <Select
+                        value={user?.platformDonationOneTimeCurrency || 'usd'}
+                        onValueChange={async (value) => {
+                          if (!user) return;
+                          try {
+                            await updateDoc(doc(db, 'userProfiles', user.id), {
+                              platformDonationOneTimeCurrency: value,
+                            });
+                            await refreshUser();
+                          } catch (error) {
+                            console.error('Error updating currency:', error);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="usd">USD</SelectItem>
+                          <SelectItem value="gbp">GBP</SelectItem>
+                          <SelectItem value="eur">EUR</SelectItem>
+                          <SelectItem value="cad">CAD</SelectItem>
+                          <SelectItem value="aud">AUD</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     {user?.platformDonationOneTimeAmount && user.platformDonationOneTimeAmount > 0 && !user.platformDonationOneTimeCompleted && (
                       <Button
@@ -920,6 +947,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                               body: JSON.stringify({
                                 artistId: user.id,
                                 amount: user.platformDonationOneTimeAmount, // Already in cents
+                                currency: user.platformDonationOneTimeCurrency || 'usd',
                               }),
                             });
 
@@ -1119,7 +1147,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
           <h4 className="font-semibold mb-2">Fees & Payouts</h4>
           <div className="text-sm text-muted-foreground space-y-1">
             <p>• 0% platform commission - you keep 100% of sales</p>
-            <p>• Stripe processing fee: ~2.9% + $0.30 per transaction (paid by seller, baked into price)</p>
+            <p>• Stripe processing fee: ~2.9% + $0.30 per transaction. Paid by seller, and should be included within price for an optimal customer experience.</p>
             <p>• Optionally donate a % of your sales to support Gouache</p>
             <p>• Payouts are processed automatically to your bank account</p>
           </div>

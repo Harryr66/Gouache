@@ -224,7 +224,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             platformDonationType: userData.platformDonationType,
             platformDonationPercentage: userData.platformDonationPercentage,
             platformDonationOneTimeAmount: userData.platformDonationOneTimeAmount,
-            platformDonationOneTimeCompleted: userData.platformDonationOneTimeCompleted
+            platformDonationOneTimeCompleted: userData.platformDonationOneTimeCompleted,
+            platformDonationOneTimeCurrency: userData.platformDonationOneTimeCurrency
           };
           setUser(detailedUser);
           setAvatarUrl(detailedUser.avatarUrl || null);
