@@ -288,9 +288,10 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
           
           productsSnapshot.forEach((doc) => {
             const data = doc.data();
-            // Convert price from cents to dollars if stored in cents (price > 1000 suggests cents)
+            // Convert price from cents to currency units (products are always stored in cents)
             const rawPrice = data.price || 0;
-            const price = rawPrice > 1000 ? rawPrice / 100 : rawPrice;
+            // Products are always stored in cents, so always divide by 100
+            const price = rawPrice / 100;
             
             results.push({
               id: doc.id,
