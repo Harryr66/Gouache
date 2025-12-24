@@ -1239,8 +1239,12 @@ export interface AdCampaign {
   createdAt: Date;
   updatedAt: Date;
   // Budget management
-  budget?: number; // Total budget in cents (e.g., $100 = 10000 cents)
+  budget?: number; // Total budget in cents (e.g., $100 = 10000 cents). null if uncapped
+  dailyBudget?: number; // Daily budget limit in cents (optional)
   spent?: number; // Amount spent so far in cents
+  dailySpent?: number; // Amount spent today in cents
+  lastSpentReset?: Date; // Date when dailySpent was last reset
+  uncappedBudget?: boolean; // If true, campaign has no budget limit
   costPerImpression?: number; // Cost per impression in cents (CPM)
   costPerClick?: number; // Cost per click in cents (CPC)
   currency?: string; // Currency code (USD, GBP, etc.)

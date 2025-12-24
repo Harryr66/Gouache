@@ -16,8 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Image as ImageIcon, Video } from 'lucide-react';
+import { Loader2, Upload, X, Image as ImageIcon, Video, AlertCircle } from 'lucide-react';
 import { AdCampaign } from '@/lib/types';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -25,10 +27,18 @@ const formSchema = z.object({
   clickUrl: z.string().url('Please enter a valid URL'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().optional(),
+  uncappedBudget: z.boolean().default(false),
   budget: z.string().optional(),
-  costPerImpression: z.string().optional(),
-  costPerClick: z.string().optional(),
-  currency: z.string().optional(),
+  dailyBudget: z.string().optional(),
+  costPerImpression: z.string().min(1, 'Cost per impression is required'),
+  costPerClick: z.string().min(1, 'Cost per click is required'),
+  currency: z.string().min(1, 'Currency is required'),
+}).refine((data) => {
+  // Either uncappedBudget is true OR budget is provided
+  return data.uncappedBudget || (data.budget && parseFloat(data.budget) > 0);
+}, {
+  message: "Either enable uncapped budget or provide a total budget",
+  path: ["budget"],
 });
 
 interface PartnerCampaignFormProps {
@@ -55,7 +65,9 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       clickUrl: '',
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
+      uncappedBudget: false,
       budget: '',
+      dailyBudget: '',
       costPerImpression: '',
       costPerClick: '',
       currency: 'usd',
@@ -182,7 +194,8 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       }
 
       // Parse budget values (convert to cents)
-      const budget = values.budget ? Math.round(parseFloat(values.budget) * 100) : undefined;
+      const budget = values.uncappedBudget ? null : (values.budget ? Math.round(parseFloat(values.budget) * 100) : undefined);
+      const dailyBudget = values.dailyBudget ? Math.round(parseFloat(values.dailyBudget) * 100) : undefined;
       const costPerImpression = values.costPerImpression ? Math.round((parseFloat(values.costPerImpression) / 1000) * 100) : undefined; // CPM to cost per impression in cents
       const costPerClick = values.costPerClick ? Math.round(parseFloat(values.costPerClick) * 100) : undefined;
 
@@ -201,8 +214,12 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
         isActive: true,
         clicks: 0,
         impressions: 0,
-        budget,
+        budget: budget || null,
+        dailyBudget,
         spent: 0,
+        dailySpent: 0,
+        lastSpentReset: new Date(),
+        uncappedBudget: values.uncappedBudget || false,
         costPerImpression,
         costPerClick,
         currency: values.currency || 'usd',
@@ -423,42 +440,19 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
           {/* Budget Section */}
           <div className="border-t pt-6 space-y-4">
             <div>
-              <h3 className="text-sm font-semibold mb-2">Budget & Pricing (Optional)</h3>
+              <h3 className="text-sm font-semibold mb-2">Budget & Pricing *</h3>
               <p className="text-xs text-muted-foreground mb-4">
-                Set a budget cap to automatically stop displaying ads once the limit is reached.
+                Set pricing and budget limits for your campaign.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="budget"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total Budget</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.01" 
-                        min="0"
-                        placeholder="0.00" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    <p className="text-xs text-muted-foreground">
-                      Campaign will stop when budget is reached
-                    </p>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Currency</FormLabel>
+                    <FormLabel>Currency *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value || 'usd'}>
                       <FormControl>
                         <SelectTrigger>
@@ -477,15 +471,13 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="costPerImpression"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cost Per 1,000 Impressions (CPM)</FormLabel>
+                    <FormLabel>Cost Per 1,000 Impressions (CPM) *</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
@@ -502,13 +494,15 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="costPerClick"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cost Per Click (CPC)</FormLabel>
+                    <FormLabel>Cost Per Click (CPC) *</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
@@ -525,7 +519,127 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="dailyBudget"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Daily Budget (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0"
+                        placeholder="0.00" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground">
+                      Maximum spend per day
+                    </p>
+                  </FormItem>
+                )}
+              />
             </div>
+
+            {/* Uncapped Budget Option */}
+            <div className="space-y-3">
+              <FormField
+                control={form.control}
+                name="uncappedBudget"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          setUncappedBudget(checked as boolean);
+                          if (checked) {
+                            setShowUncappedDialog(true);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="cursor-pointer">
+                        Enable uncapped budget
+                      </FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Ads will run continuously until manually paused or a budget is added
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              {!uncappedBudget && (
+                <FormField
+                  control={form.control}
+                  name="budget"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Total Budget *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          placeholder="0.00" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        Campaign will stop when budget is reached
+                      </p>
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            {/* Uncapped Budget Disclaimer Dialog */}
+            <AlertDialog open={showUncappedDialog} onOpenChange={setShowUncappedDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-amber-500" />
+                    Uncapped Budget Warning
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-2">
+                    <p>
+                      By enabling an uncapped budget, your campaign will continue to spend money on impressions and clicks until you manually pause it or add a budget limit.
+                    </p>
+                    <p className="font-semibold text-foreground">
+                      Important:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      <li>Ads will display continuously without spending limits</li>
+                      <li>You will be charged for every impression and click</li>
+                      <li>You can add a budget limit at any time to cap spending</li>
+                      <li>You can pause the campaign manually to stop spending</li>
+                    </ul>
+                    <p className="text-sm mt-3">
+                      Are you sure you want to proceed with an uncapped budget?
+                    </p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => {
+                    setUncappedBudget(false);
+                    form.setValue('uncappedBudget', false);
+                  }}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={() => setShowUncappedDialog(false)}>
+                    I Understand, Continue
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           <div className="flex gap-2">

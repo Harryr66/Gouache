@@ -37,9 +37,19 @@ export async function fetchActiveAds(
         if (ad.startDate && ad.startDate > now) return false;
         if (ad.endDate && ad.endDate < now) return false;
         
-        // Filter by budget - don't show ads that have exceeded budget
-        if (ad.budget && ad.spent !== undefined) {
+        // Filter by budget - don't show ads that have exceeded budget (unless uncapped)
+        if (!ad.uncappedBudget && ad.budget && ad.spent !== undefined) {
           if (ad.spent >= ad.budget) return false;
+        }
+        
+        // Filter by daily budget - check if daily limit reached
+        if (ad.dailyBudget && ad.dailySpent !== undefined) {
+          const lastReset = ad.lastSpentReset || ad.startDate;
+          const lastResetDate = lastReset instanceof Date ? lastReset : lastReset.toDate?.() || new Date(lastReset);
+          const isNewDay = now.toDateString() !== lastResetDate.toDateString();
+          
+          // If same day and daily budget exceeded, don't show
+          if (!isNewDay && ad.dailySpent >= ad.dailyBudget) return false;
         }
         
         // TODO: Apply dynamic targeting (exclude users, tags, etc.)
