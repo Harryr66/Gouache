@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
   CreditCard, 
   DollarSign, 
@@ -34,7 +35,11 @@ interface Payout {
 interface Balance {
   available: number;
   pending: number;
+  connectReserved?: number; // Funds held due to negative balances (Custom accounts)
   currency: string;
+  hasReserve?: boolean; // Whether account has rolling reserve enabled
+  availableBreakdown?: Array<{ amount: number; currency: string; source_types?: any }>;
+  pendingBreakdown?: Array<{ amount: number; currency: string; source_types?: any }>;
 }
 
 interface Sale {
@@ -300,18 +305,64 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
           <div className="text-lg font-bold">{formatCurrency(recentRevenue)}</div>
         </Card>
         <Card className="p-3">
-          <div className="text-xs text-muted-foreground mb-1">Stripe Balance</div>
-          <div className="text-lg font-bold">
-            {balance ? formatCurrency(balance.available + balance.pending, balance.currency) : '$0.00'}
+          <div className="flex items-center gap-1 mb-1">
+            <div className="text-xs text-muted-foreground">Stripe Balance</div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Info className="h-3 w-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 text-sm" align="start">
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-semibold mb-1">About Stripe Balance</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Funds go directly to your Stripe account. Gouache does not hold payments. Any holds are managed by Stripe.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-1 text-xs">Pending Settlement</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Funds from recent transactions that are clearing (typically 1-7 days). These automatically become available once processed.
+                    </p>
+                  </div>
+                  {balance?.hasReserve && (
+                    <div>
+                      <h4 className="font-semibold mb-1 text-xs">Rolling Reserve</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Stripe holds a percentage of recent sales (typically 5-10%) for a set period (often 90 days) as a risk management measure. As new sales come in, older reserves are released. This is common for new accounts or higher-risk businesses.
+                      </p>
+                    </div>
+                  )}
+                  {balance?.connectReserved > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-1 text-xs">Funds On Hold</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Funds explicitly held by Stripe, often due to disputes, chargebacks, or account verification requirements. Check your Stripe Dashboard for details.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
-          {balance && balance.pending > 0 && (
-            <div className="text-xs text-muted-foreground mt-0.5">
-              {formatCurrency(balance.pending)} pending
+          <div className="text-lg font-bold">
+            {balance ? formatCurrency(balance.available + (balance.pending || 0) + (balance.connectReserved || 0), balance.currency) : '$0.00'}
+          </div>
+          {balance && (balance.pending > 0 || balance.connectReserved > 0) && (
+            <div className="text-xs text-muted-foreground mt-0.5 space-y-0.5">
+              {balance.pending > 0 && (
+                <div>{formatCurrency(balance.pending)} pending settlement</div>
+              )}
+              {balance.connectReserved > 0 && (
+                <div>{formatCurrency(balance.connectReserved)} on hold</div>
+              )}
+              {balance.hasReserve && (
+                <div className="text-[10px] text-muted-foreground/70">Rolling reserve active</div>
+              )}
             </div>
           )}
-          <div className="text-[10px] text-muted-foreground/70 mt-1 leading-tight">
-            Funds go directly to your Stripe account. Any pending holds are managed by Stripe, not Gouache.
-          </div>
         </Card>
         <Card className="p-3">
           <div className="text-xs text-muted-foreground mb-1">Pending Payouts</div>
