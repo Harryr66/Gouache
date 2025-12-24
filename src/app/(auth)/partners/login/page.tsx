@@ -56,16 +56,10 @@ export default function PartnerLoginPage() {
 
       const partnerSnapshot = await getDocs(partnerQuery);
       
-      // Also check if this is an admin account
-      const userProfileQuery = query(
-        collection(db, 'userProfiles'),
-        where('email', '==', values.email),
-        limit(1)
-      );
-      
-      const userProfileSnapshot = await getDocs(userProfileQuery);
-      const isAdmin = userProfileSnapshot.docs.length > 0 && 
-                      userProfileSnapshot.docs[0].data().isAdmin === true;
+      // Also check if this is an admin account - use UID to get userProfile directly
+      const userProfileDoc = await getDoc(doc(db, 'userProfiles', user.uid));
+      const isAdmin = userProfileDoc.exists() && 
+                      userProfileDoc.data().isAdmin === true;
 
       if (partnerSnapshot.empty && !isAdmin) {
         // Not a partner account or admin - sign out and show error
