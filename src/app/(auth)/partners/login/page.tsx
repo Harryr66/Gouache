@@ -160,8 +160,8 @@ export default function PartnerLoginPage() {
             </Form>
             <p className="text-xs text-muted-foreground text-center mt-4">
               Need partner access? Contact{" "}
-              <a href="mailto:partners@gouache.art" className="text-primary hover:underline">
-                partners@gouache.art
+              <a href="mailto:Advertising@gouache.art" className="text-primary hover:underline">
+                Advertising@gouache.art
               </a>
             </p>
           </CardContent>
