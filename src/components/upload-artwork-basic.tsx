@@ -371,8 +371,14 @@ export function UploadArtworkBasic() {
           },
           title: title.trim(),
           description: description.trim() || '',
-          imageUrl: primaryImageUrl,
-          supportingImages: supportingImages.length > 0 ? supportingImages : undefined,
+          imageUrl: primaryMediaType === 'image' ? primaryMediaUrl : undefined,
+          videoUrl: primaryMediaType === 'video' ? primaryMediaUrl : undefined,
+          mediaType: primaryMediaType,
+          mediaUrls: uploadedUrls,
+          mediaTypes: mediaTypes,
+          supportingImages: supportingMedia.length > 0 ? supportingMedia : undefined,
+          supportingMedia: supportingMedia.length > 0 ? supportingMedia : undefined,
+          supportingMediaTypes: supportingMediaTypes.length > 0 ? supportingMediaTypes : undefined,
           imageAiHint: description.trim() || '',
           tags: tags,
           currency: 'USD',
@@ -419,7 +425,7 @@ export function UploadArtworkBasic() {
           id: `post-${Date.now()}`,
           artworkId: artworkForShop.id,
           artist: artworkForShop.artist,
-          imageUrl: primaryImageUrl,
+          imageUrl: primaryMediaType === 'image' ? primaryMediaUrl : (uploadedUrls.find((_, i) => mediaTypes[i] === 'image') || primaryMediaUrl),
           imageAiHint: artworkForShop.imageAiHint,
           caption: description.trim() || '',
           likes: 0,
@@ -980,7 +986,7 @@ export function UploadArtworkBasic() {
           </div>
 
           {/* Submit Button */}
-          <Button type="submit" disabled={uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0} className="w-full">
+          <Button type="submit" variant="gradient" disabled={uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0} className="w-full">
             {uploading ? 'Uploading...' : 'Upload Artwork'}
           </Button>
         </form>
