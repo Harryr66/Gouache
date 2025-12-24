@@ -54,6 +54,43 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, i
   const router = useRouter();
   const [showArtistPreview, setShowArtistPreview] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVideoInView, setIsVideoInView] = useState(false);
+  
+  // Check if artwork has video
+  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+  const videoUrl = (artwork as any).videoUrl;
+  const imageUrl = artwork.imageUrl || 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
+  
+  // Intersection Observer for video autoplay (Pinterest-style)
+  useEffect(() => {
+    const video = videoRef.current;
+    const tile = tileRef.current;
+    if (!video || !tile || !hasVideo) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            setIsVideoInView(true);
+            video.play().catch(() => {
+              // Autoplay failed (browser policy), user will need to click
+            });
+          } else {
+            setIsVideoInView(false);
+            video.pause();
+          }
+        });
+      },
+      {
+        threshold: [0, 0.5, 1],
+        rootMargin: '50px',
+      }
+    );
+
+    observer.observe(tile);
+    return () => observer.disconnect();
+  }, [hasVideo]);
 
   const handleTileClick = () => {
     // Navigate to artwork detail page only if we have an artwork id
@@ -252,12 +289,24 @@ const generateArtistContent = (artist: Artist) => ({
         onClick={handleTileClick}
     >
       <div className={`relative overflow-hidden rounded-t-lg ${isLandscape ? 'aspect-[16/9]' : 'aspect-[3/4]'}`}>
-        <Image
-          src={artwork.imageUrl || 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800'}
-          alt={artwork.imageAiHint}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+        {hasVideo && videoUrl ? (
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <Image
+            src={imageUrl}
+            alt={artwork.imageAiHint}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        )}
         {/* Sale status badge */}
         {artwork.sold ? (
           <div className="absolute top-2 left-2 z-10">
@@ -349,13 +398,25 @@ const generateArtistContent = (artist: Artist) => ({
               
               <div className="flex-1 flex items-center justify-center p-0 md:p-6 relative">
                 <div className="relative w-full h-full md:max-h-[75vh] md:max-w-full md:rounded-2xl overflow-hidden">
-                  <Image
-                    src={artwork.imageUrl}
-                    alt={artwork.title || artwork.imageAiHint}
-                    fill
-                    priority
-                    className="object-contain"
-                  />
+                  {hasVideo && videoUrl ? (
+                    <video
+                      src={videoUrl}
+                      className="w-full h-full object-contain"
+                      controls
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <Image
+                      src={imageUrl}
+                      alt={artwork.title || artwork.imageAiHint}
+                      fill
+                      priority
+                      className="object-contain"
+                    />
+                  )}
                   {/* Sale status badge */}
                   {artwork.sold ? (
                     <div className="absolute top-3 left-3 z-10">

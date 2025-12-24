@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Plus, Trash2, Edit, Save, X, Upload, Mail } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { doc, updateDoc, getDoc, serverTimestamp, collection, addDoc, setDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
@@ -832,6 +833,7 @@ export function PortfolioManager() {
 
   const handleDeleteItem = async (item: PortfolioItem) => {
     if (!user) return;
+    setShowDeleteConfirm(null); // Close dialog
 
     try {
       // Delete image from storage
@@ -1258,7 +1260,7 @@ export function PortfolioManager() {
                         variant="destructive"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteItem(item);
+                          setShowDeleteConfirm(item);
                         }}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -1541,6 +1543,32 @@ export function PortfolioManager() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm !== null} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Artwork?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{showDeleteConfirm?.title}"? This action cannot be undone. 
+              The artwork will be permanently removed from your portfolio.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (showDeleteConfirm) {
+                  handleDeleteItem(showDeleteConfirm);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Artwork
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
