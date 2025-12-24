@@ -863,6 +863,7 @@ export interface User {
   platformDonationPercentage?: number; // Percentage of sales to donate (0-100) for ongoing donations
   platformDonationOneTimeAmount?: number; // One-time donation amount in cents
   platformDonationOneTimeCompleted?: boolean; // Whether one-time donation has been completed
+  platformDonationOneTimeCurrency?: string; // Currency for one-time donation (e.g., 'usd', 'gbp', 'eur')
 }
 
 export interface Follow {

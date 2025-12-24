@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { artistId, amount } = body;
+    const { artistId, amount, currency = 'usd' } = body;
 
     // Validate required fields
     if (!amount || !artistId) {
@@ -31,9 +31,10 @@ export async function POST(request: NextRequest) {
 
     // Validate amount (must be positive and in cents)
     const amountInCents = Math.round(amount);
-    if (amountInCents < 50) { // Minimum $0.50
+    const minAmount = currency === 'usd' ? 50 : 50; // Minimum $0.50 or equivalent
+    if (amountInCents < minAmount) {
       return NextResponse.json(
-        { error: 'Amount must be at least $0.50' },
+        { error: `Amount must be at least ${currency === 'usd' ? '$0.50' : '0.50'}` },
         { status: 400 }
       );
     }
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: currency.toLowerCase(),
             product_data: {
               name: 'Gouache Platform Support',
               description: 'One-time donation to support the Gouache platform',
