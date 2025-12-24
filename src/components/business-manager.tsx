@@ -309,6 +309,9 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
               {formatCurrency(balance.pending)} pending
             </div>
           )}
+          <div className="text-[10px] text-muted-foreground/70 mt-1 leading-tight">
+            Funds go directly to your Stripe account. Any pending holds are managed by Stripe, not Gouache.
+          </div>
         </Card>
         <Card className="p-3">
           <div className="text-xs text-muted-foreground mb-1">Pending Payouts</div>
@@ -540,7 +543,7 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
           <div className="flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="flex-1 text-xs text-muted-foreground">
-              <span className="font-medium">Funds go directly to your Stripe account.</span> Payouts are automatic. View details in your{' '}
+              <span className="font-medium">Funds go directly to your Stripe account.</span> Gouache does not hold payments. Any pending balances or holds are managed by Stripe (typically 1-7 days for dispute protection). Payouts are automatic per your Stripe schedule. View details in your{' '}
               <a 
                 href={`https://dashboard.stripe.com/connect/accounts/${user.stripeAccountId}/payouts`}
                 target="_blank"
