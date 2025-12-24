@@ -13,7 +13,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { X } from 'lucide-react';
+import { X, Play } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -77,11 +77,59 @@ export function UploadArtworkBasic() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      setFiles(prev => [...prev, ...selectedFiles]);
+      
+      // Validate video files (max 60 seconds)
+      for (const file of selectedFiles) {
+        if (file.type.startsWith('video/')) {
+          try {
+            const duration = await getVideoDuration(file);
+            if (duration > 60) {
+              toast({
+                title: 'Video too long',
+                description: `Video "${file.name}" is ${Math.round(duration)} seconds. Maximum length is 60 seconds.`,
+                variant: 'destructive',
+              });
+              continue; // Skip this file
+            }
+          } catch (error) {
+            toast({
+              title: 'Error reading video',
+              description: `Could not read video "${file.name}". Please try another file.`,
+              variant: 'destructive',
+            });
+            continue; // Skip this file
+          }
+        }
+      }
+      
+      // Only add valid files
+      const validFiles = selectedFiles.filter(file => {
+        if (file.type.startsWith('video/')) {
+          // We already validated videos above, so if it's still in the array, it's valid
+          return true;
+        }
+        return file.type.startsWith('image/');
+      });
+      
+      setFiles(prev => [...prev, ...validFiles]);
     }
+  };
+
+  // Helper function to get video duration
+  const getVideoDuration = (file: File): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        resolve(video.duration);
+      };
+      video.onerror = () => reject(new Error('Failed to load video metadata'));
+      video.src = URL.createObjectURL(file);
+    });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -94,13 +142,37 @@ export function UploadArtworkBasic() {
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     
     const droppedFiles = Array.from(e.dataTransfer.files).filter(
-      file => file.type.startsWith('image/')
+      file => file.type.startsWith('image/') || file.type.startsWith('video/')
     );
+    
+    // Validate video files
+    for (const file of droppedFiles) {
+      if (file.type.startsWith('video/')) {
+        try {
+          const duration = await getVideoDuration(file);
+          if (duration > 60) {
+            toast({
+              title: 'Video too long',
+              description: `Video "${file.name}" is ${Math.round(duration)} seconds. Maximum length is 60 seconds.`,
+              variant: 'destructive',
+            });
+            droppedFiles.splice(droppedFiles.indexOf(file), 1);
+          }
+        } catch (error) {
+          toast({
+            title: 'Error reading video',
+            description: `Could not read video "${file.name}". Please try another file.`,
+            variant: 'destructive',
+          });
+          droppedFiles.splice(droppedFiles.indexOf(file), 1);
+        }
+      }
+    }
     
     if (droppedFiles.length > 0) {
       setFiles(prev => [...prev, ...droppedFiles]);
@@ -143,7 +215,7 @@ export function UploadArtworkBasic() {
     if (!user || !files.length || !title.trim()) {
       toast({
         title: 'Missing information',
-        description: 'Please select at least one image and enter a title.',
+        description: 'Please select at least one image or video and enter a title.',
         variant: 'destructive',
       });
       return;
@@ -197,20 +269,27 @@ export function UploadArtworkBasic() {
     setUploading(true);
 
     try {
-      // Upload all images to Firebase Storage
+      // Upload all media files (images and videos) to Firebase Storage
       const uploadedUrls: string[] = [];
+      const mediaTypes: ('image' | 'video')[] = [];
+      
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const fileRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${i}_${file.name}`);
+        const isVideo = file.type.startsWith('video/');
+        const folder = isVideo ? 'artworks/videos' : 'portfolio';
+        const fileRef = ref(storage, `${folder}/${user.id}/${Date.now()}_${i}_${file.name}`);
         await uploadBytes(fileRef, file);
         const fileUrl = await getDownloadURL(fileRef);
         uploadedUrls.push(fileUrl);
+        mediaTypes.push(isVideo ? 'video' : 'image');
       }
 
-      // First image is the main display image
-      const primaryImageUrl = uploadedUrls[0];
-      // Remaining images are carousel images
-      const supportingImages = uploadedUrls.slice(1);
+      // First media file is the main display
+      const primaryMediaUrl = uploadedUrls[0];
+      const primaryMediaType = mediaTypes[0];
+      // Remaining files are carousel items
+      const supportingMedia = uploadedUrls.slice(1);
+      const supportingMediaTypes = mediaTypes.slice(1);
 
       // Update user's portfolio in Firestore
       const userDocRef = doc(db, 'userProfiles', user.id);
@@ -219,8 +298,14 @@ export function UploadArtworkBasic() {
 
       const portfolioItem: any = {
         id: `artwork-${Date.now()}`,
-        imageUrl: primaryImageUrl,
-        supportingImages: supportingImages.length > 0 ? supportingImages : undefined,
+        imageUrl: primaryMediaType === 'image' ? primaryMediaUrl : undefined, // For backward compatibility
+        videoUrl: primaryMediaType === 'video' ? primaryMediaUrl : undefined,
+        mediaType: primaryMediaType, // 'image' or 'video'
+        mediaUrls: uploadedUrls, // All media URLs (images and videos)
+        mediaTypes: mediaTypes, // Types for each media file
+        supportingImages: supportingMedia.length > 0 ? supportingMedia : undefined,
+        supportingMedia: supportingMedia.length > 0 ? supportingMedia : undefined,
+        supportingMediaTypes: supportingMediaTypes.length > 0 ? supportingMediaTypes : undefined,
         title: title.trim(),
         description: description.trim() || '',
         type: 'artwork',
@@ -409,15 +494,18 @@ export function UploadArtworkBasic() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Image Upload */}
+          {/* Media Upload (Images & Videos) */}
           <div className="space-y-2">
-            <Label>Images *</Label>
+            <Label>Images & Videos *</Label>
+            <p className="text-xs text-muted-foreground">
+              Upload images or short videos (max 60 seconds). Videos will autoplay in the discover feed.
+            </p>
             
             {/* Hidden file input */}
             <Input
               type="file"
               id="images"
-              accept="image/*"
+              accept="image/*,video/*"
               multiple
               onChange={handleFileChange}
               className="hidden"
@@ -437,16 +525,16 @@ export function UploadArtworkBasic() {
             >
               {files.length === 0 ? (
                 <div className="text-center space-y-2">
-                  <p className="text-sm font-medium">Click or drag images here</p>
+                  <p className="text-sm font-medium">Click or drag images and videos here</p>
                   <p className="text-xs text-muted-foreground">
-                    Select multiple images at once or add them one by one
+                    Select multiple files at once or add them one by one. Videos must be 60 seconds or less.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium">
-                      {files.length} image(s) selected
+                      {files.length} file(s) selected
                     </p>
                     <Button
                       type="button"
@@ -454,26 +542,46 @@ export function UploadArtworkBasic() {
                       size="sm"
                       onClick={triggerFileInput}
                     >
-                      Add More Images
+                      Add More Files
                     </Button>
                   </div>
                   
-                  {/* Image preview tiles */}
+                  {/* Media preview tiles */}
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {files.map((file, index) => {
+                      const isVideo = file.type.startsWith('video/');
                       const previewUrl = URL.createObjectURL(file);
                       return (
                         <div key={index} className="relative group">
                           <div className="aspect-square rounded-lg overflow-hidden border-2 border-muted">
-                            <img
-                              src={previewUrl}
-                              alt={`Preview ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
+                            {isVideo ? (
+                              <video
+                                src={previewUrl}
+                                className="w-full h-full object-cover"
+                                muted
+                                playsInline
+                              />
+                            ) : (
+                              <img
+                                src={previewUrl}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                            {isVideo && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <Play className="h-8 w-8 text-white" />
+                              </div>
+                            )}
                           </div>
                           {index === 0 && (
                             <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded">
                               Main
+                            </div>
+                          )}
+                          {isVideo && (
+                            <div className="absolute top-1 right-8 bg-blue-600 text-white text-xs px-2 py-0.5 rounded">
+                              Video
                             </div>
                           )}
                           <Button
@@ -499,7 +607,7 @@ export function UploadArtworkBasic() {
                   
                   {files.length > 1 && (
                     <p className="text-xs text-muted-foreground text-center">
-                      First image is the main display. Others will appear in carousel.
+                      First file is the main display. Others will appear in carousel.
                     </p>
                   )}
                 </div>
@@ -777,6 +885,7 @@ export function UploadArtworkBasic() {
                   <Button
                     type="button"
                     variant={deliveryScope === 'worldwide' ? 'default' : 'outline'}
+                    className={deliveryScope === 'worldwide' ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : ''}
                     onClick={() => {
                       setDeliveryScope('worldwide');
                       setSelectedCountries([]);
@@ -788,6 +897,7 @@ export function UploadArtworkBasic() {
                   <Button
                     type="button"
                     variant={deliveryScope === 'specific' ? 'default' : 'outline'}
+                    className={deliveryScope === 'specific' ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : ''}
                     onClick={() => setDeliveryScope('specific')}
                   >
                     Specific countries
