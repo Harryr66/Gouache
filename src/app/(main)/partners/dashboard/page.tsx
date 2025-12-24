@@ -49,8 +49,11 @@ export default function PartnerDashboardPage() {
       );
 
       const partnerSnapshot = await getDocs(partnerQuery);
+      
+      // Check if user is admin
+      const isAdmin = user.isAdmin === true;
 
-      if (partnerSnapshot.empty) {
+      if (partnerSnapshot.empty && !isAdmin) {
         toast({
           title: "Access Denied",
           description: "This account is not authorized for partner access.",
@@ -60,18 +63,43 @@ export default function PartnerDashboardPage() {
         return;
       }
 
-      const partnerData = partnerSnapshot.docs[0].data() as PartnerAccount;
-      setPartnerAccount({
-        ...partnerData,
-        id: partnerSnapshot.docs[0].id,
-      });
+      // If partner account exists, load it
+      if (!partnerSnapshot.empty) {
+        const partnerData = partnerSnapshot.docs[0].data() as PartnerAccount;
+        setPartnerAccount({
+          ...partnerData,
+          id: partnerSnapshot.docs[0].id,
+        });
+      } else if (isAdmin) {
+        // Create a mock partner account for admin
+        setPartnerAccount({
+          id: 'admin',
+          email: user.email || '',
+          companyName: 'Gouache Admin',
+          contactName: user.displayName || user.name || 'Admin',
+          createdAt: new Date(),
+          isActive: true,
+          accountType: 'partner',
+        });
+      }
 
-      // Load campaigns
-      const campaignsQuery = query(
-        collection(db, 'adCampaigns'),
-        where('partnerId', '==', partnerSnapshot.docs[0].id),
-        orderBy('createdAt', 'desc')
-      );
+      // Load campaigns - if admin, load all campaigns; otherwise load only partner's campaigns
+      let campaignsQuery;
+      if (isAdmin && partnerSnapshot.empty) {
+        // Admin can see all campaigns
+        campaignsQuery = query(
+          collection(db, 'adCampaigns'),
+          orderBy('createdAt', 'desc')
+        );
+      } else {
+        // Partner sees only their campaigns
+        const partnerId = partnerSnapshot.docs[0].id;
+        campaignsQuery = query(
+          collection(db, 'adCampaigns'),
+          where('partnerId', '==', partnerId),
+          orderBy('createdAt', 'desc')
+        );
+      }
 
       const campaignsSnapshot = await getDocs(campaignsQuery);
       const loadedCampaigns = campaignsSnapshot.docs.map(doc => ({

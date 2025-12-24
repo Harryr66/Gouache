@@ -47,7 +47,7 @@ export default function PartnerLoginPage() {
 
       const user = userCredential.user;
 
-      // Check if this is a partner account
+      // Check if this is a partner account or admin account
       const partnerQuery = query(
         collection(db, 'partnerAccounts'),
         where('email', '==', values.email),
@@ -55,9 +55,20 @@ export default function PartnerLoginPage() {
       );
 
       const partnerSnapshot = await getDocs(partnerQuery);
+      
+      // Also check if this is an admin account
+      const userProfileQuery = query(
+        collection(db, 'userProfiles'),
+        where('email', '==', values.email),
+        limit(1)
+      );
+      
+      const userProfileSnapshot = await getDocs(userProfileQuery);
+      const isAdmin = userProfileSnapshot.docs.length > 0 && 
+                      userProfileSnapshot.docs[0].data().isAdmin === true;
 
-      if (partnerSnapshot.empty) {
-        // Not a partner account - sign out and show error
+      if (partnerSnapshot.empty && !isAdmin) {
+        // Not a partner account or admin - sign out and show error
         await auth.signOut();
         toast({
           title: "Access Denied",
@@ -68,23 +79,33 @@ export default function PartnerLoginPage() {
         return;
       }
 
-      const partnerData = partnerSnapshot.docs[0].data();
+      // If it's a partner account, check if it's active
+      if (!partnerSnapshot.empty) {
+        const partnerData = partnerSnapshot.docs[0].data();
 
-      if (!partnerData.isActive) {
-        await auth.signOut();
+        if (!partnerData.isActive) {
+          await auth.signOut();
+          toast({
+            title: "Account Inactive",
+            description: "Your partner account has been deactivated. Please contact support.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
         toast({
-          title: "Account Inactive",
-          description: "Your partner account has been deactivated. Please contact support.",
-          variant: "destructive",
+          title: "Login Successful!",
+          description: `Welcome back, ${partnerData.companyName || partnerData.contactName}!`,
         });
-        setIsLoading(false);
-        return;
+      } else if (isAdmin) {
+        // Admin account
+        const adminData = userProfileSnapshot.docs[0].data();
+        toast({
+          title: "Login Successful!",
+          description: `Welcome back, ${adminData.displayName || adminData.name || 'Admin'}!`,
+        });
       }
-
-      toast({
-        title: "Login Successful!",
-        description: `Welcome back, ${partnerData.companyName || partnerData.contactName}!`,
-      });
 
       // Redirect to partner dashboard
       router.push('/partners/dashboard');
