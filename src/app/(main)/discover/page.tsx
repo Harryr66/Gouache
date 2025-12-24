@@ -10,6 +10,9 @@ import { ArtworkTile } from '@/components/artwork-tile';
 import { Artwork, MarketplaceProduct, Event as EventType } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { useLikes } from '@/providers/likes-provider';
+import { fetchActiveAds, mixAdsIntoContent } from '@/lib/ad-fetcher';
+import { AdTile } from '@/components/ad-tile';
+import { useAuth } from '@/providers/auth-provider';
 import { collection, query, getDocs, orderBy, limit, where, doc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -259,7 +262,9 @@ function DiscoverPageContent() {
   const warn = (...args: any[]) => { if (isDev) console.warn(...args); };
   const error = (...args: any[]) => { if (isDev) console.error(...args); };
   const { toggleLike, isLiked } = useLikes();
+  const { user } = useAuth();
   const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [ads, setAds] = useState<any[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -512,7 +517,10 @@ function DiscoverPageContent() {
   };
 
     fetchArtworks();
-  }, [discoverSettings, theme, mounted]);
+    
+    // Fetch ads for discover feed
+    fetchActiveAds('discover', user?.id).then(setAds).catch(console.error);
+  }, [discoverSettings, theme, mounted, user]);
 
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = Array.isArray(artworks) ? artworks : [];
@@ -804,9 +812,12 @@ function DiscoverPageContent() {
     // This ensures items display even if there are fewer than itemsPerRow
     const finalCount = Math.min(visibleCount, totalItems);
     
-    const result = Array.isArray(filteredAndSortedArtworks)
+    const artworksSlice = Array.isArray(filteredAndSortedArtworks)
       ? filteredAndSortedArtworks.slice(0, finalCount)
       : [];
+    
+    // Mix ads into artworks
+    const result = mixAdsIntoContent(artworksSlice, ads, 2);
     
     const resultPlaceholderCount = result.filter((a: any) => {
       const tags = Array.isArray(a.tags) ? a.tags : [];
@@ -815,7 +826,7 @@ function DiscoverPageContent() {
     
     log('✅ visibleFilteredArtworks: Returning', result.length, 'items (', resultPlaceholderCount, 'placeholders)');
     return result;
-  }, [filteredAndSortedArtworks, visibleCount]);
+  }, [filteredAndSortedArtworks, visibleCount, ads]);
 
   useEffect(() => {
     // Reset to initial count when filters change
@@ -1154,7 +1165,21 @@ function DiscoverPageContent() {
               </div>
             ) : (artworkView === 'grid' || !isMobile) ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1">
-                {visibleFilteredArtworks.map((artwork) => {
+                {visibleFilteredArtworks.map((item) => {
+                  // Check if this is an ad
+                  const isAd = 'type' in item && item.type === 'ad';
+                  if (isAd) {
+                    return (
+                      <AdTile
+                        key={item.campaign.id}
+                        campaign={item.campaign}
+                        placement="discover"
+                        userId={user?.id}
+                      />
+                    );
+                  }
+                  
+                  const artwork = item as Artwork;
                   // Detect landscape images: 
                   // 1. Check if artwork has isLandscape flag (for placeholders) - PRIMARY METHOD
                   // 2. Check if dimensions suggest landscape (width > height * 1.3) - for real artworks
@@ -1183,7 +1208,21 @@ function DiscoverPageContent() {
               </div>
             ) : (
                 <div className="space-y-3">
-                {visibleFilteredArtworks.map((artwork) => {
+                {visibleFilteredArtworks.map((item) => {
+                  // Check if this is an ad
+                  const isAd = 'type' in item && item.type === 'ad';
+                  if (isAd) {
+                    return (
+                      <AdTile
+                        key={item.campaign.id}
+                        campaign={item.campaign}
+                        placement="discover"
+                        userId={user?.id}
+                      />
+                    );
+                  }
+                  
+                  const artwork = item as Artwork;
                   // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
                   const placeholderImage = 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
                   const artworkImage = artwork.imageUrl || placeholderImage;

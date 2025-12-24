@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,10 +9,15 @@ import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from '@/components/theme-loading';
 import Image from 'next/image';
 import Link from 'next/link';
+import { fetchActiveAds, mixAdsIntoContent } from '@/lib/ad-fetcher';
+import { AdTile } from '@/components/ad-tile';
+import { useAuth } from '@/providers/auth-provider';
 
 export default function CoursesPage() {
   const router = useRouter();
   const { courses, isLoading } = useCourses();
+  const { user } = useAuth();
+  const [ads, setAds] = useState<any[]>([]);
   const [isMobile, setIsMobile] = useState(false);
 
   // Detect mobile device
@@ -26,6 +31,11 @@ export default function CoursesPage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Fetch ads for learn section
+  useEffect(() => {
+    fetchActiveAds('learn', user?.id).then(setAds).catch(console.error);
+  }, [user]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -36,6 +46,11 @@ export default function CoursesPage() {
 
   // Courses are already filtered by CourseProvider to only include published and approved courses
   const publishedCourses = courses;
+
+  // Mix ads into courses
+  const coursesWithAds = useMemo(() => {
+    return mixAdsIntoContent(publishedCourses, ads, 2);
+  }, [publishedCourses, ads]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,7 +75,22 @@ export default function CoursesPage() {
           </Card>
         ) : (
           <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
-            {publishedCourses.map((course) => (
+            {coursesWithAds.map((item) => {
+              // Check if this is an ad
+              const isAd = 'type' in item && item.type === 'ad';
+              if (isAd) {
+                return (
+                  <AdTile
+                    key={item.campaign.id}
+                    campaign={item.campaign}
+                    placement="learn"
+                    userId={user?.id}
+                  />
+                );
+              }
+              
+              const course = item as any;
+              return (
               <Link key={course.id} href={`/learn/${course.id}`}>
                 <Card className={`group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full ${isMobile ? 'flex flex-row min-h-[140px]' : 'flex flex-col'}`}>
                   <div className={`${isMobile ? 'relative w-36 sm:w-40 h-full aspect-[3/2] flex-shrink-0' : 'relative aspect-[4/3]'} overflow-hidden`}>
@@ -109,7 +139,8 @@ export default function CoursesPage() {
                   </div>
                 </Card>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
