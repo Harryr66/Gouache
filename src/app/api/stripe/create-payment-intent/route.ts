@@ -85,6 +85,9 @@ export async function POST(request: NextRequest) {
       itemDoc = await getDoc(doc(db, 'books', itemId));
     } else if (itemType === 'original' || itemType === 'print') {
       itemDoc = await getDoc(doc(db, 'artworks', itemId));
+    } else if (itemType === 'merchandise' || itemType === 'product') {
+      // Check marketplaceProducts collection for products/merchandise
+      itemDoc = await getDoc(doc(db, 'marketplaceProducts', itemId));
     } else {
       return NextResponse.json(
         { error: 'Invalid item type' },
@@ -102,7 +105,7 @@ export async function POST(request: NextRequest) {
     itemData = itemDoc.data();
 
     // Verify item belongs to artist
-    const itemArtistId = itemData.artist?.userId || itemData.instructor?.userId || itemData.artistId;
+    const itemArtistId = itemData.artist?.userId || itemData.instructor?.userId || itemData.artistId || itemData.sellerId;
     if (itemArtistId !== artistId) {
       return NextResponse.json(
         { error: 'Item does not belong to this artist' },
@@ -129,6 +132,15 @@ export async function POST(request: NextRequest) {
     if (itemType === 'book' && itemData.isAvailable === false) {
       return NextResponse.json(
         { error: 'Book is not available' },
+        { status: 400 }
+      );
+    }
+
+    // Check if marketplace product is available
+    if ((itemType === 'merchandise' || itemType === 'product') && 
+        (!itemData.isActive || itemData.deleted || itemData.stock === 0)) {
+      return NextResponse.json(
+        { error: 'Product is not available for sale' },
         { status: 400 }
       );
     }
@@ -160,6 +172,7 @@ export async function POST(request: NextRequest) {
           productAmount: amountInCents.toString(), // Original product amount
           platformCommissionAmount: platformCommissionAmount.toString(), // 0% platform commission
           platformCommissionPercentage: platformCommissionPercentage.toString(), // 0% commission - artist gets 100%
+          ...(itemType === 'merchandise' || itemType === 'product' ? { stock: (itemData.stock || 0).toString() } : {}),
         },
         description: description || `Purchase: ${itemData.title || itemType}`,
         automatic_payment_methods: {

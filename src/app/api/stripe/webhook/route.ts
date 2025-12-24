@@ -238,6 +238,38 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
           });
         }
       }
+    } else if (itemType === 'merchandise' || itemType === 'product') {
+      // Handle marketplace products
+      const productRef = doc(db, 'marketplaceProducts', itemId);
+      const productDoc = await getDoc(productRef);
+      
+      if (productDoc.exists()) {
+        const productData = productDoc.data();
+        const currentStock = productData.stock || 0;
+        
+        // Update product - reduce stock if not unlimited
+        const updateData: any = {
+          updatedAt: new Date(),
+        };
+        
+        // Only reduce stock if it's not unlimited (999999)
+        if (currentStock < 999999 && currentStock > 0) {
+          updateData.stock = currentStock - 1;
+        }
+        
+        await updateDoc(productRef, updateData);
+        
+        // Record the purchase
+        await addDoc(collection(db, 'purchases'), {
+          productId: itemId,
+          buyerId: userId,
+          sellerId: paymentIntent.metadata.artistId,
+          paymentIntentId: paymentIntent.id,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          createdAt: new Date(),
+        });
+      }
     }
 
     console.log(`✅ Payment succeeded: ${paymentIntent.id} for ${itemType} ${itemId}`);
