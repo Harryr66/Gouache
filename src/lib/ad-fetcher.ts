@@ -37,6 +37,11 @@ export async function fetchActiveAds(
         if (ad.startDate && ad.startDate > now) return false;
         if (ad.endDate && ad.endDate < now) return false;
         
+        // Filter by budget - don't show ads that have exceeded budget
+        if (ad.budget && ad.spent !== undefined) {
+          if (ad.spent >= ad.budget) return false;
+        }
+        
         // TODO: Apply dynamic targeting (exclude users, tags, etc.)
         if (ad.targetAudience?.excludeUsers && userId) {
           if (ad.targetAudience.excludeUsers.includes(userId)) return false;

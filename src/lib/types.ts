@@ -1238,6 +1238,12 @@ export interface AdCampaign {
   impressions: number;
   createdAt: Date;
   updatedAt: Date;
+  // Budget management
+  budget?: number; // Total budget in cents (e.g., $100 = 10000 cents)
+  spent?: number; // Amount spent so far in cents
+  costPerImpression?: number; // Cost per impression in cents (CPM)
+  costPerClick?: number; // Cost per click in cents (CPC)
+  currency?: string; // Currency code (USD, GBP, etc.)
   // Dynamic targeting
   targetAudience?: {
     tags?: string[];
