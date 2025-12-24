@@ -779,10 +779,16 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                             platformDonationType: 'one-time',
                             platformDonationEnabled: true,
                             platformDonationPercentage: 0, // Clear percentage for one-time
+                            platformDonationOneTimeCompleted: false, // Reset completion status
                           });
                           await refreshUser();
                         } catch (error) {
                           console.error('Error updating donation type:', error);
+                          toast({
+                            title: 'Update failed',
+                            description: 'Could not update donation type. Please try again.',
+                            variant: 'destructive',
+                          });
                         }
                       }}
                     >
@@ -797,11 +803,18 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                         try {
                           await updateDoc(doc(db, 'userProfiles', user.id), {
                             platformDonationType: 'ongoing',
+                            platformDonationEnabled: true,
                             platformDonationOneTimeAmount: 0, // Clear one-time amount for ongoing
+                            platformDonationOneTimeCompleted: false, // Reset completion status
                           });
                           await refreshUser();
                         } catch (error) {
                           console.error('Error updating donation type:', error);
+                          toast({
+                            title: 'Update failed',
+                            description: 'Could not update donation type. Please try again.',
+                            variant: 'destructive',
+                          });
                         }
                       }}
                     >
@@ -810,8 +823,8 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                   </div>
                 </div>
 
-                {/* One-Time Donation Section */}
-                {(user?.platformDonationType === 'one-time' || !user?.platformDonationType) && (
+                {/* One-Time Donation Section - Only show when one-time is selected */}
+                {user?.platformDonationType === 'one-time' ? (
                   <div className="space-y-3 p-3 border rounded-lg">
                     <Label className="text-sm font-medium">One-Time Donation Amount</Label>
                     <div className="flex gap-2 flex-wrap">
@@ -942,10 +955,10 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                       </div>
                     )}
                   </div>
-                )}
+                ) : null}
 
-                {/* Ongoing Percentage Donation Section */}
-                {(user?.platformDonationType === 'ongoing' || !user?.platformDonationType) && (
+                {/* Ongoing Percentage Donation Section - Only show when ongoing is selected or no type set */}
+                {(user?.platformDonationType === 'ongoing' || !user?.platformDonationType) ? (
                   <>
                 {/* Percentage Selector */}
                 <div className="space-y-2">
@@ -1096,7 +1109,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                   </div>
                 )}
                   </>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
