@@ -568,7 +568,7 @@ function ProductDetailPage() {
           currency: product.currency.toLowerCase(),
           artistId: product.sellerId,
           itemId: product.id,
-          itemType: product.category === 'Books' ? 'book' : (product.category === 'Prints' ? 'print' : 'original'),
+          itemType: 'merchandise', // Products from marketplaceProducts collection
           buyerId: user.id,
           description: `Purchase: ${product.title}`,
         }),
