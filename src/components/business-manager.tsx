@@ -333,7 +333,7 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
                       Stripe may hold a percentage of recent sales (typically 5-10%) for a set period (often 90 days) as a risk management measure. As new sales come in, older reserves are released. This is common for new accounts or higher-risk businesses. Check your Stripe Dashboard to see if a reserve is active.
                     </p>
                   </div>
-                  {balance?.connectReserved > 0 && (
+                  {balance && balance.connectReserved && balance.connectReserved > 0 && (
                     <div>
                       <h4 className="font-semibold mb-1 text-xs">Funds On Hold</h4>
                       <p className="text-xs text-muted-foreground">
