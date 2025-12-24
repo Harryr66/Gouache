@@ -1207,3 +1207,51 @@ export interface FeaturedContent {
   startDate: Date;
   endDate?: Date;
 }
+
+// Partner Advertising Types
+export interface PartnerAccount {
+  id: string;
+  email: string;
+  companyName: string;
+  contactName: string;
+  phone?: string;
+  createdAt: Date;
+  isActive: boolean;
+  accountType: 'partner';
+}
+
+export interface AdCampaign {
+  id: string;
+  partnerId: string;
+  title: string;
+  description?: string;
+  placement: 'news' | 'discover' | 'learn';
+  imageUrl?: string;
+  videoUrl?: string;
+  mediaType: 'image' | 'video';
+  videoDuration?: number; // in seconds, max 60
+  clickUrl: string; // Where the ad links to
+  startDate: Date;
+  endDate?: Date;
+  isActive: boolean;
+  clicks: number;
+  impressions: number;
+  createdAt: Date;
+  updatedAt: Date;
+  // Dynamic targeting
+  targetAudience?: {
+    tags?: string[];
+    categories?: string[];
+    excludeUsers?: string[]; // User IDs to exclude
+  };
+}
+
+export interface AdClick {
+  id: string;
+  campaignId: string;
+  userId?: string; // Optional - may be anonymous
+  clickedAt: Date;
+  placement: 'news' | 'discover' | 'learn';
+  userAgent?: string;
+  ipAddress?: string;
+}

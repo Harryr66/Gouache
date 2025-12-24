@@ -14,6 +14,9 @@ import { Filter, Loader2, Check } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
+import { fetchActiveAds, mixAdsIntoContent } from '@/lib/ad-fetcher';
+import { AdTile } from '@/components/ad-tile';
+import { useAuth } from '@/providers/auth-provider';
 
 const ARTICLE_COLLECTION = 'newsArticles';
 
@@ -37,7 +40,9 @@ const createPlaceholderArticle = (theme: string | undefined, id: string): NewsAr
 
 export default function NewsPage() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [ads, setAds] = useState<any[]>([]);
   const [filteredCategory, setFilteredCategory] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -80,6 +85,10 @@ export default function NewsPage() {
 
         if (!isMounted) return;
         setArticles(loadedArticles);
+
+        // Load ads
+        const activeAds = await fetchActiveAds('news', user?.id);
+        setAds(activeAds);
       } catch (error) {
         console.error('Failed to load newsroom content:', error);
       } finally {
@@ -91,7 +100,7 @@ export default function NewsPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user]);
 
   const categories = ['All', 'Stories', 'Events', 'News', 'Partners'];
 
@@ -112,8 +121,10 @@ export default function NewsPage() {
       );
     }
 
-    return displayArticles.slice(0, 8);
-  }, [articles, filteredCategory, theme]);
+    // Mix ads into content
+    const articlesWithAds = mixAdsIntoContent(displayArticles.slice(0, 8), ads, 2);
+    return articlesWithAds;
+  }, [articles, filteredCategory, theme, ads]);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -280,25 +291,44 @@ export default function NewsPage() {
             {/* Hero Tile - First Article */}
             {filteredArticles.length > 0 && (
               <div>
-                <NewsTile article={filteredArticles[0]} />
+                {'type' in filteredArticles[0] && filteredArticles[0].type === 'ad' ? (
+                  <AdTile 
+                    campaign={filteredArticles[0].campaign} 
+                    placement="news"
+                    userId={user?.id}
+                  />
+                ) : (
+                  <NewsTile article={filteredArticles[0] as NewsArticle} />
+                )}
               </div>
             )}
 
             {/* Responsive, editorial-style grid - Remaining articles */}
             {filteredArticles.length > 1 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {filteredArticles.slice(1, 8).map((article, idx) => (
-                  <div
-                    key={article.id}
-                    className={
-                      idx % 5 === 0
-                        ? 'lg:col-span-2'
-                        : ''
-                    }
-                  >
-                    <NewsTile article={article} />
-                  </div>
-                ))}
+                {filteredArticles.slice(1).map((item, idx) => {
+                  const isAd = 'type' in item && item.type === 'ad';
+                  return (
+                    <div
+                      key={isAd ? item.campaign.id : item.id}
+                      className={
+                        idx % 5 === 0
+                          ? 'lg:col-span-2'
+                          : ''
+                      }
+                    >
+                      {isAd ? (
+                        <AdTile 
+                          campaign={item.campaign} 
+                          placement="news"
+                          userId={user?.id}
+                        />
+                      ) : (
+                        <NewsTile article={item as NewsArticle} />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
