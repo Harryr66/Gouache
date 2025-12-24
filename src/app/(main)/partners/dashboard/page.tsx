@@ -312,7 +312,14 @@ export default function PartnerDashboardPage() {
                             {campaign.endDate && ` - ${format(campaign.endDate, 'MMM d, yyyy')}`}
                           </span>
                         </div>
-                        {campaign.budget && (
+                        {campaign.uncappedBudget ? (
+                          <div className="flex items-center gap-1">
+                            <TrendingUp className="h-4 w-4" />
+                            <span className="text-amber-600 dark:text-amber-500">
+                              Uncapped Budget - {formatCurrency(campaign.spent || 0, campaign.currency || 'usd')} spent
+                            </span>
+                          </div>
+                        ) : campaign.budget ? (
                           <div className="flex items-center gap-1">
                             <TrendingUp className="h-4 w-4" />
                             <span>
@@ -324,12 +331,27 @@ export default function PartnerDashboardPage() {
                               )}
                             </span>
                           </div>
+                        ) : null}
+                        {campaign.dailyBudget && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                              Daily: {formatCurrency(campaign.dailySpent || 0, campaign.currency || 'usd')} / {formatCurrency(campaign.dailyBudget, campaign.currency || 'usd')}
+                            </span>
+                          </div>
                         )}
                       </div>
                       {campaign.budget && campaign.spent !== undefined && campaign.spent >= campaign.budget && (
                         <div className="mt-2">
                           <Badge variant="destructive" className="text-xs">
                             Budget Exceeded - Campaign Paused
+                          </Badge>
+                        </div>
+                      )}
+                      {campaign.dailyBudget && campaign.dailySpent !== undefined && campaign.dailySpent >= campaign.dailyBudget && (
+                        <div className="mt-2">
+                          <Badge variant="destructive" className="text-xs">
+                            Daily Budget Exceeded - Campaign Paused
                           </Badge>
                         </div>
                       )}

@@ -20,13 +20,24 @@ export async function trackAdClick(
     const campaignData = campaignDoc.data();
     const costPerClick = campaignData.costPerClick || 0;
     const currentSpent = campaignData.spent || 0;
+    const currentDailySpent = campaignData.dailySpent || 0;
     const budget = campaignData.budget;
-
-    // Calculate new spent amount
+    const dailyBudget = campaignData.dailyBudget;
+    const uncappedBudget = campaignData.uncappedBudget || false;
+    const lastSpentReset = campaignData.lastSpentReset?.toDate?.() || new Date();
+    const now = new Date();
+    
+    // Check if we need to reset daily spent (new day)
+    const needsDailyReset = now.toDateString() !== lastSpentReset.toDateString();
+    const dailySpentToUse = needsDailyReset ? 0 : currentDailySpent;
+    
+    // Calculate new spent amounts
     const newSpent = currentSpent + costPerClick;
+    const newDailySpent = dailySpentToUse + costPerClick;
 
-    // Check if budget would be exceeded
-    const wouldExceedBudget = budget && newSpent >= budget;
+    // Check budget limits
+    const wouldExceedBudget = !uncappedBudget && budget && newSpent >= budget;
+    const wouldExceedDailyBudget = dailyBudget && newDailySpent >= dailyBudget;
 
     // Record the click
     await addDoc(collection(db, 'adClicks'), {
@@ -44,13 +55,22 @@ export async function trackAdClick(
       updatedAt: serverTimestamp(),
     };
 
-    // Only update spent if budget allows
-    if (!wouldExceedBudget) {
+    // Update spending if within limits
+    if (!wouldExceedBudget && !wouldExceedDailyBudget) {
       updateData.spent = newSpent;
+      updateData.dailySpent = newDailySpent;
+      if (needsDailyReset) {
+        updateData.lastSpentReset = serverTimestamp();
+      }
     } else {
       // Budget exceeded - deactivate campaign
       updateData.isActive = false;
-      updateData.spent = budget; // Cap at budget
+      if (wouldExceedBudget) {
+        updateData.spent = budget; // Cap at budget
+      }
+      if (wouldExceedDailyBudget) {
+        updateData.dailySpent = dailyBudget; // Cap at daily budget
+      }
     }
 
     await updateDoc(doc(db, 'adCampaigns', campaignId), updateData);
@@ -79,13 +99,24 @@ export async function trackAdImpression(
     const campaignData = campaignDoc.data();
     const costPerImpression = campaignData.costPerImpression || 0;
     const currentSpent = campaignData.spent || 0;
+    const currentDailySpent = campaignData.dailySpent || 0;
     const budget = campaignData.budget;
-
-    // Calculate new spent amount
+    const dailyBudget = campaignData.dailyBudget;
+    const uncappedBudget = campaignData.uncappedBudget || false;
+    const lastSpentReset = campaignData.lastSpentReset?.toDate?.() || new Date();
+    const now = new Date();
+    
+    // Check if we need to reset daily spent (new day)
+    const needsDailyReset = now.toDateString() !== lastSpentReset.toDateString();
+    const dailySpentToUse = needsDailyReset ? 0 : currentDailySpent;
+    
+    // Calculate new spent amounts
     const newSpent = currentSpent + costPerImpression;
+    const newDailySpent = dailySpentToUse + costPerImpression;
 
-    // Check if budget would be exceeded
-    const wouldExceedBudget = budget && newSpent >= budget;
+    // Check budget limits
+    const wouldExceedBudget = !uncappedBudget && budget && newSpent >= budget;
+    const wouldExceedDailyBudget = dailyBudget && newDailySpent >= dailyBudget;
 
     // Update campaign
     const updateData: any = {
@@ -93,13 +124,22 @@ export async function trackAdImpression(
       updatedAt: serverTimestamp(),
     };
 
-    // Only update spent if budget allows
-    if (!wouldExceedBudget) {
+    // Update spending if within limits
+    if (!wouldExceedBudget && !wouldExceedDailyBudget) {
       updateData.spent = newSpent;
+      updateData.dailySpent = newDailySpent;
+      if (needsDailyReset) {
+        updateData.lastSpentReset = serverTimestamp();
+      }
     } else {
       // Budget exceeded - deactivate campaign
       updateData.isActive = false;
-      updateData.spent = budget; // Cap at budget
+      if (wouldExceedBudget) {
+        updateData.spent = budget; // Cap at budget
+      }
+      if (wouldExceedDailyBudget) {
+        updateData.dailySpent = dailyBudget; // Cap at daily budget
+      }
     }
 
     await updateDoc(doc(db, 'adCampaigns', campaignId), updateData);
