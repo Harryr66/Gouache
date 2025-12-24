@@ -53,6 +53,12 @@ match /marketplace/{allPaths=**} {
   allow write: if request.auth != null; // Only allow authenticated users to upload products
 }
 
+// Allow uploads to marketplaceProducts folder (for product images)
+match /marketplaceProducts/{userId}/{allPaths=**} {
+  allow read: if true; // Allow public read access
+  allow write: if request.auth != null && request.auth.uid == userId; // Only allow users to upload to their own folder
+}
+
 // Allow uploads to advertisements folder
 match /advertisements/{allPaths=**} {
   allow read: if true; // Allow public read access
