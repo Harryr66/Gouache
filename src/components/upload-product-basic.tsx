@@ -527,8 +527,8 @@ export function UploadProductBasic() {
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   type="button"
-                  variant={deliveryScope === 'worldwide' ? 'default' : 'outline'}
-                  className={deliveryScope === 'worldwide' ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : ''}
+                  variant="outline"
+                  className={deliveryScope === 'worldwide' ? '!bg-primary !text-primary-foreground hover:!bg-primary/90 hover:!text-primary-foreground border-primary' : ''}
                   onClick={() => {
                     setDeliveryScope('worldwide');
                     setSelectedCountries([]);
@@ -539,8 +539,8 @@ export function UploadProductBasic() {
                 </Button>
                 <Button
                   type="button"
-                  variant={deliveryScope === 'specific' ? 'default' : 'outline'}
-                  className={deliveryScope === 'specific' ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : ''}
+                  variant="outline"
+                  className={deliveryScope === 'specific' ? '!bg-primary !text-primary-foreground hover:!bg-primary/90 hover:!text-primary-foreground border-primary' : ''}
                   onClick={() => setDeliveryScope('specific')}
                 >
                   Specific countries
@@ -609,7 +609,7 @@ export function UploadProductBasic() {
           </div>
 
           {/* Submit Button */}
-          <Button type="submit" disabled={uploading || !files.length || !title.trim()} className="w-full">
+          <Button type="submit" variant="gradient" disabled={uploading || !files.length || !title.trim()} className="w-full">
             {uploading ? 'Uploading...' : 'Upload Product'}
           </Button>
         </form>
