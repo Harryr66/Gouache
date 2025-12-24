@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  Info
 } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
 import { toast } from '@/hooks/use-toast';
