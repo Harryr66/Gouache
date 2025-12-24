@@ -184,9 +184,11 @@ export function UploadProductBasic() {
       };
 
       // Add pricing/delivery fields
+      // Always set currency
+      productData.currency = currency;
+      
       if (priceType === 'fixed' && price.trim()) {
         productData.price = parseFloat(price) * 100; // Convert to cents
-        productData.currency = currency;
       } else if (priceType === 'contact') {
         productData.priceType = 'contact';
         productData.contactForPrice = true;
@@ -437,6 +439,31 @@ export function UploadProductBasic() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+            )}
+
+            {/* Currency selector for contact pricing */}
+            {priceType === 'contact' && (
+              <div className="space-y-2">
+                <Label htmlFor="product-currency-contact">Currency</Label>
+                <Select 
+                  value={currency} 
+                  onValueChange={(value: 'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD') => setCurrency(value)}
+                >
+                  <SelectTrigger id="product-currency-contact">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="CAD">CAD (C$)</SelectItem>
+                    <SelectItem value="AUD">AUD (A$)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Currency for pricing when customers contact you
+                </p>
               </div>
             )}
 
