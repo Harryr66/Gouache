@@ -5,13 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, Book, GraduationCap, Image as ImageIcon, AlertCircle, Link2, CreditCard, Edit } from 'lucide-react';
+import { Package, Book, GraduationCap, Image as ImageIcon, AlertCircle, Link2, CreditCard, Edit, Trash2 } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ThemeLoading } from './theme-loading';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
 
 interface ShopDisplayProps {
   userId: string;
@@ -32,6 +34,7 @@ interface ShopItem {
   thumbnailUrl?: string;
   isAvailable: boolean;
   stock?: number;
+  hideQuantity?: boolean;
   category?: string;
   createdAt: Date;
 }
@@ -42,6 +45,8 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
   const [isStripeIntegrated, setIsStripeIntegrated] = useState(false);
   const [checkingStripe, setCheckingStripe] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
 
@@ -305,6 +310,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               contactEmail: data.contactEmail,
               imageUrl: data.images?.[0] || data.imageUrl,
               isAvailable: data.isActive !== false && (data.stock === undefined || data.stock > 0),
+              hideQuantity: (data as any).hideQuantity || false,
               stock: data.stock,
               category: data.category,
               createdAt: data.createdAt?.toDate?.() || new Date(),
@@ -466,7 +472,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                       )}
                       {!item.isAvailable && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <Badge variant="destructive">Sold Out</Badge>
+                          <Badge variant="destructive">Sold</Badge>
                         </div>
                       )}
                       {/* Edit button overlay - only for owner */}
@@ -513,7 +519,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             </div>
           ) : (
             // Desktop: Grid view
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {artworks.map((item) => (
                 <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
                   <div className="relative aspect-square">
@@ -531,7 +537,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                     )}
                     {!item.isAvailable && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Badge variant="destructive">Sold Out</Badge>
+                        <Badge variant="destructive">Sold</Badge>
                       </div>
                     )}
                     {/* Edit button overlay - only for owner */}
@@ -550,12 +556,12 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                       </Button>
                     )}
                   </div>
-                  <CardContent className="p-4">
-                    <h4 className="font-semibold text-sm mb-2 line-clamp-1">{item.title}</h4>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="font-bold text-lg">
+                  <CardContent className="p-3">
+                    <h4 className="font-semibold text-xs mb-1.5 line-clamp-1">{item.title}</h4>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="font-bold text-base">
                         {item.priceType === 'contact' || item.contactForPrice ? (
-                          <span className="text-muted-foreground text-sm">Contact for pricing</span>
+                          <span className="text-muted-foreground text-xs">Contact for pricing</span>
                         ) : (
                           <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
                         )}
@@ -564,7 +570,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="w-full"
+                      className="w-full text-xs py-1.5 h-8"
                       onClick={() => router.push(`/artwork/${item.id}`)}
                       disabled={!item.isAvailable}
                     >
@@ -614,7 +620,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                       )}
                       {!item.isAvailable && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <Badge variant="destructive">Sold Out</Badge>
+                          <Badge variant="destructive">Sold</Badge>
                         </div>
                       )}
                       {/* Edit button overlay - only for owner */}
@@ -657,10 +663,10 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             </div>
           ) : (
             // Desktop: Grid view
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {products.map((item) => (
                 <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative aspect-[3/4]">
+                  <div className="relative aspect-[4/5]">
                     {item.imageUrl ? (
                       <Image
                         src={item.imageUrl}
@@ -675,36 +681,50 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                     )}
                     {!item.isAvailable && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Badge variant="destructive">Sold Out</Badge>
+                        <Badge variant="destructive">Sold</Badge>
                       </div>
                     )}
-                    {/* Edit button overlay - only for owner */}
+                    {/* Edit and Delete buttons overlay - only for owner */}
                     {isOwnProfile && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background/90 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/marketplace/${item.id}?edit=true`);
-                        }}
-                        title="Edit product"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/marketplace/${item.id}?edit=true`);
+                          }}
+                          title="Edit product"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="bg-background/80 backdrop-blur-sm hover:bg-destructive/90 hover:text-destructive-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowDeleteConfirm(item.id);
+                          }}
+                          title="Delete product"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
-                  <CardContent className="p-4">
-                    <h4 className="font-semibold text-sm mb-2 line-clamp-1">{item.title}</h4>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="font-bold text-lg">
+                  <CardContent className="p-3">
+                    <h4 className="font-semibold text-xs mb-1.5 line-clamp-1">{item.title}</h4>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="font-bold text-base">
                         {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
                       </span>
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="w-full"
+                      className="w-full text-xs py-1.5 h-8"
                       onClick={() => router.push(`/marketplace/${item.id}`)}
                       disabled={!item.isAvailable}
                     >
@@ -730,6 +750,54 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
         )}
       </TabsContent>
     </Tabs>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteConfirm !== null} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Product?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete this product? This action cannot be undone. 
+            The product will be permanently removed from your shop.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={async () => {
+              if (!showDeleteConfirm || !user) return;
+              setDeleting(true);
+              try {
+                await updateDoc(doc(db, 'marketplaceProducts', showDeleteConfirm), {
+                  isActive: false,
+                  deleted: true,
+                  updatedAt: new Date(),
+                });
+                setItems(prev => prev.filter(item => item.id !== showDeleteConfirm));
+                toast({
+                  title: 'Product deleted',
+                  description: 'Your product has been deleted successfully.',
+                });
+                setShowDeleteConfirm(null);
+              } catch (error) {
+                console.error('Error deleting product:', error);
+                toast({
+                  title: 'Delete failed',
+                  description: 'Failed to delete product. Please try again.',
+                  variant: 'destructive',
+                });
+              } finally {
+                setDeleting(false);
+              }
+            }}
+            disabled={deleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deleting ? 'Deleting...' : 'Delete Product'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
