@@ -212,7 +212,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 allowMessages: true
               },
               discover: userData.preferences?.discover || {}
-            }
+            },
+            // Stripe Connect fields
+            stripeAccountId: userData.stripeAccountId,
+            stripeOnboardingStatus: userData.stripeOnboardingStatus,
+            stripeOnboardingUrl: userData.stripeOnboardingUrl,
+            stripeChargesEnabled: userData.stripeChargesEnabled,
+            stripePayoutsEnabled: userData.stripePayoutsEnabled,
+            stripeAccountType: userData.stripeAccountType,
+            platformDonationEnabled: userData.platformDonationEnabled,
+            platformDonationType: userData.platformDonationType,
+            platformDonationPercentage: userData.platformDonationPercentage,
+            platformDonationOneTimeAmount: userData.platformDonationOneTimeAmount,
+            platformDonationOneTimeCompleted: userData.platformDonationOneTimeCompleted
           };
           setUser(detailedUser);
           setAvatarUrl(detailedUser.avatarUrl || null);

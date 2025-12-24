@@ -63,6 +63,39 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [checkingStripeStatus, setCheckingStripeStatus] = useState(false);
+
+  // Check Stripe status on mount and refresh user data
+  useEffect(() => {
+    const checkStripeStatus = async () => {
+      if (user?.stripeAccountId && (!user?.stripeOnboardingStatus || user?.stripeOnboardingStatus !== 'complete')) {
+        setCheckingStripeStatus(true);
+        try {
+          const response = await fetch(`/api/stripe/connect/account-status?accountId=${user.stripeAccountId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.onboardingStatus === 'complete' && data.chargesEnabled && data.payoutsEnabled) {
+              // Update user profile in Firestore
+              const { doc, updateDoc } = await import('firebase/firestore');
+              const { db } = await import('@/lib/firebase');
+              await updateDoc(doc(db, 'userProfiles', user.id), {
+                stripeOnboardingStatus: 'complete',
+                stripeChargesEnabled: data.chargesEnabled,
+                stripePayoutsEnabled: data.payoutsEnabled,
+              });
+              await refreshUser();
+            }
+          }
+        } catch (error) {
+          console.error('Error checking Stripe status:', error);
+        } finally {
+          setCheckingStripeStatus(false);
+        }
+      }
+    };
+
+    checkStripeStatus();
+  }, [user?.stripeAccountId, user?.id, refreshUser]);
 
   useEffect(() => {
     if (user?.stripeAccountId) {
@@ -202,8 +235,95 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
   const pendingPayouts = payouts.filter(p => p.status === 'pending' || p.status === 'in_transit');
   const totalPending = pendingPayouts.reduce((sum, p) => sum + p.amount, 0);
 
+  // Calculate business metrics
+  const totalSales = sales.length;
+  const totalRevenue = sales.reduce((sum, s) => sum + s.amount, 0);
+  const totalPayout = sales.reduce((sum, s) => sum + s.artistPayout, 0);
+  const totalPlatformDonation = sales.reduce((sum, s) => sum + (s.platformCommission || 0), 0);
+  const totalStripeFees = sales.reduce((sum, s) => sum + ((s as any).stripeFeeAmount || 0), 0);
+  
+  // Sales by type
+  const salesByType = sales.reduce((acc, sale) => {
+    acc[sale.itemType] = (acc[sale.itemType] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Revenue by type
+  const revenueByType = sales.reduce((acc, sale) => {
+    acc[sale.itemType] = (acc[sale.itemType] || 0) + sale.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Top selling items
+  const topItems = sales
+    .reduce((acc, sale) => {
+      const key = sale.itemId;
+      if (!acc[key]) {
+        acc[key] = { title: sale.itemTitle, type: sale.itemType, count: 0, revenue: 0 };
+      }
+      acc[key].count += 1;
+      acc[key].revenue += sale.amount;
+      return acc;
+    }, {} as Record<string, { title: string; type: string; count: number; revenue: number }>);
+
+  const topItemsArray = Object.values(topItems)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+
+  // Recent sales (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const recentSales = sales.filter(sale => {
+    const saleDate = sale.createdAt?.toDate ? sale.createdAt.toDate() : new Date(sale.createdAt);
+    return saleDate >= thirtyDaysAgo;
+  });
+  const recentRevenue = recentSales.reduce((sum, s) => sum + s.amount, 0);
+
   return (
     <div className="space-y-6">
+      {/* Business Metrics Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Sales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalSales}</div>
+            <p className="text-xs text-muted-foreground mt-1">All time</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
+            <p className="text-xs text-muted-foreground mt-1">All time</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Payout</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPayout)}</div>
+            <p className="text-xs text-muted-foreground mt-1">After fees & donations</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">30 Day Revenue</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(recentRevenue)}</div>
+            <p className="text-xs text-muted-foreground mt-1">{recentSales.length} sales</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Balance Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -349,13 +469,79 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
         </CardContent>
       </Card>
 
+      {/* Sales Analytics */}
+      {sales.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Sales by Type */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Sales by Type</CardTitle>
+              <CardDescription>
+                Breakdown of sales by item type
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Object.entries(salesByType).map(([type, count]) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="capitalize">{type}</Badge>
+                      <span className="text-sm text-muted-foreground">{count} sale{count !== 1 ? 's' : ''}</span>
+                    </div>
+                    <span className="font-semibold">{formatCurrency(revenueByType[type] || 0)}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Top Selling Items */}
+          {topItemsArray.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Selling Items</CardTitle>
+                <CardDescription>
+                  Your best performing products
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {topItemsArray.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm">{item.title}</span>
+                          <Badge variant="outline" className="text-xs">{item.type}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{item.count} sale{item.count !== 1 ? 's' : ''}</p>
+                      </div>
+                      <span className="font-semibold">{formatCurrency(item.revenue)}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
       {/* Sales History */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Sales</CardTitle>
-          <CardDescription>
-            Your recent sales and commissions
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Recent Sales</CardTitle>
+              <CardDescription>
+                Your recent sales and commissions
+              </CardDescription>
+            </div>
+            {totalStripeFees > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Total Stripe Fees</p>
+                <p className="text-sm font-semibold">{formatCurrency(totalStripeFees)}</p>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {sales.length === 0 ? (
