@@ -76,7 +76,7 @@ export default function PartnerDashboardPage() {
           id: 'admin',
           email: user.email || '',
           companyName: 'Gouache Admin',
-          contactName: user.displayName || user.name || 'Admin',
+          contactName: user.displayName || user.username || user.handle || 'Admin',
           createdAt: new Date(),
           isActive: true,
           accountType: 'partner',
