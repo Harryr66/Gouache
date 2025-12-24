@@ -36,13 +36,24 @@ export async function GET(request: NextRequest) {
     // Calculate available and pending amounts
     const available = balance.available.reduce((sum, bal) => sum + bal.amount, 0);
     const pending = balance.pending.reduce((sum, bal) => sum + bal.amount, 0);
-    const currency = balance.available[0]?.currency || 'usd';
+    const connectReserved = balance.connect_reserved?.reduce((sum, bal) => sum + bal.amount, 0) || 0;
+    const currency = balance.available[0]?.currency || balance.pending[0]?.currency || 'usd';
+
+    // Get account details to check for reserves
+    const account = await stripe.accounts.retrieve(accountId);
+    const hasReserve = account.reserve_enabled || false;
 
     return NextResponse.json({
       available,
       pending,
+      connectReserved, // Funds held due to negative balances (Custom accounts only)
       currency,
+      hasReserve, // Whether account has rolling reserve enabled
+      // Include full balance object for detailed breakdown
       balance: balance,
+      // Breakdown by source type for more detail
+      availableBreakdown: balance.available,
+      pendingBreakdown: balance.pending,
     });
   } catch (error: any) {
     console.error('Error retrieving Stripe balance:', error);
