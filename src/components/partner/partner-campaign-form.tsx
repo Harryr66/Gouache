@@ -141,6 +141,25 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    // Validate pricing is provided
+    if (!values.costPerImpression || parseFloat(values.costPerImpression) <= 0) {
+      toast({
+        title: 'Pricing required',
+        description: 'Please enter a cost per 1,000 impressions (CPM).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!values.costPerClick || parseFloat(values.costPerClick) <= 0) {
+      toast({
+        title: 'Pricing required',
+        description: 'Please enter a cost per click (CPC).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (mediaType === 'image' && !imageFile) {
       toast({
         title: 'Image required',
@@ -555,10 +574,10 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={(checked) => {
-                          field.onChange(checked);
-                          setUncappedBudget(checked as boolean);
                           if (checked) {
                             setShowUncappedDialog(true);
+                          } else {
+                            field.onChange(false);
                           }
                         }}
                       />
@@ -629,12 +648,15 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel onClick={() => {
-                    setUncappedBudget(false);
                     form.setValue('uncappedBudget', false);
+                    setShowUncappedDialog(false);
                   }}>
                     Cancel
                   </AlertDialogCancel>
-                  <AlertDialogAction onClick={() => setShowUncappedDialog(false)}>
+                  <AlertDialogAction onClick={() => {
+                    form.setValue('uncappedBudget', true);
+                    setShowUncappedDialog(false);
+                  }}>
                     I Understand, Continue
                   </AlertDialogAction>
                 </AlertDialogFooter>
