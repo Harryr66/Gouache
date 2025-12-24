@@ -645,7 +645,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                       <Button
                         variant="outline"
                         className="w-full"
-                        onClick={() => router.push(`/shop/book/${item.id}`)}
+                        onClick={() => router.push(`/marketplace/${item.id}`)}
                         disabled={!item.isAvailable}
                       >
                         View Details
@@ -705,7 +705,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                       size="sm"
                       variant="outline"
                       className="w-full"
-                      onClick={() => router.push(`/shop/book/${item.id}`)}
+                      onClick={() => router.push(`/marketplace/${item.id}`)}
                       disabled={!item.isAvailable}
                     >
                       View Details
