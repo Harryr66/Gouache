@@ -81,6 +81,10 @@ export async function POST(request: NextRequest) {
         await handleDisputeCreated(event.data.object as Stripe.Dispute);
         break;
 
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -333,6 +337,39 @@ async function handlePayoutFailed(payout: Stripe.Payout) {
     // You can update payout status and notify artist here
   } catch (error) {
     console.error('Error handling payout failed:', error);
+  }
+}
+
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  try {
+    const { artistId, donationType } = session.metadata || {};
+    
+    if (donationType === 'one-time' && artistId) {
+      // Mark one-time donation as completed
+      const artistRef = doc(db, 'userProfiles', artistId);
+      await updateDoc(artistRef, {
+        platformDonationOneTimeCompleted: true,
+        platformDonationEnabled: true,
+        platformDonationType: 'one-time',
+      });
+
+      // Record the donation
+      await addDoc(collection(db, 'donations'), {
+        artistId: artistId,
+        donationType: 'one-time',
+        amount: session.amount_total || 0,
+        currency: session.currency || 'usd',
+        sessionId: session.id,
+        paymentIntentId: session.payment_intent as string,
+        completedAt: new Date(),
+        createdAt: new Date(),
+      });
+
+      console.log(`✅ One-time donation completed: ${session.id} for artist ${artistId}`);
+    }
+  } catch (error) {
+    console.error('Error handling checkout session completion:', error);
+    throw error;
   }
 }
 

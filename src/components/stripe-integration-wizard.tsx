@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,34 @@ interface StripeIntegrationWizardProps {
 
 export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardProps) {
   const { user, refreshUser } = useAuth();
+  const searchParams = useSearchParams();
+  
+  // Check for donation completion status from URL
+  useEffect(() => {
+    const donationStatus = searchParams?.get('donation');
+    if (donationStatus === 'success' && user) {
+      // Refresh user data to get updated donation status
+      refreshUser();
+      toast({
+        title: 'Donation completed!',
+        description: 'Thank you for supporting Gouache!',
+      });
+      // Clean up URL
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    } else if (donationStatus === 'cancelled') {
+      toast({
+        title: 'Donation cancelled',
+        description: 'Your donation was cancelled. You can try again anytime.',
+        variant: 'default',
+      });
+      // Clean up URL
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, [searchParams, user, refreshUser]);
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<{
@@ -729,12 +758,195 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
               <div className="space-y-1">
                 <h4 className="font-semibold">Support Gouache (Optional)</h4>
                 <p className="text-sm text-muted-foreground">
-                  Optionally donate a percentage of your sales to support the Gouache platform. 
+                  Optionally support the Gouache platform with a one-time donation or ongoing percentage of sales. 
                   This is completely voluntary and can be changed at any time.
                 </p>
               </div>
               
               <div className="p-4 bg-muted/50 rounded-lg space-y-4">
+                {/* Donation Type Selector */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Donation Type</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={user?.platformDonationType === 'one-time' ? "default" : "outline"}
+                      size="sm"
+                      onClick={async () => {
+                        if (!user) return;
+                        try {
+                          await updateDoc(doc(db, 'userProfiles', user.id), {
+                            platformDonationType: 'one-time',
+                            platformDonationEnabled: true,
+                            platformDonationPercentage: 0, // Clear percentage for one-time
+                          });
+                          await refreshUser();
+                        } catch (error) {
+                          console.error('Error updating donation type:', error);
+                        }
+                      }}
+                    >
+                      One-Time Donation
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={user?.platformDonationType === 'ongoing' || !user?.platformDonationType ? "default" : "outline"}
+                      size="sm"
+                      onClick={async () => {
+                        if (!user) return;
+                        try {
+                          await updateDoc(doc(db, 'userProfiles', user.id), {
+                            platformDonationType: 'ongoing',
+                            platformDonationOneTimeAmount: 0, // Clear one-time amount for ongoing
+                          });
+                          await refreshUser();
+                        } catch (error) {
+                          console.error('Error updating donation type:', error);
+                        }
+                      }}
+                    >
+                      Ongoing (Percentage)
+                    </Button>
+                  </div>
+                </div>
+
+                {/* One-Time Donation Section */}
+                {(user?.platformDonationType === 'one-time' || !user?.platformDonationType) && (
+                  <div className="space-y-3 p-3 border rounded-lg">
+                    <Label className="text-sm font-medium">One-Time Donation Amount</Label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[10, 25, 50, 100, 250, 500].map((amount) => (
+                        <Button
+                          key={amount}
+                          type="button"
+                          variant={user?.platformDonationOneTimeAmount === amount * 100 ? "default" : "outline"}
+                          size="sm"
+                          onClick={async () => {
+                            if (!user) return;
+                            try {
+                              await updateDoc(doc(db, 'userProfiles', user.id), {
+                                platformDonationOneTimeAmount: amount * 100, // Store in cents
+                                platformDonationEnabled: true,
+                                platformDonationType: 'one-time',
+                              });
+                              await refreshUser();
+                            } catch (error) {
+                              console.error('Error setting donation amount:', error);
+                              toast({
+                                title: 'Update failed',
+                                description: 'Could not update donation amount. Please try again.',
+                                variant: 'destructive',
+                              });
+                            }
+                          }}
+                        >
+                          ${amount}
+                        </Button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        placeholder="Custom amount"
+                        value={user?.platformDonationOneTimeAmount && ![10, 25, 50, 100, 250, 500].includes((user.platformDonationOneTimeAmount || 0) / 100) 
+                          ? (user.platformDonationOneTimeAmount / 100).toFixed(2)
+                          : ''}
+                        onChange={async (e) => {
+                          const value = e.target.value;
+                          if (!user) return;
+                          
+                          if (value === '') {
+                            try {
+                              await updateDoc(doc(db, 'userProfiles', user.id), {
+                                platformDonationOneTimeAmount: 0,
+                                platformDonationEnabled: false,
+                              });
+                              await refreshUser();
+                            } catch (error) {
+                              console.error('Error clearing donation:', error);
+                            }
+                            return;
+                          }
+                          
+                          const numValue = parseFloat(value);
+                          if (!isNaN(numValue) && numValue > 0) {
+                            try {
+                              await updateDoc(doc(db, 'userProfiles', user.id), {
+                                platformDonationOneTimeAmount: Math.round(numValue * 100), // Convert to cents
+                                platformDonationEnabled: true,
+                                platformDonationType: 'one-time',
+                              });
+                              await refreshUser();
+                            } catch (error) {
+                              console.error('Error updating donation:', error);
+                            }
+                          }
+                        }}
+                        className="w-32"
+                      />
+                      <span className="text-sm text-muted-foreground">USD</span>
+                    </div>
+                    {user?.platformDonationOneTimeAmount && user.platformDonationOneTimeAmount > 0 && !user.platformDonationOneTimeCompleted && (
+                      <Button
+                        type="button"
+                        variant="gradient"
+                        size="sm"
+                        className="w-full"
+                        onClick={async () => {
+                          if (!user || !user.platformDonationOneTimeAmount) return;
+                          
+                          try {
+                            // Create Stripe Checkout session
+                            const response = await fetch('/api/stripe/create-donation-checkout', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                artistId: user.id,
+                                amount: user.platformDonationOneTimeAmount, // Already in cents
+                              }),
+                            });
+
+                            if (!response.ok) {
+                              const error = await response.json();
+                              throw new Error(error.error || 'Failed to create checkout');
+                            }
+
+                            const { url } = await response.json();
+                            
+                            // Redirect to Stripe Checkout
+                            if (url) {
+                              window.location.href = url;
+                            } else {
+                              throw new Error('No checkout URL received');
+                            }
+                          } catch (error: any) {
+                            console.error('Error creating donation checkout:', error);
+                            toast({
+                              title: 'Donation failed',
+                              description: error.message || 'Failed to process donation. Please try again.',
+                              variant: 'destructive',
+                            });
+                          }
+                        }}
+                      >
+                        Complete One-Time Donation
+                      </Button>
+                    )}
+                    {user?.platformDonationOneTimeCompleted && (
+                      <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded text-sm text-green-800 dark:text-green-200">
+                        ✓ One-time donation completed
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Ongoing Percentage Donation Section */}
+                {(user?.platformDonationType === 'ongoing' || !user?.platformDonationType) && (
+                  <>
                 {/* Percentage Selector */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Suggested Percentage</Label>
@@ -750,7 +962,9 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                           try {
                             await updateDoc(doc(db, 'userProfiles', user.id), {
                               platformDonationEnabled: true,
+                              platformDonationType: 'ongoing',
                               platformDonationPercentage: percentage,
+                              platformDonationOneTimeAmount: 0, // Clear one-time amount
                             });
                             await refreshUser();
                             toast({
@@ -779,6 +993,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                         try {
                           await updateDoc(doc(db, 'userProfiles', user.id), {
                             platformDonationEnabled: false,
+                            platformDonationType: 'ongoing',
                             platformDonationPercentage: 0,
                           });
                           await refreshUser();
@@ -826,6 +1041,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                           try {
                             await updateDoc(doc(db, 'userProfiles', user.id), {
                               platformDonationEnabled: false,
+                              platformDonationType: 'ongoing',
                               platformDonationPercentage: 0,
                             });
                             await refreshUser();
@@ -840,7 +1056,9 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                           try {
                             await updateDoc(doc(db, 'userProfiles', user.id), {
                               platformDonationEnabled: numValue > 0,
+                              platformDonationType: 'ongoing',
                               platformDonationPercentage: numValue,
+                              platformDonationOneTimeAmount: 0, // Clear one-time amount
                             });
                             await refreshUser();
                           } catch (error) {
@@ -860,12 +1078,24 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                 </div>
 
                 {/* Current Status */}
-                {user?.platformDonationEnabled && user.platformDonationPercentage && user.platformDonationPercentage > 0 && (
+                {user?.platformDonationEnabled && (
                   <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-                    <p className="text-sm font-medium">
-                      Currently donating <span className="text-primary">{user.platformDonationPercentage}%</span> of each sale to Gouache
-                    </p>
+                    {user.platformDonationType === 'one-time' && user.platformDonationOneTimeAmount && user.platformDonationOneTimeAmount > 0 ? (
+                      <p className="text-sm font-medium">
+                        {user.platformDonationOneTimeCompleted ? (
+                          <>✓ One-time donation of <span className="text-primary">${(user.platformDonationOneTimeAmount / 100).toFixed(2)}</span> completed</>
+                        ) : (
+                          <>One-time donation of <span className="text-primary">${(user.platformDonationOneTimeAmount / 100).toFixed(2)}</span> pending</>
+                        )}
+                      </p>
+                    ) : user.platformDonationPercentage && user.platformDonationPercentage > 0 ? (
+                      <p className="text-sm font-medium">
+                        Currently donating <span className="text-primary">{user.platformDonationPercentage}%</span> of each sale to Gouache
+                      </p>
+                    ) : null}
                   </div>
+                )}
+                  </>
                 )}
               </div>
             </div>

@@ -854,8 +854,11 @@ export interface User {
   stripeChargesEnabled?: boolean; // Whether charges are enabled
   stripePayoutsEnabled?: boolean; // Whether payouts are enabled
   stripeAccountType?: 'express' | 'standard' | 'custom'; // Account type
-  platformDonationEnabled?: boolean; // Whether artist wants to donate % of sales to platform
-  platformDonationPercentage?: number; // Percentage of sales to donate (0-100)
+  platformDonationEnabled?: boolean; // Whether artist wants to donate to platform
+  platformDonationType?: 'ongoing' | 'one-time'; // Type of donation: ongoing (percentage of sales) or one-time
+  platformDonationPercentage?: number; // Percentage of sales to donate (0-100) for ongoing donations
+  platformDonationOneTimeAmount?: number; // One-time donation amount in cents
+  platformDonationOneTimeCompleted?: boolean; // Whether one-time donation has been completed
 }
 
 export interface Follow {
