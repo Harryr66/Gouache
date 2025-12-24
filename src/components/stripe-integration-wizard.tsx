@@ -1119,7 +1119,7 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
           <h4 className="font-semibold mb-2">Fees & Payouts</h4>
           <div className="text-sm text-muted-foreground space-y-1">
             <p>• 0% platform commission - you keep 100% of sales</p>
-            <p>• Stripe processing fee: ~2.9% + $0.30 per transaction (paid by buyer)</p>
+            <p>• Stripe processing fee: ~2.9% + $0.30 per transaction (paid by seller, baked into price)</p>
             <p>• Optionally donate a % of your sales to support Gouache</p>
             <p>• Payouts are processed automatically to your bank account</p>
           </div>

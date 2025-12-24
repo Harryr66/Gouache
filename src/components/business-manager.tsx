@@ -125,7 +125,13 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
     });
   };
 
-  if (!user?.stripeAccountId) {
+  // Check if Stripe is fully connected (same logic as StripeIntegrationWizard)
+  const isStripeFullyConnected = user?.stripeAccountId && 
+    user?.stripeOnboardingStatus === 'complete' && 
+    user?.stripeChargesEnabled && 
+    user?.stripePayoutsEnabled;
+
+  if (!isStripeFullyConnected) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
