@@ -528,6 +528,7 @@ export function UploadProductBasic() {
                 <Button
                   type="button"
                   variant={deliveryScope === 'worldwide' ? 'default' : 'outline'}
+                  className={deliveryScope === 'worldwide' ? 'bg-primary text-primary-foreground' : ''}
                   onClick={() => {
                     setDeliveryScope('worldwide');
                     setSelectedCountries([]);
@@ -539,6 +540,7 @@ export function UploadProductBasic() {
                 <Button
                   type="button"
                   variant={deliveryScope === 'specific' ? 'default' : 'outline'}
+                  className={deliveryScope === 'specific' ? 'bg-primary text-primary-foreground' : ''}
                   onClick={() => setDeliveryScope('specific')}
                 >
                   Specific countries
