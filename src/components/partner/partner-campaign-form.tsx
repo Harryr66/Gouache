@@ -21,7 +21,6 @@ import { AdCampaign } from '@/lib/types';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
   placement: z.enum(['news', 'discover', 'learn']),
   clickUrl: z.string().url('Please enter a valid URL'),
   startDate: z.string().min(1, 'Start date is required'),
@@ -52,7 +51,6 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      description: '',
       placement: 'news',
       clickUrl: '',
       startDate: new Date().toISOString().split('T')[0],
@@ -192,7 +190,6 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       const campaignData: Omit<AdCampaign, 'id'> = {
         partnerId,
         title: values.title,
-        description: values.description,
         placement: values.placement,
         mediaType,
         imageUrl,
