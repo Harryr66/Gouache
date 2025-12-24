@@ -39,16 +39,15 @@ export async function GET(request: NextRequest) {
     const connectReserved = balance.connect_reserved?.reduce((sum, bal) => sum + bal.amount, 0) || 0;
     const currency = balance.available[0]?.currency || balance.pending[0]?.currency || 'usd';
 
-    // Get account details to check for reserves
-    const account = await stripe.accounts.retrieve(accountId);
-    const hasReserve = account.reserve_enabled || false;
+    // Note: Rolling reserve status is not directly available via API
+    // It's typically indicated by having pending funds that persist over time
+    // We can infer it might exist if there's a significant pending balance, but can't confirm definitively
 
     return NextResponse.json({
       available,
       pending,
       connectReserved, // Funds held due to negative balances (Custom accounts only)
       currency,
-      hasReserve, // Whether account has rolling reserve enabled
       // Include full balance object for detailed breakdown
       balance: balance,
       // Breakdown by source type for more detail
