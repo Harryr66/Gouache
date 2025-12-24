@@ -39,6 +39,7 @@ export function PortfolioManager() {
   const [isUploading, setIsUploading] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<PortfolioItem | null>(null);
   
   // Log mount only once
   useEffect(() => {
