@@ -862,17 +862,17 @@ export function StripeIntegrationWizard({ onComplete }: StripeIntegrationWizardP
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
-                        min="1"
+                        min="0"
                         step="0.01"
                         placeholder="Custom amount"
-                        value={user?.platformDonationOneTimeAmount && ![10, 25, 50, 100, 250, 500].includes((user.platformDonationOneTimeAmount || 0) / 100) 
+                        value={user?.platformDonationOneTimeAmount && user.platformDonationOneTimeAmount > 0 && ![10, 25, 50, 100, 250, 500].includes((user.platformDonationOneTimeAmount || 0) / 100) 
                           ? (user.platformDonationOneTimeAmount / 100).toFixed(2)
                           : ''}
                         onChange={async (e) => {
                           const value = e.target.value;
                           if (!user) return;
                           
-                          if (value === '') {
+                          if (value === '' || value === '0' || value === '0.00') {
                             try {
                               await updateDoc(doc(db, 'userProfiles', user.id), {
                                 platformDonationOneTimeAmount: 0,
