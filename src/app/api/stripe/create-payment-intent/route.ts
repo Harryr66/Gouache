@@ -152,11 +152,22 @@ export async function POST(request: NextRequest) {
     // No application fee - artist receives full amount
     const applicationFeeAmount = 0;
 
+    // Calculate Stripe fees and add to amount (seller pays fees, baked into price)
+    // Stripe fee: 2.9% + $0.30 per transaction
+    // Formula: totalAmount = (sellerAmount + 0.30) / (1 - 0.029)
+    // This ensures seller receives the original amount after Stripe fees
+    const STRIPE_FEE_PERCENTAGE = 0.029; // 2.9%
+    const STRIPE_FIXED_FEE = 30; // $0.30 in cents
+    const sellerAmountInCents = amountInCents; // Original seller-set price
+    const totalAmountInCents = Math.ceil((sellerAmountInCents + STRIPE_FIXED_FEE) / (1 - STRIPE_FEE_PERCENTAGE));
+    const stripeFeeAmount = totalAmountInCents - sellerAmountInCents;
+
     // Create payment intent on the connected account
-    // Artist receives: amountInCents - platformDonationAmount (if they opted in)
+    // Buyer pays: totalAmountInCents (includes Stripe fees)
+    // Seller receives: sellerAmountInCents (after Stripe deducts fees)
     const paymentIntent = await stripe.paymentIntents.create(
       {
-        amount: amountInCents,
+        amount: totalAmountInCents, // Total amount buyer pays (includes Stripe fees)
         currency: currency.toLowerCase(),
         // No application fee - artist receives 100% of payment
         transfer_data: {
@@ -169,7 +180,9 @@ export async function POST(request: NextRequest) {
           itemId: itemId,
           itemTitle: itemData.title || 'Untitled',
           platform: 'gouache',
-          productAmount: amountInCents.toString(), // Original product amount
+          productAmount: sellerAmountInCents.toString(), // Original seller price (what seller receives)
+          totalAmount: totalAmountInCents.toString(), // Total amount buyer pays
+          stripeFeeAmount: stripeFeeAmount.toString(), // Stripe fees (paid by seller)
           platformCommissionAmount: platformCommissionAmount.toString(), // 0% platform commission
           platformCommissionPercentage: platformCommissionPercentage.toString(), // 0% commission - artist gets 100%
           ...(itemType === 'merchandise' || itemType === 'product' ? { stock: (itemData.stock || 0).toString() } : {}),
@@ -189,10 +202,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
-      amount: paymentIntent.amount,
+      amount: paymentIntent.amount, // Total amount buyer pays (includes Stripe fees)
       currency: paymentIntent.currency,
       applicationFeeAmount, // 0% platform commission - artist receives 100%
-      productAmount: amountInCents,
+      productAmount: sellerAmountInCents, // Original seller price
+      totalAmount: totalAmountInCents, // Total amount buyer pays
+      stripeFeeAmount, // Stripe fees (paid by seller)
       platformCommissionAmount,
       platformCommissionPercentage,
     });

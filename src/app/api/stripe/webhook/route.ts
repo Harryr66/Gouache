@@ -113,10 +113,14 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     // Extract metadata for platform commission tracking
     const platformCommissionAmount = parseInt(paymentIntent.metadata.platformCommissionAmount || paymentIntent.metadata.platformDonationAmount || '0');
     const platformCommissionPercentage = parseFloat(paymentIntent.metadata.platformCommissionPercentage || paymentIntent.metadata.platformDonationPercentage || '0');
-    const productAmount = parseInt(paymentIntent.metadata.productAmount || paymentIntent.amount.toString());
+    const productAmount = parseInt(paymentIntent.metadata.productAmount || paymentIntent.amount.toString()); // Original seller price
+    const totalAmount = parseInt(paymentIntent.metadata.totalAmount || paymentIntent.amount.toString()); // Total amount buyer paid
+    const stripeFeeAmount = parseInt(paymentIntent.metadata.stripeFeeAmount || '0'); // Stripe fees (paid by seller)
     
-    // Artist receives full payment (0% commission)
-    const artistPayoutAmount = paymentIntent.amount - (paymentIntent.application_fee_amount || 0);
+    // Artist receives: totalAmount - Stripe fees (Stripe automatically deducts fees from transfer)
+    // With Stripe Connect, the seller receives the full amount minus Stripe's fees automatically
+    // So artistPayout ≈ productAmount (original seller price)
+    const artistPayoutAmount = productAmount; // Seller receives original price (fees already deducted by Stripe)
     
     // Record the sale in Firestore
     await addDoc(collection(db, 'sales'), {
@@ -125,13 +129,14 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       itemType,
       buyerId: userId,
       artistId,
-      amount: paymentIntent.amount,
+      amount: totalAmount, // Total amount buyer paid (includes Stripe fees)
       currency: paymentIntent.currency,
       applicationFeeAmount: paymentIntent.application_fee_amount || 0,
+      stripeFeeAmount, // Stripe fees (paid by seller)
       platformCommission: platformCommissionAmount, // 0% platform commission - artist gets 100%
       platformCommissionPercentage, // 0% commission percentage
-      productAmount, // Original product price
-      artistPayout: artistPayoutAmount, // Full amount (100% to artist)
+      productAmount, // Original seller price (what seller receives)
+      artistPayout: artistPayoutAmount, // Seller receives original price (after Stripe fees)
       status: 'completed',
       itemTitle: itemTitle || 'Untitled',
       createdAt: new Date(),

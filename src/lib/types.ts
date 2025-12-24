@@ -222,6 +222,8 @@ export interface MarketplaceProduct {
   isApproved?: boolean;
   status?: 'pending' | 'approved' | 'rejected';
   isWishlisted?: boolean;
+  // Stripe fees handling
+  stripeFeesIncluded?: boolean; // If true, price includes Stripe fees (seller pays fees). If false, fees are added on top (buyer pays fees).
 }
 
 export interface AffiliateProductRequest {
@@ -468,6 +470,8 @@ export interface Artwork {
   supportingImages?: string[];
   supportingVideos?: string[];
   statement?: string;
+  // Stripe fees handling
+  stripeFeesIncluded?: boolean; // If true, price includes Stripe fees (seller pays fees). If false, fees are added on top (buyer pays fees).
 }
 
 export interface Post {
