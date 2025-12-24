@@ -37,7 +37,6 @@ interface Balance {
   pending: number;
   connectReserved?: number; // Funds held due to negative balances (Custom accounts)
   currency: string;
-  hasReserve?: boolean; // Whether account has rolling reserve enabled
   availableBreakdown?: Array<{ amount: number; currency: string; source_types?: any }>;
   pendingBreakdown?: Array<{ amount: number; currency: string; source_types?: any }>;
 }
@@ -327,14 +326,12 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
                       Funds from recent transactions that are clearing (typically 1-7 days). These automatically become available once processed.
                     </p>
                   </div>
-                  {balance?.hasReserve && (
-                    <div>
-                      <h4 className="font-semibold mb-1 text-xs">Rolling Reserve</h4>
-                      <p className="text-xs text-muted-foreground">
-                        Stripe holds a percentage of recent sales (typically 5-10%) for a set period (often 90 days) as a risk management measure. As new sales come in, older reserves are released. This is common for new accounts or higher-risk businesses.
-                      </p>
-                    </div>
-                  )}
+                  <div>
+                    <h4 className="font-semibold mb-1 text-xs">Rolling Reserve</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Stripe may hold a percentage of recent sales (typically 5-10%) for a set period (often 90 days) as a risk management measure. As new sales come in, older reserves are released. This is common for new accounts or higher-risk businesses. Check your Stripe Dashboard to see if a reserve is active.
+                    </p>
+                  </div>
                   {balance?.connectReserved > 0 && (
                     <div>
                       <h4 className="font-semibold mb-1 text-xs">Funds On Hold</h4>
@@ -350,16 +347,13 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
           <div className="text-lg font-bold">
             {balance ? formatCurrency(balance.available + (balance.pending || 0) + (balance.connectReserved || 0), balance.currency) : '$0.00'}
           </div>
-          {balance && (balance.pending > 0 || balance.connectReserved > 0) && (
+              {balance && (balance.pending > 0 || balance.connectReserved > 0) && (
             <div className="text-xs text-muted-foreground mt-0.5 space-y-0.5">
               {balance.pending > 0 && (
                 <div>{formatCurrency(balance.pending)} pending settlement</div>
               )}
               {balance.connectReserved > 0 && (
                 <div>{formatCurrency(balance.connectReserved)} on hold</div>
-              )}
-              {balance.hasReserve && (
-                <div className="text-[10px] text-muted-foreground/70">Rolling reserve active</div>
               )}
             </div>
           )}
