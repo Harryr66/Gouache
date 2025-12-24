@@ -59,7 +59,7 @@ export default function PartnerLoginPage() {
       // Also check if this is an admin account - use UID to get userProfile directly
       const userProfileDoc = await getDoc(doc(db, 'userProfiles', user.uid));
       const isAdmin = userProfileDoc.exists() && 
-                      userProfileDoc.data().isAdmin === true;
+                      userProfileDoc.data()?.isAdmin === true;
 
       if (partnerSnapshot.empty && !isAdmin) {
         // Not a partner account or admin - sign out and show error
@@ -94,10 +94,10 @@ export default function PartnerLoginPage() {
         });
       } else if (isAdmin) {
         // Admin account
-        const adminData = userProfileSnapshot.docs[0].data();
+        const adminData = userProfileDoc.data();
         toast({
           title: "Login Successful!",
-          description: `Welcome back, ${adminData.displayName || adminData.name || 'Admin'}!`,
+          description: `Welcome back, ${adminData?.displayName || adminData?.name || adminData?.username || 'Admin'}!`,
         });
       }
 
