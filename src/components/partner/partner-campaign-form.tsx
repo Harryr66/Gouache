@@ -55,6 +55,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [showUncappedDialog, setShowUncappedDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
