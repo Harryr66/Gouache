@@ -280,97 +280,53 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
   const recentRevenue = recentSales.reduce((sum, s) => sum + s.amount, 0);
 
   return (
-    <div className="space-y-6">
-      {/* Business Metrics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Sales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalSales}</div>
-            <p className="text-xs text-muted-foreground mt-1">All time</p>
-          </CardContent>
+    <div className="space-y-4">
+      {/* Compact Metrics Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <Card className="p-3">
+          <div className="text-xs text-muted-foreground mb-1">Total Sales</div>
+          <div className="text-lg font-bold">{totalSales}</div>
         </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">All time</p>
-          </CardContent>
+        <Card className="p-3">
+          <div className="text-xs text-muted-foreground mb-1">Total Revenue</div>
+          <div className="text-lg font-bold">{formatCurrency(totalRevenue)}</div>
         </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Payout</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPayout)}</div>
-            <p className="text-xs text-muted-foreground mt-1">After fees & donations</p>
-          </CardContent>
+        <Card className="p-3">
+          <div className="text-xs text-muted-foreground mb-1">Your Payout</div>
+          <div className="text-lg font-bold text-green-600">{formatCurrency(totalPayout)}</div>
         </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">30 Day Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(recentRevenue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{recentSales.length} sales</p>
-          </CardContent>
+        <Card className="p-3">
+          <div className="text-xs text-muted-foreground mb-1">30 Day</div>
+          <div className="text-lg font-bold">{formatCurrency(recentRevenue)}</div>
         </Card>
-      </div>
-
-      {/* Balance Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Available Balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {balance ? formatCurrency(balance.available, balance.currency) : '$0.00'}
+        <Card className="p-3">
+          <div className="text-xs text-muted-foreground mb-1">Stripe Balance</div>
+          <div className="text-lg font-bold">
+            {balance ? formatCurrency(balance.available + balance.pending, balance.currency) : '$0.00'}
+          </div>
+          {balance && balance.pending > 0 && (
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {formatCurrency(balance.pending)} pending
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Ready to be paid out</p>
-          </CardContent>
+          )}
         </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {balance ? formatCurrency(balance.pending, balance.currency) : '$0.00'}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Awaiting processing</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Payouts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalPending)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">{pendingPayouts.length} payout{pendingPayouts.length !== 1 ? 's' : ''}</p>
-          </CardContent>
+        <Card className="p-3">
+          <div className="text-xs text-muted-foreground mb-1">Pending Payouts</div>
+          <div className="text-lg font-bold">{formatCurrency(totalPending)}</div>
+          {pendingPayouts.length > 0 && (
+            <div className="text-xs text-muted-foreground mt-0.5">{pendingPayouts.length} scheduled</div>
+          )}
         </Card>
       </div>
 
       {/* Payout Dashboard */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Payout Dashboard</CardTitle>
-              <CardDescription>
-                View your pending and completed payouts
+              <CardTitle className="text-base">Payouts</CardTitle>
+              <CardDescription className="text-xs">
+                Pending and completed payouts
               </CardDescription>
             </div>
             <Button
@@ -378,87 +334,77 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
               size="sm"
               onClick={handleRefresh}
               disabled={refreshing}
+              className="h-8"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
+              <RefreshCw className={`h-3 w-3 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="text-xs">Refresh</span>
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {payouts.length === 0 ? (
-            <div className="text-center py-8">
-              <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <CardTitle className="mb-2">No Payouts Yet</CardTitle>
-              <CardDescription>
-                Your payouts will appear here once you make your first sale.
-              </CardDescription>
+            <div className="text-center py-6">
+              <DollarSign className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-sm font-medium mb-1">No Payouts Yet</p>
+              <p className="text-xs text-muted-foreground">
+                Payouts will appear here after sales
+              </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Pending Payouts Section */}
+            <div className="space-y-3">
+              {/* Pending Payouts */}
               {pendingPayouts.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Clock className="h-5 w-5" />
-                    Pending Payouts
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    Pending ({pendingPayouts.length})
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {pendingPayouts.map((payout) => (
                       <div
                         key={payout.id}
-                        className="border rounded-lg p-4 flex items-center justify-between"
+                        className="border rounded p-3 flex items-center justify-between text-sm"
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            {getStatusBadge(payout.status)}
-                            <span className="font-semibold text-lg">
-                              {formatCurrency(payout.amount, payout.currency)}
-                            </span>
-                          </div>
-                          {payout.description && (
-                            <p className="text-sm text-muted-foreground">{payout.description}</p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Arrives: {formatDate(payout.created)}
-                            {payout.arrivalDate && ` • Expected: ${new Date(payout.arrivalDate).toLocaleDateString()}`}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(payout.status)}
+                          <span className="font-semibold">
+                            {formatCurrency(payout.amount, payout.currency)}
+                          </span>
                         </div>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(payout.created)}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Completed Payouts Section */}
+              {/* Completed Payouts */}
               {payouts.filter(p => p.status === 'paid').length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5" />
-                    Completed Payouts
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Completed ({payouts.filter(p => p.status === 'paid').length})
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {payouts
                       .filter(p => p.status === 'paid')
-                      .slice(0, 10) // Show last 10
+                      .slice(0, 5)
                       .map((payout) => (
                         <div
                           key={payout.id}
-                          className="border rounded-lg p-4 flex items-center justify-between"
+                          className="border rounded p-3 flex items-center justify-between text-sm"
                         >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              {getStatusBadge(payout.status)}
-                              <span className="font-semibold text-lg">
-                                {formatCurrency(payout.amount, payout.currency)}
-                              </span>
-                            </div>
-                            {payout.description && (
-                              <p className="text-sm text-muted-foreground">{payout.description}</p>
-                            )}
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Paid: {formatDate(payout.created)}
-                            </p>
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(payout.status)}
+                            <span className="font-semibold">
+                              {formatCurrency(payout.amount, payout.currency)}
+                            </span>
                           </div>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(payout.created)}
+                          </span>
                         </div>
                       ))}
                   </div>
@@ -471,24 +417,21 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
 
       {/* Sales Analytics */}
       {sales.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Sales by Type */}
           <Card>
-            <CardHeader>
-              <CardTitle>Sales by Type</CardTitle>
-              <CardDescription>
-                Breakdown of sales by item type
-              </CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Sales by Type</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="pt-0">
+              <div className="space-y-2">
                 {Object.entries(salesByType).map(([type, count]) => (
-                  <div key={type} className="flex items-center justify-between">
+                  <div key={type} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="capitalize">{type}</Badge>
-                      <span className="text-sm text-muted-foreground">{count} sale{count !== 1 ? 's' : ''}</span>
+                      <Badge variant="secondary" className="text-xs capitalize">{type}</Badge>
+                      <span className="text-xs text-muted-foreground">{count} sale{count !== 1 ? 's' : ''}</span>
                     </div>
-                    <span className="font-semibold">{formatCurrency(revenueByType[type] || 0)}</span>
+                    <span className="font-semibold text-sm">{formatCurrency(revenueByType[type] || 0)}</span>
                   </div>
                 ))}
               </div>
@@ -498,24 +441,21 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
           {/* Top Selling Items */}
           {topItemsArray.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle>Top Selling Items</CardTitle>
-                <CardDescription>
-                  Your best performing products
-                </CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Top Items</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="pt-0">
+                <div className="space-y-2">
                   {topItemsArray.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-sm">{item.title}</span>
-                          <Badge variant="outline" className="text-xs">{item.type}</Badge>
+                    <div key={index} className="flex items-center justify-between text-sm border-b pb-2 last:border-0 last:pb-0">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="font-medium text-sm truncate">{item.title}</span>
+                          <Badge variant="outline" className="text-xs shrink-0">{item.type}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">{item.count} sale{item.count !== 1 ? 's' : ''}</p>
                       </div>
-                      <span className="font-semibold">{formatCurrency(item.revenue)}</span>
+                      <span className="font-semibold text-sm ml-2">{formatCurrency(item.revenue)}</span>
                     </div>
                   ))}
                 </div>
@@ -527,69 +467,65 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
 
       {/* Sales History */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Recent Sales</CardTitle>
-              <CardDescription>
-                Your recent sales and commissions
-              </CardDescription>
+              <CardTitle className="text-base">Recent Sales</CardTitle>
+              {totalStripeFees > 0 && (
+                <CardDescription className="text-xs">
+                  Total Stripe fees: {formatCurrency(totalStripeFees)}
+                </CardDescription>
+              )}
             </div>
-            {totalStripeFees > 0 && (
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Total Stripe Fees</p>
-                <p className="text-sm font-semibold">{formatCurrency(totalStripeFees)}</p>
-              </div>
-            )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {sales.length === 0 ? (
-            <div className="text-center py-8">
-              <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <CardTitle className="mb-2">No Sales Yet</CardTitle>
-              <CardDescription>
-                Your sales will appear here once customers make purchases.
-              </CardDescription>
+            <div className="text-center py-6">
+              <DollarSign className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-sm font-medium mb-1">No Sales Yet</p>
+              <p className="text-xs text-muted-foreground">
+                Sales will appear here after purchases
+              </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {sales.map((sale) => (
+            <div className="space-y-2">
+              {sales.slice(0, 10).map((sale) => (
                 <div
                   key={sale.id}
-                  className="border rounded-lg p-4 flex items-center justify-between"
+                  className="border rounded p-3 text-sm"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Badge variant="default" className="bg-green-500">
-                        <CheckCircle2 className="h-3 w-3 mr-1" /> Sold
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="default" className="bg-green-500 text-xs">
+                        <CheckCircle2 className="h-2.5 w-2.5 mr-1" /> Sold
                       </Badge>
-                      <span className="font-semibold">{sale.itemTitle || 'Untitled'}</span>
-                      <Badge variant="secondary">{sale.itemType}</Badge>
+                      <span className="font-medium">{sale.itemTitle || 'Untitled'}</span>
+                      <Badge variant="secondary" className="text-xs">{sale.itemType}</Badge>
                     </div>
-                    <div className={`grid gap-4 text-sm ${sale.platformCommission > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    <span className="text-xs text-muted-foreground">
+                      {sale.createdAt?.toDate ? sale.createdAt.toDate().toLocaleDateString() : 'N/A'}
+                    </span>
+                  </div>
+                  <div className={`grid gap-3 text-xs ${sale.platformCommission > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    <div>
+                      <p className="text-muted-foreground mb-0.5">Sale</p>
+                      <p className="font-semibold">{formatCurrency(sale.amount, sale.currency)}</p>
+                    </div>
+                    {sale.platformCommission > 0 && (
                       <div>
-                        <p className="text-muted-foreground">Sale Amount</p>
-                        <p className="font-semibold">{formatCurrency(sale.amount, sale.currency)}</p>
-                      </div>
-                      {sale.platformCommission > 0 && (
-                        <div>
-                          <p className="text-muted-foreground">Platform Donation</p>
-                          <p className="font-semibold text-muted-foreground">
-                            -{formatCurrency(sale.platformCommission, sale.currency)}
-                          </p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-muted-foreground">Your Payout</p>
-                        <p className="font-semibold text-green-600">
-                          {formatCurrency(sale.artistPayout, sale.currency)}
+                        <p className="text-muted-foreground mb-0.5">Donation</p>
+                        <p className="font-semibold text-muted-foreground">
+                          -{formatCurrency(sale.platformCommission, sale.currency)}
                         </p>
                       </div>
+                    )}
+                    <div>
+                      <p className="text-muted-foreground mb-0.5">Payout</p>
+                      <p className="font-semibold text-green-600">
+                        {formatCurrency(sale.artistPayout, sale.currency)}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {sale.createdAt?.toDate ? sale.createdAt.toDate().toLocaleDateString() : 'Date unavailable'}
-                    </p>
                   </div>
                 </div>
               ))}
@@ -600,25 +536,20 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
 
       {/* Info Card */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
-            <div className="flex-1">
-              <h4 className="font-semibold text-sm mb-1">About Payouts</h4>
-              <p className="text-sm text-muted-foreground">
-                Payouts are automatically processed by Stripe. Pending payouts typically arrive in your bank account within 2-7 business days. 
-                You can view detailed payout information in your{' '}
-                <a 
-                  href={`https://dashboard.stripe.com/connect/accounts/${user.stripeAccountId}/payouts`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-1"
-                >
-                  Stripe Dashboard
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-                .
-              </p>
+        <CardContent className="p-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+            <div className="flex-1 text-xs text-muted-foreground">
+              <span className="font-medium">Funds go directly to your Stripe account.</span> Payouts are automatic. View details in your{' '}
+              <a 
+                href={`https://dashboard.stripe.com/connect/accounts/${user.stripeAccountId}/payouts`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline inline-flex items-center gap-0.5"
+              >
+                Stripe Dashboard
+                <ExternalLink className="h-3 w-3" />
+              </a>
             </div>
           </div>
         </CardContent>
