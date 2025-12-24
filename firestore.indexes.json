@@ -10,7 +10,7 @@
         },
         {
           "fieldPath": "rating",
-          "order": "ASCENDING"
+          "order": "DESCENDING"
         },
         {
           "fieldPath": "__name__",
