@@ -22,6 +22,7 @@ import { toast } from '@/hooks/use-toast';
 import { ArtistRequest, ShowcaseLocation } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
+import { Suspense } from 'react';
 
 // Countries list for dropdowns
 const COUNTRIES = [
@@ -1754,7 +1755,9 @@ export default function ProfileEditPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <StripeIntegrationWizard />
+              <Suspense fallback={<div className="p-4 text-center text-muted-foreground">Loading payment setup...</div>}>
+                <StripeIntegrationWizard />
+              </Suspense>
             </CardContent>
           </Card>
         )}
