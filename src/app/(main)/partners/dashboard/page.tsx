@@ -170,6 +170,15 @@ export default function PartnerDashboardPage() {
   const totalClicks = campaigns.reduce((sum, c) => sum + (c.clicks || 0), 0);
   const totalImpressions = campaigns.reduce((sum, c) => sum + (c.impressions || 0), 0);
   const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : '0.00';
+  const totalBudget = campaigns.reduce((sum, c) => sum + (c.budget || 0), 0);
+  const totalSpent = campaigns.reduce((sum, c) => sum + (c.spent || 0), 0);
+
+  const formatCurrency = (amountInCents: number, currency: string = 'usd') => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    }).format(amountInCents / 100);
+  };
 
   return (
     <div className="container py-8">
@@ -181,7 +190,7 @@ export default function PartnerDashboardPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Active Campaigns</CardDescription>
@@ -214,6 +223,35 @@ export default function PartnerDashboardPage() {
             <div className="text-2xl font-bold">{ctr}%</div>
           </CardContent>
         </Card>
+        {totalBudget > 0 && (
+          <>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Total Budget</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(totalBudget, campaigns[0]?.currency || 'usd')}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Total Spent</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(totalSpent, campaigns[0]?.currency || 'usd')}
+                </div>
+                {totalBudget > 0 && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {((totalSpent / totalBudget) * 100).toFixed(1)}% used
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Campaigns */}
@@ -261,7 +299,7 @@ export default function PartnerDashboardPage() {
                       {campaign.description && (
                         <p className="text-sm text-muted-foreground mb-3">{campaign.description}</p>
                       )}
-                      <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
                         <div className="flex items-center gap-1">
                           <Eye className="h-4 w-4" />
                           <span>{campaign.impressions || 0} impressions</span>
@@ -277,7 +315,27 @@ export default function PartnerDashboardPage() {
                             {campaign.endDate && ` - ${format(campaign.endDate, 'MMM d, yyyy')}`}
                           </span>
                         </div>
+                        {campaign.budget && (
+                          <div className="flex items-center gap-1">
+                            <TrendingUp className="h-4 w-4" />
+                            <span>
+                              {formatCurrency(campaign.spent || 0, campaign.currency || 'usd')} / {formatCurrency(campaign.budget, campaign.currency || 'usd')}
+                              {campaign.spent !== undefined && campaign.budget > 0 && (
+                                <span className="ml-1">
+                                  ({((campaign.spent / campaign.budget) * 100).toFixed(1)}%)
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        )}
                       </div>
+                      {campaign.budget && campaign.spent !== undefined && campaign.spent >= campaign.budget && (
+                        <div className="mt-2">
+                          <Badge variant="destructive" className="text-xs">
+                            Budget Exceeded - Campaign Paused
+                          </Badge>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 ml-4">
                       {campaign.mediaType === 'video' ? (

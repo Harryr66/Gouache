@@ -26,6 +26,10 @@ const formSchema = z.object({
   clickUrl: z.string().url('Please enter a valid URL'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().optional(),
+  budget: z.string().optional(),
+  costPerImpression: z.string().optional(),
+  costPerClick: z.string().optional(),
+  currency: z.string().optional(),
 });
 
 interface PartnerCampaignFormProps {
@@ -53,6 +57,10 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       clickUrl: '',
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
+      budget: '',
+      costPerImpression: '',
+      costPerClick: '',
+      currency: 'usd',
     },
   });
 
@@ -175,6 +183,11 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
         });
       }
 
+      // Parse budget values (convert to cents)
+      const budget = values.budget ? Math.round(parseFloat(values.budget) * 100) : undefined;
+      const costPerImpression = values.costPerImpression ? Math.round((parseFloat(values.costPerImpression) / 1000) * 100) : undefined; // CPM to cost per impression in cents
+      const costPerClick = values.costPerClick ? Math.round(parseFloat(values.costPerClick) * 100) : undefined;
+
       // Create campaign
       const campaignData: Omit<AdCampaign, 'id'> = {
         partnerId,
@@ -191,6 +204,11 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
         isActive: true,
         clicks: 0,
         impressions: 0,
+        budget,
+        spent: 0,
+        costPerImpression,
+        costPerClick,
+        currency: values.currency || 'usd',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -403,6 +421,114 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                 </FormItem>
               )}
             />
+          </div>
+
+          {/* Budget Section */}
+          <div className="border-t pt-6 space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Budget & Pricing (Optional)</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Set a budget cap to automatically stop displaying ads once the limit is reached.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="budget"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Budget</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0"
+                        placeholder="0.00" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground">
+                      Campaign will stop when budget is reached
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value || 'usd'}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="usd">USD ($)</SelectItem>
+                        <SelectItem value="gbp">GBP (£)</SelectItem>
+                        <SelectItem value="eur">EUR (€)</SelectItem>
+                        <SelectItem value="cad">CAD (C$)</SelectItem>
+                        <SelectItem value="aud">AUD (A$)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="costPerImpression"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cost Per 1,000 Impressions (CPM)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0"
+                        placeholder="0.00" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground">
+                      Cost per 1,000 ad views
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="costPerClick"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cost Per Click (CPC)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0"
+                        placeholder="0.00" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground">
+                      Cost when user clicks ad
+                    </p>
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
           <div className="flex gap-2">
