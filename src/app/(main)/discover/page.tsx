@@ -819,21 +819,31 @@ function DiscoverPageContent() {
     // Mix ads into artworks
     const result = mixAdsIntoContent(artworksSlice, ads, 2);
     
-    // Shuffle items to randomize landscape tile distribution (prevent uniform column)
-    // Use a seeded shuffle based on array length for consistency
-    const shuffled = [...result];
-    for (let i = shuffled.length - 1; i > 0; i--) {
+    // Separate real artworks from placeholders to preserve ranking
+    const isPlaceholder = (item: any): boolean => {
+      if ('type' in item && item.type === 'ad') return false; // Ads are not placeholders
+      const tags = Array.isArray(item.tags) ? item.tags : [];
+      return tags.includes('_placeholder') || item.id?.startsWith('placeholder-');
+    };
+    
+    const realItems = result.filter(item => !isPlaceholder(item));
+    const placeholderItems = result.filter(item => isPlaceholder(item));
+    
+    // Shuffle only real artworks to randomize landscape tile distribution (preserve ranking)
+    // This ensures landscape tiles are randomly distributed while maintaining real artworks before placeholders
+    const shuffledReal = [...realItems];
+    for (let i = shuffledReal.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      [shuffledReal[i], shuffledReal[j]] = [shuffledReal[j], shuffledReal[i]];
     }
     
-    const resultPlaceholderCount = shuffled.filter((a: any) => {
-      const tags = Array.isArray(a.tags) ? a.tags : [];
-      return tags.includes('_placeholder');
-    }).length;
+    // Combine: shuffled real artworks first, then placeholders (maintains ranking)
+    const final = [...shuffledReal, ...placeholderItems];
     
-    log('✅ visibleFilteredArtworks: Returning', shuffled.length, 'items (', resultPlaceholderCount, 'placeholders)');
-    return shuffled;
+    const resultPlaceholderCount = placeholderItems.length;
+    
+    log('✅ visibleFilteredArtworks: Returning', final.length, 'items (', resultPlaceholderCount, 'placeholders)');
+    return final;
   }, [filteredAndSortedArtworks, visibleCount, ads]);
 
   useEffect(() => {
@@ -1188,21 +1198,22 @@ function DiscoverPageContent() {
                   }
                   
                   const artwork = item as Artwork;
-                  // Detect landscape images: 
-                  // 1. Check if artwork has isLandscape flag (for placeholders) - PRIMARY METHOD
-                  // 2. Check if dimensions suggest landscape (width > height * 1.3) - for real artworks
-                  // DO NOT use URL-based detection as blue placeholder is used for both regular and landscape
+                  // Detect landscape images based on actual image aspect ratio
+                  // For placeholders: use isLandscape flag
+                  // For real artworks: check dimensions or load image to get aspect ratio
                   let isLandscape = false;
                   
                   if ((artwork as any).isLandscape === true) {
                     // Placeholder with explicit landscape flag
                     isLandscape = true;
                   } else if (artwork.dimensions && artwork.dimensions.width && artwork.dimensions.height) {
-                    // Check aspect ratio: landscape if width is significantly greater than height
+                    // Check aspect ratio from dimensions: landscape if width > height * 1.2
                     const aspectRatio = artwork.dimensions.width / artwork.dimensions.height;
-                    isLandscape = aspectRatio > 1.3; // Landscape threshold
+                    isLandscape = aspectRatio > 1.2; // Landscape threshold (slightly lower for better detection)
+                  } else {
+                    // For artworks without dimensions, we'll detect from image loading
+                    // This will be handled by the ArtworkTile component
                   }
-                  // Note: We do NOT check URLs because the blue placeholder (1546249) is used for both regular and landscape
                   
                   return (
                     <ArtworkTile 
