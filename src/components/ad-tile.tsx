@@ -17,8 +17,27 @@ type AdTileProps = {
 
 export function AdTile({ campaign, placement, userId, isMobile = false }: AdTileProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
   const impressionTracked = useRef(false);
   const tileRef = useRef<HTMLDivElement>(null);
+  
+  // Detect video aspect ratio for max-width format
+  useEffect(() => {
+    if (campaign.mediaType === 'video' && campaign.videoUrl && campaign.maxWidthFormat) {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        setVideoAspectRatio(aspectRatio);
+        window.URL.revokeObjectURL(video.src);
+      };
+      video.onerror = () => {
+        setVideoAspectRatio(16/9); // Default to 16:9 for max-width format
+        window.URL.revokeObjectURL(video.src);
+      };
+      video.src = campaign.videoUrl;
+    }
+  }, [campaign.videoUrl, campaign.mediaType, campaign.maxWidthFormat]);
 
   // Track impression when ad comes into view
   useEffect(() => {
@@ -72,9 +91,15 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
     <Card 
       ref={tileRef} 
       className={cn(
-        'overflow-hidden transition hover:shadow-lg group flex flex-col cursor-pointer relative mb-1 break-inside-avoid',
-        isMaxWidthFormat ? 'col-span-full w-full' : ''
+        'overflow-hidden transition hover:shadow-lg group flex flex-col cursor-pointer relative mb-1',
+        // For max-width format in CSS columns, we need to break out of columns
+        isMaxWidthFormat ? 'column-span-all w-full' : 'break-inside-avoid'
       )}
+      style={isMaxWidthFormat ? { 
+        columnSpan: 'all',
+        width: '100%',
+        gridColumn: '1 / -1' // Fallback for grid layouts
+      } : undefined}
     >
       <div className="absolute top-2 right-2 z-10">
         <Badge variant="secondary" className="text-xs">Ad</Badge>
@@ -89,10 +114,13 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
         <div 
           className="relative w-full overflow-hidden"
           style={{
-            // For max-width format: use 16:9 or 1:1 aspect ratio, otherwise standard
+            // For max-width format: use detected video aspect ratio (1:1 or 16:9), otherwise default to 16:9
+            // Standard ads use portrait 2:3 ratio for masonry layout
             paddingBottom: isMaxWidthFormat 
-              ? `${(9 / 16) * 100}%` // Default to 16:9 for max-width, could be 1:1 if square
-              : `${(3 / 4) * 100}%` // Standard portrait aspect ratio
+              ? videoAspectRatio 
+                ? `${(1 / videoAspectRatio) * 100}%` // Use detected aspect ratio (1:1 or 16:9)
+                : `${(9 / 16) * 100}%` // Default to 16:9 for max-width format if not detected yet
+              : `${(2 / 3) * 100}%` // Standard portrait aspect ratio (2:3) for masonry
           }}
         >
           <div className="absolute inset-0">
@@ -133,5 +161,6 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
         </CardContent>
       </a>
     </Card>
+    </div>
   );
 }
