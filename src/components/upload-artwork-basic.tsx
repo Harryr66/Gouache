@@ -444,10 +444,92 @@ export function UploadArtworkBasic() {
         }
       }
 
-      // If marked for sale, also add to artworks collection for shop display
-      if (isForSale) {
+      // Always create artwork/post for Discover feed (regardless of portfolio toggle or sale status)
+      // This ensures all uploads from this portal appear in Discover
+      const artworkForDiscover: any = {
+        id: artworkItem.id,
+        artist: {
+          id: user.id,
+          name: user.displayName || user.username || 'Artist',
+          handle: user.username || '',
+          avatarUrl: user.avatarUrl || null,
+          followerCount: user.followerCount || 0,
+          followingCount: user.followingCount || 0,
+          createdAt: user.createdAt || new Date(),
+        },
+        title: title.trim(),
+        description: description.trim() || '',
+        ...(primaryMediaType === 'image' && { imageUrl: primaryMediaUrl }),
+        ...(primaryMediaType === 'video' && { videoUrl: primaryMediaUrl }),
+        mediaType: primaryMediaType,
+        mediaUrls: uploadedUrls,
+        mediaTypes: mediaTypes,
+        ...(supportingMedia.length > 0 && { supportingImages: supportingMedia }),
+        ...(supportingMedia.length > 0 && { supportingMedia: supportingMedia }),
+        ...(supportingMediaTypes.length > 0 && { supportingMediaTypes: supportingMediaTypes }),
+        imageAiHint: description.trim() || title.trim() || '',
+        tags: tags,
+        type: 'artwork',
+        showInPortfolio: addToPortfolio, // Controls visibility in portfolio tab
+        showInShop: isForSale, // Controls visibility in shop
+        isForSale: isForSale,
+        ...(addToPortfolio && { artworkType: isOriginal ? 'original' : 'print' }),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        views: 0,
+        likes: 0,
+        commentsCount: 0,
+        isAI: false,
+        aiAssistance: 'none' as const,
+      };
+
+      // Add dimensions if provided and adding to portfolio
+      if (addToPortfolio && dimensions.width && dimensions.height) {
+        artworkForDiscover.dimensions = {
+          width: parseFloat(dimensions.width) || 0,
+          height: parseFloat(dimensions.height) || 0,
+          unit: dimensions.unit,
+        };
+      }
+
+      // Add sale-related fields if for sale and adding to portfolio
+      if (isForSale && addToPortfolio) {
+        if (priceType === 'fixed' && price.trim()) {
+          artworkForDiscover.price = parseFloat(price) * 100; // Convert to cents
+          artworkForDiscover.currency = currency;
+        } else if (priceType === 'contact') {
+          artworkForDiscover.priceType = 'contact';
+          artworkForDiscover.contactForPrice = true;
+          artworkForDiscover.contactEmail = useAccountEmail ? (user.email || '') : alternativeEmail.trim();
+        }
+        artworkForDiscover.deliveryScope = deliveryScope;
+        if (deliveryScope === 'specific' && selectedCountries.length > 0) {
+          artworkForDiscover.deliveryCountries = selectedCountries.join(', ');
+        }
+      }
+
+      // Create post object for Discover feed
+      const postForDiscover = {
+        id: `post-${Date.now()}`,
+        artworkId: artworkForDiscover.id,
+        artist: artworkForDiscover.artist,
+        imageUrl: primaryMediaType === 'image' ? primaryMediaUrl : (uploadedUrls.find((_, i) => mediaTypes[i] === 'image') || primaryMediaUrl),
+        imageAiHint: artworkForDiscover.imageAiHint,
+        caption: description.trim() || '',
+        likes: 0,
+        commentsCount: 0,
+        timestamp: new Date().toISOString(),
+        createdAt: Date.now(),
+        tags: tags,
+      };
+
+      // Always add to Discover feed via ContentProvider (regardless of portfolio toggle)
+      await addContent(postForDiscover, artworkForDiscover);
+
+      // If marked for sale, also add to artworks collection for shop display (legacy support)
+      if (isForSale && addToPortfolio) {
         const artworkForShop: any = {
-          id: portfolioItem.id,
+          id: artworkItem.id,
           artist: {
             id: user.id,
             name: user.displayName,
