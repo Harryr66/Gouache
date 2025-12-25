@@ -969,9 +969,7 @@ export function PortfolioManager() {
                 <Label htmlFor="dimensions">Dimensions</Label>
                 <Input
                   id="dimensions"
-                  value={typeof newItem.dimensions === 'object' && newItem.dimensions !== null
-                    ? `${newItem.dimensions.width} × ${newItem.dimensions.height} ${newItem.dimensions.unit || 'cm'}`
-                    : (newItem.dimensions || '')}
+                  value={newItem.dimensions}
                   onChange={(e) => setNewItem(prev => ({ ...prev, dimensions: e.target.value }))}
                   placeholder="24 x 30 inches"
                 />
@@ -1278,9 +1276,13 @@ export function PortfolioManager() {
                   )}
                   {item.dimensions && (
                     <p className="text-xs md:text-sm text-muted-foreground mb-2">
-                      {typeof item.dimensions === 'object' && item.dimensions !== null
-                        ? `${item.dimensions.width} × ${item.dimensions.height} ${item.dimensions.unit || 'cm'}`
-                        : item.dimensions}
+                      {(() => {
+                        const dims = item.dimensions;
+                        if (dims && typeof dims === 'object' && 'width' in dims && 'height' in dims) {
+                          return `${(dims as any).width} × ${(dims as any).height} ${(dims as any).unit || 'cm'}`;
+                        }
+                        return dims as string;
+                      })()}
                     </p>
                   )}
                   {item.year && (
@@ -1344,7 +1346,13 @@ export function PortfolioManager() {
                 <Label htmlFor="edit-dimensions">Dimensions</Label>
                 <Input
                   id="edit-dimensions"
-                  value={editingItem.dimensions}
+                  value={(() => {
+                    const dims = editingItem.dimensions;
+                    if (dims && typeof dims === 'object' && 'width' in dims && 'height' in dims) {
+                      return `${(dims as any).width} × ${(dims as any).height} ${(dims as any).unit || 'cm'}`;
+                    }
+                    return (dims as string) || '';
+                  })()}
                   onChange={(e) => setEditingItem(prev => prev ? { ...prev, dimensions: e.target.value } : null)}
                 />
               </div>
