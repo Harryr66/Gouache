@@ -68,7 +68,7 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, i
   useEffect(() => {
     if (isLandscape || detectedLandscape !== null || hasVideo) return; // Skip if already determined or video
     
-    const img = new Image();
+    const img = document.createElement('img');
     img.onload = () => {
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       setDetectedLandscape(aspectRatio > 1.2); // Landscape if width > height * 1.2
