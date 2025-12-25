@@ -56,11 +56,31 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, i
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoInView, setIsVideoInView] = useState(false);
+  const [detectedLandscape, setDetectedLandscape] = useState<boolean | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
   
   // Check if artwork has video
   const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
   const videoUrl = (artwork as any).videoUrl;
   const imageUrl = artwork.imageUrl || 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
+  
+  // Detect landscape from actual image dimensions if not already determined
+  useEffect(() => {
+    if (isLandscape || detectedLandscape !== null || hasVideo) return; // Skip if already determined or video
+    
+    const img = new Image();
+    img.onload = () => {
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      setDetectedLandscape(aspectRatio > 1.2); // Landscape if width > height * 1.2
+    };
+    img.onerror = () => {
+      setDetectedLandscape(false); // Default to portrait on error
+    };
+    img.src = imageUrl;
+  }, [imageUrl, isLandscape, hasVideo, detectedLandscape]);
+  
+  // Use detected landscape or fallback to prop
+  const finalIsLandscape = isLandscape || detectedLandscape === true;
   
   // Intersection Observer for video autoplay (Pinterest-style)
   useEffect(() => {
@@ -285,10 +305,10 @@ const generateArtistContent = (artist: Artist) => ({
     <>
     <Card 
         ref={tileRef}
-        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full rounded-lg ${isLandscape ? 'col-span-2' : ''} ${className || ''}`}
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full rounded-lg ${finalIsLandscape ? 'col-span-2' : ''} ${className || ''}`}
         onClick={handleTileClick}
     >
-      <div className={`relative overflow-hidden rounded-t-lg ${isLandscape ? 'aspect-[3/2]' : 'aspect-[3/4]'}`}>
+      <div className={`relative overflow-hidden rounded-t-lg ${finalIsLandscape ? 'aspect-[3/2]' : 'aspect-[3/4]'}`}>
         {hasVideo && videoUrl ? (
           <video
             ref={videoRef}
