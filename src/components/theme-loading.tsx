@@ -18,27 +18,27 @@ export function ThemeLoading({ text = '', size = 'md', fullScreen = false }: The
     setMounted(true);
   }, []);
 
-  // Default to light until mounted
+  // Default to dark until mounted
   if (!mounted) {
     const dotSize = size === 'sm' ? 'w-2 h-2' : size === 'lg' ? 'w-4 h-4' : 'w-3 h-3';
     const Component = (
       <div className="flex flex-col items-center justify-center gap-4">
         <div className="flex space-x-1">
-          <div className={`${dotSize} bg-blue-800 rounded-full animate-pulse`} />
-          <div className={`${dotSize} bg-blue-600 rounded-full animate-pulse`} />
-          <div className={`${dotSize} bg-blue-400 rounded-full animate-pulse`} />
+          <div className={`${dotSize} bg-white rounded-full animate-pulse`} />
+          <div className={`${dotSize} bg-white rounded-full animate-pulse`} />
+          <div className={`${dotSize} bg-white rounded-full animate-pulse`} />
         </div>
-        {text && <p className="text-black text-sm">{text}</p>}
+        {text && <p className="text-white text-sm">{text}</p>}
       </div>
     );
     
     if (fullScreen) {
-      return <div className="fixed inset-0 bg-white flex items-center justify-center z-50">{Component}</div>;
+      return <div className="fixed inset-0 bg-black flex items-center justify-center z-50">{Component}</div>;
     }
     return Component;
   }
 
-  const currentTheme = resolvedTheme || theme || 'light';
+  const currentTheme = resolvedTheme || theme || 'dark';
   let isDark = currentTheme === 'dark';
   
   if (typeof window !== 'undefined') {
