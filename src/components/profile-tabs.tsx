@@ -403,7 +403,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           const contentItems: any[] = [];
 
           // Fetch artworks that belong to this user but are NOT in portfolio
-          // (i.e., showInPortfolio is false or undefined, meaning they were uploaded but toggle was off)
+          // Only content uploaded via Discover portal where showInPortfolio is false
           try {
             const artworksQuery = query(
               collection(db, 'artworks'),
@@ -413,17 +413,28 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             
             artworksSnapshot.forEach((doc) => {
               const data = doc.data();
+              
               // Check if this artwork belongs to the user
               const belongsToUser = 
                 data.artist?.id === userId || 
                 data.artist?.userId === userId ||
                 data.artistId === userId;
               
-              // Only include items that are NOT in portfolio (showInPortfolio is false/undefined)
-              // These are generic content like process videos, art tips, etc.
-              const notInPortfolio = !data.showInPortfolio || data.showInPortfolio === false;
+              // Filter out events (events should not be in artworks collection, but double-check)
+              const isEvent = data.type === 'event' || data.type === 'Event' || data.eventType;
+              if (isEvent) return;
               
-              if (belongsToUser && notInPortfolio) {
+              // Filter out deleted items
+              if (data.deleted === true) return;
+              
+              // Only include items that are NOT in portfolio (showInPortfolio must be explicitly false)
+              // These are generic content like process videos, art tips, etc. uploaded via Discover portal
+              const notInPortfolio = data.showInPortfolio === false;
+              
+              // Must have media (image or video) to be valid Discover content
+              const hasMedia = data.imageUrl || data.videoUrl || data.mediaUrls?.length > 0;
+              
+              if (belongsToUser && notInPortfolio && hasMedia) {
                 contentItems.push({
                   id: doc.id,
                   ...data,
@@ -436,7 +447,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             console.error('Error fetching discover content:', error);
           }
 
-          // Also fetch posts that might be discover content
+          // Fetch posts that are discover content (associated with artworks where showInPortfolio is false)
           try {
             const postsQuery = query(
               collection(db, 'posts'),
@@ -446,16 +457,27 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             
             postsSnapshot.forEach((doc) => {
               const data = doc.data();
+              
               // Check if this post belongs to the user
               const belongsToUser = 
                 data.artist?.id === userId || 
                 data.artist?.userId === userId ||
                 data.artistId === userId;
               
-              // Check if the associated artwork is NOT in portfolio
-              // If there's an artworkId, we'd need to check that, but for now just include posts
-              // that don't have showInPortfolio set to true
-              if (belongsToUser && (!data.showInPortfolio || data.showInPortfolio === false)) {
+              // Filter out events
+              const isEvent = data.type === 'event' || data.type === 'Event' || data.eventType;
+              if (isEvent) return;
+              
+              // Filter out deleted items
+              if (data.deleted === true) return;
+              
+              // Only include posts where showInPortfolio is explicitly false (Discover content, not portfolio)
+              const notInPortfolio = data.showInPortfolio === false;
+              
+              // Must have media
+              const hasMedia = data.imageUrl || data.mediaUrls?.length > 0;
+              
+              if (belongsToUser && notInPortfolio && hasMedia) {
                 contentItems.push({
                   id: doc.id,
                   ...data,
@@ -588,9 +610,9 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           {visibleTabs.map((tab) => {
             const Icon = tab.icon;
             return (
-              <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                {tab.label}
+              <TabsTrigger key={tab.value} value={tab.value} className="flex items-center justify-center gap-2 md:gap-2">
+                <Icon className="h-5 w-5 md:h-4 md:w-4" />
+                <span className="hidden md:inline">{tab.label}</span>
               </TabsTrigger>
             );
           })}
@@ -654,9 +676,9 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
         {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           return (
-            <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
-              <Icon className="h-4 w-4" />
-              {tab.label}
+            <TabsTrigger key={tab.value} value={tab.value} className="flex items-center justify-center gap-2 md:gap-2">
+              <Icon className="h-5 w-5 md:h-4 md:w-4" />
+              <span className="hidden md:inline">{tab.label}</span>
             </TabsTrigger>
           );
         })}
