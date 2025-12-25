@@ -56,6 +56,9 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoInView, setIsVideoInView] = useState(false);
   const [mediaAspectRatio, setMediaAspectRatio] = useState<number | null>(null);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
   
   // Check if artwork has video
@@ -72,33 +75,54 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
       return;
     }
     
-    // For videos, load video metadata to detect aspect ratio
+    // For videos, load video metadata to detect aspect ratio and preload
     if (hasVideo && videoUrl) {
       const video = document.createElement('video');
-      video.preload = 'metadata';
+      video.preload = 'auto'; // Preload video for faster display
+      video.onloadeddata = () => {
+        // Video data is ready for playback
+        setIsVideoLoaded(true);
+      };
       video.onloadedmetadata = () => {
         const aspectRatio = video.videoWidth / video.videoHeight;
         setMediaAspectRatio(aspectRatio);
+        // If video can play, consider it loaded
+        video.play().then(() => {
+          video.pause();
+          setIsVideoLoaded(true);
+        }).catch(() => {
+          // If autoplay fails, still consider metadata loaded
+          setIsVideoLoaded(true);
+        });
         window.URL.revokeObjectURL(video.src);
       };
       video.onerror = () => {
         setMediaAspectRatio(2/3); // Default to portrait aspect ratio (2:3) on error
+        setIsVideoLoaded(true); // Stop showing loader even on error
         window.URL.revokeObjectURL(video.src);
       };
       video.src = videoUrl;
       return;
     }
     
-    // For images, load image to detect aspect ratio
+    // For images, load image to detect aspect ratio and preload for display
     const img = document.createElement('img');
     img.onload = () => {
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       setMediaAspectRatio(aspectRatio);
+      setIsImageLoaded(true); // Image is fully loaded
     };
     img.onerror = () => {
       setMediaAspectRatio(2/3); // Default to portrait aspect ratio (2:3) on error
+      setImageError(true);
+      setIsImageLoaded(true); // Stop showing loader even on error
     };
     img.src = imageUrl;
+    img.loading = 'eager'; // Start loading immediately
+    
+    // Reset loading state when image URL changes
+    setIsImageLoaded(false);
+    setImageError(false);
   }, [imageUrl, videoUrl, hasVideo, artwork.dimensions]);
   
   // Calculate height based on aspect ratio (column width is fixed, height scales dynamically)
@@ -344,26 +368,57 @@ const generateArtistContent = (artist: Artist) => ({
         }}
       >
         <div className="absolute inset-0">
+          {/* Loading skeleton - shown until media is fully loaded */}
+          {((hasVideo && !isVideoLoaded) || (!hasVideo && !isImageLoaded)) && (
+            <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            </div>
+          )}
+          
+          {/* Media content - shown only when loaded */}
           {hasVideo && videoUrl ? (
             <video
               ref={videoRef}
               src={videoUrl}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
               muted
               loop
               playsInline
               webkit-playsinline="true"
               x5-playsinline="true"
-              preload="metadata"
+              preload="auto"
               controls={false}
+              onLoadedData={() => setIsVideoLoaded(true)}
+              onCanPlay={() => setIsVideoLoaded(true)}
+              onError={() => {
+                setIsVideoLoaded(true); // Stop loading on error
+              }}
             />
           ) : (
             <Image
               src={imageUrl}
               alt={artwork.imageAiHint}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className={`object-cover group-hover:scale-105 transition-all duration-300 ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
+              loading="eager"
+              priority={false}
+              onLoad={() => setIsImageLoaded(true)}
+              onError={() => {
+                setImageError(true);
+                setIsImageLoaded(true);
+              }}
             />
+          )}
+          
+          {/* Error state - show placeholder if media fails to load */}
+          {imageError && !hasVideo && (
+            <div className="absolute inset-0 bg-muted flex items-center justify-center">
+              <div className="text-muted-foreground text-xs text-center p-4">
+                Failed to load image
+              </div>
+            </div>
           )}
         </div>
         {/* Sale status badge */}
