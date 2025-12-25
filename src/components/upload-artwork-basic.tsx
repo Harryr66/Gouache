@@ -338,14 +338,14 @@ export function UploadArtworkBasic() {
 
       const portfolioItem: any = {
         id: `artwork-${Date.now()}`,
-        imageUrl: primaryMediaType === 'image' ? primaryMediaUrl : undefined, // For backward compatibility
-        videoUrl: primaryMediaType === 'video' ? primaryMediaUrl : undefined,
+        ...(primaryMediaType === 'image' && { imageUrl: primaryMediaUrl }), // For backward compatibility
+        ...(primaryMediaType === 'video' && { videoUrl: primaryMediaUrl }),
         mediaType: primaryMediaType, // 'image' or 'video'
         mediaUrls: uploadedUrls, // All media URLs (images and videos)
         mediaTypes: mediaTypes, // Types for each media file
-        supportingImages: supportingMedia.length > 0 ? supportingMedia : undefined,
-        supportingMedia: supportingMedia.length > 0 ? supportingMedia : undefined,
-        supportingMediaTypes: supportingMediaTypes.length > 0 ? supportingMediaTypes : undefined,
+        ...(supportingMedia.length > 0 && { supportingImages: supportingMedia }),
+        ...(supportingMedia.length > 0 && { supportingMedia: supportingMedia }),
+        ...(supportingMediaTypes.length > 0 && { supportingMediaTypes: supportingMediaTypes }),
         title: title.trim(),
         description: description.trim() || '',
         type: 'artwork',
@@ -389,7 +389,15 @@ export function UploadArtworkBasic() {
         portfolioItem.dimensions = { width: 0, height: 0, unit: 'cm' };
       }
 
-      const updatedPortfolio = [...currentPortfolio, portfolioItem];
+      // Clean portfolio item to remove any undefined values (Firestore doesn't allow undefined)
+      const cleanPortfolioItem: any = {};
+      Object.keys(portfolioItem).forEach(key => {
+        if (portfolioItem[key] !== undefined) {
+          cleanPortfolioItem[key] = portfolioItem[key];
+        }
+      });
+
+      const updatedPortfolio = [...currentPortfolio, cleanPortfolioItem];
       
       await updateDoc(userDocRef, {
         portfolio: updatedPortfolio,
