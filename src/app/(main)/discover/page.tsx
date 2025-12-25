@@ -1201,7 +1201,7 @@ function DiscoverPageContent() {
                       key={artwork.id} 
                       artwork={artwork} 
                       hideBanner={isMobile && artworkView === 'grid'}
-                      isLandscape={isLandscape && isMobile} // Only apply landscape layout on mobile (2-column grid)
+                      isLandscape={isLandscape} // Allow landscape images on both mobile and desktop
                     />
                   );
                 })}
