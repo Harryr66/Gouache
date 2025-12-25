@@ -969,7 +969,9 @@ export function PortfolioManager() {
                 <Label htmlFor="dimensions">Dimensions</Label>
                 <Input
                   id="dimensions"
-                  value={newItem.dimensions}
+                  value={typeof newItem.dimensions === 'object' && newItem.dimensions !== null
+                    ? `${newItem.dimensions.width} × ${newItem.dimensions.height} ${newItem.dimensions.unit || 'cm'}`
+                    : (newItem.dimensions || '')}
                   onChange={(e) => setNewItem(prev => ({ ...prev, dimensions: e.target.value }))}
                   placeholder="24 x 30 inches"
                 />
@@ -1275,7 +1277,11 @@ export function PortfolioManager() {
                     <p className="text-xs md:text-sm text-muted-foreground mb-2">{item.medium}</p>
                   )}
                   {item.dimensions && (
-                    <p className="text-xs md:text-sm text-muted-foreground mb-2">{item.dimensions}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-2">
+                      {typeof item.dimensions === 'object' && item.dimensions !== null
+                        ? `${item.dimensions.width} × ${item.dimensions.height} ${item.dimensions.unit || 'cm'}`
+                        : item.dimensions}
+                    </p>
                   )}
                   {item.year && (
                     <p className="text-xs md:text-sm text-muted-foreground mb-2">{item.year}</p>
