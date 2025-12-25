@@ -44,10 +44,9 @@ interface ArtworkTileProps {
   onClick?: () => void;
   className?: string;
   hideBanner?: boolean;
-  isLandscape?: boolean; // For full-width landscape images
 }
 
-export function ArtworkTile({ artwork, onClick, className, hideBanner = false, isLandscape = false }: ArtworkTileProps) {
+export function ArtworkTile({ artwork, onClick, className, hideBanner = false }: ArtworkTileProps) {
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
@@ -56,7 +55,7 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, i
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoInView, setIsVideoInView] = useState(false);
-  const [detectedLandscape, setDetectedLandscape] = useState<boolean | null>(null);
+  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   
   // Check if artwork has video
@@ -64,23 +63,32 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, i
   const videoUrl = (artwork as any).videoUrl;
   const imageUrl = artwork.imageUrl || 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
   
-  // Detect landscape from actual image dimensions if not already determined
+  // Detect image aspect ratio for dynamic height calculation
   useEffect(() => {
-    if (isLandscape || detectedLandscape !== null || hasVideo) return; // Skip if already determined or video
+    if (hasVideo) return; // Skip for videos, they'll use their own aspect ratio
     
+    // First check dimensions if available
+    if (artwork.dimensions && artwork.dimensions.width && artwork.dimensions.height) {
+      const aspectRatio = artwork.dimensions.width / artwork.dimensions.height;
+      setImageAspectRatio(aspectRatio);
+      return;
+    }
+    
+    // Otherwise load image to detect aspect ratio
     const img = document.createElement('img');
     img.onload = () => {
       const aspectRatio = img.naturalWidth / img.naturalHeight;
-      setDetectedLandscape(aspectRatio > 1.2); // Landscape if width > height * 1.2
+      setImageAspectRatio(aspectRatio);
     };
     img.onerror = () => {
-      setDetectedLandscape(false); // Default to portrait on error
+      setImageAspectRatio(3/4); // Default to portrait aspect ratio on error
     };
     img.src = imageUrl;
-  }, [imageUrl, isLandscape, hasVideo, detectedLandscape]);
+  }, [imageUrl, hasVideo, artwork.dimensions]);
   
-  // Use detected landscape or fallback to prop
-  const finalIsLandscape = isLandscape || detectedLandscape === true;
+  // Calculate height based on aspect ratio (column width is fixed, height scales)
+  // Default to 3:4 (portrait) if aspect ratio not yet determined
+  const aspectRatio = imageAspectRatio || (hasVideo ? 3/4 : 3/4);
   
   // Intersection Observer for video autoplay (Pinterest-style)
   useEffect(() => {
@@ -301,71 +309,48 @@ const generateArtistContent = (artist: Artist) => ({
     }
   };
 
-  // Calculate aspect ratio for dynamic height
-  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
-  
-  useEffect(() => {
-    if (hasVideo || finalIsLandscape !== null) return;
-    
-    const img = document.createElement('img');
-    img.onload = () => {
-      const ratio = img.naturalWidth / img.naturalHeight;
-      setImageAspectRatio(ratio);
-    };
-    img.onerror = () => {
-      setImageAspectRatio(0.75); // Default to portrait
-    };
-    img.src = imageUrl;
-  }, [imageUrl, hasVideo, finalIsLandscape]);
-
-  // Determine aspect ratio: use detected, fallback to dimensions, then default
-  let aspectRatio = 0.75; // Default portrait (3:4)
-  if (hasVideo && videoUrl) {
-    // For videos, we'll use a default or detect from video metadata
-    aspectRatio = 0.75; // Default portrait
-  } else if (finalIsLandscape) {
-    aspectRatio = 1.5; // Landscape (3:2)
-  } else if (imageAspectRatio !== null) {
-    aspectRatio = imageAspectRatio;
-  } else if (artwork.dimensions && artwork.dimensions.width && artwork.dimensions.height) {
-    aspectRatio = artwork.dimensions.width / artwork.dimensions.height;
-  }
-
   return (
     <>
     <Card 
         ref={tileRef}
-        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col rounded-lg ${className || ''}`}
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col rounded-lg mb-1 break-inside-avoid ${className || ''}`}
         onClick={handleTileClick}
-        style={{ height: 'auto' }}
+        style={{
+          // Dynamic height based on aspect ratio: height = width / aspectRatio
+          // Column width is fixed by CSS columns, so we calculate height accordingly
+          // For masonry, we use padding-bottom trick to maintain aspect ratio
+        }}
     >
       <div 
         className="relative overflow-hidden rounded-t-lg w-full"
-        style={{ 
-          aspectRatio: `${aspectRatio}`
+        style={{
+          // Use padding-bottom trick to maintain aspect ratio
+          paddingBottom: `${(1 / aspectRatio) * 100}%`,
         }}
       >
-        {hasVideo && videoUrl ? (
-          <video
-            ref={videoRef}
-            src={videoUrl}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            muted
-            loop
-            playsInline
-            webkit-playsinline="true"
-            x5-playsinline="true"
-            preload="metadata"
-            controls={false}
-          />
-        ) : (
-          <Image
-            src={imageUrl}
-            alt={artwork.imageAiHint}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        )}
+        <div className="absolute inset-0">
+          {hasVideo && videoUrl ? (
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              muted
+              loop
+              playsInline
+              webkit-playsinline="true"
+              x5-playsinline="true"
+              preload="metadata"
+              controls={false}
+            />
+          ) : (
+            <Image
+              src={imageUrl}
+              alt={artwork.imageAiHint}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          )}
+        </div>
         {/* Sale status badge */}
         {artwork.sold ? (
           <div className="absolute top-2 left-2 z-10">

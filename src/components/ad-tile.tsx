@@ -12,10 +12,10 @@ type AdTileProps = {
   campaign: AdCampaign;
   placement: 'news' | 'discover' | 'learn';
   userId?: string;
-  isMaxWidth?: boolean; // For max-width format on mobile
+  isMobile?: boolean;
 };
 
-export function AdTile({ campaign, placement, userId }: AdTileProps) {
+export function AdTile({ campaign, placement, userId, isMobile = false }: AdTileProps) {
   const [isLoading, setIsLoading] = useState(false);
   const impressionTracked = useRef(false);
   const tileRef = useRef<HTMLDivElement>(null);
@@ -66,14 +66,16 @@ export function AdTile({ campaign, placement, userId }: AdTileProps) {
 
   const mediaUrl = campaign.videoUrl || campaign.imageUrl;
   const isVideo = campaign.mediaType === 'video';
-  
-  // For max-width format, use square (1:1) or landscape (16:9) aspect ratio
-  const aspectRatio = isMaxWidth && isVideo 
-    ? (campaign.videoUrl ? 16/9 : 1) // Default to 16:9 for max-width video ads
-    : 0.75; // Standard portrait aspect ratio
+  const isMaxWidthFormat = campaign.maxWidthFormat && isVideo && isMobile;
 
   return (
-    <Card ref={tileRef} className={cn('overflow-hidden transition hover:shadow-lg group flex flex-col cursor-pointer relative w-full', isMaxWidth && 'col-span-2')}>
+    <Card 
+      ref={tileRef} 
+      className={cn(
+        'overflow-hidden transition hover:shadow-lg group flex flex-col cursor-pointer relative mb-1 break-inside-avoid',
+        isMaxWidthFormat ? 'col-span-full w-full' : ''
+      )}
+    >
       <div className="absolute top-2 right-2 z-10">
         <Badge variant="secondary" className="text-xs">Ad</Badge>
       </div>
@@ -82,27 +84,34 @@ export function AdTile({ campaign, placement, userId }: AdTileProps) {
         onClick={handleClick}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex flex-col w-full"
+        className="flex flex-col h-full"
       >
         <div 
           className="relative w-full overflow-hidden"
-          style={{ aspectRatio: `${aspectRatio}` }}
+          style={{
+            // For max-width format: use 16:9 or 1:1 aspect ratio, otherwise standard
+            paddingBottom: isMaxWidthFormat 
+              ? `${(9 / 16) * 100}%` // Default to 16:9 for max-width, could be 1:1 if square
+              : `${(3 / 4) * 100}%` // Standard portrait aspect ratio
+          }}
         >
-          {isVideo && campaign.videoUrl ? (
-            <video
-              src={campaign.videoUrl}
-              className="absolute inset-0 w-full h-full object-cover"
-              muted
-              loop
-              playsInline
-            />
-          ) : (
-            <img
-              src={campaign.imageUrl || ''}
-              alt={campaign.title}
-              className="absolute inset-0 w-full h-full transition-transform duration-500 group-hover:scale-105 object-cover"
-            />
-          )}
+          <div className="absolute inset-0">
+            {isVideo && campaign.videoUrl ? (
+              <video
+                src={campaign.videoUrl}
+                className="absolute inset-0 h-full w-full object-cover"
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <img
+                src={campaign.imageUrl || ''}
+                alt={campaign.title}
+                className="absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105 object-cover"
+              />
+            )}
+          </div>
         </div>
 
         <CardContent className="flex flex-col justify-between flex-1 p-5 space-y-4">

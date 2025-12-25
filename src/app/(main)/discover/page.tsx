@@ -1182,53 +1182,33 @@ function DiscoverPageContent() {
                 )}
               </div>
             ) : (artworkView === 'grid' || !isMobile) ? (
-              <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-1" style={{ columnGap: '4px' }}>
+              <div 
+                className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-1"
+                style={{ columnFill: 'balance' }}
+              >
                 {visibleFilteredArtworks.map((item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
                   if (isAd) {
-                    const campaign = item.campaign;
-                    const isMaxWidth = campaign.maxWidthFormat && isMobile && campaign.mediaType === 'video';
                     return (
-                      <div 
-                        key={campaign.id}
-                        className={isMaxWidth ? 'col-span-2 break-inside-avoid mb-1' : 'break-inside-avoid mb-1'}
-                      >
-                        <AdTile
-                          campaign={campaign}
-                          placement="discover"
-                          userId={user?.id}
-                        />
-                      </div>
+                      <AdTile
+                        key={item.campaign.id}
+                        campaign={item.campaign}
+                        placement="discover"
+                        userId={user?.id}
+                        isMobile={isMobile}
+                      />
                     );
                   }
                   
                   const artwork = item as Artwork;
-                  // Detect landscape images based on actual image aspect ratio
-                  // For placeholders: use isLandscape flag
-                  // For real artworks: check dimensions or load image to get aspect ratio
-                  let isLandscape = false;
-                  
-                  if ((artwork as any).isLandscape === true) {
-                    // Placeholder with explicit landscape flag
-                    isLandscape = true;
-                  } else if (artwork.dimensions && artwork.dimensions.width && artwork.dimensions.height) {
-                    // Check aspect ratio from dimensions: landscape if width > height * 1.2
-                    const aspectRatio = artwork.dimensions.width / artwork.dimensions.height;
-                    isLandscape = aspectRatio > 1.2; // Landscape threshold (slightly lower for better detection)
-                  } else {
-                    // For artworks without dimensions, we'll detect from image loading
-                    // This will be handled by the ArtworkTile component
-                  }
                   
                   return (
-                    <div key={artwork.id} className="break-inside-avoid mb-1">
-                      <ArtworkTile 
-                        artwork={artwork} 
-                        hideBanner={isMobile && artworkView === 'grid'}
-                        isLandscape={isLandscape} // Allow landscape images on both mobile and desktop
-                      />
-                    </div>
+                    <ArtworkTile 
+                      key={artwork.id} 
+                      artwork={artwork} 
+                      hideBanner={isMobile && artworkView === 'grid'}
+                    />
                   );
                 })}
               </div>
@@ -1244,6 +1224,7 @@ function DiscoverPageContent() {
                         campaign={item.campaign}
                         placement="discover"
                         userId={user?.id}
+                        isMobile={isMobile}
                       />
                     );
                   }
