@@ -288,7 +288,7 @@ const generateArtistContent = (artist: Artist) => ({
         className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full rounded-lg ${isLandscape ? 'col-span-2' : ''} ${className || ''}`}
         onClick={handleTileClick}
     >
-      <div className={`relative overflow-hidden rounded-t-lg ${isLandscape ? 'aspect-[16/9]' : 'aspect-[3/4]'}`}>
+      <div className={`relative overflow-hidden rounded-t-lg ${isLandscape ? 'aspect-[3/2]' : 'aspect-[3/4]'}`}>
         {hasVideo && videoUrl ? (
           <video
             ref={videoRef}
@@ -297,7 +297,10 @@ const generateArtistContent = (artist: Artist) => ({
             muted
             loop
             playsInline
+            webkit-playsinline="true"
+            x5-playsinline="true"
             preload="metadata"
+            controls={false}
           />
         ) : (
           <Image

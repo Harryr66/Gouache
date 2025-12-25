@@ -819,13 +819,21 @@ function DiscoverPageContent() {
     // Mix ads into artworks
     const result = mixAdsIntoContent(artworksSlice, ads, 2);
     
-    const resultPlaceholderCount = result.filter((a: any) => {
+    // Shuffle items to randomize landscape tile distribution (prevent uniform column)
+    // Use a seeded shuffle based on array length for consistency
+    const shuffled = [...result];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    const resultPlaceholderCount = shuffled.filter((a: any) => {
       const tags = Array.isArray(a.tags) ? a.tags : [];
       return tags.includes('_placeholder');
     }).length;
     
-    log('✅ visibleFilteredArtworks: Returning', result.length, 'items (', resultPlaceholderCount, 'placeholders)');
-    return result;
+    log('✅ visibleFilteredArtworks: Returning', shuffled.length, 'items (', resultPlaceholderCount, 'placeholders)');
+    return shuffled;
   }, [filteredAndSortedArtworks, visibleCount, ads]);
 
   useEffect(() => {
@@ -1164,7 +1172,7 @@ function DiscoverPageContent() {
                 )}
               </div>
             ) : (artworkView === 'grid' || !isMobile) ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1 auto-rows-min" style={{ gridAutoFlow: 'dense' }}>
                 {visibleFilteredArtworks.map((item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
