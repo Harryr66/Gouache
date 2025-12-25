@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play, Edit } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play, Edit, Layers } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { PortfolioManager } from './portfolio-manager';
 import { ShopDisplay } from './shop-display';
@@ -13,7 +13,7 @@ import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from './theme-loading';
 import { useLikes } from '@/providers/likes-provider';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Artwork, Course } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -389,12 +389,172 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     );
   }
 
+  // Component to display all content (artwork + generic content) for a user
+  function AllContentDisplay({ userId, isOwnProfile }: { userId: string; isOwnProfile: boolean }) {
+    const [allContent, setAllContent] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      const fetchAllContent = async () => {
+        setLoading(true);
+        try {
+          const contentItems: any[] = [];
+
+          // Fetch all artworks/posts created by this user
+          // Try multiple query patterns to handle different data structures
+          try {
+            const artworksQuery = query(
+              collection(db, 'artworks'),
+              orderBy('createdAt', 'desc')
+            );
+            const artworksSnapshot = await getDocs(artworksQuery);
+            
+            artworksSnapshot.forEach((doc) => {
+              const data = doc.data();
+              // Check if this artwork belongs to the user
+              const belongsToUser = 
+                data.artist?.id === userId || 
+                data.artist?.userId === userId ||
+                data.artistId === userId;
+              
+              if (belongsToUser) {
+                contentItems.push({
+                  id: doc.id,
+                  ...data,
+                  type: 'artwork',
+                  createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
+                });
+              }
+            });
+          } catch (error) {
+            console.error('Error fetching artworks:', error);
+          }
+
+          // Also fetch posts
+          try {
+            const postsQuery = query(
+              collection(db, 'posts'),
+              orderBy('createdAt', 'desc')
+            );
+            const postsSnapshot = await getDocs(postsQuery);
+            
+            postsSnapshot.forEach((doc) => {
+              const data = doc.data();
+              // Check if this post belongs to the user
+              const belongsToUser = 
+                data.artist?.id === userId || 
+                data.artist?.userId === userId ||
+                data.artistId === userId;
+              
+              if (belongsToUser) {
+                contentItems.push({
+                  id: doc.id,
+                  ...data,
+                  type: 'post',
+                  createdAt: data.createdAt ? (typeof data.createdAt === 'number' ? new Date(data.createdAt) : data.createdAt?.toDate?.() || new Date()) : new Date(),
+                });
+              }
+            });
+          } catch (error) {
+            console.error('Error fetching posts:', error);
+          }
+
+          // Sort by creation date (newest first)
+          contentItems.sort((a, b) => {
+            const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+            const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+            return dateB - dateA;
+          });
+
+          setAllContent(contentItems);
+        } catch (error) {
+          console.error('Error fetching all content:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchAllContent();
+    }, [userId]);
+
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <ThemeLoading text="" size="sm" />
+        </div>
+      );
+    }
+
+    if (allContent.length === 0) {
+      return (
+        <Card className="p-8 text-center">
+          <CardContent>
+            <Layers className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <CardTitle className="mb-2">No content yet</CardTitle>
+            <CardDescription>
+              {isOwnProfile 
+                ? "You haven't uploaded any content yet. Use the upload portal to share your work."
+                : "This artist hasn't uploaded any content yet."}
+            </CardDescription>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {allContent.map((item) => {
+          const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.mediaUrls?.[0] || '/assets/placeholder-light.png';
+          const isVideo = item.mediaType === 'video' || item.videoUrl;
+          
+          return (
+            <Card 
+              key={item.id} 
+              className="group hover:shadow-lg transition-shadow overflow-hidden cursor-pointer"
+              onClick={() => {
+                if (item.artworkId || item.type === 'artwork') {
+                  router.push(`/artwork/${item.artworkId || item.id}`);
+                }
+              }}
+            >
+              <div className="relative aspect-square">
+                {isVideo && (item.videoUrl || item.mediaUrls?.[0]) ? (
+                  <video
+                    src={item.videoUrl || item.mediaUrls?.[0]}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    muted
+                    loop
+                    playsInline
+                  />
+                ) : (
+                  <Image
+                    src={imageUrl}
+                    alt={item.title || item.caption || 'Content'}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                )}
+              </div>
+              <CardContent className="p-4">
+                <h4 className="font-semibold text-sm mb-1 line-clamp-1">{item.title || item.caption || 'Untitled'}</h4>
+                {item.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  }
+
   console.log('🎯 ProfileTabs render:', { isProfessional, userId, isOwnProfile, hideShop, hideLearn });
 
   if (isProfessional) {
-    // For professional artists, show tabs: Portfolio, Shop (if enabled), Learn (if enabled)
+    // For professional artists, show tabs: Portfolio, All Content, Shop (if enabled), Learn (if enabled)
     const visibleTabs = [
       { value: 'portfolio', label: 'Portfolio', icon: Palette },
+      { value: 'all-content', label: 'All Content', icon: Layers },
       ...(hideShop ? [] : [{ value: 'shop', label: 'Shop', icon: ShoppingBag }]),
       ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: Brain }]),
     ];
@@ -446,6 +606,11 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             <ShopDisplay userId={userId} isOwnProfile={isOwnProfile} />
           </TabsContent>
         )}
+
+        {/* All Content Tab - Shows all uploads (artwork + content) */}
+        <TabsContent value="all-content" className="space-y-4">
+          <AllContentDisplay userId={userId} isOwnProfile={isOwnProfile} />
+        </TabsContent>
 
         {/* Learn Tab */}
         {!hideLearn && (

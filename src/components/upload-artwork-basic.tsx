@@ -876,10 +876,10 @@ export function UploadArtworkBasic() {
           <div className="flex items-center justify-between space-x-2 py-4 border-t">
             <div className="space-y-0.5 flex-1">
               <Label htmlFor="addToPortfolio" className="text-base font-medium cursor-pointer">
-                Add to portfolio
+                This is artwork (add to portfolio)
               </Label>
               <p className="text-xs text-muted-foreground">
-                Enable to store this as artwork in your portfolio. All uploads appear in Discover regardless of this setting.
+                Enable to mark this as artwork and add to your portfolio. When disabled, this will be posted as content (process videos, etc.) to Discover only.
               </p>
             </div>
             <Switch
