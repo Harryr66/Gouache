@@ -363,28 +363,30 @@ export function UploadArtworkBasic() {
       // Add sale-related fields if for sale (only relevant if adding to portfolio)
       if (isForSale && addToPortfolio) {
         if (priceType === 'fixed' && price.trim()) {
-          portfolioItem.price = parseFloat(price) * 100; // Convert to cents
-          portfolioItem.currency = currency;
+          artworkItem.price = parseFloat(price) * 100; // Convert to cents
+          artworkItem.currency = currency;
         } else if (priceType === 'contact') {
-          portfolioItem.priceType = 'contact';
-          portfolioItem.contactForPrice = true;
-          portfolioItem.contactEmail = useAccountEmail ? (user.email || '') : alternativeEmail.trim();
+          artworkItem.priceType = 'contact';
+          artworkItem.contactForPrice = true;
+          artworkItem.contactEmail = useAccountEmail ? (user.email || '') : alternativeEmail.trim();
         }
-        portfolioItem.deliveryScope = deliveryScope;
+        artworkItem.deliveryScope = deliveryScope;
         if (deliveryScope === 'specific' && selectedCountries.length > 0) {
-          portfolioItem.deliveryCountries = selectedCountries.join(', ');
+          artworkItem.deliveryCountries = selectedCountries.join(', ');
         }
       }
 
-      // Add dimensions if provided
-      if (dimensions.width && dimensions.height) {
-        portfolioItem.dimensions = {
-          width: parseFloat(dimensions.width) || 0,
-          height: parseFloat(dimensions.height) || 0,
-          unit: dimensions.unit,
-        };
-      } else {
-        portfolioItem.dimensions = { width: 0, height: 0, unit: 'cm' };
+      // Add dimensions if provided (only relevant if adding to portfolio)
+      if (addToPortfolio) {
+        if (dimensions.width && dimensions.height) {
+          artworkItem.dimensions = {
+            width: parseFloat(dimensions.width) || 0,
+            height: parseFloat(dimensions.height) || 0,
+            unit: dimensions.unit,
+          };
+        } else {
+          artworkItem.dimensions = { width: 0, height: 0, unit: 'cm' };
+        }
       }
 
       // Recursive function to remove all undefined values (Firestore doesn't allow undefined)
