@@ -96,7 +96,7 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
       setMediaAspectRatio(aspectRatio);
     };
     img.onerror = () => {
-      setMediaAspectRatio(3/4); // Default to portrait aspect ratio on error
+      setMediaAspectRatio(2/3); // Default to portrait aspect ratio (2:3) on error
     };
     img.src = imageUrl;
   }, [imageUrl, videoUrl, hasVideo, artwork.dimensions]);
