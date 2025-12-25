@@ -30,6 +30,7 @@ export async function fetchActiveAds(
           updatedAt: data.updatedAt?.toDate?.() || new Date(),
           startDate: data.startDate?.toDate?.() || new Date(),
           endDate: data.endDate?.toDate?.(),
+          lastSpentReset: data.lastSpentReset?.toDate?.() || data.lastSpentReset,
         } as AdCampaign;
       })
       .filter((ad) => {
@@ -44,8 +45,18 @@ export async function fetchActiveAds(
         
         // Filter by daily budget - check if daily limit reached
         if (ad.dailyBudget && ad.dailySpent !== undefined) {
+          // Handle lastSpentReset date conversion
+          let lastResetDate: Date;
           const lastReset = ad.lastSpentReset || ad.startDate;
-          const lastResetDate = lastReset instanceof Date ? lastReset : lastReset.toDate?.() || new Date(lastReset);
+          
+          if (lastReset instanceof Date) {
+            lastResetDate = lastReset;
+          } else if (lastReset && typeof lastReset === 'object' && 'toDate' in lastReset && typeof lastReset.toDate === 'function') {
+            lastResetDate = lastReset.toDate();
+          } else {
+            lastResetDate = new Date(lastReset as any);
+          }
+          
           const isNewDay = now.toDateString() !== lastResetDate.toDateString();
           
           // If same day and daily budget exceeded, don't show
