@@ -76,6 +76,7 @@ export function UploadArtworkBasic() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [addToPortfolio, setAddToPortfolio] = useState(true); // Default to true - add to portfolio
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentUploadingFile, setCurrentUploadingFile] = useState<string>('');
 
@@ -349,7 +350,7 @@ export function UploadArtworkBasic() {
         title: title.trim(),
         description: description.trim() || '',
         type: 'artwork',
-        showInPortfolio: true,
+        showInPortfolio: addToPortfolio,
         showInShop: isForSale,
         isForSale: isForSale,
         artworkType: isOriginal ? 'original' : 'print',
@@ -412,31 +413,34 @@ export function UploadArtworkBasic() {
 
       const cleanPortfolioItem = removeUndefined(portfolioItem);
 
-      // Clean existing portfolio items as well (they might have undefined values from previous uploads)
-      const cleanedExistingPortfolio = currentPortfolio.map((item: any) => removeUndefined(item));
-      const updatedPortfolio = [...cleanedExistingPortfolio, cleanPortfolioItem];
-      
-      // Clean the entire portfolio array one more time to be safe
-      const finalCleanedPortfolio = removeUndefined(updatedPortfolio);
-      
-      // Debug: Check for any undefined values before saving
-      const hasUndefined = JSON.stringify(finalCleanedPortfolio).includes('undefined');
-      if (hasUndefined) {
-        console.error('❌ Found undefined values in portfolio after cleaning:', finalCleanedPortfolio);
-        // Try one more aggressive clean
-        const stringified = JSON.stringify(finalCleanedPortfolio, (key, value) => {
-          return value === undefined ? null : value;
-        });
-        const finalPortfolio = JSON.parse(stringified);
-        await updateDoc(userDocRef, {
-          portfolio: finalPortfolio,
-          updatedAt: new Date(),
-        });
-      } else {
-        await updateDoc(userDocRef, {
-          portfolio: finalCleanedPortfolio,
-          updatedAt: new Date(),
-        });
+      // Only add to portfolio if toggle is enabled
+      if (addToPortfolio) {
+        // Clean existing portfolio items as well (they might have undefined values from previous uploads)
+        const cleanedExistingPortfolio = currentPortfolio.map((item: any) => removeUndefined(item));
+        const updatedPortfolio = [...cleanedExistingPortfolio, cleanPortfolioItem];
+        
+        // Clean the entire portfolio array one more time to be safe
+        const finalCleanedPortfolio = removeUndefined(updatedPortfolio);
+        
+        // Debug: Check for any undefined values before saving
+        const hasUndefined = JSON.stringify(finalCleanedPortfolio).includes('undefined');
+        if (hasUndefined) {
+          console.error('❌ Found undefined values in portfolio after cleaning:', finalCleanedPortfolio);
+          // Try one more aggressive clean
+          const stringified = JSON.stringify(finalCleanedPortfolio, (key, value) => {
+            return value === undefined ? null : value;
+          });
+          const finalPortfolio = JSON.parse(stringified);
+          await updateDoc(userDocRef, {
+            portfolio: finalPortfolio,
+            updatedAt: new Date(),
+          });
+        } else {
+          await updateDoc(userDocRef, {
+            portfolio: finalCleanedPortfolio,
+            updatedAt: new Date(),
+          });
+        }
       }
 
       // If marked for sale, also add to artworks collection for shop display
@@ -467,7 +471,7 @@ export function UploadArtworkBasic() {
           currency: 'USD',
           isForSale: true,
           type: 'artwork',
-          showInPortfolio: true,
+          showInPortfolio: addToPortfolio,
           showInShop: true,
           artworkType: isOriginal ? 'original' : 'print',
           dimensions: { width: 0, height: 0, unit: 'cm' },
@@ -524,7 +528,9 @@ export function UploadArtworkBasic() {
 
       toast({
         title: 'Artwork uploaded',
-        description: 'Your artwork has been added to your portfolio' + (isForSale ? ' and shop.' : '.'),
+        description: addToPortfolio 
+          ? 'Your artwork has been added to your portfolio' + (isForSale ? ' and shop.' : '.')
+          : 'Your artwork has been uploaded' + (isForSale ? ' to your shop.' : '.'),
       });
 
       // Reset form and cleanup object URLs
@@ -779,6 +785,23 @@ export function UploadArtworkBasic() {
             <p className="text-xs text-muted-foreground">
               Add at least one tag. Tags help users discover your artwork through search and filters.
             </p>
+          </div>
+
+          {/* Add to Portfolio Toggle */}
+          <div className="flex items-center justify-between space-x-2 py-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="addToPortfolio" className="text-base font-medium cursor-pointer">
+                Add to portfolio
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Include this artwork in your portfolio gallery
+              </p>
+            </div>
+            <Switch
+              id="addToPortfolio"
+              checked={addToPortfolio}
+              onCheckedChange={setAddToPortfolio}
+            />
           </div>
 
           {/* Dimensions */}
