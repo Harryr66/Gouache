@@ -297,20 +297,6 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
 
           <FormField
             control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Optional description for your campaign" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="placement"
             render={({ field }) => (
               <FormItem>
