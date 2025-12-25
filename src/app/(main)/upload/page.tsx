@@ -188,7 +188,7 @@ export default function UploadPage() {
         </Button>
         <header className="mb-8">
           <h1 className="font-headline text-4xl md:text-5xl font-semibold mb-2">
-            Upload Artwork
+            Discover Uploads
           </h1>
           <p className="text-muted-foreground text-lg">
             Upload images to your portfolio and shop.
