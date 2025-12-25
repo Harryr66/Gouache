@@ -838,7 +838,41 @@ function DiscoverPageContent() {
     }
     
     // Combine: shuffled real artworks first, then placeholders (maintains ranking)
-    const final = [...shuffledReal, ...placeholderItems];
+    const combined = [...shuffledReal, ...placeholderItems];
+    
+    // Interleave items across columns for uniform top alignment
+    // Instead of filling columns sequentially [col1: 1,2,3... col2: 4,5,6...],
+    // we interleave [col1: 1,3,5... col2: 2,4,6...] so tops align uniformly
+    const getColumnCount = () => {
+      if (typeof window === 'undefined') return 5;
+      const width = window.innerWidth;
+      if (width >= 1280) return 5; // xl
+      if (width >= 1024) return 5; // lg
+      if (width >= 768) return 4;  // md
+      if (width >= 640) return 3;  // sm
+      return 2; // mobile
+    };
+    
+    const columnCount = getColumnCount();
+    const interleaved: typeof combined = [];
+    const columns: (typeof combined)[] = Array.from({ length: columnCount }, () => []);
+    
+    // Distribute items across columns in a round-robin fashion
+    combined.forEach((item, index) => {
+      columns[index % columnCount].push(item);
+    });
+    
+    // Interleave items by taking one from each column in turn
+    const maxLength = Math.max(...columns.map(col => col.length));
+    for (let i = 0; i < maxLength; i++) {
+      for (let colIndex = 0; colIndex < columnCount; colIndex++) {
+        if (columns[colIndex][i]) {
+          interleaved.push(columns[colIndex][i]);
+        }
+      }
+    }
+    
+    const final = interleaved;
     
     const resultPlaceholderCount = placeholderItems.length;
     
@@ -1215,6 +1249,8 @@ function DiscoverPageContent() {
                     />
                   );
                 })}
+                {/* Infinite scroll sentinel - placed after grid content */}
+                <div ref={loadMoreRef} className="h-10 w-full" />
               </div>
             ) : (
                 <div className="space-y-3">
