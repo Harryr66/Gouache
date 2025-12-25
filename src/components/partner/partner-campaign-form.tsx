@@ -595,7 +595,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                 )}
               />
 
-              {!uncappedBudget && (
+              {!form.watch('uncappedBudget') && (
                 <FormField
                   control={form.control}
                   name="budget"
