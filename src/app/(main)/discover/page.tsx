@@ -1338,7 +1338,6 @@ function DiscoverPageContent() {
                 })}
               </div>
             )}
-            <div ref={loadMoreRef} className="h-10" />
           </TabsContent>
 
           {/* Events Tab */}
