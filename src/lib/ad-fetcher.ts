@@ -51,10 +51,14 @@ export async function fetchActiveAds(
           
           if (lastReset instanceof Date) {
             lastResetDate = lastReset;
-          } else if (lastReset && typeof lastReset === 'object' && 'toDate' in lastReset && typeof lastReset.toDate === 'function') {
-            lastResetDate = lastReset.toDate();
           } else {
-            lastResetDate = new Date(lastReset as any);
+            // Handle Firestore Timestamp or other date-like objects
+            const resetValue = lastReset as any;
+            if (resetValue && typeof resetValue === 'object' && typeof resetValue.toDate === 'function') {
+              lastResetDate = resetValue.toDate();
+            } else {
+              lastResetDate = new Date(resetValue);
+            }
           }
           
           const isNewDay = now.toDateString() !== lastResetDate.toDateString();
