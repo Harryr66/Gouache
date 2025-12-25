@@ -413,7 +413,7 @@ export function UploadArtworkBasic() {
       const cleanPortfolioItem = removeUndefined(portfolioItem);
 
       // Clean existing portfolio items as well (they might have undefined values from previous uploads)
-      const cleanedExistingPortfolio = currentPortfolio.map(item => removeUndefined(item));
+      const cleanedExistingPortfolio = currentPortfolio.map((item: any) => removeUndefined(item));
       const updatedPortfolio = [...cleanedExistingPortfolio, cleanPortfolioItem];
       
       // Clean the entire portfolio array one more time to be safe
