@@ -214,7 +214,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       }
 
       // Parse budget values (convert to cents)
-      const budget = values.uncappedBudget ? null : (values.budget ? Math.round(parseFloat(values.budget) * 100) : undefined);
+      const budget = values.uncappedBudget ? undefined : (values.budget ? Math.round(parseFloat(values.budget) * 100) : undefined);
       const dailyBudget = values.dailyBudget ? Math.round(parseFloat(values.dailyBudget) * 100) : undefined;
       const costPerImpression = values.costPerImpression ? Math.round((parseFloat(values.costPerImpression) / 1000) * 100) : undefined; // CPM to cost per impression in cents
       const costPerClick = values.costPerClick ? Math.round(parseFloat(values.costPerClick) * 100) : undefined;
@@ -234,7 +234,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
         isActive: true,
         clicks: 0,
         impressions: 0,
-        budget: budget || null,
+        budget: budget,
         dailyBudget,
         spent: 0,
         dailySpent: 0,
