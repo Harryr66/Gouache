@@ -1230,6 +1230,7 @@ export interface AdCampaign {
   videoUrl?: string;
   mediaType: 'image' | 'video';
   videoDuration?: number; // in seconds, max 60
+  maxWidthFormat?: boolean; // If true, video ad spans multiple columns on mobile (requires square 1:1 or landscape 16:9)
   clickUrl: string; // Where the ad links to
   startDate: Date;
   endDate?: Date;
@@ -1248,8 +1249,6 @@ export interface AdCampaign {
   costPerImpression?: number; // Cost per impression in cents (CPM)
   costPerClick?: number; // Cost per click in cents (CPC)
   currency?: string; // Currency code (USD, GBP, etc.)
-  // Max-width format for video ads (mobile only)
-  maxWidthFormat?: boolean; // If true, ad spans multiple columns on mobile (requires square 1:1 or landscape 16:9)
   // Dynamic targeting
   targetAudience?: {
     tags?: string[];

@@ -33,7 +33,6 @@ const formSchema = z.object({
   costPerImpression: z.string().min(1, 'Cost per impression is required'),
   costPerClick: z.string().min(1, 'Cost per click is required'),
   currency: z.string().min(1, 'Currency is required'),
-  maxWidthFormat: z.boolean().default(false),
 }).refine((data) => {
   // Either uncappedBudget is true OR budget is provided
   return data.uncappedBudget || (data.budget && parseFloat(data.budget) > 0);
@@ -57,6 +56,8 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [showUncappedDialog, setShowUncappedDialog] = useState(false);
+  const [maxWidthFormat, setMaxWidthFormat] = useState(false);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -73,7 +74,6 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       costPerImpression: '',
       costPerClick: '',
       currency: 'usd',
-      maxWidthFormat: false,
     },
   });
 
@@ -105,23 +105,27 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
         return;
       }
 
-      // Check video duration (max 60 seconds)
+      // Check video duration (max 60 seconds) and aspect ratio
       const video = document.createElement('video');
       video.preload = 'metadata';
       video.onloadedmetadata = () => {
-        window.URL.revokeObjectURL(video.src);
         const duration = video.duration;
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        setVideoAspectRatio(aspectRatio);
+        
         if (duration > 60) {
           toast({
             title: 'Video too long',
             description: 'Videos must be 60 seconds or less.',
             variant: 'destructive',
           });
+          window.URL.revokeObjectURL(video.src);
           return;
         }
         setVideoFile(file);
         const url = URL.createObjectURL(file);
         setVideoPreview(url);
+        window.URL.revokeObjectURL(video.src);
       };
       video.src = URL.createObjectURL(file);
     }
@@ -138,6 +142,8 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
     setVideoFile(null);
     setImagePreview(null);
     setVideoPreview(null);
+    setVideoAspectRatio(null);
+    setMaxWidthFormat(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -179,6 +185,21 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
         variant: 'destructive',
       });
       return;
+    }
+    
+    // Validate max-width format: requires square (1:1) or landscape (16:9) aspect ratio
+    if (maxWidthFormat && mediaType === 'video' && videoAspectRatio !== null) {
+      const isSquare = Math.abs(videoAspectRatio - 1.0) < 0.1; // Allow small tolerance
+      const isLandscape169 = Math.abs(videoAspectRatio - 16/9) < 0.1; // Allow small tolerance
+      
+      if (!isSquare && !isLandscape169) {
+        toast({
+          title: 'Invalid aspect ratio',
+          description: 'Max-width format requires square (1:1) or landscape (16:9) aspect ratio.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -230,6 +251,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
         imageUrl,
         videoUrl,
         videoDuration,
+        maxWidthFormat: mediaType === 'video' ? maxWidthFormat : false,
         clickUrl: values.clickUrl,
         startDate: new Date(values.startDate),
         endDate: values.endDate ? new Date(values.endDate) : undefined,
@@ -245,7 +267,6 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
         costPerImpression,
         costPerClick,
         currency: values.currency || 'usd',
-        maxWidthFormat: mediaType === 'video' ? (values.maxWidthFormat || false) : false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -396,11 +417,40 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                     >
                       <X className="h-4 w-4" />
                     </Button>
+                    {videoAspectRatio !== null && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Aspect ratio: {videoAspectRatio.toFixed(2)}:1
+                        {maxWidthFormat && (
+                          <span className="ml-2 text-amber-600">
+                            (Requires 1:1 or 16:9 for max-width format)
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
           </div>
+
+          {/* Max-width format option (video ads only, mobile only) */}
+          {mediaType === 'video' && (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="maxWidthFormat"
+                  checked={maxWidthFormat}
+                  onCheckedChange={(checked) => setMaxWidthFormat(checked === true)}
+                />
+                <Label htmlFor="maxWidthFormat" className="cursor-pointer">
+                  Max-width format (mobile only)
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground ml-6">
+                Spans multiple columns on mobile feeds. Requires square (1:1) or landscape (16:9) aspect ratio.
+              </p>
+            </div>
+          )}
 
           <FormField
             control={form.control}
@@ -653,34 +703,6 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
               </AlertDialogContent>
             </AlertDialog>
           </div>
-
-          {/* Max-Width Format (Video Ads Only) */}
-          {mediaType === 'video' && (
-            <div className="border-t pt-6 space-y-4">
-              <FormField
-                control={form.control}
-                name="maxWidthFormat"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="cursor-pointer">
-                        Max-Width Format (Mobile Only)
-                      </FormLabel>
-                      <p className="text-xs text-muted-foreground">
-                        Ad will span multiple columns on mobile feeds for larger presentation. Requires square (1:1) or landscape (16:9) aspect ratio. Standard video ads remain single-column.
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
-            </div>
-          )}
 
           <div className="flex gap-2">
             <Button type="submit" disabled={isSubmitting}>
