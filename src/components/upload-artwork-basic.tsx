@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/providers/auth-provider';
 import { useContent } from '@/providers/content-provider';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
@@ -76,6 +76,8 @@ export function UploadArtworkBasic() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentUploadingFile, setCurrentUploadingFile] = useState<string>('');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -278,11 +280,49 @@ export function UploadArtworkBasic() {
         const isVideo = file.type.startsWith('video/');
         const folder = isVideo ? 'artworks/videos' : 'portfolio';
         const fileRef = ref(storage, `${folder}/${user.id}/${Date.now()}_${i}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        const fileUrl = await getDownloadURL(fileRef);
-        uploadedUrls.push(fileUrl);
-        mediaTypes.push(isVideo ? 'video' : 'image');
+        
+        setCurrentUploadingFile(`${i + 1}/${files.length}: ${file.name}`);
+        
+        // Use resumable upload for videos (large files) and images for progress tracking
+        if (isVideo || file.size > 5 * 1024 * 1024) { // Use resumable for videos or files > 5MB
+          const uploadTask = uploadBytesResumable(fileRef, file);
+          
+          await new Promise<void>((resolve, reject) => {
+            uploadTask.on(
+              'state_changed',
+              (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                setUploadProgress(progress);
+              },
+              (error) => {
+                console.error(`Error uploading file ${i + 1}:`, error);
+                reject(error);
+              },
+              async () => {
+                try {
+                  const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                  uploadedUrls.push(fileUrl);
+                  mediaTypes.push(isVideo ? 'video' : 'image');
+                  resolve();
+                } catch (error) {
+                  console.error(`Error getting download URL for file ${i + 1}:`, error);
+                  reject(error);
+                }
+              }
+            );
+          });
+        } else {
+          // Use regular upload for small images
+          await uploadBytes(fileRef, file);
+          const fileUrl = await getDownloadURL(fileRef);
+          uploadedUrls.push(fileUrl);
+          mediaTypes.push(isVideo ? 'video' : 'image');
+        }
       }
+      
+      // Reset progress after all uploads complete
+      setUploadProgress(100);
+      setCurrentUploadingFile('');
 
       // First media file is the main display
       const primaryMediaUrl = uploadedUrls[0];
@@ -468,6 +508,8 @@ export function UploadArtworkBasic() {
       router.push('/profile?tab=portfolio');
     } catch (error) {
       console.error('Upload error:', error);
+      setUploadProgress(0);
+      setCurrentUploadingFile('');
       toast({
         title: 'Upload failed',
         description: 'Failed to upload artwork. Please try again.',
@@ -475,6 +517,13 @@ export function UploadArtworkBasic() {
       });
     } finally {
       setUploading(false);
+      // Reset progress after a delay to allow user to see completion
+      if (uploadProgress === 100) {
+        setTimeout(() => {
+          setUploadProgress(0);
+          setCurrentUploadingFile('');
+        }, 1000);
+      }
     }
   };
 
@@ -984,6 +1033,22 @@ export function UploadArtworkBasic() {
               I confirm that this artwork is not AI-generated and is my own original creative work.
             </label>
           </div>
+
+          {/* Upload Progress */}
+          {uploading && uploadProgress > 0 && (
+            <div className="space-y-2">
+              {currentUploadingFile && (
+                <p className="text-sm text-muted-foreground">{currentUploadingFile}</p>
+              )}
+              <div className="w-full bg-secondary rounded-full h-2">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">{Math.round(uploadProgress)}%</p>
+            </div>
+          )}
 
           {/* Submit Button */}
           <Button type="submit" variant="gradient" disabled={uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0} className="w-full">
