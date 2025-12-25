@@ -24,11 +24,24 @@ export async function trackAdClick(
     const budget = campaignData.budget;
     const dailyBudget = campaignData.dailyBudget;
     const uncappedBudget = campaignData.uncappedBudget || false;
-    const lastSpentReset = campaignData.lastSpentReset?.toDate?.() || new Date();
+    // Handle lastSpentReset date conversion
+    let lastSpentResetDate: Date;
+    if (campaignData.lastSpentReset) {
+      if (campaignData.lastSpentReset instanceof Date) {
+        lastSpentResetDate = campaignData.lastSpentReset;
+      } else if (campaignData.lastSpentReset.toDate) {
+        lastSpentResetDate = campaignData.lastSpentReset.toDate();
+      } else {
+        lastSpentResetDate = new Date(campaignData.lastSpentReset);
+      }
+    } else {
+      lastSpentResetDate = new Date();
+    }
+    
     const now = new Date();
     
     // Check if we need to reset daily spent (new day)
-    const needsDailyReset = now.toDateString() !== lastSpentReset.toDateString();
+    const needsDailyReset = now.toDateString() !== lastSpentResetDate.toDateString();
     const dailySpentToUse = needsDailyReset ? 0 : currentDailySpent;
     
     // Calculate new spent amounts
@@ -103,11 +116,24 @@ export async function trackAdImpression(
     const budget = campaignData.budget;
     const dailyBudget = campaignData.dailyBudget;
     const uncappedBudget = campaignData.uncappedBudget || false;
-    const lastSpentReset = campaignData.lastSpentReset?.toDate?.() || new Date();
+    // Handle lastSpentReset date conversion
+    let lastSpentResetDate: Date;
+    if (campaignData.lastSpentReset) {
+      if (campaignData.lastSpentReset instanceof Date) {
+        lastSpentResetDate = campaignData.lastSpentReset;
+      } else if (campaignData.lastSpentReset.toDate) {
+        lastSpentResetDate = campaignData.lastSpentReset.toDate();
+      } else {
+        lastSpentResetDate = new Date(campaignData.lastSpentReset);
+      }
+    } else {
+      lastSpentResetDate = new Date();
+    }
+    
     const now = new Date();
     
     // Check if we need to reset daily spent (new day)
-    const needsDailyReset = now.toDateString() !== lastSpentReset.toDateString();
+    const needsDailyReset = now.toDateString() !== lastSpentResetDate.toDateString();
     const dailySpentToUse = needsDailyReset ? 0 : currentDailySpent;
     
     // Calculate new spent amounts
