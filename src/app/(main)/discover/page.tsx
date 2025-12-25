@@ -1025,7 +1025,7 @@ function DiscoverPageContent() {
             <TabsList className="grid w-full grid-cols-2 md:flex md:flex-1 md:max-w-none md:gap-0">
               <TabsTrigger value="artwork" className="flex items-center justify-center gap-2 flex-1 md:flex-1 md:px-6">
                 <Palette className="h-4 w-4" />
-                Artwork
+                Discover
               </TabsTrigger>
               <TabsTrigger value="events" className="flex items-center justify-center gap-2 flex-1 md:flex-1 md:px-6">
                 <Calendar className="h-4 w-4" />
