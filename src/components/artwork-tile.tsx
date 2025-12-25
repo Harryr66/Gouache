@@ -55,7 +55,7 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoInView, setIsVideoInView] = useState(false);
-  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
+  const [mediaAspectRatio, setMediaAspectRatio] = useState<number | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   
   // Check if artwork has video
@@ -63,32 +63,47 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const videoUrl = (artwork as any).videoUrl;
   const imageUrl = artwork.imageUrl || 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
   
-  // Detect image aspect ratio for dynamic height calculation
+  // Detect media aspect ratio for dynamic height calculation (Pinterest-style masonry)
   useEffect(() => {
-    if (hasVideo) return; // Skip for videos, they'll use their own aspect ratio
-    
-    // First check dimensions if available
+    // First check dimensions if available (works for both images and videos)
     if (artwork.dimensions && artwork.dimensions.width && artwork.dimensions.height) {
       const aspectRatio = artwork.dimensions.width / artwork.dimensions.height;
-      setImageAspectRatio(aspectRatio);
+      setMediaAspectRatio(aspectRatio);
       return;
     }
     
-    // Otherwise load image to detect aspect ratio
+    // For videos, load video metadata to detect aspect ratio
+    if (hasVideo && videoUrl) {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        setMediaAspectRatio(aspectRatio);
+        window.URL.revokeObjectURL(video.src);
+      };
+      video.onerror = () => {
+        setMediaAspectRatio(2/3); // Default to portrait aspect ratio (2:3) on error
+        window.URL.revokeObjectURL(video.src);
+      };
+      video.src = videoUrl;
+      return;
+    }
+    
+    // For images, load image to detect aspect ratio
     const img = document.createElement('img');
     img.onload = () => {
       const aspectRatio = img.naturalWidth / img.naturalHeight;
-      setImageAspectRatio(aspectRatio);
+      setMediaAspectRatio(aspectRatio);
     };
     img.onerror = () => {
-      setImageAspectRatio(3/4); // Default to portrait aspect ratio on error
+      setMediaAspectRatio(3/4); // Default to portrait aspect ratio on error
     };
     img.src = imageUrl;
-  }, [imageUrl, hasVideo, artwork.dimensions]);
+  }, [imageUrl, videoUrl, hasVideo, artwork.dimensions]);
   
-  // Calculate height based on aspect ratio (column width is fixed, height scales)
-  // Default to 3:4 (portrait) if aspect ratio not yet determined
-  const aspectRatio = imageAspectRatio || (hasVideo ? 3/4 : 3/4);
+  // Calculate height based on aspect ratio (column width is fixed, height scales dynamically)
+  // Default to 2:3 (portrait) if aspect ratio not yet determined - ideal for tall tiles
+  const aspectRatio = mediaAspectRatio || (2/3);
   
   // Intersection Observer for video autoplay (Pinterest-style)
   useEffect(() => {
