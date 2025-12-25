@@ -370,7 +370,7 @@ export function UploadArtworkBasic() {
         } else if (priceType === 'contact') {
           portfolioItem.priceType = 'contact';
           portfolioItem.contactForPrice = true;
-          portfolioItem.contactEmail = useAccountEmail ? user.email : alternativeEmail.trim();
+          portfolioItem.contactEmail = useAccountEmail ? (user.email || '') : alternativeEmail.trim();
         }
         portfolioItem.deliveryScope = deliveryScope;
         if (deliveryScope === 'specific' && selectedCountries.length > 0) {
@@ -389,13 +389,28 @@ export function UploadArtworkBasic() {
         portfolioItem.dimensions = { width: 0, height: 0, unit: 'cm' };
       }
 
-      // Clean portfolio item to remove any undefined values (Firestore doesn't allow undefined)
-      const cleanPortfolioItem: any = {};
-      Object.keys(portfolioItem).forEach(key => {
-        if (portfolioItem[key] !== undefined) {
-          cleanPortfolioItem[key] = portfolioItem[key];
+      // Recursive function to remove all undefined values (Firestore doesn't allow undefined)
+      const removeUndefined = (obj: any): any => {
+        if (obj === null || obj === undefined) {
+          return null;
         }
-      });
+        if (Array.isArray(obj)) {
+          return obj.map(item => removeUndefined(item)).filter(item => item !== undefined);
+        }
+        if (typeof obj === 'object' && obj.constructor === Object) {
+          const cleaned: any = {};
+          Object.keys(obj).forEach(key => {
+            const value = removeUndefined(obj[key]);
+            if (value !== undefined) {
+              cleaned[key] = value;
+            }
+          });
+          return cleaned;
+        }
+        return obj;
+      };
+
+      const cleanPortfolioItem = removeUndefined(portfolioItem);
 
       const updatedPortfolio = [...currentPortfolio, cleanPortfolioItem];
       
@@ -450,7 +465,7 @@ export function UploadArtworkBasic() {
         } else if (priceType === 'contact') {
           artworkForShop.priceType = 'contact';
           artworkForShop.contactForPrice = true;
-          artworkForShop.contactEmail = useAccountEmail ? user.email : alternativeEmail.trim();
+          artworkForShop.contactEmail = useAccountEmail ? (user.email || '') : alternativeEmail.trim();
         }
         artworkForShop.deliveryScope = deliveryScope;
         if (deliveryScope === 'specific' && selectedCountries.length > 0) {
