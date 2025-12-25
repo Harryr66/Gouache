@@ -800,64 +800,75 @@ export function UploadArtworkBasic() {
             <Switch
               id="addToPortfolio"
               checked={addToPortfolio}
-              onCheckedChange={setAddToPortfolio}
+              onCheckedChange={(checked) => {
+                setAddToPortfolio(checked);
+                // Reset for sale when portfolio toggle is disabled
+                if (!checked) {
+                  setIsForSale(false);
+                }
+              }}
             />
           </div>
 
-          {/* Dimensions */}
-          <div className="space-y-2">
-            <Label>Dimensions (Optional)</Label>
-            <div className="grid grid-cols-3 gap-2">
-              <Input
-                placeholder="Width"
-                value={dimensions.width}
-                onChange={(e) => setDimensions({ ...dimensions, width: e.target.value })}
-                type="number"
-                min="0"
-                step="0.1"
-              />
-              <Input
-                placeholder="Height"
-                value={dimensions.height}
-                onChange={(e) => setDimensions({ ...dimensions, height: e.target.value })}
-                type="number"
-                min="0"
-                step="0.1"
-              />
-              <Select 
-                value={dimensions.unit} 
-                onValueChange={(value: 'cm' | 'in' | 'px') => setDimensions({ ...dimensions, unit: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cm">cm</SelectItem>
-                  <SelectItem value="in">in</SelectItem>
-                  <SelectItem value="px">px</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Mark for Sale */}
-          <div className="space-y-4 p-4 border rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label htmlFor="isForSale" className="cursor-pointer text-base font-semibold">
-                  Mark this item for sale
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Enable this to list this artwork in your shop.
-                </p>
+          {/* Only show Dimensions and Sale options if adding to portfolio */}
+          {addToPortfolio && (
+            <>
+              {/* Dimensions */}
+              <div className="space-y-2">
+                <Label>Dimensions (Optional)</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Input
+                    placeholder="Width"
+                    value={dimensions.width}
+                    onChange={(e) => setDimensions({ ...dimensions, width: e.target.value })}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                  />
+                  <Input
+                    placeholder="Height"
+                    value={dimensions.height}
+                    onChange={(e) => setDimensions({ ...dimensions, height: e.target.value })}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                  />
+                  <Select 
+                    value={dimensions.unit} 
+                    onValueChange={(value: 'cm' | 'in' | 'px') => setDimensions({ ...dimensions, unit: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cm">cm</SelectItem>
+                      <SelectItem value="in">in</SelectItem>
+                      <SelectItem value="px">px</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <Switch
-                id="isForSale"
-                checked={isForSale}
-                onCheckedChange={setIsForSale}
-              />
-            </div>
-          </div>
+
+              {/* Mark for Sale */}
+              <div className="space-y-4 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="isForSale" className="cursor-pointer text-base font-semibold">
+                      Mark this item for sale
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Enable this to list this artwork in your shop.
+                    </p>
+                  </div>
+                  <Switch
+                    id="isForSale"
+                    checked={isForSale}
+                    onCheckedChange={setIsForSale}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Sale Options (only shown if for sale) */}
           {isForSale && (
