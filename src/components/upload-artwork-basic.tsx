@@ -332,12 +332,9 @@ export function UploadArtworkBasic() {
       const supportingMedia = uploadedUrls.slice(1);
       const supportingMediaTypes = mediaTypes.slice(1);
 
-      // Update user's portfolio in Firestore
-      const userDocRef = doc(db, 'userProfiles', user.id);
-      const userDoc = await getDoc(userDocRef);
-      const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
-
-      const portfolioItem: any = {
+      // Create artwork item for discover feed (always created, regardless of portfolio toggle)
+      // Portfolio array update happens separately if toggle is enabled
+      const artworkItem: any = {
         id: `artwork-${Date.now()}`,
         ...(primaryMediaType === 'image' && { imageUrl: primaryMediaUrl }), // For backward compatibility
         ...(primaryMediaType === 'video' && { videoUrl: primaryMediaUrl }),
@@ -350,8 +347,8 @@ export function UploadArtworkBasic() {
         title: title.trim(),
         description: description.trim() || '',
         type: 'artwork',
-        showInPortfolio: addToPortfolio,
-        showInShop: isForSale,
+        showInPortfolio: addToPortfolio, // Controls visibility in portfolio tab
+        showInShop: isForSale, // Controls visibility in shop
         isForSale: isForSale,
         artworkType: isOriginal ? 'original' : 'print',
         createdAt: new Date(),
@@ -363,8 +360,8 @@ export function UploadArtworkBasic() {
         isAI: false,
       };
 
-      // Add sale-related fields if for sale
-      if (isForSale) {
+      // Add sale-related fields if for sale (only relevant if adding to portfolio)
+      if (isForSale && addToPortfolio) {
         if (priceType === 'fixed' && price.trim()) {
           portfolioItem.price = parseFloat(price) * 100; // Convert to cents
           portfolioItem.currency = currency;
@@ -411,10 +408,14 @@ export function UploadArtworkBasic() {
         return obj;
       };
 
-      const cleanPortfolioItem = removeUndefined(portfolioItem);
+      const cleanPortfolioItem = removeUndefined(artworkItem);
 
-      // Only add to portfolio if toggle is enabled
+      // Update user's portfolio in Firestore ONLY if toggle is enabled
       if (addToPortfolio) {
+        const userDocRef = doc(db, 'userProfiles', user.id);
+        const userDoc = await getDoc(userDocRef);
+        const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
+        
         // Clean existing portfolio items as well (they might have undefined values from previous uploads)
         const cleanedExistingPortfolio = currentPortfolio.map((item: any) => removeUndefined(item));
         const updatedPortfolio = [...cleanedExistingPortfolio, cleanPortfolioItem];
@@ -788,13 +789,13 @@ export function UploadArtworkBasic() {
           </div>
 
           {/* Add to Portfolio Toggle */}
-          <div className="flex items-center justify-between space-x-2 py-2">
-            <div className="space-y-0.5">
+          <div className="flex items-center justify-between space-x-2 py-4 border-t">
+            <div className="space-y-0.5 flex-1">
               <Label htmlFor="addToPortfolio" className="text-base font-medium cursor-pointer">
                 Add to portfolio
               </Label>
               <p className="text-xs text-muted-foreground">
-                Include this artwork in your portfolio gallery
+                Enable to store this as artwork in your portfolio. All uploads appear in Discover regardless of this setting.
               </p>
             </div>
             <Switch
