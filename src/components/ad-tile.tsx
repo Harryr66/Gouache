@@ -18,6 +18,7 @@ type AdTileProps = {
 export function AdTile({ campaign, placement, userId, isMobile = false }: AdTileProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
+  const [isMediaLoaded, setIsMediaLoaded] = useState(false);
   const impressionTracked = useRef(false);
   const tileRef = useRef<HTMLDivElement>(null);
   
@@ -124,19 +125,36 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
           }}
         >
           <div className="absolute inset-0">
+            {/* Loading skeleton */}
+            {!isMediaLoaded && (
+              <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                </div>
+              </div>
+            )}
+            
+            {/* Media content */}
             {isVideo && campaign.videoUrl ? (
               <video
                 src={campaign.videoUrl}
-                className="absolute inset-0 h-full w-full object-cover"
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${!isMediaLoaded ? 'opacity-0' : 'opacity-100'}`}
                 muted
                 loop
                 playsInline
+                preload="auto"
+                onLoadedData={() => setIsMediaLoaded(true)}
+                onCanPlay={() => setIsMediaLoaded(true)}
+                onError={() => setIsMediaLoaded(true)}
               />
             ) : (
               <img
                 src={campaign.imageUrl || ''}
                 alt={campaign.title}
-                className="absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105 object-cover"
+                className={`absolute inset-0 h-full w-full transition-all duration-500 group-hover:scale-105 object-cover ${!isMediaLoaded ? 'opacity-0' : 'opacity-100'}`}
+                loading="eager"
+                onLoad={() => setIsMediaLoaded(true)}
+                onError={() => setIsMediaLoaded(true)}
               />
             )}
           </div>
