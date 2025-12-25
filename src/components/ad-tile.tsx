@@ -91,7 +91,7 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
     <Card 
       ref={tileRef} 
       className={cn(
-        'overflow-hidden transition hover:shadow-lg group flex flex-col cursor-pointer relative mb-1',
+        'overflow-hidden transition hover:shadow-lg group flex flex-col cursor-pointer relative mb-1 rounded-none',
         // For max-width format in CSS columns, we need to break out of columns
         isMaxWidthFormat ? 'column-span-all w-full' : 'break-inside-avoid'
       )}
