@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play, Edit, Layers } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play, Edit, Eye } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { PortfolioManager } from './portfolio-manager';
 import { ShopDisplay } from './shop-display';
@@ -389,19 +389,21 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     );
   }
 
-  // Component to display all content (artwork + generic content) for a user
-  function AllContentDisplay({ userId, isOwnProfile }: { userId: string; isOwnProfile: boolean }) {
-    const [allContent, setAllContent] = useState<any[]>([]);
+  // Component to display Discover content (generic content NOT marked as artwork)
+  // This shows content uploaded via Discover upload portal that was NOT added to portfolio
+  function DiscoverContentDisplay({ userId, isOwnProfile }: { userId: string; isOwnProfile: boolean }) {
+    const [discoverContent, setDiscoverContent] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
     useEffect(() => {
-      const fetchAllContent = async () => {
+      const fetchDiscoverContent = async () => {
         setLoading(true);
         try {
           const contentItems: any[] = [];
 
-          // Fetch all artworks/posts created by this user
-          // Try multiple query patterns to handle different data structures
+          // Fetch artworks that belong to this user but are NOT in portfolio
+          // (i.e., showInPortfolio is false or undefined, meaning they were uploaded but toggle was off)
           try {
             const artworksQuery = query(
               collection(db, 'artworks'),
@@ -417,7 +419,11 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                 data.artist?.userId === userId ||
                 data.artistId === userId;
               
-              if (belongsToUser) {
+              // Only include items that are NOT in portfolio (showInPortfolio is false/undefined)
+              // These are generic content like process videos, art tips, etc.
+              const notInPortfolio = !data.showInPortfolio || data.showInPortfolio === false;
+              
+              if (belongsToUser && notInPortfolio) {
                 contentItems.push({
                   id: doc.id,
                   ...data,
@@ -427,10 +433,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               }
             });
           } catch (error) {
-            console.error('Error fetching artworks:', error);
+            console.error('Error fetching discover content:', error);
           }
 
-          // Also fetch posts
+          // Also fetch posts that might be discover content
           try {
             const postsQuery = query(
               collection(db, 'posts'),
@@ -446,7 +452,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                 data.artist?.userId === userId ||
                 data.artistId === userId;
               
-              if (belongsToUser) {
+              // Check if the associated artwork is NOT in portfolio
+              // If there's an artworkId, we'd need to check that, but for now just include posts
+              // that don't have showInPortfolio set to true
+              if (belongsToUser && (!data.showInPortfolio || data.showInPortfolio === false)) {
                 contentItems.push({
                   id: doc.id,
                   ...data,
@@ -456,7 +465,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               }
             });
           } catch (error) {
-            console.error('Error fetching posts:', error);
+            console.error('Error fetching discover posts:', error);
           }
 
           // Sort by creation date (newest first)
@@ -466,15 +475,15 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             return dateB - dateA;
           });
 
-          setAllContent(contentItems);
+          setDiscoverContent(contentItems);
         } catch (error) {
-          console.error('Error fetching all content:', error);
+          console.error('Error fetching discover content:', error);
         } finally {
           setLoading(false);
         }
       };
 
-      fetchAllContent();
+      fetchDiscoverContent();
     }, [userId]);
 
     if (loading) {
@@ -485,16 +494,16 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       );
     }
 
-    if (allContent.length === 0) {
+    if (discoverContent.length === 0) {
       return (
         <Card className="p-8 text-center">
           <CardContent>
-            <Layers className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <CardTitle className="mb-2">No content yet</CardTitle>
+            <Eye className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <CardTitle className="mb-2">No discover content yet</CardTitle>
             <CardDescription>
               {isOwnProfile 
-                ? "You haven't uploaded any content yet. Use the upload portal to share your work."
-                : "This artist hasn't uploaded any content yet."}
+                ? "You haven't uploaded any discover content yet. Use the upload portal and leave 'This is artwork' toggled off to share process videos, art tips, and other content."
+                : "This artist hasn't uploaded any discover content yet."}
             </CardDescription>
           </CardContent>
         </Card>
@@ -503,7 +512,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {allContent.map((item) => {
+        {discoverContent.map((item) => {
           const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.mediaUrls?.[0] || '/assets/placeholder-light.png';
           const isVideo = item.mediaType === 'video' || item.videoUrl;
           
@@ -551,10 +560,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
   console.log('🎯 ProfileTabs render:', { isProfessional, userId, isOwnProfile, hideShop, hideLearn });
 
   if (isProfessional) {
-    // For professional artists, show tabs: Portfolio, All Content, Shop (if enabled), Learn (if enabled)
+    // For professional artists, show tabs: Portfolio, Discover, Shop (if enabled), Learn (if enabled)
     const visibleTabs = [
       { value: 'portfolio', label: 'Portfolio', icon: Palette },
-      { value: 'all-content', label: 'All Content', icon: Layers },
+      { value: 'discover', label: 'Discover', icon: Eye },
       ...(hideShop ? [] : [{ value: 'shop', label: 'Shop', icon: ShoppingBag }]),
       ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: Brain }]),
     ];
@@ -607,9 +616,9 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           </TabsContent>
         )}
 
-        {/* All Content Tab - Shows all uploads (artwork + content) */}
-        <TabsContent value="all-content" className="space-y-4">
-          <AllContentDisplay userId={userId} isOwnProfile={isOwnProfile} />
+        {/* Discover Tab - Shows generic content (not marked as artwork) */}
+        <TabsContent value="discover" className="space-y-4">
+          <DiscoverContentDisplay userId={userId} isOwnProfile={isOwnProfile} />
         </TabsContent>
 
         {/* Learn Tab */}
