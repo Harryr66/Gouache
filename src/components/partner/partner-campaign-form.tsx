@@ -33,6 +33,7 @@ const formSchema = z.object({
   costPerImpression: z.string().min(1, 'Cost per impression is required'),
   costPerClick: z.string().min(1, 'Cost per click is required'),
   currency: z.string().min(1, 'Currency is required'),
+  maxWidthFormat: z.boolean().default(false),
 }).refine((data) => {
   // Either uncappedBudget is true OR budget is provided
   return data.uncappedBudget || (data.budget && parseFloat(data.budget) > 0);
@@ -72,6 +73,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       costPerImpression: '',
       costPerClick: '',
       currency: 'usd',
+      maxWidthFormat: false,
     },
   });
 
@@ -243,6 +245,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
         costPerImpression,
         costPerClick,
         currency: values.currency || 'usd',
+        maxWidthFormat: mediaType === 'video' ? (values.maxWidthFormat || false) : false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -650,6 +653,34 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
               </AlertDialogContent>
             </AlertDialog>
           </div>
+
+          {/* Max-Width Format (Video Ads Only) */}
+          {mediaType === 'video' && (
+            <div className="border-t pt-6 space-y-4">
+              <FormField
+                control={form.control}
+                name="maxWidthFormat"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="cursor-pointer">
+                        Max-Width Format (Mobile Only)
+                      </FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Ad will span multiple columns on mobile feeds for larger presentation. Requires square (1:1) or landscape (16:9) aspect ratio. Standard video ads remain single-column.
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button type="submit" disabled={isSubmitting}>

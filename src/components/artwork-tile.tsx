@@ -301,19 +301,55 @@ const generateArtistContent = (artist: Artist) => ({
     }
   };
 
+  // Calculate aspect ratio for dynamic height
+  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
+  
+  useEffect(() => {
+    if (hasVideo || finalIsLandscape !== null) return;
+    
+    const img = document.createElement('img');
+    img.onload = () => {
+      const ratio = img.naturalWidth / img.naturalHeight;
+      setImageAspectRatio(ratio);
+    };
+    img.onerror = () => {
+      setImageAspectRatio(0.75); // Default to portrait
+    };
+    img.src = imageUrl;
+  }, [imageUrl, hasVideo, finalIsLandscape]);
+
+  // Determine aspect ratio: use detected, fallback to dimensions, then default
+  let aspectRatio = 0.75; // Default portrait (3:4)
+  if (hasVideo && videoUrl) {
+    // For videos, we'll use a default or detect from video metadata
+    aspectRatio = 0.75; // Default portrait
+  } else if (finalIsLandscape) {
+    aspectRatio = 1.5; // Landscape (3:2)
+  } else if (imageAspectRatio !== null) {
+    aspectRatio = imageAspectRatio;
+  } else if (artwork.dimensions && artwork.dimensions.width && artwork.dimensions.height) {
+    aspectRatio = artwork.dimensions.width / artwork.dimensions.height;
+  }
+
   return (
     <>
     <Card 
         ref={tileRef}
-        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col h-full rounded-lg ${finalIsLandscape ? 'col-span-2' : ''} ${className || ''}`}
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col rounded-lg ${className || ''}`}
         onClick={handleTileClick}
+        style={{ height: 'auto' }}
     >
-      <div className={`relative overflow-hidden rounded-t-lg ${finalIsLandscape ? 'aspect-[3/2]' : 'aspect-[3/4]'}`}>
+      <div 
+        className="relative overflow-hidden rounded-t-lg w-full"
+        style={{ 
+          aspectRatio: `${aspectRatio}`
+        }}
+      >
         {hasVideo && videoUrl ? (
           <video
             ref={videoRef}
             src={videoUrl}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             muted
             loop
             playsInline

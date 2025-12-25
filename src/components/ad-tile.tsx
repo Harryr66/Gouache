@@ -12,6 +12,7 @@ type AdTileProps = {
   campaign: AdCampaign;
   placement: 'news' | 'discover' | 'learn';
   userId?: string;
+  isMaxWidth?: boolean; // For max-width format on mobile
 };
 
 export function AdTile({ campaign, placement, userId }: AdTileProps) {
@@ -65,9 +66,14 @@ export function AdTile({ campaign, placement, userId }: AdTileProps) {
 
   const mediaUrl = campaign.videoUrl || campaign.imageUrl;
   const isVideo = campaign.mediaType === 'video';
+  
+  // For max-width format, use square (1:1) or landscape (16:9) aspect ratio
+  const aspectRatio = isMaxWidth && isVideo 
+    ? (campaign.videoUrl ? 16/9 : 1) // Default to 16:9 for max-width video ads
+    : 0.75; // Standard portrait aspect ratio
 
   return (
-    <Card ref={tileRef} className={cn('overflow-hidden transition hover:shadow-lg group h-full flex flex-col cursor-pointer relative')}>
+    <Card ref={tileRef} className={cn('overflow-hidden transition hover:shadow-lg group flex flex-col cursor-pointer relative w-full', isMaxWidth && 'col-span-2')}>
       <div className="absolute top-2 right-2 z-10">
         <Badge variant="secondary" className="text-xs">Ad</Badge>
       </div>
@@ -76,13 +82,16 @@ export function AdTile({ campaign, placement, userId }: AdTileProps) {
         onClick={handleClick}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex flex-col h-full"
+        className="flex flex-col w-full"
       >
-        <div className="relative w-full pt-[60%] overflow-hidden">
+        <div 
+          className="relative w-full overflow-hidden"
+          style={{ aspectRatio: `${aspectRatio}` }}
+        >
           {isVideo && campaign.videoUrl ? (
             <video
               src={campaign.videoUrl}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
               muted
               loop
               playsInline
@@ -91,7 +100,7 @@ export function AdTile({ campaign, placement, userId }: AdTileProps) {
             <img
               src={campaign.imageUrl || ''}
               alt={campaign.title}
-              className="absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105 object-cover"
+              className="absolute inset-0 w-full h-full transition-transform duration-500 group-hover:scale-105 object-cover"
             />
           )}
         </div>
