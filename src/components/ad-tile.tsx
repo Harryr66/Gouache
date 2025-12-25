@@ -161,6 +161,5 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
         </CardContent>
       </a>
     </Card>
-    </div>
   );
 }
