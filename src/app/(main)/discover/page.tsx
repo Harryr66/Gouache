@@ -59,8 +59,8 @@ const generatePlaceholderArtworks = (theme: string | undefined, count: number = 
   ];
   
   return Array.from({ length: count }, (_, i) => {
-    // Every 5th item is a landscape image (roughly 20% landscape)
-    const isLandscape = i % 5 === 0 && i > 0;
+    // Every 8th item is a landscape image (roughly 12.5% landscape, majority portrait)
+    const isLandscape = i % 8 === 0 && i > 0;
     // Use same blue placeholder for landscape, fallback to taped banana if needed
     const imageUrl = isLandscape 
       ? landscapeImage
