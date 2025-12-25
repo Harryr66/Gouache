@@ -328,7 +328,7 @@ const generateArtistContent = (artist: Artist) => ({
     <>
     <Card 
         ref={tileRef}
-        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col rounded-lg mb-1 break-inside-avoid ${className || ''}`}
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col mb-1 break-inside-avoid ${className || ''}`}
         onClick={handleTileClick}
         style={{
           // Dynamic height based on aspect ratio: height = width / aspectRatio
@@ -337,7 +337,7 @@ const generateArtistContent = (artist: Artist) => ({
         }}
     >
       <div 
-        className="relative overflow-hidden rounded-t-lg w-full"
+        className="relative overflow-hidden w-full"
         style={{
           // Use padding-bottom trick to maintain aspect ratio
           paddingBottom: `${(1 / aspectRatio) * 100}%`,

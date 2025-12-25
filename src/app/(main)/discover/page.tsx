@@ -1183,7 +1183,7 @@ function DiscoverPageContent() {
               </div>
             ) : (artworkView === 'grid' || !isMobile) ? (
               <div 
-                className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-1"
+                className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-5 gap-1"
                 style={{ 
                   columnFill: 'balance',
                   // Ensure proper spacing for masonry layout
