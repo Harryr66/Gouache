@@ -1182,18 +1182,24 @@ function DiscoverPageContent() {
                 )}
               </div>
             ) : (artworkView === 'grid' || !isMobile) ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1 auto-rows-min" style={{ gridAutoFlow: 'dense' }}>
+              <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-1" style={{ columnGap: '4px' }}>
                 {visibleFilteredArtworks.map((item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
                   if (isAd) {
+                    const campaign = item.campaign;
+                    const isMaxWidth = campaign.maxWidthFormat && isMobile && campaign.mediaType === 'video';
                     return (
-                      <AdTile
-                        key={item.campaign.id}
-                        campaign={item.campaign}
-                        placement="discover"
-                        userId={user?.id}
-                      />
+                      <div 
+                        key={campaign.id}
+                        className={isMaxWidth ? 'col-span-2 break-inside-avoid mb-1' : 'break-inside-avoid mb-1'}
+                      >
+                        <AdTile
+                          campaign={campaign}
+                          placement="discover"
+                          userId={user?.id}
+                        />
+                      </div>
                     );
                   }
                   
@@ -1216,12 +1222,13 @@ function DiscoverPageContent() {
                   }
                   
                   return (
-                    <ArtworkTile 
-                      key={artwork.id} 
-                      artwork={artwork} 
-                      hideBanner={isMobile && artworkView === 'grid'}
-                      isLandscape={isLandscape} // Allow landscape images on both mobile and desktop
-                    />
+                    <div key={artwork.id} className="break-inside-avoid mb-1">
+                      <ArtworkTile 
+                        artwork={artwork} 
+                        hideBanner={isMobile && artworkView === 'grid'}
+                        isLandscape={isLandscape} // Allow landscape images on both mobile and desktop
+                      />
+                    </div>
                   );
                 })}
               </div>
