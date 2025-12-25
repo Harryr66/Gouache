@@ -54,7 +54,6 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [showArtistPreview, setShowArtistPreview] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isVideoInView, setIsVideoInView] = useState(false);
   const [mediaAspectRatio, setMediaAspectRatio] = useState<number | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
@@ -75,25 +74,15 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
       return;
     }
     
-    // For videos, load video metadata to detect aspect ratio and preload
+    // For videos, load video metadata to detect aspect ratio (but don't preload or play)
     if (hasVideo && videoUrl) {
       const video = document.createElement('video');
-      video.preload = 'auto'; // Preload video for faster display
-      video.onloadeddata = () => {
-        // Video data is ready for playback
-        setIsVideoLoaded(true);
-      };
+      video.preload = 'metadata'; // Only load metadata, not the video itself
       video.onloadedmetadata = () => {
         const aspectRatio = video.videoWidth / video.videoHeight;
         setMediaAspectRatio(aspectRatio);
-        // If video can play, consider it loaded
-        video.play().then(() => {
-          video.pause();
-          setIsVideoLoaded(true);
-        }).catch(() => {
-          // If autoplay fails, still consider metadata loaded
-          setIsVideoLoaded(true);
-        });
+        // Don't call play() - just detect aspect ratio
+        setIsVideoLoaded(true); // Mark as loaded so placeholder shows correctly
         window.URL.revokeObjectURL(video.src);
       };
       video.onerror = () => {
@@ -129,49 +118,9 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   // Default to 2:3 (portrait) if aspect ratio not yet determined - ideal for tall tiles
   const aspectRatio = mediaAspectRatio || (2/3);
   
-  // Intersection Observer for video autoplay (Pinterest-style, desktop only)
-  // Disable autoplay on mobile - users must click to play
-  useEffect(() => {
-    const video = videoRef.current;
-    const tile = tileRef.current;
-    if (!video || !tile || !hasVideo) return;
-
-    // Detect if mobile device
-    const isMobileDevice = () => {
-      if (typeof window === 'undefined') return false;
-      return window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    };
-
-    // Only enable autoplay on desktop
-    if (isMobileDevice()) {
-      // On mobile, videos should only play on user click, not autoplay
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
-            // Require 70% visibility for autoplay (stricter threshold)
-            setIsVideoInView(true);
-            video.play().catch(() => {
-              // Autoplay failed (browser policy), user will need to click
-            });
-          } else {
-            setIsVideoInView(false);
-            video.pause();
-          }
-        });
-      },
-      {
-        threshold: [0, 0.7, 1], // Stricter threshold - require 70% visibility
-        rootMargin: '0px', // Remove rootMargin to prevent premature triggering
-      }
-    );
-
-    observer.observe(tile);
-    return () => observer.disconnect();
-  }, [hasVideo]);
+  // Disable autoplay completely - videos should only play on user click
+  // Remove Intersection Observer autoplay to prevent videos from auto-playing
+  // Users must explicitly click to play videos
 
   const handleTileClick = () => {
     // Navigate to artwork detail page only if we have an artwork id
@@ -391,31 +340,33 @@ const generateArtistContent = (artist: Artist) => ({
             </div>
           )}
           
-          {/* Media content - shown only when loaded */}
+          {/* Media content */}
           {hasVideo && videoUrl ? (
             <video
               ref={videoRef}
               src={videoUrl}
-              className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
+              className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
               muted
               loop
               playsInline
               webkit-playsinline="true"
               x5-playsinline="true"
-              preload="metadata"
+              preload="none"
               controls={false}
               autoPlay={false}
-              onLoadedData={() => setIsVideoLoaded(true)}
-              onCanPlay={() => setIsVideoLoaded(true)}
               onError={() => {
                 setIsVideoLoaded(true); // Stop loading on error
               }}
               onClick={(e) => {
-                // On mobile, clicking the video should toggle play/pause
+                // User must explicitly click to play video
                 e.stopPropagation();
                 if (videoRef.current) {
+                  // Load and play video only when user clicks
                   if (videoRef.current.paused) {
-                    videoRef.current.play();
+                    videoRef.current.load(); // Ensure video is loaded
+                    videoRef.current.play().catch(() => {
+                      // Play failed - browser policy or other issue
+                    });
                   } else {
                     videoRef.current.pause();
                   }
