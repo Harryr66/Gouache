@@ -419,10 +419,25 @@ export function UploadArtworkBasic() {
       // Clean the entire portfolio array one more time to be safe
       const finalCleanedPortfolio = removeUndefined(updatedPortfolio);
       
-      await updateDoc(userDocRef, {
-        portfolio: finalCleanedPortfolio,
-        updatedAt: new Date(),
-      });
+      // Debug: Check for any undefined values before saving
+      const hasUndefined = JSON.stringify(finalCleanedPortfolio).includes('undefined');
+      if (hasUndefined) {
+        console.error('❌ Found undefined values in portfolio after cleaning:', finalCleanedPortfolio);
+        // Try one more aggressive clean
+        const stringified = JSON.stringify(finalCleanedPortfolio, (key, value) => {
+          return value === undefined ? null : value;
+        });
+        const finalPortfolio = JSON.parse(stringified);
+        await updateDoc(userDocRef, {
+          portfolio: finalPortfolio,
+          updatedAt: new Date(),
+        });
+      } else {
+        await updateDoc(userDocRef, {
+          portfolio: finalCleanedPortfolio,
+          updatedAt: new Date(),
+        });
+      }
 
       // If marked for sale, also add to artworks collection for shop display
       if (isForSale) {
