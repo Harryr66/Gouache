@@ -395,13 +395,13 @@ export function UploadArtworkBasic() {
           return null;
         }
         if (Array.isArray(obj)) {
-          return obj.map(item => removeUndefined(item)).filter(item => item !== undefined);
+          return obj.map(item => removeUndefined(item)).filter(item => item !== undefined && item !== null);
         }
         if (typeof obj === 'object' && obj.constructor === Object) {
           const cleaned: any = {};
           Object.keys(obj).forEach(key => {
             const value = removeUndefined(obj[key]);
-            if (value !== undefined) {
+            if (value !== undefined && value !== null) {
               cleaned[key] = value;
             }
           });
@@ -412,10 +412,15 @@ export function UploadArtworkBasic() {
 
       const cleanPortfolioItem = removeUndefined(portfolioItem);
 
-      const updatedPortfolio = [...currentPortfolio, cleanPortfolioItem];
+      // Clean existing portfolio items as well (they might have undefined values from previous uploads)
+      const cleanedExistingPortfolio = currentPortfolio.map(item => removeUndefined(item));
+      const updatedPortfolio = [...cleanedExistingPortfolio, cleanPortfolioItem];
+      
+      // Clean the entire portfolio array one more time to be safe
+      const finalCleanedPortfolio = removeUndefined(updatedPortfolio);
       
       await updateDoc(userDocRef, {
-        portfolio: updatedPortfolio,
+        portfolio: finalCleanedPortfolio,
         updatedAt: new Date(),
       });
 
