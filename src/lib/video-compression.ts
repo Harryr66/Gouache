@@ -48,15 +48,33 @@ export async function compressVideo(
       // Calculate dimensions based on target quality
       let width = video.videoWidth;
       let height = video.videoHeight;
+      const aspectRatio = width / height;
 
-      if (targetQuality === '360p') {
+      if (targetQuality === '240p') {
+        const maxDimension = 426;
+        if (width > height) {
+          width = Math.min(width, maxDimension);
+          height = Math.round(width / aspectRatio);
+        } else {
+          height = Math.min(height, maxDimension);
+          width = Math.round(height * aspectRatio);
+        }
+        // Default bitrate for 240p if not specified
+        if (!targetBitrate || targetBitrate === 500) {
+          targetBitrate = 300;
+        }
+      } else if (targetQuality === '360p') {
         const maxDimension = 640;
         if (width > height) {
           width = Math.min(width, maxDimension);
-          height = (height / video.videoWidth) * width;
+          height = Math.round(width / aspectRatio);
         } else {
           height = Math.min(height, maxDimension);
-          width = (width / video.videoHeight) * height;
+          width = Math.round(height * aspectRatio);
+        }
+        // Default bitrate for 360p if not specified
+        if (!targetBitrate || targetBitrate === 300) {
+          targetBitrate = 500;
         }
       } else if (targetQuality === '720p') {
         const maxDimension = 1280;
@@ -124,7 +142,7 @@ export async function compressVideo(
  */
 export function getVideoFilenameWithQuality(
   originalFilename: string,
-  quality: '360p' | '1080p'
+  quality: '240p' | '360p' | '1080p'
 ): string {
   const nameWithoutExt = originalFilename.replace(/\.[^/.]+$/, '');
   return `${nameWithoutExt}_${quality}.mp4`;
@@ -135,13 +153,13 @@ export function getVideoFilenameWithQuality(
  */
 export function parseVideoFilename(filename: string): {
   baseName: string;
-  quality?: '360p' | '1080p';
+  quality?: '240p' | '360p' | '1080p';
 } {
-  const match = filename.match(/^(.+?)(_360p|_1080p)?\.(mp4|webm)$/i);
+  const match = filename.match(/^(.+?)(_240p|_360p|_1080p)?\.(mp4|webm)$/i);
   if (match) {
     return {
       baseName: match[1],
-      quality: match[2]?.replace('_', '') as '360p' | '1080p' | undefined,
+      quality: match[2]?.replace('_', '') as '240p' | '360p' | '1080p' | undefined,
     };
   }
   return { baseName: filename };
