@@ -472,6 +472,18 @@ export interface Artwork {
   statement?: string;
   // Stripe fees handling
   stripeFeesIncluded?: boolean; // If true, price includes Stripe fees (seller pays fees). If false, fees are added on top (buyer pays fees).
+  // Video support
+  videoUrl?: string; // Legacy: single video URL (deprecated, use videoVariants)
+  mediaType?: 'image' | 'video';
+  // Multiple quality video variants (360p for tiles, 1080p for expanded)
+  videoVariants?: {
+    thumbnail: string; // 360p low quality for tiles/previews
+    full: string; // 1080p full quality for expanded view
+    thumbnailQuality?: '360p';
+    fullQuality?: '1080p';
+    thumbnailBitrate?: number; // in kbps (e.g., 500)
+    fullBitrate?: number; // in kbps (e.g., 2000-5000)
+  };
 }
 
 export interface Post {

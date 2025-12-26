@@ -455,7 +455,7 @@ export default function ArtworkPage() {
               >
                 {artwork.videoUrl && artwork.mediaType === 'video' ? (
                   <video
-                    src={artwork.videoUrl}
+                    src={(artwork as any).videoVariants?.full || artwork.videoUrl}
                     controls
                     className="w-full h-full object-contain"
                     playsInline
