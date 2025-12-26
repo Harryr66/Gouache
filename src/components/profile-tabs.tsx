@@ -524,7 +524,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             <CardTitle className="mb-2">No discover content yet</CardTitle>
             <CardDescription>
               {isOwnProfile 
-                ? "You haven't uploaded any discover content yet. Use the upload portal and leave 'This is artwork' toggled off to share process videos, art tips, and other content."
+                ? "Share process videos, art tips, and other interesting content."
                 : "This artist hasn't uploaded any discover content yet."}
             </CardDescription>
           </CardContent>

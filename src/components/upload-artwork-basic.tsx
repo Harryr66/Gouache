@@ -76,7 +76,7 @@ export function UploadArtworkBasic() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const [addToPortfolio, setAddToPortfolio] = useState(true); // Default to true - add to portfolio
+  const [addToPortfolio, setAddToPortfolio] = useState(false); // Default to false - content goes to Discover only unless toggle is enabled
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentUploadingFile, setCurrentUploadingFile] = useState<string>('');
 
@@ -676,9 +676,9 @@ export function UploadArtworkBasic() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Upload Artwork</CardTitle>
+        <CardTitle>Discover Uploads</CardTitle>
         <CardDescription>
-          Add artwork to your portfolio.
+          Upload images & videos to showcase in your portfolio, creation process & get discovered by new fans.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -811,7 +811,7 @@ export function UploadArtworkBasic() {
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter artwork title"
+              placeholder="Enter title"
               required
             />
           </div>
@@ -823,7 +823,7 @@ export function UploadArtworkBasic() {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your artwork..."
+              placeholder="Add a description..."
               rows={3}
             />
           </div>
@@ -873,26 +873,31 @@ export function UploadArtworkBasic() {
           </div>
 
           {/* Add to Portfolio Toggle */}
-          <div className="flex items-center justify-between space-x-2 py-4 border-t">
-            <div className="space-y-0.5 flex-1">
-              <Label htmlFor="addToPortfolio" className="text-base font-medium cursor-pointer">
-                This is artwork (add to portfolio)
-              </Label>
-              <p className="text-xs text-muted-foreground">
+          <div className="flex items-start justify-between space-x-4 py-4 border-t">
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="addToPortfolio" className="text-base font-semibold cursor-pointer">
+                  This is artwork (add to portfolio)
+                </Label>
+              </div>
+              <p className="text-sm text-muted-foreground">
                 Enable to mark this as artwork and add to your portfolio. When disabled, this will be posted as content (process videos, etc.) to Discover only.
               </p>
             </div>
-            <Switch
-              id="addToPortfolio"
-              checked={addToPortfolio}
-              onCheckedChange={(checked) => {
-                setAddToPortfolio(checked);
-                // Reset for sale when portfolio toggle is disabled
-                if (!checked) {
-                  setIsForSale(false);
-                }
-              }}
-            />
+            <div className="flex-shrink-0 pt-1">
+              <Switch
+                id="addToPortfolio"
+                checked={addToPortfolio}
+                onCheckedChange={(checked) => {
+                  setAddToPortfolio(checked);
+                  // Reset for sale when portfolio toggle is disabled
+                  if (!checked) {
+                    setIsForSale(false);
+                  }
+                }}
+                className="data-[state=checked]:bg-primary"
+              />
+            </div>
           </div>
 
           {/* Only show Dimensions and Sale options if adding to portfolio */}
