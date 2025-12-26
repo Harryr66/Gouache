@@ -899,7 +899,7 @@ export function UploadArtworkBasic() {
                 </Label>
               </div>
               <p className="text-sm text-muted-foreground">
-                Enable to mark this as artwork and add to your profiles portfolio. When disabled, this will be posted as discover content only.
+                Enable to mark this as artwork and add to your profile's portfolio. When disabled, this will be posted as discover content only.
               </p>
             </div>
             <div className="flex-shrink-0 pt-1">

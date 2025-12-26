@@ -54,6 +54,7 @@ export function TypewriterJoke({
     setIsTyping(true);
     setIsComplete(false);
     let isPaused = false;
+    let shouldCapitalizeNext = false; // Track if next char should be capitalized (after line break)
     let intervalId: NodeJS.Timeout | null = null;
 
     const typeInterval = setInterval(() => {
@@ -85,6 +86,7 @@ export function TypewriterJoke({
           const textSoFar = currentJoke.slice(0, currentIndex).replace(/\/\//g, '\n') + '\n';
           setDisplayedText(textSoFar);
           currentIndex += 2;
+          shouldCapitalizeNext = true; // Next character should be capitalized
           
           // Pause for 2 seconds before continuing
           setTimeout(() => {
@@ -93,8 +95,22 @@ export function TypewriterJoke({
           return;
         }
         
-        // Normal character typing (convert // to line breaks)
-        const textSoFar = currentJoke.slice(0, currentIndex + 1).replace(/\/\//g, '\n');
+        // Normal character typing (convert // to line breaks and capitalize after line breaks)
+        let charToAdd = char;
+        if (shouldCapitalizeNext && char.trim()) {
+          // Capitalize the first non-whitespace character after a line break
+          charToAdd = char.toUpperCase();
+          shouldCapitalizeNext = false;
+        }
+        
+        // Build text so far: take text up to and including currentIndex, replace // with \n, and apply capitalization
+        let textSoFar = currentJoke.slice(0, currentIndex + 1);
+        // Replace // with \n first
+        textSoFar = textSoFar.replace(/\/\//g, '\n');
+        // If we need to capitalize this character, replace the last character with its capitalized version
+        if (charToAdd !== char) {
+          textSoFar = textSoFar.slice(0, -1) + charToAdd;
+        }
         setDisplayedText(textSoFar);
         currentIndex++;
       } else {
