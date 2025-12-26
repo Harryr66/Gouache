@@ -401,10 +401,11 @@ function DiscoverPageContent() {
         setLoading(true);
         log('🔍 Discover: Starting to fetch artworks from artist profiles...');
         
-        // Fetch artists with portfolios (no isProfessional filter so we include all creators)
+        // Fetch artists with portfolios - reduced limit for better performance
+        // Fetch artists without ordering to avoid index requirement (simple limit query)
         const artistsQuery = query(
           collection(db, 'userProfiles'),
-          limit(200)
+          limit(50) // Reduced from 200 to 50 for better performance
         );
         
         const artistsSnapshot = await getDocs(artistsQuery);
@@ -430,14 +431,19 @@ function DiscoverPageContent() {
           
           log(`🎨 Discover: Processing artist ${artistData.displayName || artistData.username || artistDoc.id} - ${portfolio.length} portfolio items`);
           
+          // Limit portfolio items per artist to prevent performance issues
+          // Only process the 10 most recent items per artist
+          const recentPortfolio = portfolio
+            .filter(item => !item.deleted && item.showInPortfolio !== false)
+            .sort((a, b) => {
+              const dateA = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
+              const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
+              return dateB - dateA; // Newest first
+            })
+            .slice(0, 10); // Only process top 10 most recent per artist
+          
           // Process each portfolio item - use for loop to handle async
-          for (const [index, item] of portfolio.entries()) {
-            // Skip deleted or explicitly hidden from portfolio
-            if (item.deleted === true || item.showInPortfolio === false) {
-              skippedShowInPortfolioFalse++;
-              continue; // Skip items explicitly marked as not for portfolio
-            }
-            
+          for (const [index, item] of recentPortfolio.entries()) {
             // Apply discover settings filters for AI content
             if (discoverSettings.hideAiAssistedArt && (item.aiAssistance === 'assisted' || item.aiAssistance === 'generated' || item.isAI)) {
               skippedAI++;
@@ -461,33 +467,15 @@ function DiscoverPageContent() {
               continue;
             }
 
-            // Check artworks collection for sale status
-            let saleStatus: { isForSale?: boolean; sold?: boolean; price?: number; priceType?: string; contactForPrice?: boolean } = {
+            // Use portfolio item data directly - avoid N+1 query to artworks collection
+            // Portfolio items should have all necessary sale information
+            const saleStatus = {
               isForSale: item.isForSale || false,
               sold: item.sold || false,
               price: item.price,
               priceType: item.priceType,
               contactForPrice: item.contactForPrice || item.priceType === 'contact',
             };
-            
-            if (item.id) {
-              try {
-                const artworkDoc = await getDoc(doc(db, 'artworks', item.id));
-                if (artworkDoc.exists()) {
-                  const artworkData = artworkDoc.data();
-                  saleStatus = {
-                    isForSale: artworkData.isForSale || false,
-                    sold: artworkData.sold || false,
-                    price: artworkData.price,
-                    priceType: artworkData.priceType,
-                    contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
-                  };
-                }
-              } catch (err) {
-                // If artwork doesn't exist in artworks collection, use portfolio data (already set above)
-                log(`⚠️ Discover: Could not fetch artwork data for ${item.id}, using portfolio data`);
-              }
-            }
 
             // Convert portfolio item to Artwork object
             const artwork: Artwork = {
@@ -539,60 +527,94 @@ function DiscoverPageContent() {
         try {
           const artworksQuery = query(
             collection(db, 'artworks'),
+            where('showInPortfolio', '==', false), // Filter at query level for better performance
             orderBy('createdAt', 'desc'),
-            limit(100)
+            limit(30) // Reduced from 100 to 30 for better performance
           );
           const artworksSnapshot = await getDocs(artworksQuery);
+          
+          // Batch fetch artist data to avoid N+1 queries
+          const artistIds = new Set<string>();
+          const artworkItems: any[] = [];
           
           for (const artworkDoc of artworksSnapshot.docs) {
             const artworkData = artworkDoc.data();
             
-            // Only include items that are NOT in portfolio (showInPortfolio === false)
-            // These are generic content like process videos, art tips, etc.
-            if (artworkData.showInPortfolio === false) {
-              // Skip deleted items
-              if (artworkData.deleted === true) continue;
-              
-              // Skip events
-              if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
-              
-              // Apply discover settings filters for AI content
-              if (discoverSettings.hideAiAssistedArt && (artworkData.aiAssistance === 'assisted' || artworkData.aiAssistance === 'generated' || artworkData.isAI)) {
-                continue;
-              }
-              
-              // Get media URL (support video or image)
-              // Check for video: first check videoUrl, then check mediaUrls array for video type
-              let videoUrl = artworkData.videoUrl || null;
-              if (!videoUrl && artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video') {
-                videoUrl = artworkData.mediaUrls[0];
-              }
-              // For image, prefer imageUrl, then supportingImages, then mediaUrls (but only if not video)
-              const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
-              const mediaType = artworkData.mediaType || (videoUrl ? 'video' : 'image');
-              
-              // Skip items without media
-              if (!imageUrl && !videoUrl) continue;
-              
-              // Get artist info
-              let artistName = 'Unknown Artist';
-              let artistHandle = '';
-              let artistAvatarUrl = null;
-              let artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId;
-              
-              if (artistId) {
-                try {
-                  const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
-                  if (artistDoc.exists()) {
-                    const artistData = artistDoc.data();
-                    artistName = artistData.displayName || artistData.name || artistData.username || 'Unknown Artist';
-                    artistHandle = artistData.username || artistData.handle || '';
-                    artistAvatarUrl = artistData.avatarUrl || null;
-                  }
-                } catch (err) {
-                  log(`⚠️ Discover: Could not fetch artist data for ${artistId}`);
+            // Skip deleted items
+            if (artworkData.deleted === true) continue;
+            
+            // Skip events
+            if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
+            
+            // Apply discover settings filters for AI content
+            if (discoverSettings.hideAiAssistedArt && (artworkData.aiAssistance === 'assisted' || artworkData.aiAssistance === 'generated' || artworkData.isAI)) {
+              continue;
+            }
+            
+            // Get media URL (support video or image)
+            // Check for video: first check videoUrl, then check mediaUrls array for video type
+            let videoUrl = artworkData.videoUrl || null;
+            if (!videoUrl && artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video') {
+              videoUrl = artworkData.mediaUrls[0];
+            }
+            // For image, prefer imageUrl, then supportingImages, then mediaUrls (but only if not video)
+            const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
+            const mediaType = artworkData.mediaType || (videoUrl ? 'video' : 'image');
+            
+            // Skip items without media
+            if (!imageUrl && !videoUrl) continue;
+            
+            const artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId;
+            if (artistId) {
+              artistIds.add(artistId);
+            }
+            
+            artworkItems.push({
+              artworkDoc,
+              artworkData,
+              imageUrl,
+              videoUrl,
+              mediaType,
+              artistId
+            });
+          }
+          
+          // Batch fetch all artist data in parallel
+          const artistDataMap = new Map<string, any>();
+          if (artistIds.size > 0) {
+            const artistPromises = Array.from(artistIds).map(async (artistId) => {
+              try {
+                const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
+                if (artistDoc.exists()) {
+                  return { id: artistId, data: artistDoc.data() };
                 }
+              } catch (err) {
+                log(`⚠️ Discover: Could not fetch artist data for ${artistId}`);
               }
+              return null;
+            });
+            
+            const artistResults = await Promise.all(artistPromises);
+            artistResults.forEach(result => {
+              if (result) {
+                artistDataMap.set(result.id, result.data);
+              }
+            });
+          }
+          
+          // Now build artwork objects with cached artist data
+          for (const { artworkDoc, artworkData, imageUrl, videoUrl, mediaType, artistId } of artworkItems) {
+            // Get artist info from cached data
+            let artistName = 'Unknown Artist';
+            let artistHandle = '';
+            let artistAvatarUrl = null;
+            
+            if (artistId && artistDataMap.has(artistId)) {
+              const artistData = artistDataMap.get(artistId);
+              artistName = artistData.displayName || artistData.name || artistData.username || 'Unknown Artist';
+              artistHandle = artistData.username || artistData.handle || '';
+              artistAvatarUrl = artistData.avatarUrl || null;
+            }
               
               // Convert to Artwork object
               const artwork: Artwork = {
