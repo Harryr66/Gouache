@@ -44,9 +44,11 @@ interface ArtworkTileProps {
   onClick?: () => void;
   className?: string;
   hideBanner?: boolean;
+  onVideoReady?: () => void; // Callback when video is ready (for preloading)
+  isInitialViewport?: boolean; // Flag to indicate this is in initial viewport
 }
 
-export function ArtworkTile({ artwork, onClick, className, hideBanner = false }: ArtworkTileProps) {
+export function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, isInitialViewport: propIsInitialViewport }: ArtworkTileProps) {
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
@@ -288,9 +290,17 @@ const generateArtistContent = (artist: Artist) => ({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const tileRef = useRef<HTMLDivElement>(null);
 
+  // If prop indicates initial viewport, start loading immediately
+  useEffect(() => {
+    if (propIsInitialViewport && hasVideo && videoUrl && !shouldLoadVideo) {
+      setIsInitialViewport(true);
+      setShouldLoadVideo(true);
+    }
+  }, [propIsInitialViewport, hasVideo, videoUrl, shouldLoadVideo]);
+
   // Check if tile is in initial viewport (visible on first page load)
   useEffect(() => {
-    if (!tileRef.current || !hasVideo || !videoUrl) return;
+    if (!tileRef.current || !hasVideo || !videoUrl || propIsInitialViewport) return;
 
     // Check if element is in viewport immediately (before IntersectionObserver)
     const checkInitialViewport = () => {
@@ -324,7 +334,7 @@ const generateArtistContent = (artist: Artist) => ({
       clearTimeout(timeout1);
       clearTimeout(timeout2);
     };
-  }, [hasVideo, videoUrl, shouldLoadVideo]);
+  }, [hasVideo, videoUrl, shouldLoadVideo, propIsInitialViewport]);
 
   // IntersectionObserver for lazy loading videos and tracking views
   useEffect(() => {
@@ -556,6 +566,11 @@ const generateArtistContent = (artist: Artist) => ({
                     // Video is ready - fade in smoothly
                     setIsVideoLoaded(true);
                     setVideoError(false);
+                    
+                    // Notify parent that video is ready (for preloading tracking)
+                    if (onVideoReady && isInitialViewport) {
+                      onVideoReady();
+                    }
                     
                     // Autoplay if in viewport (muted, looped)
                     if ((isInViewport || isInitialViewport) && videoRef.current && videoRef.current.paused) {
