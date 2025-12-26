@@ -285,6 +285,16 @@ export function HueChatbot() {
     // Intercept fetch errors - only catch actual errors, not intentional non-200 responses
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
+      // Extract URL from args[0] - can be string or Request object
+      const getUrlFromArgs = (arg: any): string => {
+        if (typeof arg === 'string') return arg;
+        if (arg instanceof Request) return arg.url;
+        if (arg?.url) return arg.url;
+        return 'unknown endpoint';
+      };
+      
+      const url = getUrlFromArgs(args[0]);
+      
       try {
         const response = await originalFetch(...args);
         
@@ -293,7 +303,7 @@ export function HueChatbot() {
           const error = new Error(`Server Error ${response.status}: ${response.statusText}`);
           (error as any).code = `HTTP_${response.status}`;
           (error as any).status = response.status;
-          handleErrorReport(error, `API call to ${args[0]}`, 'Server Error', `HTTP_${response.status}`);
+          handleErrorReport(error, `API call to ${url}`, 'Server Error', `HTTP_${response.status}`);
         }
         
         return response;
@@ -301,7 +311,7 @@ export function HueChatbot() {
         // Network errors, CORS errors, timeout, etc.
         // Only report if it's not a user-initiated abort
         if (error?.name !== 'AbortError') {
-          handleErrorReport(error, `API call to ${args[0]}`, 'Network Error', error?.code || error?.name);
+          handleErrorReport(error, `API call to ${url}`, 'Network Error', error?.code || error?.name);
         }
         throw error; // Re-throw to maintain original behavior
       }

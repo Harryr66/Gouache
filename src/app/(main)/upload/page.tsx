@@ -191,7 +191,7 @@ export default function UploadPage() {
             Discover Uploads
           </h1>
           <p className="text-muted-foreground text-lg">
-            Upload images to your portfolio and shop.
+            Upload images & videos to showcase in your portfolio, creation process & get discovered by new fans.
           </p>
         </header>
         <UploadArtworkBasic />
