@@ -654,6 +654,21 @@ function DiscoverPageContent() {
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
         
+        // Count initial viewport videos for preloading (first 12 tiles)
+        const initialVideos = finalArtworks.filter((artwork: Artwork) => {
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          return hasVideo;
+        }).slice(0, 12); // First 12 tiles (roughly first screen)
+        
+        setInitialVideosTotal(initialVideos.length);
+        initialVideoReadyRef.current.clear();
+        setInitialVideosReady(0);
+        
+        // If no videos to preload, set loading to false immediately
+        if (initialVideos.length === 0) {
+          setLoading(false);
+        }
+        
         // Fetch engagement metrics for all artworks
         if (finalArtworks.length > 0) {
           try {
