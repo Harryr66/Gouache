@@ -45,10 +45,40 @@ export function TypewriterJoke({
     let currentIndex = 0;
     setIsTyping(true);
     setIsComplete(false);
+    let isPaused = false;
 
     const typeInterval = setInterval(() => {
+      if (isPaused) return; // Skip typing while paused
+      
       if (currentIndex < currentJoke.length) {
-        setDisplayedText(currentJoke.slice(0, currentIndex + 1));
+        const char = currentJoke[currentIndex];
+        const nextChar = currentIndex + 1 < currentJoke.length ? currentJoke[currentIndex + 1] : '';
+        const nextNextChar = currentIndex + 2 < currentJoke.length ? currentJoke[currentIndex + 2] : '';
+        
+        // Check for "..." - pause for 2 seconds
+        if (char === '.' && nextChar === '.' && nextNextChar === '.') {
+          isPaused = true;
+          // Display the ellipsis
+          setDisplayedText(currentJoke.slice(0, currentIndex + 3).replace(/\n/g, '<br/>'));
+          currentIndex += 3;
+          
+          // Pause for 2 seconds
+          setTimeout(() => {
+            isPaused = false;
+          }, 2000);
+          return;
+        }
+        
+        // Check for "//" - insert line break
+        if (char === '/' && nextChar === '/') {
+          setDisplayedText(currentJoke.slice(0, currentIndex).replace(/\n/g, '<br/>') + '<br/>');
+          currentIndex += 2;
+          return;
+        }
+        
+        // Normal character typing
+        const textToDisplay = currentJoke.slice(0, currentIndex + 1).replace(/\n/g, '<br/>');
+        setDisplayedText(textToDisplay);
         currentIndex++;
       } else {
         // Typing complete
@@ -81,12 +111,10 @@ export function TypewriterJoke({
 
   return (
     <div className={`${textColor} text-sm md:text-base max-w-2xl text-center px-4`}>
-      <p className="min-h-[3rem] flex items-center justify-center">
-        {displayedText}
-        {isTyping && (
-          <span className="ml-1 animate-pulse">|</span>
-        )}
-      </p>
+      <p 
+        className="min-h-[3rem] flex items-center justify-center"
+        dangerouslySetInnerHTML={{ __html: displayedText + (isTyping ? '<span class="ml-1 animate-pulse">|</span>' : '') }}
+      />
     </div>
   );
 }
