@@ -559,10 +559,10 @@ const generateArtistContent = (artist: Artist) => ({
           paddingBottom: `${(1 / aspectRatio) * 100}%`,
         }}
       >
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-muted">
           {/* Loading skeleton - only show if poster not loaded yet */}
           {((hasVideo && !isImageLoaded) || (!hasVideo && !isImageLoaded)) && (
-            <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse">
+            <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse z-0">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
               </div>
@@ -574,21 +574,31 @@ const generateArtistContent = (artist: Artist) => ({
             <>
               {/* Poster image - ALWAYS show immediately, stays visible until video is ready */}
               {imageUrl ? (
-                <Image
-                  src={imageUrl}
-                  alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
-                  fill
-                  className={`object-cover transition-opacity duration-500 absolute inset-0 z-10 ${isVideoLoaded && !videoError ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-                  loading="eager"
-                  priority={true}
-                  onLoad={() => {
-                    setIsImageLoaded(true);
-                  }}
-                  onError={() => {
-                    setImageError(true);
-                    setIsImageLoaded(true);
-                  }}
-                />
+                <>
+                  <Image
+                    src={imageUrl}
+                    alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
+                    fill
+                    className={`object-cover transition-opacity duration-500 absolute inset-0 z-10 ${isVideoLoaded && !videoError ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                    loading="eager"
+                    priority={true}
+                    onLoad={() => {
+                      setIsImageLoaded(true);
+                    }}
+                    onError={() => {
+                      setImageError(true);
+                      setIsImageLoaded(true);
+                    }}
+                  />
+                  {/* Error state for video poster */}
+                  {imageError && (
+                    <div className="absolute inset-0 bg-muted flex items-center justify-center z-15">
+                      <div className="text-muted-foreground text-xs text-center p-4">
+                        Failed to load thumbnail
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
                 // Fallback: show loading placeholder if no imageUrl
                 <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
@@ -699,28 +709,29 @@ const generateArtistContent = (artist: Artist) => ({
               )}
             </>
           ) : (
-            <Image
-              src={imageUrl}
-              alt={artwork.imageAiHint}
-              fill
-              className={`object-cover group-hover:scale-105 transition-all duration-300 ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
-              loading="eager"
-              priority={false}
-              onLoad={() => setIsImageLoaded(true)}
-              onError={() => {
-                setImageError(true);
-                setIsImageLoaded(true);
-              }}
-            />
-          )}
-          
-          {/* Error state - show placeholder if media fails to load */}
-          {imageError && !hasVideo && (
-            <div className="absolute inset-0 bg-muted flex items-center justify-center">
-              <div className="text-muted-foreground text-xs text-center p-4">
-                Failed to load image
-              </div>
-            </div>
+            <>
+              <Image
+                src={imageUrl}
+                alt={artwork.imageAiHint}
+                fill
+                className={`object-cover group-hover:scale-105 transition-all duration-300 z-10 ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
+                loading="eager"
+                priority={false}
+                onLoad={() => setIsImageLoaded(true)}
+                onError={() => {
+                  setImageError(true);
+                  setIsImageLoaded(true);
+                }}
+              />
+              {/* Error state - show placeholder if media fails to load */}
+              {imageError && (
+                <div className="absolute inset-0 bg-muted flex items-center justify-center z-20">
+                  <div className="text-muted-foreground text-xs text-center p-4">
+                    Failed to load image
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
         {/* Sale status badge */}

@@ -119,20 +119,20 @@ export default function UploadPage() {
 
       // Reset form and go back after delay
       setTimeout(() => {
-        setEventForm({
-          title: '',
-          startDate: '',
-          endDate: '',
-          time: '',
-          location: '',
-          locationTag: '',
-          venue: '',
-          description: '',
-          price: '',
-          bookingUrl: '',
-        });
-        setEventImageFile(null);
-        setSelectedType(null);
+      setEventForm({
+        title: '',
+        startDate: '',
+        endDate: '',
+        time: '',
+        location: '',
+        locationTag: '',
+        venue: '',
+        description: '',
+        price: '',
+        bookingUrl: '',
+      });
+      setEventImageFile(null);
+      setSelectedType(null);
       }, 100);
     } catch (error) {
       console.error('Error creating event:', error);
