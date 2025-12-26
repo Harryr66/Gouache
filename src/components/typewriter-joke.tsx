@@ -32,6 +32,7 @@ export function TypewriterJoke({
   const [isTyping, setIsTyping] = useState(true);
   const [isComplete, setIsComplete] = useState(false);
   const jokeInitializedRef = useRef(false);
+  const typingStartedRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -44,7 +45,10 @@ export function TypewriterJoke({
   }, []);
 
   useEffect(() => {
-    if (!currentJoke || !mounted) return;
+    if (!currentJoke || !mounted || typingStartedRef.current) return;
+    
+    // Mark that typing has started - prevent restarting
+    typingStartedRef.current = true;
 
     let currentIndex = 0;
     setIsTyping(true);
