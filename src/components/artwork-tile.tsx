@@ -75,7 +75,7 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
   
   // Check if artwork has video (support both legacy videoUrl and new videoVariants)
   const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video' || (artwork as any).videoVariants;
-  // Use videoVariants.thumbnail for tiles (360p), fallback to legacy videoUrl
+  // Use videoVariants.thumbnail for tiles (240p for faster loading), fallback to legacy videoUrl
   const videoUrl = (artwork as any).videoVariants?.thumbnail || (artwork as any).videoUrl;
   // Full quality URL for expanded view (1080p)
   const fullVideoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
