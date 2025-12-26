@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play, Edit, Eye } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play, Edit, Eye, Trash2, X } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { PortfolioManager } from './portfolio-manager';
 import { ShopDisplay } from './shop-display';
@@ -20,6 +20,8 @@ import Image from 'next/image';
 import { useAuth } from '@/providers/auth-provider';
 import { CreditCard } from 'lucide-react';
 import { useFollow } from '@/providers/follow-provider';
+import { toast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ProfileTabsProps {
   userId: string;
@@ -390,7 +392,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
   }
 
   // Component for individual Discover content tile with video autoplay
-  function DiscoverContentTile({ item, imageUrl, isVideo, router }: { item: any; imageUrl: string; isVideo: boolean; router: any }) {
+  function DiscoverContentTile({ item, imageUrl, isVideo, router, isOwnProfile, onDelete }: { item: any; imageUrl: string; isVideo: boolean; router: any; isOwnProfile: boolean; onDelete: (itemId: string, itemType: string) => void }) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const tileRef = useRef<HTMLDivElement>(null);
 
@@ -451,12 +453,28 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       }
     };
 
+    const handleDelete = (e: React.MouseEvent) => {
+      e.stopPropagation(); // Prevent navigation when clicking delete
+      onDelete(item.id, item.type);
+    };
+
     return (
       <Card 
         ref={tileRef}
-        className="group hover:shadow-lg transition-shadow overflow-hidden cursor-pointer"
+        className="group hover:shadow-lg transition-shadow overflow-hidden cursor-pointer relative"
         onClick={handleClick}
       >
+        {/* Delete button - only show for own profile */}
+        {isOwnProfile && (
+          <Button
+            variant="destructive"
+            size="icon"
+            className="absolute top-2 right-2 z-10 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
         <div className="relative aspect-square">
           {isVideo && (item.videoUrl || item.mediaUrls?.[0]) ? (
             <video
@@ -494,6 +512,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
   function DiscoverContentDisplay({ userId, isOwnProfile }: { userId: string; isOwnProfile: boolean }) {
     const [discoverContent, setDiscoverContent] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [itemToDelete, setItemToDelete] = useState<{ id: string; type: string } | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -616,6 +635,75 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       fetchDiscoverContent();
     }, [userId]);
 
+    const handleDelete = async (itemId: string, itemType: string) => {
+      setItemToDelete({ id: itemId, type: itemType });
+    };
+
+    const confirmDelete = async () => {
+      if (!itemToDelete) return;
+
+      try {
+        const batch = writeBatch(db);
+        
+        // Mark as deleted in the artworks collection
+        const artworkRef = doc(db, 'artworks', itemToDelete.id);
+        batch.update(artworkRef, { deleted: true, updatedAt: new Date() });
+
+        // If there's a related post, mark it as deleted too
+        if (itemToDelete.type === 'artwork') {
+          // Try to find and delete related post
+          try {
+            const postsQuery = query(
+              collection(db, 'posts'),
+              where('artworkId', '==', itemToDelete.id)
+            );
+            const postsSnapshot = await getDocs(postsQuery);
+            postsSnapshot.forEach((postDoc) => {
+              batch.update(postDoc.ref, { deleted: true, updatedAt: new Date() });
+            });
+          } catch (error) {
+            console.error('Error finding related post:', error);
+            // Continue with deletion even if post lookup fails
+          }
+        } else if (itemToDelete.type === 'post') {
+          // For posts, also check if there's a related artwork
+          try {
+            const postDoc = await getDoc(doc(db, 'posts', itemToDelete.id));
+            if (postDoc.exists()) {
+              const postData = postDoc.data();
+              if (postData.artworkId) {
+                const artworkRef = doc(db, 'artworks', postData.artworkId);
+                batch.update(artworkRef, { deleted: true, updatedAt: new Date() });
+              }
+            }
+          } catch (error) {
+            console.error('Error finding related artwork:', error);
+            // Continue with deletion even if artwork lookup fails
+          }
+        }
+
+        await batch.commit();
+
+        // Remove from local state
+        setDiscoverContent(prev => prev.filter(item => item.id !== itemToDelete.id));
+
+        toast({
+          title: "Content deleted",
+          description: "The content has been removed from your discover tab.",
+        });
+
+        setItemToDelete(null);
+      } catch (error) {
+        console.error('Error deleting discover content:', error);
+        toast({
+          title: "Delete failed",
+          description: "Failed to delete content. Please try again.",
+          variant: "destructive",
+        });
+        setItemToDelete(null);
+      }
+    };
+
     if (loading) {
       return (
         <div className="flex justify-center py-8">
@@ -653,9 +741,31 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               imageUrl={imageUrl}
               isVideo={isVideo}
               router={router}
+              isOwnProfile={isOwnProfile}
+              onDelete={handleDelete}
             />
           );
         })}
+        
+        {/* Delete confirmation dialog */}
+        <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Content</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this content? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setItemToDelete(null)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDelete}>
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
