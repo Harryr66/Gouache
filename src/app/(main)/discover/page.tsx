@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition, useCallback } from 'react';
 import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
@@ -272,6 +272,53 @@ function DiscoverPageContent() {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [artworkEngagements, setArtworkEngagements] = useState<Map<string, any>>(new Map());
+  const [initialVideosReady, setInitialVideosReady] = useState(0);
+  const [initialVideosTotal, setInitialVideosTotal] = useState(0);
+  const initialVideoReadyRef = useRef<Set<string>>(new Set());
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Track when initial videos are ready
+  const handleVideoReady = useCallback((artworkId: string) => {
+    if (!initialVideoReadyRef.current.has(artworkId)) {
+      initialVideoReadyRef.current.add(artworkId);
+      setInitialVideosReady(prev => prev + 1);
+    }
+  }, []);
+  
+  // Set loading to false when videos are ready or timeout
+  useEffect(() => {
+    if (initialVideosTotal === 0) {
+      // No videos to preload, set loading to false immediately
+      setLoading(false);
+      return;
+    }
+    
+    // If all initial videos are ready, hide loading
+    if (initialVideosReady >= initialVideosTotal) {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+      // Small delay to ensure smooth transition
+      setTimeout(() => {
+        setLoading(false);
+      }, 200);
+      return;
+    }
+    
+    // Timeout: hide loading after 3 seconds max (even if videos not all ready)
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    loadingTimeoutRef.current = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+    
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [initialVideosReady, initialVideosTotal, loading]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
@@ -623,8 +670,18 @@ function DiscoverPageContent() {
         // Even on error, show placeholder artworks
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
         setArtworks(placeholderArtworks);
+        
+        // Count initial viewport videos for preloading
+        const initialVideos = placeholderArtworks.filter((artwork: Artwork) => {
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          return hasVideo;
+        }).slice(0, 12); // First 12 tiles (roughly first screen)
+        
+        setInitialVideosTotal(initialVideos.length);
+        initialVideoReadyRef.current.clear();
       } finally {
-        setLoading(false);
+        // Don't set loading to false yet - wait for videos to preload
+        // setLoading(false);
     }
   };
 
@@ -1382,11 +1439,17 @@ function DiscoverPageContent() {
                   
                   const artwork = item as Artwork;
                   
+                  // Check if this is in initial viewport (first 12 tiles)
+                  const isInitial = visibleFilteredArtworks.indexOf(artwork) < 12;
+                  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                  
                   return (
                     <ArtworkTile 
                       key={artwork.id} 
                       artwork={artwork} 
                       hideBanner={isMobile && artworkView === 'grid'}
+                      isInitialViewport={isInitial && hasVideo}
+                      onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
                     />
                   );
                 })}
