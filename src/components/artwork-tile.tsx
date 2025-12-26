@@ -21,6 +21,7 @@ import { useLikes } from '@/providers/likes-provider';
 import { ReportDialog } from '@/components/report-dialog';
 import { engagementTracker } from '@/lib/engagement-tracker';
 import { useVideoControl } from '@/providers/video-control-provider';
+import { useVideoPrefetch } from '@/hooks/use-video-prefetch';
 import { 
   UserPlus, 
   UserCheck, 
@@ -72,9 +73,12 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
   const imageRef = useRef<HTMLImageElement | null>(null);
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   
-  // Check if artwork has video
-  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-  const videoUrl = (artwork as any).videoUrl;
+  // Check if artwork has video (support both legacy videoUrl and new videoVariants)
+  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video' || (artwork as any).videoVariants;
+  // Use videoVariants.thumbnail for tiles (360p), fallback to legacy videoUrl
+  const videoUrl = (artwork as any).videoVariants?.thumbnail || (artwork as any).videoUrl;
+  // Full quality URL for expanded view (1080p)
+  const fullVideoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
   // For videos, ensure we have a poster image - use imageUrl, supportingImages, or fallback
   const imageUrl = artwork.imageUrl || 
                    (artwork as any).supportingImages?.[0] || 
@@ -291,6 +295,14 @@ const generateArtistContent = (artist: Artist) => ({
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const tileRef = useRef<HTMLDivElement>(null);
+  
+  // Prefetch video metadata when near viewport, full video on hover
+  const { handleMouseEnter } = useVideoPrefetch(
+    videoUrl,
+    fullVideoUrl,
+    isInViewport || isInitialViewport,
+    hasVideo && !!videoUrl
+  );
 
   // If prop indicates initial viewport, start loading immediately
   useEffect(() => {
@@ -533,6 +545,7 @@ const generateArtistContent = (artist: Artist) => ({
         ref={tileRef}
         className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col mb-1 break-inside-avoid rounded-none ${className || ''}`}
         onClick={handleTileClick}
+        onMouseEnter={handleMouseEnter}
         style={{
           // Dynamic height based on aspect ratio: height = width / aspectRatio
           // Column width is fixed by CSS columns, so we calculate height accordingly
