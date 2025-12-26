@@ -295,11 +295,23 @@ function DiscoverPageContent() {
   // Set loading to false ONLY when videos are ready AND joke is complete
   // ALWAYS wait for videos to be preloaded, even if joke finishes first
   useEffect(() => {
-    if (initialVideosTotal === 0) {
-      // No videos to preload, wait for joke to complete
+    // If artworks are loaded (even if empty), we can proceed with loading state
+    // Don't wait forever if there's content to show
+    if (artworks.length > 0 && initialVideosTotal === 0) {
+      // No videos to preload, wait for joke to complete (max 10 seconds)
       if (jokeComplete) {
         setLoading(false);
+        return;
       }
+      // Fallback: if joke takes too long, show content anyway
+      const jokeTimeout = setTimeout(() => {
+        setLoading(false);
+      }, 10000);
+      return () => clearTimeout(jokeTimeout);
+    }
+    
+    if (initialVideosTotal === 0) {
+      // No videos and no artworks yet - wait a bit
       return;
     }
     
@@ -707,6 +719,13 @@ function DiscoverPageContent() {
         setInitialVideosReady(0);
         setJokeComplete(false); // Reset joke completion state
         
+        // If no videos to preload, set loading to false once joke completes
+        // (handled by useEffect, but ensure it doesn't get stuck)
+        if (initialVideos.length === 0) {
+          // No videos, so we don't need to wait for video preloading
+          // The useEffect will handle loading state based on joke completion
+        }
+        
         // Fetch engagement metrics for all artworks
         if (finalArtworks.length > 0) {
           try {
@@ -734,6 +753,13 @@ function DiscoverPageContent() {
         initialVideoReadyRef.current.clear();
         setInitialVideosReady(0);
         setJokeComplete(false); // Reset joke completion state
+        
+        // Ensure loading is set to false on error so content can display
+        // The useEffect will handle the final loading state based on videos/joke
+        // But we want to make sure it doesn't get stuck
+        setTimeout(() => {
+          setLoading(false);
+        }, 2000); // Fallback: hide loading after 2 seconds if error
       }
     };
 
