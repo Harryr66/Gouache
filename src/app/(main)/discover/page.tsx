@@ -1216,22 +1216,11 @@ function DiscoverPageContent() {
   // Render initial tiles invisibly during loading so videos can preload
   const shouldPreloadTiles = loading && initialVideosTotal > 0;
   
-  if (loading && !shouldPreloadTiles) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center justify-center gap-6">
-          <ThemeLoading size="lg" />
-          <TypewriterJoke key="loading-joke" onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       {/* Preload tiles invisibly during loading */}
       {shouldPreloadTiles && (
-        <div className="fixed inset-0 opacity-0 pointer-events-none -z-50" aria-hidden="true">
+        <div className="fixed inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden' }} aria-hidden="true">
           <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-5 gap-1">
             {visibleFilteredArtworks.slice(0, 12).map((item) => {
               const isAd = 'type' in item && item.type === 'ad';
@@ -1255,12 +1244,12 @@ function DiscoverPageContent() {
         </div>
       )}
       
-      {/* Loading overlay - only show when preloading tiles */}
-      {loading && shouldPreloadTiles && (
+      {/* Loading overlay - SINGLE instance, always shown when loading */}
+      {loading && (
         <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
           <div className="flex flex-col items-center justify-center gap-6">
             <ThemeLoading size="lg" />
-            <TypewriterJoke key="loading-joke" onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
+            <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
           </div>
         </div>
       )}
