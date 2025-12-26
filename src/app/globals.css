@@ -198,7 +198,7 @@ html {
   }
 
   /* Switch gradient background for checked state - uses theme-aware gradient */
-  [data-radix-switch-root][data-state="checked"] {
+  .switch-gradient {
     background: var(--gradient-border) !important;
     border: 2px solid transparent !important;
   }
