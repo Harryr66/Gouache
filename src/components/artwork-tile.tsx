@@ -59,11 +59,11 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [videoError, setVideoError] = useState(false);
-  const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
-  const [posterLoaded, setPosterLoaded] = useState(false);
+  const [isInViewport, setIsInViewport] = useState(false);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const videoLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const thumbnailCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   
   // Check if artwork has video
   const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
@@ -282,29 +282,43 @@ const generateArtistContent = (artist: Artist) => ({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const tileRef = useRef<HTMLDivElement>(null);
 
-  // Track view time using IntersectionObserver
+  // IntersectionObserver for lazy loading videos and tracking views
   useEffect(() => {
     if (!tileRef.current || !artwork?.id) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
+          const isIntersecting = entry.isIntersecting;
+          setIsInViewport(isIntersecting);
+          
+          if (isIntersecting) {
             // Start tracking view time
             engagementTracker.startTracking(artwork.id);
+            
+            // Lazy load video when tile enters viewport (50% visible)
+            if (hasVideo && videoUrl && !shouldLoadVideo) {
+              setShouldLoadVideo(true);
+            }
           } else {
             // Stop tracking when not visible
             engagementTracker.stopTracking(artwork.id);
+            
+            // Pause video when out of viewport
+            if (videoRef.current && !videoRef.current.paused) {
+              videoRef.current.pause();
+            }
           }
         });
       },
       {
         threshold: 0.5, // Consider visible when 50% is in viewport
-        rootMargin: '0px',
+        rootMargin: '50px', // Start loading slightly before entering viewport
       }
     );
 
     observer.observe(tileRef.current);
+    intersectionObserverRef.current = observer;
 
     return () => {
       observer.disconnect();
@@ -315,7 +329,7 @@ const generateArtistContent = (artist: Artist) => ({
         videoLoadTimeoutRef.current = null;
       }
     };
-  }, [artwork.id]);
+  }, [artwork.id, hasVideo, videoUrl, shouldLoadVideo]);
 
   // Track like engagement
   useEffect(() => {
@@ -324,76 +338,22 @@ const generateArtistContent = (artist: Artist) => ({
     }
   }, [liked, artwork.id]);
 
-  // Extract video thumbnail (first frame) when video metadata loads
+  // Autoplay video when in viewport (muted, looped)
   useEffect(() => {
-    if (hasVideo && videoUrl && videoRef.current && !videoThumbnail) {
+    if (hasVideo && videoRef.current && shouldLoadVideo && isInViewport) {
       const video = videoRef.current;
       
-      const extractThumbnail = () => {
-        try {
-          // Create canvas to capture first frame
-          if (!thumbnailCanvasRef.current) {
-            thumbnailCanvasRef.current = document.createElement('canvas');
-          }
-          const canvas = thumbnailCanvasRef.current;
-          const ctx = canvas.getContext('2d');
-          
-          if (!ctx) return;
-          
-          // Set canvas dimensions to video dimensions
-          canvas.width = video.videoWidth || 800;
-          canvas.height = video.videoHeight || 600;
-          
-          // Draw first frame to canvas
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          
-          // Convert to data URL
-          const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          setVideoThumbnail(thumbnailDataUrl);
-          setPosterLoaded(true);
-        } catch (error) {
-          console.error('Error extracting video thumbnail:', error);
-          // Fallback to imageUrl if extraction fails
-          setPosterLoaded(true);
-        }
-      };
-      
-      // Try to extract thumbnail when video can play
-      const handleCanPlay = () => {
-        if (video.readyState >= 2) { // HAVE_CURRENT_DATA
-          extractThumbnail();
-        }
-      };
-      
-      // Also try when metadata loads
-      const handleLoadedMetadata = () => {
-        if (video.readyState >= 1) { // HAVE_METADATA
-          // Seek to first frame (0 seconds)
-          video.currentTime = 0.1; // Small offset to ensure frame is available
-        }
-      };
-      
-      // Extract when seeking completes
-      const handleSeeked = () => {
-        extractThumbnail();
-      };
-      
-      video.addEventListener('canplay', handleCanPlay);
-      video.addEventListener('loadedmetadata', handleLoadedMetadata);
-      video.addEventListener('seeked', handleSeeked);
-      
-      // If video is already loaded, try immediately
-      if (video.readyState >= 2) {
-        extractThumbnail();
+      // Only autoplay if video is ready and not already playing
+      if (video.readyState >= 3 && video.paused) {
+        video.play().catch((error) => {
+          console.error('Error autoplaying video:', error);
+        });
       }
-      
-      return () => {
-        video.removeEventListener('canplay', handleCanPlay);
-        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-        video.removeEventListener('seeked', handleSeeked);
-      };
+    } else if (videoRef.current && !isInViewport) {
+      // Pause when out of viewport
+      videoRef.current.pause();
     }
-  }, [hasVideo, videoUrl, videoThumbnail]);
+  }, [hasVideo, shouldLoadVideo, isInViewport]);
   // Use artist ID for profile link - this should be the Firestore document ID
   const profileSlug = artwork.artist.id;
   const handleViewProfile = () => {
