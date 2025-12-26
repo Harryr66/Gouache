@@ -701,8 +701,7 @@ function DiscoverPageContent() {
           setLoading(false);
         }
       }
-    }
-  };
+    };
 
     fetchArtworks();
     
