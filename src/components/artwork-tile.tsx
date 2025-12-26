@@ -121,10 +121,12 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
       video.src = videoUrl;
       return;
     } else if (hasVideo && !shouldLoadMetadata) {
-      // Use default aspect ratio if metadata not loaded yet (lazy loading)
+      // Don't reset aspect ratio if already loaded - maintain it to prevent grid disruption
+      // Only use default if metadata was never loaded
       if (!mediaAspectRatio) {
-        setMediaAspectRatio(2/3); // Default portrait
+        setMediaAspectRatio(2/3); // Default portrait only on initial load
       }
+      // If aspect ratio is already set, keep it - don't reset to default
     }
     
     // For images, load image to detect aspect ratio and preload for display
