@@ -83,12 +83,22 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
         setMediaAspectRatio(aspectRatio);
         // Don't call play() - just detect aspect ratio
         setIsVideoLoaded(true); // Mark as loaded so placeholder shows correctly
-        window.URL.revokeObjectURL(video.src);
+        // Clean up if using object URL
+        if (video.src.startsWith('blob:')) {
+          window.URL.revokeObjectURL(video.src);
+        }
       };
-      video.onerror = () => {
+      video.onerror = (error) => {
+        console.error('Error loading video metadata:', error, videoUrl);
         setMediaAspectRatio(2/3); // Default to portrait aspect ratio (2:3) on error
         setIsVideoLoaded(true); // Stop showing loader even on error
-        window.URL.revokeObjectURL(video.src);
+        // Clean up if using object URL
+        if (video.src.startsWith('blob:')) {
+          window.URL.revokeObjectURL(video.src);
+        }
+      };
+      video.oncanplay = () => {
+        setIsVideoLoaded(true);
       };
       video.src = videoUrl;
       return;
@@ -351,10 +361,17 @@ const generateArtistContent = (artist: Artist) => ({
               playsInline
               webkit-playsinline="true"
               x5-playsinline="true"
-              preload="none"
+              preload="metadata"
               controls={false}
               autoPlay={false}
-              onError={() => {
+              onLoadedMetadata={() => {
+                setIsVideoLoaded(true);
+              }}
+              onCanPlay={() => {
+                setIsVideoLoaded(true);
+              }}
+              onError={(e) => {
+                console.error('Error loading video:', e, videoUrl);
                 setIsVideoLoaded(true); // Stop loading on error
               }}
               onClick={(e) => {
@@ -364,8 +381,8 @@ const generateArtistContent = (artist: Artist) => ({
                   // Load and play video only when user clicks
                   if (videoRef.current.paused) {
                     videoRef.current.load(); // Ensure video is loaded
-                    videoRef.current.play().catch(() => {
-                      // Play failed - browser policy or other issue
+                    videoRef.current.play().catch((error) => {
+                      console.error('Error playing video:', error);
                     });
                   } else {
                     videoRef.current.pause();
