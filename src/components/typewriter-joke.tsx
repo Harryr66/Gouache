@@ -4,14 +4,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 
 const ART_JOKES = [
-  "2 ships carrying red and blue paint collided at sea, the crew ended up marooned...",
-  "Why did the artist steal their supplies? They had no Monet...",
-  "Vincent Van Gogh walks into a bar... The bartender offers him a drink... // \"No thanks Vincent said... I've got one 'ere.\"",
+  "2 ships carrying red and blue paint collided at sea... // The crew ended up marooned...",
+  "Why did the artist steal their supplies? // They had no Monet...",
+  "Vincent Van Gogh walks into a bar... The bartender offers him a drink. // \"No thanks\" Vincent said... \"I've got one ere.\"",
   "Every morning Dali started his day with some Surreal",
-  "My canvas just broke up with me... // It said over the years I've stretched it too thin.",
-  "A portrait artist asked his wife why she was annoyed... She said \"don't use that tone with me\"",
-  "A textile artist was fired for falling into and breaking the loom machine... // they claim they were stitched up...",
-  "Remember, if it's not Baroque, don't fix it."
+  "My canvas just broke up with me… // It said over the years I've stretched them too thin.",
+  "A portrait artist asked his wife why she was annoyed with him… // She said \"don't use that tone with me\"",
+  "A textile artist was fired after falling into the factory loom... // They claim they were stitched up...",
+  "Remember, if it's not Baroque…Don't fix try it."
 ];
 
 interface TypewriterJokeProps {
