@@ -538,7 +538,7 @@ const generateArtistContent = (artist: Artist) => ({
                 <video
                   ref={videoRef}
                   src={videoUrl}
-                  className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-500 absolute inset-0 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100 z-20'}`}
+                  className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-500 absolute inset-0 pointer-events-none ${!isVideoLoaded ? 'opacity-0' : 'opacity-100 z-20'}`}
                   muted={true}
                   loop={true}
                   playsInline={true}
