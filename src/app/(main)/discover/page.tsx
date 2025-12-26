@@ -300,18 +300,20 @@ function DiscoverPageContent() {
       if (jokeComplete) {
         setLoading(false);
       } else {
-        // Fallback: if joke takes too long (10 seconds), show content anyway
+        // Fallback: if joke takes too long (3 seconds), show content anyway
+        // Joke animation typically takes ~2-3 seconds, so 3s is reasonable
         const jokeTimeout = setTimeout(() => {
           setLoading(false);
-        }, 10000);
+        }, 3000); // Reduced from 10s to 3s - much faster
         return () => clearTimeout(jokeTimeout);
       }
       return;
     }
     
-    // CRITICAL: Only hide loading when ALL videos are ready AND joke is complete
-    // This ensures videos are always ready to autoplay when grid appears
-    if (initialVideosReady >= initialVideosTotal && jokeComplete) {
+    // Hide loading when videos are ready OR joke is complete (don't require both)
+    // Prefer videos ready, but don't wait forever for joke if videos are loaded
+    if (initialVideosReady >= initialVideosTotal) {
+      // All videos ready - show content (joke can finish in background)
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
@@ -322,19 +324,30 @@ function DiscoverPageContent() {
       return;
     }
     
-    // Extended timeout: hide loading after 15 seconds max to ensure videos have time
+    // If joke completes before videos, wait a bit more for videos but don't wait forever
+    if (jokeComplete && initialVideosReady >= Math.max(1, Math.ceil(initialVideosTotal * 0.5))) {
+      // Joke done and at least 50% of videos ready - show content
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+      setTimeout(() => {
+        setLoading(false);
+      }, 200);
+      return;
+    }
+    
+    // Extended timeout: hide loading after 5 seconds max to ensure videos have time
     // But prefer waiting for actual video readiness - videos are priority
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
     loadingTimeoutRef.current = setTimeout(() => {
-      // Only hide if we have at least 80% of videos ready OR joke is complete AND we have some videos
-      // This prevents premature hiding while ensuring we don't wait forever
-      const minVideosReady = Math.max(1, Math.ceil(initialVideosTotal * 0.8));
-      if (initialVideosReady >= minVideosReady && jokeComplete) {
+      // After timeout, show content if joke is complete OR if we have some videos ready
+      // Don't require both - prioritize showing content
+      if (jokeComplete || initialVideosReady > 0) {
         setLoading(false);
       }
-    }, 15000);
+    }, 5000); // Reduced from 15s to 5s - much faster fallback
     
     return () => {
       if (loadingTimeoutRef.current) {
