@@ -411,8 +411,8 @@ const generateArtistContent = (artist: Artist) => ({
         }}
       >
         <div className="absolute inset-0">
-          {/* Loading skeleton - only show if poster/thumbnail not loaded yet */}
-          {((hasVideo && !posterLoaded && !videoThumbnail) || (!hasVideo && !isImageLoaded)) && (
+          {/* Loading skeleton - only show if poster not loaded yet */}
+          {((hasVideo && !isImageLoaded) || (!hasVideo && !isImageLoaded)) && (
             <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -423,23 +423,8 @@ const generateArtistContent = (artist: Artist) => ({
           {/* Media content */}
           {hasVideo && videoUrl ? (
             <>
-              {/* Show extracted video thumbnail immediately while video preloads */}
-              {videoThumbnail && (
-                <Image
-                  src={videoThumbnail}
-                  alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
-                  fill
-                  className={`object-cover transition-opacity duration-500 ${isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
-                  loading="eager"
-                  priority={false}
-                  onLoad={() => {
-                    setPosterLoaded(true);
-                  }}
-                />
-              )}
-              
-              {/* Fallback to imageUrl if thumbnail extraction hasn't happened yet */}
-              {!videoThumbnail && imageUrl && !posterLoaded && (
+              {/* Poster image - shows immediately, fades out when video is ready */}
+              {imageUrl && (
                 <Image
                   src={imageUrl}
                   alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
@@ -448,13 +433,17 @@ const generateArtistContent = (artist: Artist) => ({
                   loading="eager"
                   priority={false}
                   onLoad={() => {
-                    setPosterLoaded(true);
+                    setIsImageLoaded(true);
+                  }}
+                  onError={() => {
+                    setImageError(true);
+                    setIsImageLoaded(true);
                   }}
                 />
               )}
               
-              {/* Video element - preloads in background, fades in when ready */}
-              {!videoError ? (
+              {/* Video element - lazy loads when in viewport */}
+              {shouldLoadVideo && !videoError ? (
                 <video
                   ref={videoRef}
                   src={videoUrl}
@@ -464,27 +453,31 @@ const generateArtistContent = (artist: Artist) => ({
                   playsInline
                   webkit-playsinline="true"
                   x5-playsinline="true"
-                  preload="auto"
+                  preload="metadata"
                   controls={false}
-                  autoPlay={false}
+                  poster={imageUrl || undefined}
                   onLoadedMetadata={() => {
                     if (videoLoadTimeoutRef.current) {
                       clearTimeout(videoLoadTimeoutRef.current);
                       videoLoadTimeoutRef.current = null;
                     }
-                    // Metadata loaded - start extracting thumbnail
-                    if (videoRef.current) {
-                      videoRef.current.currentTime = 0.1;
-                    }
+                    // Metadata loaded - video can start buffering
                   }}
                   onCanPlay={() => {
                     if (videoLoadTimeoutRef.current) {
                       clearTimeout(videoLoadTimeoutRef.current);
                       videoLoadTimeoutRef.current = null;
                     }
-                    // Video is ready to play - smoothly fade in
+                    // Video is ready - fade in smoothly
                     setIsVideoLoaded(true);
                     setVideoError(false);
+                    
+                    // Autoplay if in viewport
+                    if (isInViewport && videoRef.current && videoRef.current.paused) {
+                      videoRef.current.play().catch((error) => {
+                        console.error('Error autoplaying video:', error);
+                      });
+                    }
                   }}
                   onLoadedData={() => {
                     // Data loaded - ensure visibility
@@ -493,7 +486,7 @@ const generateArtistContent = (artist: Artist) => ({
                   }}
                   onProgress={() => {
                     // Video is buffering - keep it visible once it starts
-                    if (!isVideoLoaded && videoRef.current && videoRef.current.readyState >= 3) {
+                    if (!isVideoLoaded && videoRef.current && videoRef.current.readyState >= 2) {
                       setIsVideoLoaded(true);
                     }
                   }}
@@ -509,27 +502,26 @@ const generateArtistContent = (artist: Artist) => ({
                     }
                     setVideoError(true);
                     setIsVideoLoaded(true);
-                    setPosterLoaded(true); // Show poster/thumbnail on error
+                    setIsImageLoaded(true); // Show poster on error
                   }}
                   onLoadStart={() => {
-                    // Set a timeout for video loading (15 seconds for full preload)
+                    // Set a timeout for video loading (10 seconds)
                     if (videoLoadTimeoutRef.current) {
                       clearTimeout(videoLoadTimeoutRef.current);
                     }
                     videoLoadTimeoutRef.current = setTimeout(() => {
                       console.warn('Video loading timeout:', videoUrl);
-                      // Show poster/thumbnail if timeout, but don't error
-                      setPosterLoaded(true);
-                      if (!videoThumbnail && imageUrl) {
+                      // Show poster if timeout
+                      setIsImageLoaded(true);
+                      if (imageUrl) {
                         setIsVideoLoaded(true);
                       }
-                    }, 15000);
+                    }, 10000);
                   }}
                   onClick={(e) => {
-                    // User must explicitly click to play video
+                    // User click to toggle play/pause
                     e.stopPropagation();
                     if (videoRef.current && !videoError) {
-                      // Load and play video only when user clicks
                       if (videoRef.current.paused) {
                         videoRef.current.play().catch((error) => {
                           console.error('Error playing video:', error);
@@ -541,7 +533,7 @@ const generateArtistContent = (artist: Artist) => ({
                     }
                   }}
                 />
-              ) : (
+              ) : videoError ? (
                 // Fallback: show image if video fails
                 imageUrl ? (
                   <Image
@@ -559,7 +551,7 @@ const generateArtistContent = (artist: Artist) => ({
                     </div>
                   </div>
                 )
-              )}
+              ) : null}
             </>
           ) : (
             <Image
