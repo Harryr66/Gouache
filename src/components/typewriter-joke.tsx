@@ -8,10 +8,10 @@ const ART_JOKES = [
   "Why did the artist steal their supplies? They had no Monet...",
   "Vincent Van Gogh walks into a bar... The bartender offers him a drink... // \"No thanks Vincent said... I've got one 'ere.\"",
   "Every morning Dali started his day with some Surreal",
-  "My canvas just broke up with me: They said over the years I've stretched them too thin.",
+  "My canvas just broke up with me... // They said over the years I've stretched them too thin.",
   "A portrait artist asked his wife why she was annoyed... She said \"don't use that tone with me\"",
   "A textile artist was fired for falling into and breaking the loom machine... // they claim they were stitched up...",
-  "Remember, if it's not Baroque, don't fix try it."
+  "Remember, if it's not Baroque, don't fix it."
 ];
 
 interface TypewriterJokeProps {
