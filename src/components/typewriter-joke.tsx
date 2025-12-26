@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 
 const ART_JOKES = [
-  "2 ships carrying red and blue paint collided at sea— the crew ended up marooned...",
+  "2 ships carrying red and blue paint collided at sea, the crew ended up marooned...",
   "Why did the artist steal their supplies? They had no Monet...",
   "Vincent Van Gogh walks into a bar... The bartender offers him a drink... // \"No thanks Vincent said... I've got one 'ere.\"",
   "Every morning Dali started his day with some Surreal",
@@ -140,7 +140,7 @@ export function TypewriterJoke({
 
   return (
     <div className={`${textColor} text-sm md:text-base max-w-2xl text-center px-4`}>
-      <p className="min-h-[3rem] flex items-center justify-center whitespace-pre-line">
+      <p className="min-h-[3rem] whitespace-pre-line">
         {formattedText}
         {isTyping && (
           <span className="ml-1 animate-pulse">|</span>
