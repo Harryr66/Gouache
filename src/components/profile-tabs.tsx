@@ -436,12 +436,13 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               
               if (belongsToUser && notInPortfolio && hasMedia) {
                 // Use document ID as the primary ID (this is what Firestore uses)
-                // Also ensure artworkId is set for consistency
+                // Spread data first, then override with document ID to ensure it's correct
+                // The document ID is what Firestore uses for lookups, so it must match
                 const documentId = doc.id;
                 contentItems.push({
-                  id: documentId,
-                  artworkId: data.artworkId || data.id || documentId, // Use data.id or documentId as fallback
                   ...data,
+                  id: documentId, // Override with document ID (most reliable for navigation)
+                  artworkId: data.artworkId || data.id || documentId, // Use data.id or documentId as fallback
                   type: 'artwork',
                   createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
                 });
@@ -482,10 +483,12 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               const hasMedia = data.imageUrl || data.mediaUrls?.length > 0;
               
               if (belongsToUser && notInPortfolio && hasMedia) {
+                // Spread data first, then override with document ID to ensure it's correct
+                const documentId = doc.id;
                 contentItems.push({
-                  id: doc.id,
-                  artworkId: data.artworkId || doc.id, // Ensure artworkId is set for navigation
                   ...data,
+                  id: documentId, // Override with document ID (most reliable for navigation)
+                  artworkId: data.artworkId || documentId, // Ensure artworkId is set for navigation
                   type: 'post',
                   createdAt: data.createdAt ? (typeof data.createdAt === 'number' ? new Date(data.createdAt) : data.createdAt?.toDate?.() || new Date()) : new Date(),
                 });
