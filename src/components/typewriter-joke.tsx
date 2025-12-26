@@ -58,8 +58,9 @@ export function TypewriterJoke({
         // Check for "..." - pause for 2 seconds
         if (char === '.' && nextChar === '.' && nextNextChar === '.') {
           isPaused = true;
-          // Display the ellipsis
-          setDisplayedText(currentJoke.slice(0, currentIndex + 3).replace(/\n/g, '<br/>'));
+          // Display the ellipsis (convert // to line breaks)
+          const textSoFar = currentJoke.slice(0, currentIndex + 3).replace(/\/\//g, '\n');
+          setDisplayedText(textSoFar);
           currentIndex += 3;
           
           // Pause for 2 seconds
@@ -71,14 +72,15 @@ export function TypewriterJoke({
         
         // Check for "//" - insert line break
         if (char === '/' && nextChar === '/') {
-          setDisplayedText(currentJoke.slice(0, currentIndex).replace(/\n/g, '<br/>') + '<br/>');
+          const textSoFar = currentJoke.slice(0, currentIndex).replace(/\/\//g, '\n') + '\n';
+          setDisplayedText(textSoFar);
           currentIndex += 2;
           return;
         }
         
-        // Normal character typing
-        const textToDisplay = currentJoke.slice(0, currentIndex + 1).replace(/\n/g, '<br/>');
-        setDisplayedText(textToDisplay);
+        // Normal character typing (convert // to line breaks)
+        const textSoFar = currentJoke.slice(0, currentIndex + 1).replace(/\/\//g, '\n');
+        setDisplayedText(textSoFar);
         currentIndex++;
       } else {
         // Typing complete
@@ -109,12 +111,22 @@ export function TypewriterJoke({
   const isDark = currentTheme === 'dark';
   const textColor = isDark ? 'text-white/90' : 'text-gray-800';
 
+  // Convert newlines to <br/> for rendering
+  const formattedText = displayedText.split('\n').map((line, index, array) => (
+    <React.Fragment key={index}>
+      {line}
+      {index < array.length - 1 && <br />}
+    </React.Fragment>
+  ));
+
   return (
     <div className={`${textColor} text-sm md:text-base max-w-2xl text-center px-4`}>
-      <p 
-        className="min-h-[3rem] flex items-center justify-center"
-        dangerouslySetInnerHTML={{ __html: displayedText + (isTyping ? '<span class="ml-1 animate-pulse">|</span>' : '') }}
-      />
+      <p className="min-h-[3rem] flex items-center justify-center whitespace-pre-line">
+        {formattedText}
+        {isTyping && (
+          <span className="ml-1 animate-pulse">|</span>
+        )}
+      </p>
     </div>
   );
 }
