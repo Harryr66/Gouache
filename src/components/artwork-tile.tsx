@@ -524,13 +524,14 @@ const generateArtistContent = (artist: Artist) => ({
                   ref={videoRef}
                   src={videoUrl}
                   className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-500 absolute inset-0 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100 z-20'}`}
-                  muted
-                  loop
-                  playsInline
+                  muted={true}
+                  loop={true}
+                  playsInline={true}
                   webkit-playsinline="true"
                   x5-playsinline="true"
                   preload="auto"
                   controls={false}
+                  autoPlay={isInitialViewport || isInViewport}
                   poster={imageUrl || undefined}
                   onLoadedMetadata={() => {
                     if (videoLoadTimeoutRef.current) {
