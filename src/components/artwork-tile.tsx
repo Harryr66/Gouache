@@ -69,7 +69,12 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   // Check if artwork has video
   const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
   const videoUrl = (artwork as any).videoUrl;
-  const imageUrl = artwork.imageUrl || 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
+  // For videos, ensure we have a poster image - use imageUrl, supportingImages, or fallback
+  const imageUrl = artwork.imageUrl || 
+                   (artwork as any).supportingImages?.[0] || 
+                   (artwork as any).images?.[0] || 
+                   (artwork as any).mediaUrls?.[0] || 
+                   'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
   
   // Detect media aspect ratio for dynamic height calculation (Pinterest-style masonry)
   useEffect(() => {
