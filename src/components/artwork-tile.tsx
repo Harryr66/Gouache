@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { useLikes } from '@/providers/likes-provider';
 import { ReportDialog } from '@/components/report-dialog';
 import { engagementTracker } from '@/lib/engagement-tracker';
+import { useVideoControl } from '@/providers/video-control-provider';
 import { 
   UserPlus, 
   UserCheck, 
@@ -53,6 +54,7 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
   const router = useRouter();
+  const { registerVideo, requestPlay, isPlaying, getConnectionSpeed } = useVideoControl();
   const [showArtistPreview, setShowArtistPreview] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -63,8 +65,10 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
   const [videoError, setVideoError] = useState(false);
   const [isInViewport, setIsInViewport] = useState(false);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+  const [shouldLoadMetadata, setShouldLoadMetadata] = useState(false);
   const [isInitialViewport, setIsInitialViewport] = useState(false);
   const videoLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previewTimerRef = useRef<NodeJS.Timeout | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   
@@ -87,8 +91,8 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
       return;
     }
     
-    // For videos, load video metadata to detect aspect ratio (but don't preload or play)
-    if (hasVideo && videoUrl) {
+    // For videos, only load metadata when shouldLoadMetadata is true (lazy metadata loading)
+    if (hasVideo && videoUrl && shouldLoadMetadata) {
       const video = document.createElement('video');
       video.preload = 'metadata'; // Only load metadata, not the video itself
       video.onloadedmetadata = () => {
@@ -110,11 +114,13 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
           window.URL.revokeObjectURL(video.src);
         }
       };
-      video.oncanplay = () => {
-        setIsVideoLoaded(true);
-      };
       video.src = videoUrl;
       return;
+    } else if (hasVideo && !shouldLoadMetadata) {
+      // Use default aspect ratio if metadata not loaded yet (lazy loading)
+      if (!mediaAspectRatio) {
+        setMediaAspectRatio(2/3); // Default portrait
+      }
     }
     
     // For images, load image to detect aspect ratio and preload for display
@@ -129,50 +135,46 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
       setImageError(true);
       setIsImageLoaded(true); // Stop showing loader even on error
     };
-    img.src = imageUrl;
-    img.loading = 'eager'; // Start loading immediately
-    
-    // Reset loading state when image URL changes
-    setIsImageLoaded(false);
-    setImageError(false);
-  }, [imageUrl, videoUrl, hasVideo, artwork.dimensions]);
+      img.src = imageUrl;
+      img.loading = 'eager'; // Start loading immediately
+      
+      // Reset loading state when image URL changes
+      setIsImageLoaded(false);
+      setImageError(false);
+  }, [imageUrl, videoUrl, hasVideo, artwork.dimensions, shouldLoadMetadata, mediaAspectRatio]);
   
   // Calculate height based on aspect ratio (column width is fixed, height scales dynamically)
   // Default to 2:3 (portrait) if aspect ratio not yet determined - ideal for tall tiles
   const aspectRatio = mediaAspectRatio || (2/3);
   
-  // Intersection Observer for video autoplay on Discover feed
+  // Register video with video control system for concurrent playback limiting
   useEffect(() => {
-    if (!hasVideo || !videoUrl || !videoRef.current || !tileRef.current) return;
+    if (!hasVideo || !videoUrl || !videoRef.current || !artwork.id) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            // Video is in view - play it
-            if (videoRef.current) {
-              videoRef.current.play().catch((error) => {
-                // Autoplay failed (browser policy) - this is expected on some browsers
-                console.log('Video autoplay prevented by browser:', error);
-              });
-            }
-          } else {
-            // Video is out of view - pause it
-            if (videoRef.current) {
-              videoRef.current.pause();
-            }
-          }
+    const videoId = artwork.id;
+    
+    const playCallback = () => {
+      if (videoRef.current && !videoRef.current.paused) return;
+      if (requestPlay(videoId) && videoRef.current) {
+        videoRef.current.play().catch((error) => {
+          console.log('Video play prevented:', error);
         });
-      },
-      { threshold: 0.5 } // Trigger when 50% of video is visible
-    );
+      }
+    };
 
-    observer.observe(tileRef.current);
+    const pauseCallback = () => {
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+    };
+
+    const unregister = registerVideo(videoId, playCallback, pauseCallback);
 
     return () => {
-      observer.disconnect();
+      unregister();
     };
-  }, [hasVideo, videoUrl]);
+  }, [hasVideo, videoUrl, artwork.id, registerVideo, requestPlay]);
+
 
   const handleTileClick = () => {
     // Navigate to artwork detail page only if we have an artwork id
@@ -336,9 +338,14 @@ const generateArtistContent = (artist: Artist) => ({
     };
   }, [hasVideo, videoUrl, shouldLoadVideo, propIsInitialViewport]);
 
-  // IntersectionObserver for lazy loading videos and tracking views
+  // IntersectionObserver for lazy loading videos, metadata, and tracking views
+  // Connection-based loading: Adjust rootMargin based on connection speed
   useEffect(() => {
     if (!tileRef.current || !artwork?.id) return;
+
+    const connectionSpeed = getConnectionSpeed();
+    // Adjust rootMargin based on connection speed (lazy metadata loading)
+    const rootMargin = connectionSpeed === 'fast' ? '400px' : connectionSpeed === 'medium' ? '200px' : '100px';
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -350,9 +357,22 @@ const generateArtistContent = (artist: Artist) => ({
             // Start tracking view time
             engagementTracker.startTracking(artwork.id);
             
-            // Lazy load video when tile enters viewport (50% visible)
+            // Load metadata when tile is near viewport (lazy metadata loading)
+            if (hasVideo && videoUrl && !shouldLoadMetadata) {
+              setShouldLoadMetadata(true);
+            }
+            
+            // Load video based on connection speed
             if (hasVideo && videoUrl && !shouldLoadVideo) {
-              setShouldLoadVideo(true);
+              // Only load video immediately on fast connections, otherwise wait
+              if (connectionSpeed === 'fast' || isInitialViewport) {
+                setShouldLoadVideo(true);
+              } else {
+                // On slower connections, wait a bit before loading video
+                setTimeout(() => {
+                  setShouldLoadVideo(true);
+                }, 500);
+              }
             }
           } else {
             // Stop tracking when not visible
@@ -362,12 +382,17 @@ const generateArtistContent = (artist: Artist) => ({
             if (videoRef.current && !videoRef.current.paused) {
               videoRef.current.pause();
             }
+            
+            // Reset metadata loading flag when far from viewport to save resources
+            if (!entry.isIntersecting) {
+              setShouldLoadMetadata(false);
+            }
           }
         });
       },
       {
         threshold: 0.5, // Consider visible when 50% is in viewport
-        rootMargin: '50px', // Start loading slightly before entering viewport
+        rootMargin, // Dynamic rootMargin based on connection speed
       }
     );
 
@@ -382,8 +407,12 @@ const generateArtistContent = (artist: Artist) => ({
         clearTimeout(videoLoadTimeoutRef.current);
         videoLoadTimeoutRef.current = null;
       }
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+        previewTimerRef.current = null;
+      }
     };
-  }, [artwork.id, hasVideo, videoUrl, shouldLoadVideo]);
+  }, [artwork.id, hasVideo, videoUrl, shouldLoadVideo, shouldLoadMetadata, isInitialViewport, getConnectionSpeed]);
 
   // Track like engagement
   useEffect(() => {
@@ -400,9 +429,10 @@ const generateArtistContent = (artist: Artist) => ({
     }
   }, [hasVideo, videoUrl, isInitialViewport, shouldLoadVideo]);
 
-  // Autoplay video when in viewport (muted, looped)
+  // Autoplay video when in viewport (muted, looped) with concurrent video limiting
+  // Also implement shorter previews (8 seconds) for tiles
   useEffect(() => {
-    if (!hasVideo || !videoRef.current || !shouldLoadVideo) return;
+    if (!hasVideo || !videoRef.current || !shouldLoadVideo || !artwork.id) return;
     
     const video = videoRef.current;
     const isVisible = isInViewport || isInitialViewport;
@@ -413,12 +443,24 @@ const generateArtistContent = (artist: Artist) => ({
         video.load();
       }
       
-      // Try to play when video can play (don't wait for isVideoLoaded)
+      // Try to play when video can play (with concurrent video limiting)
       const tryPlay = () => {
-        if (video.readyState >= 2 && video.paused) {
+        if (video.readyState >= 2 && video.paused && requestPlay(artwork.id)) {
           video.play().catch((error) => {
             console.error('Error autoplaying video:', error);
           });
+          
+          // Set up preview timer: stop video after 8 seconds (shorter preview for tiles)
+          if (previewTimerRef.current) {
+            clearTimeout(previewTimerRef.current);
+          }
+          previewTimerRef.current = setTimeout(() => {
+            if (video && !video.paused && isInViewport) {
+              video.pause();
+              // Reset video to start for next preview
+              video.currentTime = 0;
+            }
+          }, 8000); // 8 seconds preview
         }
       };
       
@@ -432,14 +474,22 @@ const generateArtistContent = (artist: Artist) => ({
         video.removeEventListener('canplay', tryPlay);
         video.removeEventListener('canplaythrough', tryPlay);
         video.removeEventListener('loadeddata', tryPlay);
+        if (previewTimerRef.current) {
+          clearTimeout(previewTimerRef.current);
+        }
       };
     } else {
       // Pause when out of viewport
       if (!video.paused) {
         video.pause();
       }
+      // Clear preview timer when not visible
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+        previewTimerRef.current = null;
+      }
     }
-  }, [hasVideo, shouldLoadVideo, isInViewport, isInitialViewport]);
+  }, [hasVideo, shouldLoadVideo, isInViewport, isInitialViewport, artwork.id, requestPlay]);
   // Use artist ID for profile link - this should be the Firestore document ID
   const profileSlug = artwork.artist.id;
   const handleViewProfile = () => {
@@ -534,7 +584,7 @@ const generateArtistContent = (artist: Artist) => ({
               )}
               
               {/* Video element - loads when in viewport, positioned behind poster until ready */}
-              {/* Use preload="metadata" for tiles to reduce bandwidth - only loads video metadata, not full video */}
+              {/* Use preload based on connection speed - metadata for slow, auto for fast */}
               {shouldLoadVideo && !videoError && (
                 <video
                   ref={videoRef}
@@ -545,9 +595,9 @@ const generateArtistContent = (artist: Artist) => ({
                   playsInline={true}
                   webkit-playsinline="true"
                   x5-playsinline="true"
-                  preload="metadata"
+                  preload={getConnectionSpeed() === 'fast' ? 'metadata' : 'none'}
                   controls={false}
-                  autoPlay={isInitialViewport || isInViewport}
+                  autoPlay={false}
                   poster={imageUrl || undefined}
                   onLoadedMetadata={() => {
                     if (videoLoadTimeoutRef.current) {
@@ -573,11 +623,24 @@ const generateArtistContent = (artist: Artist) => ({
                       onVideoReady();
                     }
                     
-                    // Autoplay if in viewport (muted, looped)
-                    if ((isInViewport || isInitialViewport) && videoRef.current && videoRef.current.paused) {
-                      videoRef.current.play().catch((error) => {
-                        console.error('Error autoplaying video:', error);
-                      });
+                    // Request play (will respect concurrent video limit)
+                    if ((isInViewport || isInitialViewport) && videoRef.current && videoRef.current.paused && artwork.id) {
+                      if (requestPlay(artwork.id)) {
+                        videoRef.current.play().catch((error) => {
+                          console.error('Error autoplaying video:', error);
+                        });
+                        
+                        // Set up preview timer for shorter previews in tiles
+                        if (previewTimerRef.current) {
+                          clearTimeout(previewTimerRef.current);
+                        }
+                        previewTimerRef.current = setTimeout(() => {
+                          if (videoRef.current && !videoRef.current.paused && isInViewport) {
+                            videoRef.current.pause();
+                            videoRef.current.currentTime = 0; // Reset to start
+                          }
+                        }, 8000); // 8 seconds preview
+                      }
                     }
                   }}
                   onLoadedData={() => {
