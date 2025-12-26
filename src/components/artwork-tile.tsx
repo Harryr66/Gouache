@@ -423,15 +423,15 @@ const generateArtistContent = (artist: Artist) => ({
           {/* Media content */}
           {hasVideo && videoUrl ? (
             <>
-              {/* Poster image - shows immediately, fades out when video is ready */}
+              {/* Poster image - ALWAYS show immediately, fades out when video is ready */}
               {imageUrl && (
                 <Image
                   src={imageUrl}
                   alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
                   fill
-                  className={`object-cover transition-opacity duration-500 ${isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
+                  className={`object-cover transition-opacity duration-500 z-10 ${isVideoLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                   loading="eager"
-                  priority={false}
+                  priority={true}
                   onLoad={() => {
                     setIsImageLoaded(true);
                   }}
@@ -442,18 +442,19 @@ const generateArtistContent = (artist: Artist) => ({
                 />
               )}
               
-              {/* Video element - lazy loads when in viewport */}
-              {shouldLoadVideo && !videoError ? (
+              {/* Video element - lazy loads when in viewport, always render but hidden until ready */}
+              {shouldLoadVideo ? (
+                !videoError ? (
                 <video
                   ref={videoRef}
                   src={videoUrl}
-                  className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-500 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
+                  className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-500 absolute inset-0 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100 z-20'}`}
                   muted
                   loop
                   playsInline
                   webkit-playsinline="true"
                   x5-playsinline="true"
-                  preload="metadata"
+                  preload="auto"
                   controls={false}
                   poster={imageUrl || undefined}
                   onLoadedMetadata={() => {
@@ -461,7 +462,10 @@ const generateArtistContent = (artist: Artist) => ({
                       clearTimeout(videoLoadTimeoutRef.current);
                       videoLoadTimeoutRef.current = null;
                     }
-                    // Metadata loaded - video can start buffering
+                    // Metadata loaded - start showing video when ready
+                    if (videoRef.current && videoRef.current.readyState >= 2) {
+                      setIsVideoLoaded(true);
+                    }
                   }}
                   onCanPlay={() => {
                     if (videoLoadTimeoutRef.current) {
@@ -533,25 +537,14 @@ const generateArtistContent = (artist: Artist) => ({
                     }
                   }}
                 />
-              ) : videoError ? (
-                // Fallback: show image if video fails
-                imageUrl ? (
-                  <Image
-                    src={imageUrl}
-                    alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
-                    fill
-                    className="object-cover"
-                    loading="eager"
-                    priority={false}
-                  />
                 ) : (
-                  <div className="absolute inset-0 bg-muted flex items-center justify-center">
-                    <div className="text-muted-foreground text-xs text-center p-4">
-                      Failed to load video
-                    </div>
-                  </div>
+                  // Video error - poster already showing, just keep it visible
+                  null
                 )
-              ) : null}
+              ) : (
+                // Video not loaded yet - poster image is already showing above
+                null
+              )}
             </>
           ) : (
             <Image
