@@ -401,11 +401,10 @@ function DiscoverPageContent() {
         setLoading(true);
         log('🔍 Discover: Starting to fetch artworks from artist profiles...');
         
-        // Fetch artists with portfolios - reduced limit for better performance
-        // Fetch artists without ordering to avoid index requirement (simple limit query)
+        // Fetch artists with portfolios - balance performance and content coverage
         const artistsQuery = query(
           collection(db, 'userProfiles'),
-          limit(50) // Reduced from 200 to 50 for better performance
+          limit(100) // Increased from 50 to 100 to ensure enough content loads
         );
         
         const artistsSnapshot = await getDocs(artistsQuery);
@@ -432,7 +431,7 @@ function DiscoverPageContent() {
           log(`🎨 Discover: Processing artist ${artistData.displayName || artistData.username || artistDoc.id} - ${portfolio.length} portfolio items`);
           
           // Limit portfolio items per artist to prevent performance issues
-          // Only process the 10 most recent items per artist
+          // Process up to 20 most recent items per artist for better content coverage
           const recentPortfolio = portfolio
             .filter((item: any) => !item.deleted && item.showInPortfolio !== false)
             .sort((a: any, b: any) => {
@@ -440,7 +439,7 @@ function DiscoverPageContent() {
               const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
               return dateB - dateA; // Newest first
             })
-            .slice(0, 10); // Only process top 10 most recent per artist
+            .slice(0, 20); // Process top 20 most recent per artist
           
           // Process each portfolio item - use for loop to handle async
           for (const [index, item] of recentPortfolio.entries()) {
@@ -525,11 +524,11 @@ function DiscoverPageContent() {
         // This includes content uploaded via Discover portal with showInPortfolio = false
         log('🔍 Discover: Fetching non-portfolio content from artworks collection...');
         try {
+          // Filter in JavaScript instead of query level to avoid index requirement
           const artworksQuery = query(
             collection(db, 'artworks'),
-            where('showInPortfolio', '==', false), // Filter at query level for better performance
             orderBy('createdAt', 'desc'),
-            limit(30) // Reduced from 100 to 30 for better performance
+            limit(100) // Increased limit, will filter in JavaScript
           );
           const artworksSnapshot = await getDocs(artworksQuery);
           
@@ -539,6 +538,10 @@ function DiscoverPageContent() {
           
           for (const artworkDoc of artworksSnapshot.docs) {
             const artworkData = artworkDoc.data();
+            
+            // Only include items that are NOT in portfolio (showInPortfolio === false)
+            // Filter at JavaScript level to avoid index requirement
+            if (artworkData.showInPortfolio !== false) continue;
             
             // Skip deleted items
             if (artworkData.deleted === true) continue;
@@ -668,9 +671,9 @@ function DiscoverPageContent() {
         
         // No fallback: only show current portfolio items with images, skip deleted/hidden
         
-        // Limit to 50 most recent after any fallback
+        // Limit to 100 most recent to ensure good content coverage
         const safeArtworks = Array.isArray(fetchedArtworks) ? fetchedArtworks : [];
-        const limitedArtworks = safeArtworks.slice(0, 50);
+        const limitedArtworks = safeArtworks.slice(0, 100);
         
         log(`🎯 Discover: Real artworks count: ${limitedArtworks.length}`);
         
