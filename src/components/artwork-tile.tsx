@@ -534,6 +534,7 @@ const generateArtistContent = (artist: Artist) => ({
               )}
               
               {/* Video element - loads when in viewport, positioned behind poster until ready */}
+              {/* Use preload="metadata" for tiles to reduce bandwidth - only loads video metadata, not full video */}
               {shouldLoadVideo && !videoError && (
                 <video
                   ref={videoRef}
@@ -544,7 +545,7 @@ const generateArtistContent = (artist: Artist) => ({
                   playsInline={true}
                   webkit-playsinline="true"
                   x5-playsinline="true"
-                  preload="auto"
+                  preload="metadata"
                   controls={false}
                   autoPlay={isInitialViewport || isInViewport}
                   poster={imageUrl || undefined}
