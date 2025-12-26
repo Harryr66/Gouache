@@ -1213,12 +1213,15 @@ function DiscoverPageContent() {
     fetchEvents();
   }, [theme, mounted]);
 
-  if (loading) {
+  // Render initial tiles invisibly during loading so videos can preload
+  const shouldPreloadTiles = loading && initialVideosTotal > 0;
+  
+  if (loading && !shouldPreloadTiles) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-6">
           <ThemeLoading size="lg" />
-          <TypewriterJoke onComplete={handleJokeComplete} typingSpeed={60} pauseAfterComplete={3000} />
+          <TypewriterJoke onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
         </div>
       </div>
     );
@@ -1226,6 +1229,41 @@ function DiscoverPageContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Preload tiles invisibly during loading */}
+      {shouldPreloadTiles && (
+        <div className="fixed inset-0 opacity-0 pointer-events-none -z-50" aria-hidden="true">
+          <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-5 gap-1">
+            {visibleFilteredArtworks.slice(0, 12).map((item) => {
+              const isAd = 'type' in item && item.type === 'ad';
+              if (isAd) return null;
+              
+              const artwork = item as Artwork;
+              const isInitial = true;
+              const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+              
+              return (
+                <ArtworkTile 
+                  key={`preload-${artwork.id}`}
+                  artwork={artwork} 
+                  hideBanner={isMobile && artworkView === 'grid'}
+                  isInitialViewport={isInitial && hasVideo}
+                  onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+      
+      {/* Loading overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
+          <div className="flex flex-col items-center justify-center gap-6">
+            <ThemeLoading size="lg" />
+            <TypewriterJoke onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
+          </div>
+        </div>
+      )}
       <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden">
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
