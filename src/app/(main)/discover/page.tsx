@@ -700,26 +700,6 @@ function DiscoverPageContent() {
         if (initialVideos.length === 0) {
           setLoading(false);
         }
-      } catch (err) {
-        error('❌ Error fetching artworks from artist profiles:', err);
-        // Even on error, show placeholder artworks
-        const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
-        setArtworks(placeholderArtworks);
-        
-        // Count initial viewport videos for preloading (first 12 tiles)
-        const initialVideos = placeholderArtworks.filter((artwork: Artwork) => {
-          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-          return hasVideo;
-        }).slice(0, 12); // First 12 tiles (roughly first screen)
-        
-        setInitialVideosTotal(initialVideos.length);
-        initialVideoReadyRef.current.clear();
-        setInitialVideosReady(0);
-        
-        // If no videos to preload, set loading to false immediately
-        if (initialVideos.length === 0) {
-          setLoading(false);
-        }
       }
     }
   };
