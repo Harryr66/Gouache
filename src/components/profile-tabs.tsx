@@ -22,6 +22,8 @@ import { CreditCard } from 'lucide-react';
 import { useFollow } from '@/providers/follow-provider';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { storage } from '@/lib/firebase';
+import { ref, deleteObject } from 'firebase/storage';
 
 interface ProfileTabsProps {
   userId: string;
@@ -643,6 +645,64 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       if (!itemToDelete) return;
 
       try {
+        // First, get the item data to extract storage URLs
+        let itemData: any = null;
+        if (itemToDelete.type === 'artwork') {
+          const artworkDoc = await getDoc(doc(db, 'artworks', itemToDelete.id));
+          if (artworkDoc.exists()) {
+            itemData = artworkDoc.data();
+          }
+        } else if (itemToDelete.type === 'post') {
+          const postDoc = await getDoc(doc(db, 'posts', itemToDelete.id));
+          if (postDoc.exists()) {
+            itemData = postDoc.data();
+          }
+        }
+
+        // Delete media files from Firebase Storage
+        if (itemData) {
+          const urlsToDelete: string[] = [];
+
+          // Add main image/video URLs
+          if (itemData.imageUrl) urlsToDelete.push(itemData.imageUrl);
+          if (itemData.videoUrl) urlsToDelete.push(itemData.videoUrl);
+          if (itemData.videoVariants?.thumbnail) urlsToDelete.push(itemData.videoVariants.thumbnail);
+          if (itemData.videoVariants?.full) urlsToDelete.push(itemData.videoVariants.full);
+
+          // Add supporting images/media
+          if (itemData.supportingImages && Array.isArray(itemData.supportingImages)) {
+            urlsToDelete.push(...itemData.supportingImages);
+          }
+          if (itemData.supportingMedia && Array.isArray(itemData.supportingMedia)) {
+            urlsToDelete.push(...itemData.supportingMedia);
+          }
+          if (itemData.mediaUrls && Array.isArray(itemData.mediaUrls)) {
+            urlsToDelete.push(...itemData.mediaUrls);
+          }
+
+          // Delete each file from storage
+          for (const url of urlsToDelete) {
+            if (!url || typeof url !== 'string') continue;
+            
+            try {
+              // Extract the storage path from the download URL
+              // Firebase Storage URLs format: https://firebasestorage.googleapis.com/v0/b/BUCKET/o/PATH?alt=media&token=TOKEN
+              const urlObj = new URL(url);
+              const pathMatch = urlObj.pathname.match(/\/o\/(.+)\?/);
+              if (pathMatch && pathMatch[1]) {
+                const storagePath = decodeURIComponent(pathMatch[1]);
+                const fileRef = ref(storage, storagePath);
+                await deleteObject(fileRef);
+                console.log('✅ Deleted file from storage:', storagePath);
+              }
+            } catch (storageError) {
+              console.error('Error deleting file from storage:', url, storageError);
+              // Continue with other files even if one fails
+            }
+          }
+        }
+
+        // Now mark as deleted in Firestore
         const batch = writeBatch(db);
         
         // Mark as deleted in the artworks collection
