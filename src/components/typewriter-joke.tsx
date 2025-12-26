@@ -11,7 +11,7 @@ const ART_JOKES = [
   "My canvas just broke up with me… // It said over the years I've stretched them too thin.",
   "A portrait artist asked his wife why she was annoyed with him… // She said \"don't use that tone with me\"",
   "A textile artist was fired after falling into the factory loom... // They claim they were stitched up...",
-  "Remember, if it's not Baroque…Don't fix try it."
+  "Remember, if it's not Baroque…Don't fix it."
 ];
 
 interface TypewriterJokeProps {
