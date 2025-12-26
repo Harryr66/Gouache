@@ -18,6 +18,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { ThemeLoading } from '@/components/theme-loading';
+import { TypewriterJoke } from '@/components/typewriter-joke';
 import { useTheme } from 'next-themes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -276,6 +277,7 @@ function DiscoverPageContent() {
   const [initialVideosTotal, setInitialVideosTotal] = useState(0);
   const initialVideoReadyRef = useRef<Set<string>>(new Set());
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [jokeComplete, setJokeComplete] = useState(false);
   
   // Track when initial videos are ready
   const handleVideoReady = useCallback((artworkId: string) => {
@@ -285,16 +287,23 @@ function DiscoverPageContent() {
     }
   }, []);
   
-  // Set loading to false when videos are ready or timeout
+  // Handle joke completion
+  const handleJokeComplete = useCallback(() => {
+    setJokeComplete(true);
+  }, []);
+  
+  // Set loading to false when videos are ready AND joke is complete
   useEffect(() => {
     if (initialVideosTotal === 0) {
-      // No videos to preload, set loading to false immediately
-      setLoading(false);
+      // No videos to preload, wait for joke to complete
+      if (jokeComplete) {
+        setLoading(false);
+      }
       return;
     }
     
-    // If all initial videos are ready, hide loading
-    if (initialVideosReady >= initialVideosTotal) {
+    // If all initial videos are ready AND joke is complete, hide loading
+    if (initialVideosReady >= initialVideosTotal && jokeComplete) {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
@@ -305,20 +314,20 @@ function DiscoverPageContent() {
       return;
     }
     
-    // Timeout: hide loading after 3 seconds max (even if videos not all ready)
+    // Timeout: hide loading after 8 seconds max (to allow time for joke + videos)
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
     loadingTimeoutRef.current = setTimeout(() => {
       setLoading(false);
-    }, 3000);
+    }, 8000);
     
     return () => {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [initialVideosReady, initialVideosTotal, loading]);
+  }, [initialVideosReady, initialVideosTotal, jokeComplete]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
@@ -663,11 +672,7 @@ function DiscoverPageContent() {
         setInitialVideosTotal(initialVideos.length);
         initialVideoReadyRef.current.clear();
         setInitialVideosReady(0);
-        
-        // If no videos to preload, set loading to false immediately
-        if (initialVideos.length === 0) {
-          setLoading(false);
-        }
+        setJokeComplete(false); // Reset joke completion state
         
         // Fetch engagement metrics for all artworks
         if (finalArtworks.length > 0) {
@@ -695,11 +700,7 @@ function DiscoverPageContent() {
         setInitialVideosTotal(initialVideos.length);
         initialVideoReadyRef.current.clear();
         setInitialVideosReady(0);
-        
-        // If no videos to preload, set loading to false immediately
-        if (initialVideos.length === 0) {
-          setLoading(false);
-        }
+        setJokeComplete(false); // Reset joke completion state
       }
     };
 
@@ -1215,7 +1216,10 @@ function DiscoverPageContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <ThemeLoading size="lg" />
+        <div className="flex flex-col items-center justify-center gap-6">
+          <ThemeLoading size="lg" />
+          <TypewriterJoke onComplete={handleJokeComplete} typingSpeed={30} pauseAfterComplete={2000} />
+        </div>
       </div>
     );
   }
