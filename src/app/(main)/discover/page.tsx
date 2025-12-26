@@ -939,16 +939,10 @@ function DiscoverPageContent() {
     const realItems = result.filter(item => !isPlaceholder(item));
     const placeholderItems = result.filter(item => isPlaceholder(item));
     
-    // Shuffle only real artworks to randomize landscape tile distribution (preserve ranking)
-    // This ensures landscape tiles are randomly distributed while maintaining real artworks before placeholders
-    const shuffledReal = [...realItems];
-    for (let i = shuffledReal.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledReal[i], shuffledReal[j]] = [shuffledReal[j], shuffledReal[i]];
-    }
-    
-    // Combine: shuffled real artworks first, then placeholders (maintains ranking)
-    const combined = [...shuffledReal, ...placeholderItems];
+    // Keep artworks in their ranked order (engagement + view time based)
+    // No shuffling - maintain stable positions based on ranking
+    // Combined: ranked real artworks first, then placeholders
+    const combined = [...realItems, ...placeholderItems];
     
     // Interleave items across columns for uniform top alignment
     // Instead of filling columns sequentially [col1: 1,2,3... col2: 4,5,6...],
