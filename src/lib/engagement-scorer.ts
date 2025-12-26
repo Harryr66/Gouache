@@ -27,10 +27,12 @@ export class EngagementScorer {
 
   /**
    * Score artworks based on engagement and recency
+   * @param followedArtistIds - Set of artist IDs that the user follows (for priority boost)
    */
   scoreArtworks(
     artworks: Artwork[],
-    engagements: Map<string, ArtworkEngagement>
+    engagements: Map<string, ArtworkEngagement>,
+    followedArtistIds?: Set<string>
   ): ScoredArtwork[] {
     const now = Date.now();
     const oneDayMs = 24 * 60 * 60 * 1000;
@@ -75,6 +77,11 @@ export class EngagementScorer {
       let finalScore =
         normalizedEngagement * this.ENGAGEMENT_WEIGHT +
         recencyScore * this.RECENCY_WEIGHT;
+      
+      // Boost score for followed artists (prioritize content from artists user follows)
+      if (followedArtistIds && followedArtistIds.has(artwork.artist.id)) {
+        finalScore = finalScore * 1.5; // 50% boost for followed artists
+      }
       
       // Ensure legitimate accounts get a minimum score of 1
       // This ensures they always rank above placeholders (which have score 0)

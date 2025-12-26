@@ -30,6 +30,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import { engagementTracker } from '@/lib/engagement-tracker';
 import { engagementScorer } from '@/lib/engagement-scorer';
+import { useFollow } from '@/providers/follow-provider';
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
@@ -263,6 +264,7 @@ function DiscoverPageContent() {
   const error = (...args: any[]) => { if (isDev) console.error(...args); };
   const { toggleLike, isLiked } = useLikes();
   const { user } = useAuth();
+  const { getFollowedArtists, isFollowing } = useFollow();
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [ads, setAds] = useState<any[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
@@ -713,35 +715,70 @@ function DiscoverPageContent() {
     // Sort using engagement-based algorithm when 'popular' is selected
     let sorted = Array.isArray(realArtworks) ? [...realArtworks] : [];
     
+    // Get followed artist IDs for priority boost
+    const followedArtists = getFollowedArtists();
+    const followedArtistIds = new Set(followedArtists.map(a => a.id));
+    
     if (sortBy === 'popular' && artworkEngagements.size > 0) {
-      // Use engagement-based scoring algorithm
-      const scoredArtworks = engagementScorer.scoreArtworks(sorted, artworkEngagements);
+      // Use engagement-based scoring algorithm with follow boost
+      const scoredArtworks = engagementScorer.scoreArtworks(sorted, artworkEngagements, followedArtistIds);
       const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
       sorted = engagementScorer.sortByScore(withDiversity);
     } else {
-      // Traditional sorting for other options
+      // Traditional sorting for other options, but still prioritize followed artists
       switch (sortBy) {
         case 'newest':
-          sorted.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+          // Sort by newest, but prioritize followed artists
+          sorted.sort((a, b) => {
+            const aIsFollowed = followedArtistIds.has(a.artist.id);
+            const bIsFollowed = followedArtistIds.has(b.artist.id);
+            if (aIsFollowed && !bIsFollowed) return -1;
+            if (!aIsFollowed && bIsFollowed) return 1;
+            return (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
+          });
           break;
         case 'oldest':
-          sorted.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+          sorted.sort((a, b) => {
+            const aIsFollowed = followedArtistIds.has(a.artist.id);
+            const bIsFollowed = followedArtistIds.has(b.artist.id);
+            if (aIsFollowed && !bIsFollowed) return -1;
+            if (!aIsFollowed && bIsFollowed) return 1;
+            return (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0);
+          });
           break;
         case 'likes':
-          sorted.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+          sorted.sort((a, b) => {
+            const aIsFollowed = followedArtistIds.has(a.artist.id);
+            const bIsFollowed = followedArtistIds.has(b.artist.id);
+            if (aIsFollowed && !bIsFollowed) return -1;
+            if (!aIsFollowed && bIsFollowed) return 1;
+            return (b.likes || 0) - (a.likes || 0);
+          });
           break;
         case 'recent':
-          sorted.sort((a, b) => (b.updatedAt?.getTime() || b.createdAt?.getTime() || 0) - (a.updatedAt?.getTime() || a.createdAt?.getTime() || 0));
+          sorted.sort((a, b) => {
+            const aIsFollowed = followedArtistIds.has(a.artist.id);
+            const bIsFollowed = followedArtistIds.has(b.artist.id);
+            if (aIsFollowed && !bIsFollowed) return -1;
+            if (!aIsFollowed && bIsFollowed) return 1;
+            return (b.updatedAt?.getTime() || b.createdAt?.getTime() || 0) - (a.updatedAt?.getTime() || a.createdAt?.getTime() || 0);
+          });
           break;
         default:
           // Default: Use engagement-based ranking if we have engagement data
           if (artworkEngagements.size > 0) {
-            const scoredArtworks = engagementScorer.scoreArtworks(sorted, artworkEngagements);
+            const scoredArtworks = engagementScorer.scoreArtworks(sorted, artworkEngagements, followedArtistIds);
             const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
             sorted = engagementScorer.sortByScore(withDiversity);
           } else {
-            // Fallback to newest if no engagement data
-            sorted.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+            // Fallback to newest if no engagement data, but prioritize followed artists
+            sorted.sort((a, b) => {
+              const aIsFollowed = followedArtistIds.has(a.artist.id);
+              const bIsFollowed = followedArtistIds.has(b.artist.id);
+              if (aIsFollowed && !bIsFollowed) return -1;
+              if (!aIsFollowed && bIsFollowed) return 1;
+              return (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
+            });
           }
           break;
       }

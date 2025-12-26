@@ -459,6 +459,15 @@ const generateArtistContent = (artist: Artist) => ({
           </div>
         ) : null}
 
+        {/* Followed artist indicator - subtle tag */}
+        {following && (
+          <div className="absolute top-2 right-2 z-10">
+            <Badge variant="outline" className="text-xs px-2 py-1 bg-background/80 backdrop-blur-sm border-primary/30 text-primary">
+              Following
+            </Badge>
+          </div>
+        )}
+
         {/* AI badge */}
         {artwork.isAI && (
           <div className="absolute top-2 left-2">
@@ -568,6 +577,15 @@ const generateArtistContent = (artist: Artist) => ({
                       </Badge>
                     </div>
                   ) : null}
+                  
+                  {/* Followed artist indicator - subtle tag */}
+                  {following && (
+                    <div className="absolute top-3 right-3 z-10">
+                      <Badge variant="outline" className="text-xs px-2 py-1 bg-background/80 backdrop-blur-sm border-primary/30 text-primary">
+                        Following
+                      </Badge>
+                    </div>
+                  )}
                 </div>
               </div>
               
