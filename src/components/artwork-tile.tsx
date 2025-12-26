@@ -54,6 +54,7 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [showArtistPreview, setShowArtistPreview] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const tileRef = useRef<HTMLDivElement>(null);
   const [mediaAspectRatio, setMediaAspectRatio] = useState<number | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
@@ -128,9 +129,38 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   // Default to 2:3 (portrait) if aspect ratio not yet determined - ideal for tall tiles
   const aspectRatio = mediaAspectRatio || (2/3);
   
-  // Disable autoplay completely - videos should only play on user click
-  // Remove Intersection Observer autoplay to prevent videos from auto-playing
-  // Users must explicitly click to play videos
+  // Intersection Observer for video autoplay on Discover feed
+  useEffect(() => {
+    if (!hasVideo || !videoUrl || !videoRef.current || !tileRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Video is in view - play it
+            if (videoRef.current) {
+              videoRef.current.play().catch((error) => {
+                // Autoplay failed (browser policy) - this is expected on some browsers
+                console.log('Video autoplay prevented by browser:', error);
+              });
+            }
+          } else {
+            // Video is out of view - pause it
+            if (videoRef.current) {
+              videoRef.current.pause();
+            }
+          }
+        });
+      },
+      { threshold: 0.5 } // Trigger when 50% of video is visible
+    );
+
+    observer.observe(tileRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasVideo, videoUrl]);
 
   const handleTileClick = () => {
     // Navigate to artwork detail page only if we have an artwork id
