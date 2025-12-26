@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -389,6 +389,106 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     );
   }
 
+  // Component for individual Discover content tile with video autoplay
+  function DiscoverContentTile({ item, imageUrl, isVideo, router }: { item: any; imageUrl: string; isVideo: boolean; router: any }) {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const tileRef = useRef<HTMLDivElement>(null);
+
+    // Intersection Observer for video autoplay
+    useEffect(() => {
+      if (!isVideo || !videoRef.current || !tileRef.current) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              // Video is in view - play it
+              if (videoRef.current) {
+                videoRef.current.play().catch((error) => {
+                  // Autoplay failed (browser policy) - this is expected on some browsers
+                  console.log('Video autoplay prevented by browser:', error);
+                });
+              }
+            } else {
+              // Video is out of view - pause it
+              if (videoRef.current) {
+                videoRef.current.pause();
+              }
+            }
+          });
+        },
+        { threshold: 0.5 } // Trigger when 50% of video is visible
+      );
+
+      observer.observe(tileRef.current);
+
+      return () => {
+        observer.disconnect();
+      };
+    }, [isVideo]);
+
+    const handleClick = () => {
+      // Navigate to artwork page using the item's ID
+      // Items from artworks collection: use document ID (doc.id) - this is the Firestore document ID
+      // Items from posts collection: use artworkId (links to artwork document)
+      // The document ID is the most reliable since it's what Firestore uses
+      const targetId = item.type === 'artwork' ? item.id : (item.artworkId || item.id);
+      if (targetId) {
+        console.log('🔗 Navigating to artwork from Discover tab:', {
+          targetId,
+          itemId: item.id,
+          artworkId: item.artworkId,
+          type: item.type,
+          title: item.title || item.caption,
+          hasImageUrl: !!item.imageUrl,
+          hasVideoUrl: !!item.videoUrl
+        });
+        // Encode the ID to handle special characters
+        const encodedId = encodeURIComponent(targetId);
+        router.push(`/artwork/${encodedId}`);
+      } else {
+        console.error('❌ No ID found for Discover content item:', item);
+      }
+    };
+
+    return (
+      <Card 
+        ref={tileRef}
+        className="group hover:shadow-lg transition-shadow overflow-hidden cursor-pointer"
+        onClick={handleClick}
+      >
+        <div className="relative aspect-square">
+          {isVideo && (item.videoUrl || item.mediaUrls?.[0]) ? (
+            <video
+              ref={videoRef}
+              src={item.videoUrl || item.mediaUrls?.[0]}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              muted
+              loop
+              playsInline
+              preload="auto"
+              webkit-playsinline="true"
+              x5-playsinline="true"
+            />
+          ) : (
+            <Image
+              src={imageUrl}
+              alt={item.title || item.caption || 'Content'}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          )}
+        </div>
+        <CardContent className="p-4">
+          <h4 className="font-semibold text-sm mb-1 line-clamp-1">{item.title || item.caption || 'Untitled'}</h4>
+          {item.description && (
+            <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Component to display Discover content (generic content NOT marked as artwork)
   // This shows content uploaded via Discover upload portal that was NOT added to portfolio
   function DiscoverContentDisplay({ userId, isOwnProfile }: { userId: string; isOwnProfile: boolean }) {
@@ -547,58 +647,13 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           const isVideo = item.mediaType === 'video' || item.videoUrl;
           
           return (
-            <Card 
-              key={item.id} 
-              className="group hover:shadow-lg transition-shadow overflow-hidden cursor-pointer"
-              onClick={() => {
-                // Navigate to artwork page using the item's ID
-                // Items from artworks collection: use document ID (doc.id) - this is the Firestore document ID
-                // Items from posts collection: use artworkId (links to artwork document)
-                // The document ID is the most reliable since it's what Firestore uses
-                const targetId = item.type === 'artwork' ? item.id : (item.artworkId || item.id);
-                if (targetId) {
-                  console.log('🔗 Navigating to artwork from Discover tab:', {
-                    targetId,
-                    itemId: item.id,
-                    artworkId: item.artworkId,
-                    type: item.type,
-                    title: item.title || item.caption,
-                    hasImageUrl: !!item.imageUrl,
-                    hasVideoUrl: !!item.videoUrl
-                  });
-                  // Encode the ID to handle special characters
-                  const encodedId = encodeURIComponent(targetId);
-                  router.push(`/artwork/${encodedId}`);
-                } else {
-                  console.error('❌ No ID found for Discover content item:', item);
-                }
-              }}
-            >
-              <div className="relative aspect-square">
-                {isVideo && (item.videoUrl || item.mediaUrls?.[0]) ? (
-                  <video
-                    src={item.videoUrl || item.mediaUrls?.[0]}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    muted
-                    loop
-                    playsInline
-                  />
-                ) : (
-                  <Image
-                    src={imageUrl}
-                    alt={item.title || item.caption || 'Content'}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                )}
-              </div>
-              <CardContent className="p-4">
-                <h4 className="font-semibold text-sm mb-1 line-clamp-1">{item.title || item.caption || 'Untitled'}</h4>
-                {item.description && (
-                  <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
-                )}
-              </CardContent>
-            </Card>
+            <DiscoverContentTile
+              key={item.id}
+              item={item}
+              imageUrl={imageUrl}
+              isVideo={isVideo}
+              router={router}
+            />
           );
         })}
       </div>
