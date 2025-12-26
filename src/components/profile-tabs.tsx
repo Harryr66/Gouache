@@ -435,8 +435,12 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               const hasMedia = data.imageUrl || data.videoUrl || data.mediaUrls?.length > 0;
               
               if (belongsToUser && notInPortfolio && hasMedia) {
+                // Use document ID as the primary ID (this is what Firestore uses)
+                // Also ensure artworkId is set for consistency
+                const documentId = doc.id;
                 contentItems.push({
-                  id: doc.id,
+                  id: documentId,
+                  artworkId: data.artworkId || data.id || documentId, // Use data.id or documentId as fallback
                   ...data,
                   type: 'artwork',
                   createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
@@ -480,6 +484,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               if (belongsToUser && notInPortfolio && hasMedia) {
                 contentItems.push({
                   id: doc.id,
+                  artworkId: data.artworkId || doc.id, // Ensure artworkId is set for navigation
                   ...data,
                   type: 'post',
                   createdAt: data.createdAt ? (typeof data.createdAt === 'number' ? new Date(data.createdAt) : data.createdAt?.toDate?.() || new Date()) : new Date(),
@@ -543,8 +548,26 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               key={item.id} 
               className="group hover:shadow-lg transition-shadow overflow-hidden cursor-pointer"
               onClick={() => {
-                if (item.artworkId || item.type === 'artwork') {
-                  router.push(`/artwork/${item.artworkId || item.id}`);
+                // Navigate to artwork page using the item's ID
+                // Items from artworks collection: use document ID (doc.id) - this is the Firestore document ID
+                // Items from posts collection: use artworkId (links to artwork document)
+                // The document ID is the most reliable since it's what Firestore uses
+                const targetId = item.type === 'artwork' ? item.id : (item.artworkId || item.id);
+                if (targetId) {
+                  console.log('🔗 Navigating to artwork from Discover tab:', {
+                    targetId,
+                    itemId: item.id,
+                    artworkId: item.artworkId,
+                    type: item.type,
+                    title: item.title || item.caption,
+                    hasImageUrl: !!item.imageUrl,
+                    hasVideoUrl: !!item.videoUrl
+                  });
+                  // Encode the ID to handle special characters
+                  const encodedId = encodeURIComponent(targetId);
+                  router.push(`/artwork/${encodedId}`);
+                } else {
+                  console.error('❌ No ID found for Discover content item:', item);
                 }
               }}
             >

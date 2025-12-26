@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { AboutTheArtist } from '@/components/about-the-artist';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { X, Mail } from 'lucide-react';
@@ -20,6 +20,8 @@ interface ArtworkView {
   title: string;
   description?: string;
   imageUrl: string;
+  videoUrl?: string;
+  mediaType?: 'image' | 'video';
   tags?: string[];
   price?: number;
   currency?: string;
@@ -40,7 +42,10 @@ interface ArtworkView {
 export default function ArtworkPage() {
   const params = useParams();
   const router = useRouter();
-  const artworkId = Array.isArray(params?.id) ? params.id[0] : (params?.id as string | undefined);
+  // Extract and clean the ID from URL params
+  const rawId = Array.isArray(params?.id) ? params.id[0] : (params?.id as string | undefined);
+  // Decode URL encoding and remove trailing slashes
+  const artworkId = rawId ? decodeURIComponent(rawId).replace(/\/$/, '').trim() : undefined;
   const [artwork, setArtwork] = useState<ArtworkView | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,17 +58,61 @@ export default function ArtworkPage() {
         setLoading(false);
         return;
       }
+      
+      console.log('🔍 Fetching artwork with ID:', artworkId);
+      
       try {
-        // First try the artworks collection
-        const ref = doc(db, 'artworks', artworkId);
-        const snap = await getDoc(ref);
-
+        // First try the artworks collection (this includes Discover content)
+        // The ID should already be clean from URL params extraction above
+        const cleanId = artworkId;
+        
+        console.log('🧹 Using ID:', cleanId);
+        
+        // Try to find the document - first with the exact ID, then try variations
+        let ref = doc(db, 'artworks', cleanId);
+        let snap = await getDoc(ref);
+        
+        // If not found and ID doesn't start with 'artwork-', try adding the prefix
+        if (!snap.exists() && !cleanId.startsWith('artwork-')) {
+          console.log('⚠️ Document not found, trying with artwork- prefix...');
+          ref = doc(db, 'artworks', `artwork-${cleanId}`);
+          snap = await getDoc(ref);
+        }
+        
+        // If still not found and ID starts with 'artwork-', try without the prefix
+        if (!snap.exists() && cleanId.startsWith('artwork-')) {
+          console.log('⚠️ Document not found, trying without artwork- prefix...');
+          const idWithoutPrefix = cleanId.replace(/^artwork-/, '');
+          ref = doc(db, 'artworks', idWithoutPrefix);
+          snap = await getDoc(ref);
+        }
+        
+        console.log('📄 Artwork document exists:', snap.exists(), 'for ID:', snap.exists() ? snap.id : cleanId);
+        
         if (snap.exists()) {
           const data = snap.data();
+          console.log('✅ Found artwork document, data keys:', Object.keys(data || {}));
+          console.log('📊 Artwork data:', {
+            documentId: snap.id,
+            dataId: data.id,
+            hasImageUrl: !!data.imageUrl,
+            hasVideoUrl: !!data.videoUrl,
+            hasMediaUrls: !!data.mediaUrls?.length,
+            showInPortfolio: data.showInPortfolio,
+            title: data.title,
+            description: data.description
+          });
           const imageUrl = data.imageUrl || data.supportingImages?.[0] || data.images?.[0] || '';
+          const videoUrl = data.videoUrl || data.mediaUrls?.[0] || '';
+          const hasMedia = imageUrl || videoUrl || data.mediaUrls?.length > 0;
           
-          // Only proceed if we have an imageUrl, otherwise fall through to portfolio fallback
-          if (imageUrl) {
+          // Always proceed if document exists - Discover content (showInPortfolio === false) should always be displayable
+          // Even if media detection fails, we should still show the artwork with available data
+          // If document exists in artworks collection, always display it (it's valid content)
+          // Use document ID (snap.id) as the primary ID, fallback to data.id if different
+          const artworkDocumentId = snap.id || data.id || cleanId;
+          
+          if (true) { // Document exists, so display it
             // Get artist email if available
             let artistEmail = null;
             if (data.artist?.userId || data.artist?.id) {
@@ -78,10 +127,12 @@ export default function ArtworkPage() {
             }
 
             setArtwork({
-              id: artworkId,
+              id: artworkDocumentId,
               title: data.title || 'Untitled',
               description: data.description || '',
-              imageUrl,
+              imageUrl: imageUrl || '', // Keep imageUrl separate
+              videoUrl: videoUrl || '', // Add videoUrl
+              mediaType: (data.mediaType || (videoUrl ? 'video' : (imageUrl ? 'image' : undefined))) as 'image' | 'video' | undefined,
               tags: Array.isArray(data.tags) ? data.tags : [],
               price: data.price,
               currency: data.currency || 'USD',
@@ -101,12 +152,72 @@ export default function ArtworkPage() {
             setLoading(false);
             return;
           }
-          // If no imageUrl, continue to portfolio fallback
-          console.log('Artwork found in artworks collection but no imageUrl, trying portfolio fallback...');
+          // Document exists but condition failed (shouldn't happen now) - continue to portfolio fallback
+          console.log('Artwork found in artworks collection but condition check failed, trying portfolio fallback...');
+        } else {
+          console.log('❌ Artwork document does not exist in artworks collection for ID:', cleanId);
+          
+          // Try querying by the id field in case document ID doesn't match
+          console.log('🔍 Trying to find artwork by id field...');
+          try {
+            const artworksQuery = query(
+              collection(db, 'artworks'),
+              where('id', '==', cleanId)
+            );
+            const querySnapshot = await getDocs(artworksQuery);
+            
+            if (!querySnapshot.empty) {
+              const foundDoc = querySnapshot.docs[0];
+              console.log('✅ Found artwork by id field query, document ID:', foundDoc.id);
+              const data = foundDoc.data() as any;
+              const imageUrl = data.imageUrl || data.supportingImages?.[0] || data.images?.[0] || '';
+              const videoUrl = data.videoUrl || data.mediaUrls?.[0] || '';
+              
+              let artistEmail = null;
+              if (data.artist?.userId || data.artist?.id) {
+                try {
+                  const artistDoc = await getDoc(doc(db, 'userProfiles', data.artist?.userId || data.artist?.id));
+                  if (artistDoc.exists()) {
+                    artistEmail = artistDoc.data().email;
+                  }
+                } catch (err) {
+                  console.warn('Could not fetch artist email:', err);
+                }
+              }
+              
+              setArtwork({
+                id: foundDoc.id, // Use the actual document ID
+                title: data.title || 'Untitled',
+                description: data.description || '',
+                imageUrl: imageUrl || '',
+                videoUrl: videoUrl || '',
+                mediaType: (data.mediaType || (videoUrl ? 'video' : (imageUrl ? 'image' : undefined))) as 'image' | 'video' | undefined,
+                tags: Array.isArray(data.tags) ? data.tags : [],
+                price: data.price,
+                currency: data.currency || 'USD',
+                isForSale: data.isForSale,
+                priceType: data.priceType || (data.contactForPrice ? 'contact' : 'fixed'),
+                contactForPrice: data.contactForPrice || data.priceType === 'contact',
+                deliveryScope: data.deliveryScope,
+                deliveryCountries: data.deliveryCountries,
+                artist: {
+                  id: data.artist?.userId || data.artist?.id,
+                  name: data.artist?.name,
+                  handle: data.artist?.handle,
+                  avatarUrl: data.artist?.avatarUrl ?? null,
+                  email: artistEmail,
+                },
+              });
+              setLoading(false);
+              return;
+            }
+          } catch (queryError) {
+            console.warn('Error querying artworks by id field:', queryError);
+          }
         }
 
         // Fallback: search userProfiles portfolios for this item id
-        console.log('Searching portfolios for artwork ID:', artworkId);
+        console.log('Searching portfolios for artwork ID:', cleanId);
         const usersSnap = await getDocs(collection(db, 'userProfiles'));
         let found = false;
         
@@ -114,7 +225,7 @@ export default function ArtworkPage() {
           if (found) break;
           const userData = userDoc.data();
           const portfolio = Array.isArray(userData.portfolio) ? userData.portfolio : [];
-          const match = portfolio.find((item: any) => item?.id === artworkId);
+          const match = portfolio.find((item: any) => item?.id === cleanId);
           
           if (match) {
             const imageUrl = match.imageUrl || match.supportingImages?.[0] || match.images?.[0] || '';
@@ -122,7 +233,7 @@ export default function ArtworkPage() {
               found = true;
               console.log('Found artwork in portfolio for user:', userDoc.id);
               setArtwork({
-                id: artworkId,
+                id: cleanId,
                 title: match.title || 'Untitled',
                 description: match.description || '',
                 imageUrl,
@@ -144,13 +255,141 @@ export default function ArtworkPage() {
               });
               break;
             } else {
-              console.log('Found artwork in portfolio but no imageUrl:', artworkId, 'user:', userDoc.id);
+              console.log('Found artwork in portfolio but no imageUrl:', cleanId, 'user:', userDoc.id);
             }
           }
         }
 
         if (!found) {
-          console.error('Artwork not found in artworks collection or any portfolio:', artworkId);
+          // Also check posts collection as fallback (for Discover content)
+          console.log('Checking posts collection for artwork ID:', cleanId);
+          try {
+            // First, try to find post by ID
+            const postDocRef = doc(db, 'posts', cleanId);
+            const postDoc = await getDoc(postDocRef);
+            
+            if (postDoc.exists()) {
+              const postData = postDoc.data();
+              const associatedArtworkId = postData.artworkId || postDoc.id;
+              const artworkDoc = await getDoc(doc(db, 'artworks', associatedArtworkId));
+              
+              if (artworkDoc.exists()) {
+                const artworkData = artworkDoc.data();
+                const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || '';
+                const videoUrl = artworkData.videoUrl || artworkData.mediaUrls?.[0] || '';
+                const hasMedia = imageUrl || videoUrl || artworkData.mediaUrls?.length > 0;
+                
+                if (hasMedia) {
+                  let artistEmail = null;
+                  if (artworkData.artist?.userId || artworkData.artist?.id) {
+                    try {
+                      const artistDoc = await getDoc(doc(db, 'userProfiles', artworkData.artist?.userId || artworkData.artist?.id));
+                      if (artistDoc.exists()) {
+                        artistEmail = artistDoc.data().email;
+                      }
+                    } catch (err) {
+                      console.warn('Could not fetch artist email:', err);
+                    }
+                  }
+                  
+                  setArtwork({
+                    id: associatedArtworkId,
+                    title: artworkData.title || postData.caption || 'Untitled',
+                    description: artworkData.description || postData.caption || '',
+                    imageUrl: imageUrl || '',
+                    videoUrl: videoUrl || '',
+                    mediaType: (artworkData.mediaType || (videoUrl ? 'video' : 'image')) as 'image' | 'video',
+                    tags: Array.isArray(artworkData.tags) ? artworkData.tags : [],
+                    price: artworkData.price,
+                    currency: artworkData.currency || 'USD',
+                    isForSale: artworkData.isForSale,
+                    priceType: artworkData.priceType || (artworkData.contactForPrice ? 'contact' : 'fixed'),
+                    contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
+                    deliveryScope: artworkData.deliveryScope,
+                    deliveryCountries: artworkData.deliveryCountries,
+                    artist: {
+                      id: artworkData.artist?.userId || artworkData.artist?.id,
+                      name: artworkData.artist?.name,
+                      handle: artworkData.artist?.handle,
+                      avatarUrl: artworkData.artist?.avatarUrl ?? null,
+                      email: artistEmail,
+                    },
+                  });
+                  setLoading(false);
+                  return;
+                }
+              }
+            }
+            
+            // If not found by direct ID, search all posts for matching artworkId
+            const postsQuery = collection(db, 'posts');
+            const postsSnapshot = await getDocs(postsQuery);
+            
+            for (const postDoc of postsSnapshot.docs) {
+              const postData = postDoc.data();
+              if (postData.artworkId === cleanId) {
+                // Found post with matching artworkId - get the artwork
+                const artworkDoc = await getDoc(doc(db, 'artworks', cleanId));
+                
+                if (artworkDoc.exists()) {
+                  const artworkData = artworkDoc.data();
+                  const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || '';
+                  const videoUrl = artworkData.videoUrl || artworkData.mediaUrls?.[0] || '';
+                  const hasMedia = imageUrl || videoUrl || artworkData.mediaUrls?.length > 0;
+                  
+                  if (hasMedia) {
+                    let artistEmail = null;
+                    if (artworkData.artist?.userId || artworkData.artist?.id) {
+                      try {
+                        const artistDoc = await getDoc(doc(db, 'userProfiles', artworkData.artist?.userId || artworkData.artist?.id));
+                        if (artistDoc.exists()) {
+                          artistEmail = artistDoc.data().email;
+                        }
+                      } catch (err) {
+                        console.warn('Could not fetch artist email:', err);
+                      }
+                    }
+                    
+                    setArtwork({
+                      id: cleanId,
+                      title: artworkData.title || postData.caption || 'Untitled',
+                      description: artworkData.description || postData.caption || '',
+                      imageUrl: imageUrl || '',
+                      videoUrl: videoUrl || '',
+                      mediaType: (artworkData.mediaType || (videoUrl ? 'video' : 'image')) as 'image' | 'video',
+                      tags: Array.isArray(artworkData.tags) ? artworkData.tags : [],
+                      price: artworkData.price,
+                      currency: artworkData.currency || 'USD',
+                      isForSale: artworkData.isForSale,
+                      priceType: artworkData.priceType || (artworkData.contactForPrice ? 'contact' : 'fixed'),
+                      contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
+                      deliveryScope: artworkData.deliveryScope,
+                      deliveryCountries: artworkData.deliveryCountries,
+                      artist: {
+                        id: artworkData.artist?.userId || artworkData.artist?.id,
+                        name: artworkData.artist?.name,
+                        handle: artworkData.artist?.handle,
+                        avatarUrl: artworkData.artist?.avatarUrl ?? null,
+                        email: artistEmail,
+                      },
+                    });
+                    setLoading(false);
+                    return;
+                  }
+                }
+              }
+            }
+          } catch (postErr) {
+            console.warn('Error checking posts collection:', postErr);
+          }
+          
+          console.error('Artwork not found in artworks collection, portfolios, or posts:', cleanId);
+          console.error('Tried ID variations:', {
+            original: artworkId,
+            cleaned: cleanId,
+            withPrefix: `artwork-${cleanId}`,
+            withoutPrefix: cleanId.replace(/^artwork-/, '')
+          });
           setError('Artwork not found.');
         }
       } catch (err) {
@@ -198,17 +437,33 @@ export default function ArtworkPage() {
             {/* Artwork image + actions */}
             <div className="space-y-4">
               <div
-                className="relative w-full max-h-[60vh] min-h-[300px] lg:min-h-[400px] rounded-lg overflow-hidden bg-background cursor-zoom-in"
-                onClick={() => setShowImageModal(true)}
+                className="relative w-full max-h-[60vh] min-h-[300px] lg:min-h-[400px] rounded-lg overflow-hidden bg-background"
+                onClick={() => {
+                  // Only open modal for images, videos have their own controls
+                  if (!artwork.videoUrl || artwork.mediaType !== 'video') {
+                    setShowImageModal(true);
+                  }
+                }}
               >
-                <Image
-                  src={artwork.imageUrl}
-                  alt={artwork.title}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
-                />
+                {artwork.videoUrl && artwork.mediaType === 'video' ? (
+                  <video
+                    src={artwork.videoUrl}
+                    controls
+                    className="w-full h-full object-contain"
+                    playsInline
+                  />
+                ) : (
+                  <div className="cursor-zoom-in">
+                    <Image
+                      src={artwork.imageUrl || artwork.videoUrl || '/assets/placeholder-light.png'}
+                      alt={artwork.title}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      priority
+                    />
+                  </div>
+                )}
               </div>
 
               {artwork.isForSale && artwork.price !== undefined && artwork.priceType !== 'contact' && (
@@ -319,7 +574,7 @@ export default function ArtworkPage() {
         </div>
       </div>
 
-      {/* Fullscreen image dialog */}
+      {/* Fullscreen image/video dialog */}
       <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
         <DialogContent className="max-w-2xl w-full max-h-[70vh] p-0 overflow-hidden">
           <button
@@ -330,14 +585,23 @@ export default function ArtworkPage() {
             <X className="h-5 w-5" />
           </button>
           <div className="relative w-full max-h-[70vh] bg-black flex items-center justify-center allow-pinch-zoom">
-            <Image
-              src={artwork.imageUrl}
-              alt={artwork.title}
-              width={800}
-              height={600}
-              className="max-w-full max-h-[70vh] w-auto h-auto object-contain"
-              priority
-            />
+            {artwork.videoUrl && artwork.mediaType === 'video' ? (
+              <video
+                src={artwork.videoUrl}
+                controls
+                className="max-w-full max-h-[70vh] w-auto h-auto"
+                playsInline
+              />
+            ) : (
+              <Image
+                src={artwork.imageUrl || artwork.videoUrl || '/assets/placeholder-light.png'}
+                alt={artwork.title}
+                width={800}
+                height={600}
+                className="max-w-full max-h-[70vh] w-auto h-auto object-contain"
+                priority
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
