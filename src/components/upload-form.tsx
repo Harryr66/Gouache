@@ -376,14 +376,23 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
     }
   };
 
+  // Capitalize first letter of tag for uniformity
+  const capitalizeTag = (tag: string): string => {
+    if (!tag) return tag;
+    return tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase();
+  };
+
   const addTag = () => {
     const newTag = tagInput.trim();
     if (!newTag) return;
-    if (tagsList.includes(newTag)) {
+    const capitalizedTag = capitalizeTag(newTag);
+    // Case-insensitive check for duplicates
+    const tagExists = tagsList.some(t => t.toLowerCase() === capitalizedTag.toLowerCase());
+    if (tagExists) {
       setTagInput('');
       return;
     }
-    setTagsList([...tagsList, newTag]);
+    setTagsList([...tagsList, capitalizedTag]);
     setTagInput('');
   };
 

@@ -193,12 +193,30 @@ export function UploadArtworkBasic() {
     }
   };
 
+  // Capitalize first letter of tag for uniformity
+  const capitalizeTag = (tag: string): string => {
+    if (!tag) return tag;
+    return tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase();
+  };
+
   const handleAddTag = () => {
     const trimmedTag = tagInput.trim();
-    if (trimmedTag && !tags.includes(trimmedTag)) {
-      setTags([...tags, trimmedTag]);
-      setTagInput('');
+    if (trimmedTag) {
+      const capitalizedTag = capitalizeTag(trimmedTag);
+      // Case-insensitive check for duplicates
+      const tagExists = tags.some(t => t.toLowerCase() === capitalizedTag.toLowerCase());
+      if (!tagExists) {
+        setTags([...tags, capitalizedTag]);
+        setTagInput('');
+      }
     }
+  };
+
+  // Helper to check if tag exists (case-insensitive)
+  const tagExists = (tag: string): boolean => {
+    if (!tag.trim()) return false;
+    const capitalizedTag = capitalizeTag(tag.trim());
+    return tags.some(t => t.toLowerCase() === capitalizedTag.toLowerCase());
   };
 
   const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -862,7 +880,7 @@ export function UploadArtworkBasic() {
                 type="button"
                 variant="outline"
                 onClick={handleAddTag}
-                disabled={!tagInput.trim() || tags.includes(tagInput.trim())}
+                disabled={!tagInput.trim() || tagExists(tagInput.trim())}
               >
                 Add Tag
               </Button>
