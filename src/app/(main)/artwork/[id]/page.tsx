@@ -12,8 +12,9 @@ import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { AboutTheArtist } from '@/components/about-the-artist';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { X, Mail } from 'lucide-react';
+import { X, Mail, Heart } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useLikes } from '@/providers/likes-provider';
 
 interface ArtworkView {
   id: string;
@@ -30,6 +31,7 @@ interface ArtworkView {
   contactForPrice?: boolean;
   deliveryScope?: 'worldwide' | 'specific';
   deliveryCountries?: string;
+  likes?: number;
   artist?: {
     id?: string;
     name?: string;
@@ -42,6 +44,7 @@ interface ArtworkView {
 export default function ArtworkPage() {
   const params = useParams();
   const router = useRouter();
+  const { toggleLike, isLiked, loading: likesLoading } = useLikes();
   // Extract and clean the ID from URL params
   const rawId = Array.isArray(params?.id) ? params.id[0] : (params?.id as string | undefined);
   // Decode URL encoding and remove trailing slashes
@@ -141,6 +144,7 @@ export default function ArtworkPage() {
               contactForPrice: data.contactForPrice || data.priceType === 'contact',
               deliveryScope: data.deliveryScope,
               deliveryCountries: data.deliveryCountries,
+              likes: data.likes || 0,
               artist: {
                 id: data.artist?.userId || data.artist?.id,
                 name: data.artist?.name,
@@ -200,6 +204,7 @@ export default function ArtworkPage() {
                 contactForPrice: data.contactForPrice || data.priceType === 'contact',
                 deliveryScope: data.deliveryScope,
                 deliveryCountries: data.deliveryCountries,
+                likes: data.likes || 0,
                 artist: {
                   id: data.artist?.userId || data.artist?.id,
                   name: data.artist?.name,
@@ -245,6 +250,7 @@ export default function ArtworkPage() {
                 contactForPrice: match.contactForPrice || match.priceType === 'contact',
                 deliveryScope: match.deliveryScope,
                 deliveryCountries: match.deliveryCountries,
+                likes: match.likes || 0,
                 artist: {
                   id: userDoc.id,
                   name: userData.displayName || userData.name || userData.username,
@@ -307,6 +313,7 @@ export default function ArtworkPage() {
                     contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
                     deliveryScope: artworkData.deliveryScope,
                     deliveryCountries: artworkData.deliveryCountries,
+                    likes: artworkData.likes || postData.likes || 0,
                     artist: {
                       id: artworkData.artist?.userId || artworkData.artist?.id,
                       name: artworkData.artist?.name,
@@ -365,6 +372,7 @@ export default function ArtworkPage() {
                       contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
                       deliveryScope: artworkData.deliveryScope,
                       deliveryCountries: artworkData.deliveryCountries,
+                      likes: artworkData.likes || postData.likes || 0,
                       artist: {
                         id: artworkData.artist?.userId || artworkData.artist?.id,
                         name: artworkData.artist?.name,
@@ -514,6 +522,37 @@ export default function ArtworkPage() {
                   )}
 
                   <div className="flex items-center gap-3 flex-wrap">
+                    {/* Like Button */}
+                    <Button
+                      variant="outline"
+                      size="default"
+                      onClick={() => {
+                        if (artwork?.id) {
+                          toggleLike(artwork.id);
+                        }
+                      }}
+                      disabled={likesLoading}
+                      className={`flex items-center gap-2 ${
+                        artwork?.id && isLiked(artwork.id)
+                          ? 'border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950'
+                          : 'hover:border-red-500 hover:text-red-500'
+                      }`}
+                    >
+                      <Heart
+                        className={`h-5 w-5 ${
+                          artwork?.id && isLiked(artwork.id) ? 'fill-current' : 'fill-none'
+                        }`}
+                      />
+                      <span>
+                        {artwork?.id && isLiked(artwork.id) ? 'Liked' : 'Like'}
+                      </span>
+                      {artwork?.likes !== undefined && artwork.likes > 0 && (
+                        <span className="text-sm text-muted-foreground">
+                          ({artwork.likes})
+                        </span>
+                      )}
+                    </Button>
+
                     {artwork.isForSale && (
                       <Badge className="bg-blue-600 hover:bg-blue-700">
                         For sale
