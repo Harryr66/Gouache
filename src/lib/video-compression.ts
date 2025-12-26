@@ -7,18 +7,18 @@
 
 export interface VideoQuality {
   url: string;
-  quality: '360p' | '720p' | '1080p';
+  quality: '240p' | '360p' | '720p' | '1080p';
   bitrate?: number; // in kbps
   width?: number;
   height?: number;
 }
 
 export interface VideoVariants {
-  thumbnail: string; // 360p for tiles
+  thumbnail: string; // 240p for tiles (faster loading, acceptable quality)
   full: string; // 1080p for expanded view
-  thumbnailQuality?: '360p';
+  thumbnailQuality?: '240p';
   fullQuality?: '1080p';
-  thumbnailBitrate?: number; // 500 kbps target
+  thumbnailBitrate?: number; // 300 kbps target (reduced for faster loading)
   fullBitrate?: number; // 2000-5000 kbps target
 }
 
@@ -28,8 +28,8 @@ export interface VideoVariants {
  */
 export async function compressVideo(
   file: File,
-  targetQuality: '360p' | '720p' | '1080p' = '360p',
-  targetBitrate: number = 500 // kbps
+  targetQuality: '240p' | '360p' | '720p' | '1080p' = '240p',
+  targetBitrate: number = 300 // kbps (default 300 for 240p)
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
