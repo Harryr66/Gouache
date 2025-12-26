@@ -196,6 +196,12 @@ html {
     background-clip: padding-box, border-box !important;
     border-radius: 50% !important;
   }
+
+  /* Switch gradient background for checked state - uses theme-aware gradient */
+  [data-radix-switch-root][data-state="checked"] {
+    background: var(--gradient-border) !important;
+    border: 2px solid transparent !important;
+  }
 }
 
 /* Force rounded corners on all buttons with more pronounced radius */
