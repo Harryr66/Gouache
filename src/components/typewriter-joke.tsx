@@ -140,7 +140,7 @@ export function TypewriterJoke({
 
   return (
     <div className={`${textColor} text-sm md:text-base max-w-2xl text-center px-4`}>
-      <p className="min-h-[3rem] whitespace-pre-line break-words">
+      <p className="min-h-[3rem] whitespace-pre-line break-words font-semibold">
         {formattedText}
         {isTyping && (
           <span className="ml-1 animate-pulse">|</span>
