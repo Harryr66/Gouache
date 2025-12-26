@@ -643,7 +643,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       if (!itemToDelete) return;
 
       try {
-        const { writeBatch } = await import('firebase/firestore');
         const batch = writeBatch(db);
         
         // Mark as deleted in the artworks collection
