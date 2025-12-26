@@ -13,7 +13,7 @@ import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from './theme-loading';
 import { useLikes } from '@/providers/likes-provider';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, writeBatch } from 'firebase/firestore';
 import { Artwork, Course } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
