@@ -685,12 +685,35 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             if (!url || typeof url !== 'string') continue;
             
             try {
-              // Extract the storage path from the download URL
-              // Firebase Storage URLs format: https://firebasestorage.googleapis.com/v0/b/BUCKET/o/PATH?alt=media&token=TOKEN
-              const urlObj = new URL(url);
-              const pathMatch = urlObj.pathname.match(/\/o\/(.+)\?/);
-              if (pathMatch && pathMatch[1]) {
-                const storagePath = decodeURIComponent(pathMatch[1]);
+              let storagePath: string | null = null;
+              
+              // Check if it's a full Firebase Storage URL or just a path
+              if (url.includes('firebasestorage.googleapis.com')) {
+                // Extract the storage path from the download URL
+                // Firebase Storage URLs format: https://firebasestorage.googleapis.com/v0/b/BUCKET/o/PATH?alt=media&token=TOKEN
+                // Alternative format check: split on /o/ and take the part before ?
+                const urlParts = url.split('/o/');
+                if (urlParts.length > 1) {
+                  const pathParts = urlParts[1].split('?');
+                  storagePath = decodeURIComponent(pathParts[0]);
+                } else {
+                  // Fallback to regex if split doesn't work
+                  try {
+                    const urlObj = new URL(url);
+                    const pathMatch = urlObj.pathname.match(/\/o\/(.+?)(?:\?|$)/);
+                    if (pathMatch && pathMatch[1]) {
+                      storagePath = decodeURIComponent(pathMatch[1]);
+                    }
+                  } catch (urlError) {
+                    console.error('Error parsing URL:', url, urlError);
+                  }
+                }
+              } else {
+                // Assume it's already a storage path
+                storagePath = url;
+              }
+              
+              if (storagePath) {
                 const fileRef = ref(storage, storagePath);
                 await deleteObject(fileRef);
                 console.log('✅ Deleted file from storage:', storagePath);
@@ -705,13 +728,12 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
         // Now mark as deleted in Firestore
         const batch = writeBatch(db);
         
-        // Mark as deleted in the artworks collection
-        const artworkRef = doc(db, 'artworks', itemToDelete.id);
-        batch.update(artworkRef, { deleted: true, updatedAt: new Date() });
-
-        // If there's a related post, mark it as deleted too
+        // Mark the main document as deleted
         if (itemToDelete.type === 'artwork') {
-          // Try to find and delete related post
+          const artworkRef = doc(db, 'artworks', itemToDelete.id);
+          batch.update(artworkRef, { deleted: true, updatedAt: new Date() });
+
+          // Try to find and mark related post as deleted too
           try {
             const postsQuery = query(
               collection(db, 'posts'),
@@ -726,19 +748,18 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             // Continue with deletion even if post lookup fails
           }
         } else if (itemToDelete.type === 'post') {
-          // For posts, also check if there's a related artwork
-          try {
-            const postDoc = await getDoc(doc(db, 'posts', itemToDelete.id));
-            if (postDoc.exists()) {
-              const postData = postDoc.data();
-              if (postData.artworkId) {
-                const artworkRef = doc(db, 'artworks', postData.artworkId);
-                batch.update(artworkRef, { deleted: true, updatedAt: new Date() });
-              }
+          const postRef = doc(db, 'posts', itemToDelete.id);
+          batch.update(postRef, { deleted: true, updatedAt: new Date() });
+
+          // For posts, also mark related artwork as deleted if it exists (use itemData we already fetched)
+          if (itemData?.artworkId) {
+            try {
+              const artworkRef = doc(db, 'artworks', itemData.artworkId);
+              batch.update(artworkRef, { deleted: true, updatedAt: new Date() });
+            } catch (error) {
+              console.error('Error updating related artwork:', error);
+              // Continue with deletion even if artwork update fails
             }
-          } catch (error) {
-            console.error('Error finding related artwork:', error);
-            // Continue with deletion even if artwork lookup fails
           }
         }
 
