@@ -895,7 +895,6 @@ export function UploadArtworkBasic() {
                     setIsForSale(false);
                   }
                 }}
-                className="data-[state=checked]:bg-primary"
               />
             </div>
           </div>
