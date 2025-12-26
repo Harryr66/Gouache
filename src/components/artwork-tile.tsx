@@ -296,25 +296,30 @@ const generateArtistContent = (artist: Artist) => ({
       const windowWidth = window.innerWidth || document.documentElement.clientWidth;
       
       // Check if tile is visible in initial viewport (within first screen)
+      // More lenient check - if any part is visible in viewport
       const isVisible = (
-        rect.top < windowHeight &&
-        rect.bottom > 0 &&
-        rect.left < windowWidth &&
-        rect.right > 0
+        rect.top < windowHeight + 200 && // Add buffer for preloading
+        rect.bottom > -200 && // Add buffer
+        rect.left < windowWidth + 200 &&
+        rect.right > -200
       );
       
-      if (isVisible) {
+      if (isVisible && !shouldLoadVideo) {
         setIsInitialViewport(true);
         setShouldLoadVideo(true); // Start loading immediately for initial viewport
       }
     };
 
-    // Check immediately and after a short delay (to account for layout)
+    // Check immediately, after layout, and after a longer delay to catch all initial tiles
     checkInitialViewport();
-    const timeout = setTimeout(checkInitialViewport, 100);
+    const timeout1 = setTimeout(checkInitialViewport, 100);
+    const timeout2 = setTimeout(checkInitialViewport, 500);
     
-    return () => clearTimeout(timeout);
-  }, [hasVideo, videoUrl]);
+    return () => {
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+    };
+  }, [hasVideo, videoUrl, shouldLoadVideo]);
 
   // IntersectionObserver for lazy loading videos and tracking views
   useEffect(() => {
@@ -382,25 +387,44 @@ const generateArtistContent = (artist: Artist) => ({
 
   // Autoplay video when in viewport (muted, looped)
   useEffect(() => {
-    if (hasVideo && videoRef.current && shouldLoadVideo && (isInViewport || isInitialViewport)) {
-      const video = videoRef.current;
-      
+    if (!hasVideo || !videoRef.current || !shouldLoadVideo) return;
+    
+    const video = videoRef.current;
+    const isVisible = isInViewport || isInitialViewport;
+    
+    if (isVisible) {
       // Start loading video immediately when in viewport
       if (video.readyState === 0) {
         video.load();
       }
       
-      // Autoplay when video is ready
-      if (video.readyState >= 3 && video.paused && isVideoLoaded) {
-        video.play().catch((error) => {
-          console.error('Error autoplaying video:', error);
-        });
-      }
-    } else if (videoRef.current && !isInViewport && !isInitialViewport) {
+      // Try to play when video can play (don't wait for isVideoLoaded)
+      const tryPlay = () => {
+        if (video.readyState >= 2 && video.paused) {
+          video.play().catch((error) => {
+            console.error('Error autoplaying video:', error);
+          });
+        }
+      };
+      
+      // Try immediately and on various events
+      tryPlay();
+      video.addEventListener('canplay', tryPlay);
+      video.addEventListener('canplaythrough', tryPlay);
+      video.addEventListener('loadeddata', tryPlay);
+      
+      return () => {
+        video.removeEventListener('canplay', tryPlay);
+        video.removeEventListener('canplaythrough', tryPlay);
+        video.removeEventListener('loadeddata', tryPlay);
+      };
+    } else {
       // Pause when out of viewport
-      videoRef.current.pause();
+      if (!video.paused) {
+        video.pause();
+      }
     }
-  }, [hasVideo, shouldLoadVideo, isInViewport, isInitialViewport, isVideoLoaded]);
+  }, [hasVideo, shouldLoadVideo, isInViewport, isInitialViewport]);
   // Use artist ID for profile link - this should be the Firestore document ID
   const profileSlug = artwork.artist.id;
   const handleViewProfile = () => {
@@ -471,7 +495,7 @@ const generateArtistContent = (artist: Artist) => ({
           {hasVideo && videoUrl ? (
             <>
               {/* Poster image - ALWAYS show immediately, stays visible until video is ready */}
-              {imageUrl && (
+              {imageUrl ? (
                 <Image
                   src={imageUrl}
                   alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
@@ -487,6 +511,11 @@ const generateArtistContent = (artist: Artist) => ({
                     setIsImageLoaded(true);
                   }}
                 />
+              ) : (
+                // Fallback: show loading placeholder if no imageUrl
+                <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
+                  <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                </div>
               )}
               
               {/* Video element - loads when in viewport, positioned behind poster until ready */}
@@ -522,8 +551,8 @@ const generateArtistContent = (artist: Artist) => ({
                     setIsVideoLoaded(true);
                     setVideoError(false);
                     
-                    // Autoplay if in viewport
-                    if (isInViewport && videoRef.current && videoRef.current.paused) {
+                    // Autoplay if in viewport (muted, looped)
+                    if ((isInViewport || isInitialViewport) && videoRef.current && videoRef.current.paused) {
                       videoRef.current.play().catch((error) => {
                         console.error('Error autoplaying video:', error);
                       });
