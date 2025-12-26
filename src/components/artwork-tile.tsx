@@ -618,20 +618,6 @@ const generateArtistContent = (artist: Artist) => ({
                       }
                     }, 10000);
                   }}
-                  onClick={(e) => {
-                    // User click to toggle play/pause
-                    e.stopPropagation();
-                    if (videoRef.current && !videoError) {
-                      if (videoRef.current.paused) {
-                        videoRef.current.play().catch((error) => {
-                          console.error('Error playing video:', error);
-                          setVideoError(true);
-                        });
-                      } else {
-                        videoRef.current.pause();
-                      }
-                    }
-                  }}
                 />
               )}
             </>
