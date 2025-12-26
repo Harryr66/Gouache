@@ -58,6 +58,9 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const videoLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [videoError, setVideoError] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
   
   // Check if artwork has video
@@ -304,6 +307,11 @@ const generateArtistContent = (artist: Artist) => ({
     return () => {
       observer.disconnect();
       engagementTracker.stopTracking(artwork.id);
+      // Cleanup video timeout on unmount
+      if (videoLoadTimeoutRef.current) {
+        clearTimeout(videoLoadTimeoutRef.current);
+        videoLoadTimeoutRef.current = null;
+      }
     };
   }, [artwork.id]);
 
@@ -381,44 +389,112 @@ const generateArtistContent = (artist: Artist) => ({
           
           {/* Media content */}
           {hasVideo && videoUrl ? (
-            <video
-              ref={videoRef}
-              src={videoUrl}
-              className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
-              muted
-              loop
-              playsInline
-              webkit-playsinline="true"
-              x5-playsinline="true"
-              preload="metadata"
-              controls={false}
-              autoPlay={false}
-              onLoadedMetadata={() => {
-                setIsVideoLoaded(true);
-              }}
-              onCanPlay={() => {
-                setIsVideoLoaded(true);
-              }}
-              onError={(e) => {
-                console.error('Error loading video:', e, videoUrl);
-                setIsVideoLoaded(true); // Stop loading on error
-              }}
-              onClick={(e) => {
-                // User must explicitly click to play video
-                e.stopPropagation();
-                if (videoRef.current) {
-                  // Load and play video only when user clicks
-                  if (videoRef.current.paused) {
-                    videoRef.current.load(); // Ensure video is loaded
-                    videoRef.current.play().catch((error) => {
-                      console.error('Error playing video:', error);
+            <>
+              {/* Show poster/fallback image while video loads or if it fails */}
+              {(!isVideoLoaded || videoError) && imageUrl && (
+                <Image
+                  src={imageUrl}
+                  alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
+                  fill
+                  className="object-cover"
+                  loading="eager"
+                  priority={false}
+                  onLoad={() => {
+                    // If video fails, at least show the poster
+                    if (videoError) {
+                      setIsVideoLoaded(true);
+                    }
+                  }}
+                />
+              )}
+              
+              {/* Video element */}
+              {!videoError && (
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
+                  muted
+                  loop
+                  playsInline
+                  webkit-playsinline="true"
+                  x5-playsinline="true"
+                  preload="metadata"
+                  controls={false}
+                  autoPlay={false}
+                  poster={imageUrl || undefined}
+                  onLoadedMetadata={() => {
+                    if (videoLoadTimeoutRef.current) {
+                      clearTimeout(videoLoadTimeoutRef.current);
+                      videoLoadTimeoutRef.current = null;
+                    }
+                    setIsVideoLoaded(true);
+                    setVideoError(false);
+                  }}
+                  onCanPlay={() => {
+                    if (videoLoadTimeoutRef.current) {
+                      clearTimeout(videoLoadTimeoutRef.current);
+                      videoLoadTimeoutRef.current = null;
+                    }
+                    setIsVideoLoaded(true);
+                    setVideoError(false);
+                  }}
+                  onLoadedData={() => {
+                    setIsVideoLoaded(true);
+                    setVideoError(false);
+                  }}
+                  onError={(e) => {
+                    console.error('Error loading video:', e, videoUrl, {
+                      error: e.currentTarget.error,
+                      networkState: e.currentTarget.networkState,
+                      readyState: e.currentTarget.readyState
                     });
-                  } else {
-                    videoRef.current.pause();
-                  }
-                }
-              }}
-            />
+                    if (videoLoadTimeoutRef.current) {
+                      clearTimeout(videoLoadTimeoutRef.current);
+                      videoLoadTimeoutRef.current = null;
+                    }
+                    setVideoError(true);
+                    setIsVideoLoaded(true); // Stop loading spinner, show poster instead
+                  }}
+                  onLoadStart={() => {
+                    // Set a timeout for video loading (10 seconds)
+                    if (videoLoadTimeoutRef.current) {
+                      clearTimeout(videoLoadTimeoutRef.current);
+                    }
+                    videoLoadTimeoutRef.current = setTimeout(() => {
+                      console.warn('Video loading timeout:', videoUrl);
+                      setVideoError(true);
+                      setIsVideoLoaded(true);
+                    }, 10000);
+                  }}
+                  onClick={(e) => {
+                    // User must explicitly click to play video
+                    e.stopPropagation();
+                    if (videoRef.current && !videoError) {
+                      // Load and play video only when user clicks
+                      if (videoRef.current.paused) {
+                        videoRef.current.load(); // Ensure video is loaded
+                        videoRef.current.play().catch((error) => {
+                          console.error('Error playing video:', error);
+                          setVideoError(true);
+                        });
+                      } else {
+                        videoRef.current.pause();
+                      }
+                    }
+                  }}
+                />
+              )}
+              
+              {/* Video error state - show placeholder */}
+              {videoError && !imageUrl && (
+                <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                  <div className="text-muted-foreground text-xs text-center p-4">
+                    Failed to load video
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <Image
               src={imageUrl}
