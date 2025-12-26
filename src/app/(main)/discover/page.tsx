@@ -435,7 +435,7 @@ function DiscoverPageContent() {
           // Only process the 10 most recent items per artist
           const recentPortfolio = portfolio
             .filter((item: any) => !item.deleted && item.showInPortfolio !== false)
-            .sort((a, b) => {
+            .sort((a: any, b: any) => {
               const dateA = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
               const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
               return dateB - dateA; // Newest first
