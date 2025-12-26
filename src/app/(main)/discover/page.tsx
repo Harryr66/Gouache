@@ -356,7 +356,8 @@ function DiscoverPageContent() {
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
   // Initialize with a reasonable default that will be adjusted based on screen size
-  const [visibleCount, setVisibleCount] = useState(18); // Start with 3 rows of 6 items
+  // Start with enough items to fill initial viewport, loading progressively from top to bottom
+  const [visibleCount, setVisibleCount] = useState(20); // Start with ~2-3 screens worth for smooth initial load
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market list, Events grid on mobile
@@ -1001,15 +1002,17 @@ function DiscoverPageContent() {
         if (entry.isIntersecting) {
           startTransition(() => {
             setVisibleCount((prev) => {
-              const newCount = prev + itemsPerRow; // Load one complete row at a time
+              // Load additional rows progressively from top to bottom
+              // Add itemsPerRow * 2 to load enough content for smooth scrolling
+              const newCount = prev + (itemsPerRow * 2);
               const maxCount = filteredAndSortedArtworks.length || newCount;
-              // Ensure we never exceed available items, and always maintain complete rows
+              // Ensure we never exceed available items, maintaining complete rows
               return Math.min(newCount, maxCount);
             });
           });
         }
       });
-    }, { rootMargin: '200px' });
+    }, { rootMargin: '400px' }); // Increased rootMargin for earlier loading, smoother continuous scroll
 
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -1474,10 +1477,9 @@ function DiscoverPageContent() {
               <div 
                 className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-5 gap-1"
                 style={{ 
-                  columnFill: 'auto',
-                  // Ensure proper spacing for masonry layout
+                  columnFill: 'auto', // Fill columns sequentially from top to bottom for predictable loading
                   columnGap: '0.25rem',
-                  // Force grid to start at top
+                  // Force grid to start at top, loading continuously downward
                   alignContent: 'start'
                 }}
               >
