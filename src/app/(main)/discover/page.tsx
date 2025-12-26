@@ -314,13 +314,13 @@ function DiscoverPageContent() {
       return;
     }
     
-    // Timeout: hide loading after 8 seconds max (to allow time for joke + videos)
+    // Timeout: hide loading after 12 seconds max (to allow time for joke + videos to fully load)
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
     loadingTimeoutRef.current = setTimeout(() => {
       setLoading(false);
-    }, 8000);
+    }, 12000);
     
     return () => {
       if (loadingTimeoutRef.current) {
@@ -1218,7 +1218,7 @@ function DiscoverPageContent() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-6">
           <ThemeLoading size="lg" />
-          <TypewriterJoke onComplete={handleJokeComplete} typingSpeed={30} pauseAfterComplete={2000} />
+          <TypewriterJoke onComplete={handleJokeComplete} typingSpeed={60} pauseAfterComplete={3000} />
         </div>
       </div>
     );
