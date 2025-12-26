@@ -10,7 +10,7 @@ const ART_JOKES = [
   "Every morning Dali started his day with some Surreal",
   "My canvas just broke up with me: They said over the years I've stretched them too thin.",
   "A portrait artist asked his wife why she was annoyed... She said \"don't use that tone with me\"",
-  "A textile artist was fired for breaking the upholstery machine, they claim they were stitched up...",
+  "A textile artist was fired for falling into and breaking the upholstery machine... // they claim they were stitched up...",
   "Remember, if it's not Baroque, don't fix try it."
 ];
 
