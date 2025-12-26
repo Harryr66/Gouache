@@ -292,7 +292,8 @@ function DiscoverPageContent() {
     setJokeComplete(true);
   }, []);
   
-  // Set loading to false when videos are ready AND joke is complete
+  // Set loading to false ONLY when videos are ready AND joke is complete
+  // ALWAYS wait for videos to be preloaded, even if joke finishes first
   useEffect(() => {
     if (initialVideosTotal === 0) {
       // No videos to preload, wait for joke to complete
@@ -302,7 +303,8 @@ function DiscoverPageContent() {
       return;
     }
     
-    // If all initial videos are ready AND joke is complete, hide loading
+    // CRITICAL: Only hide loading when ALL videos are ready AND joke is complete
+    // This ensures videos are always ready to autoplay when grid appears
     if (initialVideosReady >= initialVideosTotal && jokeComplete) {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
@@ -314,13 +316,19 @@ function DiscoverPageContent() {
       return;
     }
     
-    // Timeout: hide loading after 12 seconds max (to allow time for joke + videos to fully load)
+    // Extended timeout: hide loading after 15 seconds max to ensure videos have time
+    // But prefer waiting for actual video readiness - videos are priority
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
     loadingTimeoutRef.current = setTimeout(() => {
-      setLoading(false);
-    }, 12000);
+      // Only hide if we have at least 80% of videos ready OR joke is complete AND we have some videos
+      // This prevents premature hiding while ensuring we don't wait forever
+      const minVideosReady = Math.max(1, Math.ceil(initialVideosTotal * 0.8));
+      if (initialVideosReady >= minVideosReady && jokeComplete) {
+        setLoading(false);
+      }
+    }, 15000);
     
     return () => {
       if (loadingTimeoutRef.current) {
