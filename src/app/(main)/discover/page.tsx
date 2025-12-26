@@ -1221,7 +1221,7 @@ function DiscoverPageContent() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-6">
           <ThemeLoading size="lg" />
-          <TypewriterJoke onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
+          <TypewriterJoke key="loading-joke" onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
         </div>
       </div>
     );
@@ -1255,12 +1255,12 @@ function DiscoverPageContent() {
         </div>
       )}
       
-      {/* Loading overlay */}
-      {loading && (
+      {/* Loading overlay - only show when preloading tiles */}
+      {loading && shouldPreloadTiles && (
         <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
           <div className="flex flex-col items-center justify-center gap-6">
             <ThemeLoading size="lg" />
-            <TypewriterJoke onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
+            <TypewriterJoke key="loading-joke" onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
           </div>
         </div>
       )}
