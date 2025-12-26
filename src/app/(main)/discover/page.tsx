@@ -1310,7 +1310,7 @@ function DiscoverPageContent() {
           </div>
 
           {/* Artwork Tab */}
-          <TabsContent value="artwork" className="mt-6">
+          <TabsContent value="artwork" className="mt-0">
             {/* Search and Filter Bar */}
             <div className="mb-6 space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
@@ -1474,9 +1474,11 @@ function DiscoverPageContent() {
               <div 
                 className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-5 gap-1"
                 style={{ 
-                  columnFill: 'balance',
+                  columnFill: 'auto',
                   // Ensure proper spacing for masonry layout
-                  columnGap: '0.25rem'
+                  columnGap: '0.25rem',
+                  // Force grid to start at top
+                  alignContent: 'start'
                 }}
               >
                 {visibleFilteredArtworks.map((item) => {
