@@ -461,6 +461,106 @@ function DiscoverPageContent() {
         
         log(`📊 Discover: Summary - Total portfolio items: ${totalPortfolioItems}, Added: ${fetchedArtworks.length}, Skipped (no portfolio): ${skippedNoPortfolio}, Skipped (showInPortfolio=false): ${skippedShowInPortfolioFalse}, Skipped (no image): ${skippedNoImage}, Skipped (AI): ${skippedAI}`);
         
+        // Also fetch Discover content from artworks collection (non-portfolio content)
+        // This includes content uploaded via Discover portal with showInPortfolio = false
+        log('🔍 Discover: Fetching non-portfolio content from artworks collection...');
+        try {
+          const artworksQuery = query(
+            collection(db, 'artworks'),
+            orderBy('createdAt', 'desc'),
+            limit(100)
+          );
+          const artworksSnapshot = await getDocs(artworksQuery);
+          
+          for (const artworkDoc of artworksSnapshot.docs) {
+            const artworkData = artworkDoc.data();
+            
+            // Only include items that are NOT in portfolio (showInPortfolio === false)
+            // These are generic content like process videos, art tips, etc.
+            if (artworkData.showInPortfolio === false) {
+              // Skip deleted items
+              if (artworkData.deleted === true) continue;
+              
+              // Skip events
+              if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
+              
+              // Apply discover settings filters for AI content
+              if (discoverSettings.hideAiAssistedArt && (artworkData.aiAssistance === 'assisted' || artworkData.aiAssistance === 'generated' || artworkData.isAI)) {
+                continue;
+              }
+              
+              // Get media URL (support video or image)
+              const videoUrl = artworkData.videoUrl || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video' ? artworkData.mediaUrls[0] : null);
+              const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0] || '';
+              const mediaType = artworkData.mediaType || (videoUrl ? 'video' : 'image');
+              
+              // Skip items without media
+              if (!imageUrl && !videoUrl) continue;
+              
+              // Get artist info
+              let artistName = 'Unknown Artist';
+              let artistHandle = '';
+              let artistAvatarUrl = null;
+              let artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId;
+              
+              if (artistId) {
+                try {
+                  const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
+                  if (artistDoc.exists()) {
+                    const artistData = artistDoc.data();
+                    artistName = artistData.displayName || artistData.name || artistData.username || 'Unknown Artist';
+                    artistHandle = artistData.username || artistData.handle || '';
+                    artistAvatarUrl = artistData.avatarUrl || null;
+                  }
+                } catch (err) {
+                  log(`⚠️ Discover: Could not fetch artist data for ${artistId}`);
+                }
+              }
+              
+              // Convert to Artwork object
+              const artwork: Artwork = {
+                id: artworkDoc.id,
+                title: artworkData.title || 'Untitled',
+                description: artworkData.description || '',
+                imageUrl: imageUrl || '',
+                imageAiHint: artworkData.description || '',
+                ...(videoUrl && { videoUrl: videoUrl as any }),
+                ...(mediaType && { mediaType: mediaType as any }),
+                artist: {
+                  id: artistId || '',
+                  name: artistName,
+                  handle: artistHandle,
+                  avatarUrl: artistAvatarUrl,
+                  isVerified: false,
+                  isProfessional: true,
+                  followerCount: 0,
+                  followingCount: 0,
+                  createdAt: new Date(),
+                },
+                likes: artworkData.likes || 0,
+                commentsCount: artworkData.commentsCount || 0,
+                createdAt: artworkData.createdAt?.toDate?.() || (artworkData.createdAt instanceof Date ? artworkData.createdAt : new Date()),
+                updatedAt: artworkData.updatedAt?.toDate?.() || (artworkData.updatedAt instanceof Date ? artworkData.updatedAt : new Date()),
+                category: artworkData.category || '',
+                medium: artworkData.medium || '',
+                tags: artworkData.tags || [],
+                aiAssistance: artworkData.aiAssistance || 'none',
+                isAI: artworkData.isAI || false,
+                isForSale: artworkData.isForSale || false,
+                sold: artworkData.sold || false,
+                price: artworkData.price ? (artworkData.price > 1000 ? artworkData.price / 100 : artworkData.price) : undefined,
+                priceType: artworkData.priceType as 'fixed' | 'contact' | undefined,
+                contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
+              };
+              
+              fetchedArtworks.push(artwork);
+              log(`✅ Discover: Added non-portfolio artwork "${artwork.title}" from ${artwork.artist.name}`);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching non-portfolio artworks:', error);
+        }
+        
         // Sort by createdAt descending (newest first)
         fetchedArtworks.sort((a, b) => {
           const dateA = a.createdAt.getTime();
