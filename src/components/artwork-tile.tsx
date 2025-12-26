@@ -490,7 +490,7 @@ const generateArtistContent = (artist: Artist) => ({
               )}
               
               {/* Video element - loads when in viewport, positioned behind poster until ready */}
-              {shouldLoadVideo && !videoError ? (
+              {shouldLoadVideo && !videoError && (
                 <video
                   ref={videoRef}
                   src={videoUrl}
@@ -583,13 +583,6 @@ const generateArtistContent = (artist: Artist) => ({
                     }
                   }}
                 />
-                ) : (
-                  // Video error - poster already showing, just keep it visible
-                  null
-                )
-              ) : (
-                // Video not loaded yet - poster image is already showing above
-                null
               )}
             </>
           ) : (
