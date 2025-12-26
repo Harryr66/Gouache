@@ -395,10 +395,8 @@ const generateArtistContent = (artist: Artist) => ({
               videoRef.current.pause();
             }
             
-            // Reset metadata loading flag when far from viewport to save resources
-            if (!entry.isIntersecting) {
-              setShouldLoadMetadata(false);
-            }
+            // Don't reset metadata loading flag - keep aspect ratio to prevent grid disruption
+            // Once metadata is loaded, maintain it even when out of viewport
           }
         });
       },
