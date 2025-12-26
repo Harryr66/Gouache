@@ -79,11 +79,17 @@ export function TypewriterJoke({
           return;
         }
         
-        // Check for "//" - insert line break
+        // Check for "//" - insert line break with 2 second pause
         if (char === '/' && nextChar === '/') {
+          isPaused = true;
           const textSoFar = currentJoke.slice(0, currentIndex).replace(/\/\//g, '\n') + '\n';
           setDisplayedText(textSoFar);
           currentIndex += 2;
+          
+          // Pause for 2 seconds before continuing
+          setTimeout(() => {
+            isPaused = false;
+          }, 2000);
           return;
         }
         
