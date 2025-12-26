@@ -389,36 +389,18 @@ const generateArtistContent = (artist: Artist) => ({
           {/* Media content */}
           {hasVideo && videoUrl ? (
             <>
-              {/* Show poster/fallback image while video loads or if it fails */}
-              {(!isVideoLoaded || videoError) && imageUrl && (
-                <Image
-                  src={imageUrl}
-                  alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
-                  fill
-                  className="object-cover"
-                  loading="eager"
-                  priority={false}
-                  onLoad={() => {
-                    // If video fails, at least show the poster
-                    if (videoError) {
-                      setIsVideoLoaded(true);
-                    }
-                  }}
-                />
-              )}
-              
-              {/* Video element */}
-              {!videoError && (
+              {/* Video element - always render, use poster for thumbnail */}
+              {!videoError ? (
                 <video
                   ref={videoRef}
                   src={videoUrl}
-                  className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
+                  className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-500 ${!isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
                   muted
                   loop
                   playsInline
                   webkit-playsinline="true"
                   x5-playsinline="true"
-                  preload="metadata"
+                  preload="auto"
                   controls={false}
                   autoPlay={false}
                   poster={imageUrl || undefined}
@@ -427,6 +409,7 @@ const generateArtistContent = (artist: Artist) => ({
                       clearTimeout(videoLoadTimeoutRef.current);
                       videoLoadTimeoutRef.current = null;
                     }
+                    // Metadata loaded - video thumbnail should be visible via poster
                     setIsVideoLoaded(true);
                     setVideoError(false);
                   }}
@@ -435,12 +418,20 @@ const generateArtistContent = (artist: Artist) => ({
                       clearTimeout(videoLoadTimeoutRef.current);
                       videoLoadTimeoutRef.current = null;
                     }
+                    // Video is ready to play - smoothly fade in
                     setIsVideoLoaded(true);
                     setVideoError(false);
                   }}
                   onLoadedData={() => {
+                    // Data loaded - ensure visibility
                     setIsVideoLoaded(true);
                     setVideoError(false);
+                  }}
+                  onProgress={() => {
+                    // Video is buffering - keep it visible
+                    if (!isVideoLoaded) {
+                      setIsVideoLoaded(true);
+                    }
                   }}
                   onError={(e) => {
                     console.error('Error loading video:', e, videoUrl, {
@@ -456,15 +447,20 @@ const generateArtistContent = (artist: Artist) => ({
                     setIsVideoLoaded(true); // Stop loading spinner, show poster instead
                   }}
                   onLoadStart={() => {
-                    // Set a timeout for video loading (10 seconds)
+                    // Set a timeout for video loading (15 seconds for full preload)
                     if (videoLoadTimeoutRef.current) {
                       clearTimeout(videoLoadTimeoutRef.current);
                     }
                     videoLoadTimeoutRef.current = setTimeout(() => {
                       console.warn('Video loading timeout:', videoUrl);
-                      setVideoError(true);
-                      setIsVideoLoaded(true);
-                    }, 10000);
+                      // Don't set error if we have a poster - just show poster
+                      if (imageUrl) {
+                        setIsVideoLoaded(true);
+                      } else {
+                        setVideoError(true);
+                        setIsVideoLoaded(true);
+                      }
+                    }, 15000);
                   }}
                   onClick={(e) => {
                     // User must explicitly click to play video
@@ -472,7 +468,6 @@ const generateArtistContent = (artist: Artist) => ({
                     if (videoRef.current && !videoError) {
                       // Load and play video only when user clicks
                       if (videoRef.current.paused) {
-                        videoRef.current.load(); // Ensure video is loaded
                         videoRef.current.play().catch((error) => {
                           console.error('Error playing video:', error);
                           setVideoError(true);
@@ -483,15 +478,24 @@ const generateArtistContent = (artist: Artist) => ({
                     }
                   }}
                 />
-              )}
-              
-              {/* Video error state - show placeholder */}
-              {videoError && !imageUrl && (
-                <div className="absolute inset-0 bg-muted flex items-center justify-center">
-                  <div className="text-muted-foreground text-xs text-center p-4">
-                    Failed to load video
+              ) : (
+                // Fallback: show image if video fails
+                imageUrl ? (
+                  <Image
+                    src={imageUrl}
+                    alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
+                    fill
+                    className="object-cover"
+                    loading="eager"
+                    priority={false}
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                    <div className="text-muted-foreground text-xs text-center p-4">
+                      Failed to load video
+                    </div>
                   </div>
-                </div>
+                )
               )}
             </>
           ) : (
