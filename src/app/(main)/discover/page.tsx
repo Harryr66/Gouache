@@ -378,8 +378,13 @@ function DiscoverPageContent() {
             }
             
             // Get media URL (support video or image)
-            const videoUrl = item.videoUrl || item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video' ? item.mediaUrls[0] : null;
-            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || item.mediaUrls?.[0] || '';
+            // Check for video: first check videoUrl, then check mediaUrls array for video type
+            let videoUrl = item.videoUrl || null;
+            if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
+              videoUrl = item.mediaUrls[0];
+            }
+            // For image, prefer imageUrl, then supportingImages, then mediaUrls (but only if not video)
+            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
             const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
             
             // Skip items without media
@@ -490,8 +495,13 @@ function DiscoverPageContent() {
               }
               
               // Get media URL (support video or image)
-              const videoUrl = artworkData.videoUrl || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video' ? artworkData.mediaUrls[0] : null);
-              const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0] || '';
+              // Check for video: first check videoUrl, then check mediaUrls array for video type
+              let videoUrl = artworkData.videoUrl || null;
+              if (!videoUrl && artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video') {
+                videoUrl = artworkData.mediaUrls[0];
+              }
+              // For image, prefer imageUrl, then supportingImages, then mediaUrls (but only if not video)
+              const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
               const mediaType = artworkData.mediaType || (videoUrl ? 'video' : 'image');
               
               // Skip items without media
