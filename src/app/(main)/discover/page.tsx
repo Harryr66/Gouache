@@ -615,46 +615,45 @@ function DiscoverPageContent() {
               artistHandle = artistData.username || artistData.handle || '';
               artistAvatarUrl = artistData.avatarUrl || null;
             }
-              
-              // Convert to Artwork object
-              const artwork: Artwork = {
-                id: artworkDoc.id,
-                title: artworkData.title || 'Untitled',
-                description: artworkData.description || '',
-                imageUrl: imageUrl || '',
-                imageAiHint: artworkData.description || '',
-                ...(videoUrl && { videoUrl: videoUrl as any }),
-                ...(mediaType && { mediaType: mediaType as any }),
-                artist: {
-                  id: artistId || '',
-                  name: artistName,
-                  handle: artistHandle,
-                  avatarUrl: artistAvatarUrl,
-                  isVerified: false,
-                  isProfessional: true,
-                  followerCount: 0,
-                  followingCount: 0,
-                  createdAt: new Date(),
-                },
-                likes: artworkData.likes || 0,
-                commentsCount: artworkData.commentsCount || 0,
-                createdAt: artworkData.createdAt?.toDate?.() || (artworkData.createdAt instanceof Date ? artworkData.createdAt : new Date()),
-                updatedAt: artworkData.updatedAt?.toDate?.() || (artworkData.updatedAt instanceof Date ? artworkData.updatedAt : new Date()),
-                category: artworkData.category || '',
-                medium: artworkData.medium || '',
-                tags: artworkData.tags || [],
-                aiAssistance: artworkData.aiAssistance || 'none',
-                isAI: artworkData.isAI || false,
-                isForSale: artworkData.isForSale || false,
-                sold: artworkData.sold || false,
-                price: artworkData.price ? (artworkData.price > 1000 ? artworkData.price / 100 : artworkData.price) : undefined,
-                priceType: artworkData.priceType as 'fixed' | 'contact' | undefined,
-                contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
-              };
-              
-              fetchedArtworks.push(artwork);
-              log(`✅ Discover: Added non-portfolio artwork "${artwork.title}" from ${artwork.artist.name}`);
-            }
+            
+            // Convert to Artwork object
+            const artwork: Artwork = {
+              id: artworkDoc.id,
+              title: artworkData.title || 'Untitled',
+              description: artworkData.description || '',
+              imageUrl: imageUrl || '',
+              imageAiHint: artworkData.description || '',
+              ...(videoUrl && { videoUrl: videoUrl as any }),
+              ...(mediaType && { mediaType: mediaType as any }),
+              artist: {
+                id: artistId || '',
+                name: artistName,
+                handle: artistHandle,
+                avatarUrl: artistAvatarUrl,
+                isVerified: false,
+                isProfessional: true,
+                followerCount: 0,
+                followingCount: 0,
+                createdAt: new Date(),
+              },
+              likes: artworkData.likes || 0,
+              commentsCount: artworkData.commentsCount || 0,
+              createdAt: artworkData.createdAt?.toDate?.() || (artworkData.createdAt instanceof Date ? artworkData.createdAt : new Date()),
+              updatedAt: artworkData.updatedAt?.toDate?.() || (artworkData.updatedAt instanceof Date ? artworkData.updatedAt : new Date()),
+              category: artworkData.category || '',
+              medium: artworkData.medium || '',
+              tags: artworkData.tags || [],
+              aiAssistance: artworkData.aiAssistance || 'none',
+              isAI: artworkData.isAI || false,
+              isForSale: artworkData.isForSale || false,
+              sold: artworkData.sold || false,
+              price: artworkData.price ? (artworkData.price > 1000 ? artworkData.price / 100 : artworkData.price) : undefined,
+              priceType: artworkData.priceType as 'fixed' | 'contact' | undefined,
+              contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
+            };
+            
+            fetchedArtworks.push(artwork);
+            log(`✅ Discover: Added non-portfolio artwork "${artwork.title}" from ${artwork.artist.name}`);
           }
         } catch (error) {
           console.error('Error fetching non-portfolio artworks:', error);
