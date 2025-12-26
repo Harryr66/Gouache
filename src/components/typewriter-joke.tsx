@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 
 const ART_JOKES = [
@@ -31,12 +31,16 @@ export function TypewriterJoke({
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const [isComplete, setIsComplete] = useState(false);
+  const jokeInitializedRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
-    // Pick a random joke
-    const randomJoke = ART_JOKES[Math.floor(Math.random() * ART_JOKES.length)];
-    setCurrentJoke(randomJoke);
+    // Pick a random joke ONLY ONCE - never change it
+    if (!jokeInitializedRef.current) {
+      const randomJoke = ART_JOKES[Math.floor(Math.random() * ART_JOKES.length)];
+      setCurrentJoke(randomJoke);
+      jokeInitializedRef.current = true;
+    }
   }, []);
 
   useEffect(() => {
@@ -46,6 +50,7 @@ export function TypewriterJoke({
     setIsTyping(true);
     setIsComplete(false);
     let isPaused = false;
+    let intervalId: NodeJS.Timeout | null = null;
 
     const typeInterval = setInterval(() => {
       if (isPaused) return; // Skip typing while paused
@@ -98,8 +103,12 @@ export function TypewriterJoke({
       }
     }, typingSpeed);
 
+    intervalId = typeInterval;
+
     return () => {
-      clearInterval(typeInterval);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
     };
   }, [currentJoke, mounted, typingSpeed, pauseAfterComplete, onComplete]);
 
