@@ -54,7 +54,6 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [showArtistPreview, setShowArtistPreview] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const tileRef = useRef<HTMLDivElement>(null);
   const [mediaAspectRatio, setMediaAspectRatio] = useState<number | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
