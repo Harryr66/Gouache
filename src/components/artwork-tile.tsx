@@ -59,8 +59,11 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
+  const [posterLoaded, setPosterLoaded] = useState(false);
   const videoLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const thumbnailCanvasRef = useRef<HTMLCanvasElement | null>(null);
   
   // Check if artwork has video
   const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
@@ -320,6 +323,77 @@ const generateArtistContent = (artist: Artist) => ({
       engagementTracker.recordLike(artwork.id, true);
     }
   }, [liked, artwork.id]);
+
+  // Extract video thumbnail (first frame) when video metadata loads
+  useEffect(() => {
+    if (hasVideo && videoUrl && videoRef.current && !videoThumbnail) {
+      const video = videoRef.current;
+      
+      const extractThumbnail = () => {
+        try {
+          // Create canvas to capture first frame
+          if (!thumbnailCanvasRef.current) {
+            thumbnailCanvasRef.current = document.createElement('canvas');
+          }
+          const canvas = thumbnailCanvasRef.current;
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) return;
+          
+          // Set canvas dimensions to video dimensions
+          canvas.width = video.videoWidth || 800;
+          canvas.height = video.videoHeight || 600;
+          
+          // Draw first frame to canvas
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          
+          // Convert to data URL
+          const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setVideoThumbnail(thumbnailDataUrl);
+          setPosterLoaded(true);
+        } catch (error) {
+          console.error('Error extracting video thumbnail:', error);
+          // Fallback to imageUrl if extraction fails
+          setPosterLoaded(true);
+        }
+      };
+      
+      // Try to extract thumbnail when video can play
+      const handleCanPlay = () => {
+        if (video.readyState >= 2) { // HAVE_CURRENT_DATA
+          extractThumbnail();
+        }
+      };
+      
+      // Also try when metadata loads
+      const handleLoadedMetadata = () => {
+        if (video.readyState >= 1) { // HAVE_METADATA
+          // Seek to first frame (0 seconds)
+          video.currentTime = 0.1; // Small offset to ensure frame is available
+        }
+      };
+      
+      // Extract when seeking completes
+      const handleSeeked = () => {
+        extractThumbnail();
+      };
+      
+      video.addEventListener('canplay', handleCanPlay);
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
+      video.addEventListener('seeked', handleSeeked);
+      
+      // If video is already loaded, try immediately
+      if (video.readyState >= 2) {
+        extractThumbnail();
+      }
+      
+      return () => {
+        video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        video.removeEventListener('seeked', handleSeeked);
+      };
+    }
+  }, [hasVideo, videoUrl, videoThumbnail]);
   // Use artist ID for profile link - this should be the Firestore document ID
   const profileSlug = artwork.artist.id;
   const handleViewProfile = () => {
@@ -377,8 +451,8 @@ const generateArtistContent = (artist: Artist) => ({
         }}
       >
         <div className="absolute inset-0">
-          {/* Loading skeleton - shown until media is fully loaded */}
-          {((hasVideo && !isVideoLoaded) || (!hasVideo && !isImageLoaded)) && (
+          {/* Loading skeleton - only show if poster/thumbnail not loaded yet */}
+          {((hasVideo && !posterLoaded && !videoThumbnail) || (!hasVideo && !isImageLoaded)) && (
             <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -389,7 +463,37 @@ const generateArtistContent = (artist: Artist) => ({
           {/* Media content */}
           {hasVideo && videoUrl ? (
             <>
-              {/* Video element - always render, use poster for thumbnail */}
+              {/* Show extracted video thumbnail immediately while video preloads */}
+              {videoThumbnail && (
+                <Image
+                  src={videoThumbnail}
+                  alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
+                  fill
+                  className={`object-cover transition-opacity duration-500 ${isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
+                  loading="eager"
+                  priority={false}
+                  onLoad={() => {
+                    setPosterLoaded(true);
+                  }}
+                />
+              )}
+              
+              {/* Fallback to imageUrl if thumbnail extraction hasn't happened yet */}
+              {!videoThumbnail && imageUrl && !posterLoaded && (
+                <Image
+                  src={imageUrl}
+                  alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
+                  fill
+                  className={`object-cover transition-opacity duration-500 ${isVideoLoaded ? 'opacity-0' : 'opacity-100'}`}
+                  loading="eager"
+                  priority={false}
+                  onLoad={() => {
+                    setPosterLoaded(true);
+                  }}
+                />
+              )}
+              
+              {/* Video element - preloads in background, fades in when ready */}
               {!videoError ? (
                 <video
                   ref={videoRef}
@@ -403,15 +507,15 @@ const generateArtistContent = (artist: Artist) => ({
                   preload="auto"
                   controls={false}
                   autoPlay={false}
-                  poster={imageUrl || undefined}
                   onLoadedMetadata={() => {
                     if (videoLoadTimeoutRef.current) {
                       clearTimeout(videoLoadTimeoutRef.current);
                       videoLoadTimeoutRef.current = null;
                     }
-                    // Metadata loaded - video thumbnail should be visible via poster
-                    setIsVideoLoaded(true);
-                    setVideoError(false);
+                    // Metadata loaded - start extracting thumbnail
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = 0.1;
+                    }
                   }}
                   onCanPlay={() => {
                     if (videoLoadTimeoutRef.current) {
@@ -428,8 +532,8 @@ const generateArtistContent = (artist: Artist) => ({
                     setVideoError(false);
                   }}
                   onProgress={() => {
-                    // Video is buffering - keep it visible
-                    if (!isVideoLoaded) {
+                    // Video is buffering - keep it visible once it starts
+                    if (!isVideoLoaded && videoRef.current && videoRef.current.readyState >= 3) {
                       setIsVideoLoaded(true);
                     }
                   }}
@@ -444,7 +548,8 @@ const generateArtistContent = (artist: Artist) => ({
                       videoLoadTimeoutRef.current = null;
                     }
                     setVideoError(true);
-                    setIsVideoLoaded(true); // Stop loading spinner, show poster instead
+                    setIsVideoLoaded(true);
+                    setPosterLoaded(true); // Show poster/thumbnail on error
                   }}
                   onLoadStart={() => {
                     // Set a timeout for video loading (15 seconds for full preload)
@@ -453,11 +558,9 @@ const generateArtistContent = (artist: Artist) => ({
                     }
                     videoLoadTimeoutRef.current = setTimeout(() => {
                       console.warn('Video loading timeout:', videoUrl);
-                      // Don't set error if we have a poster - just show poster
-                      if (imageUrl) {
-                        setIsVideoLoaded(true);
-                      } else {
-                        setVideoError(true);
+                      // Show poster/thumbnail if timeout, but don't error
+                      setPosterLoaded(true);
+                      if (!videoThumbnail && imageUrl) {
                         setIsVideoLoaded(true);
                       }
                     }, 15000);
