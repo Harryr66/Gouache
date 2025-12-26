@@ -543,13 +543,13 @@ const generateArtistContent = (artist: Artist) => ({
     <>
     <Card 
         ref={tileRef}
-        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col mb-1 break-inside-avoid rounded-none ${className || ''}`}
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col rounded-none ${className || ''}`}
         onClick={handleTileClick}
         onMouseEnter={handleMouseEnter}
         style={{
           // Dynamic height based on aspect ratio: height = width / aspectRatio
-          // Column width is fixed by CSS columns, so we calculate height accordingly
-          // For masonry, we use padding-bottom trick to maintain aspect ratio
+          // Grid width is fixed by CSS grid, so we calculate height accordingly
+          // Using padding-bottom trick to maintain aspect ratio
         }}
     >
       <div 

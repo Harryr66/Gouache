@@ -1256,7 +1256,7 @@ function DiscoverPageContent() {
       {/* Preload tiles invisibly during loading */}
       {shouldPreloadTiles && (
         <div className="fixed inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden' }} aria-hidden="true">
-          <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-5 gap-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-1">
             {visibleFilteredArtworks.slice(0, 12).map((item) => {
               const isAd = 'type' in item && item.type === 'ad';
               if (isAd) return null;
@@ -1499,12 +1499,10 @@ function DiscoverPageContent() {
               </div>
             ) : (artworkView === 'grid' || !isMobile) ? (
               <div 
-                className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-5 gap-1"
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-1"
                 style={{ 
-                  columnFill: 'auto', // Fill columns sequentially from top to bottom for predictable loading
-                  columnGap: '0.25rem',
-                  // Force grid to start at top, loading continuously downward
-                  alignContent: 'start'
+                  // Fill grid row by row from top to bottom
+                  gridAutoRows: 'auto'
                 }}
               >
                 {visibleFilteredArtworks.map((item) => {
