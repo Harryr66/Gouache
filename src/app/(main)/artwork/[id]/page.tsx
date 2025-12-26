@@ -524,7 +524,7 @@ export default function ArtworkPage() {
                   <div className="flex items-center gap-3 flex-wrap">
                     {/* Like Button */}
                     <Button
-                      variant="outline"
+                      variant={artwork?.id && isLiked(artwork.id) ? 'gradient' : 'outline'}
                       size="default"
                       onClick={() => {
                         if (artwork?.id) {
@@ -532,11 +532,7 @@ export default function ArtworkPage() {
                         }
                       }}
                       disabled={likesLoading}
-                      className={`flex items-center gap-2 ${
-                        artwork?.id && isLiked(artwork.id)
-                          ? 'border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950'
-                          : 'hover:border-red-500 hover:text-red-500'
-                      }`}
+                      className="flex items-center gap-2"
                     >
                       <Heart
                         className={`h-5 w-5 ${

@@ -80,6 +80,17 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
           const data = userDoc.data();
           const followedIds = data.following || [];
           setFollowedArtistIds(new Set(followedIds));
+          
+          // Update followingCount if it doesn't match the array length
+          if (followedIds.length !== (data.followingCount || 0)) {
+            try {
+              await updateDoc(doc(db, 'userProfiles', user.uid), {
+                followingCount: followedIds.length,
+              });
+            } catch (error) {
+              console.error('Error syncing followingCount:', error);
+            }
+          }
 
           // Fetch artist data for followed artists
           const artistPromises = followedIds.map(async (artistId: string) => {
@@ -195,6 +206,20 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Error updating follower count:', error);
       }
+
+      // Update following count on user's own profile
+      try {
+        const userDocRef = doc(db, 'userProfiles', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const currentFollowing = userDoc.data().following || [];
+          await updateDoc(userDocRef, {
+            followingCount: currentFollowing.length + 1,
+          });
+        }
+      } catch (error) {
+        console.error('Error updating following count:', error);
+      }
     } catch (error) {
       console.error('Error following artist:', error);
       const { toast } = await import('@/hooks/use-toast');
@@ -247,6 +272,20 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Error updating follower count:', error);
+      }
+
+      // Update following count on user's own profile
+      try {
+        const userDocRef = doc(db, 'userProfiles', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const currentFollowing = userDoc.data().following || [];
+          await updateDoc(userDocRef, {
+            followingCount: Math.max(0, currentFollowing.length - 1),
+          });
+        }
+      } catch (error) {
+        console.error('Error updating following count:', error);
       }
     } catch (error) {
       console.error('Error unfollowing artist:', error);

@@ -174,10 +174,9 @@ export function ExpandedArtworkView({ artwork, discussion, onClose }: ExpandedAr
                             <div className="flex items-center justify-between">
                                 <div className="flex space-x-2">
                                     <Button
-                                        variant="ghost"
+                                        variant={isLiked ? 'gradient' : 'ghost'}
                                         size="sm"
                                         onClick={handleLike}
-                                        className={isLiked ? 'text-red-500' : ''}
                                     >
                                         <Heart className={`h-4 w-4 mr-1 ${isLiked ? 'fill-current' : ''}`} />
                                         Like
