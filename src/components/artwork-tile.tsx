@@ -61,6 +61,7 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [videoError, setVideoError] = useState(false);
   const [isInViewport, setIsInViewport] = useState(false);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+  const [isInitialViewport, setIsInitialViewport] = useState(false);
   const videoLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
@@ -282,6 +283,39 @@ const generateArtistContent = (artist: Artist) => ({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const tileRef = useRef<HTMLDivElement>(null);
 
+  // Check if tile is in initial viewport (visible on first page load)
+  useEffect(() => {
+    if (!tileRef.current || !hasVideo || !videoUrl) return;
+
+    // Check if element is in viewport immediately (before IntersectionObserver)
+    const checkInitialViewport = () => {
+      if (!tileRef.current) return;
+      
+      const rect = tileRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+      const windowWidth = window.innerWidth || document.documentElement.clientWidth;
+      
+      // Check if tile is visible in initial viewport (within first screen)
+      const isVisible = (
+        rect.top < windowHeight &&
+        rect.bottom > 0 &&
+        rect.left < windowWidth &&
+        rect.right > 0
+      );
+      
+      if (isVisible) {
+        setIsInitialViewport(true);
+        setShouldLoadVideo(true); // Start loading immediately for initial viewport
+      }
+    };
+
+    // Check immediately and after a short delay (to account for layout)
+    checkInitialViewport();
+    const timeout = setTimeout(checkInitialViewport, 100);
+    
+    return () => clearTimeout(timeout);
+  }, [hasVideo, videoUrl]);
+
   // IntersectionObserver for lazy loading videos and tracking views
   useEffect(() => {
     if (!tileRef.current || !artwork?.id) return;
@@ -338,22 +372,35 @@ const generateArtistContent = (artist: Artist) => ({
     }
   }, [liked, artwork.id]);
 
+  // Preload video immediately if in initial viewport
+  useEffect(() => {
+    if (hasVideo && videoUrl && isInitialViewport && !shouldLoadVideo) {
+      // Start loading video immediately for initial viewport tiles
+      setShouldLoadVideo(true);
+    }
+  }, [hasVideo, videoUrl, isInitialViewport, shouldLoadVideo]);
+
   // Autoplay video when in viewport (muted, looped)
   useEffect(() => {
-    if (hasVideo && videoRef.current && shouldLoadVideo && isInViewport) {
+    if (hasVideo && videoRef.current && shouldLoadVideo && (isInViewport || isInitialViewport)) {
       const video = videoRef.current;
       
-      // Only autoplay if video is ready and not already playing
-      if (video.readyState >= 3 && video.paused) {
+      // Start loading video immediately when in viewport
+      if (video.readyState === 0) {
+        video.load();
+      }
+      
+      // Autoplay when video is ready
+      if (video.readyState >= 3 && video.paused && isVideoLoaded) {
         video.play().catch((error) => {
           console.error('Error autoplaying video:', error);
         });
       }
-    } else if (videoRef.current && !isInViewport) {
+    } else if (videoRef.current && !isInViewport && !isInitialViewport) {
       // Pause when out of viewport
       videoRef.current.pause();
     }
-  }, [hasVideo, shouldLoadVideo, isInViewport]);
+  }, [hasVideo, shouldLoadVideo, isInViewport, isInitialViewport, isVideoLoaded]);
   // Use artist ID for profile link - this should be the Firestore document ID
   const profileSlug = artwork.artist.id;
   const handleViewProfile = () => {
@@ -423,13 +470,13 @@ const generateArtistContent = (artist: Artist) => ({
           {/* Media content */}
           {hasVideo && videoUrl ? (
             <>
-              {/* Poster image - ALWAYS show immediately, fades out when video is ready */}
+              {/* Poster image - ALWAYS show immediately, stays visible until video is ready */}
               {imageUrl && (
                 <Image
                   src={imageUrl}
                   alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
                   fill
-                  className={`object-cover transition-opacity duration-500 z-10 ${isVideoLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                  className={`object-cover transition-opacity duration-500 absolute inset-0 z-10 ${isVideoLoaded && !videoError ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                   loading="eager"
                   priority={true}
                   onLoad={() => {
@@ -442,9 +489,8 @@ const generateArtistContent = (artist: Artist) => ({
                 />
               )}
               
-              {/* Video element - lazy loads when in viewport, always render but hidden until ready */}
-              {shouldLoadVideo ? (
-                !videoError ? (
+              {/* Video element - loads when in viewport, positioned behind poster until ready */}
+              {shouldLoadVideo && !videoError ? (
                 <video
                   ref={videoRef}
                   src={videoUrl}
