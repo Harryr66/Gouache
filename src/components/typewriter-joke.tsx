@@ -8,7 +8,7 @@ const ART_JOKES = [
   "Why did the artist steal their supplies? // They had no Monet...",
   "Vincent Van Gogh walks into a bar… // The bartender offers him a drink... // \"No thanks\" Vincent said... // \"I've got one ere.\"",
   "What did Dali eat for breakfast?... // A bowl of Surreal ...",
-  "My canvas just broke up with me… // It said over the years I've stretched them too thin.",
+  "My canvas just broke up with me… // It said over the years I've stretched it too thin.",
   "A portrait artist asked his wife why she was annoyed with him… // She said \"don't use that tone with me\"",
   "A textile artist was fired after falling into the factory loom... // They claim they were stitched up...",
   "Remember, if it's not Baroque…Don't fix it."
