@@ -60,7 +60,6 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false }:
   const [imageError, setImageError] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const videoLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [videoError, setVideoError] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
   
   // Check if artwork has video
