@@ -295,23 +295,17 @@ function DiscoverPageContent() {
   // Set loading to false ONLY when videos are ready AND joke is complete
   // ALWAYS wait for videos to be preloaded, even if joke finishes first
   useEffect(() => {
-    // If artworks are loaded (even if empty), we can proceed with loading state
-    // Don't wait forever if there's content to show
-    if (artworks.length > 0 && initialVideosTotal === 0) {
-      // No videos to preload, wait for joke to complete (max 10 seconds)
+    if (initialVideosTotal === 0) {
+      // No videos to preload, wait for joke to complete
       if (jokeComplete) {
         setLoading(false);
-        return;
+      } else {
+        // Fallback: if joke takes too long (10 seconds), show content anyway
+        const jokeTimeout = setTimeout(() => {
+          setLoading(false);
+        }, 10000);
+        return () => clearTimeout(jokeTimeout);
       }
-      // Fallback: if joke takes too long, show content anyway
-      const jokeTimeout = setTimeout(() => {
-        setLoading(false);
-      }, 10000);
-      return () => clearTimeout(jokeTimeout);
-    }
-    
-    if (initialVideosTotal === 0) {
-      // No videos and no artworks yet - wait a bit
       return;
     }
     
