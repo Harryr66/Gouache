@@ -895,11 +895,11 @@ export function UploadArtworkBasic() {
             <div className="space-y-1 flex-1">
               <div className="flex items-center gap-2">
                 <Label htmlFor="addToPortfolio" className="text-base font-semibold cursor-pointer">
-                  This is artwork (add to portfolio)
+                  This is an Artwork. (Add to my portfolio).
                 </Label>
               </div>
               <p className="text-sm text-muted-foreground">
-                Enable to mark this as artwork and add to your portfolio. When disabled, this will be posted as content (process videos, etc.) to Discover only.
+                Enable to mark this as artwork and add to your profiles portfolio. When disabled, this will be posted as discover content only.
               </p>
             </div>
             <div className="flex-shrink-0 pt-1">
