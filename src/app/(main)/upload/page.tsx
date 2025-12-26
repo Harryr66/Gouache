@@ -394,7 +394,7 @@ export default function UploadPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        {/* Upload Artwork */}
+        {/* Discover Uploads */}
         <Card 
           className="group hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
           onClick={() => setSelectedType('artwork')}
@@ -403,14 +403,14 @@ export default function UploadPage() {
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
               <Image className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle>Upload Artwork</CardTitle>
+            <CardTitle>Discover Uploads</CardTitle>
             <CardDescription>
-              Upload images to showcase in your portfolio. Mark as for sale to appear in your shop.
+              Upload images & videos to showcase in your portfolio, creation process & get discovered by new fans.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              Upload Artwork
+              Upload Content
             </Button>
           </CardContent>
         </Card>
