@@ -389,6 +389,18 @@ export function HueChatbot() {
         return response;
       } catch (error: any) {
         // Network errors, CORS errors, timeout, etc.
+        // Suppress Firestore connection errors - these are expected and will auto-retry
+        const errorMessage = error?.message || String(error);
+        const isFirestoreError = url.includes('firestore.googleapis.com') ||
+          errorMessage.includes('firestore.googleapis.com') ||
+          errorMessage.includes('Listen/channel') ||
+          errorMessage.includes('gsessionid');
+        
+        if (isFirestoreError) {
+          console.log('Suppressing Firestore connection error from fetch (expected, will auto-retry):', errorMessage);
+          throw error; // Re-throw to maintain original behavior
+        }
+        
         // Only report if it's not a user-initiated abort
         if (error?.name !== 'AbortError') {
           handleErrorReport(error, `API call to ${url}`, 'Network Error', error?.code || error?.name);
