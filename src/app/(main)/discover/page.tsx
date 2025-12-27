@@ -381,11 +381,15 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   }, [items.length, columnCount, gap, items]);
 
   const containerHeight = positions.length > 0 && itemRefs.current.length > 0
-    ? Math.max(...positions.map((pos, index) => {
-        const itemEl = itemRefs.current[index];
-        const itemHeight = itemEl?.offsetHeight || 0;
-        return pos.top + itemHeight;
-      }))
+    ? (() => {
+        const heights = positions.map((pos, index) => {
+          const itemEl = itemRefs.current[index];
+          const itemHeight = itemEl?.offsetHeight || 0;
+          const height = pos.top + itemHeight;
+          return isFinite(height) && height > 0 ? height : 0;
+        }).filter(h => h > 0);
+        return heights.length > 0 ? Math.max(...heights) : 0;
+      })()
     : 0;
 
   return (
