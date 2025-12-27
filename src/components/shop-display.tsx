@@ -140,145 +140,106 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
         
         console.log('Shop Display - Starting fetch for userId:', userId, 'isOwnProfile:', isOwnProfile);
 
-        // Fetch artworks marked for sale (originals and prints)
-        // Try multiple query patterns to handle different data structures
-        let artworksFound: any[] = [];
+        // NEW: Fetch shop items from portfolioItems collection (primary source)
+        const { PortfolioService } = await import('@/lib/database');
         
-        // Strategy 1: Query all artworks with isForSale=true and filter client-side
-        // This is more reliable than nested field queries
         try {
-          const allArtworksQuery = query(
-            collection(db, 'artworks'),
-            where('isForSale', '==', true)
-          );
-          const allArtworks = await getDocs(allArtworksQuery);
-          console.log('Shop Display - Found', allArtworks.size, 'total artworks with isForSale=true');
+          const portfolioItems = await PortfolioService.getUserShopItems(userId, 200);
+          console.log('Shop Display - Found', portfolioItems.length, 'portfolio items for shop from portfolioItems collection');
           
-          allArtworks.forEach((doc) => {
-            const data = doc.data();
-            // Check if this artwork belongs to the user - try multiple field patterns
-            const belongsToUser = 
-              data.artist?.userId === userId || 
-              data.artistId === userId || 
-              data.artist?.id === userId ||
-              (typeof data.artist === 'string' && data.artist === userId);
+          portfolioItems.forEach((item) => {
+            // Skip if not for sale or not showing in shop
+            if (!item.isForSale || !item.showInShop) {
+              return;
+            }
             
-            if (belongsToUser) {
-              artworksFound.push({ id: doc.id, data });
-              console.log('Shop Display - Found artwork for user:', {
-                id: doc.id,
-                title: data.title,
-                isForSale: data.isForSale,
-                showInShop: data.showInShop,
-                artistUserId: data.artist?.userId,
-                artistId: data.artistId,
-                artist: data.artist
+            // Determine item type
+            let itemType = item.artworkType || item.type || 'original';
+            if (item.artworkType) {
+              itemType = item.artworkType;
+            } else if (item.type === 'artwork') {
+              // Legacy: check tags or other fields
+              const isPrint = item.tags?.some((tag: string) => tag.toLowerCase() === 'print') || false;
+              itemType = isPrint ? 'print' : 'original';
+            }
+            
+            // Only include artworks (originals and prints) - products are fetched separately
+            if (itemType !== 'merchandise') {
+              // Convert price from cents to dollars if stored in cents (price > 1000 suggests cents)
+              const rawPrice = item.price || 0;
+              const price = rawPrice > 1000 ? rawPrice / 100 : rawPrice;
+              
+              results.push({
+                id: item.id,
+                type: itemType === 'print' ? 'print' : 'original',
+                title: item.title || 'Untitled',
+                description: item.description,
+                price: price,
+                currency: item.currency || 'USD',
+                priceType: item.priceType || (item.contactForPrice ? 'contact' : 'fixed'),
+                contactForPrice: item.contactForPrice || item.priceType === 'contact',
+                imageUrl: item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '',
+                isAvailable: !item.sold && (item.stock === undefined || item.stock > 0),
+                stock: item.stock,
+                category: item.category || item.medium,
+                createdAt: item.createdAt instanceof Date ? item.createdAt : (item.createdAt as any)?.toDate?.() || new Date(),
               });
+              
+              console.log('Shop Display - Added portfolio item to results:', item.id, item.title);
             }
           });
-        } catch (queryError) {
-          console.error('Error querying artworks:', queryError);
+        } catch (portfolioItemsError) {
+          console.error('Error fetching from portfolioItems collection:', portfolioItemsError);
         }
         
-        // Strategy 2: If no artworks found, check portfolio directly and sync missing ones
-        if (artworksFound.length === 0) {
-          console.log('Shop Display - No artworks found in artworks collection, checking portfolio...');
+        // BACKWARD COMPATIBILITY: Fallback to artworks collection if no portfolioItems found
+        if (results.length === 0) {
+          console.log('Shop Display - No items in portfolioItems, checking artworks collection (backward compatibility)...');
           try {
-            const userDoc = await getDoc(doc(db, 'userProfiles', userId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              const portfolio = Array.isArray(userData.portfolio) ? userData.portfolio : [];
-              const portfolioItemsForSale = portfolio.filter((item: any) => item.isForSale === true);
+            const allArtworksQuery = query(
+              collection(db, 'artworks'),
+              where('isForSale', '==', true)
+            );
+            const allArtworks = await getDocs(allArtworksQuery);
+            console.log('Shop Display - Found', allArtworks.size, 'total artworks with isForSale=true');
+            
+            allArtworks.forEach((doc) => {
+              const data = doc.data();
+              // Check if this artwork belongs to the user
+              const belongsToUser = 
+                data.artist?.userId === userId || 
+                data.artistId === userId || 
+                data.artist?.id === userId ||
+                (typeof data.artist === 'string' && data.artist === userId);
               
-              console.log('Shop Display - Found', portfolioItemsForSale.length, 'portfolio items marked for sale');
-              
-              // For each portfolio item marked for sale, check if it exists in artworks collection
-              for (const portfolioItem of portfolioItemsForSale) {
-                if (!portfolioItem.id) continue;
-                
-                try {
-                  const artworkDoc = await getDoc(doc(db, 'artworks', portfolioItem.id));
-                  if (artworkDoc.exists()) {
-                    const artworkData = artworkDoc.data();
-                    artworksFound.push({ id: portfolioItem.id, data: artworkData });
-                    console.log('Shop Display - Found artwork from portfolio check:', portfolioItem.id);
-                  } else {
-                    // Artwork doesn't exist in artworks collection - this is a sync issue
-                    console.warn('Shop Display - Portfolio item marked for sale but not in artworks collection:', portfolioItem.id);
-                    // We could sync it here, but for now just log it
-                  }
-                } catch (err) {
-                  console.error('Error checking artwork for portfolio item:', err);
+              if (belongsToUser && data.isForSale === true) {
+                let itemType = data.type || (data.category === 'print' ? 'print' : 'original');
+                if (itemType !== 'merchandise') {
+                  const rawPrice = data.price || 0;
+                  const price = rawPrice > 1000 ? rawPrice / 100 : rawPrice;
+                  
+                  results.push({
+                    id: doc.id,
+                    type: itemType === 'print' ? 'print' : 'original',
+                    title: data.title || 'Untitled',
+                    description: data.description,
+                    price: price,
+                    currency: data.currency || 'USD',
+                    priceType: data.priceType || (data.contactForPrice ? 'contact' : 'fixed'),
+                    contactForPrice: data.contactForPrice || data.priceType === 'contact',
+                    imageUrl: data.imageUrl,
+                    isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
+                    stock: data.stock,
+                    category: data.category,
+                    createdAt: data.createdAt?.toDate?.() || new Date(),
+                  });
                 }
               }
-            }
-          } catch (portfolioError) {
-            console.error('Error checking portfolio:', portfolioError);
+            });
+          } catch (queryError) {
+            console.error('Error querying artworks (backward compatibility):', queryError);
           }
         }
-        
-        console.log('Shop Display - Total artworks found for userId', userId, ':', artworksFound.length);
-        
-        artworksFound.forEach(({ id, data }) => {
-          console.log('Shop Display - Processing artwork:', {
-            id,
-            title: data.title,
-            isForSale: data.isForSale,
-            showInShop: data.showInShop,
-            artistUserId: data.artist?.userId,
-            artistId: data.artistId
-          });
-          
-          // Skip if not for sale
-          if (data.isForSale !== true) {
-            console.log('Shop Display - Skipping artwork (isForSale is not true):', id, 'isForSale:', data.isForSale);
-            return;
-          }
-          
-          // If isForSale is true, include it in shop (showInShop=false is ignored if isForSale=true)
-          // This ensures artworks marked for sale always appear in shop
-          // Also auto-fix the showInShop field if it's incorrectly set to false
-          if (data.showInShop === false && data.isForSale === true) {
-            console.log('Shop Display - Including artwork despite showInShop=false because isForSale=true:', id);
-            // Auto-fix: update showInShop to true in the background (don't wait for it)
-            updateDoc(doc(db, 'artworks', id), { showInShop: true }).catch((err) => {
-              console.warn('Failed to auto-fix showInShop field:', err);
-            });
-          }
-          
-          // Use the type field from Stage 2, or determine from category/legacy fields
-          let itemType = data.type;
-          if (!itemType) {
-            // Fallback for legacy items
-            const isPrint = data.category === 'print' || data.isPrint || false;
-            itemType = isPrint ? 'print' : 'original';
-          }
-          
-          // Only include artworks (originals and prints) - products are fetched separately
-          if (itemType !== 'merchandise') {
-            // Convert price from cents to dollars if stored in cents (price > 1000 suggests cents)
-            const rawPrice = data.price || 0;
-            const price = rawPrice > 1000 ? rawPrice / 100 : rawPrice;
-            
-            results.push({
-              id: id,
-              type: itemType === 'print' ? 'print' : 'original',
-              title: data.title || 'Untitled',
-              description: data.description,
-              price: price,
-              currency: data.currency || 'USD',
-              priceType: data.priceType || (data.contactForPrice ? 'contact' : 'fixed'),
-              contactForPrice: data.contactForPrice || data.priceType === 'contact',
-              imageUrl: data.imageUrl,
-              isAvailable: !data.sold && (data.stock === undefined || data.stock > 0),
-              stock: data.stock,
-              category: data.category,
-              createdAt: data.createdAt?.toDate?.() || new Date(),
-            });
-            
-            console.log('Shop Display - Added artwork to results:', id, data.title);
-          }
-        });
         
         console.log('Shop Display - Total artworks added to results:', results.length);
 

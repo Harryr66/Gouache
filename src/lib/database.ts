@@ -518,6 +518,283 @@ export class AnalyticsService {
   }
 }
 
+// Portfolio Items Service - New collection-based architecture
+export interface PortfolioItem {
+  id: string;
+  userId: string;
+  imageUrl: string;
+  videoUrl?: string;
+  mediaType?: 'image' | 'video';
+  supportingImages?: string[];
+  mediaUrls?: string[];
+  mediaTypes?: string[];
+  title: string;
+  description?: string;
+  medium?: string;
+  dimensions?: string;
+  year?: string;
+  tags?: string[];
+  createdAt: Date | Timestamp;
+  updatedAt: Date | Timestamp;
+  showInPortfolio?: boolean;
+  showInShop?: boolean;
+  isForSale?: boolean;
+  sold?: boolean;
+  price?: number; // in cents
+  currency?: string;
+  priceType?: 'fixed' | 'contact';
+  contactForPrice?: boolean;
+  deliveryScope?: string;
+  deliveryCountries?: string[];
+  artworkType?: 'original' | 'print' | 'merchandise';
+  type?: string;
+  deleted?: boolean;
+  aiAssistance?: 'none' | 'assisted' | 'generated';
+  isAI?: boolean;
+  likes?: number;
+  commentsCount?: number;
+  category?: string;
+  [key: string]: any; // Allow additional fields
+}
+
+export class PortfolioService {
+  /**
+   * Create a new portfolio item
+   */
+  static async createPortfolioItem(item: Omit<PortfolioItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const itemRef = await addDoc(collection(db, 'portfolioItems'), {
+      ...item,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      deleted: false,
+      showInPortfolio: item.showInPortfolio !== false, // Default to true
+    });
+    return itemRef.id;
+  }
+
+  /**
+   * Get a single portfolio item by ID
+   */
+  static async getPortfolioItem(itemId: string): Promise<PortfolioItem | null> {
+    const itemDoc = await getDoc(doc(db, 'portfolioItems', itemId));
+    if (!itemDoc.exists()) return null;
+    
+    const data = itemDoc.data();
+    return {
+      id: itemDoc.id,
+      ...data,
+      createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
+      updatedAt: data.updatedAt?.toDate?.() || (data.updatedAt instanceof Date ? data.updatedAt : new Date()),
+    } as PortfolioItem;
+  }
+
+  /**
+   * Get all portfolio items for a user
+   */
+  static async getUserPortfolioItems(
+    userId: string,
+    options?: {
+      showInPortfolio?: boolean;
+      showInShop?: boolean;
+      isForSale?: boolean;
+      deleted?: boolean;
+      limit?: number;
+      orderBy?: 'createdAt' | 'updatedAt';
+      orderDirection?: 'asc' | 'desc';
+    }
+  ): Promise<PortfolioItem[]> {
+    let q = query(
+      collection(db, 'portfolioItems'),
+      where('userId', '==', userId)
+    );
+
+    if (options?.showInPortfolio !== undefined) {
+      q = query(q, where('showInPortfolio', '==', options.showInPortfolio));
+    }
+    if (options?.showInShop !== undefined) {
+      q = query(q, where('showInShop', '==', options.showInShop));
+    }
+    if (options?.isForSale !== undefined) {
+      q = query(q, where('isForSale', '==', options.isForSale));
+    }
+    if (options?.deleted !== undefined) {
+      q = query(q, where('deleted', '==', options.deleted));
+    }
+
+    const orderField = options?.orderBy || 'createdAt';
+    const orderDir = options?.orderDirection || 'desc';
+    q = query(q, orderBy(orderField, orderDir));
+
+    if (options?.limit) {
+      q = query(q, limit(options.limit));
+    }
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
+        updatedAt: data.updatedAt?.toDate?.() || (data.updatedAt instanceof Date ? data.updatedAt : new Date()),
+      } as PortfolioItem;
+    });
+  }
+
+  /**
+   * Get portfolio items for discover feed (all users, filtered)
+   */
+  static async getDiscoverPortfolioItems(options?: {
+    showInPortfolio?: boolean;
+    deleted?: boolean;
+    hideAI?: boolean;
+    limit?: number;
+    startAfter?: any;
+  }): Promise<PortfolioItem[]> {
+    let q = query(collection(db, 'portfolioItems'));
+
+    if (options?.showInPortfolio !== undefined) {
+      q = query(q, where('showInPortfolio', '==', options.showInPortfolio));
+    }
+    if (options?.deleted !== undefined) {
+      q = query(q, where('deleted', '==', options.deleted));
+    }
+
+    q = query(q, orderBy('createdAt', 'desc'));
+
+    if (options?.startAfter) {
+      q = query(q, startAfter(options.startAfter));
+    }
+    if (options?.limit) {
+      q = query(q, limit(options.limit));
+    }
+
+    const snapshot = await getDocs(q);
+    let items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
+        updatedAt: data.updatedAt?.toDate?.() || (data.updatedAt instanceof Date ? data.updatedAt : new Date()),
+      } as PortfolioItem;
+    });
+
+    // Client-side filter for AI content if needed (can't query on nested fields efficiently)
+    if (options?.hideAI) {
+      items = items.filter(item => 
+        item.aiAssistance !== 'assisted' && 
+        item.aiAssistance !== 'generated' && 
+        !item.isAI
+      );
+    }
+
+    return items;
+  }
+
+  /**
+   * Update a portfolio item
+   */
+  static async updatePortfolioItem(itemId: string, updates: Partial<PortfolioItem>): Promise<void> {
+    const { id, userId, createdAt, ...updateData } = updates;
+    await updateDoc(doc(db, 'portfolioItems', itemId), {
+      ...updateData,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  /**
+   * Delete a portfolio item (soft delete)
+   */
+  static async deletePortfolioItem(itemId: string): Promise<void> {
+    await updateDoc(doc(db, 'portfolioItems', itemId), {
+      deleted: true,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  /**
+   * Hard delete a portfolio item
+   */
+  static async hardDeletePortfolioItem(itemId: string): Promise<void> {
+    await deleteDoc(doc(db, 'portfolioItems', itemId));
+  }
+
+  /**
+   * Batch create portfolio items (for migration)
+   */
+  static async batchCreatePortfolioItems(items: Omit<PortfolioItem, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<void> {
+    const batch = writeBatch(db);
+    const timestamp = serverTimestamp();
+
+    items.forEach(item => {
+      const itemRef = doc(collection(db, 'portfolioItems'));
+      batch.set(itemRef, {
+        ...item,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        deleted: false,
+        showInPortfolio: item.showInPortfolio !== false,
+      });
+    });
+
+    await batch.commit();
+  }
+
+  /**
+   * Get shop items for a user
+   */
+  static async getUserShopItems(userId: string, limitCount: number = 100): Promise<PortfolioItem[]> {
+    return this.getUserPortfolioItems(userId, {
+      isForSale: true,
+      showInShop: true,
+      deleted: false,
+      limit: limitCount,
+      orderBy: 'createdAt',
+      orderDirection: 'desc',
+    });
+  }
+
+  /**
+   * Subscribe to portfolio items changes (real-time)
+   */
+  static subscribeToUserPortfolio(
+    userId: string,
+    callback: (items: PortfolioItem[]) => void,
+    options?: {
+      showInPortfolio?: boolean;
+      deleted?: boolean;
+    }
+  ): () => void {
+    let q = query(
+      collection(db, 'portfolioItems'),
+      where('userId', '==', userId)
+    );
+
+    if (options?.showInPortfolio !== undefined) {
+      q = query(q, where('showInPortfolio', '==', options.showInPortfolio));
+    }
+    if (options?.deleted !== undefined) {
+      q = query(q, where('deleted', '==', options.deleted));
+    }
+
+    q = query(q, orderBy('createdAt', 'desc'));
+
+    return onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
+          updatedAt: data.updatedAt?.toDate?.() || (data.updatedAt instanceof Date ? data.updatedAt : new Date()),
+        } as PortfolioItem;
+      });
+      callback(items);
+    });
+  }
+}
+
 // Search System
 export class SearchService {
   static async searchUsers(searchTerm: string): Promise<User[]> {

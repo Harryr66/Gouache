@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/providers/auth-provider';
 import { useContent } from '@/providers/content-provider';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -479,37 +479,50 @@ export function UploadArtworkBasic() {
 
       const cleanPortfolioItem = removeUndefined(artworkItem);
 
-      // Update user's portfolio in Firestore ONLY if toggle is enabled
+      // NEW: Update user's portfolio in portfolioItems collection if toggle is enabled
       if (addToPortfolio) {
-        const userDocRef = doc(db, 'userProfiles', user.id);
-        const userDoc = await getDoc(userDocRef);
-        const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
+        const { PortfolioService } = await import('@/lib/database');
         
-        // Clean existing portfolio items as well (they might have undefined values from previous uploads)
-        const cleanedExistingPortfolio = currentPortfolio.map((item: any) => removeUndefined(item));
-        const updatedPortfolio = [...cleanedExistingPortfolio, cleanPortfolioItem];
+        const portfolioItemData: any = {
+          userId: user.id,
+          ...cleanPortfolioItem,
+          showInPortfolio: true,
+          deleted: false,
+        };
+
+        // Check if item already exists
+        const existingItem = await PortfolioService.getPortfolioItem(artworkItem.id);
         
-        // Clean the entire portfolio array one more time to be safe
-        const finalCleanedPortfolio = removeUndefined(updatedPortfolio);
-        
-        // Debug: Check for any undefined values before saving
-        const hasUndefined = JSON.stringify(finalCleanedPortfolio).includes('undefined');
-        if (hasUndefined) {
-          console.error('❌ Found undefined values in portfolio after cleaning:', finalCleanedPortfolio);
-          // Try one more aggressive clean
-          const stringified = JSON.stringify(finalCleanedPortfolio, (key, value) => {
-            return value === undefined ? null : value;
-          });
-          const finalPortfolio = JSON.parse(stringified);
-          await updateDoc(userDocRef, {
-            portfolio: finalPortfolio,
-            updatedAt: new Date(),
-          });
+        if (existingItem) {
+          await PortfolioService.updatePortfolioItem(artworkItem.id, portfolioItemData);
+          console.log('✅ Portfolio item updated in portfolioItems collection');
         } else {
+          // Use setDoc to use the existing ID
+          await setDoc(doc(db, 'portfolioItems', artworkItem.id), {
+            ...portfolioItemData,
+            id: artworkItem.id,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+          console.log('✅ Portfolio item created in portfolioItems collection');
+        }
+
+        // BACKWARD COMPATIBILITY: Also update userProfiles.portfolio array
+        try {
+          const userDocRef = doc(db, 'userProfiles', user.id);
+          const userDoc = await getDoc(userDocRef);
+          const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
+          const cleanedExistingPortfolio = currentPortfolio.map((item: any) => removeUndefined(item));
+          const updatedPortfolio = [...cleanedExistingPortfolio, cleanPortfolioItem];
+          const finalCleanedPortfolio = removeUndefined(updatedPortfolio);
+          
           await updateDoc(userDocRef, {
             portfolio: finalCleanedPortfolio,
             updatedAt: new Date(),
           });
+          console.log('✅ Portfolio item added to userProfiles.portfolio (backward compatibility)');
+        } catch (legacyError) {
+          console.warn('⚠️ Failed to update legacy userProfiles.portfolio (non-critical):', legacyError);
         }
       }
 

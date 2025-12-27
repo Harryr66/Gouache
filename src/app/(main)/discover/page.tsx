@@ -607,124 +607,103 @@ function DiscoverPageContent() {
         setLoading(true);
         log('🔍 Discover: Starting to fetch artworks from artist profiles...');
         
-        // Fetch artists with portfolios - balance performance and content coverage
-        const artistsQuery = query(
-          collection(db, 'userProfiles'),
-          limit(100) // Increased from 50 to 100 to ensure enough content loads
-        );
+        // NEW: Fetch portfolio items directly from portfolioItems collection (much more efficient!)
+        const { PortfolioService } = await import('@/lib/database');
         
-        const artistsSnapshot = await getDocs(artistsQuery);
-        log(`👥 Discover: Found ${artistsSnapshot.docs.length} professional artists`);
+        log('🔍 Discover: Fetching portfolio items from portfolioItems collection...');
+        const portfolioItems = await PortfolioService.getDiscoverPortfolioItems({
+          showInPortfolio: true,
+          deleted: false,
+          hideAI: discoverSettings.hideAiAssistedArt,
+          limit: 500, // Fetch more items for better content coverage
+        });
+        
+        log(`📦 Discover: Found ${portfolioItems.length} portfolio items from portfolioItems collection`);
         
         const fetchedArtworks: Artwork[] = [];
-        let totalPortfolioItems = 0;
-        let skippedNoPortfolio = 0;
-        let skippedShowInPortfolioFalse = 0;
         let skippedNoImage = 0;
         let skippedAI = 0;
+        let skippedNoArtist = 0;
         
-        // Extract portfolio items from each artist
-        for (const artistDoc of artistsSnapshot.docs) {
-          const artistData = artistDoc.data();
-          const portfolio = artistData.portfolio || [];
-          totalPortfolioItems += portfolio.length;
-          
-          if (portfolio.length === 0) {
-            skippedNoPortfolio++;
-            continue;
-          }
-          
-          log(`🎨 Discover: Processing artist ${artistData.displayName || artistData.username || artistDoc.id} - ${portfolio.length} portfolio items`);
-          
-          // Limit portfolio items per artist to prevent performance issues
-          // Process up to 20 most recent items per artist for better content coverage
-          const recentPortfolio = portfolio
-            .filter((item: any) => !item.deleted && item.showInPortfolio !== false)
-            .sort((a: any, b: any) => {
-              const dateA = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
-              const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
-              return dateB - dateA; // Newest first
-            })
-            .slice(0, 20); // Process top 20 most recent per artist
-          
-          // Process each portfolio item - use for loop to handle async
-          for (const [index, item] of recentPortfolio.entries()) {
-            // Apply discover settings filters for AI content
-            if (discoverSettings.hideAiAssistedArt && (item.aiAssistance === 'assisted' || item.aiAssistance === 'generated' || item.isAI)) {
-              skippedAI++;
-              continue; // Skip AI-assisted/generated artworks if hidden
+        // Batch fetch artist data to avoid N+1 queries
+        const artistIds = new Set<string>(portfolioItems.map(item => item.userId));
+        const artistDataMap = new Map<string, any>();
+        
+        log(`👥 Discover: Fetching ${artistIds.size} artist profiles...`);
+        for (const artistId of artistIds) {
+          try {
+            const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
+            if (artistDoc.exists()) {
+              artistDataMap.set(artistId, artistDoc.data());
             }
-            
-            // Get media URL (support video or image)
-            // Check for video: first check videoUrl, then check mediaUrls array for video type
-            let videoUrl = item.videoUrl || null;
-            if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
-              videoUrl = item.mediaUrls[0];
-            }
-            // For image, prefer imageUrl, then supportingImages, then mediaUrls (but only if not video)
-            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
-            const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
-            
-            // Skip items without media
-            if (!imageUrl && !videoUrl) {
-              skippedNoImage++;
-              log(`⚠️ Discover: Skipping item "${item.title || 'Untitled'}" from ${artistData.displayName || artistDoc.id} - no media URL`);
-              continue;
-            }
-
-            // Use portfolio item data directly - avoid N+1 query to artworks collection
-            // Portfolio items should have all necessary sale information
-            const saleStatus = {
-              isForSale: item.isForSale || false,
-              sold: item.sold || false,
-              price: item.price,
-              priceType: item.priceType,
-              contactForPrice: item.contactForPrice || item.priceType === 'contact',
-            };
-
-            // Convert portfolio item to Artwork object
-            const artwork: Artwork = {
-              id: item.id || `${artistDoc.id}-${Date.now()}-${index}`,
-              title: item.title || 'Untitled',
-              description: item.description || '',
-              imageUrl: imageUrl || '', // Fallback for backward compatibility
-              imageAiHint: item.description || '',
-              // Add video support
-              ...(videoUrl && { videoUrl: videoUrl as any }),
-              ...(mediaType && { mediaType: mediaType as any }),
-              artist: {
-                id: artistDoc.id,
-                name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
-                handle: artistData.username || artistData.handle || '',
-                avatarUrl: artistData.avatarUrl || null,
-                isVerified: artistData.isVerified || false,
-                isProfessional: true,
-                followerCount: artistData.followerCount || 0,
-                followingCount: artistData.followingCount || 0,
-                createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
-              },
-              likes: item.likes || 0,
-              commentsCount: item.commentsCount || 0,
-              createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date()),
-              updatedAt: item.updatedAt?.toDate?.() || item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date()),
-              category: item.category || '',
-              medium: item.medium || '',
-              tags: item.tags || [],
-              aiAssistance: item.aiAssistance || 'none',
-              isAI: item.isAI || false,
-              isForSale: saleStatus.isForSale,
-              sold: saleStatus.sold,
-              price: saleStatus.price ? (saleStatus.price > 1000 ? saleStatus.price / 100 : saleStatus.price) : undefined,
-              priceType: saleStatus.priceType as 'fixed' | 'contact' | undefined,
-              contactForPrice: saleStatus.contactForPrice,
-            };
-            
-            fetchedArtworks.push(artwork);
-            log(`✅ Discover: Added artwork "${artwork.title}" from ${artwork.artist.name} (imageUrl: ${artwork.imageUrl.substring(0, 50)}...)`);
+          } catch (error) {
+            console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
           }
         }
         
-        log(`📊 Discover: Summary - Total portfolio items: ${totalPortfolioItems}, Added: ${fetchedArtworks.length}, Skipped (no portfolio): ${skippedNoPortfolio}, Skipped (showInPortfolio=false): ${skippedShowInPortfolioFalse}, Skipped (no image): ${skippedNoImage}, Skipped (AI): ${skippedAI}`);
+        // Process portfolio items
+        for (const [index, item] of portfolioItems.entries()) {
+          // Get artist data
+          const artistData = artistDataMap.get(item.userId);
+          if (!artistData) {
+            skippedNoArtist++;
+            continue;
+          }
+          
+          // Get media URL (support video or image)
+          let videoUrl = item.videoUrl || null;
+          if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
+            videoUrl = item.mediaUrls[0];
+          }
+          const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
+          const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
+          
+          // Skip items without media
+          if (!imageUrl && !videoUrl) {
+            skippedNoImage++;
+            continue;
+          }
+
+          // Convert portfolio item to Artwork object
+          const artwork: Artwork = {
+            id: item.id,
+            title: item.title || 'Untitled',
+            description: item.description || '',
+            imageUrl: imageUrl,
+            imageAiHint: item.description || '',
+            ...(videoUrl && { videoUrl: videoUrl as any }),
+            ...(mediaType && { mediaType: mediaType as any }),
+            artist: {
+              id: item.userId,
+              name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
+              handle: artistData.username || artistData.handle || '',
+              avatarUrl: artistData.avatarUrl || null,
+              isVerified: artistData.isVerified || false,
+              isProfessional: true,
+              followerCount: artistData.followerCount || 0,
+              followingCount: artistData.followingCount || 0,
+              createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
+            },
+            likes: item.likes || 0,
+            commentsCount: item.commentsCount || 0,
+            createdAt: item.createdAt instanceof Date ? item.createdAt : (item.createdAt as any)?.toDate?.() || new Date(),
+            updatedAt: item.updatedAt instanceof Date ? item.updatedAt : (item.updatedAt as any)?.toDate?.() || new Date(),
+            category: item.category || '',
+            medium: item.medium || '',
+            tags: item.tags || [],
+            aiAssistance: item.aiAssistance || 'none',
+            isAI: item.isAI || false,
+            isForSale: item.isForSale || false,
+            sold: item.sold || false,
+            price: item.price ? (item.price > 1000 ? item.price / 100 : item.price) : undefined,
+            priceType: item.priceType as 'fixed' | 'contact' | undefined,
+            contactForPrice: item.contactForPrice || item.priceType === 'contact',
+          };
+          
+          fetchedArtworks.push(artwork);
+        }
+        
+        log(`📊 Discover: Summary - Portfolio items: ${portfolioItems.length}, Added: ${fetchedArtworks.length}, Skipped (no image): ${skippedNoImage}, Skipped (no artist): ${skippedNoArtist}`);
         
         // Also fetch Discover content from artworks collection (non-portfolio content)
         // This includes content uploaded via Discover portal with showInPortfolio = false
@@ -1517,8 +1496,15 @@ function DiscoverPageContent() {
   // Videos will load in background and autoplay when ready (onCanPlay)
   const shouldPreloadTiles = loading && initialImagesTotal > 0;
   
+  // Debug: Log loading state changes
+  useEffect(() => {
+    if (isDev) {
+      console.log('🔍 Discover: Loading state changed:', loading);
+    }
+  }, [loading, isDev]);
+
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background relative" style={{ pointerEvents: 'auto' }}>
       {/* Preload tiles invisibly during loading */}
       {shouldPreloadTiles && (
         <div className="fixed inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden' }} aria-hidden="true">
@@ -1579,9 +1565,19 @@ function DiscoverPageContent() {
         </div>
       )}
       
-      {/* Loading overlay - SINGLE instance, always shown when loading */}
+      {/* Loading overlay - SINGLE instance, only shown when loading */}
+      {/* Ensure it doesn't block navigation - headers are z-[60], overlay is z-50 */}
+      {/* Use conditional rendering to completely remove from DOM when not loading */}
       {loading && (
-        <div className="fixed inset-0 bg-background flex items-center justify-center z-50 pointer-events-auto">
+        <div 
+          className="fixed inset-0 bg-background flex items-center justify-center z-50" 
+          style={{ 
+            pointerEvents: 'auto',
+            // Ensure it's below navigation headers (z-[60])
+            zIndex: 50
+          }}
+          aria-hidden={!loading}
+        >
           <div className="flex flex-col items-center justify-center gap-6">
             <ThemeLoading size="lg" />
             <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={1000} />

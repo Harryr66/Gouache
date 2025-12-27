@@ -276,32 +276,83 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          // Convert portfolio items from Firestore format (with Timestamps) to Date objects
-          const portfolio = userData.portfolio?.map((item: any) => {
-            // Handle createdAt - could be Firestore Timestamp, Date, or serverTimestamp placeholder
-            let createdAt: Date;
-            if (item.createdAt?.toDate) {
-              createdAt = item.createdAt.toDate();
-            } else if (item.createdAt instanceof Date) {
-              createdAt = item.createdAt;
-            } else {
-              createdAt = new Date();
-            }
+          // OPTIMIZATION: Try to load portfolio from portfolioItems collection first (faster, more efficient)
+          let portfolio: any[] = [];
+          try {
+            const { PortfolioService } = await import('@/lib/database');
+            const portfolioItems = await PortfolioService.getUserPortfolioItems(firebaseUser.uid, {
+              showInPortfolio: true,
+              deleted: false,
+              limit: 100, // Limit for performance in auth context
+            });
             
-            return {
-              ...item,
-              createdAt: createdAt
-            };
-          }) || [];
+            if (portfolioItems.length > 0) {
+              portfolio = portfolioItems.map((item) => {
+                let createdAt: Date;
+                if (item.createdAt instanceof Date) {
+                  createdAt = item.createdAt;
+                } else if ((item.createdAt as any)?.toDate) {
+                  createdAt = (item.createdAt as any).toDate();
+                } else {
+                  createdAt = new Date();
+                }
+                
+                return {
+                  ...item,
+                  createdAt: createdAt
+                };
+              });
+              
+              console.log('📋 Auth Provider: Loaded portfolio from portfolioItems collection:', {
+                userId: firebaseUser.uid,
+                portfolioCount: portfolio.length,
+              });
+            } else {
+              // BACKWARD COMPATIBILITY: Fallback to userProfiles.portfolio array
+              console.log('📋 Auth Provider: No items in portfolioItems, using userProfiles.portfolio (backward compatibility)');
+              portfolio = userData.portfolio?.map((item: any) => {
+                let createdAt: Date;
+                if (item.createdAt?.toDate) {
+                  createdAt = item.createdAt.toDate();
+                } else if (item.createdAt instanceof Date) {
+                  createdAt = item.createdAt;
+                } else {
+                  createdAt = new Date();
+                }
+                
+                return {
+                  ...item,
+                  createdAt: createdAt
+                };
+              }) || [];
+            }
+          } catch (portfolioError) {
+            // If portfolioItems query fails, fallback to userProfiles.portfolio
+            console.warn('⚠️ Auth Provider: Error loading from portfolioItems, falling back to userProfiles.portfolio:', portfolioError);
+            portfolio = userData.portfolio?.map((item: any) => {
+              let createdAt: Date;
+              if (item.createdAt?.toDate) {
+                createdAt = item.createdAt.toDate();
+              } else if (item.createdAt instanceof Date) {
+                createdAt = item.createdAt;
+              } else {
+                createdAt = new Date();
+              }
+              
+              return {
+                ...item,
+                createdAt: createdAt
+              };
+            }) || [];
+          }
           
-          console.log('📋 Auth Provider: Loaded portfolio:', {
+          console.log('📋 Auth Provider: Final portfolio loaded:', {
             userId: firebaseUser.uid,
             portfolioCount: portfolio.length,
-            items: portfolio.map((item: any) => ({
+            items: portfolio.slice(0, 5).map((item: any) => ({
               id: item.id,
               title: item.title,
               imageUrl: item.imageUrl ? 'has image' : 'no image',
-              createdAt: item.createdAt
             }))
           });
           
