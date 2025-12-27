@@ -1258,9 +1258,16 @@ function DiscoverPageContent() {
         if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
           videoUrl = item.mediaUrls[0];
         }
-        const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
         const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
+        // For videos, prioritize explicit poster images, but ensure we have something to display
+        const imageUrl = item.imageUrl || 
+                        item.supportingImages?.[0] || 
+                        item.images?.[0] || 
+                        (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || 
+                        '';
         
+        // For videos, if no explicit poster image, we'll use the video element to extract a frame
+        // But we still need at least a videoUrl to continue
         if (!imageUrl && !videoUrl) continue;
 
         const artwork: Artwork = {
@@ -2144,7 +2151,7 @@ function DiscoverPageContent() {
               <MasonryGrid
                 items={visibleFilteredArtworks}
                 columnCount={columnCount}
-                gap={2}
+                gap={1}
                 renderItem={(item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
