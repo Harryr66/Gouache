@@ -21,6 +21,7 @@ export function VideoControlProvider({ children }: { children: React.ReactNode }
   const [playingVideos, setPlayingVideos] = useState<Set<string>>(new Set());
   const videoCallbacks = useRef<Map<string, { play: () => void; pause: () => void; onEnded?: () => void }>>(new Map());
   const [visibleVideos, setVisibleVideos] = useState<Set<string>>(new Set());
+  const visibleVideosRef = useRef<Set<string>>(new Set()); // Synchronous ref for immediate access
   const videoQueue = useRef<string[]>([]);
   const [connectionSpeed, setConnectionSpeed] = useState<'slow' | 'medium' | 'fast' | 'unknown'>('unknown');
   const pendingAutoplayChecks = useRef<Set<string>>(new Set());
@@ -88,6 +89,7 @@ export function VideoControlProvider({ children }: { children: React.ReactNode }
   }, []);
   
   const registerVisibleVideo = useCallback((videoId: string) => {
+    visibleVideosRef.current.add(videoId); // Update ref immediately for synchronous access
     setVisibleVideos(prev => {
       const next = new Set(prev);
       if (!next.has(videoId)) {
@@ -98,6 +100,7 @@ export function VideoControlProvider({ children }: { children: React.ReactNode }
   }, []);
   
   const unregisterVisibleVideo = useCallback((videoId: string) => {
+    visibleVideosRef.current.delete(videoId); // Update ref immediately
     setVisibleVideos(prev => {
       const next = new Set(prev);
       next.delete(videoId);
@@ -113,14 +116,11 @@ export function VideoControlProvider({ children }: { children: React.ReactNode }
       return true;
     }
     
-    // Only allow autoplay for 50% of visible videos
-    const visibleCount = visibleVideos.size;
+    // Use ref for synchronous access to visible videos count
+    const visibleCount = visibleVideosRef.current.size;
     
-    // If no visible videos registered yet, check if this video is in the process of registering
-    // Allow first video to autoplay immediately
+    // If no visible videos registered yet, allow first video to autoplay
     if (visibleCount === 0) {
-      // If this video is trying to autoplay, it should be visible - allow it
-      // This handles the case where videos register and try to autoplay simultaneously
       return true; // First video can always autoplay
     }
     
@@ -130,7 +130,7 @@ export function VideoControlProvider({ children }: { children: React.ReactNode }
     
     // Check if we can add another autoplay video
     return currentlyPlaying < maxAutoplay;
-  }, [visibleVideos, playingVideos]);
+  }, [playingVideos]);
   
   // Handle video ended - play next in queue
   const handleVideoEnded = useCallback((videoId: string) => {
