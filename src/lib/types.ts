@@ -475,14 +475,14 @@ export interface Artwork {
   // Video support
   videoUrl?: string; // Legacy: single video URL (deprecated, use videoVariants)
   mediaType?: 'image' | 'video';
-  // Multiple quality video variants (240p for tiles, 1080p for expanded)
+  // Multiple quality video variants (240p for tiles, 720p for expanded)
   videoVariants?: {
     thumbnail: string; // 240p low quality for tiles/previews (faster loading)
-    full: string; // 1080p full quality for expanded view
+    full: string; // 720p full quality for expanded view
     thumbnailQuality?: '240p';
-    fullQuality?: '1080p';
+    fullQuality?: '720p';
     thumbnailBitrate?: number; // in kbps (e.g., 300)
-    fullBitrate?: number; // in kbps (e.g., 2000-5000)
+    fullBitrate?: number; // in kbps (e.g., 1000-2500)
   };
 }
 
