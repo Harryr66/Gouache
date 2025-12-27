@@ -24,7 +24,6 @@ export function VideoControlProvider({ children }: { children: React.ReactNode }
   const visibleVideosRef = useRef<Set<string>>(new Set()); // Synchronous ref for immediate access
   const videoQueue = useRef<string[]>([]);
   const [connectionSpeed, setConnectionSpeed] = useState<'slow' | 'medium' | 'fast' | 'unknown'>('unknown');
-  const pendingAutoplayChecks = useRef<Set<string>>(new Set());
 
   // Detect connection speed using Network Information API (if available) or fallback
   useEffect(() => {
