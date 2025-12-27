@@ -1092,7 +1092,7 @@ function DiscoverPageContent() {
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
         setArtworksLoaded(true); // Mark artworks as loaded
-        setLoading(false); // Initial load complete
+        // DO NOT set loading to false here - must wait for joke to complete + 2s minimum
         
         // Count initial viewport media for preloading with connection-aware limits
         // Strategy: Load poster images first (fast), limit videos to 3 per viewport, connection-aware preload count
@@ -1857,29 +1857,28 @@ function DiscoverPageContent() {
   // Videos will load in background and autoplay when ready (onCanPlay)
   const shouldPreloadTiles = loading && initialImagesTotal > 0;
   
-  // Debug: Log loading state changes
+  // Debug: Log loading state changes (DO NOT force loading to false - must wait for joke)
   useEffect(() => {
-    console.log('🔍 Discover: Loading state changed:', loading, 'Artworks loaded:', artworksLoaded);
-    // Force loading to false if artworks are loaded but loading is still true
-    if (artworksLoaded && loading) {
-      console.warn('⚠️ Discover: Artworks loaded but loading still true - forcing to false');
-      setLoading(false);
-    }
-  }, [loading, artworksLoaded, isDev]);
+    console.log('🔍 Discover: Loading state changed:', loading, 'Artworks loaded:', artworksLoaded, 'Joke complete:', jokeComplete);
+  }, [loading, artworksLoaded, jokeComplete, isDev]);
 
-  // Safety fallback: Force loading to false after maximum time to prevent stuck state
+  // Safety fallback: Force loading to false after maximum time ONLY if joke has completed
+  // This prevents stuck state but still respects joke completion requirement
   useEffect(() => {
-    const MAX_LOADING_TIME = 10000; // 10 seconds max - faster timeout
+    const MAX_LOADING_TIME = 60000; // 60 seconds max - increased to allow joke + media loading
     const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn('⚠️ Discover: Loading timeout - forcing loading to false');
-        setLoading(false);
-        setArtworksLoaded(true); // Also mark as loaded to prevent re-triggering
+      if (loading && jokeComplete && jokeCompleteTime) {
+        const timeSinceJoke = Date.now() - jokeCompleteTime;
+        // Only force dismiss if joke has been complete for at least 2 seconds
+        if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
+          console.warn('⚠️ Discover: Safety timeout (60s) reached - forcing loading to false (joke has completed + 2s minimum)');
+          setLoading(false);
+        }
       }
     }, MAX_LOADING_TIME);
 
     return () => clearTimeout(timeout);
-  }, [loading]);
+  }, [loading, jokeComplete, jokeCompleteTime]);
 
   return (
     <div className="min-h-screen bg-background">
