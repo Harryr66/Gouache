@@ -1764,11 +1764,12 @@ function DiscoverPageContent() {
 
   // Safety fallback: Force loading to false after maximum time to prevent stuck state
   useEffect(() => {
-    const MAX_LOADING_TIME = 15000; // 15 seconds max
+    const MAX_LOADING_TIME = 10000; // 10 seconds max - faster timeout
     const timeout = setTimeout(() => {
       if (loading) {
         console.warn('⚠️ Discover: Loading timeout - forcing loading to false');
         setLoading(false);
+        setArtworksLoaded(true); // Also mark as loaded to prevent re-triggering
       }
     }, MAX_LOADING_TIME);
 
