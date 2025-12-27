@@ -65,6 +65,8 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
   const [isInViewport, setIsInViewport] = useState(false);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const [shouldLoadMetadata, setShouldLoadMetadata] = useState(false);
@@ -154,8 +156,18 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
       setIsImageLoaded(true); // Image is fully loaded
     };
     img.onerror = () => {
+      // Retry up to 2 times with exponential backoff
+      if (retryCount < 2) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          img.src = imageUrl + (imageUrl.includes('?') ? '&' : '?') + `retry=${retryCount + 1}&t=${Date.now()}`;
+        }, (retryCount + 1) * 1000);
+        return;
+      }
+      // After retries, use placeholder
       setMediaAspectRatio(2/3); // Default to portrait aspect ratio (2:3) on error
       setImageError(true);
+      setFallbackImageUrl(generatePlaceholderUrl(400, 600));
       setIsImageLoaded(true); // Stop showing loader even on error
     };
       img.src = imageUrl;
@@ -164,7 +176,9 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
       // Reset loading state when image URL changes
       setIsImageLoaded(false);
       setImageError(false);
-  }, [imageUrl, videoUrl, hasVideo, artwork.dimensions, shouldLoadMetadata, mediaAspectRatio]);
+      setRetryCount(0);
+      setFallbackImageUrl(null);
+  }, [imageUrl, videoUrl, hasVideo, artwork.dimensions, shouldLoadMetadata, mediaAspectRatio, retryCount, generatePlaceholderUrl]);
   
   // Calculate height based on aspect ratio (column width is fixed, height scales dynamically)
   // Default to 2:3 (portrait) if aspect ratio not yet determined - ideal for tall tiles
@@ -639,30 +653,49 @@ const generateArtistContent = (artist: Artist) => ({
               {(imageUrl || videoUrl) ? (
                 <>
                   {imageUrl ? (
-                    <Image
-                      src={imageUrl}
-                      alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
-                      fill
-                      className={`object-cover transition-opacity duration-500 absolute inset-0 z-10 pointer-events-none ${isVideoLoaded && !videoError ? 'opacity-0' : 'opacity-100'}`}
-                      loading="eager"
-                      priority={true}
-                      onLoad={() => {
-                        setIsImageLoaded(true);
-                        // Call onImageReady if this is in initial viewport (for preloading)
-                        // Pass true for video posters so we can track them separately
-                        if (isInitialViewport && onImageReady) {
-                          onImageReady(true); // true = this is a video poster
-                        }
-                      }}
-                      onError={() => {
-                        setImageError(true);
-                        setIsImageLoaded(true);
-                        // Still call onImageReady even on error (to not block loading)
-                        if (isInitialViewport && onImageReady) {
-                          onImageReady(true); // true = this is a video poster
-                        }
-                      }}
-                    />
+                    <>
+                      <Image
+                        src={imageError && fallbackImageUrl ? fallbackImageUrl : imageUrl}
+                        alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
+                        fill
+                        className={`object-cover transition-opacity duration-500 absolute inset-0 z-10 pointer-events-none ${isVideoLoaded && !videoError ? 'opacity-0' : 'opacity-100'}`}
+                        loading="eager"
+                        priority={true}
+                        onLoad={() => {
+                          setIsImageLoaded(true);
+                          setImageError(false); // Clear error on successful load
+                          // Call onImageReady if this is in initial viewport (for preloading)
+                          // Pass true for video posters so we can track them separately
+                          if (isInitialViewport && onImageReady) {
+                            onImageReady(true); // true = this is a video poster
+                          }
+                        }}
+                        onError={() => {
+                          // Retry up to 2 times
+                          if (retryCount < 2 && !fallbackImageUrl) {
+                            setTimeout(() => {
+                              setRetryCount(prev => prev + 1);
+                            }, (retryCount + 1) * 1000);
+                            return; // Don't set error yet, will retry
+                          }
+                          // After retries, use placeholder
+                          setImageError(true);
+                          setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                          setIsImageLoaded(true);
+                          // Still call onImageReady even on error (to not block loading)
+                          if (isInitialViewport && onImageReady) {
+                            onImageReady(true); // true = this is a video poster
+                          }
+                        }}
+                      />
+                      {/* Retry indicator - show while retrying */}
+                      {retryCount > 0 && retryCount < 2 && !imageError && (
+                        <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-12 pointer-events-none">
+                          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                        </div>
+                      )}
+                    </>
+                  )
                   ) : (
                     // If no explicit poster image, show a hidden video element to extract first frame as thumbnail
                     <video
@@ -686,14 +719,7 @@ const generateArtistContent = (artist: Artist) => ({
                       }}
                     />
                   )}
-                  {/* Error state for video poster */}
-                  {imageError && (
-                    <div className="absolute inset-0 bg-muted flex items-center justify-center z-15 pointer-events-none">
-                      <div className="text-muted-foreground text-xs text-center p-4">
-                        Failed to load thumbnail
-                      </div>
-                    </div>
-                  )}
+                  {/* Error state removed - placeholder image is shown instead via fallbackImageUrl */}
                 </>
               ) : (
                 // Fallback: show loading placeholder if no imageUrl or videoUrl
@@ -830,7 +856,7 @@ const generateArtistContent = (artist: Artist) => ({
           ) : (
             <>
               <Image
-                src={imageUrl}
+                src={imageError && fallbackImageUrl ? fallbackImageUrl : imageUrl}
                 alt={artwork.imageAiHint}
                 fill
                 className={`object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
@@ -838,6 +864,7 @@ const generateArtistContent = (artist: Artist) => ({
                 priority={false}
                 onLoad={() => {
                   setIsImageLoaded(true);
+                  setImageError(false); // Clear error on successful load
                   // Call onImageReady if this is in initial viewport (for preloading)
                   // Pass false for regular images (not video posters)
                   if (isInitialViewport && onImageReady) {
@@ -845,7 +872,16 @@ const generateArtistContent = (artist: Artist) => ({
                   }
                 }}
                 onError={() => {
+                  // Retry up to 2 times
+                  if (retryCount < 2 && !fallbackImageUrl) {
+                    setTimeout(() => {
+                      setRetryCount(prev => prev + 1);
+                    }, (retryCount + 1) * 1000);
+                    return; // Don't set error yet, will retry
+                  }
+                  // After retries, use placeholder
                   setImageError(true);
+                  setFallbackImageUrl(generatePlaceholderUrl(400, 600));
                   setIsImageLoaded(true);
                   // Still call onImageReady even on error (to not block loading)
                   if (isInitialViewport && onImageReady) {
@@ -853,12 +889,11 @@ const generateArtistContent = (artist: Artist) => ({
                   }
                 }}
               />
-              {/* Error state - show placeholder if media fails to load */}
-              {imageError && (
-                <div className="absolute inset-0 bg-muted flex items-center justify-center z-20 pointer-events-none">
-                  <div className="text-muted-foreground text-xs text-center p-4">
-                    Failed to load image
-                  </div>
+              {/* Error state removed - placeholder image is shown instead via fallbackImageUrl */}
+              {/* Retry indicator - show while retrying */}
+              {retryCount > 0 && retryCount < 2 && !imageError && (
+                <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-12 pointer-events-none">
+                  <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 </div>
               )}
             </>
