@@ -1757,10 +1757,13 @@ function DiscoverPageContent() {
   
   // Debug: Log loading state changes
   useEffect(() => {
-    if (isDev) {
-      console.log('🔍 Discover: Loading state changed:', loading);
+    console.log('🔍 Discover: Loading state changed:', loading, 'Artworks loaded:', artworksLoaded);
+    // Force loading to false if artworks are loaded but loading is still true
+    if (artworksLoaded && loading) {
+      console.warn('⚠️ Discover: Artworks loaded but loading still true - forcing to false');
+      setLoading(false);
     }
-  }, [loading, isDev]);
+  }, [loading, artworksLoaded, isDev]);
 
   // Safety fallback: Force loading to false after maximum time to prevent stuck state
   useEffect(() => {
