@@ -2018,13 +2018,13 @@ function DiscoverPageContent() {
           <TabsContent value="artwork" className="mt-0">
             {/* Search and Filter Bar */}
             <div className="mb-6 space-y-4">
-              {/* Mobile: Filter and View Toggle - mirror top row layout */}
+              {/* Mobile: Filter and View Toggle - mirror top row layout (50/50 split) */}
               {isMobile && (
-                <div className="flex items-center gap-3 w-full">
+                <div className="flex items-center gap-0 w-full">
                   <Button
                     variant="outline"
                     onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                    className="shrink-0 h-10 px-4 md:px-6"
+                    className="flex-1 h-10 px-4 md:px-6 rounded-r-none border-r-0"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
