@@ -23,7 +23,7 @@ interface TypewriterJokeProps {
 export function TypewriterJoke({ 
   onComplete, 
   typingSpeed = 60, // Slower typing speed for better readability
-  pauseAfterComplete = 3000 // Longer pause to allow reading
+  pauseAfterComplete = 2000 // 2 second pause after joke completes to allow reading
 }: TypewriterJokeProps) {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);

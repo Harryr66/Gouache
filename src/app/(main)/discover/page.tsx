@@ -457,7 +457,7 @@ function DiscoverPageContent() {
   const [jokeComplete, setJokeComplete] = useState(false);
   const [artworksLoaded, setArtworksLoaded] = useState(false);
   const [jokeCompleteTime, setJokeCompleteTime] = useState<number | null>(null);
-  const MIN_JOKE_DISPLAY_TIME = 2000; // Minimum 2 seconds to display joke after completion
+  const MIN_JOKE_DISPLAY_TIME = 2000; // Minimum 2 seconds to display joke AFTER completion callback (so joke finishes + 2s minimum)
   const jokeCompletionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Track when initial videos are ready
@@ -482,22 +482,22 @@ function DiscoverPageContent() {
     }
   }, []);
   
-  // Handle joke completion
+  // Handle joke completion - this is called AFTER the joke has fully finished typing AND pauseAfterComplete (2s) has elapsed
   const handleJokeComplete = useCallback(() => {
-    console.log('🎭 Joke animation completed at:', new Date().toISOString());
+    console.log('🎭 Joke animation FULLY completed (typing + 2s pause) at:', new Date().toISOString());
     const completionTime = Date.now();
     setJokeComplete(true);
     setJokeCompleteTime(completionTime);
     
-    // Ensure we wait the full minimum display time after joke completion
     // Clear any existing timeout
     if (jokeCompletionTimeoutRef.current) {
       clearTimeout(jokeCompletionTimeoutRef.current);
     }
     
-    // Set a timeout to ensure minimum display time is respected
+    // The joke has finished typing + 2s pause, now we wait an ADDITIONAL 2s minimum before checking content
+    // This ensures media has plenty of time to load
     jokeCompletionTimeoutRef.current = setTimeout(() => {
-      console.log('✅ Minimum joke display time (2s) has passed, content can now be checked');
+      console.log('✅ Minimum joke display time (2s AFTER completion) has passed, content can now be checked');
     }, MIN_JOKE_DISPLAY_TIME);
   }, []);
   
@@ -605,18 +605,24 @@ function DiscoverPageContent() {
         // After extended timeout, show content even if not all media loaded
         // This handles edge cases where media fails to load
         // BUT ONLY if joke has finished + minimum time has passed
-        const timeSinceJoke = Date.now() - (jokeCompleteTime || Date.now());
+        if (!jokeCompleteTime) {
+          log('⚠️ Loading timeout reached but joke not complete yet, waiting...');
+          return; // Don't dismiss until joke is complete
+        }
+        
+        const timeSinceJoke = Date.now() - jokeCompleteTime;
         if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
-          log('⚠️ Loading timeout reached - showing content with partial media loaded (joke has finished + 2s minimum)');
+          log('⚠️ Loading timeout (12s) reached - showing content with partial media loaded (joke has finished + 2s minimum)');
           setLoading(false);
         } else {
-          log('⚠️ Loading timeout reached but joke minimum time not met, waiting...');
+          log(`⚠️ Loading timeout reached but joke minimum time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms), waiting...`);
           // Wait for joke minimum time, then dismiss
           setTimeout(() => {
+            log('✅ Joke minimum time now met, dismissing loading screen');
             setLoading(false);
           }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
         }
-      }, 8000); // Reduced from 15s to 8s - faster fallback for slow connections
+      }, 12000); // Increased to 12s to give media more time to load
     }
     
     return () => {
@@ -1915,8 +1921,8 @@ function DiscoverPageContent() {
                     hideBanner={isMobile && artworkView === 'grid'}
                     // Mark as initial viewport so videos start loading immediately and autoplay when ready
                     isInitialViewport={isInitial && (hasVideo || hasImage) ? true : undefined}
-                    // Track image loading - ArtworkTile will pass isVideoPoster flag
-                    onImageReady={isInitial && hasImage ? (isVideoPoster) => handleImageReady(artwork.id, isVideoPoster) : undefined}
+                    // Track image loading (including video posters) - ArtworkTile will pass isVideoPoster flag
+                    onImageReady={isInitial && (hasImage || hasVideo) ? (isVideoPoster) => handleImageReady(artwork.id, isVideoPoster) : undefined}
                     // Track video metadata loading
                     onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
                   />
