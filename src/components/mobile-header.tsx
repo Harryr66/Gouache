@@ -47,8 +47,8 @@ export function MobileHeader() {
           </Link>
         </div>
         
-        {/* Action Buttons */}
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        {/* Action Buttons - Settings only (Profile moved to bottom nav) */}
+        <div className="flex flex-1 items-center justify-end">
             <Button 
               variant="ghost"
               size="icon" 
@@ -57,6 +57,7 @@ export function MobileHeader() {
               style={{
                 pointerEvents: 'auto',
                 touchAction: 'manipulation',
+                zIndex: 1,
               }}
             >
               <Link 
@@ -65,32 +66,15 @@ export function MobileHeader() {
                   pointerEvents: 'auto',
                   touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent',
+                  zIndex: 1,
+                }}
+                onClick={(e) => {
+                  // Ensure click is not prevented
+                  e.stopPropagation();
                 }}
               >
                 <Settings className="h-5 w-5" />
                 <span className="sr-only">Settings</span>
-              </Link>
-            </Button>
-            <Button 
-              variant="ghost"
-              size="icon" 
-              className="h-9 w-9 rounded-lg"
-              asChild
-              style={{
-                pointerEvents: 'auto',
-                touchAction: 'manipulation',
-              }}
-            >
-              <Link 
-                href="/profile"
-                style={{
-                  pointerEvents: 'auto',
-                  touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                <Fingerprint className="h-5 w-5" />
-                <span className="sr-only">Profile</span>
               </Link>
             </Button>
         </div>
