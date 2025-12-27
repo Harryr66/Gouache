@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useMemo, useEffect, useRef, useState } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Eye, Fingerprint, Globe, Brain } from 'lucide-react';
-import { createPortal } from 'react-dom';
 
 const navigation = [
   { name: 'News', href: '/news', icon: Globe },
@@ -17,7 +16,6 @@ const navigation = [
 export function DesktopHeader() {
   const pathname = usePathname();
   const headerRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
   
   // Memoize active states to prevent re-computation during scroll
   // Normalize pathname to handle query params and ensure stable comparison
@@ -31,14 +29,9 @@ export function DesktopHeader() {
     }));
   }, [pathname]);
 
-  // Mount check for portal
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Add native event listeners as absolute fallback
   useEffect(() => {
-    if (!mounted || !headerRef.current) return;
+    if (!headerRef.current) return;
     
     const header = headerRef.current;
     const links = header.querySelectorAll('a');
@@ -60,9 +53,9 @@ export function DesktopHeader() {
         link.removeEventListener('click', handler, { capture: true });
       });
     };
-  }, [mounted, activeStates]);
+  }, [activeStates]);
 
-  const headerContent = (
+  return (
     <div 
       ref={headerRef}
       className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6 relative z-[9999]"
@@ -143,8 +136,4 @@ export function DesktopHeader() {
       {/* Username section removed - profile section already available */}
     </div>
   );
-
-  // Render via portal to document.body to ensure it's always accessible
-  if (!mounted) return null;
-  return createPortal(headerContent, document.body);
 }
