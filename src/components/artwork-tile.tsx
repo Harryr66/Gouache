@@ -484,8 +484,7 @@ const generateArtistContent = (artist: Artist) => ({
     }
   }, [hasVideo, videoUrl, isInitialViewport, shouldLoadVideo]);
 
-  // Autoplay video when in viewport (muted, looped) with concurrent video limiting
-  // Also implement shorter previews (8 seconds) for tiles
+  // Autoplay video when in viewport (muted, looped) with 50% autoplay rule
   useEffect(() => {
     if (!hasVideo || !videoRef.current || !shouldLoadVideo || !artwork.id) return;
     
@@ -514,13 +513,18 @@ const generateArtistContent = (artist: Artist) => ({
         }
       };
       
+      // Small delay to ensure visible videos are registered before checking canAutoplay
+      const timeoutId = setTimeout(() => {
+        tryPlay();
+      }, 100);
+      
       // Try immediately and on various events
-      tryPlay();
       video.addEventListener('canplay', tryPlay);
       video.addEventListener('canplaythrough', tryPlay);
       video.addEventListener('loadeddata', tryPlay);
       
       return () => {
+        clearTimeout(timeoutId);
         video.removeEventListener('canplay', tryPlay);
         video.removeEventListener('canplaythrough', tryPlay);
         video.removeEventListener('loadeddata', tryPlay);
@@ -541,7 +545,7 @@ const generateArtistContent = (artist: Artist) => ({
         previewTimerRef.current = null;
       }
     }
-  }, [hasVideo, shouldLoadVideo, isInViewport, isInitialViewport, artwork.id, requestPlay]);
+  }, [hasVideo, shouldLoadVideo, isInViewport, isInitialViewport, artwork.id, requestPlay, canAutoplay]);
   // Use artist ID for profile link - this should be the Firestore document ID
   const profileSlug = artwork.artist.id;
   const handleViewProfile = () => {
