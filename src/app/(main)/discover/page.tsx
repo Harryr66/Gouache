@@ -296,10 +296,14 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
 
         const itemHeight = itemEl.offsetHeight || 0;
         const left = shortestColumnIndex * (itemWidth + gap);
-        const top = columnHeights[shortestColumnIndex];
+        // Add gap to top position if not first item in column (to create uniform vertical spacing)
+        const top = columnHeights[shortestColumnIndex] === 0 
+          ? 0 
+          : columnHeights[shortestColumnIndex] + gap;
 
         newPositions.push({ top, left, width: itemWidth });
-        columnHeights[shortestColumnIndex] += itemHeight + gap;
+        // Add item height plus gap for next item
+        columnHeights[shortestColumnIndex] = top + itemHeight;
       });
 
       setPositions(newPositions);
