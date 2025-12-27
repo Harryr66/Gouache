@@ -563,15 +563,23 @@ function DiscoverPageContent() {
       // Require ALL video thumbnails (up to 3) to load, plus connection-aware threshold for regular images
       // This ensures all 3 video tiles show their thumbnails before loading screen disappears
       
-      if (initialImagesTotal === 0) {
-        // No images to preload - content is ready immediately (but joke must have finished)
+      // Only dismiss if artworks are loaded AND there are no images to preload
+      // If artworks haven't loaded yet, keep waiting
+      if (initialImagesTotal === 0 && artworksLoaded) {
+        // No images to preload AND artworks are loaded - content is ready (but joke must have finished)
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
-        console.log('✅ No images to load, dismissing loading screen (joke has finished + 2s minimum)');
+        console.log('✅ No images to load and artworks loaded, dismissing loading screen (joke has finished + 2s minimum)');
         setTimeout(() => {
           setLoading(false);
         }, 200);
+        return;
+      }
+      
+      // If artworks aren't loaded yet, wait for them
+      if (!artworksLoaded) {
+        console.log('⏳ Waiting for artworks to load before checking media readiness...');
         return;
       }
       
