@@ -604,7 +604,24 @@ export class PortfolioService {
     }
   ): Promise<PortfolioItem[]> {
     try {
+      // Check if collection exists and has any documents first (quick check)
+      // This helps avoid query errors on empty collections
       let q = query(
+        collection(db, 'portfolioItems'),
+        where('userId', '==', userId),
+        limit(1) // Quick check - just see if any documents exist
+      );
+      
+      const quickCheck = await getDocs(q);
+      
+      // If no documents found, return empty array (will trigger fallback)
+      if (quickCheck.empty) {
+        console.log('📋 PortfolioService: No portfolioItems found for user, returning empty array (will trigger fallback)');
+        return [];
+      }
+
+      // Build full query
+      q = query(
         collection(db, 'portfolioItems'),
         where('userId', '==', userId)
       );
@@ -641,7 +658,7 @@ export class PortfolioService {
         } as PortfolioItem;
       });
     } catch (error: any) {
-      // If query fails (e.g., missing index, empty collection), return empty array
+      // If query fails (e.g., missing index), return empty array
       // This allows backward compatibility to kick in
       console.warn('⚠️ PortfolioService: Error querying portfolioItems, returning empty array:', error?.message || error);
       return [];
@@ -659,6 +676,13 @@ export class PortfolioService {
     startAfter?: any;
   }): Promise<PortfolioItem[]> {
     try {
+      // Quick check: see if collection has any documents
+      const quickCheck = await getDocs(query(collection(db, 'portfolioItems'), limit(1)));
+      if (quickCheck.empty) {
+        console.log('📋 PortfolioService: portfolioItems collection is empty, returning empty array (will trigger fallback)');
+        return [];
+      }
+
       let q = query(collection(db, 'portfolioItems'));
 
       if (options?.showInPortfolio !== undefined) {
@@ -699,7 +723,7 @@ export class PortfolioService {
 
       return items;
     } catch (error: any) {
-      // If query fails (e.g., missing index, empty collection), return empty array
+      // If query fails (e.g., missing index), return empty array
       // This allows backward compatibility to kick in
       console.warn('⚠️ PortfolioService: Error querying discover portfolioItems, returning empty array:', error?.message || error);
       return [];

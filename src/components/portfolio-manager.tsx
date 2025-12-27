@@ -278,12 +278,18 @@ export function PortfolioManager() {
 
       try {
         // NEW: Load from portfolioItems collection (primary source)
-        const portfolioItems = await PortfolioService.getUserPortfolioItems(user.id, {
-          showInPortfolio: true,
-          deleted: false,
-          orderBy: 'createdAt',
-          orderDirection: 'desc',
-        });
+        let portfolioItems: any[] = [];
+        try {
+          portfolioItems = await PortfolioService.getUserPortfolioItems(user.id, {
+            showInPortfolio: true,
+            deleted: false,
+            orderBy: 'createdAt',
+            orderDirection: 'desc',
+          });
+        } catch (portfolioError) {
+          console.warn('⚠️ PortfolioManager: Error loading from portfolioItems, will try fallback:', portfolioError);
+          portfolioItems = []; // Will trigger fallback
+        }
 
         if (portfolioItems.length > 0) {
           const mappedItems = portfolioItems.map(mapPortfolioItem);
@@ -298,31 +304,54 @@ export function PortfolioManager() {
 
         // BACKWARD COMPATIBILITY: Fallback to userProfiles.portfolio array
         console.log('📋 PortfolioManager: No items in portfolioItems, checking userProfiles.portfolio (backward compatibility)');
-        const userDoc = await getDoc(doc(db, 'userProfiles', user.id));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          const rawPortfolio = data.portfolio || [];
-          
-          if (rawPortfolio.length > 0) {
-            const mappedItems = rawPortfolio
-              .filter((item: any) => item.showInPortfolio !== false)
-              .map(mapPortfolioItem);
-            mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
+        try {
+          const userDoc = await getDoc(doc(db, 'userProfiles', user.id));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            const rawPortfolio = data.portfolio || [];
+            
+            if (rawPortfolio.length > 0) {
+              const mappedItems = rawPortfolio
+                .filter((item: any) => item.showInPortfolio !== false)
+                .map(mapPortfolioItem);
+              mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
 
-            console.log('📋 PortfolioManager: Loaded portfolio from userProfiles.portfolio (legacy)', {
-              userId: user.id,
-              rawPortfolioCount: rawPortfolio.length,
-              mappedCount: mappedItems.length,
-            });
-            setPortfolioItems(mappedItems);
-            return;
+              console.log('📋 PortfolioManager: Loaded portfolio from userProfiles.portfolio (legacy)', {
+                userId: user.id,
+                rawPortfolioCount: rawPortfolio.length,
+                mappedCount: mappedItems.length,
+              });
+              setPortfolioItems(mappedItems);
+              return;
+            }
           }
+        } catch (fallbackError) {
+          console.error('⚠️ PortfolioManager: Error loading from userProfiles.portfolio fallback:', fallbackError);
         }
 
         // No portfolio items found
+        console.log('📋 PortfolioManager: No portfolio items found in either collection');
         setPortfolioItems([]);
       } catch (error) {
         console.error('Error loading portfolio:', error);
+        // Try fallback one more time
+        try {
+          const userDoc = await getDoc(doc(db, 'userProfiles', user.id));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            const rawPortfolio = data.portfolio || [];
+            if (rawPortfolio.length > 0) {
+              const mappedItems = rawPortfolio
+                .filter((item: any) => item.showInPortfolio !== false)
+                .map((item: any, index: number) => mapPortfolioItem(item, index));
+              mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
+              setPortfolioItems(mappedItems);
+              return;
+            }
+          }
+        } catch (fallbackError) {
+          console.error('⚠️ PortfolioManager: Fallback also failed:', fallbackError);
+        }
         setPortfolioItems([]);
       }
     };
