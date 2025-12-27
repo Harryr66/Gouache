@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -53,6 +53,8 @@ export default function ArtworkPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const modalVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const fetchArtwork = async () => {
@@ -410,6 +412,28 @@ export default function ArtworkPage() {
     fetchArtwork();
   }, [artworkId]);
 
+  // Autoplay video when artwork loads and it's a video
+  useEffect(() => {
+    if (artwork && artwork.videoUrl && artwork.mediaType === 'video' && videoRef.current) {
+      // Attempt to play the video
+      videoRef.current.play().catch((error) => {
+        // Autoplay may be blocked by browser - this is expected
+        console.log('Video autoplay prevented by browser:', error);
+      });
+    }
+  }, [artwork]);
+
+  // Autoplay video in modal when modal opens
+  useEffect(() => {
+    if (showImageModal && artwork && artwork.videoUrl && artwork.mediaType === 'video' && modalVideoRef.current) {
+      // Attempt to play the video in modal
+      modalVideoRef.current.play().catch((error) => {
+        // Autoplay may be blocked by browser - this is expected
+        console.log('Modal video autoplay prevented by browser:', error);
+      });
+    }
+  }, [showImageModal, artwork]);
+
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto p-6 space-y-4">
@@ -455,10 +479,14 @@ export default function ArtworkPage() {
               >
                 {artwork.videoUrl && artwork.mediaType === 'video' ? (
                   <video
+                    ref={videoRef}
                     src={(artwork as any).videoVariants?.full || artwork.videoUrl}
                     controls
                     className="w-full h-full object-contain"
                     playsInline
+                    autoPlay
+                    muted={false}
+                    loop={false}
                   />
                 ) : (
                   <div className="cursor-zoom-in">
@@ -622,10 +650,14 @@ export default function ArtworkPage() {
           <div className="relative w-full max-h-[70vh] bg-black flex items-center justify-center allow-pinch-zoom">
             {artwork.videoUrl && artwork.mediaType === 'video' ? (
               <video
-                src={artwork.videoUrl}
+                ref={modalVideoRef}
+                src={(artwork as any).videoVariants?.full || artwork.videoUrl}
                 controls
                 className="max-w-full max-h-[70vh] w-auto h-auto"
                 playsInline
+                autoPlay
+                muted={false}
+                loop={false}
               />
             ) : (
               <Image
