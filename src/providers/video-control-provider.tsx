@@ -118,9 +118,14 @@ export function VideoControlProvider({ children }: { children: React.ReactNode }
     // Use ref for synchronous access to visible videos count
     const visibleCount = visibleVideosRef.current.size;
     
-    // If no visible videos registered yet, allow first video to autoplay
-    if (visibleCount === 0) {
+    // If this is the first visible video (and none are playing), always allow autoplay
+    if (visibleCount === 1 && playingVideos.size === 0) {
       return true; // First video can always autoplay
+    }
+    
+    // If no visible videos, don't allow autoplay
+    if (visibleCount === 0) {
+      return false;
     }
     
     // Calculate 50% of visible videos (rounded up)
