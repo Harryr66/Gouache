@@ -760,6 +760,28 @@ const generateArtistContent = (artist: Artist) => ({
                   }}
                 />
               )}
+              
+              {/* Play button overlay - show when video is paused */}
+              {hasVideo && isVideoLoaded && isVideoPaused && isInViewport && (
+                <div 
+                  className="absolute top-2 right-2 z-30 pointer-events-auto"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (videoRef.current && videoRef.current.paused) {
+                      if (requestPlay(artwork.id)) {
+                        videoRef.current.play().catch((error) => {
+                          console.error('Error playing video:', error);
+                        });
+                        setIsVideoPaused(false);
+                      }
+                    }
+                  }}
+                >
+                  <div className="bg-black/60 backdrop-blur-sm rounded-full p-2 hover:bg-black/80 transition-colors">
+                    <Play className="h-5 w-5 text-white fill-white" />
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <>
