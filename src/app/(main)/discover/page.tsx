@@ -1783,7 +1783,7 @@ function DiscoverPageContent() {
           <div 
             style={{ 
               columnCount: columnCount,
-              columnGap: '0px',
+              columnGap: '2px',
               columnFill: 'auto' as const, // Fill columns sequentially from top to bottom
             }}
           >
@@ -1838,7 +1838,7 @@ function DiscoverPageContent() {
       )}
       
       {/* Loading overlay - completely removed from DOM when not loading to prevent any blocking */}
-      {loading ? (
+      {loading && (
         <div 
           className="fixed inset-0 bg-background flex items-center justify-center"
           style={{ 
@@ -1851,9 +1851,9 @@ function DiscoverPageContent() {
             <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={1000} />
           </div>
         </div>
-      ) : null}
-      {/* Main content - always clickable, even during loading */}
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden" style={{ pointerEvents: 'auto', position: 'relative', zIndex: 1 }}>
+      )}
+      {/* Main content - always clickable */}
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden">
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
           value={activeTab}
@@ -2066,7 +2066,7 @@ function DiscoverPageContent() {
               <MasonryGrid
                 items={visibleFilteredArtworks}
                 columnCount={columnCount}
-                gap={0}
+                gap={2}
                 renderItem={(item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
