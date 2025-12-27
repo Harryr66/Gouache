@@ -320,12 +320,18 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           // NEW: Fetch from portfolioItems collection (primary source)
           const { PortfolioService } = await import('@/lib/database');
           
-          const portfolioItems = await PortfolioService.getUserPortfolioItems(userId, {
-            showInPortfolio: true,
-            deleted: false,
-            orderBy: 'createdAt',
-            orderDirection: 'desc',
-          });
+          let portfolioItems: any[] = [];
+          try {
+            portfolioItems = await PortfolioService.getUserPortfolioItems(userId, {
+              showInPortfolio: true,
+              deleted: false,
+              orderBy: 'createdAt',
+              orderDirection: 'desc',
+            });
+          } catch (portfolioError) {
+            console.warn('⚠️ ProfileTabs: Error loading from portfolioItems, will try fallback:', portfolioError);
+            portfolioItems = []; // Will trigger fallback
+          }
 
           if (portfolioItems.length > 0) {
             const mappedItems = portfolioItems.map((item) => ({
@@ -338,6 +344,29 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           } else {
             // BACKWARD COMPATIBILITY: Fallback to userProfiles.portfolio array
             console.log('📋 No items in portfolioItems, checking userProfiles.portfolio (backward compatibility)...');
+            try {
+              const userDoc = await getDoc(doc(db, 'userProfiles', userId));
+              if (userDoc.exists()) {
+                const data = userDoc.data();
+                const portfolioItems = (data.portfolio || []).map((item: any) => ({
+                  ...item,
+                  imageUrl: item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '',
+                  createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
+                }));
+                setPortfolio(portfolioItems);
+                console.log('📋 Portfolio loaded from userProfiles.portfolio (legacy) for user:', userId, portfolioItems.length, 'items');
+              } else {
+                setPortfolio([]);
+              }
+            } catch (fallbackError) {
+              console.error('⚠️ ProfileTabs: Error loading from userProfiles.portfolio fallback:', fallbackError);
+              setPortfolio([]);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching portfolio:', error);
+          // Final fallback attempt
+          try {
             const userDoc = await getDoc(doc(db, 'userProfiles', userId));
             if (userDoc.exists()) {
               const data = userDoc.data();
@@ -347,11 +376,13 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                 createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
               }));
               setPortfolio(portfolioItems);
-              console.log('📋 Portfolio loaded from userProfiles.portfolio (legacy) for user:', userId, portfolioItems.length, 'items');
+            } else {
+              setPortfolio([]);
             }
+          } catch (finalError) {
+            console.error('⚠️ ProfileTabs: All fallbacks failed:', finalError);
+            setPortfolio([]);
           }
-        } catch (error) {
-          console.error('Error fetching portfolio:', error);
         } finally {
           setLoading(false);
         }

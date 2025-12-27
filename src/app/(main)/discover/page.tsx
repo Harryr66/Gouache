@@ -612,6 +612,8 @@ function DiscoverPageContent() {
         
         log('🔍 Discover: Fetching portfolio items from portfolioItems collection...');
         let portfolioItems: any[] = [];
+        let useFallback = false;
+        
         try {
           portfolioItems = await PortfolioService.getDiscoverPortfolioItems({
             showInPortfolio: true,
@@ -620,10 +622,16 @@ function DiscoverPageContent() {
             limit: 500, // Fetch more items for better content coverage
           });
           log(`📦 Discover: Found ${portfolioItems.length} portfolio items from portfolioItems collection`);
+          
+          // If empty, immediately use fallback
+          if (portfolioItems.length === 0) {
+            log('📋 Discover: portfolioItems collection is empty, using fallback method');
+            useFallback = true;
+          }
         } catch (portfolioError: any) {
-          // If portfolioItems query fails (e.g., missing index, empty collection), fall back to old method
+          // If portfolioItems query fails (e.g., missing index), fall back to old method
           log('⚠️ Discover: Error querying portfolioItems, falling back to userProfiles method:', portfolioError?.message || portfolioError);
-          portfolioItems = []; // Will trigger fallback below
+          useFallback = true;
         }
         
         const fetchedArtworks: Artwork[] = [];
@@ -631,88 +639,91 @@ function DiscoverPageContent() {
         let skippedAI = 0;
         let skippedNoArtist = 0;
         
-        // Batch fetch artist data to avoid N+1 queries
-        const artistIds = new Set<string>(portfolioItems.map(item => item.userId));
-        const artistDataMap = new Map<string, any>();
-        
-        log(`👥 Discover: Fetching ${artistIds.size} artist profiles...`);
-        for (const artistId of artistIds) {
-          try {
-            const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
-            if (artistDoc.exists()) {
-              artistDataMap.set(artistId, artistDoc.data());
+        // Only process portfolioItems if we have them and aren't using fallback
+        if (!useFallback && portfolioItems.length > 0) {
+          // Batch fetch artist data to avoid N+1 queries
+          const artistIds = new Set<string>(portfolioItems.map(item => item.userId));
+          const artistDataMap = new Map<string, any>();
+          
+          log(`👥 Discover: Fetching ${artistIds.size} artist profiles...`);
+          for (const artistId of artistIds) {
+            try {
+              const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
+              if (artistDoc.exists()) {
+                artistDataMap.set(artistId, artistDoc.data());
+              }
+            } catch (error) {
+              console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
             }
-          } catch (error) {
-            console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
-          }
-        }
-        
-        // Process portfolio items
-        for (const [index, item] of portfolioItems.entries()) {
-          // Get artist data
-          const artistData = artistDataMap.get(item.userId);
-          if (!artistData) {
-            skippedNoArtist++;
-            continue;
           }
           
-          // Get media URL (support video or image)
-          let videoUrl = item.videoUrl || null;
-          if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
-            videoUrl = item.mediaUrls[0];
-          }
-          const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
-          const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
-          
-          // Skip items without media
-          if (!imageUrl && !videoUrl) {
-            skippedNoImage++;
-            continue;
-          }
+          // Process portfolio items
+          for (const [index, item] of portfolioItems.entries()) {
+            // Get artist data
+            const artistData = artistDataMap.get(item.userId);
+            if (!artistData) {
+              skippedNoArtist++;
+              continue;
+            }
+            
+            // Get media URL (support video or image)
+            let videoUrl = item.videoUrl || null;
+            if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
+              videoUrl = item.mediaUrls[0];
+            }
+            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
+            const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
+            
+            // Skip items without media
+            if (!imageUrl && !videoUrl) {
+              skippedNoImage++;
+              continue;
+            }
 
-          // Convert portfolio item to Artwork object
-          const artwork: Artwork = {
-            id: item.id,
-            title: item.title || 'Untitled',
-            description: item.description || '',
-            imageUrl: imageUrl,
-            imageAiHint: item.description || '',
-            ...(videoUrl && { videoUrl: videoUrl as any }),
-            ...(mediaType && { mediaType: mediaType as any }),
-            artist: {
-              id: item.userId,
-              name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
-              handle: artistData.username || artistData.handle || '',
-              avatarUrl: artistData.avatarUrl || null,
-              isVerified: artistData.isVerified || false,
-              isProfessional: true,
-              followerCount: artistData.followerCount || 0,
-              followingCount: artistData.followingCount || 0,
-              createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
-            },
-            likes: item.likes || 0,
-            commentsCount: item.commentsCount || 0,
-            createdAt: item.createdAt instanceof Date ? item.createdAt : (item.createdAt as any)?.toDate?.() || new Date(),
-            updatedAt: item.updatedAt instanceof Date ? item.updatedAt : (item.updatedAt as any)?.toDate?.() || new Date(),
-            category: item.category || '',
-            medium: item.medium || '',
-            tags: item.tags || [],
-            aiAssistance: item.aiAssistance || 'none',
-            isAI: item.isAI || false,
-            isForSale: item.isForSale || false,
-            sold: item.sold || false,
-            price: item.price ? (item.price > 1000 ? item.price / 100 : item.price) : undefined,
-            priceType: item.priceType as 'fixed' | 'contact' | undefined,
-            contactForPrice: item.contactForPrice || item.priceType === 'contact',
-          };
+            // Convert portfolio item to Artwork object
+            const artwork: Artwork = {
+              id: item.id,
+              title: item.title || 'Untitled',
+              description: item.description || '',
+              imageUrl: imageUrl,
+              imageAiHint: item.description || '',
+              ...(videoUrl && { videoUrl: videoUrl as any }),
+              ...(mediaType && { mediaType: mediaType as any }),
+              artist: {
+                id: item.userId,
+                name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
+                handle: artistData.username || artistData.handle || '',
+                avatarUrl: artistData.avatarUrl || null,
+                isVerified: artistData.isVerified || false,
+                isProfessional: true,
+                followerCount: artistData.followerCount || 0,
+                followingCount: artistData.followingCount || 0,
+                createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
+              },
+              likes: item.likes || 0,
+              commentsCount: item.commentsCount || 0,
+              createdAt: item.createdAt instanceof Date ? item.createdAt : (item.createdAt as any)?.toDate?.() || new Date(),
+              updatedAt: item.updatedAt instanceof Date ? item.updatedAt : (item.updatedAt as any)?.toDate?.() || new Date(),
+              category: item.category || '',
+              medium: item.medium || '',
+              tags: item.tags || [],
+              aiAssistance: item.aiAssistance || 'none',
+              isAI: item.isAI || false,
+              isForSale: item.isForSale || false,
+              sold: item.sold || false,
+              price: item.price ? (item.price > 1000 ? item.price / 100 : item.price) : undefined,
+              priceType: item.priceType as 'fixed' | 'contact' | undefined,
+              contactForPrice: item.contactForPrice || item.priceType === 'contact',
+            };
+            
+            fetchedArtworks.push(artwork);
+          }
           
-          fetchedArtworks.push(artwork);
+          log(`📊 Discover: Summary - Portfolio items: ${portfolioItems.length}, Added: ${fetchedArtworks.length}, Skipped (no image): ${skippedNoImage}, Skipped (no artist): ${skippedNoArtist}`);
         }
         
-        log(`📊 Discover: Summary - Portfolio items: ${portfolioItems.length}, Added: ${fetchedArtworks.length}, Skipped (no image): ${skippedNoImage}, Skipped (no artist): ${skippedNoArtist}`);
-        
-        // BACKWARD COMPATIBILITY: If no portfolioItems found, fall back to old method (userProfiles.portfolio arrays)
-        if (portfolioItems.length === 0 && fetchedArtworks.length === 0) {
+        // BACKWARD COMPATIBILITY: If no portfolioItems found or using fallback, use old method (userProfiles.portfolio arrays)
+        if (useFallback || (portfolioItems.length === 0 && fetchedArtworks.length === 0)) {
           log('📋 Discover: No portfolioItems found, falling back to userProfiles.portfolio method (backward compatibility)...');
           
           // Fetch artists with portfolios - old method
