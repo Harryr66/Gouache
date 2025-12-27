@@ -127,6 +127,10 @@ export function DesktopHeader() {
               }}
               onClick={(e) => {
                 e.stopPropagation();
+                // Force navigation as backup
+                if (!e.defaultPrevented) {
+                  window.location.href = item.href;
+                }
               }}
             >
               <item.icon className="h-4 w-4" />
@@ -139,4 +143,8 @@ export function DesktopHeader() {
       {/* Username section removed - profile section already available */}
     </div>
   );
+
+  // Render via portal to document.body to ensure it's always accessible
+  if (!mounted) return null;
+  return createPortal(headerContent, document.body);
 }
