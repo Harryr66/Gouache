@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Eye, Globe, Brain } from 'lucide-react';
+import { Eye, Globe, Brain, Fingerprint } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 
@@ -11,6 +11,7 @@ const mobileNavItems = [
   { href: '/news', icon: Globe, label: 'News' },
   { href: '/discover', icon: Eye, label: 'Discover' },
   { href: '/courses', icon: Brain, label: 'Learn' },
+  { href: '/profile', icon: Fingerprint, label: 'Profile' },
 ];
 
 export function MobileBottomNav() {
