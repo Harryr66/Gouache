@@ -1881,91 +1881,84 @@ function DiscoverPageContent() {
   }, [loading]);
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Preload tiles invisibly during loading - ensure it doesn't block clicks */}
-      {shouldPreloadTiles && (
-        <div className="fixed inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
-          <div 
-            style={{ 
-              columnCount: columnCount,
-              columnGap: '2px',
-              columnFill: 'auto' as const, // Fill columns sequentially from top to bottom
-            }}
-          >
-            {(() => {
-              // Connection-aware preload count and video limiting
-              const connectionSpeed = getConnectionSpeed();
-              const preloadCount = connectionSpeed === 'fast' ? 3 : connectionSpeed === 'medium' ? 2 : 1;
-              const MAX_VIDEOS_PER_VIEWPORT = 3;
-              
-              const preloadTiles: Artwork[] = [];
-              let preloadVideoCount = 0;
-              
-              for (const item of visibleFilteredArtworks) {
-                if (preloadTiles.length >= preloadCount) break;
-                if ('type' in item && item.type === 'ad') continue;
+    <div className="min-h-screen bg-background">
+      {/* Main content container - loading overlay contained within this area only */}
+      <div className="relative w-full min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-4rem)]">
+        {/* Preload tiles invisibly during loading - contained within main area */}
+        {shouldPreloadTiles && (
+          <div className="absolute inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
+            <div 
+              style={{ 
+                columnCount: columnCount,
+                columnGap: '2px',
+                columnFill: 'auto' as const, // Fill columns sequentially from top to bottom
+              }}
+            >
+              {(() => {
+                // Connection-aware preload count and video limiting
+                const connectionSpeed = getConnectionSpeed();
+                const preloadCount = connectionSpeed === 'fast' ? 3 : connectionSpeed === 'medium' ? 2 : 1;
+                const MAX_VIDEOS_PER_VIEWPORT = 3;
                 
-                const artwork = item as Artwork;
-                const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                const preloadTiles: Artwork[] = [];
+                let preloadVideoCount = 0;
                 
-                if (hasVideo) {
-                  if (preloadVideoCount < MAX_VIDEOS_PER_VIEWPORT) {
+                for (const item of visibleFilteredArtworks) {
+                  if (preloadTiles.length >= preloadCount) break;
+                  if ('type' in item && item.type === 'ad') continue;
+                  
+                  const artwork = item as Artwork;
+                  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                  
+                  if (hasVideo) {
+                    if (preloadVideoCount < MAX_VIDEOS_PER_VIEWPORT) {
+                      preloadTiles.push(artwork);
+                      preloadVideoCount++;
+                    }
+                  } else {
                     preloadTiles.push(artwork);
-                    preloadVideoCount++;
                   }
-                } else {
-                  preloadTiles.push(artwork);
                 }
-              }
-              
-              return preloadTiles.map((artwork) => {
-                const isInitial = true;
-                const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                const hasImage = !!artwork.imageUrl;
                 
-                return (
-                  <ArtworkTile 
-                    key={`preload-${artwork.id}`}
-                    artwork={artwork} 
-                    hideBanner={isMobile && artworkView === 'grid'}
-                    // Mark as initial viewport so videos start loading immediately and autoplay when ready
-                    isInitialViewport={isInitial && (hasVideo || hasImage) ? true : undefined}
-                    // Track image loading (including video posters) - ArtworkTile will pass isVideoPoster flag
-                    onImageReady={isInitial && (hasImage || hasVideo) ? (isVideoPoster) => handleImageReady(artwork.id, isVideoPoster) : undefined}
-                    // Track video metadata loading
-                    onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
-                  />
-                );
-              });
-            })()}
+                return preloadTiles.map((artwork) => {
+                  const isInitial = true;
+                  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                  const hasImage = !!artwork.imageUrl;
+                  
+                  return (
+                    <ArtworkTile 
+                      key={`preload-${artwork.id}`}
+                      artwork={artwork} 
+                      hideBanner={isMobile && artworkView === 'grid'}
+                      // Mark as initial viewport so videos start loading immediately and autoplay when ready
+                      isInitialViewport={isInitial && (hasVideo || hasImage) ? true : undefined}
+                      // Track image loading (including video posters) - ArtworkTile will pass isVideoPoster flag
+                      onImageReady={isInitial && (hasImage || hasVideo) ? (isVideoPoster) => handleImageReady(artwork.id, isVideoPoster) : undefined}
+                      // Track video metadata loading
+                      onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
+                    />
+                  );
+                });
+              })()}
+            </div>
           </div>
-        </div>
-      )}
-      
-      {/* Loading overlay - shown only when loading, completely removed from DOM when not loading */}
-      {loading ? (
-        <div 
-          className="fixed inset-0 bg-background flex items-center justify-center"
-          style={{ 
-            zIndex: 30, // Below navigation (z-[60]) so navigation is always clickable
-            pointerEvents: 'none', // Don't block any clicks - allows navigation and tiles to work
-            touchAction: 'none', // Prevent touch events from being captured on mobile
-          }}
-          aria-hidden="true"
-        >
+        )}
+        
+        {/* Loading overlay - contained within main content area only, navigation always accessible */}
+        {loading ? (
           <div 
-            className="flex flex-col items-center justify-center gap-6 pointer-events-auto"
-            style={{
-              touchAction: 'none', // Prevent touch events on loading animation
-            }}
+            className="absolute inset-0 bg-background flex items-center justify-center z-10"
+            aria-hidden="true"
           >
-            <ThemeLoading size="lg" />
-            <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
+            <div className="flex flex-col items-center justify-center gap-6">
+              <ThemeLoading size="lg" />
+              <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
+            </div>
           </div>
-        </div>
-      ) : null}
-      {/* Main content - always clickable */}
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden">
+        ) : null}
+        
+        {/* Main content - always clickable, navigation outside this container */}
+        <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden">
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
           value={activeTab}
@@ -2596,6 +2589,7 @@ function DiscoverPageContent() {
             })()}
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   );
