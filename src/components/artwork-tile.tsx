@@ -849,16 +849,18 @@ const generateArtistContent = (artist: Artist) => ({
           ) : (
             <>
               <Image
-                src={imageUrl}
-          alt={artwork.imageAiHint}
-          fill
+                src={imageError && fallbackImageUrl ? fallbackImageUrl : imageUrl}
+                alt={artwork.imageAiHint || artwork.title || 'Artwork'}
+                fill
                 className={`object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
                 loading="eager"
                 priority={false}
+                key={retryCount} // Force re-render on retry
                 onLoad={() => {
                   setIsImageLoaded(true);
-                  // Call onImageReady if this is in initial viewport (for preloading)
-                  // Pass false for regular images (not video posters)
+                  setImageError(false); // Clear error on successful load
+                  setRetryCount(0); // Reset retry count on success
+                  // Call onImageReady ONLY on successful load - this counts toward loading screen
                   if (isInitialViewport && onImageReady) {
                     onImageReady(false); // false = regular image, not video poster
                   }
