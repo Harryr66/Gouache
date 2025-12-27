@@ -1895,6 +1895,8 @@ function DiscoverPageContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Main content container - loading overlay contained within this area only */}
+      {/* Navigation is outside this container with z-[60] and isolation, so it's always on top */}
+      {/* Using position: relative ONLY for the loading overlay container, not creating blocking stacking context */}
       <div className="relative w-full min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-4rem)]">
         {/* Preload tiles invisibly during loading - contained within main area */}
         {shouldPreloadTiles && (
