@@ -418,7 +418,7 @@ function DiscoverPageContent() {
   const [jokeComplete, setJokeComplete] = useState(false);
   const [artworksLoaded, setArtworksLoaded] = useState(false);
   const [jokeCompleteTime, setJokeCompleteTime] = useState<number | null>(null);
-  const MIN_JOKE_DISPLAY_TIME = 4000; // Minimum 4 seconds to read joke after completion
+  const MIN_JOKE_DISPLAY_TIME = 2000; // Minimum 2 seconds to read joke after completion
   
   // Track when initial videos are ready
   const handleVideoReady = useCallback((artworkId: string) => {
@@ -474,32 +474,30 @@ function DiscoverPageContent() {
     checkContentReady();
     
     function checkContentReady() {
-      // Calculate total media items (videos + images) that need to be ready
-      const totalMediaItems = initialVideosTotal + initialImagesTotal;
-      
-      if (totalMediaItems === 0) {
-        // No media to preload - content is ready
+      // Only wait for poster images - videos load in background and autoplay when ready
+      // This is much faster: poster images load in ~200-800ms vs videos buffering in ~2-5s
+      if (initialImagesTotal === 0) {
+        // No images to preload - content is ready immediately
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
         setTimeout(() => {
           setLoading(false);
-        }, 300); // Small delay for smooth transition
+        }, 200);
         return;
       }
       
-      // Calculate how many media items are ready
-      const totalMediaReady = initialVideosReady + initialImagesReady;
-      
-      // Require ALL media items to be ready (100%, not 50%)
-      if (totalMediaReady >= totalMediaItems) {
-        // All media ready - content is ready
+      // Show content when 60% of poster images are loaded
+      // Videos will continue loading in background and autoplay when ready (onCanPlay)
+      const imageReadyPercentage = initialImagesReady / initialImagesTotal;
+      if (imageReadyPercentage >= 0.6) {
+        // Enough poster images ready - videos will load in background and autoplay when ready
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
         setTimeout(() => {
           setLoading(false);
-        }, 300); // Small delay for smooth transition
+        }, 200);
         return;
       }
       
@@ -513,7 +511,7 @@ function DiscoverPageContent() {
         // This handles edge cases where media fails to load
         log('⚠️ Loading timeout reached - showing content with partial media loaded');
         setLoading(false);
-      }, 15000); // 15 second fallback - should be enough for content to load
+      }, 8000); // Reduced from 15s to 8s - faster fallback for slow connections
     }
     
     return () => {
@@ -521,7 +519,7 @@ function DiscoverPageContent() {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [artworksLoaded, jokeComplete, jokeCompleteTime, initialVideosReady, initialVideosTotal, initialImagesReady, initialImagesTotal]);
+  }, [artworksLoaded, jokeComplete, jokeCompleteTime, initialImagesReady, initialImagesTotal]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
@@ -883,19 +881,17 @@ function DiscoverPageContent() {
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
         setArtworksLoaded(true); // Mark artworks as loaded
         
-        // Count initial viewport media for preloading (first 12 tiles)
-        const initialTiles = finalArtworks.slice(0, 12); // First 12 tiles (roughly first screen)
-        const initialVideos = initialTiles.filter((artwork: Artwork) => {
-          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-          return hasVideo;
-        });
+        // Count initial viewport media for preloading (first 4 tiles only - minimal preload)
+        // Strategy: Load poster images first (fast), then videos buffer in background and autoplay when ready
+        const initialTiles = finalArtworks.slice(0, 4); // Reduced to 4 - just above the fold
         const initialImages = initialTiles.filter((artwork: Artwork) => {
-          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-          const hasImage = artwork.imageUrl && !hasVideo; // Images only (not videos)
-          return hasImage;
+          // Preload ALL images including video posters - these load fast and show immediately
+          return artwork.imageUrl; // All images, including video posters
         });
         
-        setInitialVideosTotal(initialVideos.length);
+        // Don't count videos for loading screen - we only wait for poster images
+        // Videos will load in background and autoplay when ready (onCanPlay)
+        setInitialVideosTotal(0); // Videos don't block loading screen
         setInitialImagesTotal(initialImages.length);
         initialVideoReadyRef.current.clear();
         initialImageReadyRef.current.clear();
@@ -922,19 +918,15 @@ function DiscoverPageContent() {
         setArtworks(placeholderArtworks);
         setArtworksLoaded(true); // Mark artworks as loaded even on error
         
-        // Count initial viewport media for preloading (first 12 tiles)
-        const initialTiles = placeholderArtworks.slice(0, 12);
-        const initialVideos = initialTiles.filter((artwork: Artwork) => {
-          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-          return hasVideo;
-        });
+        // Count initial viewport media for preloading (first 4 tiles only)
+        const initialTiles = placeholderArtworks.slice(0, 4);
         const initialImages = initialTiles.filter((artwork: Artwork) => {
-          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-          const hasImage = artwork.imageUrl && !hasVideo;
-          return hasImage;
+          // Preload all images (including video posters)
+          return artwork.imageUrl;
         });
         
-        setInitialVideosTotal(initialVideos.length);
+        // Don't count videos - only wait for poster images
+        setInitialVideosTotal(0);
         setInitialImagesTotal(initialImages.length);
         initialVideoReadyRef.current.clear();
         initialImageReadyRef.current.clear();
@@ -1436,6 +1428,7 @@ function DiscoverPageContent() {
   }, [theme, mounted]);
 
   // Render initial tiles invisibly during loading so media can preload
+  // Videos: load metadata only (fast) - not full buffering (slow)
   const shouldPreloadTiles = loading && (initialVideosTotal > 0 || initialImagesTotal > 0);
   
   return (
@@ -1450,22 +1443,23 @@ function DiscoverPageContent() {
               columnFill: 'auto' as const, // Fill columns sequentially from top to bottom
             }}
           >
-            {visibleFilteredArtworks.slice(0, 12).map((item) => {
+            {visibleFilteredArtworks.slice(0, 4).map((item) => {
               const isAd = 'type' in item && item.type === 'ad';
               if (isAd) return null;
               
               const artwork = item as Artwork;
               const isInitial = true;
               const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-              const hasImage = artwork.imageUrl && !hasVideo;
+              const hasImage = !!artwork.imageUrl;
               
               return (
                 <ArtworkTile 
                   key={`preload-${artwork.id}`}
                   artwork={artwork} 
                   hideBanner={isMobile && artworkView === 'grid'}
-                  isInitialViewport={isInitial && (hasVideo || hasImage)}
-                  onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
+                  // Mark as initial viewport so videos start loading immediately and autoplay when ready
+                  isInitialViewport={isInitial && (hasVideo || hasImage) ? true : undefined}
+                  // Only track image loading for loading screen - videos load in background
                   onImageReady={isInitial && hasImage ? () => handleImageReady(artwork.id) : undefined}
                 />
               );
@@ -1479,7 +1473,7 @@ function DiscoverPageContent() {
         <div className="fixed inset-0 bg-background flex items-center justify-center z-50 pointer-events-auto">
           <div className="flex flex-col items-center justify-center gap-6">
             <ThemeLoading size="lg" />
-            <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
+            <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={1000} />
           </div>
         </div>
       )}
