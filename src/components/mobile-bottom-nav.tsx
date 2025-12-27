@@ -44,7 +44,7 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center p-3 rounded-lg transition-all text-foreground w-16',
+                'flex flex-col items-center justify-center p-3 rounded-lg transition-all text-foreground flex-1 max-w-[25%]',
                 {
                   'gradient-border': item.isActive,
                   'border-2 border-transparent hover:gradient-border': !item.isActive
@@ -54,6 +54,11 @@ export function MobileBottomNav() {
                 pointerEvents: 'auto', // Ensure links are clickable
                 touchAction: 'manipulation', // Optimize touch handling
                 WebkitTapHighlightColor: 'transparent', // Remove tap highlight on iOS
+                zIndex: 1, // Ensure links are above other elements
+              }}
+              onClick={(e) => {
+                // Ensure click is not prevented
+                e.stopPropagation();
               }}
             >
               <item.icon className="h-7 w-7" />
