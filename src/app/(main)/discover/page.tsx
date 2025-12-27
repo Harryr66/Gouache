@@ -1783,7 +1783,7 @@ function DiscoverPageContent() {
           <div 
             style={{ 
               columnCount: columnCount,
-              columnGap: '2px',
+              columnGap: '0px',
               columnFill: 'auto' as const, // Fill columns sequentially from top to bottom
             }}
           >
@@ -1837,36 +1837,21 @@ function DiscoverPageContent() {
         </div>
       )}
       
-      {/* Loading overlay - SINGLE instance, only shown when loading */}
-      {/* Ensure it doesn't block navigation - headers are z-[60], overlay is z-50 */}
-      {/* Use conditional rendering to completely remove from DOM when not loading */}
-      {loading && (
-        <>
-          {/* Background overlay - doesn't block clicks, just provides background */}
-          <div 
-            className="fixed inset-0 bg-background z-50" 
-            style={{ 
-              pointerEvents: 'none', // Don't block any clicks
-              zIndex: 50
-            }}
-            aria-hidden={!loading}
-          />
-          {/* Loading content - only this blocks clicks in center area */}
-          <div 
-            className="fixed inset-0 flex items-center justify-center z-50" 
-            style={{ 
-              pointerEvents: 'none', // Allow clicks to pass through to navigation
-              zIndex: 50
-            }}
-            aria-hidden={!loading}
-          >
-            <div className="flex flex-col items-center justify-center gap-6 pointer-events-auto">
-              <ThemeLoading size="lg" />
-              <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={1000} />
-            </div>
+      {/* Loading overlay - completely removed from DOM when not loading to prevent any blocking */}
+      {loading ? (
+        <div 
+          className="fixed inset-0 bg-background flex items-center justify-center"
+          style={{ 
+            zIndex: 40, // Lower than navigation (z-[60]) to ensure navigation is always on top
+            pointerEvents: 'none', // Don't block any clicks - allow navigation to work
+          }}
+        >
+          <div className="flex flex-col items-center justify-center gap-6 pointer-events-auto">
+            <ThemeLoading size="lg" />
+            <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={1000} />
           </div>
-        </>
-      )}
+        </div>
+      ) : null}
       {/* Main content - always clickable, even during loading */}
       <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden" style={{ pointerEvents: 'auto', position: 'relative', zIndex: 1 }}>
         {/* Tabs for Artwork/Events/Market */}
@@ -2081,7 +2066,7 @@ function DiscoverPageContent() {
               <MasonryGrid
                 items={visibleFilteredArtworks}
                 columnCount={columnCount}
-                gap={2}
+                gap={0}
                 renderItem={(item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
