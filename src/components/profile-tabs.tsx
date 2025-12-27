@@ -416,7 +416,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {portfolio.map((item) => {
           const imageUrl = item.imageUrl || item.supportingImages?.[0] || '/assets/placeholder-light.png';
           return (
@@ -429,8 +429,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
-            <CardContent className="p-4">
-              <h4 className="font-semibold text-sm mb-1 line-clamp-1">{item.title || 'Untitled Artwork'}</h4>
+            <CardContent className="p-2">
+              <h4 className="font-semibold text-xs mb-1 line-clamp-1">{item.title || 'Untitled Artwork'}</h4>
               {item.medium && (
                 <p className="text-xs text-muted-foreground line-clamp-1">{item.medium}</p>
               )}
@@ -859,7 +859,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {discoverContent.map((item) => {
           const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.mediaUrls?.[0] || '/assets/placeholder-light.png';
           const isVideo = item.mediaType === 'video' || item.videoUrl;
@@ -1029,7 +1029,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
         )}
 
         {likedArtworks.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             {likedArtworks.map((artwork) => (
               <ArtworkCard
                 key={artwork.id}
