@@ -14,6 +14,7 @@ import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { X, Play } from 'lucide-react';
+import { compressImage } from '@/lib/image-compression';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -290,53 +291,99 @@ export function UploadArtworkBasic() {
     setUploading(true);
 
     try {
-      // Upload all media files (images and videos) to Firebase Storage
-      const uploadedUrls: string[] = [];
-      const mediaTypes: ('image' | 'video')[] = [];
+      // Step 1: Compress images before upload (videos stay as-is for now)
+      setCurrentUploadingFile('Preparing files...');
+      const processedFiles = await Promise.all(
+        files.map(async (file) => {
+          if (file.type.startsWith('image/')) {
+            try {
+              const compressed = await compressImage(file);
+              console.log(`✅ Compressed ${file.name}: ${(file.size / 1024).toFixed(1)}KB → ${(compressed.size / 1024).toFixed(1)}KB`);
+              return compressed;
+            } catch (error) {
+              console.warn(`Failed to compress ${file.name}, using original:`, error);
+              return file;
+            }
+          }
+          return file; // Videos not compressed yet
+        })
+      );
+
+      // Step 2: Upload all files in parallel (with concurrency limit of 3)
+      const uploadedUrls: string[] = new Array(processedFiles.length);
+      const mediaTypes: ('image' | 'video')[] = new Array(processedFiles.length);
+      const MAX_CONCURRENT_UPLOADS = 3;
       
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const isVideo = file.type.startsWith('video/');
-        const folder = isVideo ? 'artworks/videos' : 'portfolio';
-        const fileRef = ref(storage, `${folder}/${user.id}/${Date.now()}_${i}_${file.name}`);
+      // Upload files in batches to avoid overwhelming the network
+      for (let i = 0; i < processedFiles.length; i += MAX_CONCURRENT_UPLOADS) {
+        const batch = processedFiles.slice(i, i + MAX_CONCURRENT_UPLOADS);
         
-        setCurrentUploadingFile(`${i + 1}/${files.length}: ${file.name}`);
-        
-        // Use resumable upload for videos (large files) and images for progress tracking
-        if (isVideo || file.size > 5 * 1024 * 1024) { // Use resumable for videos or files > 5MB
-          const uploadTask = uploadBytesResumable(fileRef, file);
+        const batchPromises = batch.map(async (file, batchIndex) => {
+          const globalIndex = i + batchIndex;
+          const isVideo = file.type.startsWith('video/');
+          const folder = isVideo ? 'artworks/videos' : 'portfolio';
+          const timestamp = Date.now();
+          const fileRef = ref(storage, `${folder}/${user.id}/${timestamp}_${globalIndex}_${file.name}`);
           
-          await new Promise<void>((resolve, reject) => {
-            uploadTask.on(
-              'state_changed',
-              (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                setUploadProgress(progress);
-              },
-              (error) => {
-                console.error(`Error uploading file ${i + 1}:`, error);
-                reject(error);
-              },
-              async () => {
-                try {
-                  const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                  uploadedUrls.push(fileUrl);
-                  mediaTypes.push(isVideo ? 'video' : 'image');
-                  resolve();
-                } catch (error) {
-                  console.error(`Error getting download URL for file ${i + 1}:`, error);
-                  reject(error);
-                }
-              }
-            );
-          });
-        } else {
-          // Use regular upload for small images
-          await uploadBytes(fileRef, file);
-          const fileUrl = await getDownloadURL(fileRef);
-          uploadedUrls.push(fileUrl);
-          mediaTypes.push(isVideo ? 'video' : 'image');
-        }
+          setCurrentUploadingFile(`${globalIndex + 1}/${processedFiles.length}: ${file.name}`);
+          
+          try {
+            // Use resumable upload for videos or large files (>5MB)
+            if (isVideo || file.size > 5 * 1024 * 1024) {
+              const uploadTask = uploadBytesResumable(fileRef, file);
+              
+              return new Promise<{ url: string; type: 'image' | 'video'; index: number }>((resolve, reject) => {
+                uploadTask.on(
+                  'state_changed',
+                  (snapshot) => {
+                    // Calculate progress for this specific file
+                    const fileProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    // Calculate overall progress including all files
+                    const overallProgress = ((globalIndex * 100 + fileProgress) / processedFiles.length);
+                    setUploadProgress(overallProgress);
+                  },
+                  (error) => {
+                    console.error(`Error uploading file ${globalIndex + 1}:`, error);
+                    reject(error);
+                  },
+                  async () => {
+                    try {
+                      const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                      resolve({ url: fileUrl, type: isVideo ? 'video' : 'image', index: globalIndex });
+                    } catch (error) {
+                      console.error(`Error getting download URL for file ${globalIndex + 1}:`, error);
+                      reject(error);
+                    }
+                  }
+                );
+              });
+            } else {
+              // Use regular upload for small files
+              await uploadBytes(fileRef, file);
+              const fileUrl = await getDownloadURL(fileRef);
+              // Update progress
+              const overallProgress = ((globalIndex + 1) * 100 / processedFiles.length);
+              setUploadProgress(overallProgress);
+              
+              return { url: fileUrl, type: isVideo ? 'video' : 'image', index: globalIndex };
+            }
+          } catch (error) {
+            console.error(`Error uploading file ${globalIndex + 1}:`, error);
+            throw error;
+          }
+        });
+
+        // Wait for current batch to complete
+        const batchResults = await Promise.all(batchPromises);
+        
+        // Sort results by original index to maintain file order
+        batchResults.sort((a, b) => a.index - b.index);
+        
+        // Add to arrays in correct order
+        batchResults.forEach((result) => {
+          uploadedUrls[result.index] = result.url;
+          mediaTypes[result.index] = result.type;
+        });
       }
       
       // Reset progress after all uploads complete

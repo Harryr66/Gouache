@@ -15,6 +15,7 @@ import { useContent } from '@/providers/content-provider';
 import { useRouter } from 'next/navigation';
 import { Upload, Image as ImageIcon, Video, FileText, X, AlertCircle, Mail } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { compressImage } from '@/lib/image-compression';
 import { doc, getDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -172,17 +173,37 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
     try {
       console.log('📤 UploadForm: Starting upload process...');
       
-      // Upload all files to Firebase Storage
-      const uploadedUrls: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        console.log(`📤 UploadForm: Uploading file ${i + 1}/${files.length}...`);
-        const fileRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${i}_${file.name}`);
+      // Step 1: Compress images before upload
+      console.log('📤 UploadForm: Compressing images...');
+      const processedFiles = await Promise.all(
+        files.map(async (file) => {
+          if (file.type.startsWith('image/')) {
+            try {
+              const compressed = await compressImage(file);
+              console.log(`✅ Compressed ${file.name}: ${(file.size / 1024).toFixed(1)}KB → ${(compressed.size / 1024).toFixed(1)}KB`);
+              return compressed;
+            } catch (error) {
+              console.warn(`Failed to compress ${file.name}, using original:`, error);
+              return file;
+            }
+          }
+          return file;
+        })
+      );
+
+      // Step 2: Upload all files in parallel
+      console.log('📤 UploadForm: Uploading files in parallel...');
+      const timestamp = Date.now();
+      const uploadPromises = processedFiles.map(async (file, i) => {
+        console.log(`📤 UploadForm: Uploading file ${i + 1}/${processedFiles.length}...`);
+        const fileRef = ref(storage, `portfolio/${user.id}/${timestamp}_${i}_${file.name}`);
         await uploadBytes(fileRef, file);
         const fileUrl = await getDownloadURL(fileRef);
-        uploadedUrls.push(fileUrl);
         console.log(`✅ UploadForm: File ${i + 1} uploaded to Storage:`, fileUrl);
-      }
+        return fileUrl;
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
 
       // Use first image as primary imageUrl, store all in supportingImages
       const primaryImageUrl = uploadedUrls[0];
