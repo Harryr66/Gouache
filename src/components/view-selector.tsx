@@ -17,7 +17,7 @@ export function ViewSelector({ view, onViewChange, className }: ViewSelectorProp
       <button
         onClick={() => onViewChange('list')}
         className={cn(
-          'relative z-10 flex items-center justify-center h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium',
+          'relative z-10 flex items-center justify-center h-10 px-4 md:px-6 rounded-md transition-all duration-200 text-sm font-medium',
           view === 'list'
             ? 'bg-background text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'
@@ -29,7 +29,7 @@ export function ViewSelector({ view, onViewChange, className }: ViewSelectorProp
       <button
         onClick={() => onViewChange('grid')}
         className={cn(
-          'relative z-10 flex items-center justify-center h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium',
+          'relative z-10 flex items-center justify-center h-10 px-4 md:px-6 rounded-md transition-all duration-200 text-sm font-medium',
           view === 'grid'
             ? 'bg-background text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'
