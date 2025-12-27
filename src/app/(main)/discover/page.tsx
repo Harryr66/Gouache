@@ -1444,10 +1444,9 @@ function DiscoverPageContent() {
       {shouldPreloadTiles && (
         <div className="fixed inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden' }} aria-hidden="true">
           <div 
-            className="gap-1"
             style={{ 
               columnCount: columnCount,
-              columnGap: '4px',
+              columnGap: '0px',
               columnFill: 'auto' as const, // Fill columns sequentially from top to bottom
             }}
           >
@@ -1477,7 +1476,7 @@ function DiscoverPageContent() {
       
       {/* Loading overlay - SINGLE instance, always shown when loading */}
       {loading && (
-        <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-background flex items-center justify-center z-50 pointer-events-auto">
           <div className="flex flex-col items-center justify-center gap-6">
             <ThemeLoading size="lg" />
             <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={50} pauseAfterComplete={2000} />
@@ -1697,7 +1696,7 @@ function DiscoverPageContent() {
               <MasonryGrid
                 items={visibleFilteredArtworks}
                 columnCount={columnCount}
-                gap={4}
+                gap={0}
                 renderItem={(item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
