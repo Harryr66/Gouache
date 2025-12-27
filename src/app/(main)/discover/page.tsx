@@ -2042,7 +2042,7 @@ function DiscoverPageContent() {
                       </div>
             
             {/* Artworks Grid */}
-            {filteredAndSortedArtworks.length === 0 ? (
+            {!loading && filteredAndSortedArtworks.length === 0 ? (
               <div className="text-center py-16">
                 <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">No artworks found</h2>
