@@ -2201,6 +2201,7 @@ function DiscoverPageContent() {
             
             {/* Artworks Grid */}
             {/* Show content when artworks are loaded and joke is complete, even if loading is still true (media loading) */}
+            {/* Only show "No artworks" if we have no content AND artworks are loaded */}
             {(artworksLoaded && jokeComplete) && filteredAndSortedArtworks.length === 0 ? (
               <div className="text-center py-16">
                 <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -2225,7 +2226,7 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : (artworkView === 'grid' || !isMobile) ? (
+            ) : (artworksLoaded && jokeComplete) && (artworkView === 'grid' || !isMobile) ? (
               <MasonryGrid
                 items={visibleFilteredArtworks}
                 columnCount={columnCount}
