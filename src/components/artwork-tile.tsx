@@ -570,6 +570,8 @@ const generateArtistContent = (artist: Artist) => ({
           width: '100%', // Fill column width completely
           pointerEvents: 'auto', // Ensure clicks work
           zIndex: 1, // Ensure tile is above background
+          margin: 0, // Ensure no margins that could create irregular gaps
+          padding: 0, // Ensure no padding that could create irregular gaps
         }}
     >
       <div 
