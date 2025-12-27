@@ -33,8 +33,10 @@ export function MobileBottomNav() {
     <nav 
       className="fixed bottom-0 left-0 right-0 z-[60] border-t bg-background/95 backdrop-blur-sm md:hidden"
       style={{ 
+        position: 'fixed', // Explicitly set to ensure it's in root stacking context
         pointerEvents: 'auto', // Ensure navigation is always clickable
         touchAction: 'manipulation', // Optimize touch handling on mobile
+        isolation: 'isolate', // Create new stacking context to ensure it's always on top
       }}
     >
       <div className="flex h-16 items-center justify-around">

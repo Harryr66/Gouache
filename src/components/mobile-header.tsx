@@ -13,8 +13,10 @@ export function MobileHeader() {
     <header 
       className="sticky top-0 z-[60] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden"
       style={{ 
+        position: 'sticky', // Explicitly set to ensure it's in root stacking context
         pointerEvents: 'auto', // Ensure header is always clickable
         touchAction: 'manipulation', // Optimize touch handling on mobile
+        isolation: 'isolate', // Create new stacking context to ensure it's always on top
       }}
     >
       <div className="container flex h-14 items-center">
