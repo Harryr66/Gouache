@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Megaphone, ShoppingCart, Package, AlertCircle, BookOpen } from 'lucide-react';
+import { Users, Megaphone, ShoppingCart, Package, AlertCircle, BookOpen, Database } from 'lucide-react';
 
 interface AdminSidebarProps {
   selectedView: string;
@@ -264,6 +264,27 @@ export function AdminSidebar(props: AdminSidebarProps) {
           >
             <span className="text-sm">Analytics</span>
             <Badge variant={props.selectedView === 'advertising-analytics' ? 'secondary' : 'outline'}>({props.advertisementAnalytics.length})</Badge>
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* Database Tools */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Database Tools
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <button
+            onClick={() => props.setSelectedView('portfolio-migration')}
+            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+              props.selectedView === 'portfolio-migration' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+            }`}
+          >
+            <span className="text-sm">Portfolio Migration</span>
+            <Badge variant={props.selectedView === 'portfolio-migration' ? 'secondary' : 'outline'}>New</Badge>
           </button>
         </CardContent>
       </Card>
