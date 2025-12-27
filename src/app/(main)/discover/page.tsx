@@ -1933,8 +1933,8 @@ function DiscoverPageContent() {
         </div>
       )}
       
-      {/* Loading overlay - shown only when loading, doesn't block clicks */}
-      {loading && (
+      {/* Loading overlay - shown only when loading, completely removed from DOM when not loading */}
+      {loading ? (
         <div 
           className="fixed inset-0 bg-background flex items-center justify-center"
           style={{ 
@@ -1942,6 +1942,7 @@ function DiscoverPageContent() {
             pointerEvents: 'none', // Don't block any clicks - allows navigation and tiles to work
             touchAction: 'none', // Prevent touch events from being captured on mobile
           }}
+          aria-hidden="true"
         >
           <div 
             className="flex flex-col items-center justify-center gap-6 pointer-events-auto"
@@ -1950,10 +1951,10 @@ function DiscoverPageContent() {
             }}
           >
             <ThemeLoading size="lg" />
-            <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={1000} />
+            <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
           </div>
         </div>
-      )}
+      ) : null}
       {/* Main content - always clickable */}
       <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden">
         {/* Tabs for Artwork/Events/Market */}

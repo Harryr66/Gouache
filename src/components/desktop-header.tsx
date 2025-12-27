@@ -29,8 +29,22 @@ export function DesktopHeader() {
   }, [pathname]);
 
   return (
-    <div className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6 relative z-[60]">
-      <Link href="/" className="flex items-center">
+    <div 
+      className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6 relative z-[60]"
+      style={{
+        pointerEvents: 'auto',
+        touchAction: 'manipulation',
+      }}
+    >
+      <Link 
+        href="/" 
+        className="flex items-center"
+        style={{
+          pointerEvents: 'auto',
+          touchAction: 'manipulation',
+          zIndex: 1,
+        }}
+      >
         <span className="sr-only">Gouache</span>
         <img
           src="/assets/gouache-logo-light-20241111.png"
@@ -48,7 +62,14 @@ export function DesktopHeader() {
         />
       </Link>
       
-      <nav className="hidden md:flex items-center space-x-6">
+      <nav 
+        className="hidden md:flex items-center space-x-6"
+        style={{
+          pointerEvents: 'auto',
+          touchAction: 'manipulation',
+          zIndex: 1,
+        }}
+      >
         {activeStates.map((item) => {
           return (
             <Link
@@ -61,6 +82,14 @@ export function DesktopHeader() {
                   'text-foreground border-[3px] border-transparent hover:gradient-border': !item.isActive
                 }
               )}
+              style={{
+                pointerEvents: 'auto',
+                touchAction: 'manipulation',
+                zIndex: 1,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
             >
               <item.icon className="h-4 w-4" />
               <span>{item.name}</span>
