@@ -481,7 +481,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             </div>
           ) : (
             // Desktop: Grid view
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
               {artworks.map((item) => (
                 <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
                   <div className="relative aspect-square">
@@ -518,12 +518,12 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                       </Button>
                     )}
                   </div>
-                  <CardContent className="p-3">
-                    <h4 className="font-semibold text-xs mb-1.5 line-clamp-1">{item.title}</h4>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="font-bold text-base">
+                  <CardContent className="p-2">
+                    <h4 className="font-semibold text-xs mb-1 line-clamp-1">{item.title}</h4>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="font-bold text-xs">
                         {item.priceType === 'contact' || item.contactForPrice ? (
-                          <span className="text-muted-foreground text-xs">Contact for pricing</span>
+                          <span className="text-muted-foreground text-xs">Contact</span>
                         ) : (
                           <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
                         )}
@@ -625,7 +625,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             </div>
           ) : (
             // Desktop: Grid view
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
               {products.map((item) => (
                 <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
                   <div className="relative aspect-[4/5]">
