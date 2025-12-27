@@ -5,22 +5,15 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Settings, Fingerprint } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef } from 'react';
 
 export function MobileHeader() {
   const pathname = usePathname();
   const headerRef = useRef<HTMLElement>(null);
-  const [mounted, setMounted] = useState(false);
-
-  // Mount check for portal
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Add native event listeners as absolute fallback
   useEffect(() => {
-    if (!mounted || !headerRef.current) return;
+    if (!headerRef.current) return;
     
     const header = headerRef.current;
     const links = header.querySelectorAll('a');
@@ -42,9 +35,9 @@ export function MobileHeader() {
         link.removeEventListener('click', handler, { capture: true });
       });
     };
-  }, [mounted]);
+  }, []);
 
-  const headerContent = (
+  return (
     <header 
       ref={headerRef}
       className="sticky top-0 z-[9999] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden"
@@ -124,8 +117,4 @@ export function MobileHeader() {
       </div>
     </header>
   );
-
-  // Render via portal to document.body to ensure it's always accessible
-  if (!mounted) return null;
-  return createPortal(headerContent, document.body);
 }

@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Eye, Globe, Brain, Fingerprint } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useMemo, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useMemo, useEffect, useRef } from 'react';
 
 const mobileNavItems = [
   { href: '/news', icon: Globe, label: 'News' },
@@ -18,7 +17,6 @@ const mobileNavItems = [
 export function MobileBottomNav() {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
-  const [mounted, setMounted] = useState(false);
   
   // Memoize active states to prevent re-computation during scroll
   // Normalize pathname to handle query params and ensure stable comparison
@@ -32,14 +30,9 @@ export function MobileBottomNav() {
     }));
   }, [pathname]);
 
-  // Mount check for portal
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Add native event listeners as absolute fallback - these CANNOT be blocked
   useEffect(() => {
-    if (!mounted || !navRef.current) return;
+    if (!navRef.current) return;
     
     const nav = navRef.current;
     const links = nav.querySelectorAll('a');
@@ -63,9 +56,9 @@ export function MobileBottomNav() {
         link.removeEventListener('click', handler, { capture: true });
       });
     };
-  }, [mounted, activeStates]);
+  }, [activeStates]);
 
-  const navContent = (
+  return (
     <nav 
       ref={navRef}
       className="fixed bottom-0 left-0 right-0 z-[9999] border-t bg-background/95 backdrop-blur-sm md:hidden"
@@ -113,8 +106,4 @@ export function MobileBottomNav() {
       </div>
     </nav>
   );
-
-  // Render via portal to document.body to ensure it's always accessible
-  if (!mounted) return null;
-  return createPortal(navContent, document.body);
 }
