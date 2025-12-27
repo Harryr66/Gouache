@@ -865,7 +865,7 @@ export function HueChatbot() {
                 </div>
                 <div>
                   <p className="text-sm mb-2">
-                    Tell me what you were trying to do—I'll get someone to fix it.
+                    Tell me what you were trying to do—I'll get someone to fix it. <span className="text-muted-foreground">(Optional)</span>
                   </p>
                   <Textarea
                     value={userContext}
