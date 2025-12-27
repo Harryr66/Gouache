@@ -1843,7 +1843,7 @@ function DiscoverPageContent() {
           </div>
         </div>
       ) : null}
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden">
+      <div className={`container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden ${!loading ? 'pointer-events-auto' : ''}`} style={!loading ? { pointerEvents: 'auto' } : undefined}>
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
           value={activeTab}
