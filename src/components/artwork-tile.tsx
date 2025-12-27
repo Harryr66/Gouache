@@ -184,6 +184,12 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
 
 
   const handleTileClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Prevent navigation if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, [role="button"]')) {
+      return;
+    }
+    
     // Navigate to artwork detail page only if we have an artwork id
     if (artwork?.id) {
       console.log('🎯 Artwork tile clicked:', artwork.id, artwork.title);
@@ -547,7 +553,7 @@ const generateArtistContent = (artist: Artist) => ({
     <>
     <Card 
         ref={tileRef}
-        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col rounded-none relative break-inside-avoid mb-1 ${className || ''}`}
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col rounded-none relative break-inside-avoid ${className || ''}`}
         onClick={handleTileClick}
         onMouseEnter={handleMouseEnter}
         style={{
