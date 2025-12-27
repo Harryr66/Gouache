@@ -1958,18 +1958,19 @@ function DiscoverPageContent() {
           className="mb-6"
         >
           <div className="flex items-center gap-3 w-full">
-            <TabsList className="grid w-full grid-cols-2 md:flex md:flex-1 md:max-w-none md:gap-0">
-              <TabsTrigger value="artwork" className="flex items-center justify-center gap-2 flex-1 md:flex-1 md:px-6">
+            <TabsList className="flex flex-1 gap-0">
+              <TabsTrigger value="artwork" className="flex items-center justify-center gap-2 flex-1 px-4 md:px-6 h-10">
                 <Palette className="h-4 w-4" />
-                Discover
+                <span className="hidden sm:inline">Discover</span>
+                <span className="sm:hidden">Discover</span>
               </TabsTrigger>
-              <TabsTrigger value="events" className="flex items-center justify-center gap-2 flex-1 md:flex-1 md:px-6">
+              <TabsTrigger value="events" className="flex items-center justify-center gap-2 flex-1 px-4 md:px-6 h-10">
                 <Calendar className="h-4 w-4" />
                 Events
               </TabsTrigger>
             </TabsList>
-            {/* Desktop Filter Button - positioned next to tabs */}
-            <div className="hidden md:flex">
+            {/* Filter Button - positioned next to tabs, aligned */}
+            <div className="flex items-center">
               {activeTab === 'artwork' ? (
                 <Button
                   variant="outline"
@@ -2205,6 +2206,9 @@ function DiscoverPageContent() {
                   }
                   
                   const artwork = item as Artwork;
+                  // Check if artwork has video
+                  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                  const videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
                   // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
                   const placeholderImage = 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
                   const artworkImage = artwork.imageUrl || placeholderImage;
@@ -2218,12 +2222,23 @@ function DiscoverPageContent() {
                     <div key={artwork.id} className="relative group">
                       <Link href={`/artwork/${artwork.id}`}>
                         <Card className="relative aspect-square overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
-                          <Image
-                            src={artworkImage}
-                            alt={artwork.imageAiHint || artwork.title}
-                            fill
-                            className="object-cover"
-                          />
+                          {hasVideo && videoUrl ? (
+                            <video
+                              src={videoUrl}
+                              className="w-full h-full object-cover"
+                              playsInline
+                              muted
+                              loop
+                              autoPlay
+                            />
+                          ) : (
+                            <Image
+                              src={artworkImage}
+                              alt={artwork.imageAiHint || artwork.title}
+                              fill
+                              className="object-cover"
+                            />
+                          )}
                           <div className="absolute inset-x-0 bottom-0 bg-background/80 backdrop-blur-sm p-3 flex items-center gap-2">
                             <Avatar className="h-9 w-9 flex-shrink-0">
                               <AvatarImage src={artwork.artist.avatarUrl || avatarPlaceholder} />
