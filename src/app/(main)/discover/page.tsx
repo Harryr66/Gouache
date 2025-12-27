@@ -1781,9 +1781,9 @@ function DiscoverPageContent() {
 
   return (
     <div className="min-h-screen bg-background relative">
-      {/* Preload tiles invisibly during loading */}
+      {/* Preload tiles invisibly during loading - ensure it doesn't block clicks */}
       {shouldPreloadTiles && (
-        <div className="fixed inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden' }} aria-hidden="true">
+        <div className="fixed inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
           <div 
             style={{ 
               columnCount: columnCount,
