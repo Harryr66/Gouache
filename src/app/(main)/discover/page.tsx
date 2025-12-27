@@ -457,6 +457,7 @@ function DiscoverPageContent() {
   const [artworksLoaded, setArtworksLoaded] = useState(false);
   const [jokeCompleteTime, setJokeCompleteTime] = useState<number | null>(null);
   const MIN_JOKE_DISPLAY_TIME = 2000; // Minimum 2 seconds to display joke after completion
+  const jokeCompletionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Track when initial videos are ready
   const handleVideoReady = useCallback((artworkId: string) => {
@@ -482,12 +483,25 @@ function DiscoverPageContent() {
   
   // Handle joke completion
   const handleJokeComplete = useCallback(() => {
+    console.log('🎭 Joke animation completed at:', new Date().toISOString());
+    const completionTime = Date.now();
     setJokeComplete(true);
-    setJokeCompleteTime(Date.now());
+    setJokeCompleteTime(completionTime);
+    
+    // Ensure we wait the full minimum display time after joke completion
+    // Clear any existing timeout
+    if (jokeCompletionTimeoutRef.current) {
+      clearTimeout(jokeCompletionTimeoutRef.current);
+    }
+    
+    // Set a timeout to ensure minimum display time is respected
+    jokeCompletionTimeoutRef.current = setTimeout(() => {
+      console.log('✅ Minimum joke display time (2s) has passed, content can now be checked');
+    }, MIN_JOKE_DISPLAY_TIME);
   }, []);
   
   // Set loading to false ONLY when ALL conditions are met:
-  // 1. Joke is complete AND has been displayed for minimum time
+  // 1. Joke is complete AND has been displayed for minimum time (STRICT REQUIREMENT)
   // 2. Artworks are loaded
   // 3. Initial images/videos are ready (or there are none to load)
   useEffect(() => {
@@ -496,36 +510,60 @@ function DiscoverPageContent() {
       return;
     }
     
-    // Don't proceed if joke isn't complete
+    // STRICT: Don't proceed if joke isn't complete - this is non-negotiable
     if (!jokeComplete) {
+      console.log('⏳ Waiting for joke animation to complete...');
       return;
     }
     
-    // Ensure joke has been displayed for minimum time after completion
-    if (jokeCompleteTime) {
-      const timeSinceJokeComplete = Date.now() - jokeCompleteTime;
-      if (timeSinceJokeComplete < MIN_JOKE_DISPLAY_TIME) {
-        const remainingTime = MIN_JOKE_DISPLAY_TIME - timeSinceJokeComplete;
-        const timeout = setTimeout(() => {
-          // After minimum display time, check if content is ready
-          checkContentReady();
-        }, remainingTime);
-        return () => clearTimeout(timeout);
-      }
+    // STRICT: Ensure joke has been displayed for minimum time after completion
+    if (!jokeCompleteTime) {
+      console.log('⏳ Waiting for joke completion timestamp...');
+      return;
     }
     
-    // Check if content is ready
+    const timeSinceJokeComplete = Date.now() - jokeCompleteTime;
+    if (timeSinceJokeComplete < MIN_JOKE_DISPLAY_TIME) {
+      const remainingTime = MIN_JOKE_DISPLAY_TIME - timeSinceJokeComplete;
+      console.log(`⏳ Joke completed ${timeSinceJokeComplete}ms ago, waiting ${remainingTime}ms more to reach minimum ${MIN_JOKE_DISPLAY_TIME}ms...`);
+      const timeout = setTimeout(() => {
+        // After minimum display time, check if content is ready
+        console.log('✅ Minimum joke display time reached, checking content readiness...');
+        checkContentReady();
+      }, remainingTime);
+      return () => clearTimeout(timeout);
+    }
+    
+    // Only check content if joke has been displayed for minimum time
+    console.log('✅ Joke has been displayed for minimum time, checking content readiness...');
     checkContentReady();
     
     function checkContentReady() {
+      // STRICT: Double-check that joke has been displayed for minimum time
+      if (!jokeCompleteTime) {
+        console.warn('⚠️ checkContentReady called but jokeCompleteTime is null');
+        return;
+      }
+      
+      const timeSinceJokeComplete = Date.now() - jokeCompleteTime;
+      if (timeSinceJokeComplete < MIN_JOKE_DISPLAY_TIME) {
+        console.warn(`⚠️ checkContentReady called too early (${timeSinceJokeComplete}ms < ${MIN_JOKE_DISPLAY_TIME}ms), waiting...`);
+        const remainingTime = MIN_JOKE_DISPLAY_TIME - timeSinceJokeComplete;
+        setTimeout(() => {
+          checkContentReady();
+        }, remainingTime);
+        return;
+      }
+      
       // Require ALL video thumbnails (up to 3) to load, plus connection-aware threshold for regular images
       // This ensures all 3 video tiles show their thumbnails before loading screen disappears
       
       if (initialImagesTotal === 0) {
-        // No images to preload - content is ready immediately
+        // No images to preload - content is ready immediately (but joke must have finished)
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
+        console.log('✅ No images to load, dismissing loading screen (joke has finished + 2s minimum)');
         setTimeout(() => {
           setLoading(false);
         }, 200);
@@ -550,6 +588,7 @@ function DiscoverPageContent() {
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
+        console.log('✅ Content ready (video posters + images), dismissing loading screen (joke has finished + 2s minimum)');
         setTimeout(() => {
           setLoading(false);
         }, 200);
@@ -564,8 +603,18 @@ function DiscoverPageContent() {
       loadingTimeoutRef.current = setTimeout(() => {
         // After extended timeout, show content even if not all media loaded
         // This handles edge cases where media fails to load
-        log('⚠️ Loading timeout reached - showing content with partial media loaded');
-        setLoading(false);
+        // BUT ONLY if joke has finished + minimum time has passed
+        const timeSinceJoke = Date.now() - (jokeCompleteTime || Date.now());
+        if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
+          log('⚠️ Loading timeout reached - showing content with partial media loaded (joke has finished + 2s minimum)');
+          setLoading(false);
+        } else {
+          log('⚠️ Loading timeout reached but joke minimum time not met, waiting...');
+          // Wait for joke minimum time, then dismiss
+          setTimeout(() => {
+            setLoading(false);
+          }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
+        }
       }, 8000); // Reduced from 15s to 8s - faster fallback for slow connections
     }
     
