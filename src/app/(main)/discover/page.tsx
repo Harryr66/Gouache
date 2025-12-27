@@ -32,6 +32,7 @@ import { Suspense } from 'react';
 import { engagementTracker } from '@/lib/engagement-tracker';
 import { engagementScorer } from '@/lib/engagement-scorer';
 import { useFollow } from '@/providers/follow-provider';
+import { useVideoControl } from '@/providers/video-control-provider';
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
@@ -401,6 +402,7 @@ function DiscoverPageContent() {
   const { toggleLike, isLiked } = useLikes();
   const { user } = useAuth();
   const { getFollowedArtists, isFollowing } = useFollow();
+  const { getConnectionSpeed } = useVideoControl();
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [ads, setAds] = useState<any[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
@@ -412,8 +414,11 @@ function DiscoverPageContent() {
   const [initialVideosTotal, setInitialVideosTotal] = useState(0);
   const [initialImagesReady, setInitialImagesReady] = useState(0);
   const [initialImagesTotal, setInitialImagesTotal] = useState(0);
+  const [initialVideoPostersReady, setInitialVideoPostersReady] = useState(0);
+  const [initialVideoPostersTotal, setInitialVideoPostersTotal] = useState(0);
   const initialVideoReadyRef = useRef<Set<string>>(new Set());
   const initialImageReadyRef = useRef<Set<string>>(new Set());
+  const initialVideoPosterRef = useRef<Set<string>>(new Set());
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [jokeComplete, setJokeComplete] = useState(false);
   const [artworksLoaded, setArtworksLoaded] = useState(false);
@@ -428,11 +433,17 @@ function DiscoverPageContent() {
     }
   }, []);
   
-  // Track when initial images are ready
-  const handleImageReady = useCallback((artworkId: string) => {
+  // Track when initial images are ready (including video posters)
+  const handleImageReady = useCallback((artworkId: string, isVideoPoster: boolean = false) => {
     if (!initialImageReadyRef.current.has(artworkId)) {
       initialImageReadyRef.current.add(artworkId);
       setInitialImagesReady(prev => prev + 1);
+    }
+    
+    // Also track video posters separately to ensure all 3 load
+    if (isVideoPoster && !initialVideoPosterRef.current.has(artworkId)) {
+      initialVideoPosterRef.current.add(artworkId);
+      setInitialVideoPostersReady(prev => prev + 1);
     }
   }, []);
   
@@ -474,8 +485,9 @@ function DiscoverPageContent() {
     checkContentReady();
     
     function checkContentReady() {
-      // Only wait for poster images - videos load in background and autoplay when ready
-      // This is much faster: poster images load in ~200-800ms vs videos buffering in ~2-5s
+      // Require ALL video thumbnails (up to 3) to load, plus connection-aware threshold for regular images
+      // This ensures all 3 video tiles show their thumbnails before loading screen disappears
+      
       if (initialImagesTotal === 0) {
         // No images to preload - content is ready immediately
         if (loadingTimeoutRef.current) {
@@ -487,11 +499,21 @@ function DiscoverPageContent() {
         return;
       }
       
-      // Show content when 60% of poster images are loaded
-      // Videos will continue loading in background and autoplay when ready (onCanPlay)
-      const imageReadyPercentage = initialImagesReady / initialImagesTotal;
-      if (imageReadyPercentage >= 0.6) {
-        // Enough poster images ready - videos will load in background and autoplay when ready
+      // REQUIRE ALL video posters to be loaded (100% of video thumbnails)
+      const allVideoPostersReady = initialVideoPostersTotal === 0 || initialVideoPostersReady >= initialVideoPostersTotal;
+      
+      // Connection-aware threshold for regular images (not video posters)
+      const connectionSpeed = getConnectionSpeed();
+      const regularImageThreshold = connectionSpeed === 'fast' ? 0.6 : connectionSpeed === 'medium' ? 0.5 : 0.3;
+      
+      // Calculate regular images (excluding video posters)
+      const regularImagesTotal = initialImagesTotal - initialVideoPostersTotal;
+      const regularImagesReady = initialImagesReady - initialVideoPostersReady;
+      const regularImageReadyPercentage = regularImagesTotal > 0 ? (regularImagesReady / regularImagesTotal) : 1;
+      
+      // Show content when ALL video posters are ready AND threshold of regular images are ready
+      if (allVideoPostersReady && regularImageReadyPercentage >= regularImageThreshold) {
+        // All video thumbnails loaded + enough regular images - videos will autoplay when ready
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
@@ -519,7 +541,7 @@ function DiscoverPageContent() {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [artworksLoaded, jokeComplete, jokeCompleteTime, initialImagesReady, initialImagesTotal]);
+  }, [artworksLoaded, jokeComplete, jokeCompleteTime, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
@@ -881,22 +903,57 @@ function DiscoverPageContent() {
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
         setArtworksLoaded(true); // Mark artworks as loaded
         
-        // Count initial viewport media for preloading (first 4 tiles only - minimal preload)
-        // Strategy: Load poster images first (fast), then videos buffer in background and autoplay when ready
-        const initialTiles = finalArtworks.slice(0, 4); // Reduced to 4 - just above the fold
-        const initialImages = initialTiles.filter((artwork: Artwork) => {
-          // Preload ALL images including video posters - these load fast and show immediately
-          return artwork.imageUrl; // All images, including video posters
+        // Count initial viewport media for preloading with connection-aware limits
+        // Strategy: Load poster images first (fast), limit videos to 3 per viewport, connection-aware preload count
+        const connectionSpeed = getConnectionSpeed();
+        
+        // Connection-aware preload count: fast = more, slow = less
+        const preloadCount = connectionSpeed === 'fast' ? 3 : connectionSpeed === 'medium' ? 2 : 1;
+        
+        // Limit videos to 3 per viewport for consistent performance
+        const MAX_VIDEOS_PER_VIEWPORT = 3;
+        let videoCount = 0;
+        const initialTiles: Artwork[] = [];
+        
+        // Select tiles with video limiting: max 3 videos, fill rest with images
+        for (const artwork of finalArtworks) {
+          if (initialTiles.length >= preloadCount) break;
+          
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          
+          if (hasVideo) {
+            if (videoCount < MAX_VIDEOS_PER_VIEWPORT) {
+              initialTiles.push(artwork);
+              videoCount++;
+            }
+            // Skip this video if we've hit the limit
+          } else {
+            // Always include images
+            initialTiles.push(artwork);
+          }
+        }
+        
+        // Separate video posters from regular images
+        // We need ALL 3 video thumbnails to load, plus regular images
+        const initialVideoPosters = initialTiles.filter((artwork: Artwork) => {
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          return hasVideo && artwork.imageUrl; // Video posters
+        });
+        const initialRegularImages = initialTiles.filter((artwork: Artwork) => {
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          return !hasVideo && artwork.imageUrl; // Regular images (not videos)
         });
         
-        // Don't count videos for loading screen - we only wait for poster images
-        // Videos will load in background and autoplay when ready (onCanPlay)
-        setInitialVideosTotal(0); // Videos don't block loading screen
-        setInitialImagesTotal(initialImages.length);
+        // Count videos (for tracking) and separate poster images
+        setInitialVideosTotal(initialVideoPosters.length); // Track video count (max 3)
+        setInitialVideoPostersTotal(initialVideoPosters.length); // All video posters must load (100%)
+        setInitialImagesTotal(initialVideoPosters.length + initialRegularImages.length); // All images including video posters
         initialVideoReadyRef.current.clear();
         initialImageReadyRef.current.clear();
+        initialVideoPosterRef.current.clear();
         setInitialVideosReady(0);
         setInitialImagesReady(0);
+        setInitialVideoPostersReady(0);
         setJokeComplete(false); // Reset joke completion state
         setJokeCompleteTime(null); // Reset joke completion time
         
@@ -918,20 +975,49 @@ function DiscoverPageContent() {
         setArtworks(placeholderArtworks);
         setArtworksLoaded(true); // Mark artworks as loaded even on error
         
-        // Count initial viewport media for preloading (first 4 tiles only)
-        const initialTiles = placeholderArtworks.slice(0, 4);
-        const initialImages = initialTiles.filter((artwork: Artwork) => {
-          // Preload all images (including video posters)
-          return artwork.imageUrl;
+        // Count initial viewport media for preloading with connection-aware limits
+        const connectionSpeed = getConnectionSpeed();
+        const preloadCount = connectionSpeed === 'fast' ? 3 : connectionSpeed === 'medium' ? 2 : 1;
+        
+        // Limit videos to 3 per viewport
+        const MAX_VIDEOS_PER_VIEWPORT = 3;
+        let videoCount = 0;
+        const initialTiles: Artwork[] = [];
+        
+        for (const artwork of placeholderArtworks) {
+          if (initialTiles.length >= preloadCount) break;
+          
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          
+          if (hasVideo) {
+            if (videoCount < MAX_VIDEOS_PER_VIEWPORT) {
+              initialTiles.push(artwork);
+              videoCount++;
+            }
+          } else {
+            initialTiles.push(artwork);
+          }
+        }
+        
+        // Separate video posters from regular images (same as success case)
+        const initialVideoPosters = initialTiles.filter((artwork: Artwork) => {
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          return hasVideo && artwork.imageUrl;
+        });
+        const initialRegularImages = initialTiles.filter((artwork: Artwork) => {
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          return !hasVideo && artwork.imageUrl;
         });
         
-        // Don't count videos - only wait for poster images
-        setInitialVideosTotal(0);
-        setInitialImagesTotal(initialImages.length);
+        setInitialVideosTotal(initialVideoPosters.length);
+        setInitialVideoPostersTotal(initialVideoPosters.length);
+        setInitialImagesTotal(initialVideoPosters.length + initialRegularImages.length);
         initialVideoReadyRef.current.clear();
         initialImageReadyRef.current.clear();
+        initialVideoPosterRef.current.clear();
         setInitialVideosReady(0);
         setInitialImagesReady(0);
+        setInitialVideoPostersReady(0);
         setJokeComplete(false); // Reset joke completion state
         setJokeCompleteTime(null); // Reset joke completion time
       }
@@ -1427,9 +1513,9 @@ function DiscoverPageContent() {
     fetchEvents();
   }, [theme, mounted]);
 
-  // Render initial tiles invisibly during loading so media can preload
-  // Videos: load metadata only (fast) - not full buffering (slow)
-  const shouldPreloadTiles = loading && (initialVideosTotal > 0 || initialImagesTotal > 0);
+  // Render initial tiles invisibly during loading so poster images can preload
+  // Videos will load in background and autoplay when ready (onCanPlay)
+  const shouldPreloadTiles = loading && initialImagesTotal > 0;
   
   return (
     <div className="min-h-screen bg-background relative">
@@ -1443,27 +1529,52 @@ function DiscoverPageContent() {
               columnFill: 'auto' as const, // Fill columns sequentially from top to bottom
             }}
           >
-            {visibleFilteredArtworks.slice(0, 4).map((item) => {
-              const isAd = 'type' in item && item.type === 'ad';
-              if (isAd) return null;
+            {(() => {
+              // Connection-aware preload count and video limiting
+              const connectionSpeed = getConnectionSpeed();
+              const preloadCount = connectionSpeed === 'fast' ? 3 : connectionSpeed === 'medium' ? 2 : 1;
+              const MAX_VIDEOS_PER_VIEWPORT = 3;
               
-              const artwork = item as Artwork;
-              const isInitial = true;
-              const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-              const hasImage = !!artwork.imageUrl;
+              const preloadTiles: Artwork[] = [];
+              let preloadVideoCount = 0;
               
-              return (
-                <ArtworkTile 
-                  key={`preload-${artwork.id}`}
-                  artwork={artwork} 
-                  hideBanner={isMobile && artworkView === 'grid'}
-                  // Mark as initial viewport so videos start loading immediately and autoplay when ready
-                  isInitialViewport={isInitial && (hasVideo || hasImage) ? true : undefined}
-                  // Only track image loading for loading screen - videos load in background
-                  onImageReady={isInitial && hasImage ? () => handleImageReady(artwork.id) : undefined}
-                />
-              );
-            })}
+              for (const item of visibleFilteredArtworks) {
+                if (preloadTiles.length >= preloadCount) break;
+                if ('type' in item && item.type === 'ad') continue;
+                
+                const artwork = item as Artwork;
+                const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                
+                if (hasVideo) {
+                  if (preloadVideoCount < MAX_VIDEOS_PER_VIEWPORT) {
+                    preloadTiles.push(artwork);
+                    preloadVideoCount++;
+                  }
+                } else {
+                  preloadTiles.push(artwork);
+                }
+              }
+              
+              return preloadTiles.map((artwork) => {
+                const isInitial = true;
+                const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                const hasImage = !!artwork.imageUrl;
+                
+                return (
+                  <ArtworkTile 
+                    key={`preload-${artwork.id}`}
+                    artwork={artwork} 
+                    hideBanner={isMobile && artworkView === 'grid'}
+                    // Mark as initial viewport so videos start loading immediately and autoplay when ready
+                    isInitialViewport={isInitial && (hasVideo || hasImage) ? true : undefined}
+                    // Track image loading - ArtworkTile will pass isVideoPoster flag
+                    onImageReady={isInitial && hasImage ? (isVideoPoster) => handleImageReady(artwork.id, isVideoPoster) : undefined}
+                    // Track video metadata loading
+                    onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
+                  />
+                );
+              });
+            })()}
           </div>
         </div>
       )}

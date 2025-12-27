@@ -47,7 +47,7 @@ interface ArtworkTileProps {
   className?: string;
   hideBanner?: boolean;
   onVideoReady?: () => void; // Callback when video is ready (for preloading)
-  onImageReady?: () => void; // Callback when image is ready (for preloading)
+  onImageReady?: (isVideoPoster?: boolean) => void; // Callback when image is ready (for preloading), with flag for video posters
   isInitialViewport?: boolean; // Flag to indicate this is in initial viewport
 }
 
@@ -602,8 +602,9 @@ const generateArtistContent = (artist: Artist) => ({
                     onLoad={() => {
                       setIsImageLoaded(true);
                       // Call onImageReady if this is in initial viewport (for preloading)
+                      // Pass true for video posters so we can track them separately
                       if (isInitialViewport && onImageReady) {
-                        onImageReady();
+                        onImageReady(true); // true = this is a video poster
                       }
                     }}
                     onError={() => {
@@ -611,7 +612,7 @@ const generateArtistContent = (artist: Artist) => ({
                       setIsImageLoaded(true);
                       // Still call onImageReady even on error (to not block loading)
                       if (isInitialViewport && onImageReady) {
-                        onImageReady();
+                        onImageReady(true); // true = this is a video poster
                       }
                     }}
                   />
@@ -739,8 +740,9 @@ const generateArtistContent = (artist: Artist) => ({
                 onLoad={() => {
                   setIsImageLoaded(true);
                   // Call onImageReady if this is in initial viewport (for preloading)
+                  // Pass false for regular images (not video posters)
                   if (isInitialViewport && onImageReady) {
-                    onImageReady();
+                    onImageReady(false); // false = regular image, not video poster
                   }
                 }}
                 onError={() => {
@@ -748,7 +750,7 @@ const generateArtistContent = (artist: Artist) => ({
                   setIsImageLoaded(true);
                   // Still call onImageReady even on error (to not block loading)
                   if (isInitialViewport && onImageReady) {
-                    onImageReady();
+                    onImageReady(false); // false = regular image, not video poster
                   }
                 }}
               />
