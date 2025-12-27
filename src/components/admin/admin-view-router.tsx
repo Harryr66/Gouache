@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,7 +18,8 @@ import { useRouter } from 'next/navigation';
 import { ArtistRequest, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport, Report } from '@/lib/types';
 import { doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
-import { toast } from '@/hooks/use-toast';
+import { toast, useToast } from '@/hooks/use-toast';
+import { migratePortfoliosToCollection, checkMigrationStatus } from '@/lib/migrate-portfolio';
 
 export function AdminViewRouter(props: any) {
   const router = useRouter();
@@ -2460,6 +2461,278 @@ export function AdminViewRouter(props: any) {
           </DialogContent>
         </Dialog>
 
+      {/* Portfolio Migration Tool */}
+      {props.selectedView === 'portfolio-migration' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Portfolio Migration Tool</CardTitle>
+              <CardDescription>
+                Migrate portfolio items from userProfiles.portfolio arrays to the new portfolioItems collection.
+                This improves query performance and scalability.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <PortfolioMigrationTool />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// Portfolio Migration Tool Component
+function PortfolioMigrationTool() {
+  const [migrationStatus, setMigrationStatus] = useState<any>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationProgress, setMigrationProgress] = useState<string>('');
+  const [migrationResults, setMigrationResults] = useState<any>(null);
+  const [batchSize, setBatchSize] = useState(10);
+  const { toast } = useToast();
+
+  const checkStatus = async () => {
+    setIsChecking(true);
+    setMigrationProgress('Checking migration status...');
+    try {
+      const status = await checkMigrationStatus();
+      setMigrationStatus(status);
+      setMigrationProgress('');
+      toast({
+        title: "Status checked",
+        description: `Found ${status.usersWithPortfolios} users with portfolios, ${status.usersMigrated} already migrated.`,
+      });
+    } catch (error: any) {
+      console.error('Error checking migration status:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to check migration status",
+        variant: "destructive"
+      });
+      setMigrationProgress('');
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const runDryRun = async () => {
+    setIsMigrating(true);
+    setMigrationProgress('Running dry run (no changes will be made)...');
+    setMigrationResults(null);
+    try {
+      const results = await migratePortfoliosToCollection(batchSize, true);
+      setMigrationResults(results);
+      setMigrationProgress('');
+      toast({
+        title: "Dry run complete",
+        description: `Would migrate ${results.totalItemsMigrated} items from ${results.usersWithPortfolios} users.`,
+      });
+    } catch (error: any) {
+      console.error('Error running dry run:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to run dry run",
+        variant: "destructive"
+      });
+      setMigrationProgress('');
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
+  const runMigration = async () => {
+    if (!confirm('⚠️ Are you sure you want to run the migration? This will create portfolioItems documents. Make sure you have a backup!')) {
+      return;
+    }
+
+    setIsMigrating(true);
+    setMigrationProgress('Starting migration...');
+    setMigrationResults(null);
+    try {
+      const results = await migratePortfoliosToCollection(batchSize, false);
+      setMigrationResults(results);
+      setMigrationProgress('');
+      toast({
+        title: "Migration complete",
+        description: `Migrated ${results.totalItemsMigrated} items from ${results.usersWithPortfolios} users.`,
+      });
+      
+      // Refresh status
+      await checkStatus();
+    } catch (error: any) {
+      console.error('Error running migration:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to run migration",
+        variant: "destructive"
+      });
+      setMigrationProgress('');
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Status Check */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">Migration Status</h3>
+            <p className="text-sm text-muted-foreground">Check current migration status</p>
+          </div>
+          <Button onClick={checkStatus} disabled={isChecking}>
+            {isChecking ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Check Status
+          </Button>
+        </div>
+
+        {migrationStatus && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Users</p>
+                  <p className="text-2xl font-bold">{migrationStatus.totalUsers}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Users with Portfolios</p>
+                  <p className="text-2xl font-bold">{migrationStatus.usersWithPortfolios}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Users Migrated</p>
+                  <p className="text-2xl font-bold">{migrationStatus.usersMigrated}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Portfolio Items</p>
+                  <p className="text-2xl font-bold">{migrationStatus.totalPortfolioItems}</p>
+                </div>
+                <div className="col-span-2 md:col-span-4">
+                  <p className="text-sm text-muted-foreground">Items in portfolioItems Collection</p>
+                  <p className="text-2xl font-bold">{migrationStatus.totalMigratedItems}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Migration Controls */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Run Migration</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            ⚠️ Always run a dry run first to preview what will be migrated.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="batchSize">Batch Size (users per batch)</Label>
+          <Input
+            id="batchSize"
+            type="number"
+            min="1"
+            max="50"
+            value={batchSize}
+            onChange={(e) => setBatchSize(parseInt(e.target.value) || 10)}
+            disabled={isMigrating}
+          />
+          <p className="text-xs text-muted-foreground">
+            Smaller batches are safer but slower. Recommended: 10-20.
+          </p>
+        </div>
+
+        <div className="flex gap-4">
+          <Button
+            onClick={runDryRun}
+            disabled={isMigrating}
+            variant="outline"
+          >
+            {isMigrating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Run Dry Run
+          </Button>
+          <Button
+            onClick={runMigration}
+            disabled={isMigrating || !migrationResults}
+            variant="default"
+          >
+            {isMigrating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Run Migration
+          </Button>
+        </div>
+
+        {migrationProgress && (
+          <div className="p-4 bg-muted rounded-lg">
+            <p className="text-sm">{migrationProgress}</p>
+          </div>
+        )}
+
+        {migrationResults && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Migration Results</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Items Migrated</p>
+                  <p className="text-xl font-bold">{migrationResults.totalItemsMigrated}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Items Skipped</p>
+                  <p className="text-xl font-bold">{migrationResults.itemsSkipped}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Users with Portfolios</p>
+                  <p className="text-xl font-bold">{migrationResults.usersWithPortfolios}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Errors</p>
+                  <p className="text-xl font-bold text-destructive">{migrationResults.errors.length}</p>
+                </div>
+              </div>
+              {migrationResults.errors.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-destructive mb-2">Errors:</p>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {migrationResults.errors.map((error: string, index: number) => (
+                      <p key={index} className="text-xs text-destructive">{error}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Instructions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Instructions</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <ol className="list-decimal list-inside space-y-2">
+            <li>Click "Check Status" to see current migration state</li>
+            <li>Click "Run Dry Run" to preview what will be migrated (no changes made)</li>
+            <li>Review the dry run results</li>
+            <li>If everything looks good, click "Run Migration" to perform the actual migration</li>
+            <li>After migration, verify in Firebase Console that portfolioItems collection has documents</li>
+            <li>Test the app to ensure everything still works</li>
+          </ol>
+          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <p className="font-semibold text-yellow-800 dark:text-yellow-200">⚠️ Important:</p>
+            <ul className="list-disc list-inside mt-2 text-yellow-700 dark:text-yellow-300 space-y-1">
+              <li>Migration is safe - original data in userProfiles.portfolio is NOT deleted</li>
+              <li>If migration fails, the app will automatically fall back to userProfiles.portfolio</li>
+              <li>New uploads are already writing to portfolioItems collection</li>
+              <li>You can run migration multiple times - it will skip already migrated items</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
