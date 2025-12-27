@@ -456,7 +456,7 @@ function DiscoverPageContent() {
   const [jokeComplete, setJokeComplete] = useState(false);
   const [artworksLoaded, setArtworksLoaded] = useState(false);
   const [jokeCompleteTime, setJokeCompleteTime] = useState<number | null>(null);
-  const MIN_JOKE_DISPLAY_TIME = 2000; // Minimum 2 seconds to read joke after completion
+  const MIN_JOKE_DISPLAY_TIME = 2000; // Minimum 2 seconds to display joke after completion
   
   // Track when initial videos are ready
   const handleVideoReady = useCallback((artworkId: string) => {
