@@ -1841,15 +1841,15 @@ function DiscoverPageContent() {
         </div>
       )}
       
-      {/* Loading overlay - ONLY when loading is true, completely removed otherwise */}
-      {!loading ? null : (
+      {/* Loading overlay - TEMPORARILY DISABLED to test click responsiveness */}
+      {/* Commented out to test if this is blocking clicks */}
+      {false && loading && (
         <div 
           className="fixed inset-0 bg-background flex items-center justify-center"
           style={{ 
-            zIndex: 30, // Much lower than navigation (z-[60]) to ensure navigation is always on top
-            pointerEvents: 'none', // Don't block any clicks - allow navigation to work
+            zIndex: 30,
+            pointerEvents: 'none',
           }}
-          data-testid="loading-overlay"
         >
           <div className="flex flex-col items-center justify-center gap-6 pointer-events-auto">
             <ThemeLoading size="lg" />
