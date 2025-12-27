@@ -1762,6 +1762,19 @@ function DiscoverPageContent() {
     }
   }, [loading, isDev]);
 
+  // Safety fallback: Force loading to false after maximum time to prevent stuck state
+  useEffect(() => {
+    const MAX_LOADING_TIME = 15000; // 15 seconds max
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ Discover: Loading timeout - forcing loading to false');
+        setLoading(false);
+      }
+    }, MAX_LOADING_TIME);
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
   return (
     <div className="min-h-screen bg-background relative">
       {/* Preload tiles invisibly during loading */}
