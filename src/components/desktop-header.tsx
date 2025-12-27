@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Eye, Fingerprint, Globe, Brain } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 const navigation = [
   { name: 'News', href: '/news', icon: Globe },
@@ -15,6 +16,8 @@ const navigation = [
 
 export function DesktopHeader() {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   
   // Memoize active states to prevent re-computation during scroll
   // Normalize pathname to handle query params and ensure stable comparison
@@ -28,14 +31,47 @@ export function DesktopHeader() {
     }));
   }, [pathname]);
 
-  return (
+  // Mount check for portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Add native event listeners as absolute fallback
+  useEffect(() => {
+    if (!mounted || !headerRef.current) return;
+    
+    const header = headerRef.current;
+    const links = header.querySelectorAll('a');
+    
+    const nativeHandlers = Array.from(links).map((link) => {
+      const handleNativeClick = (e: Event) => {
+        const href = (link as HTMLAnchorElement).href;
+        if (href && href !== window.location.href) {
+          window.location.href = href;
+        }
+      };
+      
+      link.addEventListener('click', handleNativeClick, { capture: true, passive: false });
+      return { link, handler: handleNativeClick };
+    });
+    
+    return () => {
+      nativeHandlers.forEach(({ link, handler }) => {
+        link.removeEventListener('click', handler, { capture: true });
+      });
+    };
+  }, [mounted, activeStates]);
+
+  const headerContent = (
     <div 
-      className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6 relative z-[60]"
+      ref={headerRef}
+      className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6 relative z-[9999]"
       style={{
         position: 'relative', // Keep relative for z-index to work
         pointerEvents: 'auto',
         touchAction: 'manipulation',
         isolation: 'isolate', // Create new stacking context to ensure it's always on top
+        zIndex: 9999, // Maximum z-index
       }}
     >
       <Link 

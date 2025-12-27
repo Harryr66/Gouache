@@ -5,18 +5,55 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Settings, Fingerprint } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export function MobileHeader() {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLElement>(null);
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  // Mount check for portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Add native event listeners as absolute fallback
+  useEffect(() => {
+    if (!mounted || !headerRef.current) return;
+    
+    const header = headerRef.current;
+    const links = header.querySelectorAll('a');
+    
+    const nativeHandlers = Array.from(links).map((link) => {
+      const handleNativeClick = (e: Event) => {
+        const href = (link as HTMLAnchorElement).href;
+        if (href && href !== window.location.href) {
+          window.location.href = href;
+        }
+      };
+      
+      link.addEventListener('click', handleNativeClick, { capture: true, passive: false });
+      return { link, handler: handleNativeClick };
+    });
+    
+    return () => {
+      nativeHandlers.forEach(({ link, handler }) => {
+        link.removeEventListener('click', handler, { capture: true });
+      });
+    };
+  }, [mounted]);
+
+  const headerContent = (
     <header 
-      className="sticky top-0 z-[60] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden"
+      ref={headerRef}
+      className="sticky top-0 z-[9999] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden"
       style={{ 
         position: 'sticky', // Explicitly set to ensure it's in root stacking context
         pointerEvents: 'auto', // Ensure header is always clickable
         touchAction: 'manipulation', // Optimize touch handling on mobile
         isolation: 'isolate', // Create new stacking context to ensure it's always on top
+        zIndex: 9999, // Maximum z-index
       }}
     >
       <div className="container flex h-14 items-center">
