@@ -757,7 +757,8 @@ function DiscoverPageContent() {
   useEffect(() => {
     const fetchArtworks = async () => {
       try {
-        setLoading(true);
+        // DO NOT set loading to true here - loading is already managed by joke completion logic
+        // Setting it to true here would reset the loading screen after joke completes
         log('🔍 Discover: Starting to fetch artworks from artist profiles...');
         
         // NEW: Fetch portfolio items directly from portfolioItems collection (much more efficient!)
