@@ -1827,22 +1827,31 @@ function DiscoverPageContent() {
       {/* Loading overlay - SINGLE instance, only shown when loading */}
       {/* Ensure it doesn't block navigation - headers are z-[60], overlay is z-50 */}
       {/* Use conditional rendering to completely remove from DOM when not loading */}
-      {loading ? (
+      {loading && (
         <div 
           className="fixed inset-0 bg-background flex items-center justify-center z-50" 
           style={{ 
+            // Only block clicks in the center area, allow navigation to be clickable
             pointerEvents: 'auto',
             // Ensure it's below navigation headers (z-[60])
             zIndex: 50
           }}
           aria-hidden={!loading}
+          onClick={(e) => {
+            // Allow clicks on navigation (which is above this overlay) to pass through
+            // Only prevent clicks if clicking directly on the overlay background
+            const target = e.target as HTMLElement;
+            if (target.classList.contains('fixed') || target === e.currentTarget) {
+              e.stopPropagation();
+            }
+          }}
         >
-          <div className="flex flex-col items-center justify-center gap-6">
+          <div className="flex flex-col items-center justify-center gap-6 pointer-events-auto">
             <ThemeLoading size="lg" />
             <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={1000} />
           </div>
         </div>
-      ) : null}
+      )}
       <div className={`container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden ${!loading ? 'pointer-events-auto' : ''}`} style={!loading ? { pointerEvents: 'auto' } : undefined}>
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
