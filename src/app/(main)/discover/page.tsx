@@ -2001,11 +2001,11 @@ function DiscoverPageContent() {
                   <Button
                     variant="outline"
                     onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                    className="shrink-0 h-10 px-3"
+                    className="shrink-0 h-10 px-4 md:px-6"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
-                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="shrink-0" />
+                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1" />
                 </div>
               )}
 
