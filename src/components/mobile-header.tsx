@@ -110,6 +110,10 @@ export function MobileHeader() {
                 onClick={(e) => {
                   // Ensure click is not prevented
                   e.stopPropagation();
+                  // Force navigation as backup
+                  if (!e.defaultPrevented) {
+                    window.location.href = '/settings';
+                  }
                 }}
               >
                 <Settings className="h-5 w-5" />
@@ -120,4 +124,8 @@ export function MobileHeader() {
       </div>
     </header>
   );
+
+  // Render via portal to document.body to ensure it's always accessible
+  if (!mounted) return null;
+  return createPortal(headerContent, document.body);
 }
