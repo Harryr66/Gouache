@@ -625,13 +625,14 @@ function DiscoverPageContent() {
       }, 12000); // Increased to 12s to give media more time to load
     }
     
-    // Safety timeout: Force loading to false after 15 seconds maximum to prevent permanent blocking
+    // Safety timeout: Force loading to false after 45 seconds maximum to prevent permanent blocking
+    // This allows time for retries (3 retries × 4s max delay = 12s) + initial load time
     const safetyTimeout = setTimeout(() => {
       if (loading) {
-        console.warn('⚠️ Safety timeout: Forcing loading to false after 15s to prevent permanent blocking');
+        console.warn('⚠️ Safety timeout: Forcing loading to false after 45s to prevent permanent blocking');
         setLoading(false);
       }
-    }, 15000);
+    }, 45000);
     
     return () => {
       if (loadingTimeoutRef.current) {
