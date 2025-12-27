@@ -279,8 +279,18 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     }
 
     const calculatePositions = () => {
-      const containerWidth = containerRef.current!.offsetWidth;
+      if (!containerRef.current) return;
+      
+      const containerWidth = containerRef.current.offsetWidth;
+      if (!containerWidth || containerWidth <= 0 || !columnCount || columnCount <= 0) {
+        return; // Safety check: don't calculate if container has no width or invalid column count
+      }
+      
       const itemWidth = (containerWidth - (gap * (columnCount - 1))) / columnCount;
+      if (itemWidth <= 0 || !isFinite(itemWidth)) {
+        return; // Safety check: prevent invalid width calculations
+      }
+      
       const columnHeights = new Array(columnCount).fill(0);
       const newPositions: Array<{ top: number; left: number; width: number }> = [];
 
@@ -295,18 +305,27 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         );
 
         const itemHeight = itemEl.offsetHeight || 0;
+        if (itemHeight <= 0) return; // Skip items with no height
+        
         const left = shortestColumnIndex * (itemWidth + gap);
         // Add gap to top position if not first item in column (to create uniform vertical spacing)
         const top = columnHeights[shortestColumnIndex] === 0 
           ? 0 
           : columnHeights[shortestColumnIndex] + gap;
 
+        // Validate calculated values
+        if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
+          return; // Skip invalid positions
+        }
+
         newPositions.push({ top, left, width: itemWidth });
         // Add item height plus gap for next item
         columnHeights[shortestColumnIndex] = top + itemHeight;
       });
 
-      setPositions(newPositions);
+      if (newPositions.length > 0) {
+        setPositions(newPositions);
+      }
     };
 
     // Calculate positions after items render (use requestAnimationFrame for better timing)
