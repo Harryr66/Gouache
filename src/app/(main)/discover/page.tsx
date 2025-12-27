@@ -308,10 +308,11 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         if (itemHeight <= 0) return; // Skip items with no height
         
         const left = shortestColumnIndex * (itemWidth + gap);
-        // Add gap to top position if not first item in column (to create uniform vertical spacing)
-        const top = columnHeights[shortestColumnIndex] === 0 
+        // Calculate top position: if column is empty (height is 0), start at 0, otherwise add gap
+        const currentColumnHeight = columnHeights[shortestColumnIndex];
+        const top = currentColumnHeight === 0 
           ? 0 
-          : columnHeights[shortestColumnIndex] + gap;
+          : currentColumnHeight + gap;
 
         // Validate calculated values
         if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
@@ -319,7 +320,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         }
 
         newPositions.push({ top, left, width: itemWidth });
-        // Add item height plus gap for next item
+        // Update column height: current top position + item height (gap is already in top calculation)
         columnHeights[shortestColumnIndex] = top + itemHeight;
       });
 
