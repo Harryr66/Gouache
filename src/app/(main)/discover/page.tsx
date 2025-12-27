@@ -1446,7 +1446,7 @@ function DiscoverPageContent() {
           <div 
             style={{ 
               columnCount: columnCount,
-              columnGap: '0px',
+              columnGap: '2px',
               columnFill: 'auto' as const, // Fill columns sequentially from top to bottom
             }}
           >
@@ -1696,7 +1696,7 @@ function DiscoverPageContent() {
               <MasonryGrid
                 items={visibleFilteredArtworks}
                 columnCount={columnCount}
-                gap={0}
+                gap={2}
                 renderItem={(item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';

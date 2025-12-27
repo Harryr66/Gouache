@@ -374,10 +374,14 @@ const generateArtistContent = (artist: Artist) => ({
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          // Use intersectionRatio to check exact visibility percentage
+          const intersectionRatio = entry.intersectionRatio;
           const isIntersecting = entry.isIntersecting;
-          setIsInViewport(isIntersecting);
+          // Consider in viewport only if at least 50% is visible
+          const isInViewportEnough = intersectionRatio >= 0.5;
+          setIsInViewport(isInViewportEnough);
           
-          if (isIntersecting) {
+          if (isInViewportEnough) {
             // Start tracking view time
             engagementTracker.startTracking(artwork.id);
             
@@ -399,10 +403,10 @@ const generateArtistContent = (artist: Artist) => ({
               }
             }
           } else {
-            // Stop tracking when not visible
+            // Stop tracking when less than 50% visible
             engagementTracker.stopTracking(artwork.id);
             
-            // Pause video when out of viewport
+            // Pause video when less than 50% is visible (not just when completely out)
             if (videoRef.current && !videoRef.current.paused) {
               videoRef.current.pause();
             }
@@ -413,7 +417,7 @@ const generateArtistContent = (artist: Artist) => ({
         });
       },
       {
-        threshold: 0.5, // Consider visible when 50% is in viewport
+        threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], // Multiple thresholds for granular updates
         rootMargin, // Dynamic rootMargin based on connection speed
       }
     );
@@ -501,9 +505,11 @@ const generateArtistContent = (artist: Artist) => ({
         }
       };
     } else {
-      // Pause when out of viewport
-      if (!video.paused) {
+      // Pause when less than 50% visible (immediately)
+      if (video && !video.paused) {
         video.pause();
+        // Reset to start for next time it becomes visible
+        video.currentTime = 0;
       }
       // Clear preview timer when not visible
       if (previewTimerRef.current) {
@@ -558,6 +564,8 @@ const generateArtistContent = (artist: Artist) => ({
         onMouseEnter={handleMouseEnter}
         style={{
           width: '100%', // Fill column width completely
+          pointerEvents: 'auto', // Ensure clicks work
+          zIndex: 1, // Ensure tile is above background
         }}
     >
       <div 
