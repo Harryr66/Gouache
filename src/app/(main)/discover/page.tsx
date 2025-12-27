@@ -1867,7 +1867,8 @@ function DiscoverPageContent() {
           </div>
         </>
       )}
-      <div className={`container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden ${!loading ? 'pointer-events-auto' : ''}`} style={!loading ? { pointerEvents: 'auto' } : undefined}>
+      {/* Main content - always clickable, even during loading */}
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden" style={{ pointerEvents: 'auto', position: 'relative', zIndex: 1 }}>
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
           value={activeTab}
