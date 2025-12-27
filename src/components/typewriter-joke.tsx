@@ -80,7 +80,7 @@ export function TypewriterJoke({
           return;
         }
         
-        // Check for "//" - insert line break with 2 second pause
+        // Check for "//" - insert line break with 1 second pause
         if (char === '/' && nextChar === '/') {
           isPaused = true;
           const textSoFar = currentJoke.slice(0, currentIndex).replace(/\/\//g, '\n') + '\n';
@@ -88,10 +88,10 @@ export function TypewriterJoke({
           currentIndex += 2;
           shouldCapitalizeNext = true; // Next character should be capitalized
           
-          // Pause for 2 seconds before continuing
+          // Pause for 1 second before continuing
           setTimeout(() => {
             isPaused = false;
-          }, 2000);
+          }, 1000);
           return;
         }
         
