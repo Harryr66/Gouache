@@ -1960,9 +1960,19 @@ function DiscoverPageContent() {
         {loading ? (
           <div 
             className="absolute inset-0 bg-background flex items-center justify-center z-10"
+            style={{
+              pointerEvents: 'none', // Never block clicks - navigation always accessible
+              touchAction: 'none', // Prevent touch events from being captured
+            }}
             aria-hidden="true"
           >
-            <div className="flex flex-col items-center justify-center gap-6">
+            <div 
+              className="flex flex-col items-center justify-center gap-6"
+              style={{
+                pointerEvents: 'auto', // Allow clicks on loading animation itself
+                touchAction: 'none',
+              }}
+            >
               <ThemeLoading size="lg" />
               <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
             </div>
