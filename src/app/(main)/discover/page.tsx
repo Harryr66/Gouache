@@ -409,6 +409,10 @@ function DiscoverPageContent() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  // Pagination state
+  const [hasMore, setHasMore] = useState(true);
+  const [lastDocument, setLastDocument] = useState<any>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [artworkEngagements, setArtworkEngagements] = useState<Map<string, any>>(new Map());
   const [initialVideosReady, setInitialVideosReady] = useState(0);
   const [initialVideosTotal, setInitialVideosTotal] = useState(0);
@@ -615,13 +619,23 @@ function DiscoverPageContent() {
         let useFallback = false;
         
         try {
-          portfolioItems = await PortfolioService.getDiscoverPortfolioItems({
+          const INITIAL_FETCH_LIMIT = 25; // Reduced from 500 for faster initial load
+          const result = await PortfolioService.getDiscoverPortfolioItems({
             showInPortfolio: true,
             deleted: false,
             hideAI: discoverSettings.hideAiAssistedArt,
-            limit: 500, // Fetch more items for better content coverage
+            limit: INITIAL_FETCH_LIMIT,
           });
-          log(`📦 Discover: Found ${portfolioItems.length} portfolio items from portfolioItems collection`);
+          portfolioItems = result.items;
+          log(`📦 Discover: Found ${portfolioItems.length} portfolio items from portfolioItems collection (initial fetch)`);
+          
+          // Store last document for pagination
+          if (result.lastDoc) {
+            setLastDocument(result.lastDoc);
+            setHasMore(portfolioItems.length === INITIAL_FETCH_LIMIT);
+          } else {
+            setHasMore(false);
+          }
           
           // If empty, immediately use fallback
           if (portfolioItems.length === 0) {
@@ -641,12 +655,12 @@ function DiscoverPageContent() {
         
         // Only process portfolioItems if we have them and aren't using fallback
         if (!useFallback && portfolioItems.length > 0) {
-          // Batch fetch artist data to avoid N+1 queries
+          // Batch fetch artist data in parallel to avoid N+1 queries
           const artistIds = new Set<string>(portfolioItems.map(item => item.userId));
           const artistDataMap = new Map<string, any>();
           
-          log(`👥 Discover: Fetching ${artistIds.size} artist profiles...`);
-          for (const artistId of artistIds) {
+          log(`👥 Discover: Fetching ${artistIds.size} artist profiles in parallel...`);
+          const artistPromises = Array.from(artistIds).map(async (artistId) => {
             try {
               const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
               if (artistDoc.exists()) {
@@ -655,7 +669,9 @@ function DiscoverPageContent() {
             } catch (error) {
               console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
             }
-          }
+          });
+          
+          await Promise.all(artistPromises);
           
           // Process portfolio items
           for (const [index, item] of portfolioItems.entries()) {
@@ -981,6 +997,7 @@ function DiscoverPageContent() {
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
         setArtworksLoaded(true); // Mark artworks as loaded
+        setLoading(false); // Initial load complete
         
         // Count initial viewport media for preloading with connection-aware limits
         // Strategy: Load poster images first (fast), limit videos to 3 per viewport, connection-aware preload count
@@ -1107,6 +1124,148 @@ function DiscoverPageContent() {
     // Fetch ads for discover feed
     fetchActiveAds('discover', user?.id).then(setAds).catch(console.error);
   }, [discoverSettings, theme, mounted, user]);
+
+  // Load more artworks when scrolling to bottom (pagination)
+  const loadMoreArtworks = useCallback(async () => {
+    if (isLoadingMore || !hasMore || !lastDocument) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+    log('📥 Discover: Loading more artworks...');
+
+    try {
+      const { PortfolioService } = await import('@/lib/database');
+      const LOAD_MORE_LIMIT = 25;
+      
+      const result = await PortfolioService.getDiscoverPortfolioItems({
+        showInPortfolio: true,
+        deleted: false,
+        hideAI: discoverSettings.hideAiAssistedArt,
+        limit: LOAD_MORE_LIMIT,
+        startAfter: lastDocument,
+      });
+
+      if (result.items.length === 0) {
+        setHasMore(false);
+        setIsLoadingMore(false);
+        return;
+      }
+
+      // Batch fetch artist data for new items - use Promise.all for parallel fetching
+      const artistIds = new Set<string>(result.items.map(item => item.userId));
+      const artistDataMap = new Map<string, any>();
+      
+      const artistPromises = Array.from(artistIds).map(async (artistId) => {
+        try {
+          const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
+          if (artistDoc.exists()) {
+            artistDataMap.set(artistId, artistDoc.data());
+          }
+        } catch (error) {
+          console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
+        }
+      });
+      
+      await Promise.all(artistPromises);
+
+      // Process new portfolio items
+      const newArtworks: Artwork[] = [];
+      for (const item of result.items) {
+        const artistData = artistDataMap.get(item.userId);
+        if (!artistData) continue;
+
+        let videoUrl = item.videoUrl || null;
+        if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
+          videoUrl = item.mediaUrls[0];
+        }
+        const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
+        const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
+        
+        if (!imageUrl && !videoUrl) continue;
+
+        const artwork: Artwork = {
+          id: item.id,
+          title: item.title || 'Untitled',
+          description: item.description || '',
+          imageUrl: imageUrl,
+          imageAiHint: item.description || '',
+          ...(videoUrl && { videoUrl: videoUrl as any }),
+          ...(mediaType && { mediaType: mediaType as any }),
+          artist: {
+            id: item.userId,
+            name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
+            handle: artistData.username || artistData.handle || '',
+            avatarUrl: artistData.avatarUrl || null,
+            isVerified: artistData.isVerified || false,
+            isProfessional: true,
+            followerCount: artistData.followerCount || 0,
+            followingCount: artistData.followingCount || 0,
+            createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
+          },
+          likes: item.likes || 0,
+          commentsCount: item.commentsCount || 0,
+          createdAt: item.createdAt instanceof Date ? item.createdAt : (item.createdAt as any)?.toDate?.() || new Date(),
+          updatedAt: item.updatedAt instanceof Date ? item.updatedAt : (item.updatedAt as any)?.toDate?.() || new Date(),
+          category: item.category || '',
+          medium: item.medium || '',
+          tags: item.tags || [],
+          aiAssistance: item.aiAssistance || 'none',
+          isAI: item.isAI || false,
+          isForSale: item.isForSale || false,
+          sold: item.sold || false,
+          price: item.price ? (item.price > 1000 ? item.price / 100 : item.price) : undefined,
+          priceType: item.priceType as 'fixed' | 'contact' | undefined,
+          contactForPrice: item.contactForPrice || item.priceType === 'contact',
+        };
+        
+        newArtworks.push(artwork);
+      }
+
+      // Append new artworks to existing ones
+      setArtworks(prev => [...prev, ...newArtworks]);
+      
+      // Update pagination state
+      if (result.lastDoc) {
+        setLastDocument(result.lastDoc);
+        setHasMore(result.items.length === LOAD_MORE_LIMIT);
+      } else {
+        setHasMore(false);
+      }
+
+      log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
+    } catch (error: any) {
+      console.error('Error loading more artworks:', error);
+      setHasMore(false);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [hasMore, lastDocument, isLoadingMore, discoverSettings]);
+
+  // IntersectionObserver for infinite scroll pagination
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || !hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && hasMore && !isLoadingMore) {
+            loadMoreArtworks();
+          }
+        });
+      },
+      {
+        rootMargin: '200px', // Start loading 200px before reaching the bottom
+      }
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, isLoadingMore, loadMoreArtworks]);
 
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = Array.isArray(artworks) ? artworks : [];

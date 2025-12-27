@@ -667,6 +667,7 @@ export class PortfolioService {
 
   /**
    * Get portfolio items for discover feed (all users, filtered)
+   * Returns both items and the last document for pagination
    */
   static async getDiscoverPortfolioItems(options?: {
     showInPortfolio?: boolean;
@@ -674,13 +675,13 @@ export class PortfolioService {
     hideAI?: boolean;
     limit?: number;
     startAfter?: any;
-  }): Promise<PortfolioItem[]> {
+  }): Promise<{ items: PortfolioItem[]; lastDoc: any }> {
     try {
       // Quick check: see if collection has any documents
       const quickCheck = await getDocs(query(collection(db, 'portfolioItems'), limit(1)));
       if (quickCheck.empty) {
         console.log('📋 PortfolioService: portfolioItems collection is empty, returning empty array (will trigger fallback)');
-        return [];
+        return { items: [], lastDoc: null };
       }
 
       let q = query(collection(db, 'portfolioItems'));
@@ -721,12 +722,15 @@ export class PortfolioService {
         );
       }
 
-      return items;
+      // Get last document for pagination
+      const lastDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+
+      return { items, lastDoc };
     } catch (error: any) {
       // If query fails (e.g., missing index), return empty array
       // This allows backward compatibility to kick in
       console.warn('⚠️ PortfolioService: Error querying discover portfolioItems, returning empty array:', error?.message || error);
-      return [];
+      return { items: [], lastDoc: null };
     }
   }
 
