@@ -1877,9 +1877,15 @@ function DiscoverPageContent() {
           style={{ 
             zIndex: 30, // Below navigation (z-[60]) so navigation is always clickable
             pointerEvents: 'none', // Don't block any clicks - allows navigation and tiles to work
+            touchAction: 'none', // Prevent touch events from being captured on mobile
           }}
         >
-          <div className="flex flex-col items-center justify-center gap-6 pointer-events-auto">
+          <div 
+            className="flex flex-col items-center justify-center gap-6 pointer-events-auto"
+            style={{
+              touchAction: 'none', // Prevent touch events on loading animation
+            }}
+          >
             <ThemeLoading size="lg" />
             <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={1000} />
           </div>
