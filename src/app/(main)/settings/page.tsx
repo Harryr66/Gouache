@@ -106,13 +106,28 @@ function SettingsPageContent() {
 
       // For authenticated users, use Firestore
       const userRef = doc(db, 'userProfiles', user.id);
-      const unsubscribe = onSnapshot(userRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          const enabled = userData.preferences?.hueEnabled !== false; // Default to true
-          setHueEnabled(enabled);
+      const unsubscribe = onSnapshot(
+        userRef,
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            const enabled = userData.preferences?.hueEnabled !== false; // Default to true
+            setHueEnabled(enabled);
+          }
+        },
+        (error) => {
+          // Handle Firestore listener errors gracefully
+          console.error('Settings: Error listening to user profile:', error);
+          // Fallback to localStorage or default if Firestore fails
+          const savedPreference = localStorage.getItem('hue-enabled');
+          if (savedPreference !== null) {
+            setHueEnabled(savedPreference === 'true');
+          } else {
+            // Default to true if no saved preference and Firestore fails
+            setHueEnabled(true);
+          }
         }
-      });
+      );
 
       return unsubscribe;
     };

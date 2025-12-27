@@ -15,11 +15,11 @@ export interface VideoQuality {
 
 export interface VideoVariants {
   thumbnail: string; // 240p for tiles (faster loading, acceptable quality)
-  full: string; // 1080p for expanded view
+  full: string; // 720p for expanded view
   thumbnailQuality?: '240p';
-  fullQuality?: '1080p';
+  fullQuality?: '720p';
   thumbnailBitrate?: number; // 300 kbps target (reduced for faster loading)
-  fullBitrate?: number; // 2000-5000 kbps target
+  fullBitrate?: number; // 1000-2500 kbps target
 }
 
 /**
@@ -80,13 +80,30 @@ export async function compressVideo(
         const maxDimension = 1280;
         if (width > height) {
           width = Math.min(width, maxDimension);
-          height = (height / video.videoWidth) * width;
+          height = Math.round(width / aspectRatio);
         } else {
           height = Math.min(height, maxDimension);
-          width = (width / video.videoHeight) * height;
+          width = Math.round(height * aspectRatio);
+        }
+        // Default bitrate for 720p if not specified
+        if (!targetBitrate || targetBitrate >= 2000) {
+          targetBitrate = 1500; // 1.5 Mbps for 720p
+        }
+      } else if (targetQuality === '1080p') {
+        // 1080p - keep original dimensions or scale down if larger
+        const maxDimension = 1920;
+        if (width > height) {
+          width = Math.min(width, maxDimension);
+          height = Math.round(width / aspectRatio);
+        } else {
+          height = Math.min(height, maxDimension);
+          width = Math.round(height * aspectRatio);
+        }
+        // Default bitrate for 1080p if not specified
+        if (!targetBitrate || targetBitrate < 2000) {
+          targetBitrate = 2500; // 2.5 Mbps for 1080p
         }
       }
-      // 1080p - keep original dimensions or scale down if larger
 
       canvas.width = width;
       canvas.height = height;
@@ -142,7 +159,7 @@ export async function compressVideo(
  */
 export function getVideoFilenameWithQuality(
   originalFilename: string,
-  quality: '240p' | '360p' | '1080p'
+  quality: '240p' | '360p' | '720p' | '1080p'
 ): string {
   const nameWithoutExt = originalFilename.replace(/\.[^/.]+$/, '');
   return `${nameWithoutExt}_${quality}.mp4`;
@@ -153,13 +170,13 @@ export function getVideoFilenameWithQuality(
  */
 export function parseVideoFilename(filename: string): {
   baseName: string;
-  quality?: '240p' | '360p' | '1080p';
+  quality?: '240p' | '360p' | '720p' | '1080p';
 } {
-  const match = filename.match(/^(.+?)(_240p|_360p|_1080p)?\.(mp4|webm)$/i);
+  const match = filename.match(/^(.+?)(_240p|_360p|_720p|_1080p)?\.(mp4|webm)$/i);
   if (match) {
     return {
       baseName: match[1],
-      quality: match[2]?.replace('_', '') as '240p' | '360p' | '1080p' | undefined,
+      quality: match[2]?.replace('_', '') as '240p' | '360p' | '720p' | '1080p' | undefined,
     };
   }
   return { baseName: filename };
