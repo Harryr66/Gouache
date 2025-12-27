@@ -108,10 +108,13 @@ export async function migratePortfoliosToCollection(
             }
 
             // Map portfolio item to new structure
-            const portfolioItem: Omit<PortfolioItem, 'id' | 'createdAt' | 'updatedAt'> = {
+            // Helper to convert undefined to null for Firestore compatibility
+            const toFirestoreValue = (value: any) => value === undefined ? null : value;
+            
+            const portfolioItem: any = {
               userId: userId,
               imageUrl: item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || item.mediaUrls?.[0] || '',
-              videoUrl: item.videoUrl || (item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video' ? item.mediaUrls[0] : undefined),
+              videoUrl: toFirestoreValue(item.videoUrl || (item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video' ? item.mediaUrls[0] : null)),
               mediaType: item.mediaType || (item.videoUrl ? 'video' : 'image'),
               supportingImages: item.supportingImages || item.images || [],
               mediaUrls: item.mediaUrls || [],
@@ -126,13 +129,13 @@ export async function migratePortfoliosToCollection(
               showInShop: item.showInShop || false,
               isForSale: item.isForSale || false,
               sold: item.sold || false,
-              price: item.price,
+              price: toFirestoreValue(item.price),
               currency: item.currency || 'USD',
-              priceType: item.priceType,
+              priceType: toFirestoreValue(item.priceType),
               contactForPrice: item.contactForPrice || item.priceType === 'contact',
-              deliveryScope: item.deliveryScope,
-              deliveryCountries: item.deliveryCountries,
-              artworkType: item.artworkType || item.type === 'artwork' ? 'original' : undefined,
+              deliveryScope: toFirestoreValue(item.deliveryScope),
+              deliveryCountries: item.deliveryCountries || [],
+              artworkType: toFirestoreValue(item.artworkType || (item.type === 'artwork' ? 'original' : null)),
               type: item.type || 'artwork',
               deleted: item.deleted || false,
               aiAssistance: item.aiAssistance || 'none',
@@ -141,6 +144,13 @@ export async function migratePortfoliosToCollection(
               commentsCount: item.commentsCount || 0,
               category: item.category || '',
             };
+            
+            // Remove any remaining undefined values (safety check)
+            Object.keys(portfolioItem).forEach(key => {
+              if (portfolioItem[key] === undefined) {
+                portfolioItem[key] = null;
+              }
+            });
 
             itemsToMigrate.push(portfolioItem);
           }
@@ -165,13 +175,23 @@ export async function migratePortfoliosToCollection(
                 (p.imageUrl === item.imageUrl || p.id)
               )?.id || `${userId}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-              const itemRef = doc(collection(db, 'portfolioItems'), itemId);
-              firestoreBatch.set(itemRef, {
+              // Clean the item object to remove any undefined values
+              const cleanItem: any = {
                 ...item,
                 id: itemId, // Store original ID in document
                 createdAt: timestamp,
                 updatedAt: timestamp,
+              };
+              
+              // Remove undefined values (convert to null)
+              Object.keys(cleanItem).forEach(key => {
+                if (cleanItem[key] === undefined) {
+                  cleanItem[key] = null;
+                }
               });
+
+              const itemRef = doc(collection(db, 'portfolioItems'), itemId);
+              firestoreBatch.set(itemRef, cleanItem);
             }
 
             await firestoreBatch.commit();
