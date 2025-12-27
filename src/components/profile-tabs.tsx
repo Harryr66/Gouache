@@ -317,20 +317,38 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     useEffect(() => {
       const fetchPortfolio = async () => {
         try {
-          const userDoc = await getDoc(doc(db, 'userProfiles', userId));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            const portfolioItems = (data.portfolio || []).map((item: any) => ({
+          // NEW: Fetch from portfolioItems collection (primary source)
+          const { PortfolioService } = await import('@/lib/database');
+          
+          const portfolioItems = await PortfolioService.getUserPortfolioItems(userId, {
+            showInPortfolio: true,
+            deleted: false,
+            orderBy: 'createdAt',
+            orderDirection: 'desc',
+          });
+
+          if (portfolioItems.length > 0) {
+            const mappedItems = portfolioItems.map((item) => ({
               ...item,
               imageUrl: item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '',
-              createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
-            })); // REMOVED FILTER - show ALL items
-            setPortfolio(portfolioItems);
-            console.log('📋 Portfolio loaded for user:', userId, portfolioItems.length, 'items', {
-              totalInFirestore: (data.portfolio || []).length,
-              withImages: portfolioItems.length,
-              items: portfolioItems.map((i: any) => ({ id: i.id, title: i.title, imageUrl: i.imageUrl ? 'has image' : 'no image' }))
-            });
+              createdAt: item.createdAt instanceof Date ? item.createdAt : (item.createdAt as any)?.toDate?.() || new Date()
+            }));
+            setPortfolio(mappedItems);
+            console.log('📋 Portfolio loaded from portfolioItems collection for user:', userId, mappedItems.length, 'items');
+          } else {
+            // BACKWARD COMPATIBILITY: Fallback to userProfiles.portfolio array
+            console.log('📋 No items in portfolioItems, checking userProfiles.portfolio (backward compatibility)...');
+            const userDoc = await getDoc(doc(db, 'userProfiles', userId));
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              const portfolioItems = (data.portfolio || []).map((item: any) => ({
+                ...item,
+                imageUrl: item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '',
+                createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
+              }));
+              setPortfolio(portfolioItems);
+              console.log('📋 Portfolio loaded from userProfiles.portfolio (legacy) for user:', userId, portfolioItems.length, 'items');
+            }
           }
         } catch (error) {
           console.error('Error fetching portfolio:', error);

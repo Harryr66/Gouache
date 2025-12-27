@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { doc, updateDoc, getDoc, serverTimestamp, collection, addDoc, setDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
+import { PortfolioService, PortfolioItem as ServicePortfolioItem } from '@/lib/database';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/auth-provider';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -249,8 +250,8 @@ export function PortfolioManager() {
         return;
       }
 
-      // Helper function to map portfolio items (deferred to avoid blocking)
-      const mapPortfolioItem = (item: any, index: number): PortfolioItem => {
+      // Helper function to map portfolio items to local interface
+      const mapPortfolioItem = (item: ServicePortfolioItem | any, index?: number): PortfolioItem => {
         let createdAt: Date;
         if (item.createdAt?.toDate) {
           createdAt = item.createdAt.toDate();
@@ -263,7 +264,7 @@ export function PortfolioManager() {
         const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
 
         return {
-          id: item.id || `portfolio-${Date.now()}-${index}`,
+          id: item.id || `portfolio-${Date.now()}-${index || 0}`,
           imageUrl: imageUrl,
           title: item.title || 'Untitled Artwork',
           description: item.description || '',
@@ -275,55 +276,59 @@ export function PortfolioManager() {
         };
       };
 
-      // First, try to use portfolio from user object if available (faster)
-      if (user.portfolio && Array.isArray(user.portfolio) && user.portfolio.length > 0) {
-        const userPortfolio = user.portfolio;
-        console.log('📋 PortfolioManager: Using portfolio from user object', userPortfolio.length);
-        
-        // Process immediately - the operations are fast enough for small arrays
-        // Filter to only show items where showInPortfolio is true (or undefined for backward compatibility)
-        const mappedFromUser = userPortfolio
-          .filter((item: any) => item.showInPortfolio !== false) // Show if true or undefined
-          .map(mapPortfolioItem);
-        mappedFromUser.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
-        console.log('✅ PortfolioManager: Setting portfolio items from user object', mappedFromUser.length);
-        setPortfolioItems(mappedFromUser);
-      }
-
-      // Always also fetch from Firestore to ensure we have the latest
       try {
+        // NEW: Load from portfolioItems collection (primary source)
+        const portfolioItems = await PortfolioService.getUserPortfolioItems(user.id, {
+          showInPortfolio: true,
+          deleted: false,
+          orderBy: 'createdAt',
+          orderDirection: 'desc',
+        });
+
+        if (portfolioItems.length > 0) {
+          const mappedItems = portfolioItems.map(mapPortfolioItem);
+          console.log('📋 PortfolioManager: Loaded portfolio from portfolioItems collection', {
+            userId: user.id,
+            count: mappedItems.length,
+            items: mappedItems.slice(0, 5).map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
+          });
+          setPortfolioItems(mappedItems);
+          return; // Successfully loaded from new collection
+        }
+
+        // BACKWARD COMPATIBILITY: Fallback to userProfiles.portfolio array
+        console.log('📋 PortfolioManager: No items in portfolioItems, checking userProfiles.portfolio (backward compatibility)');
         const userDoc = await getDoc(doc(db, 'userProfiles', user.id));
         if (userDoc.exists()) {
           const data = userDoc.data();
           const rawPortfolio = data.portfolio || [];
           
-          // Filter to only show items where showInPortfolio is true (or undefined for backward compatibility)
-          // Process immediately
-          const mappedItems = rawPortfolio
-            .filter((item: any) => item.showInPortfolio !== false) // Show if true or undefined
-            .map(mapPortfolioItem);
-          mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
+          if (rawPortfolio.length > 0) {
+            const mappedItems = rawPortfolio
+              .filter((item: any) => item.showInPortfolio !== false)
+              .map(mapPortfolioItem);
+            mappedItems.sort((a: PortfolioItem, b: PortfolioItem) => b.createdAt.getTime() - a.createdAt.getTime());
 
-          console.log('📋 PortfolioManager: Loaded portfolio from Firestore', {
-            userId: user.id,
-            rawPortfolioCount: rawPortfolio.length,
-            mappedCount: mappedItems.length,
-            items: mappedItems.slice(0, 5).map((i: PortfolioItem) => ({ id: i.id, title: i.title, hasImage: !!i.imageUrl }))
-          });
-
-          console.log('✅ PortfolioManager: Setting portfolio items from Firestore', mappedItems.length);
-          setPortfolioItems(mappedItems);
-        } else {
-          setPortfolioItems([]);
+            console.log('📋 PortfolioManager: Loaded portfolio from userProfiles.portfolio (legacy)', {
+              userId: user.id,
+              rawPortfolioCount: rawPortfolio.length,
+              mappedCount: mappedItems.length,
+            });
+            setPortfolioItems(mappedItems);
+            return;
+          }
         }
+
+        // No portfolio items found
+        setPortfolioItems([]);
       } catch (error) {
-        console.error('Error loading portfolio from Firestore:', error);
+        console.error('Error loading portfolio:', error);
         setPortfolioItems([]);
       }
     };
 
     loadPortfolio();
-  }, [user?.id, user?.portfolio]);
+  }, [user?.id]);
 
   const compressImage = (file: File): Promise<File> => {
     return new Promise((resolve) => {
@@ -481,82 +486,72 @@ export function PortfolioManager() {
         createdAt: portfolioItem.createdAt
       });
 
-      // Read current portfolio from Firestore to ensure we have the latest data
-      const userDocRef = doc(db, 'userProfiles', user.id);
-      console.log('🔍 Reading from Firestore document:', {
-        collection: 'userProfiles',
-        documentId: user.id,
-        userName: user.displayName || user.username
-      });
-      
-      const userDoc = await getDoc(userDocRef);
-      const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
-      
-      console.log('📖 Firestore document read result:', {
-        exists: userDoc.exists(),
-        documentId: userDoc.id,
-        hasPortfolio: !!userDoc.data()?.portfolio,
-        portfolioType: Array.isArray(userDoc.data()?.portfolio) ? 'array' : typeof userDoc.data()?.portfolio,
-        portfolioLength: currentPortfolio.length
-      });
-      
-      console.log('📖 Current portfolio from Firestore:', {
-        exists: userDoc.exists(),
-        currentCount: currentPortfolio.length,
-        currentItems: currentPortfolio.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          hasImage: !!item.imageUrl
-        }))
-      });
-      
-      // Check if item with same ID already exists
-      const existingIndex = currentPortfolio.findIndex((item: any) => item.id === portfolioItem.id);
-      
-      // Add or update the portfolio item
-      let updatedPortfolio;
-      if (existingIndex >= 0) {
-        // Update existing item
-        updatedPortfolio = [...currentPortfolio];
-        updatedPortfolio[existingIndex] = portfolioItem;
-        console.log('📝 Updating existing portfolio item at index:', existingIndex);
-      } else {
-        // Add new item
-        updatedPortfolio = [...currentPortfolio, portfolioItem];
-        console.log('➕ Adding new portfolio item, total items:', updatedPortfolio.length);
-      }
-
-      console.log('💾 Saving portfolio to Firestore:', {
+      // NEW: Save to portfolioItems collection
+      console.log('💾 Saving portfolio item to portfolioItems collection:', {
         userId: user.id,
         itemId: portfolioItem.id,
         itemTitle: portfolioItem.title,
-        totalItems: updatedPortfolio.length,
-        portfolioStructure: updatedPortfolio.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          imageUrl: item.imageUrl ? 'has image' : 'no image',
-          createdAt: item.createdAt ? (item.createdAt instanceof Date ? item.createdAt.toISOString() : 'not a date') : 'missing'
-        }))
       });
 
-      // Update user profile with the complete portfolio array
-      console.log('💾 Writing to Firestore:', {
-        documentId: user.id,
-        userName: user.displayName || user.username,
-        portfolioArrayLength: updatedPortfolio.length,
-        newItemId: portfolioItem.id,
-        newItemTitle: portfolioItem.title,
-        newItemImageUrl: portfolioItem.imageUrl ? 'has image' : 'MISSING'
-      });
-      
       try {
-        await updateDoc(userDocRef, {
-          portfolio: updatedPortfolio,
-          updatedAt: now
-        });
-        console.log('✅ Firestore updateDoc completed successfully');
+        // Check if item already exists
+        const existingItem = await PortfolioService.getPortfolioItem(portfolioItem.id);
+        
+        const portfolioItemData: Omit<ServicePortfolioItem, 'id' | 'createdAt' | 'updatedAt'> = {
+          userId: user.id,
+          imageUrl: portfolioItem.imageUrl,
+          title: portfolioItem.title,
+          description: portfolioItem.description,
+          medium: portfolioItem.medium,
+          dimensions: portfolioItem.dimensions,
+          year: portfolioItem.year,
+          tags: portfolioItem.tags,
+          showInPortfolio: true,
+          showInShop: newItem.isForSale || false,
+          isForSale: newItem.isForSale || false,
+          deleted: false,
+          createdAt: now,
+          updatedAt: now,
+        };
 
-        // If marked for sale, also add to artworks collection
+        // Add sale-related fields if for sale
+        if (newItem.isForSale) {
+          if (newItem.priceType === 'fixed' && newItem.price) {
+            portfolioItemData.price = parseFloat(newItem.price) * 100; // Convert to cents
+            portfolioItemData.currency = newItem.currency || 'USD';
+          } else if (newItem.priceType === 'contact') {
+            portfolioItemData.priceType = 'contact';
+            portfolioItemData.contactForPrice = true;
+          }
+          portfolioItemData.deliveryScope = newItem.deliveryScope || 'worldwide';
+          if (newItem.deliveryScope === 'specific' && newItem.deliveryCountries) {
+            portfolioItemData.deliveryCountries = newItem.deliveryCountries.split(',').map(c => c.trim());
+          }
+          portfolioItemData.artworkType = newItem.artworkType || 'original';
+        }
+
+        if (existingItem) {
+          // Update existing item
+          await PortfolioService.updatePortfolioItem(portfolioItem.id, portfolioItemData);
+          console.log('✅ Portfolio item updated in portfolioItems collection');
+        } else {
+          // Create new item (use existing ID if provided, otherwise let Firestore generate)
+          if (portfolioItem.id) {
+            // Use setDoc to use the existing ID
+            await setDoc(doc(db, 'portfolioItems', portfolioItem.id), {
+              ...portfolioItemData,
+              id: portfolioItem.id,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+          } else {
+            // Let Firestore generate ID
+            await PortfolioService.createPortfolioItem(portfolioItemData);
+          }
+          console.log('✅ Portfolio item created in portfolioItems collection');
+        }
+
+        // If marked for sale, also add to artworks collection (for backward compatibility with shop)
         if (newItem.isForSale) {
           try {
             const artworkData: any = {
@@ -599,47 +594,15 @@ export function PortfolioManager() {
 
             // Use setDoc with the artwork ID to ensure it uses the same ID
             await setDoc(doc(db, 'artworks', portfolioItem.id), artworkData);
-            console.log('✅ Artwork added to artworks collection for shop');
+            console.log('✅ Artwork added to artworks collection for shop (backward compatibility)');
           } catch (artworkError) {
             console.error('⚠️ Failed to add artwork to artworks collection (non-critical):', artworkError);
             // Don't throw - portfolio save is more important
           }
         }
       } catch (updateError) {
-        console.error('❌ Firestore updateDoc failed:', updateError);
+        console.error('❌ Failed to save portfolio item:', updateError);
         throw updateError;
-      }
-
-      // Verify the write by reading back
-      console.log('🔍 Verifying write by reading back from Firestore...');
-      const verifyDoc = await getDoc(userDocRef);
-      const verifiedPortfolio = verifyDoc.exists() ? (verifyDoc.data().portfolio || []) : [];
-      
-      console.log('✅ Portfolio saved and verified:', {
-        documentId: verifyDoc.id,
-        exists: verifyDoc.exists(),
-        verifiedCount: verifiedPortfolio.length,
-        expectedCount: updatedPortfolio.length,
-        verifiedItems: verifiedPortfolio.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          imageUrl: item.imageUrl || 'MISSING',
-          imageUrlType: typeof item.imageUrl,
-          hasImage: !!item.imageUrl,
-          allKeys: Object.keys(item || {})
-        })),
-        fullPortfolioJSON: JSON.stringify(verifiedPortfolio, null, 2)
-      });
-      
-      // Check if the new item is in the verified portfolio
-      const newItemFound = verifiedPortfolio.some((item: any) => item.id === portfolioItem.id);
-      if (!newItemFound) {
-        console.error('❌ CRITICAL: New portfolio item NOT found in verified portfolio!', {
-          expectedItemId: portfolioItem.id,
-          verifiedItemIds: verifiedPortfolio.map((item: any) => item.id)
-        });
-      } else {
-        console.log('✅ New portfolio item confirmed in Firestore');
       }
 
       // Update local state immediately for instant feedback
@@ -731,13 +694,43 @@ export function PortfolioManager() {
         tags: updatedTags
       };
       
-      // Remove old item and add updated item
-      const updatedItems = portfolioItems.map(p => p.id === item.id ? updatedItem : p);
+      // NEW: Update in portfolioItems collection
+      const updateData: Partial<ServicePortfolioItem> = {
+        title: item.title,
+        description: item.description,
+        medium: item.medium,
+        dimensions: item.dimensions,
+        year: item.year,
+        tags: updatedTags,
+      };
+
+      // Add sale info if provided
+      if (editingItemSaleInfo) {
+        updateData.isForSale = editingItemSaleInfo.isForSale || false;
+        updateData.showInShop = editingItemSaleInfo.isForSale || false;
+        updateData.sold = editingItemSaleInfo.sold || false;
+        updateData.artworkType = editingItemSaleInfo.artworkType || 'original';
+        
+        if (editingItemSaleInfo.isForSale) {
+          if (editingItemSaleInfo.priceType === 'fixed' && editingItemSaleInfo.price) {
+            updateData.price = parseFloat(editingItemSaleInfo.price) * 100;
+            updateData.currency = editingItemSaleInfo.currency || 'USD';
+          } else if (editingItemSaleInfo.priceType === 'contact') {
+            updateData.priceType = 'contact';
+            updateData.contactForPrice = true;
+          }
+          updateData.deliveryScope = editingItemSaleInfo.deliveryScope || 'worldwide';
+          if (editingItemSaleInfo.deliveryScope === 'specific' && editingItemSaleInfo.deliveryCountries) {
+            updateData.deliveryCountries = editingItemSaleInfo.deliveryCountries.split(',').map((c: string) => c.trim()).filter(Boolean);
+          }
+        }
+      }
+
+      await PortfolioService.updatePortfolioItem(item.id, updateData);
+      console.log('✅ Portfolio item updated in portfolioItems collection');
       
-      await updateDoc(doc(db, 'userProfiles', user.id), {
-        portfolio: updatedItems,
-        updatedAt: serverTimestamp()
-      });
+      // Update local state
+      const updatedItems = portfolioItems.map(p => p.id === item.id ? updatedItem : p);
 
       // Update artworks collection if sale info changed
       if (editingItemSaleInfo !== null) {
@@ -848,29 +841,32 @@ export function PortfolioManager() {
         }
       }
 
-      // Read current portfolio from Firestore
-      const userDocRef = doc(db, 'userProfiles', user.id);
-      const userDoc = await getDoc(userDocRef);
-      const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
+      // NEW: Soft delete from portfolioItems collection
+      await PortfolioService.deletePortfolioItem(item.id);
+      console.log('✅ Portfolio item deleted from portfolioItems collection');
       
-      // Remove item from portfolio array
-      const updatedPortfolio = currentPortfolio.filter((p: any) => p.id !== item.id);
-      
-      console.log('🗑️ Deleting portfolio item:', {
-        itemId: item.id,
-        beforeCount: currentPortfolio.length,
-        afterCount: updatedPortfolio.length
-      });
-
-      // Update Firestore with the filtered portfolio
-      await updateDoc(userDocRef, {
-        portfolio: updatedPortfolio,
-        updatedAt: new Date()
-      });
+      // BACKWARD COMPATIBILITY: Also remove from userProfiles.portfolio array if it exists
+      try {
+        const userDocRef = doc(db, 'userProfiles', user.id);
+        const userDoc = await getDoc(userDocRef);
+        const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
+        
+        // Remove item from portfolio array (backward compatibility)
+        const updatedPortfolio = currentPortfolio.filter((p: any) => p.id !== item.id);
+        
+        await updateDoc(userDocRef, {
+          portfolio: updatedPortfolio,
+          updatedAt: serverTimestamp()
+        });
+        console.log('✅ Portfolio item removed from userProfiles.portfolio (backward compatibility)');
+      } catch (legacyError) {
+        console.warn('⚠️ Failed to update legacy userProfiles.portfolio (non-critical):', legacyError);
+      }
 
       // Refresh user data to update the portfolio in the auth context
       await refreshUser();
 
+      // Update local state
       setPortfolioItems(prev => prev.filter(p => p.id !== item.id));
 
       toast({

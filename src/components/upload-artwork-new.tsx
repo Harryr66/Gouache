@@ -13,7 +13,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { useContent } from '@/providers/content-provider';
 import { useRouter } from 'next/navigation';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -180,12 +180,11 @@ export function UploadArtworkNew() {
       // Add to posts/artworks collections via ContentProvider
       await addContent(post, newArtwork);
 
-      // Update user's portfolio in Firestore
-      const userDocRef = doc(db, 'userProfiles', user.id);
-      const userDoc = await getDoc(userDocRef);
-      const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
-
-      const portfolioItem: any = {
+      // NEW: Update user's portfolio in portfolioItems collection
+      const { PortfolioService } = await import('@/lib/database');
+      
+      const portfolioItemData: any = {
+        userId: user.id,
         id: newArtwork.id,
         imageUrl: primaryImageUrl,
         supportingImages: supportingImages,
@@ -196,33 +195,49 @@ export function UploadArtworkNew() {
         showInShop: isForSale,
         isForSale: isForSale,
         artworkType: isOriginal ? 'original' : 'print',
-        createdAt: new Date(),
-        updatedAt: new Date(),
         likes: 0,
         commentsCount: 0,
         tags: [],
         aiAssistance: 'none',
         isAI: false,
+        deleted: false,
       };
 
       // Add sale-related fields to portfolio item if for sale
       if (isForSale) {
         if (priceType === 'fixed' && price.trim()) {
-          portfolioItem.price = parseFloat(price) * 100;
-          portfolioItem.currency = 'USD';
+          portfolioItemData.price = parseFloat(price) * 100;
+          portfolioItemData.currency = 'USD';
         } else if (priceType === 'contact') {
-          portfolioItem.priceType = 'contact';
-          portfolioItem.contactForPrice = true;
+          portfolioItemData.priceType = 'contact';
+          portfolioItemData.contactForPrice = true;
         }
-        portfolioItem.deliveryScope = deliveryScope;
+        portfolioItemData.deliveryScope = deliveryScope;
       }
 
-      const updatedPortfolio = [...currentPortfolio, portfolioItem];
-
-      await updateDoc(userDocRef, {
-        portfolio: updatedPortfolio,
-        updatedAt: new Date(),
+      // Use setDoc to use the existing ID
+      await setDoc(doc(db, 'portfolioItems', newArtwork.id), {
+        ...portfolioItemData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
+      console.log('✅ Portfolio item created in portfolioItems collection');
+
+      // BACKWARD COMPATIBILITY: Also update userProfiles.portfolio array
+      try {
+        const userDocRef = doc(db, 'userProfiles', user.id);
+        const userDoc = await getDoc(userDocRef);
+        const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
+        const updatedPortfolio = [...currentPortfolio, portfolioItemData];
+        
+        await updateDoc(userDocRef, {
+          portfolio: updatedPortfolio,
+          updatedAt: new Date(),
+        });
+        console.log('✅ Portfolio item added to userProfiles.portfolio (backward compatibility)');
+      } catch (legacyError) {
+        console.warn('⚠️ Failed to update legacy userProfiles.portfolio (non-critical):', legacyError);
+      }
 
       // Use queueMicrotask to defer all state updates and navigation
       queueMicrotask(() => {
