@@ -477,7 +477,7 @@ export function HueChatbot() {
   }, [isDragging, dragStart, isExpanded, isMobile, touchStart]);
 
   const handleSend = async () => {
-    if (!errorReport || !userContext.trim() || isSubmitting) return;
+    if (!errorReport || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
@@ -488,21 +488,36 @@ export function HueChatbot() {
         },
         body: JSON.stringify({
           ...errorReport,
-          userContext: userContext.trim().substring(0, 500), // Cap at 500 chars
+          userContext: userContext.trim() ? userContext.trim().substring(0, 500) : undefined, // Optional context, cap at 500 chars
         }),
       });
 
       if (response.ok) {
         setIsSubmitted(true);
+        toast({
+          title: 'Report sent',
+          description: 'Thank you for reporting this error. We\'ll look into it.',
+        });
         setTimeout(() => {
           setIsExpanded(false);
           resetAllState(); // Reset all state after error report is submitted
         }, 3000);
       } else {
-        console.error('Failed to submit error report');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to submit error report:', response.status, errorData);
+        toast({
+          title: 'Failed to send report',
+          description: errorData.error || 'Please try again later.',
+          variant: 'destructive',
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting report:', error);
+      toast({
+        title: 'Failed to send report',
+        description: error.message || 'Network error. Please check your connection and try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -888,7 +903,7 @@ export function HueChatbot() {
                 </div>
                 <Button
                   onClick={handleSend}
-                  disabled={!userContext.trim() || isOverLimit || isSubmitting}
+                  disabled={isOverLimit || isSubmitting}
                   className="w-full gradient-button"
                 >
                   <Send className="h-4 w-4 mr-2" />
