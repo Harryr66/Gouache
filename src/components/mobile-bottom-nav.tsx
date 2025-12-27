@@ -29,7 +29,7 @@ export function MobileBottomNav() {
   }, [pathname]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-[60] border-t bg-background/95 backdrop-blur-sm md:hidden">
       <div className="flex h-16 items-center justify-around">
         {activeStates.map((item) => {
           return (
