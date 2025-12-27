@@ -1763,7 +1763,7 @@ function DiscoverPageContent() {
   }, [loading, isDev]);
 
   return (
-    <div className="min-h-screen bg-background relative" style={{ pointerEvents: 'auto' }}>
+    <div className="min-h-screen bg-background relative">
       {/* Preload tiles invisibly during loading */}
       {shouldPreloadTiles && (
         <div className="fixed inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden' }} aria-hidden="true">
@@ -1827,7 +1827,7 @@ function DiscoverPageContent() {
       {/* Loading overlay - SINGLE instance, only shown when loading */}
       {/* Ensure it doesn't block navigation - headers are z-[60], overlay is z-50 */}
       {/* Use conditional rendering to completely remove from DOM when not loading */}
-      {loading && (
+      {loading ? (
         <div 
           className="fixed inset-0 bg-background flex items-center justify-center z-50" 
           style={{ 
@@ -1842,7 +1842,7 @@ function DiscoverPageContent() {
             <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={1000} />
           </div>
         </div>
-      )}
+      ) : null}
       <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden">
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
