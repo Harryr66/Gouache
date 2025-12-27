@@ -500,8 +500,8 @@ const generateArtistContent = (artist: Artist) => ({
       // Try to play when video can play (with 50% autoplay rule)
       const tryPlay = () => {
         if (video.readyState >= 2 && video.paused) {
-          // Small delay to ensure visible videos are registered before checking canAutoplay
-          setTimeout(() => {
+          // Use requestAnimationFrame to ensure registration has completed
+          requestAnimationFrame(() => {
             // Check if this video can autoplay (50% rule)
             if (canAutoplay(artwork.id) && requestPlay(artwork.id)) {
               video.play().catch((error) => {
@@ -512,14 +512,12 @@ const generateArtistContent = (artist: Artist) => ({
               // Can't autoplay - keep paused, show play button
               setIsVideoPaused(true);
             }
-          }, 100); // Delay to ensure registration completes
+          });
         }
       };
       
-      // Try immediately with delay
-      const timeoutId = setTimeout(() => {
-        tryPlay();
-      }, 150);
+      // Try immediately and on various events
+      tryPlay();
       
       // Try immediately and on various events
       video.addEventListener('canplay', tryPlay);
