@@ -81,12 +81,27 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
   const videoUrl = (artwork as any).videoVariants?.thumbnail || (artwork as any).videoUrl;
   // Full quality URL for expanded view (720p)
   const fullVideoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
-  // For videos, ensure we have a poster image - use imageUrl, supportingImages, or fallback
-  const imageUrl = artwork.imageUrl || 
-                   (artwork as any).supportingImages?.[0] || 
-                   (artwork as any).images?.[0] || 
-                   (artwork as any).mediaUrls?.[0] || 
-                   'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
+  // For videos, prioritize video poster/thumbnail images - check for video-specific poster first
+  // For videos, we need to ensure we have a poster/thumbnail image to display
+  const imageUrl = hasVideo 
+    ? (
+        // For videos, prioritize: imageUrl (poster), then try to use video thumbnail as poster
+        artwork.imageUrl || 
+        (artwork as any).supportingImages?.[0] || 
+        (artwork as any).images?.[0] || 
+        (artwork as any).mediaUrls?.[0] || 
+        // If no explicit poster, we'll need to show the video element with its poster attribute
+        // But for now, use a placeholder that indicates it's a video
+        undefined
+      )
+    : (
+        // For images, use standard imageUrl
+        artwork.imageUrl || 
+        (artwork as any).supportingImages?.[0] || 
+        (artwork as any).images?.[0] || 
+        (artwork as any).mediaUrls?.[0] || 
+        'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800'
+      );
   
   // Detect media aspect ratio for dynamic height calculation (Pinterest-style masonry)
   useEffect(() => {
@@ -620,32 +635,57 @@ const generateArtistContent = (artist: Artist) => ({
           {hasVideo && videoUrl ? (
             <>
               {/* Poster image - ALWAYS show immediately, stays visible until video is ready */}
-              {imageUrl ? (
+              {/* For videos, always try to show a poster/thumbnail - use imageUrl if available, otherwise use video's first frame via poster attribute */}
+              {(imageUrl || videoUrl) ? (
                 <>
-                  <Image
-                    src={imageUrl}
-                    alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
-                    fill
-                    className={`object-cover transition-opacity duration-500 absolute inset-0 z-10 pointer-events-none ${isVideoLoaded && !videoError ? 'opacity-0' : 'opacity-100'}`}
-                    loading="eager"
-                    priority={true}
-                    onLoad={() => {
-                      setIsImageLoaded(true);
-                      // Call onImageReady if this is in initial viewport (for preloading)
-                      // Pass true for video posters so we can track them separately
-                      if (isInitialViewport && onImageReady) {
-                        onImageReady(true); // true = this is a video poster
-                      }
-                    }}
-                    onError={() => {
-                      setImageError(true);
-                      setIsImageLoaded(true);
-                      // Still call onImageReady even on error (to not block loading)
-                      if (isInitialViewport && onImageReady) {
-                        onImageReady(true); // true = this is a video poster
-                      }
-                    }}
-                  />
+                  {imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
+                      fill
+                      className={`object-cover transition-opacity duration-500 absolute inset-0 z-10 pointer-events-none ${isVideoLoaded && !videoError ? 'opacity-0' : 'opacity-100'}`}
+                      loading="eager"
+                      priority={true}
+                      onLoad={() => {
+                        setIsImageLoaded(true);
+                        // Call onImageReady if this is in initial viewport (for preloading)
+                        // Pass true for video posters so we can track them separately
+                        if (isInitialViewport && onImageReady) {
+                          onImageReady(true); // true = this is a video poster
+                        }
+                      }}
+                      onError={() => {
+                        setImageError(true);
+                        setIsImageLoaded(true);
+                        // Still call onImageReady even on error (to not block loading)
+                        if (isInitialViewport && onImageReady) {
+                          onImageReady(true); // true = this is a video poster
+                        }
+                      }}
+                    />
+                  ) : (
+                    // If no explicit poster image, show a hidden video element to extract first frame as thumbnail
+                    <video
+                      src={videoUrl}
+                      className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none opacity-100"
+                      preload="metadata"
+                      muted
+                      playsInline
+                      onLoadedMetadata={() => {
+                        setIsImageLoaded(true);
+                        if (isInitialViewport && onImageReady) {
+                          onImageReady(true);
+                        }
+                      }}
+                      onError={() => {
+                        setImageError(true);
+                        setIsImageLoaded(true);
+                        if (isInitialViewport && onImageReady) {
+                          onImageReady(true);
+                        }
+                      }}
+                    />
+                  )}
                   {/* Error state for video poster */}
                   {imageError && (
                     <div className="absolute inset-0 bg-muted flex items-center justify-center z-15 pointer-events-none">
@@ -656,7 +696,7 @@ const generateArtistContent = (artist: Artist) => ({
                   )}
                 </>
               ) : (
-                // Fallback: show loading placeholder if no imageUrl
+                // Fallback: show loading placeholder if no imageUrl or videoUrl
                 <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10 pointer-events-none">
                   <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 </div>
