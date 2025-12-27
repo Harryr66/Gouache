@@ -108,28 +108,59 @@ export function HueChatbot() {
 
       // For authenticated users, use Firestore
       const userRef = doc(db, 'userProfiles', user.id);
-      const unsubscribe = onSnapshot(
-        userRef,
-        (docSnap) => {
-          if (docSnap.exists()) {
-            const userData = docSnap.data();
-            const enabled = userData.preferences?.hueEnabled !== false; // Default to true
-            setHueEnabled(enabled);
+      let unsubscribe: (() => void) | undefined;
+      
+      try {
+        unsubscribe = onSnapshot(
+          userRef,
+          (docSnap) => {
+            if (docSnap.exists()) {
+              const userData = docSnap.data();
+              const enabled = userData.preferences?.hueEnabled !== false; // Default to true
+              setHueEnabled(enabled);
+            }
+          },
+          (error: any) => {
+            // Handle Firestore listener errors gracefully
+            // Suppress network/connection errors - these are expected and will auto-retry
+            const isNetworkError = 
+              error?.code === 'unavailable' ||
+              error?.code === 'deadline-exceeded' ||
+              error?.message?.includes('Load failed') ||
+              error?.message?.includes('network') ||
+              error?.message?.includes('connection') ||
+              error?.message?.includes('Listen/channel');
+            
+            if (isNetworkError) {
+              // Network errors are expected - Firestore will auto-retry
+              // Don't log as error, just use fallback silently
+              console.log('HueChatbot: Firestore listener connection issue (will retry):', error.code || error.message);
+            } else {
+              // Only log non-network errors
+              console.error('HueChatbot: Error listening to user profile:', error);
+            }
+            
+            // Fallback to localStorage or default if Firestore fails
+            const savedPreference = localStorage.getItem('hue-enabled');
+            if (savedPreference !== null) {
+              setHueEnabled(savedPreference === 'true');
+            } else {
+              // Default to true if no saved preference and Firestore fails
+              setHueEnabled(true);
+            }
           }
-        },
-        (error) => {
-          // Handle Firestore listener errors gracefully
-          console.error('HueChatbot: Error listening to user profile:', error);
-          // Fallback to localStorage or default if Firestore fails
-          const savedPreference = localStorage.getItem('hue-enabled');
-          if (savedPreference !== null) {
-            setHueEnabled(savedPreference === 'true');
-          } else {
-            // Default to true if no saved preference and Firestore fails
-            setHueEnabled(true);
-          }
+        );
+      } catch (error: any) {
+        // Catch any errors during listener setup
+        console.warn('HueChatbot: Failed to set up Firestore listener:', error);
+        // Fallback to localStorage
+        const savedPreference = localStorage.getItem('hue-enabled');
+        if (savedPreference !== null) {
+          setHueEnabled(savedPreference === 'true');
+        } else {
+          setHueEnabled(true);
         }
-      );
+      }
 
       return unsubscribe;
     };
