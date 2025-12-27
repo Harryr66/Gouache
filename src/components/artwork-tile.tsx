@@ -525,7 +525,6 @@ const generateArtistContent = (artist: Artist) => ({
       video.addEventListener('loadeddata', tryPlay);
       
       return () => {
-        clearTimeout(timeoutId);
         video.removeEventListener('canplay', tryPlay);
         video.removeEventListener('canplaythrough', tryPlay);
         video.removeEventListener('loadeddata', tryPlay);
