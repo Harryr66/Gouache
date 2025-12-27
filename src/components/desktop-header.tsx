@@ -29,7 +29,7 @@ export function DesktopHeader() {
   }, [pathname]);
 
   return (
-    <div className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6">
+    <div className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6 relative z-[60]">
       <Link href="/" className="flex items-center">
         <span className="sr-only">Gouache</span>
         <img
