@@ -193,17 +193,13 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
     // Navigate to artwork detail page only if we have an artwork id
     if (artwork?.id) {
       console.log('🎯 Artwork tile clicked:', artwork.id, artwork.title);
-      e.preventDefault?.();
-      e.stopPropagation?.();
+      // Don't prevent default - let navigation happen naturally
       // Record click engagement
       engagementTracker.recordClick(artwork.id);
-      // Use window.location as fallback if router.push doesn't work
-      try {
-        router.push(`/artwork/${encodeURIComponent(artwork.id)}`);
-      } catch (error) {
-        console.error('Router push failed, using window.location:', error);
-        window.location.href = `/artwork/${encodeURIComponent(artwork.id)}`;
-      }
+      // Use window.location directly for more reliable navigation
+      const artworkUrl = `/artwork/${encodeURIComponent(artwork.id)}`;
+      console.log('🚀 Navigating to:', artworkUrl);
+      window.location.href = artworkUrl;
       if (onClick) onClick();
     } else {
       console.warn('⚠️ Artwork tile clicked but no ID:', artwork);
