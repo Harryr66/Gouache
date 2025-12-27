@@ -511,32 +511,36 @@ function DiscoverPageContent() {
       return;
     }
     
-    // STRICT: Don't proceed if joke isn't complete - this is non-negotiable
+    // STRICT: Don't proceed if joke isn't complete - this is ABSOLUTELY NON-NEGOTIABLE
+    // The joke MUST finish completely before we even think about checking media
     if (!jokeComplete) {
-      console.log('⏳ Waiting for joke animation to complete...');
+      console.log('⏳ STRICT: Waiting for joke animation to complete - loading screen will NOT dismiss until joke finishes');
       return;
     }
     
     // STRICT: Ensure joke has been displayed for minimum time after completion
     if (!jokeCompleteTime) {
-      console.log('⏳ Waiting for joke completion timestamp...');
+      console.log('⏳ STRICT: Waiting for joke completion timestamp - loading screen will NOT dismiss');
       return;
     }
     
     const timeSinceJokeComplete = Date.now() - jokeCompleteTime;
+    
+    // STRICT: Must wait FULL 2 seconds AFTER joke completes before checking media
     if (timeSinceJokeComplete < MIN_JOKE_DISPLAY_TIME) {
       const remainingTime = MIN_JOKE_DISPLAY_TIME - timeSinceJokeComplete;
-      console.log(`⏳ Joke completed ${timeSinceJokeComplete}ms ago, waiting ${remainingTime}ms more to reach minimum ${MIN_JOKE_DISPLAY_TIME}ms...`);
+      console.log(`⏳ STRICT: Joke completed ${timeSinceJokeComplete}ms ago, waiting ${remainingTime}ms more to reach minimum ${MIN_JOKE_DISPLAY_TIME}ms - loading screen will NOT dismiss until this time passes`);
       const timeout = setTimeout(() => {
-        // After minimum display time, check if content is ready
-        console.log('✅ Minimum joke display time reached, checking content readiness...');
+        // After minimum display time, NOW we can check if content is ready
+        console.log('✅ Minimum joke display time (2s) reached, NOW checking content readiness...');
         checkContentReady();
       }, remainingTime);
       return () => clearTimeout(timeout);
     }
     
     // Only check content if joke has been displayed for minimum time
-    console.log('✅ Joke has been displayed for minimum time, checking content readiness...');
+    // This is the ONLY place where we check media readiness
+    console.log('✅ Joke has been displayed for minimum time (2s), checking content readiness...');
     checkContentReady();
     
     function checkContentReady() {
@@ -605,24 +609,24 @@ function DiscoverPageContent() {
         // After extended timeout, show content even if not all media loaded
         // This handles edge cases where media fails to load
         // BUT ONLY if joke has finished + minimum time has passed
-        if (!jokeCompleteTime) {
-          log('⚠️ Loading timeout reached but joke not complete yet, waiting...');
-          return; // Don't dismiss until joke is complete
+        if (!jokeComplete || !jokeCompleteTime) {
+          log('⚠️ STRICT: Loading timeout reached but joke not complete yet - waiting for joke to finish + 2s minimum');
+          return; // Don't dismiss until joke is complete + 2s
         }
         
         const timeSinceJoke = Date.now() - jokeCompleteTime;
         if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
-          log('⚠️ Loading timeout (12s) reached - showing content with partial media loaded (joke has finished + 2s minimum)');
+          log('⚠️ Loading timeout (40s) reached - showing content with partial media loaded (joke has finished + 2s minimum)');
           setLoading(false);
         } else {
-          log(`⚠️ Loading timeout reached but joke minimum time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms), waiting...`);
+          log(`⚠️ STRICT: Loading timeout reached but joke minimum time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms), waiting for joke + 2s...`);
           // Wait for joke minimum time, then dismiss
           setTimeout(() => {
             log('✅ Joke minimum time now met, dismissing loading screen');
             setLoading(false);
           }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
         }
-      }, 12000); // Increased to 12s to give media more time to load
+      }, 40000); // Increased to 40s to give ALL media time to load with retries
     }
     
     // Safety timeout: Force loading to false after 45 seconds maximum to prevent permanent blocking
