@@ -1969,8 +1969,8 @@ function DiscoverPageContent() {
                 Events
               </TabsTrigger>
             </TabsList>
-            {/* Filter Button - positioned next to tabs, aligned */}
-            <div className="flex items-center">
+            {/* Filter Button - positioned next to tabs, aligned - hidden on mobile */}
+            <div className="hidden md:flex items-center">
               {activeTab === 'artwork' ? (
                 <Button
                   variant="outline"
@@ -1995,31 +1995,19 @@ function DiscoverPageContent() {
           <TabsContent value="artwork" className="mt-0">
             {/* Search and Filter Bar */}
             <div className="mb-6 space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                {isMobile ? (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="flex-1"
-                    >
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1 justify-center" />
-                  </div>
-                ) : (
-                  <div className="flex gap-2 md:hidden">
-                    <Button
-                      variant="outline"
-                      onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                      className="shrink-0"
-                    >
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="shrink-0" />
-                  </div>
-                )}
-              </div>
+              {/* Mobile: Filter and View Toggle - mirror top row layout */}
+              {isMobile && (
+                <div className="flex items-center gap-3 w-full">
+                  <Button
+                    variant="outline"
+                    onClick={() => startTransition(() => setShowFilters(!showFilters))}
+                    className="shrink-0 h-10 px-3"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="shrink-0" />
+                </div>
+              )}
 
               {/* Filters Panel */}
               {showFilters && (
