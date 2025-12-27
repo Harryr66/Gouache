@@ -628,6 +628,7 @@ export default function ArtworkPage() {
                   artistId={artwork.artist.id}
                   artistName={artwork.artist.name}
                   artistHandle={artwork.artist.handle}
+                  artistAvatarUrl={artwork.artist.avatarUrl}
                   className="border"
                   compact
                 />
