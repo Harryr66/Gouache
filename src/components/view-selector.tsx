@@ -13,11 +13,11 @@ interface ViewSelectorProps {
 
 export function ViewSelector({ view, onViewChange, className }: ViewSelectorProps) {
   return (
-    <div className={cn('relative flex items-center bg-muted rounded-lg p-1', className)}>
+    <div className={cn('relative flex items-center bg-muted rounded-lg p-1 rounded-l-none', className)}>
       <button
         onClick={() => onViewChange('list')}
         className={cn(
-          'relative z-10 flex items-center justify-center h-10 px-4 md:px-6 rounded-md transition-all duration-200 text-sm font-medium',
+          'relative z-10 flex items-center justify-center h-10 px-4 md:px-6 rounded-md transition-all duration-200 text-sm font-medium flex-1',
           view === 'list'
             ? 'bg-background text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'
@@ -29,7 +29,7 @@ export function ViewSelector({ view, onViewChange, className }: ViewSelectorProp
       <button
         onClick={() => onViewChange('grid')}
         className={cn(
-          'relative z-10 flex items-center justify-center h-10 px-4 md:px-6 rounded-md transition-all duration-200 text-sm font-medium',
+          'relative z-10 flex items-center justify-center h-10 px-4 md:px-6 rounded-md transition-all duration-200 text-sm font-medium flex-1',
           view === 'grid'
             ? 'bg-background text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'
