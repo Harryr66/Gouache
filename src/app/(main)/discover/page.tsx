@@ -258,6 +258,141 @@ const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently Updated' }
 ];
 
+// Masonry grid component that fills columns sequentially from top to bottom
+function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
+  items: any[];
+  columnCount: number;
+  gap: number;
+  renderItem: (item: any) => React.ReactNode;
+  loadMoreRef: React.RefObject<HTMLDivElement>;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [positions, setPositions] = useState<Array<{ top: number; left: number; width: number }>>([]);
+
+  // Calculate positions for masonry layout
+  useEffect(() => {
+    if (!containerRef.current || columnCount === 0 || items.length === 0) {
+      setPositions([]);
+      return;
+    }
+
+    const calculatePositions = () => {
+      const containerWidth = containerRef.current!.offsetWidth;
+      const itemWidth = (containerWidth - (gap * (columnCount - 1))) / columnCount;
+      const columnHeights = new Array(columnCount).fill(0);
+      const newPositions: Array<{ top: number; left: number; width: number }> = [];
+
+      itemRefs.current.forEach((itemEl, index) => {
+        if (!itemEl || index >= items.length) return;
+
+        // Find shortest column
+        const shortestColumnIndex = columnHeights.reduce(
+          (minIndex, height, colIndex) => 
+            height < columnHeights[minIndex] ? colIndex : minIndex,
+          0
+        );
+
+        const itemHeight = itemEl.offsetHeight || 0;
+        const left = shortestColumnIndex * (itemWidth + gap);
+        const top = columnHeights[shortestColumnIndex];
+
+        newPositions.push({ top, left, width: itemWidth });
+        columnHeights[shortestColumnIndex] += itemHeight + gap;
+      });
+
+      setPositions(newPositions);
+    };
+
+    // Calculate positions after items render (use requestAnimationFrame for better timing)
+    let timeout: NodeJS.Timeout;
+    const scheduleCalculation = () => {
+      timeout = setTimeout(() => {
+        requestAnimationFrame(() => {
+          calculatePositions();
+        });
+      }, 150);
+    };
+    
+    scheduleCalculation();
+    
+    // Recalculate when images/videos load
+    const handleLoad = () => {
+      scheduleCalculation();
+    };
+    
+    // Set up load listeners on next frame to ensure DOM is ready
+    const observerTimeout = setTimeout(() => {
+      itemRefs.current.forEach((itemEl) => {
+        if (itemEl) {
+          const media = itemEl.querySelectorAll('img, video');
+          media.forEach((el) => {
+            const imgEl = el as HTMLImageElement;
+            const videoEl = el as HTMLVideoElement;
+            if ((imgEl.complete !== undefined && imgEl.complete) || (videoEl.readyState !== undefined && videoEl.readyState >= 2)) {
+              // Already loaded, trigger calculation
+              handleLoad();
+            } else {
+              el.addEventListener('load', handleLoad);
+              el.addEventListener('loadeddata', handleLoad);
+            }
+          });
+        }
+      });
+    }, 200);
+
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(observerTimeout);
+      itemRefs.current.forEach((itemEl) => {
+        if (itemEl) {
+          const media = itemEl.querySelectorAll('img, video');
+          media.forEach((el) => {
+            el.removeEventListener('load', handleLoad);
+            el.removeEventListener('loadeddata', handleLoad);
+          });
+        }
+      });
+    };
+  }, [items.length, columnCount, gap, items]);
+
+  const containerHeight = positions.length > 0 && itemRefs.current.length > 0
+    ? Math.max(...positions.map((pos, index) => {
+        const itemEl = itemRefs.current[index];
+        const itemHeight = itemEl?.offsetHeight || 0;
+        return pos.top + itemHeight;
+      }))
+    : 0;
+
+  return (
+    <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
+      {items.map((item, index) => {
+        const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
+        return (
+          <div
+            key={itemKey}
+            ref={(el) => { itemRefs.current[index] = el; }}
+            style={{
+              position: 'absolute',
+              top: positions[index]?.top ?? 0,
+              left: positions[index]?.left ?? 0,
+              width: positions[index]?.width || `${100 / columnCount}%`,
+              opacity: positions[index] ? 1 : 0, // Hide until positioned
+            }}
+          >
+            {renderItem(item)}
+          </div>
+        );
+      })}
+      <div 
+        ref={loadMoreRef} 
+        className="h-10 w-full" 
+        style={{ position: 'absolute', top: containerHeight, left: 0, right: 0 }} 
+      />
+    </div>
+  );
+}
+
 function DiscoverPageContent() {
   const isDev = process.env.NODE_ENV === 'development';
   const log = (...args: any[]) => { if (isDev) console.log(...args); };
@@ -275,9 +410,15 @@ function DiscoverPageContent() {
   const [artworkEngagements, setArtworkEngagements] = useState<Map<string, any>>(new Map());
   const [initialVideosReady, setInitialVideosReady] = useState(0);
   const [initialVideosTotal, setInitialVideosTotal] = useState(0);
+  const [initialImagesReady, setInitialImagesReady] = useState(0);
+  const [initialImagesTotal, setInitialImagesTotal] = useState(0);
   const initialVideoReadyRef = useRef<Set<string>>(new Set());
+  const initialImageReadyRef = useRef<Set<string>>(new Set());
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [jokeComplete, setJokeComplete] = useState(false);
+  const [artworksLoaded, setArtworksLoaded] = useState(false);
+  const [jokeCompleteTime, setJokeCompleteTime] = useState<number | null>(null);
+  const MIN_JOKE_DISPLAY_TIME = 4000; // Minimum 4 seconds to read joke after completion
   
   // Track when initial videos are ready
   const handleVideoReady = useCallback((artworkId: string) => {
@@ -287,74 +428,100 @@ function DiscoverPageContent() {
     }
   }, []);
   
+  // Track when initial images are ready
+  const handleImageReady = useCallback((artworkId: string) => {
+    if (!initialImageReadyRef.current.has(artworkId)) {
+      initialImageReadyRef.current.add(artworkId);
+      setInitialImagesReady(prev => prev + 1);
+    }
+  }, []);
+  
   // Handle joke completion
   const handleJokeComplete = useCallback(() => {
     setJokeComplete(true);
+    setJokeCompleteTime(Date.now());
   }, []);
   
-  // Set loading to false ONLY when videos are ready AND joke is complete
-  // ALWAYS wait for videos to be preloaded, even if joke finishes first
+  // Set loading to false ONLY when ALL conditions are met:
+  // 1. Joke is complete AND has been displayed for minimum time
+  // 2. Artworks are loaded
+  // 3. Initial images/videos are ready (or there are none to load)
   useEffect(() => {
-    if (initialVideosTotal === 0) {
-      // No videos to preload, wait for joke to complete
-      if (jokeComplete) {
-        setLoading(false);
-      } else {
-        // Fallback: if joke takes too long (3 seconds), show content anyway
-        // Joke animation typically takes ~2-3 seconds, so 3s is reasonable
-        const jokeTimeout = setTimeout(() => {
+    // Don't proceed if artworks aren't loaded yet
+    if (!artworksLoaded) {
+      return;
+    }
+    
+    // Don't proceed if joke isn't complete
+    if (!jokeComplete) {
+      return;
+    }
+    
+    // Ensure joke has been displayed for minimum time after completion
+    if (jokeCompleteTime) {
+      const timeSinceJokeComplete = Date.now() - jokeCompleteTime;
+      if (timeSinceJokeComplete < MIN_JOKE_DISPLAY_TIME) {
+        const remainingTime = MIN_JOKE_DISPLAY_TIME - timeSinceJokeComplete;
+        const timeout = setTimeout(() => {
+          // After minimum display time, check if content is ready
+          checkContentReady();
+        }, remainingTime);
+        return () => clearTimeout(timeout);
+      }
+    }
+    
+    // Check if content is ready
+    checkContentReady();
+    
+    function checkContentReady() {
+      // Calculate total media items (videos + images) that need to be ready
+      const totalMediaItems = initialVideosTotal + initialImagesTotal;
+      
+      if (totalMediaItems === 0) {
+        // No media to preload - content is ready
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+        }
+        setTimeout(() => {
           setLoading(false);
-        }, 3000); // Reduced from 10s to 3s - much faster
-        return () => clearTimeout(jokeTimeout);
+        }, 300); // Small delay for smooth transition
+        return;
       }
-      return;
-    }
-    
-    // Hide loading when videos are ready OR joke is complete (don't require both)
-    // Prefer videos ready, but don't wait forever for joke if videos are loaded
-    if (initialVideosReady >= initialVideosTotal) {
-      // All videos ready - show content (joke can finish in background)
+      
+      // Calculate how many media items are ready
+      const totalMediaReady = initialVideosReady + initialImagesReady;
+      
+      // Require ALL media items to be ready (100%, not 50%)
+      if (totalMediaReady >= totalMediaItems) {
+        // All media ready - content is ready
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+        }
+        setTimeout(() => {
+          setLoading(false);
+        }, 300); // Small delay for smooth transition
+        return;
+      }
+      
+      // Set a longer timeout as fallback - but this should rarely trigger
+      // if content is loading properly
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
-      // Small delay to ensure smooth transition
-      setTimeout(() => {
+      loadingTimeoutRef.current = setTimeout(() => {
+        // After extended timeout, show content even if not all media loaded
+        // This handles edge cases where media fails to load
+        log('⚠️ Loading timeout reached - showing content with partial media loaded');
         setLoading(false);
-      }, 200);
-      return;
+      }, 15000); // 15 second fallback - should be enough for content to load
     }
-    
-    // If joke completes before videos, wait a bit more for videos but don't wait forever
-    if (jokeComplete && initialVideosReady >= Math.max(1, Math.ceil(initialVideosTotal * 0.5))) {
-      // Joke done and at least 50% of videos ready - show content
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-      setTimeout(() => {
-        setLoading(false);
-      }, 200);
-      return;
-    }
-    
-    // Extended timeout: hide loading after 5 seconds max to ensure videos have time
-    // But prefer waiting for actual video readiness - videos are priority
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-    loadingTimeoutRef.current = setTimeout(() => {
-      // After timeout, show content if joke is complete OR if we have some videos ready
-      // Don't require both - prioritize showing content
-      if (jokeComplete || initialVideosReady > 0) {
-        setLoading(false);
-      }
-    }, 5000); // Reduced from 15s to 5s - much faster fallback
     
     return () => {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [initialVideosReady, initialVideosTotal, jokeComplete]);
+  }, [artworksLoaded, jokeComplete, jokeCompleteTime, initialVideosReady, initialVideosTotal, initialImagesReady, initialImagesTotal]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
@@ -714,24 +881,28 @@ function DiscoverPageContent() {
         }
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
+        setArtworksLoaded(true); // Mark artworks as loaded
         
-        // Count initial viewport videos for preloading (first 12 tiles)
-        const initialVideos = finalArtworks.filter((artwork: Artwork) => {
+        // Count initial viewport media for preloading (first 12 tiles)
+        const initialTiles = finalArtworks.slice(0, 12); // First 12 tiles (roughly first screen)
+        const initialVideos = initialTiles.filter((artwork: Artwork) => {
           const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
           return hasVideo;
-        }).slice(0, 12); // First 12 tiles (roughly first screen)
+        });
+        const initialImages = initialTiles.filter((artwork: Artwork) => {
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          const hasImage = artwork.imageUrl && !hasVideo; // Images only (not videos)
+          return hasImage;
+        });
         
         setInitialVideosTotal(initialVideos.length);
+        setInitialImagesTotal(initialImages.length);
         initialVideoReadyRef.current.clear();
+        initialImageReadyRef.current.clear();
         setInitialVideosReady(0);
+        setInitialImagesReady(0);
         setJokeComplete(false); // Reset joke completion state
-        
-        // If no videos to preload, set loading to false once joke completes
-        // (handled by useEffect, but ensure it doesn't get stuck)
-        if (initialVideos.length === 0) {
-          // No videos, so we don't need to wait for video preloading
-          // The useEffect will handle loading state based on joke completion
-        }
+        setJokeCompleteTime(null); // Reset joke completion time
         
         // Fetch engagement metrics for all artworks
         if (finalArtworks.length > 0) {
@@ -749,24 +920,28 @@ function DiscoverPageContent() {
         // Even on error, show placeholder artworks
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
         setArtworks(placeholderArtworks);
+        setArtworksLoaded(true); // Mark artworks as loaded even on error
         
-        // Count initial viewport videos for preloading (first 12 tiles)
-        const initialVideos = placeholderArtworks.filter((artwork: Artwork) => {
+        // Count initial viewport media for preloading (first 12 tiles)
+        const initialTiles = placeholderArtworks.slice(0, 12);
+        const initialVideos = initialTiles.filter((artwork: Artwork) => {
           const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
           return hasVideo;
-        }).slice(0, 12); // First 12 tiles (roughly first screen)
+        });
+        const initialImages = initialTiles.filter((artwork: Artwork) => {
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          const hasImage = artwork.imageUrl && !hasVideo;
+          return hasImage;
+        });
         
         setInitialVideosTotal(initialVideos.length);
+        setInitialImagesTotal(initialImages.length);
         initialVideoReadyRef.current.clear();
+        initialImageReadyRef.current.clear();
         setInitialVideosReady(0);
+        setInitialImagesReady(0);
         setJokeComplete(false); // Reset joke completion state
-        
-        // Ensure loading is set to false on error so content can display
-        // The useEffect will handle the final loading state based on videos/joke
-        // But we want to make sure it doesn't get stuck
-        setTimeout(() => {
-          setLoading(false);
-        }, 2000); // Fallback: hide loading after 2 seconds if error
+        setJokeCompleteTime(null); // Reset joke completion time
       }
     };
 
@@ -1032,11 +1207,23 @@ function DiscoverPageContent() {
 
   // Track items per row with state to handle window resize
   const [itemsPerRow, setItemsPerRow] = useState(6);
+  // Track column count for masonry layout (CSS columns)
+  const [columnCount, setColumnCount] = useState(5);
   
   useEffect(() => {
     const updateItemsPerRow = () => {
+      if (typeof window === 'undefined') return;
+      const width = window.innerWidth;
       const newItemsPerRow = getItemsPerRow();
       setItemsPerRow(newItemsPerRow);
+      
+      // Calculate column count for masonry layout based on screen width
+      let newColumnCount = 2; // mobile default
+      if (width >= 1280) newColumnCount = 5; // xl
+      else if (width >= 1024) newColumnCount = 4; // lg
+      else if (width >= 768) newColumnCount = 3; // md
+      setColumnCount(newColumnCount);
+      
       // Ensure visibleCount is a multiple of itemsPerRow when it changes
       setVisibleCount((prev) => {
         const completeRows = Math.floor(prev / newItemsPerRow);
@@ -1123,41 +1310,8 @@ function DiscoverPageContent() {
     // Keep artworks in their ranked order (engagement + view time based)
     // No shuffling - maintain stable positions based on ranking
     // Combined: ranked real artworks first, then placeholders
-    const combined = [...realItems, ...placeholderItems];
-    
-    // Interleave items across columns for uniform top alignment
-    // Instead of filling columns sequentially [col1: 1,2,3... col2: 4,5,6...],
-    // we interleave [col1: 1,3,5... col2: 2,4,6...] so tops align uniformly
-    const getColumnCount = () => {
-      if (typeof window === 'undefined') return 5;
-      const width = window.innerWidth;
-      if (width >= 1280) return 5; // xl
-      if (width >= 1024) return 5; // lg
-      if (width >= 768) return 4;  // md
-      if (width >= 640) return 3;  // sm
-      return 2; // mobile
-    };
-    
-    const columnCount = getColumnCount();
-    const interleaved: typeof combined = [];
-    const columns: (typeof combined)[] = Array.from({ length: columnCount }, () => []);
-    
-    // Distribute items across columns in a round-robin fashion
-    combined.forEach((item, index) => {
-      columns[index % columnCount].push(item);
-    });
-    
-    // Interleave items by taking one from each column in turn
-    const maxLength = Math.max(...columns.map(col => col.length));
-    for (let i = 0; i < maxLength; i++) {
-      for (let colIndex = 0; colIndex < columnCount; colIndex++) {
-        if (columns[colIndex][i]) {
-          interleaved.push(columns[colIndex][i]);
-        }
-      }
-    }
-    
-    const final = interleaved;
+    // Don't interleave - let CSS Grid handle natural column-by-column flow
+    const final = [...realItems, ...placeholderItems];
     
     const resultPlaceholderCount = placeholderItems.length;
     
@@ -1281,15 +1435,22 @@ function DiscoverPageContent() {
     fetchEvents();
   }, [theme, mounted]);
 
-  // Render initial tiles invisibly during loading so videos can preload
-  const shouldPreloadTiles = loading && initialVideosTotal > 0;
+  // Render initial tiles invisibly during loading so media can preload
+  const shouldPreloadTiles = loading && (initialVideosTotal > 0 || initialImagesTotal > 0);
   
   return (
     <div className="min-h-screen bg-background relative">
       {/* Preload tiles invisibly during loading */}
       {shouldPreloadTiles && (
         <div className="fixed inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden' }} aria-hidden="true">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-1">
+          <div 
+            className="gap-1"
+            style={{ 
+              columnCount: columnCount,
+              columnGap: '4px',
+              columnFill: 'auto' as const, // Fill columns sequentially from top to bottom
+            }}
+          >
             {visibleFilteredArtworks.slice(0, 12).map((item) => {
               const isAd = 'type' in item && item.type === 'ad';
               if (isAd) return null;
@@ -1297,14 +1458,16 @@ function DiscoverPageContent() {
               const artwork = item as Artwork;
               const isInitial = true;
               const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+              const hasImage = artwork.imageUrl && !hasVideo;
               
               return (
                 <ArtworkTile 
                   key={`preload-${artwork.id}`}
                   artwork={artwork} 
                   hideBanner={isMobile && artworkView === 'grid'}
-                  isInitialViewport={isInitial && hasVideo}
+                  isInitialViewport={isInitial && (hasVideo || hasImage)}
                   onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
+                  onImageReady={isInitial && hasImage ? () => handleImageReady(artwork.id) : undefined}
                 />
               );
             })}
@@ -1531,20 +1694,16 @@ function DiscoverPageContent() {
                 )}
               </div>
             ) : (artworkView === 'grid' || !isMobile) ? (
-              <div 
-                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-1"
-                style={{ 
-                  // Fill grid row by row from top to bottom
-                  gridAutoRows: 'auto'
-                }}
-              >
-                {visibleFilteredArtworks.map((item) => {
+              <MasonryGrid
+                items={visibleFilteredArtworks}
+                columnCount={columnCount}
+                gap={4}
+                renderItem={(item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
                   if (isAd) {
                     return (
                       <AdTile
-                        key={item.campaign.id}
                         campaign={item.campaign}
                         placement="discover"
                         userId={user?.id}
@@ -1561,17 +1720,15 @@ function DiscoverPageContent() {
                   
                   return (
                     <ArtworkTile 
-                      key={artwork.id} 
                       artwork={artwork} 
                       hideBanner={isMobile && artworkView === 'grid'}
                       isInitialViewport={isInitial && hasVideo}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
                     />
                   );
-                })}
-                {/* Infinite scroll sentinel - placed after grid content */}
-                <div ref={loadMoreRef} className="h-10 w-full" />
-              </div>
+                }}
+                loadMoreRef={loadMoreRef}
+              />
             ) : (
                 <div className="space-y-3">
                 {visibleFilteredArtworks.map((item) => {

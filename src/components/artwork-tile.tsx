@@ -47,10 +47,11 @@ interface ArtworkTileProps {
   className?: string;
   hideBanner?: boolean;
   onVideoReady?: () => void; // Callback when video is ready (for preloading)
+  onImageReady?: () => void; // Callback when image is ready (for preloading)
   isInitialViewport?: boolean; // Flag to indicate this is in initial viewport
 }
 
-export function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, isInitialViewport: propIsInitialViewport }: ArtworkTileProps) {
+export function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, isInitialViewport: propIsInitialViewport }: ArtworkTileProps) {
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
@@ -182,13 +183,16 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
   }, [hasVideo, videoUrl, artwork.id, registerVideo, requestPlay]);
 
 
-  const handleTileClick = () => {
+  const handleTileClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Navigate to artwork detail page only if we have an artwork id
     if (artwork?.id) {
+      console.log('🎯 Artwork tile clicked:', artwork.id, artwork.title);
       // Record click engagement
       engagementTracker.recordClick(artwork.id);
       router.push(`/artwork/${encodeURIComponent(artwork.id)}`);
       if (onClick) onClick();
+    } else {
+      console.warn('⚠️ Artwork tile clicked but no ID:', artwork);
     }
   };
 
@@ -543,17 +547,16 @@ const generateArtistContent = (artist: Artist) => ({
     <>
     <Card 
         ref={tileRef}
-        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col rounded-none ${className || ''}`}
+        className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-0 flex flex-col rounded-none relative break-inside-avoid mb-1 ${className || ''}`}
         onClick={handleTileClick}
         onMouseEnter={handleMouseEnter}
         style={{
-          // Dynamic height based on aspect ratio: height = width / aspectRatio
-          // Grid width is fixed by CSS grid, so we calculate height accordingly
-          // Using padding-bottom trick to maintain aspect ratio
+          width: '100%', // Fill column width completely
         }}
     >
       <div 
-        className="relative overflow-hidden w-full"
+        className="relative overflow-hidden w-full cursor-pointer"
+        onClick={handleTileClick}
         style={{
           // Use padding-bottom trick to maintain aspect ratio
           paddingBottom: `${(1 / aspectRatio) * 100}%`,
@@ -584,10 +587,18 @@ const generateArtistContent = (artist: Artist) => ({
                     priority={true}
                     onLoad={() => {
                       setIsImageLoaded(true);
+                      // Call onImageReady if this is in initial viewport (for preloading)
+                      if (isInitialViewport && onImageReady) {
+                        onImageReady();
+                      }
                     }}
                     onError={() => {
                       setImageError(true);
                       setIsImageLoaded(true);
+                      // Still call onImageReady even on error (to not block loading)
+                      if (isInitialViewport && onImageReady) {
+                        onImageReady();
+                      }
                     }}
                   />
                   {/* Error state for video poster */}
@@ -717,15 +728,25 @@ const generateArtistContent = (artist: Artist) => ({
                 className={`object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
                 loading="eager"
                 priority={false}
-                onLoad={() => setIsImageLoaded(true)}
+                onLoad={() => {
+                  setIsImageLoaded(true);
+                  // Call onImageReady if this is in initial viewport (for preloading)
+                  if (isInitialViewport && onImageReady) {
+                    onImageReady();
+                  }
+                }}
                 onError={() => {
                   setImageError(true);
                   setIsImageLoaded(true);
+                  // Still call onImageReady even on error (to not block loading)
+                  if (isInitialViewport && onImageReady) {
+                    onImageReady();
+                  }
                 }}
               />
               {/* Error state - show placeholder if media fails to load */}
               {imageError && (
-                <div className="absolute inset-0 bg-muted flex items-center justify-center z-20">
+                <div className="absolute inset-0 bg-muted flex items-center justify-center z-20 pointer-events-none">
                   <div className="text-muted-foreground text-xs text-center p-4">
                     Failed to load image
                   </div>
@@ -736,13 +757,13 @@ const generateArtistContent = (artist: Artist) => ({
         </div>
         {/* Sale status badge */}
         {artwork.sold ? (
-          <div className="absolute top-2 left-2 z-10">
+          <div className="absolute top-2 left-2 z-10 pointer-events-none">
             <Badge variant="destructive" className="text-xs px-2 py-1">
               Sold
             </Badge>
           </div>
         ) : artwork.isForSale ? (
-          <div className="absolute top-2 left-2 z-10">
+          <div className="absolute top-2 left-2 z-10 pointer-events-none">
             <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1">
               {artwork.priceType === 'contact' || artwork.contactForPrice ? 'For Sale' : artwork.price ? `$${artwork.price.toLocaleString()}` : 'For Sale'}
             </Badge>
@@ -751,7 +772,7 @@ const generateArtistContent = (artist: Artist) => ({
 
         {/* Followed artist indicator - subtle tag */}
         {following && (
-          <div className="absolute top-2 right-2 z-10">
+          <div className="absolute top-2 right-2 z-10 pointer-events-none">
             <Badge variant="outline" className="text-xs px-2 py-1 bg-background/80 backdrop-blur-sm border-primary/30 text-primary">
               Following
             </Badge>
@@ -760,7 +781,7 @@ const generateArtistContent = (artist: Artist) => ({
 
         {/* AI badge */}
         {artwork.isAI && (
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-2 left-2 pointer-events-none">
             <Badge variant="secondary" className="text-xs">
               AI {artwork.aiAssistance}
             </Badge>
@@ -770,32 +791,32 @@ const generateArtistContent = (artist: Artist) => ({
           {/* Artist banner at bottom */}
           {!hideBanner && (
           <div
-            className={`absolute bottom-0 left-0 right-0 backdrop-blur-sm p-2 ${
+            className={`absolute bottom-0 left-0 right-0 backdrop-blur-sm p-2 pointer-events-none ${
               (resolvedTheme || theme) === 'dark' ? 'bg-gray-900/90' : 'bg-white/90'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <Avatar className="h-6 w-6">
+            <div className="flex items-center gap-2 pointer-events-none">
+              <Avatar className="h-6 w-6 pointer-events-none">
                 <AvatarImage 
                   src={artwork.artist.avatarUrl || generateAvatarPlaceholderUrl(24, 24)} 
                   alt={artwork.artist.name}
-                  className="object-cover"
+                  className="object-cover pointer-events-none"
                 />
-                <AvatarFallback className="text-xs">
+                <AvatarFallback className="text-xs pointer-events-none">
                   {(typeof artwork.artist?.name === 'string' ? artwork.artist.name : '')
                     .slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium truncate">
+              <div className="flex-1 min-w-0 pointer-events-none">
+                <div className="flex items-center gap-1 pointer-events-none">
+                  <span className="text-sm font-medium truncate pointer-events-none">
                     {artwork.artist.name}
                   </span>
                 </div>
                 {artwork.artist.location && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    <span className="truncate">{artwork.artist.location}</span>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground pointer-events-none">
+                    <MapPin className="h-3 w-3 pointer-events-none" />
+                    <span className="truncate pointer-events-none">{artwork.artist.location}</span>
                   </div>
                 )}
               </div>
