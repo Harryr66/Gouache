@@ -481,7 +481,7 @@ const generateArtistContent = (artist: Artist) => ({
             clearTimeout(previewTimerRef.current);
           }
           previewTimerRef.current = setTimeout(() => {
-            if (video && !video.paused && isInViewport) {
+            if (video && !video.paused && (isInViewport || isInitialViewport)) {
               video.pause();
               // Reset video to start for next preview
               video.currentTime = 0;
@@ -652,26 +652,20 @@ const generateArtistContent = (artist: Artist) => ({
                       clearTimeout(videoLoadTimeoutRef.current);
                       videoLoadTimeoutRef.current = null;
                     }
-                    // Metadata loaded - start showing video when ready
-                    if (videoRef.current && videoRef.current.readyState >= 2) {
-                      setIsVideoLoaded(true);
-                    }
+                    // Metadata loaded - video dimensions known, can start buffering
+                    // Poster image is already visible, video will fade in when ready
                   }}
                   onCanPlay={() => {
                     if (videoLoadTimeoutRef.current) {
                       clearTimeout(videoLoadTimeoutRef.current);
                       videoLoadTimeoutRef.current = null;
                     }
-                    // Video is ready - fade in smoothly
+                    // Video is ready to play - fade in smoothly and autoplay
                     setIsVideoLoaded(true);
                     setVideoError(false);
                     
-                    // Notify parent that video is ready (for preloading tracking)
-                    if (onVideoReady && isInitialViewport) {
-                      onVideoReady();
-                    }
-                    
-                    // Request play (will respect concurrent video limit)
+                    // Autoplay when ready (for initial tiles or when in viewport)
+                    // The useEffect above will handle the actual play with concurrent video limiting
                     if ((isInViewport || isInitialViewport) && videoRef.current && videoRef.current.paused && artwork.id) {
                       if (requestPlay(artwork.id)) {
                         videoRef.current.play().catch((error) => {
@@ -683,7 +677,7 @@ const generateArtistContent = (artist: Artist) => ({
                           clearTimeout(previewTimerRef.current);
                         }
                         previewTimerRef.current = setTimeout(() => {
-                          if (videoRef.current && !videoRef.current.paused && isInViewport) {
+                          if (videoRef.current && !videoRef.current.paused && (isInViewport || isInitialViewport)) {
                             videoRef.current.pause();
                             videoRef.current.currentTime = 0; // Reset to start
                           }
