@@ -383,6 +383,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
               left: positions[index]?.left ?? 0,
               width: positions[index]?.width || `${100 / columnCount}%`,
               opacity: positions[index] ? 1 : 0, // Hide until positioned
+              margin: 0, // Ensure no margins that could create irregular gaps
+              padding: 0, // Ensure no padding that could create irregular gaps
             }}
           >
             {renderItem(item)}
