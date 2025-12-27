@@ -349,7 +349,8 @@ export function UploadArtworkBasic() {
                   async () => {
                     try {
                       const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                      resolve({ url: fileUrl, type: isVideo ? 'video' : 'image', index: globalIndex });
+                      const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
+                      resolve({ url: fileUrl, type: mediaType, index: globalIndex });
                     } catch (error) {
                       console.error(`Error getting download URL for file ${globalIndex + 1}:`, error);
                       reject(error);
@@ -365,7 +366,8 @@ export function UploadArtworkBasic() {
               const overallProgress = ((globalIndex + 1) * 100 / processedFiles.length);
               setUploadProgress(overallProgress);
               
-              return { url: fileUrl, type: isVideo ? 'video' : 'image', index: globalIndex };
+              const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
+              return { url: fileUrl, type: mediaType, index: globalIndex };
             }
           } catch (error) {
             console.error(`Error uploading file ${globalIndex + 1}:`, error);
