@@ -120,3 +120,4 @@ But for simplicity, **240p across the board is recommended**.
 **Yes, switch to 240p.** The performance gains (2x faster, 50% less bandwidth) significantly outweigh the minimal visual quality loss at thumbnail sizes. Your users will appreciate the faster loading, and the visual difference will be barely noticeable in a grid of small preview tiles.
 
 
+
