@@ -2001,8 +2001,9 @@ function DiscoverPageContent() {
           </div>
         )}
         
-        {/* Loading overlay - contained within main content area only, navigation always accessible */}
-        {loading ? (
+        {/* Loading overlay - only show if loading AND (artworks not loaded OR joke not complete) */}
+        {/* Once artworks are loaded AND joke is complete, hide overlay even if loading is still true (media loading) */}
+        {loading && (!artworksLoaded || !jokeComplete) ? (
           <div 
             className="absolute inset-0 bg-background flex items-center justify-center z-10"
             style={{
@@ -2199,7 +2200,8 @@ function DiscoverPageContent() {
                       </div>
             
             {/* Artworks Grid */}
-            {!loading && filteredAndSortedArtworks.length === 0 ? (
+            {/* Show content when artworks are loaded and joke is complete, even if loading is still true (media loading) */}
+            {(artworksLoaded && jokeComplete) && filteredAndSortedArtworks.length === 0 ? (
               <div className="text-center py-16">
                 <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">No artworks found</h2>
