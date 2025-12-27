@@ -566,11 +566,24 @@ function DiscoverPageContent() {
       // Only dismiss if artworks are loaded AND there are no images to preload
       // If artworks haven't loaded yet, keep waiting
       if (initialImagesTotal === 0 && artworksLoaded) {
-        // No images to preload AND artworks are loaded - content is ready (but joke must have finished)
+        // FINAL SAFEGUARD: Triple-check joke completion before dismissing
+        if (!jokeComplete || !jokeCompleteTime) {
+          console.warn('⚠️ CRITICAL: Attempted to dismiss loading but joke not complete - BLOCKED');
+          return;
+        }
+        const timeSinceJoke = Date.now() - jokeCompleteTime;
+        if (timeSinceJoke < MIN_JOKE_DISPLAY_TIME) {
+          console.warn(`⚠️ CRITICAL: Attempted to dismiss loading but joke time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms) - BLOCKED`);
+          setTimeout(() => {
+            checkContentReady(); // Re-check after remaining time
+          }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
+          return;
+        }
+        // No images to preload AND artworks are loaded - content is ready (joke verified)
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
-        console.log('✅ No images to load and artworks loaded, dismissing loading screen (joke has finished + 2s minimum)');
+        console.log('✅ No images to load and artworks loaded, dismissing loading screen (joke has finished + 2s minimum - VERIFIED)');
         setTimeout(() => {
           setLoading(false);
         }, 200);
@@ -597,11 +610,24 @@ function DiscoverPageContent() {
       
       // Show content when ALL video posters are ready AND threshold of regular images are ready
       if (allVideoPostersReady && regularImageReadyPercentage >= regularImageThreshold) {
+        // FINAL SAFEGUARD: Triple-check joke completion before dismissing
+        if (!jokeComplete || !jokeCompleteTime) {
+          console.warn('⚠️ CRITICAL: Attempted to dismiss loading but joke not complete - BLOCKED');
+          return;
+        }
+        const timeSinceJoke = Date.now() - jokeCompleteTime;
+        if (timeSinceJoke < MIN_JOKE_DISPLAY_TIME) {
+          console.warn(`⚠️ CRITICAL: Attempted to dismiss loading but joke time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms) - BLOCKED`);
+          setTimeout(() => {
+            checkContentReady(); // Re-check after remaining time
+          }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
+          return;
+        }
         // All video thumbnails loaded + enough regular images - videos will autoplay when ready
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
-        console.log('✅ Content ready (video posters + images), dismissing loading screen (joke has finished + 2s minimum)');
+        console.log('✅ Content ready (video posters + images), dismissing loading screen (joke has finished + 2s minimum - VERIFIED)');
         setTimeout(() => {
           setLoading(false);
         }, 200);
@@ -637,14 +663,30 @@ function DiscoverPageContent() {
       }, 40000); // Increased to 40s to give ALL media time to load with retries
     }
     
-    // Safety timeout: Force loading to false after 45 seconds maximum to prevent permanent blocking
-    // This allows time for retries (3 retries × 4s max delay = 12s) + initial load time
+    // Safety timeout: Force loading to false after 60 seconds maximum ONLY if joke has completed + 2s
+    // This allows time for retries (3 retries × 4s max delay = 12s) + initial load time + joke time
     const safetyTimeout = setTimeout(() => {
       if (loading) {
-        console.warn('⚠️ Safety timeout: Forcing loading to false after 45s to prevent permanent blocking');
+        // ABSOLUTE REQUIREMENT: Joke MUST be complete + 2s before safety timeout can dismiss
+        if (!jokeComplete || !jokeCompleteTime) {
+          console.warn('⚠️ CRITICAL: Safety timeout reached but joke not complete - BLOCKED, waiting for joke');
+          return; // Don't dismiss - wait for joke
+        }
+        const timeSinceJoke = Date.now() - jokeCompleteTime;
+        if (timeSinceJoke < MIN_JOKE_DISPLAY_TIME) {
+          console.warn(`⚠️ CRITICAL: Safety timeout reached but joke time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms) - BLOCKED, waiting for joke + 2s`);
+          setTimeout(() => {
+            if (loading) {
+              console.warn('⚠️ Safety timeout: Forcing loading to false after joke + 2s minimum met');
+              setLoading(false);
+            }
+          }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
+          return;
+        }
+        console.warn('⚠️ Safety timeout: Forcing loading to false after 60s (joke has completed + 2s minimum - VERIFIED)');
         setLoading(false);
       }
-    }, 45000);
+    }, 60000); // Increased to 60s to allow joke time
     
     return () => {
       if (loadingTimeoutRef.current) {
