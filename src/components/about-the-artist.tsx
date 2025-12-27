@@ -16,11 +16,12 @@ interface AboutTheArtistProps {
   artistId: string;
   artistName?: string;
   artistHandle?: string;
+  artistAvatarUrl?: string | null;
   className?: string;
   compact?: boolean;
 }
 
-export function AboutTheArtist({ artistId, artistName, artistHandle, className, compact = false }: AboutTheArtistProps) {
+export function AboutTheArtist({ artistId, artistName, artistHandle, artistAvatarUrl, className, compact = false }: AboutTheArtistProps) {
   const [artist, setArtist] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
   const { generateAvatarPlaceholderUrl, generatePlaceholderUrl } = usePlaceholder();
@@ -37,7 +38,7 @@ export function AboutTheArtist({ artistId, artistName, artistHandle, className, 
             username: data.username || data.handle || artistHandle || `user_${userDoc.id}`,
             email: data.email || '',
             displayName: data.name || data.displayName || artistName || 'Artist',
-            avatarUrl: data.avatarUrl,
+            avatarUrl: artistAvatarUrl || data.avatarUrl, // Use provided avatarUrl first, fallback to userProfiles
             bio: data.bio || '',
             website: data.website || data.socialLinks?.website,
             isVerified: data.isVerified !== false && data.isProfessional === true,
@@ -60,6 +61,7 @@ export function AboutTheArtist({ artistId, artistName, artistHandle, className, 
             username: artistHandle || `user_${artistId}`,
             email: '',
             displayName: artistName || 'Artist',
+            avatarUrl: artistAvatarUrl || undefined, // Use provided avatarUrl if available
             isVerified: false,
             isProfessional: false,
             followerCount: 0,
@@ -79,6 +81,7 @@ export function AboutTheArtist({ artistId, artistName, artistHandle, className, 
           username: artistHandle || `user_${artistId}`,
           email: '',
           displayName: artistName || 'Artist',
+          avatarUrl: artistAvatarUrl || undefined, // Use provided avatarUrl if available
           isVerified: false,
           isProfessional: false,
           followerCount: 0,
