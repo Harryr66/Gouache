@@ -332,11 +332,33 @@ export function HueChatbot() {
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
       const error = event.error || event;
+      const errorMessage = event.message || error?.message || String(error);
+      
+      // Suppress Firestore connection errors - these are expected and will auto-retry
+      if (errorMessage.includes('firestore.googleapis.com') ||
+          errorMessage.includes('Listen/channel') ||
+          errorMessage.includes('gsessionid') ||
+          (errorMessage.includes('Load failed') && errorMessage.includes('firestore'))) {
+        console.log('Suppressing Firestore connection error (expected, will auto-retry):', errorMessage);
+        return;
+      }
+      
       handleErrorReport(error, undefined, 'JavaScript Error');
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const error = event.reason;
+      const errorMessage = error?.message || String(error);
+      
+      // Suppress Firestore connection errors - these are expected
+      if (errorMessage.includes('firestore.googleapis.com') ||
+          errorMessage.includes('Listen/channel') ||
+          errorMessage.includes('gsessionid') ||
+          (errorMessage.includes('Load failed') && errorMessage.includes('firestore'))) {
+        console.log('Suppressing Firestore connection error from unhandled rejection (expected, will auto-retry):', errorMessage);
+        return;
+      }
+      
       handleErrorReport(error, undefined, 'Unhandled Promise Rejection');
     };
 
