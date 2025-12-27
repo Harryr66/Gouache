@@ -625,12 +625,21 @@ function DiscoverPageContent() {
       }, 12000); // Increased to 12s to give media more time to load
     }
     
+    // Safety timeout: Force loading to false after 15 seconds maximum to prevent permanent blocking
+    const safetyTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ Safety timeout: Forcing loading to false after 15s to prevent permanent blocking');
+        setLoading(false);
+      }
+    }, 15000);
+    
     return () => {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
+      clearTimeout(safetyTimeout);
     };
-  }, [artworksLoaded, jokeComplete, jokeCompleteTime, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed]);
+  }, [artworksLoaded, jokeComplete, jokeCompleteTime, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, loading]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
