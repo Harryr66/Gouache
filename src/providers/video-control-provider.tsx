@@ -90,25 +90,12 @@ export function VideoControlProvider({ children }: { children: React.ReactNode }
   const registerVisibleVideo = useCallback((videoId: string) => {
     setVisibleVideos(prev => {
       const next = new Set(prev);
-      next.add(videoId);
-      // After registering, check if any pending videos can now autoplay
-      setTimeout(() => {
-        if (pendingAutoplayChecks.current.has(videoId)) {
-          pendingAutoplayChecks.current.delete(videoId);
-          const callbacks = videoCallbacks.current.get(videoId);
-          if (callbacks) {
-            // Trigger play callback if video can autoplay
-            const maxAutoplay = Math.ceil(next.size * 0.5);
-            const currentlyPlaying = playingVideos.size;
-            if (currentlyPlaying < maxAutoplay) {
-              callbacks.play();
-            }
-          }
-        }
-      }, 50);
+      if (!next.has(videoId)) {
+        next.add(videoId);
+      }
       return next;
     });
-  }, [playingVideos]);
+  }, []);
   
   const unregisterVisibleVideo = useCallback((videoId: string) => {
     setVisibleVideos(prev => {
@@ -121,27 +108,25 @@ export function VideoControlProvider({ children }: { children: React.ReactNode }
   }, []);
   
   const canAutoplay = useCallback((videoId: string): boolean => {
-    // Only allow autoplay for 50% of visible videos
-    const visibleCount = visibleVideos.size;
-    
-    // If no visible videos yet, this video might be the first - allow it if it's visible
-    if (visibleCount === 0) {
-      // Check if this video is in the visible set (might be registering)
-      if (visibleVideos.has(videoId)) {
-        return true; // First visible video can autoplay
-      }
-      // If not yet registered, mark for pending check
-      pendingAutoplayChecks.current.add(videoId);
-      return false;
-    }
-    
-    const maxAutoplay = Math.ceil(visibleCount * 0.5); // 50% rounded up
-    const currentlyPlaying = playingVideos.size;
-    
     // Check if this video is already playing
     if (playingVideos.has(videoId)) {
       return true;
     }
+    
+    // Only allow autoplay for 50% of visible videos
+    const visibleCount = visibleVideos.size;
+    
+    // If no visible videos registered yet, check if this video is in the process of registering
+    // Allow first video to autoplay immediately
+    if (visibleCount === 0) {
+      // If this video is trying to autoplay, it should be visible - allow it
+      // This handles the case where videos register and try to autoplay simultaneously
+      return true; // First video can always autoplay
+    }
+    
+    // Calculate 50% of visible videos (rounded up)
+    const maxAutoplay = Math.ceil(visibleCount * 0.5);
+    const currentlyPlaying = playingVideos.size;
     
     // Check if we can add another autoplay video
     return currentlyPlaying < maxAutoplay;
