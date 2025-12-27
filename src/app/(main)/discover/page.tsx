@@ -571,30 +571,32 @@ function DiscoverPageContent() {
         return;
       }
       
-      // REQUIRE ALL video posters to be loaded (100% of video thumbnails)
+      // REQUIRE 100% OF ALL INITIAL VIEWPORT IMAGES TO LOAD - NO THRESHOLDS
+      // This ensures ALL visible thumbnails are loaded before dismissing loading screen
       const allVideoPostersReady = initialVideoPostersTotal === 0 || initialVideoPostersReady >= initialVideoPostersTotal;
-      
-      // Connection-aware threshold for regular images (not video posters)
-      const connectionSpeed = getConnectionSpeed();
-      const regularImageThreshold = connectionSpeed === 'fast' ? 0.6 : connectionSpeed === 'medium' ? 0.5 : 0.3;
       
       // Calculate regular images (excluding video posters)
       const regularImagesTotal = initialImagesTotal - initialVideoPostersTotal;
       const regularImagesReady = initialImagesReady - initialVideoPostersReady;
-      const regularImageReadyPercentage = regularImagesTotal > 0 ? (regularImagesReady / regularImagesTotal) : 1;
       
-      // Show content when ALL video posters are ready AND threshold of regular images are ready
-      if (allVideoPostersReady && regularImageReadyPercentage >= regularImageThreshold) {
-        // All video thumbnails loaded + enough regular images - videos will autoplay when ready
+      // REQUIRE 100% - ALL images must be loaded (or failed after retries)
+      const allRegularImagesReady = regularImagesTotal === 0 || regularImagesReady >= regularImagesTotal;
+      
+      // Show content ONLY when ALL video posters AND ALL regular images are ready
+      if (allVideoPostersReady && allRegularImagesReady) {
+        // ALL images loaded - safe to dismiss loading screen
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
-        console.log('✅ Content ready (video posters + images), dismissing loading screen (joke has finished + 2s minimum)');
+        console.log(`✅ ALL images loaded (${initialImagesReady}/${initialImagesTotal} total, ${initialVideoPostersReady}/${initialVideoPostersTotal} video posters), dismissing loading screen (joke has finished + 2s minimum)`);
         setTimeout(() => {
           setLoading(false);
         }, 200);
         return;
       }
+      
+      // Log progress for debugging
+      console.log(`⏳ Loading progress: ${initialImagesReady}/${initialImagesTotal} images (${initialVideoPostersReady}/${initialVideoPostersTotal} video posters) - waiting for ALL to load...`);
       
       // Set a longer timeout as fallback - but this should rarely trigger
       // if content is loading properly
@@ -622,16 +624,16 @@ function DiscoverPageContent() {
             setLoading(false);
           }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
         }
-      }, 12000); // Increased to 12s to give media more time to load
+      }, 25000); // Increased to 25s to give ALL media time to load
     }
     
-    // Safety timeout: Force loading to false after 15 seconds maximum to prevent permanent blocking
+    // Safety timeout: Force loading to false after 30 seconds maximum to prevent permanent blocking
     const safetyTimeout = setTimeout(() => {
       if (loading) {
-        console.warn('⚠️ Safety timeout: Forcing loading to false after 15s to prevent permanent blocking');
+        console.warn('⚠️ Safety timeout: Forcing loading to false after 30s to prevent permanent blocking');
         setLoading(false);
       }
-    }, 15000);
+    }, 30000);
     
     return () => {
       if (loadingTimeoutRef.current) {
