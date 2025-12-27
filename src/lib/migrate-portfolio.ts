@@ -222,13 +222,57 @@ export async function migratePortfoliosToCollection(
                 return obj;
               };
               
-              // Clean the item object to remove any undefined values
-              const cleanItem: any = deepClean({
-                ...item,
-                id: itemId, // Store original ID in document
+              // Build clean item explicitly - don't rely on spread which might preserve undefined
+              let cleanItem: any = {
+                userId: item.userId || userId,
+                imageUrl: item.imageUrl || '',
+                videoUrl: (item.videoUrl && typeof item.videoUrl === 'string') ? item.videoUrl : null, // Explicitly null if not a string
+                mediaType: item.mediaType || 'image',
+                supportingImages: Array.isArray(item.supportingImages) ? item.supportingImages : [],
+                mediaUrls: Array.isArray(item.mediaUrls) ? item.mediaUrls : [],
+                mediaTypes: Array.isArray(item.mediaTypes) ? item.mediaTypes : [],
+                title: item.title || 'Untitled',
+                description: item.description || '',
+                medium: item.medium || '',
+                dimensions: item.dimensions || '',
+                year: item.year || '',
+                tags: Array.isArray(item.tags) ? item.tags : [],
+                showInPortfolio: item.showInPortfolio !== false,
+                showInShop: item.showInShop || false,
+                isForSale: item.isForSale || false,
+                sold: item.sold || false,
+                price: (item.price !== undefined && item.price !== null) ? item.price : null,
+                currency: item.currency || 'USD',
+                priceType: (item.priceType !== undefined && item.priceType !== null) ? item.priceType : null,
+                contactForPrice: item.contactForPrice || false,
+                deliveryScope: (item.deliveryScope !== undefined && item.deliveryScope !== null) ? item.deliveryScope : null,
+                deliveryCountries: Array.isArray(item.deliveryCountries) ? item.deliveryCountries : [],
+                artworkType: (item.artworkType !== undefined && item.artworkType !== null) ? item.artworkType : null,
+                type: item.type || 'artwork',
+                deleted: item.deleted || false,
+                aiAssistance: item.aiAssistance || 'none',
+                isAI: item.isAI || false,
+                likes: typeof item.likes === 'number' ? item.likes : 0,
+                commentsCount: typeof item.commentsCount === 'number' ? item.commentsCount : 0,
+                category: item.category || '',
+                id: itemId,
                 createdAt: timestamp,
                 updatedAt: timestamp,
+              };
+              
+              // Final safety pass - remove any remaining undefined values (shouldn't be any, but just in case)
+              Object.keys(cleanItem).forEach(key => {
+                if (cleanItem[key] === undefined) {
+                  console.error(`❌ CRITICAL: Found undefined value for key ${key} in item ${itemId}, converting to null`);
+                  cleanItem[key] = null;
+                }
               });
+              
+              // Double-check videoUrl specifically
+              if (cleanItem.videoUrl === undefined) {
+                console.error(`❌ CRITICAL: videoUrl is undefined for item ${itemId}, forcing to null`);
+                cleanItem.videoUrl = null;
+              }
 
               const itemRef = doc(collection(db, 'portfolioItems'), itemId);
               firestoreBatch.set(itemRef, cleanItem);
