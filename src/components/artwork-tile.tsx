@@ -56,7 +56,7 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
   const router = useRouter();
-  const { registerVideo, requestPlay, isPlaying, getConnectionSpeed } = useVideoControl();
+  const { registerVideo, requestPlay, isPlaying, getConnectionSpeed, registerVisibleVideo, unregisterVisibleVideo, canAutoplay, handleVideoEnded } = useVideoControl();
   const [showArtistPreview, setShowArtistPreview] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -69,6 +69,7 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const [shouldLoadMetadata, setShouldLoadMetadata] = useState(false);
   const [isInitialViewport, setIsInitialViewport] = useState(false);
+  const [isVideoPaused, setIsVideoPaused] = useState(true);
   const videoLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previewTimerRef = useRef<NodeJS.Timeout | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -154,6 +155,21 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
   // Default to 2:3 (portrait) if aspect ratio not yet determined - ideal for tall tiles
   const aspectRatio = mediaAspectRatio || (2/3);
   
+  // Register/unregister visible videos for 50% autoplay calculation
+  useEffect(() => {
+    if (!hasVideo || !artwork.id) return;
+    
+    if (isInViewport) {
+      registerVisibleVideo(artwork.id);
+    } else {
+      unregisterVisibleVideo(artwork.id);
+    }
+    
+    return () => {
+      unregisterVisibleVideo(artwork.id);
+    };
+  }, [hasVideo, artwork.id, isInViewport, registerVisibleVideo, unregisterVisibleVideo]);
+
   // Register video with video control system for concurrent playback limiting
   useEffect(() => {
     if (!hasVideo || !videoUrl || !videoRef.current || !artwork.id) return;
@@ -174,8 +190,17 @@ export function ArtworkTile({ artwork, onClick, className, hideBanner = false, o
         videoRef.current.pause();
       }
     };
+    
+    const onEndedCallback = () => {
+      // Video finished - trigger next in queue
+      handleVideoEnded(videoId);
+      // Reset to start for potential replay
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+      }
+    };
 
-    const unregister = registerVideo(videoId, playCallback, pauseCallback);
+    const unregister = registerVideo(videoId, playCallback, pauseCallback, onEndedCallback);
 
     return () => {
       unregister();
@@ -473,24 +498,19 @@ const generateArtistContent = (artist: Artist) => ({
         video.load();
       }
       
-      // Try to play when video can play (with concurrent video limiting)
+      // Try to play when video can play (with 50% autoplay rule)
       const tryPlay = () => {
-        if (video.readyState >= 2 && video.paused && requestPlay(artwork.id)) {
-          video.play().catch((error) => {
-            console.error('Error autoplaying video:', error);
-          });
-          
-          // Set up preview timer: stop video after 8 seconds (shorter preview for tiles)
-          if (previewTimerRef.current) {
-            clearTimeout(previewTimerRef.current);
+        if (video.readyState >= 2 && video.paused) {
+          // Check if this video can autoplay (50% rule)
+          if (canAutoplay(artwork.id) && requestPlay(artwork.id)) {
+            video.play().catch((error) => {
+              console.error('Error autoplaying video:', error);
+            });
+            setIsVideoPaused(false);
+          } else {
+            // Can't autoplay - keep paused, show play button
+            setIsVideoPaused(true);
           }
-          previewTimerRef.current = setTimeout(() => {
-            if (video && !video.paused && (isInViewport || isInitialViewport)) {
-              video.pause();
-              // Reset video to start for next preview
-              video.currentTime = 0;
-            }
-          }, 8000); // 8 seconds preview
         }
       };
       
@@ -672,25 +692,32 @@ const generateArtistContent = (artist: Artist) => ({
                     setVideoError(false);
                     
                     // Autoplay when ready (for initial tiles or when in viewport)
-                    // The useEffect above will handle the actual play with concurrent video limiting
+                    // Check if can autoplay (50% rule)
                     if ((isInViewport || isInitialViewport) && videoRef.current && videoRef.current.paused && artwork.id) {
-                      if (requestPlay(artwork.id)) {
+                      if (canAutoplay(artwork.id) && requestPlay(artwork.id)) {
                         videoRef.current.play().catch((error) => {
                           console.error('Error autoplaying video:', error);
                         });
-                        
-                        // Set up preview timer for shorter previews in tiles
-                        if (previewTimerRef.current) {
-                          clearTimeout(previewTimerRef.current);
-                        }
-                        previewTimerRef.current = setTimeout(() => {
-                          if (videoRef.current && !videoRef.current.paused && (isInViewport || isInitialViewport)) {
-                            videoRef.current.pause();
-                            videoRef.current.currentTime = 0; // Reset to start
-                          }
-                        }, 8000); // 8 seconds preview
+                        setIsVideoPaused(false);
+                      } else {
+                        // Can't autoplay - keep paused, show play button
+                        setIsVideoPaused(true);
                       }
                     }
+                  }}
+                  onPlay={() => {
+                    setIsVideoPaused(false);
+                  }}
+                  onPause={() => {
+                    setIsVideoPaused(true);
+                  }}
+                  onEnded={() => {
+                    // Video finished - trigger next in queue via video control provider
+                    setIsVideoPaused(true);
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = 0;
+                    }
+                    // The onEnded callback in registerVideo will handle queue
                   }}
                   onLoadedData={() => {
                     // Data loaded - ensure visibility
