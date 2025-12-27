@@ -32,8 +32,10 @@ export function DesktopHeader() {
     <div 
       className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6 relative z-[60]"
       style={{
+        position: 'relative', // Keep relative for z-index to work
         pointerEvents: 'auto',
         touchAction: 'manipulation',
+        isolation: 'isolate', // Create new stacking context to ensure it's always on top
       }}
     >
       <Link 

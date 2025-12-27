@@ -26,7 +26,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <MobileHeader />
         </div>
         
-        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0 w-full max-w-full" style={{ position: 'relative', zIndex: 0 }}>
+        {/* Main content - NO position relative to avoid creating stacking context that blocks navigation */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0 w-full max-w-full">
           {children}
         </main>
         <SiteFooter />
