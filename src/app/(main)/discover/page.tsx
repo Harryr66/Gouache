@@ -611,14 +611,20 @@ function DiscoverPageContent() {
         const { PortfolioService } = await import('@/lib/database');
         
         log('🔍 Discover: Fetching portfolio items from portfolioItems collection...');
-        const portfolioItems = await PortfolioService.getDiscoverPortfolioItems({
-          showInPortfolio: true,
-          deleted: false,
-          hideAI: discoverSettings.hideAiAssistedArt,
-          limit: 500, // Fetch more items for better content coverage
-        });
-        
-        log(`📦 Discover: Found ${portfolioItems.length} portfolio items from portfolioItems collection`);
+        let portfolioItems: any[] = [];
+        try {
+          portfolioItems = await PortfolioService.getDiscoverPortfolioItems({
+            showInPortfolio: true,
+            deleted: false,
+            hideAI: discoverSettings.hideAiAssistedArt,
+            limit: 500, // Fetch more items for better content coverage
+          });
+          log(`📦 Discover: Found ${portfolioItems.length} portfolio items from portfolioItems collection`);
+        } catch (portfolioError: any) {
+          // If portfolioItems query fails (e.g., missing index, empty collection), fall back to old method
+          log('⚠️ Discover: Error querying portfolioItems, falling back to userProfiles method:', portfolioError?.message || portfolioError);
+          portfolioItems = []; // Will trigger fallback below
+        }
         
         const fetchedArtworks: Artwork[] = [];
         let skippedNoImage = 0;
@@ -704,6 +710,89 @@ function DiscoverPageContent() {
         }
         
         log(`📊 Discover: Summary - Portfolio items: ${portfolioItems.length}, Added: ${fetchedArtworks.length}, Skipped (no image): ${skippedNoImage}, Skipped (no artist): ${skippedNoArtist}`);
+        
+        // BACKWARD COMPATIBILITY: If no portfolioItems found, fall back to old method (userProfiles.portfolio arrays)
+        if (portfolioItems.length === 0 && fetchedArtworks.length === 0) {
+          log('📋 Discover: No portfolioItems found, falling back to userProfiles.portfolio method (backward compatibility)...');
+          
+          // Fetch artists with portfolios - old method
+          const artistsQuery = query(
+            collection(db, 'userProfiles'),
+            limit(100)
+          );
+          
+          const artistsSnapshot = await getDocs(artistsQuery);
+          log(`👥 Discover: Found ${artistsSnapshot.docs.length} artists (fallback method)`);
+          
+          // Extract portfolio items from each artist (old method)
+          for (const artistDoc of artistsSnapshot.docs) {
+            const artistData = artistDoc.data();
+            const portfolio = artistData.portfolio || [];
+            
+            if (portfolio.length === 0) continue;
+            
+            const recentPortfolio = portfolio
+              .filter((item: any) => !item.deleted && item.showInPortfolio !== false)
+              .sort((a: any, b: any) => {
+                const dateA = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
+                const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
+                return dateB - dateA;
+              })
+              .slice(0, 20);
+            
+            for (const [index, item] of recentPortfolio.entries()) {
+              if (discoverSettings.hideAiAssistedArt && (item.aiAssistance === 'assisted' || item.aiAssistance === 'generated' || item.isAI)) {
+                continue;
+              }
+              
+              let videoUrl = item.videoUrl || null;
+              if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
+                videoUrl = item.mediaUrls[0];
+              }
+              const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
+              
+              if (!imageUrl && !videoUrl) continue;
+              
+              const artwork: Artwork = {
+                id: item.id || `${artistDoc.id}-${Date.now()}-${index}`,
+                title: item.title || 'Untitled',
+                description: item.description || '',
+                imageUrl: imageUrl,
+                imageAiHint: item.description || '',
+                ...(videoUrl && { videoUrl: videoUrl as any }),
+                artist: {
+                  id: artistDoc.id,
+                  name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
+                  handle: artistData.username || artistData.handle || '',
+                  avatarUrl: artistData.avatarUrl || null,
+                  isVerified: artistData.isVerified || false,
+                  isProfessional: true,
+                  followerCount: artistData.followerCount || 0,
+                  followingCount: artistData.followingCount || 0,
+                  createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
+                },
+                likes: item.likes || 0,
+                commentsCount: item.commentsCount || 0,
+                createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date()),
+                updatedAt: item.updatedAt?.toDate?.() || item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date()),
+                category: item.category || '',
+                medium: item.medium || '',
+                tags: item.tags || [],
+                aiAssistance: item.aiAssistance || 'none',
+                isAI: item.isAI || false,
+                isForSale: item.isForSale || false,
+                sold: item.sold || false,
+                price: item.price ? (item.price > 1000 ? item.price / 100 : item.price) : undefined,
+                priceType: item.priceType as 'fixed' | 'contact' | undefined,
+                contactForPrice: item.contactForPrice || item.priceType === 'contact',
+              };
+              
+              fetchedArtworks.push(artwork);
+            }
+          }
+          
+          log(`📊 Discover: Fallback method - Added ${fetchedArtworks.length} artworks from userProfiles.portfolio`);
+        }
         
         // Also fetch Discover content from artworks collection (non-portfolio content)
         // This includes content uploaded via Discover portal with showInPortfolio = false

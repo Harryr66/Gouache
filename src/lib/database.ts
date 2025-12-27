@@ -603,42 +603,49 @@ export class PortfolioService {
       orderDirection?: 'asc' | 'desc';
     }
   ): Promise<PortfolioItem[]> {
-    let q = query(
-      collection(db, 'portfolioItems'),
-      where('userId', '==', userId)
-    );
+    try {
+      let q = query(
+        collection(db, 'portfolioItems'),
+        where('userId', '==', userId)
+      );
 
-    if (options?.showInPortfolio !== undefined) {
-      q = query(q, where('showInPortfolio', '==', options.showInPortfolio));
-    }
-    if (options?.showInShop !== undefined) {
-      q = query(q, where('showInShop', '==', options.showInShop));
-    }
-    if (options?.isForSale !== undefined) {
-      q = query(q, where('isForSale', '==', options.isForSale));
-    }
-    if (options?.deleted !== undefined) {
-      q = query(q, where('deleted', '==', options.deleted));
-    }
+      if (options?.showInPortfolio !== undefined) {
+        q = query(q, where('showInPortfolio', '==', options.showInPortfolio));
+      }
+      if (options?.showInShop !== undefined) {
+        q = query(q, where('showInShop', '==', options.showInShop));
+      }
+      if (options?.isForSale !== undefined) {
+        q = query(q, where('isForSale', '==', options.isForSale));
+      }
+      if (options?.deleted !== undefined) {
+        q = query(q, where('deleted', '==', options.deleted));
+      }
 
-    const orderField = options?.orderBy || 'createdAt';
-    const orderDir = options?.orderDirection || 'desc';
-    q = query(q, orderBy(orderField, orderDir));
+      const orderField = options?.orderBy || 'createdAt';
+      const orderDir = options?.orderDirection || 'desc';
+      q = query(q, orderBy(orderField, orderDir));
 
-    if (options?.limit) {
-      q = query(q, limit(options.limit));
+      if (options?.limit) {
+        q = query(q, limit(options.limit));
+      }
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
+          updatedAt: data.updatedAt?.toDate?.() || (data.updatedAt instanceof Date ? data.updatedAt : new Date()),
+        } as PortfolioItem;
+      });
+    } catch (error: any) {
+      // If query fails (e.g., missing index, empty collection), return empty array
+      // This allows backward compatibility to kick in
+      console.warn('⚠️ PortfolioService: Error querying portfolioItems, returning empty array:', error?.message || error);
+      return [];
     }
-
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
-        updatedAt: data.updatedAt?.toDate?.() || (data.updatedAt instanceof Date ? data.updatedAt : new Date()),
-      } as PortfolioItem;
-    });
   }
 
   /**
@@ -651,45 +658,52 @@ export class PortfolioService {
     limit?: number;
     startAfter?: any;
   }): Promise<PortfolioItem[]> {
-    let q = query(collection(db, 'portfolioItems'));
+    try {
+      let q = query(collection(db, 'portfolioItems'));
 
-    if (options?.showInPortfolio !== undefined) {
-      q = query(q, where('showInPortfolio', '==', options.showInPortfolio));
+      if (options?.showInPortfolio !== undefined) {
+        q = query(q, where('showInPortfolio', '==', options.showInPortfolio));
+      }
+      if (options?.deleted !== undefined) {
+        q = query(q, where('deleted', '==', options.deleted));
+      }
+
+      q = query(q, orderBy('createdAt', 'desc'));
+
+      if (options?.startAfter) {
+        q = query(q, startAfter(options.startAfter));
+      }
+      if (options?.limit) {
+        q = query(q, limit(options.limit));
+      }
+
+      const snapshot = await getDocs(q);
+      let items = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
+          updatedAt: data.updatedAt?.toDate?.() || (data.updatedAt instanceof Date ? data.updatedAt : new Date()),
+        } as PortfolioItem;
+      });
+
+      // Client-side filter for AI content if needed (can't query on nested fields efficiently)
+      if (options?.hideAI) {
+        items = items.filter(item => 
+          item.aiAssistance !== 'assisted' && 
+          item.aiAssistance !== 'generated' && 
+          !item.isAI
+        );
+      }
+
+      return items;
+    } catch (error: any) {
+      // If query fails (e.g., missing index, empty collection), return empty array
+      // This allows backward compatibility to kick in
+      console.warn('⚠️ PortfolioService: Error querying discover portfolioItems, returning empty array:', error?.message || error);
+      return [];
     }
-    if (options?.deleted !== undefined) {
-      q = query(q, where('deleted', '==', options.deleted));
-    }
-
-    q = query(q, orderBy('createdAt', 'desc'));
-
-    if (options?.startAfter) {
-      q = query(q, startAfter(options.startAfter));
-    }
-    if (options?.limit) {
-      q = query(q, limit(options.limit));
-    }
-
-    const snapshot = await getDocs(q);
-    let items = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
-        updatedAt: data.updatedAt?.toDate?.() || (data.updatedAt instanceof Date ? data.updatedAt : new Date()),
-      } as PortfolioItem;
-    });
-
-    // Client-side filter for AI content if needed (can't query on nested fields efficiently)
-    if (options?.hideAI) {
-      items = items.filter(item => 
-        item.aiAssistance !== 'assisted' && 
-        item.aiAssistance !== 'generated' && 
-        !item.isAI
-      );
-    }
-
-    return items;
   }
 
   /**
@@ -766,32 +780,46 @@ export class PortfolioService {
       deleted?: boolean;
     }
   ): () => void {
-    let q = query(
-      collection(db, 'portfolioItems'),
-      where('userId', '==', userId)
-    );
+    try {
+      let q = query(
+        collection(db, 'portfolioItems'),
+        where('userId', '==', userId)
+      );
 
-    if (options?.showInPortfolio !== undefined) {
-      q = query(q, where('showInPortfolio', '==', options.showInPortfolio));
+      if (options?.showInPortfolio !== undefined) {
+        q = query(q, where('showInPortfolio', '==', options.showInPortfolio));
+      }
+      if (options?.deleted !== undefined) {
+        q = query(q, where('deleted', '==', options.deleted));
+      }
+
+      q = query(q, orderBy('createdAt', 'desc'));
+
+      return onSnapshot(q, 
+        (snapshot) => {
+          const items = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
+              updatedAt: data.updatedAt?.toDate?.() || (data.updatedAt instanceof Date ? data.updatedAt : new Date()),
+            } as PortfolioItem;
+          });
+          callback(items);
+        },
+        (error) => {
+          // If snapshot fails, return empty array
+          console.warn('⚠️ PortfolioService: Error in portfolio snapshot, returning empty array:', error?.message || error);
+          callback([]);
+        }
+      );
+    } catch (error: any) {
+      // If query setup fails, return a no-op unsubscribe function
+      console.warn('⚠️ PortfolioService: Error setting up portfolio subscription, returning empty array:', error?.message || error);
+      callback([]);
+      return () => {}; // Return no-op unsubscribe function
     }
-    if (options?.deleted !== undefined) {
-      q = query(q, where('deleted', '==', options.deleted));
-    }
-
-    q = query(q, orderBy('createdAt', 'desc'));
-
-    return onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate?.() || (data.createdAt instanceof Date ? data.createdAt : new Date()),
-          updatedAt: data.updatedAt?.toDate?.() || (data.updatedAt instanceof Date ? data.updatedAt : new Date()),
-        } as PortfolioItem;
-      });
-      callback(items);
-    });
   }
 }
 
