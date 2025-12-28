@@ -850,6 +850,14 @@ const generateArtistContent = (artist: Artist) => ({
             </>
           ) : (
             <>
+              {/* Skeleton loader - prevents black squares (like Pinterest) */}
+              {!isImageLoaded && !imageError && (
+                <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse z-0">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                    <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  </div>
+                </div>
+              )}
               <Image
                 src={imageError && fallbackImageUrl ? fallbackImageUrl : imageUrl}
                 alt={artwork.imageAiHint || artwork.title || 'Artwork'}

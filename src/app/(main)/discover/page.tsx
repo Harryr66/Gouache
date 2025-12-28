@@ -466,10 +466,11 @@ function DiscoverPageContent() {
   
   // Calculate how many items are in viewport + 1 row (for faster loading)
   // This is what we'll wait for before dismissing the loading screen
+  // AGGRESSIVE: Only wait for first visible row + 1 extra row (like Pinterest)
   const itemsToWaitFor = useMemo(() => {
-    // Estimate viewport height: ~2-3 rows visible, plus 1 extra row = 3-4 rows total
-    // Use columnCount to calculate: 3-4 rows × columnCount
-    const estimatedRowsInViewport = 3; // Conservative estimate
+    // Estimate viewport height: ~1-2 rows visible initially, plus 1 extra row = 2-3 rows total
+    // Use columnCount to calculate: 2 rows × columnCount (much faster than before)
+    const estimatedRowsInViewport = 1; // Aggressive - just first row
     const extraRow = 1;
     return columnCount * (estimatedRowsInViewport + extraRow);
   }, [columnCount]);
@@ -557,17 +558,18 @@ function DiscoverPageContent() {
       const maxItemsToCheck = Math.min(itemsToWaitForValue, initialImagesTotal);
       
       // Count how many of the first N items are ready
-      // We'll use a simple heuristic: if we have at least 80% of viewport+1row ready, dismiss
+      // AGGRESSIVE: Lower threshold to 60% for faster dismissal (like Pinterest)
       const itemsReady = Math.min(initialImagesReady, maxItemsToCheck);
       const itemsReadyPercentage = maxItemsToCheck > 0 ? (itemsReady / maxItemsToCheck) : 1;
       
       // Also check video posters in viewport + 1 row
       const videoPostersInViewport = Math.min(initialVideoPostersTotal, maxItemsToCheck);
       const videoPostersReadyInViewport = Math.min(initialVideoPostersReady, videoPostersInViewport);
-      const allVideoPostersReadyInViewport = videoPostersInViewport === 0 || videoPostersReadyInViewport >= videoPostersInViewport;
+      // Lower threshold for video posters too - 80% instead of 100%
+      const videoPostersReadyPercentage = videoPostersInViewport > 0 ? (videoPostersReadyInViewport / videoPostersInViewport) : 1;
       
-      // Dismiss if viewport + 1 row is ready (80% threshold for images, 100% for video posters)
-      if (allVideoPostersReadyInViewport && itemsReadyPercentage >= 0.8) {
+      // Dismiss if viewport + 1 row is ready (60% threshold for images, 80% for video posters - much faster)
+      if (videoPostersReadyPercentage >= 0.8 && itemsReadyPercentage >= 0.6) {
         console.log(`✅ Ready to dismiss: Viewport + 1 row ready (${itemsReady}/${maxItemsToCheck} items, ${Math.round(itemsReadyPercentage * 100)}%), artworks loaded, joke complete + 2s`);
         setShowLoadingScreen(false);
         return;
