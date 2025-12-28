@@ -459,6 +459,8 @@ function DiscoverPageContent() {
   const [jokeCompleteTime, setJokeCompleteTime] = useState<number | null>(null);
   const MIN_JOKE_DISPLAY_TIME = 2000; // Minimum 2 seconds to display joke AFTER completion callback (so joke finishes + 2s minimum)
   const jokeCompletionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track if overlay should be permanently hidden - once hidden, never show again
+  const overlayPermanentlyHiddenRef = useRef(false);
   
   // Track when initial videos are ready
   const handleVideoReady = useCallback((artworkId: string) => {
@@ -2016,10 +2018,11 @@ function DiscoverPageContent() {
         )}
         
         {/* Loading overlay - Show ONLY while waiting for joke to complete OR artworks to load */}
-        {/* Hide overlay once joke completes AND artworks are loaded, even if loading is still true (media loading in background) */}
+        {/* Hide overlay IMMEDIATELY once joke completes AND artworks are loaded, even if loading is still true (media loading in background) */}
         {/* This prevents a second loading screen from covering the feed */}
-        {/* CRITICAL: Must check jokeCompleteTime to ensure joke has actually completed, not just the flag */}
-        {loading && (!artworksLoaded || !jokeComplete || !jokeCompleteTime) ? (
+        {/* CRITICAL: Only show overlay when we're actually waiting for something, not just when loading is true */}
+        {/* Use explicit check: show only if we're missing joke completion OR artworks, AND loading is true */}
+        {(loading && (!artworksLoaded || !jokeComplete || !jokeCompleteTime)) ? (
           <div 
             className="absolute inset-0 bg-background flex items-center justify-center z-10"
             style={{
