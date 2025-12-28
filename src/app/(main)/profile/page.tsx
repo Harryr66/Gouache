@@ -92,18 +92,18 @@ export default function ProfilePage() {
     loadEvents();
   }, [user?.id]);
 
-  // Show loading only if auth is still loading and no user
-  if (authLoading && !user) {
+  // Show loading spinner only if auth is still loading (no flash of dark rectangles)
+  if (authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 w-full max-w-full overflow-x-hidden">
-        <div className="animate-pulse space-y-4">
-          <div className="h-32 bg-muted rounded"></div>
-          <div className="h-64 bg-muted rounded"></div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <ThemeLoading text="" size="lg" />
         </div>
       </div>
     );
   }
 
+  // Show login prompt immediately after auth loads (no flash)
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8 w-full max-w-full overflow-x-hidden">
