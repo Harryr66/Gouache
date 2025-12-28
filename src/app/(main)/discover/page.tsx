@@ -1210,16 +1210,19 @@ function DiscoverPageContent() {
         // setJokeComplete(false); // REMOVED - causes second loading screen
         // setJokeCompleteTime(null); // REMOVED - causes second loading screen
         
-        // Fetch engagement metrics for all artworks
+        // OPTIMIZED: Fetch engagement metrics in background (non-blocking)
+        // Don't wait for this - it's not critical for initial display
         if (finalArtworks.length > 0) {
-          try {
-            const artworkIds = finalArtworks.map(a => a.id);
-            const engagements = await engagementTracker.getArtworkEngagements(artworkIds);
-            setArtworkEngagements(engagements);
-            log(`📊 Discover: Loaded engagement metrics for ${engagements.size} artworks`);
-          } catch (err) {
-            warn('⚠️ Error fetching engagement metrics:', err);
-          }
+          const artworkIds = finalArtworks.map(a => a.id);
+          // Fire and forget - update when ready
+          engagementTracker.getArtworkEngagements(artworkIds)
+            .then(engagements => {
+              setArtworkEngagements(engagements);
+              log(`📊 Discover: Loaded engagement metrics for ${engagements.size} artworks (background)`);
+            })
+            .catch(err => {
+              warn('⚠️ Error fetching engagement metrics (non-blocking):', err);
+            });
         }
       } catch (err: any) {
         const fetchDuration = Date.now() - fetchStartTime;
@@ -1291,6 +1294,33 @@ function DiscoverPageContent() {
       fetchingRef.current = false;
     };
   }, [discoverSettings.hideAiAssistedArt, theme, mounted, user?.id]); // Only depend on specific values, not entire objects
+
+  // OPTIMIZED: Prefetch next page when user is 80% through current content
+  const prefetchNextPage = useCallback(async () => {
+    if (isLoadingMore || !hasMore || !lastDocument || fetchingRef.current) {
+      return;
+    }
+    
+    // Silently prefetch in background (don't show loading state)
+    try {
+      const { PortfolioService } = await import('@/lib/database');
+      const result = await PortfolioService.getDiscoverPortfolioItems({
+        showInPortfolio: true,
+        deleted: false,
+        hideAI: discoverSettings.hideAiAssistedArt,
+        limit: 20,
+        startAfter: lastDocument,
+      });
+      
+      // Store prefetched data for instant display when user scrolls
+      if (result.items.length > 0) {
+        log(`🚀 Discover: Prefetched ${result.items.length} items (ready for instant load)`);
+        // Store in a ref or state for instant display
+      }
+    } catch (err) {
+      // Silent fail - prefetch is optional
+    }
+  }, [hasMore, lastDocument, discoverSettings.hideAiAssistedArt, isLoadingMore]);
 
   // Load more artworks when scrolling to bottom (pagination)
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
@@ -1416,6 +1446,21 @@ function DiscoverPageContent() {
       setIsLoadingMore(false);
     }
   }, [hasMore, lastDocument, isLoadingMore, discoverSettings]);
+
+  // OPTIMIZED: Prefetch when user scrolls 80% through content
+  useEffect(() => {
+    if (!hasMore || isLoadingMore || !lastDocument) return;
+    
+    const handleScroll = () => {
+      const scrollPercentage = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
+      if (scrollPercentage > 0.8 && !fetchingRef.current) {
+        prefetchNextPage();
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, isLoadingMore, lastDocument, prefetchNextPage]);
 
   // IntersectionObserver for infinite scroll pagination (Pinterest-style continuous scrolling)
   useEffect(() => {

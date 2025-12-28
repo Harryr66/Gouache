@@ -51,7 +51,8 @@ interface ArtworkTileProps {
   isInitialViewport?: boolean; // Flag to indicate this is in initial viewport
 }
 
-export function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, isInitialViewport: propIsInitialViewport }: ArtworkTileProps) {
+// Memoize to prevent unnecessary re-renders (performance optimization)
+export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, isInitialViewport: propIsInitialViewport }: ArtworkTileProps) {
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
@@ -1445,4 +1446,14 @@ const generateArtistContent = (artist: Artist) => ({
       )}
     </>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  // Only re-render if artwork data actually changed
+  return (
+    prevProps.artwork.id === nextProps.artwork.id &&
+    prevProps.artwork.imageUrl === nextProps.artwork.imageUrl &&
+    prevProps.artwork.title === nextProps.artwork.title &&
+    prevProps.hideBanner === nextProps.hideBanner &&
+    prevProps.isInitialViewport === nextProps.isInitialViewport
+  );
+});
