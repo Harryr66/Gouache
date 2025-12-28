@@ -653,13 +653,6 @@ export function UploadArtworkBasic() {
         await addContent(post, artworkForShop);
       }
 
-      toast({
-        title: 'Artwork uploaded',
-        description: addToPortfolio 
-          ? 'Your artwork has been added to your portfolio' + (isForSale ? ' and shop.' : '.')
-          : 'Your artwork has been uploaded' + (isForSale ? ' to your shop.' : '.'),
-      });
-
       // Reset form and cleanup object URLs
       files.forEach(file => {
         const url = URL.createObjectURL(file);
@@ -686,11 +679,6 @@ export function UploadArtworkBasic() {
       console.error('Upload error:', error);
       setUploadProgress(0);
       setCurrentUploadingFile('');
-      toast({
-        title: 'Upload failed',
-        description: 'Failed to upload artwork. Please try again.',
-        variant: 'destructive',
-      });
     } finally {
       setUploading(false);
       // Reset progress after a delay to allow user to see completion
