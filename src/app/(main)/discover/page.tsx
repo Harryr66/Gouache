@@ -459,8 +459,8 @@ function DiscoverPageContent() {
   const [jokeCompleteTime, setJokeCompleteTime] = useState<number | null>(null);
   const MIN_JOKE_DISPLAY_TIME = 2000; // Minimum 2 seconds to display joke AFTER completion callback (so joke finishes + 2s minimum)
   const jokeCompletionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Track if overlay should be permanently hidden - once hidden, never show again
-  const overlayPermanentlyHiddenRef = useRef(false);
+  // Track if overlay has been dismissed - once dismissed, NEVER show again (prevents second loading screen)
+  const overlayDismissedRef = useRef(false);
   
   // Track when initial videos are ready
   const handleVideoReady = useCallback((artworkId: string) => {
@@ -630,6 +630,7 @@ function DiscoverPageContent() {
           clearTimeout(loadingTimeoutRef.current);
         }
         console.log('✅ Content ready (video posters + images), dismissing loading screen (joke has finished + 2s minimum - VERIFIED)');
+        overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
         setTimeout(() => {
           setLoading(false);
         }, 200);
@@ -2020,7 +2021,8 @@ function DiscoverPageContent() {
         {/* Loading overlay - Show while loading is true (until preloading completes) */}
         {/* Keep overlay visible until ALL preloading is complete, then cut immediately to feed */}
         {/* This ensures smooth transition: joke completes -> preloading continues -> feed appears */}
-        {loading ? (
+        {/* CRITICAL: Once dismissed, NEVER show again to prevent second loading screen */}
+        {loading && !overlayDismissedRef.current ? (
           <div 
             className="absolute inset-0 bg-background flex items-center justify-center z-10"
             style={{
