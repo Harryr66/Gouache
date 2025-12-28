@@ -2017,19 +2017,10 @@ function DiscoverPageContent() {
           </div>
         )}
         
-        {/* Loading overlay - Show ONLY while waiting for joke to complete OR artworks to load */}
-        {/* Hide overlay IMMEDIATELY once joke completes AND artworks are loaded, even if loading is still true (media loading in background) */}
-        {/* This prevents a second loading screen from covering the feed */}
-        {/* CRITICAL: Once overlay is hidden (joke complete + artworks loaded), never show it again using ref flag */}
-        {(() => {
-          // Check if overlay should be permanently hidden
-          const shouldBeHidden = artworksLoaded && jokeComplete && jokeCompleteTime;
-          if (shouldBeHidden) {
-            overlayPermanentlyHiddenRef.current = true;
-          }
-          // Only show overlay if not permanently hidden AND we're waiting for something
-          return !overlayPermanentlyHiddenRef.current && loading && (!artworksLoaded || !jokeComplete || !jokeCompleteTime);
-        })() ? (
+        {/* Loading overlay - Show while loading is true (until preloading completes) */}
+        {/* Keep overlay visible until ALL preloading is complete, then cut immediately to feed */}
+        {/* This ensures smooth transition: joke completes -> preloading continues -> feed appears */}
+        {loading ? (
           <div 
             className="absolute inset-0 bg-background flex items-center justify-center z-10"
             style={{
