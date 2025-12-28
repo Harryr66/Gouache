@@ -640,6 +640,14 @@ const generateArtistContent = (artist: Artist) => ({
               {/* For videos, always try to show a poster/thumbnail - use imageUrl if available, otherwise use video's first frame via poster attribute */}
               {(imageUrl || videoUrl) ? (
                 <>
+                  {/* Skeleton loader for video poster - prevents black squares */}
+                  {imageUrl && !isImageLoaded && !imageError && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse z-0">
+                      <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      </div>
+                    </div>
+                  )}
                   {imageUrl ? (
         <Image
                       src={imageUrl}
