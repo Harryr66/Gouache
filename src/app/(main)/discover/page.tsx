@@ -690,7 +690,9 @@ function DiscoverPageContent() {
         let useFallback = false;
         
         try {
-          const INITIAL_FETCH_LIMIT = 25; // Reduced from 500 for faster initial load
+          // AGGRESSIVE: Fetch only 12 items initially (viewport + 1 row)
+          // This is 2x faster than 25, and we can load more on scroll
+          const INITIAL_FETCH_LIMIT = 12;
           const result = await PortfolioService.getDiscoverPortfolioItems({
             showInPortfolio: true,
             deleted: false,
