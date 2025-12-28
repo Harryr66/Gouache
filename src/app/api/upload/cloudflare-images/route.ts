@@ -49,7 +49,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔍 Cloudflare Images API: Uploading image...', {
+    // Upload image to Cloudflare Images
+    // Cloudflare Images API expects multipart/form-data, not raw buffer
+    console.log('🔍 Cloudflare Images API: Uploading image directly...', {
       accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
       accountHash: accountHash ? `${accountHash.substring(0, 8)}...` : 'MISSING',
       hasToken: !!apiToken,
@@ -58,43 +60,33 @@ export async function POST(request: NextRequest) {
       fileType: file.type,
     });
 
-    // Upload image to Cloudflare Images
+    // Upload image directly to Cloudflare Images
+    // Cloudflare Images API expects the file as multipart/form-data
     // Convert File to Blob for proper FormData handling in Node.js
-    let formDataToSend: FormData;
-    try {
-      const fileBuffer = await file.arrayBuffer();
-      const fileBlob = new Blob([fileBuffer], { type: file.type });
-      
-      formDataToSend = new FormData();
-      formDataToSend.append('file', fileBlob, file.name);
-    } catch (formDataError: any) {
-      console.error('❌ Error creating FormData:', formDataError);
-      return NextResponse.json(
-        { error: `Failed to prepare file for upload: ${formDataError.message || 'Unknown error'}` },
-        { status: 500 }
-      );
-    }
+    const fileBuffer = await file.arrayBuffer();
+    const fileBlob = new Blob([fileBuffer], { type: file.type });
+    
+    const cloudflareFormData = new FormData();
+    cloudflareFormData.append('file', fileBlob, file.name);
 
-    let uploadResponse: Response;
-    try {
-      uploadResponse = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiToken}`,
-            // Don't set Content-Type - fetch will set it with boundary for FormData
-          },
-          body: formDataToSend,
-        }
-      );
-    } catch (fetchError: any) {
-      console.error('❌ Error calling Cloudflare Images API:', fetchError);
-      return NextResponse.json(
-        { error: `Failed to connect to Cloudflare Images: ${fetchError.message || 'Network error'}` },
-        { status: 500 }
-      );
-    }
+    console.log('📤 Sending to Cloudflare Images:', {
+      fileSize: file.size,
+      fileName: file.name,
+      fileType: file.type,
+      formDataSize: fileBuffer.byteLength,
+    });
+
+    const uploadResponse = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          // Don't set Content-Type - fetch will set it with boundary for FormData
+        },
+        body: cloudflareFormData,
+      }
+    );
 
     if (!uploadResponse.ok) {
       let errorText: string;
