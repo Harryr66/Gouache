@@ -694,18 +694,23 @@ function DiscoverPageContent() {
     }
   }, [isMobile]);
 
+  // Track if fetch is in progress to prevent multiple simultaneous calls
+  const fetchingRef = useRef(false);
+  
   useEffect(() => {
+    // Prevent multiple simultaneous fetches
+    if (fetchingRef.current) {
+      log('⚠️ Discover: Fetch already in progress, skipping duplicate call');
+      return;
+    }
+    
     const fetchArtworks = async () => {
+      fetchingRef.current = true;
       const fetchStartTime = Date.now();
       try {
         // DO NOT set loading to true here - loading is already managed by joke completion logic
         // Setting it to true here would reset the loading screen after joke completes
         log('🔍 Discover: Starting to fetch artworks from cached API...');
-        
-        // Global timeout: if fetch takes more than 20 seconds, show placeholders
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Fetch timeout after 20 seconds')), 20000);
-        });
         
         // OPTIMIZED: Use cached API route for instant response (5-10s → <100ms)
         // Falls back to direct Firestore if API fails
@@ -1216,12 +1221,14 @@ function DiscoverPageContent() {
             warn('⚠️ Error fetching engagement metrics:', err);
           }
         }
-      } catch (err) {
-        error('❌ Error fetching artworks from artist profiles:', err);
+      } catch (err: any) {
+        const fetchDuration = Date.now() - fetchStartTime;
+        error(`❌ Error fetching artworks from artist profiles (took ${fetchDuration}ms):`, err);
         // Even on error, show placeholder artworks
-        const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
+        const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 6);
         setArtworks(placeholderArtworks);
         setArtworksLoaded(true); // Mark artworks as loaded even on error
+        log(`⚠️ Discover: Showing ${placeholderArtworks.length} placeholder artworks due to error`);
         
         // Count initial viewport media for preloading with connection-aware limits
         const connectionSpeed = getConnectionSpeed();
@@ -1269,6 +1276,8 @@ function DiscoverPageContent() {
         // DO NOT reset joke completion state - it must remain true once set to prevent overlay from reappearing
         // setJokeComplete(false); // REMOVED - causes second loading screen
         // setJokeCompleteTime(null); // REMOVED - causes second loading screen
+      } finally {
+        fetchingRef.current = false;
       }
     };
 
@@ -1276,7 +1285,12 @@ function DiscoverPageContent() {
     
     // Fetch ads for discover feed
     fetchActiveAds('discover', user?.id).then(setAds).catch(console.error);
-  }, [discoverSettings, theme, mounted, user]);
+    
+    // Cleanup: reset fetch flag if component unmounts
+    return () => {
+      fetchingRef.current = false;
+    };
+  }, [discoverSettings.hideAiAssistedArt, theme, mounted, user?.id]); // Only depend on specific values, not entire objects
 
   // Load more artworks when scrolling to bottom (pagination)
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
