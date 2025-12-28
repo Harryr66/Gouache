@@ -459,6 +459,16 @@ function DiscoverPageContent() {
   const jokeCompleteTimeRef = useRef<number | null>(null);
   const MIN_JOKE_DISPLAY_TIME = 2000; // 2 seconds minimum after joke completes
   
+  // Calculate how many items are in viewport + 1 row (for faster loading)
+  // This is what we'll wait for before dismissing the loading screen
+  const itemsToWaitFor = useMemo(() => {
+    // Estimate viewport height: ~2-3 rows visible, plus 1 extra row = 3-4 rows total
+    // Use columnCount to calculate: 3-4 rows × columnCount
+    const estimatedRowsInViewport = 3; // Conservative estimate
+    const extraRow = 1;
+    return columnCount * (estimatedRowsInViewport + extraRow);
+  }, [columnCount]);
+  
   // Track when initial videos are ready
   const handleVideoReady = useCallback((artworkId: string) => {
     if (!initialVideoReadyRef.current.has(artworkId)) {
