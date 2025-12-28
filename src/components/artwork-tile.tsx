@@ -15,6 +15,7 @@ import { useFollow } from '@/providers/follow-provider';
 import { usePlaceholder } from '@/hooks/use-placeholder';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
+import { useOptimizedImage } from '@/hooks/use-optimized-image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLikes } from '@/providers/likes-provider';
@@ -77,13 +78,43 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
   const previewTimerRef = useRef<NodeJS.Timeout | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Detect mobile for responsive images
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // Check if artwork has video (support both legacy videoUrl and new videoVariants)
   const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video' || (artwork as any).videoVariants;
-  // Use videoVariants.thumbnail for tiles (240p for faster loading), fallback to legacy videoUrl
-  const videoUrl = (artwork as any).videoVariants?.thumbnail || (artwork as any).videoUrl;
-  // Full quality URL for expanded view (720p)
-  const fullVideoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
+  
+  // Detect Cloudflare Stream URLs and handle appropriately
+  const isCloudflareStream = (artwork as any).videoUrl?.includes('cloudflarestream.com') || 
+                             (artwork as any).videoUrl?.includes('videodelivery.net');
+  
+  // For Cloudflare Stream, use HLS manifest URL for playback
+  // For Firebase/other, use direct video URL
+  let videoUrl = (artwork as any).videoVariants?.thumbnail || (artwork as any).videoUrl;
+  let fullVideoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
+  
+  // If Cloudflare Stream, ensure we're using the HLS manifest
+  if (isCloudflareStream && videoUrl && !videoUrl.includes('.m3u8')) {
+    // Extract video ID from Cloudflare Stream URL
+    const videoIdMatch = videoUrl.match(/cloudflarestream\.com\/([^/]+)/) || 
+                         videoUrl.match(/videodelivery\.net\/([^/]+)/);
+    if (videoIdMatch) {
+      const videoId = videoIdMatch[1];
+      const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
+      if (accountId) {
+        videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
+        fullVideoUrl = videoUrl; // Same for full quality (adaptive streaming)
+      }
+    }
+  }
   // For videos, prioritize video poster/thumbnail images - check for video-specific poster first
   // For videos, we need to ensure we have a poster/thumbnail image to display
   const imageUrl = hasVideo 
@@ -105,6 +136,15 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
         (artwork as any).mediaUrls?.[0] || 
         'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800'
       );
+  
+  // OPTIMIZED: Use optimized image hook for Pinterest/Instagram-style performance
+  const optimizedImage = useOptimizedImage({
+    src: imageUrl || '',
+    isGrid: true,
+    isMobile,
+    enableBlur: true,
+    priority: isInitialViewport,
+  });
   
   // Detect media aspect ratio for dynamic height calculation (Pinterest-style masonry)
   useEffect(() => {
@@ -859,8 +899,21 @@ const generateArtistContent = (artist: Artist) => ({
             </>
           ) : (
             <>
-              {/* Skeleton loader - prevents black squares (like Pinterest) */}
-              {!isImageLoaded && !imageError && (
+              {/* Blur-up placeholder (Pinterest/Instagram style) - shows instantly */}
+              {!isImageLoaded && !imageError && optimizedImage.placeholder && (
+                <div 
+                  className="absolute inset-0 z-0 blur-xl scale-110"
+                  style={{
+                    backgroundImage: `url(${optimizedImage.placeholder})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    filter: 'blur(20px)',
+                    opacity: 0.6,
+                  }}
+                />
+              )}
+              {/* Skeleton loader fallback */}
+              {!isImageLoaded && !imageError && !optimizedImage.placeholder && (
                 <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse z-0">
                   <div className="absolute inset-0 flex items-center justify-center opacity-20">
                     <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -868,12 +921,14 @@ const generateArtistContent = (artist: Artist) => ({
                 </div>
               )}
               <Image
-                src={imageError && fallbackImageUrl ? fallbackImageUrl : imageUrl}
+                src={imageError && fallbackImageUrl ? fallbackImageUrl : optimizedImage.src}
                 alt={artwork.imageAiHint || artwork.title || 'Artwork'}
                 fill
                 className={`object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
-                loading="eager"
-                priority={false}
+                loading={isInitialViewport ? "eager" : "lazy"}
+                priority={isInitialViewport}
+                sizes={optimizedImage.sizes}
+                quality={85}
                 key={retryCount} // Force re-render on retry
                 onLoad={() => {
                   setIsImageLoaded(true);

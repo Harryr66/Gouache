@@ -581,56 +581,22 @@ function DiscoverPageContent() {
       const timeSinceJoke = jokeComplete && jokeCompleteTimeRef.current ? Date.now() - jokeCompleteTimeRef.current : Infinity;
       const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
       
-      // Check if no media to load
-      if (effectiveImagesTotal === 0) {
-        // If joke is done + 2s, dismiss immediately (no media to wait for)
-        if (jokeTimeMet) {
-          console.log('✅ Ready to dismiss: No media to load, joke complete + 2s (VERIFIED)');
+      // OPTIMIZED: Dismiss immediately after joke + 2s (plenty of buffer time)
+      // Skeleton loaders and blur-up placeholders will handle visual loading state
+      // This ensures consistent, fast dismissal every time (like Pinterest/Instagram)
+      if (jokeTimeMet) {
+        // If artworks are loaded, dismiss immediately
+        if (artworksLoaded && artworks.length > 0) {
+          console.log(`✅ Ready to dismiss: Joke complete + 2s, ${artworks.length} artworks ready. Blur-up placeholders will handle media loading.`);
           setShowLoadingScreen(false);
           return;
         }
-        // If artworks haven't loaded after 15 seconds since joke completed, dismiss anyway (timeout fallback)
-        if (jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 15000) {
-          console.warn('⚠️ Timeout: No artworks loaded after 15s since joke completed, dismissing loading screen');
+        // If artworks not loaded yet, wait max 8s (reduced from 10s for faster fallback)
+        if (jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 8000) {
+          console.warn('⚠️ Timeout: Artworks not loaded after 8s, dismissing anyway (placeholders will show)');
           setShowLoadingScreen(false);
           return;
         }
-        return; // Wait for joke if no media
-      }
-      
-      // SPEED OPTIMIZATION: Only wait for viewport + 1 row worth of items
-      const maxItemsToCheck = Math.min(itemsToWaitForValue, effectiveImagesTotal);
-      
-      // Count how many of the first N items are ready
-      const itemsReady = Math.min(initialImagesReady, maxItemsToCheck);
-      const itemsReadyPercentage = maxItemsToCheck > 0 ? (itemsReady / maxItemsToCheck) : 1;
-      
-      // Also check video posters in viewport + 1 row
-      const videoPostersInViewport = Math.min(effectiveVideoPostersTotal, maxItemsToCheck);
-      const videoPostersReadyInViewport = Math.min(initialVideoPostersReady, videoPostersInViewport);
-      const videoPostersReadyPercentage = videoPostersInViewport > 0 ? (videoPostersReadyInViewport / videoPostersInViewport) : 1;
-      
-      // Check if media is ready (60% threshold for images, 80% for video posters)
-      const mediaReady = videoPostersReadyPercentage >= 0.8 && itemsReadyPercentage >= 0.6;
-      
-      // PARALLEL LOADING: Dismiss when BOTH conditions are met (whichever comes last)
-      // - Joke has completed + 2s minimum (ABSOLUTE REQUIREMENT)
-      // - Media is ready (viewport + 1 row)
-      if (jokeTimeMet && mediaReady) {
-        console.log(`✅ Ready to dismiss: BOTH conditions met - Media ready (${itemsReady}/${maxItemsToCheck} items, ${Math.round(itemsReadyPercentage * 100)}%), joke complete + 2s (VERIFIED)`);
-        setShowLoadingScreen(false);
-        return;
-      }
-      
-      // If media is ready but joke isn't done yet, wait for joke (media continues loading in background)
-      // If joke is done but media isn't ready, wait for media (joke has already finished)
-      // This is the parallel loading - both happen simultaneously
-      
-      // SAFETY TIMEOUT: If joke is done + 2s but media still not ready after 15s total, dismiss anyway
-      if (jokeTimeMet && !mediaReady && jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 15000) {
-        console.warn('⚠️ Safety timeout: Dismissing loading screen after 15s (media may not have loaded)');
-        setShowLoadingScreen(false);
-        return;
       }
     }
   }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor]);

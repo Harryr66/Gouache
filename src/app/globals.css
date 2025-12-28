@@ -49,6 +49,20 @@ h1, h2, h3, h4, h5, h6 {
   display: none;  /* Safari and Chrome */
 }
 
+/* Shimmer animation for skeleton loaders (Pinterest/Instagram style) */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
 .alice-regular {
   font-family: var(--font-alice, "Alice"), serif;
   font-weight: 400;

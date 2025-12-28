@@ -233,8 +233,17 @@ export function UploadArtworkBasic() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // TEMPORARY: Alert to verify function is called
+    alert(`Upload started! Files: ${files.length}, Title: ${title}`);
+    console.log('🔥🔥🔥 UploadArtworkBasic handleSubmit CALLED! 🔥🔥🔥');
+    console.log('🔥 Files:', files.length, 'Title:', title, 'User:', !!user);
+    
+    // Test Cloudflare env vars
+    const { testCloudflareEnv } = await import('@/lib/test-env');
+    testCloudflareEnv();
     
     if (!user || !files.length || !title.trim()) {
+      console.log('🔥 Validation failed - missing info');
       toast({
         title: 'Missing information',
         description: 'Please select at least one image or video and enter a title.',
@@ -289,10 +298,12 @@ export function UploadArtworkBasic() {
     }
 
     setUploading(true);
+    console.log(`🚀 UploadArtworkBasic: handleSubmit called, starting upload process...`);
 
     try {
       // Step 1: Compress images before upload (videos stay as-is for now)
       setCurrentUploadingFile('Preparing files...');
+      console.log(`🚀 UploadArtworkBasic: Step 1 - Compressing ${files.length} files...`);
       const processedFiles = await Promise.all(
         files.map(async (file) => {
           if (file.type.startsWith('image/')) {
@@ -321,54 +332,25 @@ export function UploadArtworkBasic() {
         const batchPromises = batch.map(async (file, batchIndex) => {
           const globalIndex = i + batchIndex;
           const isVideo = file.type.startsWith('video/');
-          const folder = isVideo ? 'artworks/videos' : 'portfolio';
-          const timestamp = Date.now();
-          const fileRef = ref(storage, `${folder}/${user.id}/${timestamp}_${globalIndex}_${file.name}`);
-          
           setCurrentUploadingFile(`${globalIndex + 1}/${processedFiles.length}: ${file.name}`);
           
           try {
-            // Use resumable upload for videos or large files (>5MB)
-            if (isVideo || file.size > 5 * 1024 * 1024) {
-              const uploadTask = uploadBytesResumable(fileRef, file);
-              
-              return new Promise<{ url: string; type: 'image' | 'video'; index: number }>((resolve, reject) => {
-                uploadTask.on(
-                  'state_changed',
-                  (snapshot) => {
-                    // Calculate progress for this specific file
-                    const fileProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    // Calculate overall progress including all files
-                    const overallProgress = ((globalIndex * 100 + fileProgress) / processedFiles.length);
-                    setUploadProgress(overallProgress);
-                  },
-                  (error) => {
-                    console.error(`Error uploading file ${globalIndex + 1}:`, error);
-                    reject(error);
-                  },
-                  async () => {
-                    try {
-                      const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                      const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
-                      resolve({ url: fileUrl, type: mediaType, index: globalIndex });
-                    } catch (error) {
-                      console.error(`Error getting download URL for file ${globalIndex + 1}:`, error);
-                      reject(error);
-                    }
-                  }
-                );
-              });
-            } else {
-              // Use regular upload for small files
-              await uploadBytes(fileRef, file);
-              const fileUrl = await getDownloadURL(fileRef);
-              // Update progress
-              const overallProgress = ((globalIndex + 1) * 100 / processedFiles.length);
-              setUploadProgress(overallProgress);
-              
-              const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
-              return { url: fileUrl, type: mediaType, index: globalIndex };
-            }
+            console.log(`🚀 UploadArtworkBasic: Starting upload for file ${globalIndex + 1}: ${file.name} (${isVideo ? 'video' : 'image'})`);
+            // Use Cloudflare if configured, otherwise fallback to Firebase
+            const { uploadMedia } = await import('@/lib/media-upload');
+            console.log(`🚀 UploadArtworkBasic: uploadMedia imported, calling now...`);
+            const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
+            console.log(`🚀 UploadArtworkBasic: Calling uploadMedia with type: ${mediaType}`);
+            const uploadResult = await uploadMedia(file, mediaType, user.id);
+            console.log(`🚀 UploadArtworkBasic: uploadMedia returned:`, uploadResult);
+            
+            // Update progress
+            const overallProgress = ((globalIndex + 1) * 100 / processedFiles.length);
+            setUploadProgress(overallProgress);
+            
+            console.log(`✅ UploadArtworkBasic: File ${globalIndex + 1} uploaded to ${uploadResult.provider}:`, uploadResult.url);
+            
+            return { url: uploadResult.url, type: mediaType, index: globalIndex };
           } catch (error) {
             console.error(`Error uploading file ${globalIndex + 1}:`, error);
             throw error;
@@ -1297,9 +1279,37 @@ export function UploadArtworkBasic() {
           )}
 
           {/* Submit Button */}
-          <Button type="submit" variant="gradient" disabled={uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0} className="w-full">
-            {uploading ? 'Uploading...' : 'Upload Artwork'}
-          </Button>
+          <div className="space-y-2">
+            {/* Debug info - shows why button might be disabled */}
+            <div className="text-xs text-muted-foreground p-2 bg-muted rounded border-2 border-orange-500">
+              <p className="font-bold">🔍 DEBUG INFO:</p>
+              <p>Files: {files.length} {files.length > 0 ? '✅' : '❌'}</p>
+              <p>Title: {title.trim() ? '✅' : '❌'} "{title.substring(0, 20)}"</p>
+              <p>Terms: {agreedToTerms ? '✅' : '❌'}</p>
+              <p>Tags: {tags.length} {tags.length > 0 ? '✅' : '❌'}</p>
+              <p className="font-bold mt-2">Button disabled: {uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0 ? 'YES ❌' : 'NO ✅'}</p>
+            </div>
+            <Button 
+              type="submit" 
+              variant="gradient" 
+              disabled={uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0} 
+              className="w-full"
+              onClick={(e) => {
+                console.log('🔥🔥🔥 BUTTON CLICKED! 🔥🔥🔥');
+                console.log('🔥 Button state:', {
+                  uploading,
+                  filesLength: files.length,
+                  title: title.trim(),
+                  agreedToTerms,
+                  tagsLength: tags.length,
+                  disabled: uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0
+                });
+                alert('Button clicked! Check console for details.');
+              }}
+            >
+              {uploading ? 'Uploading...' : 'Upload Artwork'}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

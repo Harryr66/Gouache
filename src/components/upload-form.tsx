@@ -191,19 +191,15 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
         })
       );
 
-      // Step 2: Upload all files in parallel
+      // Step 2: Upload all files in parallel (Cloudflare or Firebase)
       console.log('📤 UploadForm: Uploading files in parallel...');
-      const timestamp = Date.now();
-      const uploadPromises = processedFiles.map(async (file, i) => {
-        console.log(`📤 UploadForm: Uploading file ${i + 1}/${processedFiles.length}...`);
-        const fileRef = ref(storage, `portfolio/${user.id}/${timestamp}_${i}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        const fileUrl = await getDownloadURL(fileRef);
-        console.log(`✅ UploadForm: File ${i + 1} uploaded to Storage:`, fileUrl);
-        return fileUrl;
+      const { uploadMultipleMedia } = await import('@/lib/media-upload');
+      const uploadResults = await uploadMultipleMedia(processedFiles, user.id);
+      
+      const uploadedUrls = uploadResults.map((result, i) => {
+        console.log(`✅ UploadForm: File ${i + 1} uploaded to ${result.provider}:`, result.url);
+        return result.url;
       });
-
-      const uploadedUrls = await Promise.all(uploadPromises);
 
       // Use first image as primary imageUrl, store all in supportingImages
       const primaryImageUrl = uploadedUrls[0];
