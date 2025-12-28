@@ -190,7 +190,7 @@ export default function NewsPage() {
 
   return (
     <>
-    <div className="container max-w-6xl w-full px-6 sm:px-8 lg:px-12 py-12 space-y-10 overflow-x-hidden">
+    <div className="container max-w-6xl w-full px-6 sm:px-8 lg:px-20 xl:px-24 py-12 space-y-10 overflow-x-hidden">
       <header className="space-y-6">
         <div className="space-y-2">
           <Badge variant="outline" className="uppercase tracking-widest">
@@ -340,7 +340,7 @@ export default function NewsPage() {
     </div>
     
     {/* Newsletter Signup - Bottom with Standard Theme Colors */}
-    <div className="container max-w-6xl px-6 sm:px-8 lg:px-12 pt-12 pb-16 border-t">
+    <div className="container max-w-6xl px-6 sm:px-8 lg:px-20 xl:px-24 pt-12 pb-16 border-t">
       <NewsletterSignup />
     </div>
     </>
