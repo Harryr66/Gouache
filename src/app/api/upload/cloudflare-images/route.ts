@@ -22,9 +22,29 @@ export async function POST(request: NextRequest) {
     const accountHash = process.env.NEXT_PUBLIC_CLOUDFLARE_IMAGES_ACCOUNT_HASH;
     const apiToken = process.env.NEXT_PUBLIC_CLOUDFLARE_IMAGES_API_TOKEN;
 
+    // Debug: Log environment variable status
+    console.log('🔍 Cloudflare Images API: Environment check...', {
+      accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
+      accountHash: accountHash ? `${accountHash.substring(0, 8)}...` : 'MISSING',
+      hasToken: !!apiToken,
+      tokenLength: apiToken ? apiToken.length : 0,
+      allEnvKeys: Object.keys(process.env).filter(k => k.includes('CLOUDFLARE')),
+    });
+
     if (!accountId || !apiToken) {
+      console.error('❌ Cloudflare Images: Missing credentials', {
+        hasAccountId: !!accountId,
+        hasApiToken: !!apiToken,
+        envKeys: Object.keys(process.env).filter(k => k.includes('CLOUDFLARE')),
+      });
       return NextResponse.json(
-        { error: 'Cloudflare Images credentials not configured' },
+        { 
+          error: 'Cloudflare Images credentials not configured',
+          details: {
+            hasAccountId: !!accountId,
+            hasApiToken: !!apiToken,
+          }
+        },
         { status: 500 }
       );
     }
@@ -35,6 +55,7 @@ export async function POST(request: NextRequest) {
       hasToken: !!apiToken,
       fileSize: file.size,
       fileName: file.name,
+      fileType: file.type,
     });
 
     // Upload image to Cloudflare Images
