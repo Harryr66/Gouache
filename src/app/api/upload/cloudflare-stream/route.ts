@@ -19,7 +19,20 @@ export async function POST(request: NextRequest) {
     const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
     const apiToken = process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_API_TOKEN;
 
+    // Debug: Log environment variable status
+    console.log('🔍 Cloudflare Stream API: Environment check...', {
+      accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
+      hasToken: !!apiToken,
+      tokenLength: apiToken ? apiToken.length : 0,
+      allEnvKeys: Object.keys(process.env).filter(k => k.includes('CLOUDFLARE')),
+    });
+
     if (!accountId || !apiToken) {
+      console.error('❌ Cloudflare Stream: Missing credentials', {
+        hasAccountId: !!accountId,
+        hasApiToken: !!apiToken,
+        envKeys: Object.keys(process.env).filter(k => k.includes('CLOUDFLARE')),
+      });
       return NextResponse.json(
         { error: 'Cloudflare Stream credentials not configured' },
         { status: 500 }
@@ -44,24 +57,42 @@ export async function POST(request: NextRequest) {
     const cloudflareFormData = new FormData();
     cloudflareFormData.append('file', fileBlob, file.name);
 
-    console.log('📤 Sending to Cloudflare:', {
+    console.log('📤 Sending to Cloudflare Stream:', {
       fileSize: file.size,
       fileName: file.name,
       fileType: file.type,
       formDataSize: fileBuffer.byteLength,
+      endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
     });
 
-    const uploadResponse = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiToken}`,
-          // Don't set Content-Type - fetch will set it with boundary for FormData
+    let uploadResponse: Response;
+    try {
+      uploadResponse = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`,
+            // Don't set Content-Type - fetch will set it with boundary for FormData
+          },
+          body: cloudflareFormData,
+        }
+      );
+    } catch (fetchError: any) {
+      console.error('❌ Error calling Cloudflare Stream API (fetch failed):', {
+        error: fetchError?.message,
+        stack: fetchError?.stack,
+        name: fetchError?.name,
+        code: fetchError?.code,
+      });
+      return NextResponse.json(
+        { 
+          error: `Network error calling Cloudflare Stream: ${fetchError?.message || 'Unknown error'}`,
+          ...(process.env.NODE_ENV === 'development' && { details: fetchError?.stack })
         },
-        body: cloudflareFormData,
-      }
-    );
+        { status: 500 }
+      );
+    }
 
     if (!uploadResponse.ok) {
       let errorText: string;
