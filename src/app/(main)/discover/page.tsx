@@ -1713,7 +1713,8 @@ function DiscoverPageContent() {
     return () => window.removeEventListener('resize', updateItemsPerRow);
   }, [getItemsPerRow]);
 
-  // Infinite scroll observer for artworks
+  // Infinite scroll observer for list view - progressively show more items
+  // Also triggers loadMoreArtworks when we're near the end of visible items
   useEffect(() => {
     const sentinel = loadMoreRef.current;
     if (!sentinel) return;
@@ -1721,6 +1722,12 @@ function DiscoverPageContent() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
+          // If we're showing most of the available items, load more from server
+          if (visibleCount >= filteredAndSortedArtworks.length * 0.8 && hasMore && !isLoadingMore) {
+            loadMoreArtworks();
+          }
+          
+          // Also progressively show more items from already loaded data
           startTransition(() => {
             setVisibleCount((prev) => {
               // Load additional rows progressively from top to bottom
@@ -1733,11 +1740,14 @@ function DiscoverPageContent() {
           });
         }
       });
-    }, { rootMargin: '400px' }); // Increased rootMargin for earlier loading, smoother continuous scroll
+    }, { 
+      rootMargin: '400px', // Start loading 400px before reaching bottom for smoother continuous scroll (Pinterest-style)
+      threshold: 0.1, // Trigger when 10% of sentinel is visible
+    });
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [filteredAndSortedArtworks, itemsPerRow]);
+  }, [filteredAndSortedArtworks, itemsPerRow, visibleCount, hasMore, isLoadingMore, loadMoreArtworks]);
 
   const visibleFilteredArtworks = useMemo(() => {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
