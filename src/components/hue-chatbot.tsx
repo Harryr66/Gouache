@@ -57,6 +57,8 @@ export function HueChatbot() {
   const containerRef = useRef<HTMLDivElement>(null);
   const wasExpandedRef = useRef(false);
   const [isMobile, setIsMobile] = useState(false);
+  // Track reported errors to prevent duplicate notifications
+  const reportedErrorsRef = useRef<Set<string>>(new Set());
   
   // Set isMobile in useEffect to prevent hydration mismatches
   useEffect(() => {
@@ -284,11 +286,38 @@ export function HueChatbot() {
     }
   }, [isMobile]);
 
+  // Generate a unique identifier for an error to track duplicates
+  const getErrorId = (error: Error | any, route: string, context?: string, errorType?: string, errorCode?: string): string => {
+    let errorMessage = error?.message || String(error) || 'Unknown error';
+    
+    // Normalize error message (remove context for ID generation to catch same error in different contexts)
+    const baseMessage = errorMessage.split(' (Context:')[0].trim();
+    
+    // Create a unique identifier based on route, error message, type, and code
+    const parts = [
+      route,
+      baseMessage,
+      errorType || 'JavaScript Error',
+      errorCode || error?.code || '',
+    ].filter(Boolean);
+    
+    return parts.join('|');
+  };
+
   // Global error handler function - catches ALL errors
   const handleErrorReport = (error: Error | any, context?: string, errorType?: string, errorCode?: string) => {
-    const route = window.location.pathname;
+    const route = pathname || window.location.pathname;
     const timestamp = new Date().toISOString();
     const userAgent = navigator.userAgent;
+
+    // Generate unique error identifier
+    const errorId = getErrorId(error, route, context, errorType, errorCode);
+    
+    // Check if this error has already been reported
+    if (reportedErrorsRef.current.has(errorId)) {
+      console.log('Hue: Error already reported, skipping duplicate notification:', errorId);
+      return;
+    }
 
     // Build comprehensive error message
     let errorMessage = error?.message || String(error) || 'Unknown error';
@@ -311,6 +340,9 @@ export function HueChatbot() {
 
     console.error('Hue detected error:', report);
 
+    // Mark this error as reported
+    reportedErrorsRef.current.add(errorId);
+
     setErrorReport(report);
     setHasError(true);
     setIsExpanded(true);
@@ -319,6 +351,11 @@ export function HueChatbot() {
     // Force show Hue when error detected
     setHueEnabled(true);
   };
+
+  // Clear reported errors when route changes (allows same error on different pages to be reported)
+  useEffect(() => {
+    reportedErrorsRef.current.clear();
+  }, [pathname]);
 
   // Set global error handler so it can be called from anywhere
   useEffect(() => {
