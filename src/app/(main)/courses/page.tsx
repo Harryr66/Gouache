@@ -36,6 +36,14 @@ export default function CoursesPage() {
     fetchActiveAds('learn', user?.id).then(setAds).catch(console.error);
   }, [user]);
 
+  // Courses are already filtered by CourseProvider to only include published and approved courses
+  const publishedCourses = courses;
+
+  // Mix ads into courses - MUST be called before early return to maintain hook order
+  const coursesWithAds = useMemo(() => {
+    return mixAdsIntoContent(publishedCourses, ads, 2);
+  }, [publishedCourses, ads]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -43,14 +51,6 @@ export default function CoursesPage() {
       </div>
     );
   }
-
-  // Courses are already filtered by CourseProvider to only include published and approved courses
-  const publishedCourses = courses;
-
-  // Mix ads into courses
-  const coursesWithAds = useMemo(() => {
-    return mixAdsIntoContent(publishedCourses, ads, 2);
-  }, [publishedCourses, ads]);
 
   return (
     <div className="min-h-screen bg-background">
