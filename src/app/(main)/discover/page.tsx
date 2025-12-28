@@ -694,7 +694,9 @@ function DiscoverPageContent() {
       }
       clearTimeout(safetyTimeout);
     };
-  }, [artworksLoaded, jokeComplete, jokeCompleteTime, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, loading]);
+    // REMOVED 'loading' from dependencies to prevent effect re-running when loading changes
+    // This prevents timeouts from being reset and causing race conditions
+  }, [artworksLoaded, jokeComplete, jokeCompleteTime, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
