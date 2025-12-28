@@ -1079,10 +1079,10 @@ function DiscoverPageContent() {
         
         log(`🎯 Discover: Final artworks count (real + placeholders): ${finalArtworks.length}`);
         
-        if (limitedArtworks.length === 0) {
+        if (safeArtworks.length === 0) {
           warn('⚠️ Discover: No real artworks found, showing only placeholders');
         } else {
-          log(`✅ Discover: Showing ${limitedArtworks.length} real artworks + ${placeholderArtworks.length} placeholder artworks`);
+          log(`✅ Discover: Showing ${safeArtworks.length} real artworks + ${placeholderArtworks.length} placeholder artworks`);
         }
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
