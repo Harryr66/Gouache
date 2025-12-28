@@ -2001,9 +2001,10 @@ function DiscoverPageContent() {
           </div>
         )}
         
-        {/* Loading overlay - only show if loading AND (artworks not loaded OR joke not complete) */}
-        {/* Once artworks are loaded AND joke is complete, hide overlay even if loading is still true (media loading) */}
-        {loading && (!artworksLoaded || !jokeComplete) ? (
+        {/* Loading overlay - ALWAYS show while loading is true to ensure joke animation completes */}
+        {/* The joke MUST be visible until it finishes typing + pause + minimum display time */}
+        {/* We only hide the overlay when loading becomes false (which only happens after joke completes + 2s minimum) */}
+        {loading ? (
           <div 
             className="absolute inset-0 bg-background flex items-center justify-center z-10"
             style={{
