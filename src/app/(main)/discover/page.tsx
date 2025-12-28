@@ -551,22 +551,52 @@ function DiscoverPageContent() {
       // Get itemsToWaitFor from the memoized value
       const itemsToWaitForValue = itemsToWaitFor;
       
+      // CRITICAL: If initialImagesTotal is 0 but we have artworks, calculate it now from artworks
+      // This prevents waiting for artworksLoaded before we can check media
+      let effectiveImagesTotal = initialImagesTotal;
+      let effectiveVideoPostersTotal = initialVideoPostersTotal;
+      
+      if (effectiveImagesTotal === 0 && artworks.length > 0) {
+        // Calculate media counts from available artworks immediately
+        const availableArtworks = artworks.slice(0, itemsToWaitForValue);
+        let videoPosterCount = 0;
+        let regularImageCount = 0;
+        
+        for (const artwork of availableArtworks) {
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          if (hasVideo && artwork.imageUrl) {
+            videoPosterCount++;
+          } else if (!hasVideo && artwork.imageUrl) {
+            regularImageCount++;
+          }
+        }
+        
+        effectiveVideoPostersTotal = videoPosterCount;
+        effectiveImagesTotal = videoPosterCount + regularImageCount;
+        
+        // Set the totals so tracking can work
+        if (effectiveImagesTotal > 0) {
+          setInitialVideoPostersTotal(effectiveVideoPostersTotal);
+          setInitialImagesTotal(effectiveImagesTotal);
+        }
+      }
+      
       // Check if no media to load
-      if (initialImagesTotal === 0) {
+      if (effectiveImagesTotal === 0) {
         console.log('✅ Ready to dismiss: No media to load, joke complete + 2s (VERIFIED)');
         setShowLoadingScreen(false);
         return;
       }
       
       // SPEED OPTIMIZATION: Only wait for viewport + 1 row worth of items
-      const maxItemsToCheck = Math.min(itemsToWaitForValue, initialImagesTotal);
+      const maxItemsToCheck = Math.min(itemsToWaitForValue, effectiveImagesTotal);
       
       // Count how many of the first N items are ready
       const itemsReady = Math.min(initialImagesReady, maxItemsToCheck);
       const itemsReadyPercentage = maxItemsToCheck > 0 ? (itemsReady / maxItemsToCheck) : 1;
       
       // Also check video posters in viewport + 1 row
-      const videoPostersInViewport = Math.min(initialVideoPostersTotal, maxItemsToCheck);
+      const videoPostersInViewport = Math.min(effectiveVideoPostersTotal, maxItemsToCheck);
       const videoPostersReadyInViewport = Math.min(initialVideoPostersReady, videoPostersInViewport);
       const videoPostersReadyPercentage = videoPostersInViewport > 0 ? (videoPostersReadyInViewport / videoPostersInViewport) : 1;
       
