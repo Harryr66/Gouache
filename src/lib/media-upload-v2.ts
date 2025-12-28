@@ -67,8 +67,19 @@ export async function uploadMedia(
           duration: result.duration,
         };
       } else {
-        const error = await response.json();
-        console.log(`⚠️ uploadMedia: Cloudflare Stream API returned error:`, error.error);
+        // Try to parse error as JSON, fallback to text
+        let error;
+        try {
+          const errorText = await response.text();
+          try {
+            error = JSON.parse(errorText);
+          } catch {
+            error = { error: errorText || `HTTP ${response.status}: ${response.statusText}` };
+          }
+        } catch {
+          error = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        console.log(`⚠️ uploadMedia: Cloudflare Stream API returned error:`, error.error || error.message || `HTTP ${response.status}`);
         // Fall through to Firebase
       }
     } catch (error: any) {

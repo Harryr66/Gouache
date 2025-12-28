@@ -64,22 +64,39 @@ export async function POST(request: NextRequest) {
     );
 
     if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
+      let errorText: string;
+      try {
+        errorText = await uploadResponse.text();
+      } catch (textError) {
+        errorText = `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`;
+      }
+      
       let error;
       try {
         error = JSON.parse(errorText);
       } catch {
+        // If it's not JSON, treat the text as the error message
         error = { errors: [{ message: errorText }] };
       }
+      
       console.error('❌ Cloudflare Stream API Error:', {
         status: uploadResponse.status,
         statusText: uploadResponse.statusText,
         error: error.errors?.[0]?.message || errorText,
         fullError: error,
+        errorText: errorText,
+        hint: uploadResponse.status === 403 ? 'Check API token permissions for Cloudflare Stream' : undefined,
       });
+      
       return NextResponse.json(
-        { error: `Failed to upload video: ${error.errors?.[0]?.message || 'Unknown error'}` },
-        { status: uploadResponse.status }
+        { 
+          error: `Failed to upload video: ${error.errors?.[0]?.message || errorText || 'Unknown error'}`,
+          status: uploadResponse.status,
+          ...(uploadResponse.status === 403 && {
+            hint: 'API token may not have Stream permissions. Check token permissions in Cloudflare dashboard.'
+          })
+        },
+        { status: uploadResponse.status >= 400 && uploadResponse.status < 600 ? uploadResponse.status : 500 }
       );
     }
 
