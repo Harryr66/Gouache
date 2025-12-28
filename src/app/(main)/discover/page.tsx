@@ -503,92 +503,128 @@ function DiscoverPageContent() {
     jokeCompleteTimeRef.current = Date.now();
   }, []);
   
-  // CLEAN LOADING SCREEN LOGIC - Simple and straightforward
-  // Dismiss loading screen when ALL conditions are met:
-  // 1. Joke has completed AND been displayed for minimum 2 seconds
-  // 2. Artworks are loaded
+  // OPTIMIZED LOADING SCREEN LOGIC - Parallel instead of sequential
+  // Dismiss loading screen when:
+  // 1. Joke has completed (can be concurrent with media loading)
+  // 2. We have enough artworks for viewport + 1 row (don't wait for ALL artworks)
   // 3. Media is ready (video posters + threshold of images) - only viewport + 1 row
+  // 4. Joke has been displayed for minimum time OR media is ready (whichever comes last)
   useEffect(() => {
     // Don't check if loading screen is already dismissed
     if (!showLoadingScreen) {
       return;
     }
     
-    // Must wait for joke to complete
-    if (!jokeCompleteTimeRef.current) {
-      return;
-    }
+    // Check if we have enough artworks to start checking media (viewport + 1 row)
+    // Don't wait for ALL artworks - just enough to fill the viewport
+    const hasEnoughArtworks = artworks.length >= itemsToWaitFor || artworksLoaded;
     
-    // Must wait for artworks to load
-    if (!artworksLoaded) {
-      return;
+    // If we don't have enough artworks yet, wait a bit and check again
+    if (!hasEnoughArtworks && artworks.length === 0) {
+      return; // No artworks at all yet, wait
     }
-    
-    // Check if joke has been displayed for minimum time (2s after completion)
-    const timeSinceJokeComplete = Date.now() - jokeCompleteTimeRef.current;
-    if (timeSinceJokeComplete < MIN_JOKE_DISPLAY_TIME) {
-      const remainingTime = MIN_JOKE_DISPLAY_TIME - timeSinceJokeComplete;
-      const timeout = setTimeout(() => {
-        // Re-check after minimum time has passed
-        checkIfReadyToDismiss();
-      }, remainingTime);
-      return () => clearTimeout(timeout);
-    }
-    
-    // Joke has been displayed for minimum time, now check media readiness
-    checkIfReadyToDismiss();
     
     function checkIfReadyToDismiss() {
       // Get itemsToWaitFor from the memoized value
       const itemsToWaitForValue = itemsToWaitFor;
-      // Double-check joke time
-      if (!jokeCompleteTimeRef.current) return;
-      const timeSinceJoke = Date.now() - jokeCompleteTimeRef.current;
-      if (timeSinceJoke < MIN_JOKE_DISPLAY_TIME) return;
       
       // Check if no media to load
       if (initialImagesTotal === 0) {
-        console.log('✅ Ready to dismiss: No media to load, artworks loaded, joke complete + 2s');
-        setShowLoadingScreen(false);
-        return;
+        // If joke is complete, dismiss immediately (no media to wait for)
+        if (jokeCompleteTimeRef.current) {
+          const timeSinceJoke = Date.now() - jokeCompleteTimeRef.current;
+          if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
+            console.log('✅ Ready to dismiss: No media to load, joke complete + 2s');
+            setShowLoadingScreen(false);
+            return;
+          }
+        }
+        return; // Wait for joke if no media
       }
       
       // SPEED OPTIMIZATION: Only wait for viewport + 1 row worth of items
-      // Calculate how many items we need to wait for (viewport + 1 row)
       const maxItemsToCheck = Math.min(itemsToWaitForValue, initialImagesTotal);
       
       // Count how many of the first N items are ready
-      // AGGRESSIVE: Lower threshold to 60% for faster dismissal (like Pinterest)
       const itemsReady = Math.min(initialImagesReady, maxItemsToCheck);
       const itemsReadyPercentage = maxItemsToCheck > 0 ? (itemsReady / maxItemsToCheck) : 1;
       
       // Also check video posters in viewport + 1 row
       const videoPostersInViewport = Math.min(initialVideoPostersTotal, maxItemsToCheck);
       const videoPostersReadyInViewport = Math.min(initialVideoPostersReady, videoPostersInViewport);
-      // Lower threshold for video posters too - 80% instead of 100%
       const videoPostersReadyPercentage = videoPostersInViewport > 0 ? (videoPostersReadyInViewport / videoPostersInViewport) : 1;
       
-      // Dismiss if viewport + 1 row is ready (60% threshold for images, 80% for video posters - much faster)
-      if (videoPostersReadyPercentage >= 0.8 && itemsReadyPercentage >= 0.6) {
-        console.log(`✅ Ready to dismiss: Viewport + 1 row ready (${itemsReady}/${maxItemsToCheck} items, ${Math.round(itemsReadyPercentage * 100)}%), artworks loaded, joke complete + 2s`);
-        setShowLoadingScreen(false);
-        return;
+      // Check if media is ready (60% images, 80% video posters)
+      const mediaReady = videoPostersReadyPercentage >= 0.8 && itemsReadyPercentage >= 0.6;
+      
+      // Check joke timing
+      const jokeComplete = !!jokeCompleteTimeRef.current;
+      const timeSinceJoke = jokeComplete ? Date.now() - jokeCompleteTimeRef.current : Infinity;
+      const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
+      
+      // Dismiss if BOTH conditions are met:
+      // - Media is ready (viewport + 1 row)
+      // - Joke has completed + minimum time OR joke hasn't completed yet but media is ready (dismiss anyway after 3s max joke wait)
+      if (mediaReady) {
+        if (jokeTimeMet) {
+          // Perfect: media ready + joke time met
+          console.log(`✅ Ready to dismiss: Media ready (${itemsReady}/${maxItemsToCheck} items, ${Math.round(itemsReadyPercentage * 100)}%), joke complete + 2s`);
+          setShowLoadingScreen(false);
+          return;
+        } else if (jokeComplete && timeSinceJoke >= 1000) {
+          // Media ready, joke complete but only 1s passed - wait a bit more
+          const remainingTime = MIN_JOKE_DISPLAY_TIME - timeSinceJoke;
+          setTimeout(() => {
+            if (showLoadingScreen) {
+              console.log(`✅ Ready to dismiss: Media ready, joke time now met`);
+              setShowLoadingScreen(false);
+            }
+          }, remainingTime);
+          return;
+        } else if (!jokeComplete) {
+          // Media ready but joke not complete - wait max 3s for joke, then dismiss
+          setTimeout(() => {
+            if (showLoadingScreen) {
+              console.log(`✅ Ready to dismiss: Media ready, dismissing after max joke wait`);
+              setShowLoadingScreen(false);
+            }
+          }, 3000); // Max 3s wait for joke if media is already ready
+          return;
+        }
       }
       
-      // Set fallback timeout (15s max) - reduced since we're only waiting for viewport + 1 row
+      // Set aggressive fallback timeout (8s max) - dismiss if media is mostly ready
       const fallbackTimeout = setTimeout(() => {
-        if (showLoadingScreen && jokeCompleteTimeRef.current) {
-          const timeSinceJoke = Date.now() - jokeCompleteTimeRef.current;
-          if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
-            console.log('⚠️ Fallback timeout: Dismissing loading screen (joke complete + 2s, viewport + 1 row partially loaded)');
+        if (showLoadingScreen) {
+          // If we have at least 50% of media ready, dismiss anyway
+          if (itemsReadyPercentage >= 0.5 || videoPostersReadyPercentage >= 0.5) {
+            console.log('⚠️ Fallback timeout: Dismissing with partial media ready');
+            setShowLoadingScreen(false);
+          } else if (jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
+            // Joke time met but media not ready - dismiss anyway
+            console.log('⚠️ Fallback timeout: Dismissing (joke complete + 2s, partial media)');
             setShowLoadingScreen(false);
           }
         }
-      }, 15000); // Reduced from 40s to 15s since we're only waiting for viewport + 1 row
+      }, 8000); // Aggressive 8s timeout
       
       return () => clearTimeout(fallbackTimeout);
     }
-  }, [showLoadingScreen, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor]);
+    
+    // Check immediately and set up interval to re-check
+    checkIfReadyToDismiss();
+    
+    // Re-check every 500ms for faster response
+    const interval = setInterval(() => {
+      if (showLoadingScreen) {
+        checkIfReadyToDismiss();
+      } else {
+        clearInterval(interval);
+      }
+    }, 500);
+    
+    return () => clearInterval(interval);
+  }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
