@@ -637,7 +637,8 @@ function DiscoverPageContent() {
   const [showEventFilters, setShowEventFilters] = useState(false);
   // Initialize with a reasonable default that will be adjusted based on screen size
   // Start with enough items to fill initial viewport, loading progressively from top to bottom
-  const [visibleCount, setVisibleCount] = useState(20); // Start with ~2-3 screens worth for smooth initial load
+  // AGGRESSIVE: Start with only 6-9 items (viewport + 1 row) for faster loading
+  const [visibleCount, setVisibleCount] = useState(9);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market list, Events grid on mobile
@@ -728,11 +729,13 @@ function DiscoverPageContent() {
         
         // Only process portfolioItems if we have them and aren't using fallback
         if (!useFallback && portfolioItems.length > 0) {
-          // Batch fetch artist data in parallel to avoid N+1 queries
+          // CRITICAL OPTIMIZATION: Don't block on artist profiles - use fallback data immediately
+          // Fetch artist profiles in background, update when ready
           const artistIds = new Set<string>(portfolioItems.map(item => item.userId));
           const artistDataMap = new Map<string, any>();
           
-          log(`👥 Discover: Fetching ${artistIds.size} artist profiles in parallel...`);
+          // Start fetching artist profiles but don't await - process items immediately
+          log(`👥 Discover: Fetching ${artistIds.size} artist profiles in background (non-blocking)...`);
           const artistPromises = Array.from(artistIds).map(async (artistId) => {
             try {
               const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
@@ -744,15 +747,27 @@ function DiscoverPageContent() {
             }
           });
           
-          await Promise.all(artistPromises);
+          // Don't await - let it load in background, use fallback for now
+          Promise.all(artistPromises).then(() => {
+            log('✅ Artist profiles loaded in background');
+          });
           
-          // Process portfolio items
+          // Process portfolio items immediately with fallback artist data
           for (const [index, item] of portfolioItems.entries()) {
-            // Get artist data
-            const artistData = artistDataMap.get(item.userId);
+            // Get artist data (use fallback if not loaded yet)
+            let artistData = artistDataMap.get(item.userId);
+            
+            // If not loaded yet, use minimal fallback (don't skip - show content immediately)
             if (!artistData) {
-              skippedNoArtist++;
-              continue;
+              artistData = {
+                displayName: item.artistName || item.userId || 'Artist',
+                username: item.artistHandle || item.userId || 'artist',
+                avatarUrl: item.artistAvatarUrl || null,
+                isVerified: false,
+                followerCount: 0,
+                followingCount: 0,
+                createdAt: new Date(),
+              };
             }
             
             // Get media URL (support video or image)
@@ -1045,19 +1060,21 @@ function DiscoverPageContent() {
         
         // No fallback: only show current portfolio items with images, skip deleted/hidden
         
-        // Limit to 100 most recent to ensure good content coverage
+        // AGGRESSIVE: Use all fetched artworks (only 12 initially), no artificial limit
         const safeArtworks = Array.isArray(fetchedArtworks) ? fetchedArtworks : [];
-        const limitedArtworks = safeArtworks.slice(0, 100);
+        // Don't slice - use all fetched (only 12 items initially, load more on scroll)
         
-        log(`🎯 Discover: Real artworks count: ${limitedArtworks.length}`);
+        log(`🎯 Discover: Real artworks count: ${safeArtworks.length}`);
         
-        // Always generate placeholder artworks to fill the feed
-        const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 20);
+        // Generate minimal placeholders only if we have very few items
+        const placeholderCount = safeArtworks.length < 6 ? 6 - safeArtworks.length : 0;
+        const placeholderArtworks = placeholderCount > 0 
+          ? generatePlaceholderArtworks(mounted ? theme : undefined, placeholderCount)
+          : [];
         
-        // Combine real artworks with placeholders
-        // If we have real artworks, mix them with placeholders. If not, show only placeholders.
-        const finalArtworks = limitedArtworks.length > 0 
-          ? [...limitedArtworks, ...placeholderArtworks]
+        // Combine real artworks with minimal placeholders
+        const finalArtworks = safeArtworks.length > 0 
+          ? [...safeArtworks, ...placeholderArtworks]
           : placeholderArtworks;
         
         log(`🎯 Discover: Final artworks count (real + placeholders): ${finalArtworks.length}`);
@@ -1076,8 +1093,8 @@ function DiscoverPageContent() {
         // Strategy: Load poster images first (fast), limit videos to 3 per viewport, connection-aware preload count
         const connectionSpeed = getConnectionSpeed();
         
-        // Connection-aware preload count: fast = more, slow = less
-        const preloadCount = connectionSpeed === 'fast' ? 3 : connectionSpeed === 'medium' ? 2 : 1;
+        // AGGRESSIVE: Preload only 1-2 items (viewport + 1 row is enough)
+        const preloadCount = connectionSpeed === 'fast' ? 2 : 1;
         
         // Limit videos to 3 per viewport for consistent performance
         const MAX_VIDEOS_PER_VIEWPORT = 3;
@@ -1725,10 +1742,11 @@ function DiscoverPageContent() {
   }, [filteredAndSortedArtworks, visibleCount, ads]);
 
   useEffect(() => {
-    // Reset to initial count when filters change
-    const initialCount = 18; // Start with 18 items (works for various screen sizes)
+    // AGGRESSIVE: Reset to minimal count when filters change (6-9 items based on connection)
+    const connectionSpeed = getConnectionSpeed();
+    const initialCount = connectionSpeed === 'fast' ? 9 : 6;
     setVisibleCount(initialCount);
-  }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation]);
+  }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, getConnectionSpeed]);
 
   useEffect(() => {
     const fetchMarketplaceProducts = async () => {
