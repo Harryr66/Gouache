@@ -1935,7 +1935,7 @@ function DiscoverPageContent() {
   
   // Debug: Log loading state changes (DO NOT force loading to false - must wait for joke)
   useEffect(() => {
-    console.log('🔍 Discover: Loading state changed:', loading, 'Artworks loaded:', artworksLoaded, 'Joke complete:', jokeComplete);
+    console.log('🔍 Discover: Loading state changed:', loading, 'Artworks loaded:', artworksLoaded, 'Joke complete:', jokeComplete, 'Overlay dismissed:', overlayDismissedRef.current);
   }, [loading, artworksLoaded, jokeComplete, isDev]);
 
   // Safety fallback: Force loading to false after maximum time ONLY if joke has completed
@@ -2027,27 +2027,35 @@ function DiscoverPageContent() {
         {/* Keep overlay visible until ALL preloading is complete, then cut immediately to feed */}
         {/* This ensures smooth transition: joke completes -> preloading continues -> feed appears */}
         {/* CRITICAL: Once dismissed, NEVER show again to prevent second loading screen */}
-        {loading && !overlayDismissedRef.current ? (
-          <div 
-            className="absolute inset-0 bg-background flex items-center justify-center z-10"
-            style={{
-              pointerEvents: 'none', // Never block clicks - navigation always accessible
-              touchAction: 'none', // Prevent touch events from being captured
-            }}
-            aria-hidden="true"
-          >
+        {/* Use strict check: only show if loading is true AND overlay has NOT been dismissed */}
+        {(() => {
+          const shouldShow = loading && !overlayDismissedRef.current;
+          if (!shouldShow && overlayDismissedRef.current) {
+            // Overlay has been dismissed - ensure it never shows again
+            return null;
+          }
+          return shouldShow ? (
             <div 
-              className="flex flex-col items-center justify-center gap-6"
+              className="absolute inset-0 bg-background flex items-center justify-center z-10"
               style={{
-                pointerEvents: 'auto', // Allow clicks on loading animation itself
-                touchAction: 'none',
+                pointerEvents: 'none', // Never block clicks - navigation always accessible
+                touchAction: 'none', // Prevent touch events from being captured
               }}
+              aria-hidden="true"
             >
-              <ThemeLoading size="lg" />
-              <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
+              <div 
+                className="flex flex-col items-center justify-center gap-6"
+                style={{
+                  pointerEvents: 'auto', // Allow clicks on loading animation itself
+                  touchAction: 'none',
+                }}
+              >
+                <ThemeLoading size="lg" />
+                <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null;
+        })()}
         
         {/* Main content - always clickable, navigation outside this container */}
         <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden">
