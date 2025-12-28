@@ -233,13 +233,8 @@ export function UploadArtworkBasic() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TEMPORARY: Alert to verify function is called
-    alert(`Upload started! Files: ${files.length}, Title: ${title}`);
-    console.log('🔥🔥🔥 UploadArtworkBasic handleSubmit CALLED! 🔥🔥🔥');
-    console.log('🔥 Files:', files.length, 'Title:', title, 'User:', !!user);
     
     if (!user || !files.length || !title.trim()) {
-      console.log('🔥 Validation failed - missing info');
       toast({
         title: 'Missing information',
         description: 'Please select at least one image or video and enter a title.',
@@ -294,18 +289,15 @@ export function UploadArtworkBasic() {
     }
 
     setUploading(true);
-    console.log(`🚀 UploadArtworkBasic: handleSubmit called, starting upload process...`);
 
     try {
       // Step 1: Compress images before upload (videos stay as-is for now)
       setCurrentUploadingFile('Preparing files...');
-      console.log(`🚀 UploadArtworkBasic: Step 1 - Compressing ${files.length} files...`);
       const processedFiles = await Promise.all(
         files.map(async (file) => {
           if (file.type.startsWith('image/')) {
             try {
               const compressed = await compressImage(file);
-              console.log(`✅ Compressed ${file.name}: ${(file.size / 1024).toFixed(1)}KB → ${(compressed.size / 1024).toFixed(1)}KB`);
               return compressed;
             } catch (error) {
               console.warn(`Failed to compress ${file.name}, using original:`, error);
@@ -331,20 +323,15 @@ export function UploadArtworkBasic() {
           setCurrentUploadingFile(`${globalIndex + 1}/${processedFiles.length}: ${file.name}`);
           
           try {
-            console.log(`🚀 UploadArtworkBasic: Starting upload for file ${globalIndex + 1}: ${file.name} (${isVideo ? 'video' : 'image'})`);
             // Use Cloudflare if configured, otherwise fallback to Firebase
             const { uploadMedia } = await import('@/lib/media-upload-v2');
-            console.log(`🚀 UploadArtworkBasic: uploadMedia imported, calling now...`);
             const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
-            console.log(`🚀 UploadArtworkBasic: Calling uploadMedia with type: ${mediaType}`);
             const uploadResult = await uploadMedia(file, mediaType, user.id);
-            console.log(`🚀 UploadArtworkBasic: uploadMedia returned:`, uploadResult);
             
             // Update progress
             const overallProgress = ((globalIndex + 1) * 100 / processedFiles.length);
             setUploadProgress(overallProgress);
             
-            console.log(`✅ UploadArtworkBasic: File ${globalIndex + 1} uploaded to ${uploadResult.provider}:`, uploadResult.url);
             
             return { url: uploadResult.url, type: mediaType, index: globalIndex };
           } catch (error) {
@@ -473,7 +460,6 @@ export function UploadArtworkBasic() {
         
         if (existingItem) {
           await PortfolioService.updatePortfolioItem(artworkItem.id, portfolioItemData);
-          console.log('✅ Portfolio item updated in portfolioItems collection');
         } else {
           // Use setDoc to use the existing ID
           await setDoc(doc(db, 'portfolioItems', artworkItem.id), {
@@ -482,7 +468,6 @@ export function UploadArtworkBasic() {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           });
-          console.log('✅ Portfolio item created in portfolioItems collection');
         }
 
         // BACKWARD COMPATIBILITY: Also update userProfiles.portfolio array
@@ -498,7 +483,6 @@ export function UploadArtworkBasic() {
             portfolio: finalCleanedPortfolio,
             updatedAt: new Date(),
           });
-          console.log('✅ Portfolio item added to userProfiles.portfolio (backward compatibility)');
         } catch (legacyError) {
           console.warn('⚠️ Failed to update legacy userProfiles.portfolio (non-critical):', legacyError);
         }
@@ -1276,32 +1260,11 @@ export function UploadArtworkBasic() {
 
           {/* Submit Button */}
           <div className="space-y-2">
-            {/* Debug info - shows why button might be disabled */}
-            <div className="text-xs text-muted-foreground p-2 bg-muted rounded border-2 border-orange-500">
-              <p className="font-bold">🔍 DEBUG INFO:</p>
-              <p>Files: {files.length} {files.length > 0 ? '✅' : '❌'}</p>
-              <p>Title: {title.trim() ? '✅' : '❌'} "{title.substring(0, 20)}"</p>
-              <p>Terms: {agreedToTerms ? '✅' : '❌'}</p>
-              <p>Tags: {tags.length} {tags.length > 0 ? '✅' : '❌'}</p>
-              <p className="font-bold mt-2">Button disabled: {uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0 ? 'YES ❌' : 'NO ✅'}</p>
-            </div>
             <Button 
               type="submit" 
               variant="gradient" 
               disabled={uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0} 
               className="w-full"
-              onClick={(e) => {
-                console.log('🔥🔥🔥 BUTTON CLICKED! 🔥🔥🔥');
-                console.log('🔥 Button state:', {
-                  uploading,
-                  filesLength: files.length,
-                  title: title.trim(),
-                  agreedToTerms,
-                  tagsLength: tags.length,
-                  disabled: uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0
-                });
-                alert('Button clicked! Check console for details.');
-              }}
             >
               {uploading ? 'Uploading...' : 'Upload Artwork'}
             </Button>
