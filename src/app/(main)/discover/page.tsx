@@ -654,12 +654,14 @@ function DiscoverPageContent() {
         const timeSinceJoke = Date.now() - jokeCompleteTime;
         if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
           log('⚠️ Loading timeout (40s) reached - showing content with partial media loaded (joke has finished + 2s minimum)');
+          overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
           setLoading(false);
         } else {
           log(`⚠️ STRICT: Loading timeout reached but joke minimum time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms), waiting for joke + 2s...`);
           // Wait for joke minimum time, then dismiss
           setTimeout(() => {
             log('✅ Joke minimum time now met, dismissing loading screen');
+            overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
             setLoading(false);
           }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
         }
@@ -681,12 +683,14 @@ function DiscoverPageContent() {
           setTimeout(() => {
             if (loading) {
               console.warn('⚠️ Safety timeout: Forcing loading to false after joke + 2s minimum met');
+              overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
               setLoading(false);
             }
           }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
           return;
         }
         console.warn('⚠️ Safety timeout: Forcing loading to false after 60s (joke has completed + 2s minimum - VERIFIED)');
+        overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
         setLoading(false);
       }
     }, 60000); // Increased to 60s to allow joke time
@@ -1944,6 +1948,7 @@ function DiscoverPageContent() {
         // Only force dismiss if joke has been complete for at least 2 seconds
         if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
           console.warn('⚠️ Discover: Safety timeout (60s) reached - forcing loading to false (joke has completed + 2s minimum)');
+          overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
           setLoading(false);
         }
       }
