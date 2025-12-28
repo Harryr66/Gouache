@@ -508,6 +508,13 @@ function DiscoverPageContent() {
   // 2. Artworks are loaded
   // 3. Initial images/videos are ready (or there are none to load)
   useEffect(() => {
+    // CRITICAL SAFEGUARD: If overlay has been dismissed, never allow loading to be true again
+    if (overlayDismissedRef.current && loading) {
+      console.warn('⚠️ CRITICAL: Overlay was dismissed but loading is still true - forcing to false to prevent second loading screen');
+      setLoading(false);
+      return;
+    }
+    
     // Don't proceed if artworks aren't loaded yet
     if (!artworksLoaded) {
       return;
