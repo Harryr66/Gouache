@@ -535,34 +535,41 @@ function DiscoverPageContent() {
         return;
       }
       
-      // Check media readiness: ALL video posters + threshold of regular images
-      const allVideoPostersReady = initialVideoPostersTotal === 0 || initialVideoPostersReady >= initialVideoPostersTotal;
-      const connectionSpeed = getConnectionSpeed();
-      const regularImageThreshold = connectionSpeed === 'fast' ? 0.6 : connectionSpeed === 'medium' ? 0.5 : 0.3;
-      const regularImagesTotal = initialImagesTotal - initialVideoPostersTotal;
-      const regularImagesReady = initialImagesReady - initialVideoPostersReady;
-      const regularImageReadyPercentage = regularImagesTotal > 0 ? (regularImagesReady / regularImagesTotal) : 1;
+      // SPEED OPTIMIZATION: Only wait for viewport + 1 row worth of items
+      // Calculate how many items we need to wait for (viewport + 1 row)
+      const maxItemsToCheck = Math.min(itemsToWaitFor, initialImagesTotal);
       
-      if (allVideoPostersReady && regularImageReadyPercentage >= regularImageThreshold) {
-        console.log('✅ Ready to dismiss: Media loaded, artworks loaded, joke complete + 2s');
+      // Count how many of the first N items are ready
+      // We'll use a simple heuristic: if we have at least 80% of viewport+1row ready, dismiss
+      const itemsReady = Math.min(initialImagesReady, maxItemsToCheck);
+      const itemsReadyPercentage = maxItemsToCheck > 0 ? (itemsReady / maxItemsToCheck) : 1;
+      
+      // Also check video posters in viewport + 1 row
+      const videoPostersInViewport = Math.min(initialVideoPostersTotal, maxItemsToCheck);
+      const videoPostersReadyInViewport = Math.min(initialVideoPostersReady, videoPostersInViewport);
+      const allVideoPostersReadyInViewport = videoPostersInViewport === 0 || videoPostersReadyInViewport >= videoPostersInViewport;
+      
+      // Dismiss if viewport + 1 row is ready (80% threshold for images, 100% for video posters)
+      if (allVideoPostersReadyInViewport && itemsReadyPercentage >= 0.8) {
+        console.log(`✅ Ready to dismiss: Viewport + 1 row ready (${itemsReady}/${maxItemsToCheck} items, ${Math.round(itemsReadyPercentage * 100)}%), artworks loaded, joke complete + 2s`);
         setShowLoadingScreen(false);
         return;
       }
       
-      // Set fallback timeout (40s max) - only if joke has completed + 2s
+      // Set fallback timeout (15s max) - reduced since we're only waiting for viewport + 1 row
       const fallbackTimeout = setTimeout(() => {
         if (showLoadingScreen && jokeCompleteTimeRef.current) {
           const timeSinceJoke = Date.now() - jokeCompleteTimeRef.current;
           if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
-            console.log('⚠️ Fallback timeout: Dismissing loading screen (joke complete + 2s, partial media)');
+            console.log('⚠️ Fallback timeout: Dismissing loading screen (joke complete + 2s, viewport + 1 row partially loaded)');
             setShowLoadingScreen(false);
           }
         }
-      }, 40000);
+      }, 15000); // Reduced from 40s to 15s since we're only waiting for viewport + 1 row
       
       return () => clearTimeout(fallbackTimeout);
     }
-  }, [showLoadingScreen, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed]);
+  }, [showLoadingScreen, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
@@ -1858,7 +1865,10 @@ function DiscoverPageContent() {
                   }
                 }
                 
-                return preloadTiles.map((artwork) => {
+                // Only preload viewport + 1 row worth of items for faster loading
+                const preloadSlice = preloadTiles.slice(0, itemsToWaitFor);
+                
+                return preloadSlice.map((artwork) => {
                   const isInitial = true;
                   const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                   const hasImage = !!artwork.imageUrl;
