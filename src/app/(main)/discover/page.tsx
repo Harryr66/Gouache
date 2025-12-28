@@ -1216,8 +1216,9 @@ function DiscoverPageContent() {
         setInitialVideosReady(0);
         setInitialImagesReady(0);
         setInitialVideoPostersReady(0);
-        setJokeComplete(false); // Reset joke completion state
-        setJokeCompleteTime(null); // Reset joke completion time
+        // DO NOT reset joke completion state - it must remain true once set to prevent overlay from reappearing
+        // setJokeComplete(false); // REMOVED - causes second loading screen
+        // setJokeCompleteTime(null); // REMOVED - causes second loading screen
         
         // Fetch engagement metrics for all artworks
         if (finalArtworks.length > 0) {
@@ -1280,8 +1281,9 @@ function DiscoverPageContent() {
         setInitialVideosReady(0);
         setInitialImagesReady(0);
         setInitialVideoPostersReady(0);
-        setJokeComplete(false); // Reset joke completion state
-        setJokeCompleteTime(null); // Reset joke completion time
+        // DO NOT reset joke completion state - it must remain true once set to prevent overlay from reappearing
+        // setJokeComplete(false); // REMOVED - causes second loading screen
+        // setJokeCompleteTime(null); // REMOVED - causes second loading screen
       }
     };
 
