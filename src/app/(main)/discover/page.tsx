@@ -2519,7 +2519,7 @@ function DiscoverPageContent() {
         </Tabs>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
