@@ -2034,35 +2034,28 @@ function DiscoverPageContent() {
         {/* Keep overlay visible until ALL preloading is complete, then cut immediately to feed */}
         {/* This ensures smooth transition: joke completes -> preloading continues -> feed appears */}
         {/* CRITICAL: Once dismissed, NEVER show again to prevent second loading screen */}
-        {/* Use strict check: only show if loading is true AND overlay has NOT been dismissed */}
-        {(() => {
-          const shouldShow = loading && !overlayDismissedRef.current;
-          if (!shouldShow && overlayDismissedRef.current) {
-            // Overlay has been dismissed - ensure it never shows again
-            return null;
-          }
-          return shouldShow ? (
+        {/* COMPLETELY REMOVE from DOM when dismissed - no conditional rendering that could cause flash */}
+        {!overlayDismissedRef.current && loading ? (
+          <div 
+            className="absolute inset-0 bg-background flex items-center justify-center z-10"
+            style={{
+              pointerEvents: 'none', // Never block clicks - navigation always accessible
+              touchAction: 'none', // Prevent touch events from being captured
+            }}
+            aria-hidden="true"
+          >
             <div 
-              className="absolute inset-0 bg-background flex items-center justify-center z-10"
+              className="flex flex-col items-center justify-center gap-6"
               style={{
-                pointerEvents: 'none', // Never block clicks - navigation always accessible
-                touchAction: 'none', // Prevent touch events from being captured
+                pointerEvents: 'auto', // Allow clicks on loading animation itself
+                touchAction: 'none',
               }}
-              aria-hidden="true"
             >
-              <div 
-                className="flex flex-col items-center justify-center gap-6"
-                style={{
-                  pointerEvents: 'auto', // Allow clicks on loading animation itself
-                  touchAction: 'none',
-                }}
-              >
-                <ThemeLoading size="lg" />
-                <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
-              </div>
+              <ThemeLoading size="lg" />
+              <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
             </div>
-          ) : null;
-        })()}
+          </div>
+        ) : null}
         
         {/* Main content - always clickable, navigation outside this container */}
         <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden">
