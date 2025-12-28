@@ -503,24 +503,19 @@ function DiscoverPageContent() {
     jokeCompleteTimeRef.current = Date.now();
   }, []);
   
-  // OPTIMIZED LOADING SCREEN LOGIC - Joke MUST complete + 2s minimum (NON-NEGOTIABLE)
-  // Dismiss loading screen when ALL conditions are met:
+  // PARALLEL LOADING LOGIC - Joke and media load simultaneously
+  // The joke entertains the user WHILE media loads in the background
+  // Dismiss when BOTH conditions are met (whichever comes last):
   // 1. Joke has completed AND been displayed for minimum 2 seconds (ABSOLUTE REQUIREMENT)
-  // 2. We have enough artworks for viewport + 1 row (don't wait for ALL artworks - this is the optimization)
-  // 3. Media is ready (video posters + threshold of images) - only viewport + 1 row
+  // 2. Media is ready (video posters + threshold of images) - only viewport + 1 row
   useEffect(() => {
     // Don't check if loading screen is already dismissed
     if (!showLoadingScreen) {
       return;
     }
     
-    // ABSOLUTE REQUIREMENT: Must wait for joke to complete
-    if (!jokeCompleteTimeRef.current) {
-      return;
-    }
-    
     // Check if we have enough artworks to start checking media (viewport + 1 row)
-    // Don't wait for ALL artworks - just enough to fill the viewport (this is the optimization)
+    // Don't wait for ALL artworks - just enough to fill the viewport
     const hasEnoughArtworks = artworks.length >= itemsToWaitFor || artworksLoaded;
     
     // If we don't have enough artworks yet, wait a bit and check again
@@ -528,31 +523,27 @@ function DiscoverPageContent() {
       return; // No artworks at all yet, wait
     }
     
-    // ABSOLUTE REQUIREMENT: Check if joke has been displayed for minimum time (2s after completion)
-    const timeSinceJokeComplete = Date.now() - jokeCompleteTimeRef.current;
-    if (timeSinceJokeComplete < MIN_JOKE_DISPLAY_TIME) {
-      const remainingTime = MIN_JOKE_DISPLAY_TIME - timeSinceJokeComplete;
-      const timeout = setTimeout(() => {
-        // Re-check after minimum time has passed
-        checkIfReadyToDismiss();
-      }, remainingTime);
-      return () => clearTimeout(timeout);
-    }
-    
-    // Joke has been displayed for minimum time, now check media readiness
+    // PARALLEL: Check media readiness continuously (don't wait for joke)
+    // Media can start loading immediately while joke plays
     checkIfReadyToDismiss();
     
+    // Re-check every 500ms to catch when conditions are met
+    const interval = setInterval(() => {
+      if (showLoadingScreen) {
+        checkIfReadyToDismiss();
+      } else {
+        clearInterval(interval);
+      }
+    }, 500);
+    
+    return () => clearInterval(interval);
+    
     function checkIfReadyToDismiss() {
-      // ABSOLUTE REQUIREMENT: Double-check joke time
-      if (!jokeCompleteTimeRef.current) return;
-      const timeSinceJoke = Date.now() - jokeCompleteTimeRef.current;
-      if (timeSinceJoke < MIN_JOKE_DISPLAY_TIME) return;
-      
       // Get itemsToWaitFor from the memoized value
       const itemsToWaitForValue = itemsToWaitFor;
       
       // CRITICAL: If initialImagesTotal is 0 but we have artworks, calculate it now from artworks
-      // This prevents waiting for artworksLoaded before we can check media
+      // This allows media tracking to start immediately, in parallel with joke
       let effectiveImagesTotal = initialImagesTotal;
       let effectiveVideoPostersTotal = initialVideoPostersTotal;
       
@@ -574,18 +565,26 @@ function DiscoverPageContent() {
         effectiveVideoPostersTotal = videoPosterCount;
         effectiveImagesTotal = videoPosterCount + regularImageCount;
         
-        // Set the totals so tracking can work
+        // Set the totals so tracking can work immediately
         if (effectiveImagesTotal > 0) {
           setInitialVideoPostersTotal(effectiveVideoPostersTotal);
           setInitialImagesTotal(effectiveImagesTotal);
         }
       }
       
+      // Check joke timing (ABSOLUTE REQUIREMENT: joke must complete + 2s)
+      const jokeComplete = !!jokeCompleteTimeRef.current;
+      const timeSinceJoke = jokeComplete && jokeCompleteTimeRef.current ? Date.now() - jokeCompleteTimeRef.current : Infinity;
+      const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
+      
       // Check if no media to load
       if (effectiveImagesTotal === 0) {
-        console.log('✅ Ready to dismiss: No media to load, joke complete + 2s (VERIFIED)');
-        setShowLoadingScreen(false);
-        return;
+        // If joke is done + 2s, dismiss immediately (no media to wait for)
+        if (jokeTimeMet) {
+          console.log('✅ Ready to dismiss: No media to load, joke complete + 2s (VERIFIED)');
+          setShowLoadingScreen(false);
+        }
+        return; // Wait for joke if no media
       }
       
       // SPEED OPTIMIZATION: Only wait for viewport + 1 row worth of items
@@ -600,27 +599,21 @@ function DiscoverPageContent() {
       const videoPostersReadyInViewport = Math.min(initialVideoPostersReady, videoPostersInViewport);
       const videoPostersReadyPercentage = videoPostersInViewport > 0 ? (videoPostersReadyInViewport / videoPostersInViewport) : 1;
       
-      // Dismiss if viewport + 1 row is ready (60% threshold for images, 80% for video posters)
-      // BUT ONLY IF joke has completed + 2s minimum (ABSOLUTE REQUIREMENT)
-      if (videoPostersReadyPercentage >= 0.8 && itemsReadyPercentage >= 0.6) {
-        console.log(`✅ Ready to dismiss: Media ready (${itemsReady}/${maxItemsToCheck} items, ${Math.round(itemsReadyPercentage * 100)}%), joke complete + 2s (VERIFIED)`);
+      // Check if media is ready (60% threshold for images, 80% for video posters)
+      const mediaReady = videoPostersReadyPercentage >= 0.8 && itemsReadyPercentage >= 0.6;
+      
+      // PARALLEL LOADING: Dismiss when BOTH conditions are met (whichever comes last)
+      // - Joke has completed + 2s minimum (ABSOLUTE REQUIREMENT)
+      // - Media is ready (viewport + 1 row)
+      if (jokeTimeMet && mediaReady) {
+        console.log(`✅ Ready to dismiss: BOTH conditions met - Media ready (${itemsReady}/${maxItemsToCheck} items, ${Math.round(itemsReadyPercentage * 100)}%), joke complete + 2s (VERIFIED)`);
         setShowLoadingScreen(false);
         return;
       }
       
-      // Set fallback timeout (15s max) - only dismiss if joke has completed + 2s
-      const fallbackTimeout = setTimeout(() => {
-        if (showLoadingScreen && jokeCompleteTimeRef.current) {
-          const timeSinceJoke = Date.now() - jokeCompleteTimeRef.current;
-          // ABSOLUTE REQUIREMENT: Only dismiss if joke time is met
-          if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
-            console.log('⚠️ Fallback timeout: Dismissing loading screen (joke complete + 2s VERIFIED, partial media)');
-            setShowLoadingScreen(false);
-          }
-        }
-      }, 15000);
-      
-      return () => clearTimeout(fallbackTimeout);
+      // If media is ready but joke isn't done yet, wait for joke (media continues loading in background)
+      // If joke is done but media isn't ready, wait for media (joke has already finished)
+      // This is the parallel loading - both happen simultaneously
     }
   }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor]);
   const { settings: discoverSettings } = useDiscoverSettings();
