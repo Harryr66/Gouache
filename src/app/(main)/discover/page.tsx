@@ -2006,7 +2006,8 @@ function DiscoverPageContent() {
         {/* Loading overlay - Show ONLY while waiting for joke to complete OR artworks to load */}
         {/* Hide overlay once joke completes AND artworks are loaded, even if loading is still true (media loading in background) */}
         {/* This prevents a second loading screen from covering the feed */}
-        {loading && (!artworksLoaded || !jokeComplete) ? (
+        {/* CRITICAL: Must check jokeCompleteTime to ensure joke has actually completed, not just the flag */}
+        {loading && (!artworksLoaded || !jokeComplete || !jokeCompleteTime) ? (
           <div 
             className="absolute inset-0 bg-background flex items-center justify-center z-10"
             style={{
