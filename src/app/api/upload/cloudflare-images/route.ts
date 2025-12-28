@@ -18,31 +18,47 @@ export async function POST(request: NextRequest) {
 
     // Cloudflare Images uses account ID (same as Stream), not account hash
     // The account hash is only for the delivery URL (imagedelivery.net)
-    const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
-    const accountHash = process.env.NEXT_PUBLIC_CLOUDFLARE_IMAGES_ACCOUNT_HASH;
-    const apiToken = process.env.NEXT_PUBLIC_CLOUDFLARE_IMAGES_API_TOKEN;
+    // Try multiple ways to access env vars (Next.js can be inconsistent)
+    const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || 
+                      process.env.CLOUDFLARE_ACCOUNT_ID;
+    const accountHash = process.env.NEXT_PUBLIC_CLOUDFLARE_IMAGES_ACCOUNT_HASH || 
+                        process.env.CLOUDFLARE_IMAGES_ACCOUNT_HASH;
+    const apiToken = process.env.NEXT_PUBLIC_CLOUDFLARE_IMAGES_API_TOKEN || 
+                     process.env.CLOUDFLARE_IMAGES_API_TOKEN;
 
     // Debug: Log environment variable status
+    const allEnvKeys = Object.keys(process.env).filter(k => k.includes('CLOUDFLARE'));
     console.log('🔍 Cloudflare Images API: Environment check...', {
       accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
       accountHash: accountHash ? `${accountHash.substring(0, 8)}...` : 'MISSING',
       hasToken: !!apiToken,
       tokenLength: apiToken ? apiToken.length : 0,
-      allEnvKeys: Object.keys(process.env).filter(k => k.includes('CLOUDFLARE')),
+      allEnvKeys: allEnvKeys,
+      allEnvKeysCount: allEnvKeys.length,
+      nodeEnv: process.env.NODE_ENV,
     });
 
     if (!accountId || !apiToken) {
+      const envKeys = Object.keys(process.env).filter(k => k.includes('CLOUDFLARE'));
       console.error('❌ Cloudflare Images: Missing credentials', {
         hasAccountId: !!accountId,
         hasApiToken: !!apiToken,
-        envKeys: Object.keys(process.env).filter(k => k.includes('CLOUDFLARE')),
+        envKeys: envKeys,
+        envKeysCount: envKeys.length,
+        nodeEnv: process.env.NODE_ENV,
+        // Log first few chars of actual values if they exist (for debugging)
+        accountIdPreview: accountId ? `${accountId.substring(0, 4)}...` : 'undefined',
+        tokenPreview: apiToken ? `${apiToken.substring(0, 4)}...` : 'undefined',
       });
+      
+      // Provide helpful error message
       return NextResponse.json(
         { 
           error: 'Cloudflare Images credentials not configured',
           details: {
             hasAccountId: !!accountId,
             hasApiToken: !!apiToken,
+            hint: 'Make sure NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID and NEXT_PUBLIC_CLOUDFLARE_IMAGES_API_TOKEN are set in .env.local and the server has been restarted',
           }
         },
         { status: 500 }
