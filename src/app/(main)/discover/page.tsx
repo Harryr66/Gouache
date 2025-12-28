@@ -437,7 +437,6 @@ function DiscoverPageContent() {
   const [ads, setAds] = useState<any[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   // Pagination state
   const [hasMore, setHasMore] = useState(true);
@@ -453,14 +452,12 @@ function DiscoverPageContent() {
   const initialVideoReadyRef = useRef<Set<string>>(new Set());
   const initialImageReadyRef = useRef<Set<string>>(new Set());
   const initialVideoPosterRef = useRef<Set<string>>(new Set());
-  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [jokeComplete, setJokeComplete] = useState(false);
+  
+  // CLEAN LOADING SCREEN STATE - Simple and straightforward
+  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [artworksLoaded, setArtworksLoaded] = useState(false);
-  const [jokeCompleteTime, setJokeCompleteTime] = useState<number | null>(null);
-  const MIN_JOKE_DISPLAY_TIME = 2000; // Minimum 2 seconds to display joke AFTER completion callback (so joke finishes + 2s minimum)
-  const jokeCompletionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Track if overlay has been dismissed - once dismissed, NEVER show again (prevents second loading screen)
-  const overlayDismissedRef = useRef(false);
+  const jokeCompleteTimeRef = useRef<number | null>(null);
+  const MIN_JOKE_DISPLAY_TIME = 2000; // 2 seconds minimum after joke completes
   
   // Track when initial videos are ready
   const handleVideoReady = useCallback((artworkId: string) => {
@@ -484,233 +481,88 @@ function DiscoverPageContent() {
     }
   }, []);
   
-  // Handle joke completion - this is called AFTER the joke has fully finished typing AND pauseAfterComplete (2s) has elapsed
+  // Handle joke completion - called AFTER joke finishes typing + 2s pause
   const handleJokeComplete = useCallback(() => {
     console.log('🎭 Joke animation FULLY completed (typing + 2s pause) at:', new Date().toISOString());
-    const completionTime = Date.now();
-    setJokeComplete(true);
-    setJokeCompleteTime(completionTime);
-    
-    // Clear any existing timeout
-    if (jokeCompletionTimeoutRef.current) {
-      clearTimeout(jokeCompletionTimeoutRef.current);
-    }
-    
-    // The joke has finished typing + 2s pause, now we wait an ADDITIONAL 2s minimum before checking content
-    // This ensures media has plenty of time to load
-    jokeCompletionTimeoutRef.current = setTimeout(() => {
-      console.log('✅ Minimum joke display time (2s AFTER completion) has passed, content can now be checked');
-    }, MIN_JOKE_DISPLAY_TIME);
+    jokeCompleteTimeRef.current = Date.now();
   }, []);
   
-  // Set loading to false ONLY when ALL conditions are met:
-  // 1. Joke is complete AND has been displayed for minimum time (STRICT REQUIREMENT)
+  // CLEAN LOADING SCREEN LOGIC - Simple and straightforward
+  // Dismiss loading screen when ALL conditions are met:
+  // 1. Joke has completed AND been displayed for minimum 2 seconds
   // 2. Artworks are loaded
-  // 3. Initial images/videos are ready (or there are none to load)
+  // 3. Media is ready (video posters + threshold of images)
   useEffect(() => {
-    // CRITICAL SAFEGUARD: If overlay has been dismissed, never allow loading to be true again
-    if (overlayDismissedRef.current && loading) {
-      console.warn('⚠️ CRITICAL: Overlay was dismissed but loading is still true - forcing to false to prevent second loading screen');
-      setLoading(false);
+    // Don't check if loading screen is already dismissed
+    if (!showLoadingScreen) {
       return;
     }
     
-    // Don't proceed if artworks aren't loaded yet
+    // Must wait for joke to complete
+    if (!jokeCompleteTimeRef.current) {
+      return;
+    }
+    
+    // Must wait for artworks to load
     if (!artworksLoaded) {
       return;
     }
     
-    // STRICT: Don't proceed if joke isn't complete - this is ABSOLUTELY NON-NEGOTIABLE
-    // The joke MUST finish completely before we even think about checking media
-    if (!jokeComplete) {
-      console.log('⏳ STRICT: Waiting for joke animation to complete - loading screen will NOT dismiss until joke finishes');
-      return;
-    }
-    
-    // STRICT: Ensure joke has been displayed for minimum time after completion
-    if (!jokeCompleteTime) {
-      console.log('⏳ STRICT: Waiting for joke completion timestamp - loading screen will NOT dismiss');
-      return;
-    }
-    
-    const timeSinceJokeComplete = Date.now() - jokeCompleteTime;
-    
-    // STRICT: Must wait FULL 2 seconds AFTER joke completes before checking media
+    // Check if joke has been displayed for minimum time (2s after completion)
+    const timeSinceJokeComplete = Date.now() - jokeCompleteTimeRef.current;
     if (timeSinceJokeComplete < MIN_JOKE_DISPLAY_TIME) {
       const remainingTime = MIN_JOKE_DISPLAY_TIME - timeSinceJokeComplete;
-      console.log(`⏳ STRICT: Joke completed ${timeSinceJokeComplete}ms ago, waiting ${remainingTime}ms more to reach minimum ${MIN_JOKE_DISPLAY_TIME}ms - loading screen will NOT dismiss until this time passes`);
       const timeout = setTimeout(() => {
-        // After minimum display time, NOW we can check if content is ready
-        console.log('✅ Minimum joke display time (2s) reached, NOW checking content readiness...');
-        checkContentReady();
+        // Re-check after minimum time has passed
+        checkIfReadyToDismiss();
       }, remainingTime);
       return () => clearTimeout(timeout);
     }
     
-    // Only check content if joke has been displayed for minimum time
-    // This is the ONLY place where we check media readiness
-    console.log('✅ Joke has been displayed for minimum time (2s), checking content readiness...');
-    checkContentReady();
+    // Joke has been displayed for minimum time, now check media readiness
+    checkIfReadyToDismiss();
     
-    function checkContentReady() {
-      // STRICT: Double-check that joke has been displayed for minimum time
-      if (!jokeCompleteTime) {
-        console.warn('⚠️ checkContentReady called but jokeCompleteTime is null');
+    function checkIfReadyToDismiss() {
+      // Double-check joke time
+      if (!jokeCompleteTimeRef.current) return;
+      const timeSinceJoke = Date.now() - jokeCompleteTimeRef.current;
+      if (timeSinceJoke < MIN_JOKE_DISPLAY_TIME) return;
+      
+      // Check if no media to load
+      if (initialImagesTotal === 0) {
+        console.log('✅ Ready to dismiss: No media to load, artworks loaded, joke complete + 2s');
+        setShowLoadingScreen(false);
         return;
       }
       
-      const timeSinceJokeComplete = Date.now() - jokeCompleteTime;
-      if (timeSinceJokeComplete < MIN_JOKE_DISPLAY_TIME) {
-        console.warn(`⚠️ checkContentReady called too early (${timeSinceJokeComplete}ms < ${MIN_JOKE_DISPLAY_TIME}ms), waiting...`);
-        const remainingTime = MIN_JOKE_DISPLAY_TIME - timeSinceJokeComplete;
-        setTimeout(() => {
-          checkContentReady();
-        }, remainingTime);
-        return;
-      }
-      
-      // Require ALL video thumbnails (up to 3) to load, plus connection-aware threshold for regular images
-      // This ensures all 3 video tiles show their thumbnails before loading screen disappears
-      
-      // Only dismiss if artworks are loaded AND there are no images to preload
-      // If artworks haven't loaded yet, keep waiting
-      if (initialImagesTotal === 0 && artworksLoaded) {
-        // FINAL SAFEGUARD: Triple-check joke completion before dismissing
-        if (!jokeComplete || !jokeCompleteTime) {
-          console.warn('⚠️ CRITICAL: Attempted to dismiss loading but joke not complete - BLOCKED');
-          return;
-        }
-        const timeSinceJoke = Date.now() - jokeCompleteTime;
-        if (timeSinceJoke < MIN_JOKE_DISPLAY_TIME) {
-          console.warn(`⚠️ CRITICAL: Attempted to dismiss loading but joke time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms) - BLOCKED`);
-          setTimeout(() => {
-            checkContentReady(); // Re-check after remaining time
-          }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
-          return;
-        }
-        // No images to preload AND artworks are loaded - content is ready (joke verified)
-        if (loadingTimeoutRef.current) {
-          clearTimeout(loadingTimeoutRef.current);
-        }
-        console.log('✅ No images to load and artworks loaded, dismissing loading screen (joke has finished + 2s minimum - VERIFIED)');
-        setTimeout(() => {
-          setLoading(false);
-        }, 200);
-        return;
-      }
-      
-      // If artworks aren't loaded yet, wait for them
-      if (!artworksLoaded) {
-        console.log('⏳ Waiting for artworks to load before checking media readiness...');
-        return;
-      }
-      
-      // REQUIRE ALL video posters to be loaded (100% of video thumbnails)
+      // Check media readiness: ALL video posters + threshold of regular images
       const allVideoPostersReady = initialVideoPostersTotal === 0 || initialVideoPostersReady >= initialVideoPostersTotal;
-      
-      // Connection-aware threshold for regular images (not video posters)
       const connectionSpeed = getConnectionSpeed();
       const regularImageThreshold = connectionSpeed === 'fast' ? 0.6 : connectionSpeed === 'medium' ? 0.5 : 0.3;
-      
-      // Calculate regular images (excluding video posters)
       const regularImagesTotal = initialImagesTotal - initialVideoPostersTotal;
       const regularImagesReady = initialImagesReady - initialVideoPostersReady;
       const regularImageReadyPercentage = regularImagesTotal > 0 ? (regularImagesReady / regularImagesTotal) : 1;
       
-      // Show content when ALL video posters are ready AND threshold of regular images are ready
       if (allVideoPostersReady && regularImageReadyPercentage >= regularImageThreshold) {
-        // FINAL SAFEGUARD: Triple-check joke completion before dismissing
-        if (!jokeComplete || !jokeCompleteTime) {
-          console.warn('⚠️ CRITICAL: Attempted to dismiss loading but joke not complete - BLOCKED');
-          return;
-        }
-        const timeSinceJoke = Date.now() - jokeCompleteTime;
-        if (timeSinceJoke < MIN_JOKE_DISPLAY_TIME) {
-          console.warn(`⚠️ CRITICAL: Attempted to dismiss loading but joke time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms) - BLOCKED`);
-          setTimeout(() => {
-            checkContentReady(); // Re-check after remaining time
-          }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
-          return;
-        }
-        // All video thumbnails loaded + enough regular images - videos will autoplay when ready
-        if (loadingTimeoutRef.current) {
-          clearTimeout(loadingTimeoutRef.current);
-        }
-        console.log('✅ Content ready (video posters + images), dismissing loading screen (joke has finished + 2s minimum - VERIFIED)');
-        overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
-        setTimeout(() => {
-          setLoading(false);
-        }, 200);
+        console.log('✅ Ready to dismiss: Media loaded, artworks loaded, joke complete + 2s');
+        setShowLoadingScreen(false);
         return;
       }
       
-      // Set a longer timeout as fallback - but this should rarely trigger
-      // if content is loading properly
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-      loadingTimeoutRef.current = setTimeout(() => {
-        // After extended timeout, show content even if not all media loaded
-        // This handles edge cases where media fails to load
-        // BUT ONLY if joke has finished + minimum time has passed
-        if (!jokeComplete || !jokeCompleteTime) {
-          log('⚠️ STRICT: Loading timeout reached but joke not complete yet - waiting for joke to finish + 2s minimum');
-          return; // Don't dismiss until joke is complete + 2s
+      // Set fallback timeout (40s max) - only if joke has completed + 2s
+      const fallbackTimeout = setTimeout(() => {
+        if (showLoadingScreen && jokeCompleteTimeRef.current) {
+          const timeSinceJoke = Date.now() - jokeCompleteTimeRef.current;
+          if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
+            console.log('⚠️ Fallback timeout: Dismissing loading screen (joke complete + 2s, partial media)');
+            setShowLoadingScreen(false);
+          }
         }
-        
-        const timeSinceJoke = Date.now() - jokeCompleteTime;
-        if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
-          log('⚠️ Loading timeout (40s) reached - showing content with partial media loaded (joke has finished + 2s minimum)');
-          overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
-          setLoading(false);
-        } else {
-          log(`⚠️ STRICT: Loading timeout reached but joke minimum time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms), waiting for joke + 2s...`);
-          // Wait for joke minimum time, then dismiss
-          setTimeout(() => {
-            log('✅ Joke minimum time now met, dismissing loading screen');
-            overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
-            setLoading(false);
-          }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
-        }
-      }, 40000); // Increased to 40s to give ALL media time to load with retries
+      }, 40000);
+      
+      return () => clearTimeout(fallbackTimeout);
     }
-    
-    // Safety timeout: Force loading to false after 60 seconds maximum ONLY if joke has completed + 2s
-    // This allows time for retries (3 retries × 4s max delay = 12s) + initial load time + joke time
-    const safetyTimeout = setTimeout(() => {
-      if (loading) {
-        // ABSOLUTE REQUIREMENT: Joke MUST be complete + 2s before safety timeout can dismiss
-        if (!jokeComplete || !jokeCompleteTime) {
-          console.warn('⚠️ CRITICAL: Safety timeout reached but joke not complete - BLOCKED, waiting for joke');
-          return; // Don't dismiss - wait for joke
-        }
-        const timeSinceJoke = Date.now() - jokeCompleteTime;
-        if (timeSinceJoke < MIN_JOKE_DISPLAY_TIME) {
-          console.warn(`⚠️ CRITICAL: Safety timeout reached but joke time not met (${timeSinceJoke}ms < ${MIN_JOKE_DISPLAY_TIME}ms) - BLOCKED, waiting for joke + 2s`);
-          setTimeout(() => {
-            if (loading) {
-              console.warn('⚠️ Safety timeout: Forcing loading to false after joke + 2s minimum met');
-              overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
-              setLoading(false);
-            }
-          }, MIN_JOKE_DISPLAY_TIME - timeSinceJoke);
-          return;
-        }
-        console.warn('⚠️ Safety timeout: Forcing loading to false after 60s (joke has completed + 2s minimum - VERIFIED)');
-        overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
-        setLoading(false);
-      }
-    }, 60000); // Increased to 60s to allow joke time
-    
-    return () => {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-      clearTimeout(safetyTimeout);
-    };
-    // REMOVED 'loading' from dependencies to prevent effect re-running when loading changes
-    // This prevents timeouts from being reset and causing race conditions
-  }, [artworksLoaded, jokeComplete, jokeCompleteTime, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed]);
+  }, [showLoadingScreen, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
@@ -1940,31 +1792,7 @@ function DiscoverPageContent() {
 
   // Render initial tiles invisibly during loading so poster images can preload
   // Videos will load in background and autoplay when ready (onCanPlay)
-  const shouldPreloadTiles = loading && initialImagesTotal > 0;
-  
-  // Debug: Log loading state changes (DO NOT force loading to false - must wait for joke)
-  useEffect(() => {
-    console.log('🔍 Discover: Loading state changed:', loading, 'Artworks loaded:', artworksLoaded, 'Joke complete:', jokeComplete, 'Overlay dismissed:', overlayDismissedRef.current);
-  }, [loading, artworksLoaded, jokeComplete, isDev]);
-
-  // Safety fallback: Force loading to false after maximum time ONLY if joke has completed
-  // This prevents stuck state but still respects joke completion requirement
-  useEffect(() => {
-    const MAX_LOADING_TIME = 60000; // 60 seconds max - increased to allow joke + media loading
-    const timeout = setTimeout(() => {
-      if (loading && jokeComplete && jokeCompleteTime) {
-        const timeSinceJoke = Date.now() - jokeCompleteTime;
-        // Only force dismiss if joke has been complete for at least 2 seconds
-        if (timeSinceJoke >= MIN_JOKE_DISPLAY_TIME) {
-          console.warn('⚠️ Discover: Safety timeout (60s) reached - forcing loading to false (joke has completed + 2s minimum)');
-          overlayDismissedRef.current = true; // Mark as dismissed - prevent any second loading screen
-          setLoading(false);
-        }
-      }
-    }, MAX_LOADING_TIME);
-
-    return () => clearTimeout(timeout);
-  }, [loading, jokeComplete, jokeCompleteTime]);
+  const shouldPreloadTiles = showLoadingScreen && initialImagesTotal > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -2037,7 +1865,7 @@ function DiscoverPageContent() {
         {/* This ensures smooth transition: joke completes -> preloading continues -> feed appears */}
         {/* CRITICAL: Once dismissed, NEVER show again to prevent second loading screen */}
         {/* COMPLETELY REMOVE from DOM when dismissed - no conditional rendering that could cause flash */}
-        {!overlayDismissedRef.current && loading ? (
+        {showLoadingScreen ? (
           <div 
             className="absolute inset-0 bg-background flex items-center justify-center z-10"
             style={{
@@ -2234,9 +2062,8 @@ function DiscoverPageContent() {
                       </div>
             
             {/* Artworks Grid */}
-            {/* Show content ONLY when loading is false (preloading complete) */}
-            {/* This ensures smooth transition: overlay stays until preloading done, then feed appears immediately */}
-            {!loading && filteredAndSortedArtworks.length === 0 ? (
+            {/* Show content when loading screen is dismissed */}
+            {!showLoadingScreen && filteredAndSortedArtworks.length === 0 ? (
               <div className="text-center py-16">
                 <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">No artworks found</h2>
@@ -2260,7 +2087,7 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : !loading && (artworkView === 'grid' || !isMobile) ? (
+            ) : !showLoadingScreen && (artworkView === 'grid' || !isMobile) ? (
               <MasonryGrid
                 items={visibleFilteredArtworks}
                 columnCount={columnCount}
