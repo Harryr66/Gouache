@@ -1795,11 +1795,33 @@ function DiscoverPageContent() {
   const shouldPreloadTiles = showLoadingScreen && initialImagesTotal > 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Main content container - loading overlay contained within this area only */}
-      {/* Navigation is outside this container with z-[60] and isolation, so it's always on top */}
-      {/* Using position: relative ONLY for the loading overlay container, not creating blocking stacking context */}
-      <div className="relative w-full min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-4rem)]">
+    <>
+      {/* Fixed Loading Screen Overlay - Independent of content area */}
+      {/* Positioned fixed to viewport, completely removed from DOM when dismissed */}
+      {/* Navigation has z-[60], so this uses z-[50] to stay below navigation but above content */}
+      {showLoadingScreen && typeof window !== 'undefined' ? (
+        <div 
+          className="fixed inset-0 bg-background flex items-center justify-center"
+          style={{
+            zIndex: 50, // Below navigation (z-[60]) but above content
+            pointerEvents: 'none', // Never block navigation or content clicks
+            isolation: 'isolate', // Create own stacking context
+          }}
+          aria-hidden="true"
+        >
+          <div 
+            className="flex flex-col items-center justify-center gap-6"
+            style={{
+              pointerEvents: 'auto', // Allow interaction with loading animation itself
+            }}
+          >
+            <ThemeLoading size="lg" />
+            <TypewriterJoke key="loading-joke" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
+          </div>
+        </div>
+      ) : null}
+      
+      <div className="min-h-screen bg-background">
         {/* Preload tiles invisibly during loading - contained within main area */}
         {shouldPreloadTiles && (
           <div className="absolute inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
@@ -1859,33 +1881,6 @@ function DiscoverPageContent() {
             </div>
           </div>
         )}
-        
-        {/* Loading overlay - Show while loading is true (until preloading completes) */}
-        {/* Keep overlay visible until ALL preloading is complete, then cut immediately to feed */}
-        {/* This ensures smooth transition: joke completes -> preloading continues -> feed appears */}
-        {/* CRITICAL: Once dismissed, NEVER show again to prevent second loading screen */}
-        {/* COMPLETELY REMOVE from DOM when dismissed - no conditional rendering that could cause flash */}
-        {showLoadingScreen ? (
-          <div 
-            className="absolute inset-0 bg-background flex items-center justify-center z-10"
-            style={{
-              pointerEvents: 'none', // Never block clicks - navigation always accessible
-              touchAction: 'none', // Prevent touch events from being captured
-            }}
-            aria-hidden="true"
-          >
-            <div 
-              className="flex flex-col items-center justify-center gap-6"
-              style={{
-                pointerEvents: 'auto', // Allow clicks on loading animation itself
-                touchAction: 'none',
-              }}
-            >
-              <ThemeLoading size="lg" />
-              <TypewriterJoke key="loading-joke-single" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
-            </div>
-          </div>
-        ) : null}
         
         {/* Main content - always clickable, navigation outside this container */}
         <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-x-hidden">
