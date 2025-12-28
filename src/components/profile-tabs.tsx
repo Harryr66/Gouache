@@ -13,7 +13,7 @@ import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from './theme-loading';
 import { useLikes } from '@/providers/likes-provider';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { Artwork, Course } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -564,6 +564,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     const [discoverContent, setDiscoverContent] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [itemToDelete, setItemToDelete] = useState<{ id: string; type: string } | null>(null);
+    const [isDeletingAll, setIsDeletingAll] = useState(false);
+    const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -780,7 +782,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
         // Mark the main document as deleted
         if (itemToDelete.type === 'artwork') {
           const artworkRef = doc(db, 'artworks', itemToDelete.id);
-          batch.update(artworkRef, { deleted: true, updatedAt: new Date() });
+          batch.update(artworkRef, { deleted: true, updatedAt: serverTimestamp() });
 
           // Try to find and mark related post as deleted too
           try {
@@ -790,7 +792,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             );
             const postsSnapshot = await getDocs(postsQuery);
             postsSnapshot.forEach((postDoc) => {
-              batch.update(postDoc.ref, { deleted: true, updatedAt: new Date() });
+              batch.update(postDoc.ref, { deleted: true, updatedAt: serverTimestamp() });
             });
           } catch (error) {
             console.error('Error finding related post:', error);
@@ -798,13 +800,13 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           }
         } else if (itemToDelete.type === 'post') {
           const postRef = doc(db, 'posts', itemToDelete.id);
-          batch.update(postRef, { deleted: true, updatedAt: new Date() });
+          batch.update(postRef, { deleted: true, updatedAt: serverTimestamp() });
 
           // For posts, also mark related artwork as deleted if it exists (use itemData we already fetched)
           if (itemData?.artworkId) {
             try {
               const artworkRef = doc(db, 'artworks', itemData.artworkId);
-              batch.update(artworkRef, { deleted: true, updatedAt: new Date() });
+              batch.update(artworkRef, { deleted: true, updatedAt: serverTimestamp() });
             } catch (error) {
               console.error('Error updating related artwork:', error);
               // Continue with deletion even if artwork update fails
@@ -834,6 +836,87 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       }
     };
 
+    const handleDeleteAll = async () => {
+      if (discoverContent.length === 0) return;
+      
+      setIsDeletingAll(true);
+      setShowDeleteAllConfirm(false);
+
+      try {
+        let deletedCount = 0;
+        let errorCount = 0;
+
+        // Process items in batches (Firestore batch limit is 500)
+        const batchSize = 500;
+        for (let i = 0; i < discoverContent.length; i += batchSize) {
+          const batch = writeBatch(db);
+          const batchItems = discoverContent.slice(i, i + batchSize);
+          
+          for (const item of batchItems) {
+            try {
+              // Mark as deleted in Firestore
+              if (item.type === 'artwork') {
+          const artworkRef = doc(db, 'artworks', item.id);
+          batch.update(artworkRef, { deleted: true, updatedAt: serverTimestamp() });
+
+                // Also mark related posts as deleted
+                try {
+                  const postsQuery = query(
+                    collection(db, 'posts'),
+                    where('artworkId', '==', item.id)
+                  );
+                  const postsSnapshot = await getDocs(postsQuery);
+                  postsSnapshot.forEach((postDoc) => {
+                    batch.update(postDoc.ref, { deleted: true, updatedAt: serverTimestamp() });
+                  });
+                } catch (error) {
+                  console.error('Error finding related post:', error);
+                }
+              } else if (item.type === 'post') {
+                const postRef = doc(db, 'posts', item.id);
+                batch.update(postRef, { deleted: true, updatedAt: serverTimestamp() });
+
+                // Also mark related artwork as deleted if it exists
+                if (item.artworkId) {
+                  try {
+                    const artworkRef = doc(db, 'artworks', item.artworkId);
+                    batch.update(artworkRef, { deleted: true, updatedAt: serverTimestamp() });
+                  } catch (error) {
+                    console.error('Error updating related artwork:', error);
+                  }
+                }
+              }
+              
+              deletedCount++;
+            } catch (error) {
+              console.error(`Error preparing deletion for item ${item.id}:`, error);
+              errorCount++;
+            }
+          }
+
+          // Commit this batch
+          await batch.commit();
+        }
+
+        // Clear local state
+        setDiscoverContent([]);
+
+        toast({
+          title: "All content deleted",
+          description: `Successfully deleted ${deletedCount} item${deletedCount !== 1 ? 's' : ''}${errorCount > 0 ? `. ${errorCount} error${errorCount !== 1 ? 's' : ''} occurred.` : '.'}`,
+        });
+      } catch (error) {
+        console.error('Error deleting all discover content:', error);
+        toast({
+          title: "Delete failed",
+          description: "Failed to delete all content. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsDeletingAll(false);
+      }
+    };
+
     if (loading) {
       return (
         <div className="flex justify-center py-8">
@@ -859,25 +942,43 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     }
 
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-        {discoverContent.map((item) => {
-          const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.mediaUrls?.[0] || '/assets/placeholder-light.png';
-          const isVideo = item.mediaType === 'video' || item.videoUrl;
-          
-          return (
-            <DiscoverContentTile
-              key={item.id}
-              item={item}
-              imageUrl={imageUrl}
-              isVideo={isVideo}
-              router={router}
-              isOwnProfile={isOwnProfile}
-              onDelete={handleDelete}
-            />
-          );
-        })}
+      <div className="space-y-4">
+        {/* Delete All Button - Only show for own profile and when there's content */}
+        {isOwnProfile && discoverContent.length > 0 && (
+          <div className="flex justify-end">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteAllConfirm(true)}
+              disabled={isDeletingAll}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeletingAll ? 'Deleting...' : 'Delete All'}
+            </Button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+          {discoverContent.map((item) => {
+            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.mediaUrls?.[0] || '/assets/placeholder-light.png';
+            const isVideo = item.mediaType === 'video' || item.videoUrl;
+            
+            return (
+              <DiscoverContentTile
+                key={item.id}
+                item={item}
+                imageUrl={imageUrl}
+                isVideo={isVideo}
+                router={router}
+                isOwnProfile={isOwnProfile}
+                onDelete={handleDelete}
+              />
+            );
+          })}
+        </div>
         
-        {/* Delete confirmation dialog */}
+        {/* Delete single item confirmation dialog */}
         <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
           <DialogContent>
             <DialogHeader>
@@ -892,6 +993,26 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               </Button>
               <Button variant="destructive" onClick={confirmDelete}>
                 Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete All confirmation dialog */}
+        <Dialog open={showDeleteAllConfirm} onOpenChange={(open) => !open && setShowDeleteAllConfirm(false)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete All Content</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete all {discoverContent.length} item{discoverContent.length !== 1 ? 's' : ''} from your discover tab? This action cannot be undone and will permanently delete all content from Firestore.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowDeleteAllConfirm(false)} disabled={isDeletingAll}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteAll} disabled={isDeletingAll}>
+                {isDeletingAll ? 'Deleting...' : 'Delete All'}
               </Button>
             </DialogFooter>
           </DialogContent>
