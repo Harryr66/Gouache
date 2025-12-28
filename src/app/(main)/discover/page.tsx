@@ -2243,7 +2243,7 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : (artworksLoaded && jokeComplete) && (artworkView === 'grid' || !isMobile) ? (
+            ) : !loading && (artworkView === 'grid' || !isMobile) ? (
               <MasonryGrid
                 items={visibleFilteredArtworks}
                 columnCount={columnCount}
