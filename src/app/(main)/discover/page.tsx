@@ -491,7 +491,7 @@ function DiscoverPageContent() {
   // Dismiss loading screen when ALL conditions are met:
   // 1. Joke has completed AND been displayed for minimum 2 seconds
   // 2. Artworks are loaded
-  // 3. Media is ready (video posters + threshold of images)
+  // 3. Media is ready (video posters + threshold of images) - only viewport + 1 row
   useEffect(() => {
     // Don't check if loading screen is already dismissed
     if (!showLoadingScreen) {
@@ -523,6 +523,8 @@ function DiscoverPageContent() {
     checkIfReadyToDismiss();
     
     function checkIfReadyToDismiss() {
+      // Get itemsToWaitFor from the memoized value
+      const itemsToWaitForValue = itemsToWaitFor;
       // Double-check joke time
       if (!jokeCompleteTimeRef.current) return;
       const timeSinceJoke = Date.now() - jokeCompleteTimeRef.current;
@@ -537,7 +539,7 @@ function DiscoverPageContent() {
       
       // SPEED OPTIMIZATION: Only wait for viewport + 1 row worth of items
       // Calculate how many items we need to wait for (viewport + 1 row)
-      const maxItemsToCheck = Math.min(itemsToWaitFor, initialImagesTotal);
+      const maxItemsToCheck = Math.min(itemsToWaitForValue, initialImagesTotal);
       
       // Count how many of the first N items are ready
       // We'll use a simple heuristic: if we have at least 80% of viewport+1row ready, dismiss
