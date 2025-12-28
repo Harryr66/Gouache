@@ -1401,7 +1401,7 @@ function DiscoverPageContent() {
     }
   }, [hasMore, lastDocument, isLoadingMore, discoverSettings]);
 
-  // IntersectionObserver for infinite scroll pagination
+  // IntersectionObserver for infinite scroll pagination (Pinterest-style continuous scrolling)
   useEffect(() => {
     const sentinel = loadMoreRef.current;
     if (!sentinel || !hasMore || isLoadingMore) return;
@@ -1410,12 +1410,14 @@ function DiscoverPageContent() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && hasMore && !isLoadingMore) {
+            // Load more content when sentinel comes into view
             loadMoreArtworks();
           }
         });
       },
       {
-        rootMargin: '200px', // Start loading 200px before reaching the bottom
+        rootMargin: '400px', // Start loading 400px before reaching bottom for smoother continuous scroll (Pinterest-style)
+        threshold: 0.1, // Trigger when 10% of sentinel is visible
       }
     );
 
@@ -2364,6 +2366,8 @@ function DiscoverPageContent() {
                     </div>
                   );
                 })}
+                {/* Sentinel element for infinite scroll in list view */}
+                <div ref={loadMoreRef} className="h-20 w-full" />
               </div>
             )}
           </TabsContent>
