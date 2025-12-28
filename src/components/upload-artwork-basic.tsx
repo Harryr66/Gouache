@@ -238,10 +238,6 @@ export function UploadArtworkBasic() {
     console.log('🔥🔥🔥 UploadArtworkBasic handleSubmit CALLED! 🔥🔥🔥');
     console.log('🔥 Files:', files.length, 'Title:', title, 'User:', !!user);
     
-    // Test Cloudflare env vars
-    const { testCloudflareEnv } = await import('@/lib/test-env');
-    testCloudflareEnv();
-    
     if (!user || !files.length || !title.trim()) {
       console.log('🔥 Validation failed - missing info');
       toast({
@@ -337,7 +333,7 @@ export function UploadArtworkBasic() {
           try {
             console.log(`🚀 UploadArtworkBasic: Starting upload for file ${globalIndex + 1}: ${file.name} (${isVideo ? 'video' : 'image'})`);
             // Use Cloudflare if configured, otherwise fallback to Firebase
-            const { uploadMedia } = await import('@/lib/media-upload');
+            const { uploadMedia } = await import('@/lib/media-upload-v2');
             console.log(`🚀 UploadArtworkBasic: uploadMedia imported, calling now...`);
             const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
             console.log(`🚀 UploadArtworkBasic: Calling uploadMedia with type: ${mediaType}`);

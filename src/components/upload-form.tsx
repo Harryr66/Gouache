@@ -193,7 +193,7 @@ export function UploadForm({ initialFormData, titleText, descriptionText }: Uplo
 
       // Step 2: Upload all files in parallel (Cloudflare or Firebase)
       console.log('📤 UploadForm: Uploading files in parallel...');
-      const { uploadMultipleMedia } = await import('@/lib/media-upload');
+      const { uploadMultipleMedia } = await import('@/lib/media-upload-v2');
       const uploadResults = await uploadMultipleMedia(processedFiles, user.id);
       
       const uploadedUrls = uploadResults.map((result, i) => {
