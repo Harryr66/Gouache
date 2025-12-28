@@ -559,7 +559,7 @@ function DiscoverPageContent() {
       
       // Check joke timing
       const jokeComplete = !!jokeCompleteTimeRef.current;
-      const timeSinceJoke = jokeComplete ? Date.now() - jokeCompleteTimeRef.current : Infinity;
+      const timeSinceJoke = jokeComplete && jokeCompleteTimeRef.current ? Date.now() - jokeCompleteTimeRef.current : Infinity;
       const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
       
       // Dismiss if BOTH conditions are met:
