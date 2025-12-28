@@ -39,46 +39,99 @@ export async function POST(request: NextRequest) {
 
     // Upload image to Cloudflare Images
     // Convert File to Blob for proper FormData handling in Node.js
-    const fileBuffer = await file.arrayBuffer();
-    const fileBlob = new Blob([fileBuffer], { type: file.type });
-    
-    const formDataToSend = new FormData();
-    formDataToSend.append('file', fileBlob, file.name);
+    let formDataToSend: FormData;
+    try {
+      const fileBuffer = await file.arrayBuffer();
+      const fileBlob = new Blob([fileBuffer], { type: file.type });
+      
+      formDataToSend = new FormData();
+      formDataToSend.append('file', fileBlob, file.name);
+    } catch (formDataError: any) {
+      console.error('❌ Error creating FormData:', formDataError);
+      return NextResponse.json(
+        { error: `Failed to prepare file for upload: ${formDataError.message || 'Unknown error'}` },
+        { status: 500 }
+      );
+    }
 
-    const uploadResponse = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiToken}`,
-          // Don't set Content-Type - fetch will set it with boundary for FormData
-        },
-        body: formDataToSend,
-      }
-    );
+    let uploadResponse: Response;
+    try {
+      uploadResponse = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`,
+            // Don't set Content-Type - fetch will set it with boundary for FormData
+          },
+          body: formDataToSend,
+        }
+      );
+    } catch (fetchError: any) {
+      console.error('❌ Error calling Cloudflare Images API:', fetchError);
+      return NextResponse.json(
+        { error: `Failed to connect to Cloudflare Images: ${fetchError.message || 'Network error'}` },
+        { status: 500 }
+      );
+    }
 
     if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
+      let errorText: string;
+      try {
+        errorText = await uploadResponse.text();
+      } catch (textError) {
+        errorText = `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`;
+      }
+      
       let error;
       try {
         error = JSON.parse(errorText);
       } catch {
         error = { errors: [{ message: errorText }] };
       }
+      
       console.error('❌ Cloudflare Images API Error:', {
         status: uploadResponse.status,
         statusText: uploadResponse.statusText,
         error: error.errors?.[0]?.message || errorText,
         fullError: error,
       });
+      
       return NextResponse.json(
-        { error: `Failed to upload image: ${error.errors?.[0]?.message || 'Unknown error'}` },
-        { status: uploadResponse.status }
+        { error: `Failed to upload image: ${error.errors?.[0]?.message || errorText || 'Unknown error'}` },
+        { status: uploadResponse.status >= 400 && uploadResponse.status < 600 ? uploadResponse.status : 500 }
       );
     }
 
-    const { result } = await uploadResponse.json();
+    let responseData: any;
+    try {
+      responseData = await uploadResponse.json();
+    } catch (jsonError: any) {
+      console.error('❌ Error parsing Cloudflare Images response:', jsonError);
+      return NextResponse.json(
+        { error: `Failed to parse Cloudflare Images response: ${jsonError.message || 'Invalid JSON'}` },
+        { status: 500 }
+      );
+    }
+
+    if (!responseData || !responseData.result) {
+      console.error('❌ Invalid Cloudflare Images response structure:', responseData);
+      return NextResponse.json(
+        { error: 'Invalid response from Cloudflare Images API' },
+        { status: 500 }
+      );
+    }
+
+    const { result } = responseData;
     const imageId = result.id;
+
+    if (!imageId) {
+      console.error('❌ Missing image ID in Cloudflare Images response:', result);
+      return NextResponse.json(
+        { error: 'Cloudflare Images did not return an image ID' },
+        { status: 500 }
+      );
+    }
 
     // Cloudflare Images returns the image ID
     // We need to construct the delivery URL using the account hash
@@ -111,9 +164,17 @@ export async function POST(request: NextRequest) {
       height: result.metadata?.height || result.dimensions?.height,
     });
   } catch (error: any) {
-    console.error('Error uploading image to Cloudflare Images:', error);
+    console.error('❌ Unexpected error in Cloudflare Images upload:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+      error: error,
+    });
     return NextResponse.json(
-      { error: `Cloudflare Images upload failed: ${error.message}` },
+      { 
+        error: `Cloudflare Images upload failed: ${error?.message || 'Unknown error'}`,
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }
