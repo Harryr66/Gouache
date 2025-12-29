@@ -64,23 +64,42 @@ export async function POST(request: NextRequest) {
       
       // First, verify the API token works with a simple request
       try {
-        const verifyResponse = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
-          {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${apiToken}`,
-            },
-          }
-        );
+        const verifyUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`;
+        const verifyResponse = await fetch(verifyUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`,
+          },
+        });
         
-        if (!verifyResponse.ok && verifyResponse.status === 403) {
-          console.error('❌ API token verification failed with 403 - token may not have Stream permissions');
+        const verifyHeaders: Record<string, string> = {};
+        verifyResponse.headers.forEach((value, key) => {
+          verifyHeaders[key] = value;
+        });
+        
+        if (!verifyResponse.ok) {
+          const verifyErrorText = await verifyResponse.text();
+          console.error('❌ API token verification failed:', {
+            status: verifyResponse.status,
+            statusText: verifyResponse.statusText,
+            errorText: verifyErrorText,
+            responseHeaders: verifyHeaders,
+            requestUrl: verifyUrl,
+          });
         } else {
-          console.log('✅ API token verified - can access Stream API');
+          const verifyData = await verifyResponse.json();
+          console.log('✅ API token verified - can access Stream API:', {
+            status: verifyResponse.status,
+            resultCount: verifyData.result?.length || 0,
+            responseHeaders: verifyHeaders,
+          });
         }
-      } catch (verifyError) {
-        console.warn('⚠️ Could not verify API token (non-critical):', verifyError);
+      } catch (verifyError: any) {
+        console.error('❌ API token verification error:', {
+          error: verifyError?.message,
+          stack: verifyError?.stack,
+          name: verifyError?.name,
+        });
       }
       
       try {
@@ -102,6 +121,8 @@ export async function POST(request: NextRequest) {
           tokenPrefix: apiToken ? apiToken.substring(0, 10) + '...' : 'MISSING',
         });
         
+        // Make the request and capture timing
+        const requestStartTime = Date.now();
         const createUploadResponse = await fetch(
           requestUrl,
           {
@@ -113,71 +134,126 @@ export async function POST(request: NextRequest) {
             body: JSON.stringify(requestBody),
           }
         );
+        const requestDuration = Date.now() - requestStartTime;
+        
+        console.log('📥 Direct creator upload response received:', {
+          status: createUploadResponse.status,
+          statusText: createUploadResponse.statusText,
+          duration: `${requestDuration}ms`,
+          ok: createUploadResponse.ok,
+        });
 
+        // Capture ALL response details before parsing
+        const responseStatus = createUploadResponse.status;
+        const responseStatusText = createUploadResponse.statusText;
+        const responseHeaders: Record<string, string> = {};
+        createUploadResponse.headers.forEach((value, key) => {
+          responseHeaders[key] = value;
+        });
+        
+        // Read response body as text first (before JSON parsing)
+        const responseBodyText = await createUploadResponse.text();
+        
         if (!createUploadResponse.ok) {
-          const errorText = await createUploadResponse.text();
-          const responseHeaders: Record<string, string> = {};
-          createUploadResponse.headers.forEach((value, key) => {
-            responseHeaders[key] = value;
-          });
-          
           let error;
           try {
-            error = JSON.parse(errorText);
+            error = JSON.parse(responseBodyText);
           } catch {
-            error = { errors: [{ message: errorText }] };
+            error = { errors: [{ message: responseBodyText }] };
           }
           
-          console.error('❌ Failed to create direct creator upload URL:', {
-            status: createUploadResponse.status,
-            statusText: createUploadResponse.statusText,
-            error: error.errors?.[0]?.message || errorText,
-            fullError: error,
-            errorText: errorText,
+          // Log COMPLETE error information
+          const completeErrorLog = {
+            // Response details
+            status: responseStatus,
+            statusText: responseStatusText,
             responseHeaders: responseHeaders,
-            requestInfo: {
-              endpoint: requestUrl,
-              method: 'POST',
-              requestBody: requestBody,
-              hasToken: !!apiToken,
-              tokenLength: apiToken?.length || 0,
-              tokenPrefix: apiToken ? apiToken.substring(0, 10) + '...' : 'MISSING',
-              accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
+            responseBodyText: responseBodyText,
+            responseBodyParsed: error,
+            
+            // Request details
+            requestUrl: requestUrl,
+            requestMethod: 'POST',
+            requestBody: requestBody,
+            requestHeaders: {
+              'Authorization': `Bearer ${apiToken ? apiToken.substring(0, 10) + '...' : 'MISSING'}`,
+              'Content-Type': 'application/json',
             },
-          });
+            
+            // Token details
+            hasToken: !!apiToken,
+            tokenLength: apiToken?.length || 0,
+            tokenPrefix: apiToken ? apiToken.substring(0, 15) + '...' : 'MISSING',
+            
+            // Account details
+            accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
+            accountIdFull: accountId || 'MISSING',
+            
+            // Error message
+            errorMessage: error.errors?.[0]?.message || responseBodyText,
+            errorCode: error.errors?.[0]?.code,
+            allErrors: error.errors || [],
+            
+            // File details
+            fileSize: file.size,
+            fileName: file.name,
+            fileType: file.type,
+          };
           
-          // Return detailed error with instructions
-          let errorMessage = `Failed to create direct creator upload URL: ${error.errors?.[0]?.message || errorText}`;
+          console.error('❌ COMPLETE ERROR - Failed to create direct creator upload URL:', JSON.stringify(completeErrorLog, null, 2));
+          
+          // Return detailed error with ALL information
+          let errorMessage = `Failed to create direct creator upload URL: ${error.errors?.[0]?.message || responseBodyText}`;
           let hint = '';
           
-          if (createUploadResponse.status === 403) {
+          if (responseStatus === 403) {
             hint = '403 Forbidden - Your API token may not have permission for direct creator uploads. ' +
                    'Ensure your API token has "Stream:Edit" permission and that direct creator uploads are enabled in your Cloudflare account. ' +
                    'Check: My Profile → API Tokens → Verify token has "Account.Cloudflare Stream.Edit" permission.';
-          } else if (createUploadResponse.status === 401) {
+          } else if (responseStatus === 401) {
             hint = '401 Unauthorized - Invalid API token. Verify your NEXT_PUBLIC_CLOUDFLARE_STREAM_API_TOKEN is correct.';
           }
           
           return NextResponse.json(
             { 
               error: errorMessage,
-              status: createUploadResponse.status,
+              status: responseStatus,
+              statusText: responseStatusText,
               hint: hint,
               debug: {
-                rawErrorText: errorText,
-                parsedError: error,
+                // Full response
+                responseBodyText: responseBodyText,
+                responseBodyParsed: error,
                 responseHeaders: responseHeaders,
-                requestInfo: {
-                  endpoint: requestUrl,
-                  method: 'POST',
-                  requestBody: requestBody,
-                  hasToken: !!apiToken,
-                  tokenLength: apiToken?.length || 0,
-                  tokenPrefix: apiToken ? apiToken.substring(0, 10) + '...' : 'MISSING',
+                
+                // Full request
+                requestUrl: requestUrl,
+                requestMethod: 'POST',
+                requestBody: requestBody,
+                requestHeaders: {
+                  'Authorization': `Bearer ${apiToken ? '[REDACTED]' : 'MISSING'}`,
+                  'Content-Type': 'application/json',
                 },
+                
+                // Token info (partial for security)
+                hasToken: !!apiToken,
+                tokenLength: apiToken?.length || 0,
+                tokenPrefix: apiToken ? apiToken.substring(0, 15) + '...' : 'MISSING',
+                
+                // Account info
+                accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
+                
+                // Error details
+                errorCode: error.errors?.[0]?.code,
+                allErrors: error.errors || [],
+                
+                // File info
+                fileSize: file.size,
+                fileName: file.name,
+                fileType: file.type,
               },
             },
-            { status: createUploadResponse.status }
+            { status: responseStatus }
           );
         } else {
           // Success - get the upload URL and video ID
