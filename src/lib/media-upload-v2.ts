@@ -132,10 +132,20 @@ export async function uploadMedia(
 
   // ALWAYS try Cloudflare API route first - no client-side checks
   if (type === 'video') {
-    // DISABLED: Direct creator upload is not working (Decoding Error from Cloudflare)
-    // Using regular direct upload for all files - Vercel will block large files with 403,
-    // but we'll handle that error and fall back to Firebase
-    // TODO: Implement proper large file handling (maybe tus protocol or chunked upload)
+    // For large files (>20MB), use direct creator upload from client to bypass Vercel size limits
+    const LARGE_FILE_THRESHOLD = 20 * 1024 * 1024; // 20MB
+    const isLargeFile = file.size > LARGE_FILE_THRESHOLD;
+    
+    if (isLargeFile) {
+      // Use direct creator upload from client side to bypass Vercel body size limits
+      console.log(`📤 uploadMedia: Large file detected (${(file.size / 1024 / 1024).toFixed(1)}MB), using direct creator upload from client...`);
+      try {
+        return await uploadVideoDirectCreatorUpload(file);
+      } catch (error: any) {
+        console.error('❌ Direct creator upload failed, falling back to regular upload:', error.message);
+        // Fall through to regular upload
+      }
+    }
     
     try {
       console.log(`📤 uploadMedia: Calling Cloudflare Stream API...`);
