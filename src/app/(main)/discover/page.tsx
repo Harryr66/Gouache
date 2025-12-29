@@ -2347,7 +2347,7 @@ function DiscoverPageContent() {
                   });
                   
                   return (
-                    <div className="w-full space-y-4">
+                    <div className="w-full space-y-6 flex flex-col items-center">
                       {videoArtworks.map((item) => {
                         const artwork = item as Artwork;
                         const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
@@ -2362,11 +2362,11 @@ function DiscoverPageContent() {
                         if (!hasVideo || !videoUrl) return null;
                         
                         return (
-                          <div key={artwork.id} className="relative group w-full">
+                          <div key={artwork.id} className="relative group w-full max-w-md mx-auto">
                             <Link href={`/artwork/${artwork.id}`}>
                               <Card className="relative w-full overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
-                                {/* Video container with 16:9 aspect ratio */}
-                                <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                                {/* Video container with 9:16 portrait aspect ratio */}
+                                <div className="relative w-full" style={{ aspectRatio: '9/16' }}>
                                   <video
                                     src={videoUrl}
                                     className="w-full h-full object-cover"
