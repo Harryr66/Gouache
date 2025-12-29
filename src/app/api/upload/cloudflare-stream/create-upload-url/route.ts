@@ -30,34 +30,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Create direct creator upload URL
-    // Cloudflare Stream direct_user endpoint - try with NO body first
-    // Some APIs require empty body or no body at all
+    // Try /stream/direct_upload endpoint first (this might be the correct endpoint)
     console.log('📤 Creating direct creator upload URL:', {
       accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
       hasToken: !!apiToken,
-      endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
     });
     
-    // Try with empty body first (no Content-Type header)
+    // Try /stream/direct_upload endpoint first
     let response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/direct_upload`,
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiToken}`,
-          // Don't set Content-Type - let Cloudflare determine it
+          'Content-Type': 'application/json',
         },
-        // No body at all
+        body: JSON.stringify({
+          maxDurationSeconds,
+          allowedOrigins,
+        }),
       }
     );
     
-    // If that fails, try with JSON body
-    if (!response.ok && response.status === 400) {
-      console.log('⚠️ Empty body failed, trying with JSON body...');
-      const jsonBody = {
-        maxDurationSeconds,
-        allowedOrigins,
-      };
+    // If that fails, try the query parameter version
+    if (!response.ok && (response.status === 404 || response.status === 400)) {
+      console.log('⚠️ /stream/direct_upload failed, trying ?direct_user=true...');
       response = await fetch(
         `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
         {
@@ -66,15 +63,26 @@ export async function POST(request: NextRequest) {
             'Authorization': `Bearer ${apiToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(jsonBody),
+          body: JSON.stringify({
+            maxDurationSeconds,
+            allowedOrigins,
+          }),
         }
       );
     }
     
-    // If that also fails, try without direct_user parameter (regular upload endpoint)
+    // If that also fails, try with empty body
     if (!response.ok && response.status === 400) {
-      console.log('⚠️ direct_user failed, this endpoint may not be available');
-      // Don't try regular upload here - that's handled in the main route
+      console.log('⚠️ Query parameter failed, trying with empty body...');
+      response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`,
+          },
+        }
+      );
     }
 
     if (!response.ok) {
