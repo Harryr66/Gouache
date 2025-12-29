@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     // Determine upload method based on file size
     // Large files (>20MB) should use direct creator upload to avoid timeouts
     const LARGE_FILE_THRESHOLD = 20 * 1024 * 1024; // 20MB
-    const useDirectCreatorUpload = file.size > LARGE_FILE_THRESHOLD;
+    let useDirectCreatorUpload = file.size > LARGE_FILE_THRESHOLD;
 
     console.log('🔍 Cloudflare Stream API: Uploading video...', {
       accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
@@ -55,7 +55,9 @@ export async function POST(request: NextRequest) {
 
     let uploadResponse: Response | null = null;
     let videoId: string | null = null;
+    let directCreatorUploadSucceeded = false;
 
+    // Try direct creator upload first for large files
     if (useDirectCreatorUpload) {
       // For large files: Use direct creator upload method
       // Step 1: Create upload URL
@@ -87,16 +89,69 @@ export async function POST(request: NextRequest) {
           console.error('❌ Failed to create direct creator upload URL:', {
             status: createUploadResponse.status,
             error: error.errors?.[0]?.message || errorText,
+            hint: 'Falling back to direct upload method',
           });
-          return NextResponse.json(
-            { error: `Failed to create upload URL: ${error.errors?.[0]?.message || errorText}` },
-            { status: createUploadResponse.status }
-          );
-        }
+          
+          // If 403 or permission error, fall back to direct upload
+          // This can happen if the API token doesn't have permission for direct_user=true
+          // or if the account doesn't have direct creator uploads enabled
+          if (createUploadResponse.status === 403 || createUploadResponse.status === 401) {
+            console.log('⚠️ Direct creator upload not available (403/401), falling back to direct upload...');
+            // Will fall through to direct upload below
+          } else {
+            return NextResponse.json(
+              { 
+                error: `Failed to create upload URL: ${error.errors?.[0]?.message || errorText}`,
+                status: createUploadResponse.status,
+                hint: 'If this is a 403, your API token may not have permission for direct creator uploads. Try using direct upload instead.',
+              },
+              { status: createUploadResponse.status }
+            );
+          }
+        } else {
+          // Success - get the upload URL and video ID
+          const { result } = await createUploadResponse.json();
+          const uploadUrl = result.uploadURL;
+          videoId = result.uid;
 
-        const { result } = await createUploadResponse.json();
-        const uploadUrl = result.uploadURL;
-        videoId = result.uid;
+          // Step 2: Upload file to the signed URL
+          console.log('📤 Uploading file to signed URL...');
+          const fileBuffer = await file.arrayBuffer();
+          const putResponse = await fetch(uploadUrl, {
+            method: 'PUT',
+            body: fileBuffer,
+            headers: {
+              'Content-Type': file.type,
+            },
+          });
+
+          if (!putResponse.ok) {
+            const errorText = await putResponse.text();
+            console.error('❌ Failed to upload to signed URL:', {
+              status: putResponse.status,
+              statusText: putResponse.statusText,
+              errorText,
+            });
+            // Fall back to direct upload on PUT failure
+            console.log('⚠️ Failed to upload to signed URL, falling back to direct upload...');
+          } else {
+            // Success - we're done with direct creator upload
+            console.log('✅ File uploaded to signed URL, videoId:', videoId);
+            directCreatorUploadSucceeded = true;
+          }
+        }
+      } catch (fetchError: any) {
+        console.error('❌ Error in direct creator upload:', {
+          error: fetchError?.message,
+          stack: fetchError?.stack,
+        });
+        // On error, fall back to direct upload
+        console.log('⚠️ Error in direct creator upload, falling back to direct upload...');
+      }
+    }
+    
+    // Use direct upload if direct creator upload failed or wasn't attempted
+    if (!directCreatorUploadSucceeded) {
 
         // Step 2: Upload file to the signed URL
         console.log('📤 Uploading file to signed URL...');
