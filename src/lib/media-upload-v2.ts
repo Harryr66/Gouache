@@ -148,10 +148,14 @@ export async function uploadMedia(
   userId: string
 ): Promise<MediaUploadResult> {
   console.log(`🚀🚀🚀 NEW CODE V2.0 RUNNING 🚀🚀🚀`);
-  console.log(`📤 uploadMedia: Starting upload for ${type}, file: ${file.name}, size: ${(file.size / 1024).toFixed(1)}KB`);
+  console.log(`📤 uploadMedia: Starting upload for ${type}, file: ${file.name}, size: ${(file.size / 1024).toFixed(1)}KB, file.type: ${file.type}`);
 
-  // ALWAYS try Cloudflare API route first - no client-side checks
-  if (type === 'video') {
+  // Verify type matches file type as a safeguard
+  const isVideoFile = file.type.startsWith('video/');
+  const isImageFile = file.type.startsWith('image/');
+  
+  // If type is 'video' OR file is a video, use direct creator upload
+  if (type === 'video' || isVideoFile) {
     // For videos, ALWAYS use direct creator upload to bypass Vercel limits and rate limiting
     // Vercel can block requests with 403 due to rate limiting or body size limits during bulk uploads
     console.log(`📤 uploadMedia: Video detected (${(file.size / 1024 / 1024).toFixed(1)}MB), using direct creator upload from client to bypass Vercel limits...`);
@@ -161,6 +165,11 @@ export async function uploadMedia(
       console.error('❌ Direct creator upload failed:', error.message);
       throw new Error(`Failed to upload video to Cloudflare Stream: ${error.message}`);
     }
+  }
+  
+  // Ensure we only process images here
+  if (type !== 'image' && !isImageFile) {
+    throw new Error(`Invalid media type: ${type}. File type: ${file.type}. Only 'image' and 'video' are supported.`);
   }
   
   // For images, use API route with retry logic for rate limiting
