@@ -30,6 +30,8 @@ interface PortfolioItem {
   year: string;
   tags: string[];
   createdAt: Date;
+  supportingImages?: string[];
+  mediaUrls?: string[];
 }
 
 export function PortfolioManager() {
