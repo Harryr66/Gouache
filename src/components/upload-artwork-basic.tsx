@@ -430,61 +430,47 @@ export function UploadArtworkBasic() {
       const uploadedUrls: string[] = new Array(processedFiles.length);
       const mediaTypes: ('image' | 'video')[] = new Array(processedFiles.length);
       const thumbnailUrls: (string | undefined)[] = new Array(processedFiles.length);
-      const MAX_CONCURRENT_UPLOADS = 3;
       
-      // Upload files in batches to avoid overwhelming the network
-      for (let i = 0; i < processedFiles.length; i += MAX_CONCURRENT_UPLOADS) {
-        const batch = processedFiles.slice(i, i + MAX_CONCURRENT_UPLOADS);
+      // Upload files sequentially (one at a time) to avoid rate limiting
+      // This is slower but more reliable, especially for bulk uploads
+      for (let i = 0; i < processedFiles.length; i++) {
+        const file = processedFiles[i];
+        const isVideo = file.type.startsWith('video/');
+        setCurrentUploadingFile(`${i + 1}/${processedFiles.length}: ${file.name}`);
         
-        const batchPromises = batch.map(async (file, batchIndex) => {
-          const globalIndex = i + batchIndex;
-          const isVideo = file.type.startsWith('video/');
-          setCurrentUploadingFile(`${globalIndex + 1}/${processedFiles.length}: ${file.name}`);
+        try {
+          // Upload to Cloudflare (Stream for videos, Images for images)
+          const { uploadMedia } = await import('@/lib/media-upload-v2');
+          const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
+          const uploadResult = await uploadMedia(file, mediaType, user.id);
           
-          try {
-            // Upload to Cloudflare (Stream for videos, Images for images)
-            const { uploadMedia } = await import('@/lib/media-upload-v2');
-            const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
-            const uploadResult = await uploadMedia(file, mediaType, user.id);
-            
-            // Handle thumbnail: prioritize Cloudflare thumbnail, then custom, then extracted
-            let thumbnailUrl = uploadResult.thumbnailUrl; // Use Cloudflare thumbnail if available (fastest)
-            if (globalIndex === 0 && thumbnailToUpload && !thumbnailUrl) {
-              // Only upload custom/extracted thumbnail if Cloudflare didn't provide one
-              try {
-                const { uploadMedia } = await import('@/lib/media-upload-v2');
-                const thumbnailResult = await uploadMedia(thumbnailToUpload, 'image', user.id);
-                thumbnailUrl = thumbnailResult.url;
-              } catch (error) {
-                console.warn('Failed to upload custom thumbnail:', error);
-              }
+          // Handle thumbnail: prioritize Cloudflare thumbnail, then custom, then extracted
+          let thumbnailUrl = uploadResult.thumbnailUrl; // Use Cloudflare thumbnail if available (fastest)
+          if (i === 0 && thumbnailToUpload && !thumbnailUrl) {
+            // Only upload custom/extracted thumbnail if Cloudflare didn't provide one
+            try {
+              const { uploadMedia } = await import('@/lib/media-upload-v2');
+              const thumbnailResult = await uploadMedia(thumbnailToUpload, 'image', user.id);
+              thumbnailUrl = thumbnailResult.url;
+            } catch (error) {
+              console.warn('Failed to upload custom thumbnail:', error);
             }
-            
-            // Update progress
-            const overallProgress = ((globalIndex + 1) * 100 / processedFiles.length);
-            setUploadProgress(overallProgress);
-            
-            return { url: uploadResult.url, type: mediaType, index: globalIndex, thumbnailUrl };
-          } catch (error) {
-            console.error(`Error uploading file ${globalIndex + 1}:`, error);
-            throw error;
           }
-        });
-
-        // Wait for current batch to complete
-        const batchResults = await Promise.all(batchPromises);
-        
-        // Sort results by original index to maintain file order
-        batchResults.sort((a, b) => a.index - b.index);
-        
-        // Add to arrays in correct order
-        batchResults.forEach((result) => {
-          uploadedUrls[result.index] = result.url;
-          mediaTypes[result.index] = result.type;
-          if (result.thumbnailUrl) {
-            thumbnailUrls[result.index] = result.thumbnailUrl;
+          
+          // Store results
+          uploadedUrls[i] = uploadResult.url;
+          mediaTypes[i] = mediaType;
+          if (thumbnailUrl) {
+            thumbnailUrls[i] = thumbnailUrl;
           }
-        });
+          
+          // Update progress
+          const overallProgress = ((i + 1) * 100 / processedFiles.length);
+          setUploadProgress(overallProgress);
+        } catch (error) {
+          console.error(`Error uploading file ${i + 1}:`, error);
+          throw error;
+        }
       }
       
       // Reset progress after all uploads complete
