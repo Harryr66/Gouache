@@ -186,7 +186,7 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
   // This is critical for Firebase images which don't have variants
   const optimizedImage = useOptimizedImage({
     src: imageUrl || '',
-    size: isInitialViewport ? 'thumbnail' : (isMobile ? 'small' : 'medium'), // Force smaller sizes for faster loading
+    size: isInitialViewport ? 'thumbnail' : (isMobile ? 'small' : 'large'), // Use 'large' (1080px) for desktop, not 'medium'
     isGrid: true, // Always grid view in discover feed
     isMobile,
     enableBlur: true,
@@ -638,9 +638,12 @@ const generateArtistContent = (artist: Artist) => ({
         }
       };
     } else {
-      // Pause when less than 50% visible (immediately)
+      // Pause when less than 50% visible (lazy loading - don't play when out of view)
       if (video && !video.paused) {
         video.pause();
+        setIsVideoPaused(true);
+        // Show poster image when video is paused (out of view)
+        setIsImageLoaded(true);
         // Reset to start for next time it becomes visible
         video.currentTime = 0;
       }
@@ -741,7 +744,7 @@ const generateArtistContent = (artist: Artist) => ({
                       src={imageUrl}
                       alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
                       fill
-                      className={`object-cover transition-opacity duration-500 absolute inset-0 z-10 pointer-events-none ${isVideoLoaded && !videoError ? 'opacity-0' : 'opacity-100'}`}
+                      className={`object-cover transition-opacity duration-500 absolute inset-0 z-10 pointer-events-none ${isVideoLoaded && !isVideoPaused && isInViewport ? 'opacity-0' : 'opacity-100'}`}
                       loading="eager"
                       priority={true}
                       onLoad={() => {
@@ -819,13 +822,13 @@ const generateArtistContent = (artist: Artist) => ({
                 </div>
               )}
               
-              {/* Video element - loads when in viewport, positioned behind poster until ready */}
+              {/* Video element - loads when in viewport, replaces poster thumbnail when playing */}
               {/* Use preload based on connection speed - metadata for slow, auto for fast */}
               {shouldLoadVideo && !videoError && (
                 <video
                   ref={videoRef}
                   src={videoUrl}
-                  className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-500 absolute inset-0 pointer-events-none ${!isVideoLoaded ? 'opacity-0' : 'opacity-100 z-20'}`}
+                  className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-500 absolute inset-0 pointer-events-none ${!isVideoLoaded || isVideoPaused ? 'opacity-0' : 'opacity-100 z-20'}`}
                   muted={true}
                   loop={true}
                   playsInline={true}
@@ -848,29 +851,52 @@ const generateArtistContent = (artist: Artist) => ({
                       clearTimeout(videoLoadTimeoutRef.current);
                       videoLoadTimeoutRef.current = null;
                     }
-                    // Video is ready to play - fade in smoothly and autoplay
+                    // Video is ready to play - mark as loaded
                     setIsVideoLoaded(true);
                     setVideoError(false);
                     
-                    // Autoplay when ready (for initial tiles or when in viewport)
-                    // Check if can autoplay (50% rule)
+                    // CRITICAL: Hide poster image when video is ready (replaces thumbnail)
+                    // The video will fade in and replace the poster
+                    setIsImageLoaded(false); // Hide poster to show video
+                    
+                    // Autoplay immediately when ready and in viewport
                     if ((isInViewport || isInitialViewport) && videoRef.current && videoRef.current.paused && artwork.id) {
                       if (canAutoplay(artwork.id) && requestPlay(artwork.id)) {
-                        videoRef.current.play().catch((error) => {
+                        // Autoplay immediately - video will replace poster thumbnail
+                        videoRef.current.play().then(() => {
+                          setIsVideoPaused(false);
+                          // Ensure poster is hidden when video starts playing
+                          setIsImageLoaded(false);
+                        }).catch((error) => {
                           console.error('Error autoplaying video:', error);
+                          setIsVideoPaused(true);
+                          // If autoplay fails, show poster again
+                          setIsImageLoaded(true);
                         });
-                        setIsVideoPaused(false);
                       } else {
-                        // Can't autoplay - keep paused, show play button
+                        // Can't autoplay - keep paused, show play button and poster
                         setIsVideoPaused(true);
+                        setIsImageLoaded(true); // Keep poster visible
                       }
+                    } else if (!isInViewport && !isInitialViewport) {
+                      // Not in viewport - keep paused and show poster
+                      setIsVideoPaused(true);
+                      setIsImageLoaded(true);
                     }
                   }}
                   onPlay={() => {
                     setIsVideoPaused(false);
+                    // Hide poster image when video starts playing (replaces thumbnail)
+                    setIsImageLoaded(false);
+                    // Notify parent that video is playing
+                    if (onVideoReady) {
+                      onVideoReady(artwork.id);
+                    }
                   }}
                   onPause={() => {
                     setIsVideoPaused(true);
+                    // Show poster image when video is paused
+                    setIsImageLoaded(true);
                   }}
                   onEnded={() => {
                     // Video finished - trigger next in queue via video control provider
@@ -881,12 +907,24 @@ const generateArtistContent = (artist: Artist) => ({
                     // The onEnded callback in registerVideo will handle queue
                   }}
                   onLoadedData={() => {
-                    // Data loaded - ensure visibility
+                    // Data loaded - video is ready
                     setIsVideoLoaded(true);
                     setVideoError(false);
+                    // Try to autoplay if in viewport
+                    if ((isInViewport || isInitialViewport) && videoRef.current && videoRef.current.paused && artwork.id) {
+                      if (canAutoplay(artwork.id) && requestPlay(artwork.id)) {
+                        videoRef.current.play().then(() => {
+                          setIsVideoPaused(false);
+                          setIsImageLoaded(false); // Hide poster when video plays
+                        }).catch(() => {
+                          setIsVideoPaused(true);
+                          setIsImageLoaded(true); // Show poster if autoplay fails
+                        });
+                      }
+                    }
                   }}
                   onProgress={() => {
-                    // Video is buffering - keep it visible once it starts
+                    // Video is buffering - mark as loaded when ready
                     if (!isVideoLoaded && videoRef.current && videoRef.current.readyState >= 2) {
                       setIsVideoLoaded(true);
                     }
@@ -1008,23 +1046,37 @@ const generateArtistContent = (artist: Artist) => ({
                   });
                 }
                 
-                // PRIORITY 1: Cloudflare Images (new uploads) - use /thumbnail variant for optimal performance
+                // PRIORITY 1: Cloudflare Images (new uploads)
                 if (isCloudflareImage) {
-                  // Use /thumbnail variant (240px) - smallest, fastest loading (~30KB vs 150KB+)
-                  // Both /thumbnail and /public are now configured with "Always public" access
                   let cloudflareUrl = imageSrc;
                   
                   // Extract Cloudflare image ID and account hash to construct proper variant URL
                   const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
                   if (cloudflareMatch) {
                     const [, accountHash, imageId] = cloudflareMatch;
-                    // Use /Thumbnail variant (capital T - matches Cloudflare variant name exactly)
-                    // Variant names are case-sensitive in Cloudflare
-                    cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`;
+                    
+                    // CRITICAL: Use /Thumbnail ONLY for video posters (placeholders before autoplay)
+                    // Use /1080px for regular image artworks to match Instagram/Pinterest quality
+                    if (hasVideo) {
+                      // Video poster: Use /Thumbnail variant (240px, ~30KB - fast placeholder)
+                      cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`;
+                    } else {
+                      // Regular image artwork: Use /1080px variant - Instagram/Pinterest standard
+                      // This matches Instagram's 1080px feed resolution for best quality
+                      cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/1080px`;
+                    }
                   } else {
-                    // Fallback: Ensure /Thumbnail variant (capital T)
-                    if (!imageSrc.includes('/Thumbnail') && !imageSrc.includes('/thumbnail')) {
-                      cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/Thumbnail');
+                    // Fallback: Determine variant based on whether it's a video
+                    if (hasVideo) {
+                      // Video poster: Use /Thumbnail
+                      if (!imageSrc.includes('/Thumbnail') && !imageSrc.includes('/thumbnail')) {
+                        cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/Thumbnail');
+                      }
+                    } else {
+                      // Regular image: Use /1080px (Instagram/Pinterest standard)
+                      if (!imageSrc.includes('/1080px') && !imageSrc.includes('/public')) {
+                        cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/1080px');
+                      }
                     }
                   }
                   
@@ -1042,7 +1094,7 @@ const generateArtistContent = (artist: Artist) => ({
                       alt={artwork.imageAiHint || artwork.title || 'Artwork'}
                       width={finalWidth}
                       height={finalHeight}
-                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
+                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${!isImageLoaded && !imageError ? 'opacity-0' : 'opacity-100'}`}
                       loading={isInitialViewport ? "eager" : "lazy"}
                       fetchPriority={isInitialViewport ? "high" : "auto"}
                       decoding="async"
@@ -1056,23 +1108,28 @@ const generateArtistContent = (artist: Artist) => ({
                         }
                       }}
                       onError={(e) => {
-                        // Completely suppress error logging - track silently to prevent console spam
+                        // Log error for debugging (but only once per URL)
                         if (!failedUrlsRef.current.has(cloudflareUrl)) {
                           failedUrlsRef.current.add(cloudflareUrl);
-                          // NO CONSOLE LOGGING - prevents 2000+ error spam
+                          console.warn('⚠️ Cloudflare image load error:', {
+                            url: cloudflareUrl,
+                            artworkId: artwork.id,
+                            variant: hasVideo ? 'Thumbnail' : '1080px',
+                            retryCount,
+                            originalUrl: imageSrc
+                          });
                         }
                         
-                        // Fallback: Try /public variant if /thumbnail fails
-                        if (retryCount < 1 && !fallbackImageUrl) {
+                        // Fallback: Try alternative variant if current one fails
+                        if (retryCount < 2 && !fallbackImageUrl) {
                           const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
                           if (cloudflareMatch) {
                             const [, accountHash, imageId] = cloudflareMatch;
-                            // Try /Thumbnail first (capital T), then /public
-                            const fallbackUrl = cloudflareUrl.includes('/Thumbnail') 
-                              ? `https://imagedelivery.net/${accountHash}/${imageId}/public`
-                              : `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`;
+                            // Try /public variant as fallback (most compatible)
+                            const fallbackUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
                             
                             if (fallbackUrl !== cloudflareUrl && !failedUrlsRef.current.has(fallbackUrl)) {
+                              console.log('🔄 Retrying with /public variant:', fallbackUrl);
                               setTimeout(() => {
                                 setRetryCount(prev => prev + 1);
                                 setIsImageLoaded(false);
@@ -1083,10 +1140,25 @@ const generateArtistContent = (artist: Artist) => ({
                           }
                         }
                         
-                        // Final fallback: use placeholder
+                        // Final fallback: use original URL or placeholder
+                        if (retryCount >= 2) {
+                          console.warn('❌ All variants failed, using original URL:', imageSrc);
+                          // Try original URL as last resort
+                          if (imageSrc !== cloudflareUrl && !failedUrlsRef.current.has(imageSrc)) {
+                            setTimeout(() => {
+                              setRetryCount(prev => prev + 1);
+                              setIsImageLoaded(false);
+                              (e.target as HTMLImageElement).src = imageSrc;
+                            }, 500);
+                            return;
+                          }
+                        }
+                        
+                        // Ultimate fallback: show placeholder but mark as loaded so it's visible
+                        console.error('❌ Image failed to load after all retries:', cloudflareUrl);
                         setImageError(true);
                         setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                        setIsImageLoaded(true);
+                        setIsImageLoaded(true); // Show placeholder
                       }}
                     />
                   );

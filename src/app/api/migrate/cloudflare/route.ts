@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       batchSize = 10,
       deleteAfterMigration = false,
       limit,
+      dryRun = false,
     } = body;
 
     console.log('🚀 Starting migration via API...', {
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
       batchSize,
       deleteAfterMigration,
       limit,
+      dryRun,
     });
 
     return NextResponse.json({
@@ -72,21 +74,49 @@ export async function GET(request: NextRequest) {
     const snapshot = await getDocs(artworksQuery);
     let needsMigration = 0;
     let alreadyMigrated = 0;
+    let hasCloudflareUrls = 0;
+    let noMediaUrls = 0;
 
     snapshot.forEach((doc) => {
       const data = doc.data();
       if (data.migratedToCloudflare) {
         alreadyMigrated++;
       } else {
-        // Check if it has Firebase URLs
-        const hasFirebaseUrls = 
-          (data.imageUrl && data.imageUrl.includes('firebasestorage.googleapis.com')) ||
-          (data.videoUrl && data.videoUrl.includes('firebasestorage.googleapis.com')) ||
-          (data.supportingImages?.some((url: string) => url.includes('firebasestorage.googleapis.com'))) ||
-          (data.mediaUrls?.some((url: string) => url.includes('firebasestorage.googleapis.com')));
+        // Check if it has Firebase URLs (and not already Cloudflare)
+        const hasFirebaseImage = data.imageUrl && 
+          data.imageUrl.includes('firebasestorage.googleapis.com') &&
+          !data.imageUrl.includes('cloudflarestream.com') &&
+          !data.imageUrl.includes('imagedelivery.net');
+        const hasFirebaseVideo = data.videoUrl && 
+          data.videoUrl.includes('firebasestorage.googleapis.com') &&
+          !data.videoUrl.includes('cloudflarestream.com') &&
+          !data.videoUrl.includes('imagedelivery.net');
+        const hasFirebaseSupporting = data.supportingImages?.some((url: string) => 
+          url.includes('firebasestorage.googleapis.com') &&
+          !url.includes('cloudflarestream.com') &&
+          !url.includes('imagedelivery.net')
+        );
+        const hasFirebaseMedia = data.mediaUrls?.some((url: string) => 
+          url.includes('firebasestorage.googleapis.com') &&
+          !url.includes('cloudflarestream.com') &&
+          !url.includes('imagedelivery.net')
+        );
+        
+        const hasFirebaseUrls = hasFirebaseImage || hasFirebaseVideo || hasFirebaseSupporting || hasFirebaseMedia;
         
         if (hasFirebaseUrls) {
           needsMigration++;
+        } else if (data.imageUrl || data.videoUrl || data.supportingImages?.length || data.mediaUrls?.length) {
+          // Has media but it's already Cloudflare or something else
+          if (data.imageUrl?.includes('cloudflarestream.com') || 
+              data.imageUrl?.includes('imagedelivery.net') ||
+              data.videoUrl?.includes('cloudflarestream.com') ||
+              data.videoUrl?.includes('imagedelivery.net')) {
+            hasCloudflareUrls++;
+          }
+        } else {
+          // No media URLs at all
+          noMediaUrls++;
         }
       }
     });
@@ -94,6 +124,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       needsMigration,
       alreadyMigrated,
+      hasCloudflareUrls,
+      noMediaUrls,
       total: snapshot.size,
     });
   } catch (error: any) {

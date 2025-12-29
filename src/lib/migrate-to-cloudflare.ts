@@ -206,9 +206,10 @@ export async function migrateArtworksToCloudflare(
     batchSize?: number;
     deleteAfterMigration?: boolean;
     limit?: number;
+    dryRun?: boolean;
   } = {}
 ): Promise<MigrationStats> {
-  const { batchSize = 10, deleteAfterMigration = false, limit } = options;
+  const { batchSize = 10, deleteAfterMigration = false, limit, dryRun = false } = options;
   const stats: MigrationStats = {
     totalFound: 0,
     migrated: 0,
@@ -233,13 +234,16 @@ export async function migrateArtworksToCloudflare(
       const data = doc.data();
       // Check if artwork has Firebase Storage URLs
       const hasFirebaseUrls = 
-        (data.imageUrl && isFirebaseStorageUrl(data.imageUrl)) ||
-        (data.videoUrl && isFirebaseStorageUrl(data.videoUrl)) ||
-        (data.supportingImages?.some((url: string) => isFirebaseStorageUrl(url))) ||
-        (data.mediaUrls?.some((url: string) => isFirebaseStorageUrl(url)));
+        (data.imageUrl && isFirebaseStorageUrl(data.imageUrl) && !isCloudflareUrl(data.imageUrl)) ||
+        (data.videoUrl && isFirebaseStorageUrl(data.videoUrl) && !isCloudflareUrl(data.videoUrl)) ||
+        (data.supportingImages?.some((url: string) => isFirebaseStorageUrl(url) && !isCloudflareUrl(url))) ||
+        (data.mediaUrls?.some((url: string) => isFirebaseStorageUrl(url) && !isCloudflareUrl(url)));
 
       if (hasFirebaseUrls && !data.migratedToCloudflare) {
         artworks.push({ id: doc.id, data });
+      } else if (dryRun && hasFirebaseUrls) {
+        // In dry run, log why items are being skipped
+        console.log(`🔍 DRY RUN: Skipping ${doc.id} - migratedToCloudflare: ${data.migratedToCloudflare}, hasFirebaseUrls: ${hasFirebaseUrls}`);
       }
     });
 
@@ -256,6 +260,13 @@ export async function migrateArtworksToCloudflare(
       await Promise.all(
         batch.map(async (artwork) => {
           try {
+            if (dryRun) {
+              // In dry run, just simulate migration
+              console.log(`🔍 DRY RUN: Would migrate artwork ${artwork.id}`);
+              stats.migrated++;
+              return;
+            }
+            
             const result = await migrateArtworkMedia(artwork.id, artwork.data);
             
             if (result.updated) {

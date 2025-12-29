@@ -20,6 +20,8 @@ interface MigrationStats {
 interface MigrationStatus {
   needsMigration: number;
   alreadyMigrated: number;
+  hasCloudflareUrls?: number;
+  noMediaUrls?: number;
   total: number;
 }
 
@@ -31,6 +33,7 @@ export default function MigratePage() {
   const [batchSize, setBatchSize] = useState(10);
   const [limit, setLimit] = useState<number | undefined>(undefined);
   const [deleteAfterMigration, setDeleteAfterMigration] = useState(false);
+  const [dryRun, setDryRun] = useState(true);
 
   const checkStatus = async () => {
     setLoadingStatus(true);
@@ -72,6 +75,7 @@ export default function MigratePage() {
           batchSize,
           deleteAfterMigration,
           limit: limit || undefined,
+          dryRun,
         }),
       });
 
@@ -80,11 +84,15 @@ export default function MigratePage() {
       if (data.success) {
         setStats(data.stats);
         toast({
-          title: 'Migration Complete',
-          description: data.message,
+          title: dryRun ? 'Dry Run Complete' : 'Migration Complete',
+          description: dryRun 
+            ? `Would migrate ${data.stats.migrated} items. ${data.stats.skipped} skipped, ${data.stats.failed} would fail.`
+            : data.message,
         });
-        // Refresh status
-        await checkStatus();
+        // Refresh status only if not dry run
+        if (!dryRun) {
+          await checkStatus();
+        }
       } else {
         toast({
           title: 'Migration Failed',
@@ -138,7 +146,7 @@ export default function MigratePage() {
             </div>
 
             {status && (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="p-4 border rounded-lg">
                   <div className="text-sm text-muted-foreground">Needs Migration</div>
                   <div className="text-2xl font-bold">{status.needsMigration}</div>
@@ -146,6 +154,14 @@ export default function MigratePage() {
                 <div className="p-4 border rounded-lg">
                   <div className="text-sm text-muted-foreground">Already Migrated</div>
                   <div className="text-2xl font-bold text-green-600">{status.alreadyMigrated}</div>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <div className="text-sm text-muted-foreground">Has Cloudflare</div>
+                  <div className="text-2xl font-bold text-blue-600">{status.hasCloudflareUrls || 0}</div>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <div className="text-sm text-muted-foreground">No Media</div>
+                  <div className="text-2xl font-bold text-gray-600">{status.noMediaUrls || 0}</div>
                 </div>
                 <div className="p-4 border rounded-lg">
                   <div className="text-sm text-muted-foreground">Total Artworks</div>
@@ -202,6 +218,18 @@ export default function MigratePage() {
                 Delete from Firebase Storage after successful migration
               </Label>
             </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="dryRun"
+                checked={dryRun}
+                onCheckedChange={(checked) => setDryRun(checked === true)}
+                disabled={migrating}
+              />
+              <Label htmlFor="dryRun" className="cursor-pointer">
+                Dry Run (preview only, no changes made)
+              </Label>
+            </div>
           </div>
 
           {/* Start Migration */}
@@ -214,10 +242,10 @@ export default function MigratePage() {
             {migrating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Migrating...
+                {dryRun ? 'Running Dry Run...' : 'Migrating...'}
               </>
             ) : (
-              'Start Migration'
+              dryRun ? 'Run Dry Run' : 'Start Migration'
             )}
           </Button>
 

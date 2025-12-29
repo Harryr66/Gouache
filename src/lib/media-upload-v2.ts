@@ -1,19 +1,15 @@
 /**
  * Unified Media Upload Interface
  * 
- * ALWAYS tries Cloudflare API routes first (server-side handles credentials)
- * Falls back to Firebase if Cloudflare is not configured or fails
+ * CLOUDFLARE ONLY - No Firebase fallback
+ * All uploads must go through Cloudflare (Stream for videos, Images for images)
  * 
- * VERSION: 2.0.1 - Direct API route calls, no client-side checks
- * Updated: 2025-01-28 21:45:00
- * BUILD: FORCE_REBUILD_20250128_214500
+ * VERSION: 3.0.0 - Cloudflare only, no fallbacks
+ * Updated: 2025-01-28
  */
 
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
-
 export type MediaType = 'image' | 'video';
-export type MediaProvider = 'cloudflare' | 'firebase';
+export type MediaProvider = 'cloudflare';
 
 export interface MediaUploadResult {
   url: string;
@@ -167,8 +163,8 @@ export async function uploadMedia(
       try {
         return await uploadVideoDirectCreatorUpload(file);
       } catch (error: any) {
-        console.error('❌ Direct creator upload failed, falling back to regular upload:', error.message);
-        // Fall through to regular upload (will likely fail with 403 from Vercel, then Firebase)
+        console.error('❌ Direct creator upload failed:', error.message);
+        throw new Error(`Failed to upload video to Cloudflare Stream: ${error.message}`);
       }
     }
     
@@ -274,11 +270,14 @@ export async function uploadMedia(
         } else {
           console.error(`⚠️ No debug object in error response - API may not be returning full error details`);
         }
-        // Fall through to Firebase
+        
+        // Throw error - no Firebase fallback
+        throw new Error(`Cloudflare Stream upload failed: ${error.error || error.message || 'Unknown error'}`);
       }
     } catch (error: any) {
-      console.log(`⚠️ uploadMedia: Cloudflare Stream API error:`, error.message);
-      // Fall through to Firebase
+      console.error(`❌ uploadMedia: Cloudflare Stream API error:`, error.message);
+      // Re-throw - no Firebase fallback
+      throw error;
     }
   }
 
@@ -306,38 +305,20 @@ export async function uploadMedia(
           height: result.height,
         };
       } else {
-        const error = await response.json();
-        console.log(`⚠️ uploadMedia: Cloudflare Images API returned error:`, error.error);
-        // Fall through to Firebase
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error(`❌ uploadMedia: Cloudflare Images API returned error:`, error.error);
+        // Throw error - no Firebase fallback
+        throw new Error(`Cloudflare Images upload failed: ${error.error || 'Unknown error'}`);
       }
     } catch (error: any) {
-      console.log(`⚠️ uploadMedia: Cloudflare Images API error:`, error.message);
-      // Fall through to Firebase
+      console.error(`❌ uploadMedia: Cloudflare Images API error:`, error.message);
+      // Re-throw - no Firebase fallback
+      throw error;
     }
   }
 
-  // Fallback to Firebase
-  console.log(`📤 uploadMedia: Using Firebase Storage fallback...`);
-  return uploadToFirebase(file, type, userId);
-}
-
-async function uploadToFirebase(
-  file: File,
-  type: MediaType,
-  userId: string
-): Promise<MediaUploadResult> {
-  const timestamp = Date.now();
-  const storagePath = `portfolio/${userId}/${timestamp}_${file.name}`;
-  
-  const fileRef = ref(storage, storagePath);
-  await uploadBytes(fileRef, file);
-  const downloadURL = await getDownloadURL(fileRef);
-
-  console.log(`✅ uploadMedia: Firebase upload successful`);
-  return {
-    url: downloadURL,
-    provider: 'firebase',
-  };
+  // This should never be reached, but TypeScript needs it
+  throw new Error(`Unsupported media type: ${type}. Only 'image' and 'video' are supported.`);
 }
 
 export async function uploadMultipleMedia(

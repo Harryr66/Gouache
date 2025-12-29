@@ -204,12 +204,12 @@ export async function POST(request: NextRequest) {
       ? `https://imagedelivery.net/${accountHash}/${imageId}/public`
       : result.variants?.[0] || `https://imagedelivery.net/${imageId}/public`;
 
-    // Generate variant URLs (Cloudflare Images supports on-the-fly resizing via URL params)
+    // Generate variant URLs using your custom variant names (1080px, 720px, Thumbnail, public)
     const variants = {
-      thumbnail: accountHash ? `https://imagedelivery.net/${accountHash}/${imageId}/thumbnail` : baseUrl,
-      small: accountHash ? `https://imagedelivery.net/${accountHash}/${imageId}/small` : baseUrl,
-      medium: accountHash ? `https://imagedelivery.net/${accountHash}/${imageId}/medium` : baseUrl,
-      large: accountHash ? `https://imagedelivery.net/${accountHash}/${imageId}/large` : baseUrl,
+      thumbnail: accountHash ? `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail` : baseUrl,
+      '720px': accountHash ? `https://imagedelivery.net/${accountHash}/${imageId}/720px` : baseUrl,
+      '1080px': accountHash ? `https://imagedelivery.net/${accountHash}/${imageId}/1080px` : baseUrl,
+      public: baseUrl,
       full: baseUrl,
     };
 
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({
       imageId,
-      url: variants.medium, // Default to medium size
+      url: variants['1080px'], // Default to 1080px (Instagram quality)
       variants,
       provider: 'cloudflare',
       width: result.metadata?.width || result.dimensions?.width,

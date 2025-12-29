@@ -581,22 +581,30 @@ function DiscoverPageContent() {
       const timeSinceJoke = jokeComplete && jokeCompleteTimeRef.current ? Date.now() - jokeCompleteTimeRef.current : Infinity;
       const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
       
-      // OPTIMIZED: Dismiss immediately after joke + 2s (plenty of buffer time)
-      // Skeleton loaders and blur-up placeholders will handle visual loading state
-      // This ensures consistent, fast dismissal every time (like Pinterest/Instagram)
-      if (jokeTimeMet) {
-        // If artworks are loaded, dismiss immediately
-        if (artworksLoaded && artworks.length > 0) {
-          console.log(`✅ Ready to dismiss: Joke complete + 2s, ${artworks.length} artworks ready. Blur-up placeholders will handle media loading.`);
-          setShowLoadingScreen(false);
-          return;
-        }
-        // If artworks not loaded yet, wait max 8s (reduced from 10s for faster fallback)
-        if (jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 8000) {
-          console.warn('⚠️ Timeout: Artworks not loaded after 8s, dismissing anyway (placeholders will show)');
-          setShowLoadingScreen(false);
-          return;
-        }
+      // PINTEREST-LEVEL: Wait for ALL initial viewport images to fully load
+      // This ensures zero loading states after screen dismisses
+      const imagesReady = effectiveImagesTotal > 0 && initialImagesReady >= effectiveImagesTotal;
+      const videoPostersReady = effectiveVideoPostersTotal > 0 && initialVideoPostersReady >= effectiveVideoPostersTotal;
+      const allMediaReady = imagesReady && videoPostersReady;
+      
+      // CRITICAL: Only dismiss when BOTH joke time is met AND all media is loaded
+      if (jokeTimeMet && allMediaReady && artworksLoaded && artworks.length > 0) {
+        console.log(`✅ Ready to dismiss: Joke complete + 2s, ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Zero loading states!`);
+        setShowLoadingScreen(false);
+        return;
+      }
+      
+      // Fallback timeout: If joke is done + 2s but media still loading, wait max 5s more
+      // This prevents infinite waiting if some images fail
+      if (jokeTimeMet && jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 7000) {
+        console.warn(`⚠️ Timeout after joke + 2s + 5s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
+        setShowLoadingScreen(false);
+        return;
+      }
+      
+      // Log progress for debugging
+      if (jokeTimeMet && !allMediaReady) {
+        console.log(`⏳ Waiting for media: ${initialImagesReady}/${effectiveImagesTotal} images, ${initialVideoPostersReady}/${effectiveVideoPostersTotal} posters`);
       }
     }
   }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor]);
@@ -1787,13 +1795,22 @@ function DiscoverPageContent() {
       // PRIORITY: Cloudflare images first (new uploads), Firebase only for legacy
       let preloadUrl = imageUrl;
       if (imageUrl.includes('imagedelivery.net')) {
-        // Cloudflare: Use /thumbnail variant (240px, ~30KB - fastest loading)
+        // Cloudflare: Use appropriate variant based on media type
         const cloudflareMatch = imageUrl.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
         if (cloudflareMatch) {
           const [, accountHash, imageId] = cloudflareMatch;
-          preloadUrl = `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`;
+          // Check if this is a video poster (has videoUrl) - use /Thumbnail for videos
+          // Use /1080px for regular images to match Instagram/Pinterest quality
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          preloadUrl = hasVideo
+            ? `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail` // Video poster: thumbnail
+            : `https://imagedelivery.net/${accountHash}/${imageId}/1080px`; // Regular image: 1080px (Instagram standard)
         } else {
-          preloadUrl = imageUrl.replace(/\/[^/]+$/, '/Thumbnail');
+          // Fallback: determine variant from artwork type
+          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+          preloadUrl = hasVideo
+            ? imageUrl.replace(/\/[^/]+$/, '/Thumbnail')
+            : imageUrl.replace(/\/[^/]+$/, '/1080px'); // 1080px (Instagram standard)
         }
       } else if (imageUrl.includes('firebasestorage') || imageUrl.includes('firebase')) {
         // Firebase (legacy): Use Next.js Image Optimization API with 240px

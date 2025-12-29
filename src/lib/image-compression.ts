@@ -16,7 +16,7 @@ export async function compressImage(
   file: File,
   maxWidth: number = 1920,
   maxHeight: number = 1920,
-  quality: number = 0.85
+  quality: number = 0.95  // High quality (95%) - increased from 0.85
 ): Promise<File> {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');

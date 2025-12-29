@@ -66,16 +66,16 @@ export function getOptimizedImageUrl(
     const variantIndex = urlParts.length - 1;
     const imageIdIndex = urlParts.length - 2;
     
-    // Map our size to Cloudflare variant
+    // Map our size to Cloudflare variant (using your custom variant names)
     const variantMap: Record<ImageSize, string> = {
-      thumbnail: 'thumbnail',
-      small: 'small',
-      medium: 'medium',
-      large: 'large',
-      full: 'full',
+      thumbnail: 'Thumbnail',  // Your variant name (capital T)
+      small: '720px',          // Your variant name
+      medium: '1080px',       // Your variant name (Instagram quality)
+      large: '1080px',         // Use 1080px for large too
+      full: 'public',          // Your variant name (original)
     };
     
-    const variant = variantMap[size] || 'medium';
+    const variant = variantMap[size] || '1080px';
     
     // Replace variant in URL
     if (urlParts[variantIndex] && urlParts[imageIdIndex]) {
@@ -144,12 +144,15 @@ export function generateBlurPlaceholder(
   width: number = 20,
   quality: number = 20
 ): string {
-  // For now, return a tiny version of the image
-  // In production, this would be a base64-encoded 20px blurry version
-  // Or use a service like Cloudinary's blur transformation
+  // CRITICAL: Don't add query params to Cloudflare URLs - they don't support them
+  // Cloudflare Images uses variants, not query params
+  if (originalUrl.includes('imagedelivery.net')) {
+    // For Cloudflare Images, use the Thumbnail variant for blur placeholder
+    // Don't add query params - Cloudflare will return 403
+    return originalUrl.replace(/\/[^/]+$/, '/Thumbnail');
+  }
   
-  // Temporary: Use Next.js Image with very small size for placeholder
-  // In production, generate actual blur-up during upload
+  // For Firebase/other URLs, use Next.js Image Optimization API
   return `${originalUrl}?w=${width}&q=${quality}&blur=10`;
 }
 

@@ -339,18 +339,56 @@ export function UploadArtworkBasic() {
       setCurrentUploadingFile('Preparing files...');
       const { generateBlurPlaceholder } = await import('@/lib/blur-placeholder');
       
+      // For Cloudflare uploads, skip compression to preserve maximum quality
+      // Cloudflare Images will optimize on their end while preserving quality
+      // Only resize if image is extremely large (>4K) to avoid upload issues
       const processedFiles = await Promise.all(
         files.map(async (file) => {
           if (file.type.startsWith('image/')) {
+            // Check if image is extremely large (>4K width/height)
+            // Only compress if necessary to avoid upload size limits
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            
             try {
-              const compressed = await compressImage(file);
-              return compressed;
+              await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = url;
+              });
+              
+              // Instagram/Pinterest standard: 1080px max width
+              // Instagram: 1080x1080 square, 1080x1350 portrait, 1080x566 landscape
+              // Pinterest: 1000x1500 recommended (2:3 ratio)
+              // Resize to 1080px max width to match competitor standards
+              const MAX_WIDTH = 1080;
+              const MAX_HEIGHT = 1920; // Allow tall images (portrait/Stories format)
+              
+              if (img.width > MAX_WIDTH || img.height > MAX_HEIGHT) {
+                console.log(`📐 Resizing image to Instagram/Pinterest standard: ${img.width}x${img.height} → max ${MAX_WIDTH}x${MAX_HEIGHT}`);
+                URL.revokeObjectURL(url);
+                try {
+                  // Compress with high quality (0.95) to 1080px max width (Instagram standard)
+                  const compressed = await compressImage(file, MAX_WIDTH, MAX_HEIGHT, 0.95);
+                  return compressed;
+                } catch (error) {
+                  console.warn(`Failed to compress ${file.name}, using original:`, error);
+                  return file;
+                }
+              } else {
+                // Image is already at optimal size - upload original for maximum quality
+                URL.revokeObjectURL(url);
+                console.log(`✅ Uploading image at optimal resolution (${img.width}x${img.height}) - matching Instagram/Pinterest standards`);
+                return file;
+              }
             } catch (error) {
-              console.warn(`Failed to compress ${file.name}, using original:`, error);
+              URL.revokeObjectURL(url);
+              // If we can't check dimensions, use original (better than compressing blindly)
+              console.warn(`Could not check image dimensions for ${file.name}, using original:`, error);
               return file;
             }
           }
-          return file; // Videos not compressed yet
+          return file; // Videos not compressed
         })
       );
       
@@ -407,7 +445,7 @@ export function UploadArtworkBasic() {
           setCurrentUploadingFile(`${globalIndex + 1}/${processedFiles.length}: ${file.name}`);
           
           try {
-            // Use Cloudflare if configured, otherwise fallback to Firebase
+            // Upload to Cloudflare (Stream for videos, Images for images)
             const { uploadMedia } = await import('@/lib/media-upload-v2');
             const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
             const uploadResult = await uploadMedia(file, mediaType, user.id);
