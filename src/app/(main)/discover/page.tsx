@@ -7,7 +7,6 @@ import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
-import { VirtualList } from '@/components/virtual-list';
 import { Artwork, MarketplaceProduct, Event as EventType } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { useLikes } from '@/providers/likes-provider';
@@ -2338,111 +2337,96 @@ function DiscoverPageContent() {
               />
             ) : (
               <>
-                {/* Virtual scrolling for list view - handles 1000+ items efficiently */}
-                <VirtualList
-                  items={visibleFilteredArtworks}
-                  itemHeight={isMobile ? 140 : 200}
-                  containerHeight={typeof window !== 'undefined' ? window.innerHeight - 300 : 600}
-                  overscan={5}
-                  className="space-y-3"
-                  renderItem={(item, index) => {
-                  // Check if this is an ad
-                  const isAd = 'type' in item && item.type === 'ad';
-                  if (isAd) {
-                    return (
-                      <AdTile
-                        key={item.campaign.id}
-                        campaign={item.campaign}
-                        placement="discover"
-                        userId={user?.id}
-                        isMobile={isMobile}
-                      />
-                    );
-                  }
-                  
-                  const artwork = item as Artwork;
-                  // Check if artwork has video
-                  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                  const videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
-                  // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
-                  const placeholderImage = 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
-                  const artworkImage = artwork.imageUrl || placeholderImage;
-                  const avatarPlaceholder = theme === 'dark'
-                    ? '/assets/placeholder-dark.png'
-                    : '/assets/placeholder-light.png';
-                  
-                  const liked = isLiked(artwork.id);
+                {/* Single view - Only videos, 1 per row, 1 column, full width */}
+                {(() => {
+                  // Filter to only videos for single view
+                  const videoArtworks = visibleFilteredArtworks.filter((item) => {
+                    if ('type' in item && item.type === 'ad') return false; // Exclude ads
+                    const artwork = item as Artwork;
+                    return (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                  });
                   
                   return (
-                    <div key={artwork.id} className="relative group">
-                      <Link href={`/artwork/${artwork.id}`}>
-                        <Card className="relative aspect-square overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
-                          {hasVideo && videoUrl ? (
-                            <video
-                              src={videoUrl}
-                              className="w-full h-full object-cover"
-                              playsInline
-                              muted
-                              loop
-                              autoPlay
-                            />
-                          ) : (
-                            <Image
-                              src={artworkImage}
-                              alt={artwork.imageAiHint || artwork.title}
-                              fill
-                              className="object-cover"
-                            />
-                          )}
-                          <div className="absolute inset-x-0 bottom-0 bg-background/80 backdrop-blur-sm p-3 flex items-center gap-2">
-                            <Avatar className="h-9 w-9 flex-shrink-0">
-                              <AvatarImage src={artwork.artist.avatarUrl || avatarPlaceholder} />
-                              <AvatarFallback>{artwork.artist.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">by {artwork.artist.name}</p>
-                              {artwork.artist.location && (
-                                <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                                  <MapPin className="h-3 w-3" />
-                                  {artwork.artist.location}
-                                </p>
-                              )}
-                            </div>
-                            {artwork.sold ? (
-                              <Badge variant="destructive" className="text-xs px-2 py-1 flex-shrink-0">
-                                Sold
-                              </Badge>
-                            ) : artwork.isForSale ? (
-                              <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 flex-shrink-0">
-                                {artwork.priceType === 'contact' || artwork.contactForPrice ? 'For Sale' : artwork.price ? `$${artwork.price.toLocaleString()}` : 'For Sale'}
-                              </Badge>
-                            ) : null}
+                    <div className="w-full space-y-4">
+                      {videoArtworks.map((item) => {
+                        const artwork = item as Artwork;
+                        const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                        const videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
+                        const avatarPlaceholder = theme === 'dark'
+                          ? '/assets/placeholder-dark.png'
+                          : '/assets/placeholder-light.png';
+                        
+                        const liked = isLiked(artwork.id);
+                        
+                        // Only render if it has a video
+                        if (!hasVideo || !videoUrl) return null;
+                        
+                        return (
+                          <div key={artwork.id} className="relative group w-full">
+                            <Link href={`/artwork/${artwork.id}`}>
+                              <Card className="relative w-full overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+                                {/* Video container with 16:9 aspect ratio */}
+                                <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                                  <video
+                                    src={videoUrl}
+                                    className="w-full h-full object-cover"
+                                    playsInline
+                                    muted
+                                    loop
+                                    autoPlay
+                                  />
+                                </div>
+                                <div className="absolute inset-x-0 bottom-0 bg-background/80 backdrop-blur-sm p-3 flex items-center gap-2">
+                                  <Avatar className="h-9 w-9 flex-shrink-0">
+                                    <AvatarImage src={artwork.artist.avatarUrl || avatarPlaceholder} />
+                                    <AvatarFallback>{artwork.artist.name.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-foreground truncate">by {artwork.artist.name}</p>
+                                    {artwork.artist.location && (
+                                      <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                                        <MapPin className="h-3 w-3" />
+                                        {artwork.artist.location}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {artwork.sold ? (
+                                    <Badge variant="destructive" className="text-xs px-2 py-1 flex-shrink-0">
+                                      Sold
+                                    </Badge>
+                                  ) : artwork.isForSale ? (
+                                    <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 flex-shrink-0">
+                                      {artwork.priceType === 'contact' || artwork.contactForPrice ? 'For Sale' : artwork.price ? `$${artwork.price.toLocaleString()}` : 'For Sale'}
+                                    </Badge>
+                                  ) : null}
+                                </div>
+                              </Card>
+                            </Link>
+                            {/* Upvote Button - positioned on the tile */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`absolute top-3 right-3 h-10 w-10 rounded-full bg-background/90 backdrop-blur-sm border-2 transition-all ${
+                                liked 
+                                  ? 'border-primary text-primary bg-primary/10' 
+                                  : 'border-border hover:border-primary/50 hover:text-primary'
+                              }`}
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                await toggleLike(artwork.id);
+                              }}
+                              aria-label={liked ? 'Remove upvote' : 'Upvote artwork'}
+                            >
+                              <ArrowUp className={`h-5 w-5 ${liked ? 'fill-current' : ''}`} />
+                            </Button>
                           </div>
-                        </Card>
-                      </Link>
-                      {/* Upvote Button - positioned on the tile */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`absolute top-3 right-3 h-10 w-10 rounded-full bg-background/90 backdrop-blur-sm border-2 transition-all ${
-                          liked 
-                            ? 'border-primary text-primary bg-primary/10' 
-                            : 'border-border hover:border-primary/50 hover:text-primary'
-                        }`}
-                        onClick={async (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          await toggleLike(artwork.id);
-                        }}
-                        aria-label={liked ? 'Remove upvote' : 'Upvote artwork'}
-                      >
-                        <ArrowUp className={`h-5 w-5 ${liked ? 'fill-current' : ''}`} />
-                      </Button>
+                        );
+                      })}
                     </div>
                   );
-                  }}
-                />
-                {/* Sentinel element for infinite scroll in list view */}
+                })()}
+                {/* Sentinel element for infinite scroll in single view */}
                 <div ref={loadMoreRef} className="h-20 w-full" />
               </>
             )}
