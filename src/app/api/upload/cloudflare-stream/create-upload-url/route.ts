@@ -54,6 +54,10 @@ export async function POST(request: NextRequest) {
     // If that fails, try with JSON body
     if (!response.ok && response.status === 400) {
       console.log('⚠️ Empty body failed, trying with JSON body...');
+      const jsonBody = {
+        maxDurationSeconds,
+        allowedOrigins,
+      };
       response = await fetch(
         `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
         {
@@ -62,12 +66,15 @@ export async function POST(request: NextRequest) {
             'Authorization': `Bearer ${apiToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            maxDurationSeconds,
-            allowedOrigins,
-          }),
+          body: JSON.stringify(jsonBody),
         }
       );
+    }
+    
+    // If that also fails, try without direct_user parameter (regular upload endpoint)
+    if (!response.ok && response.status === 400) {
+      console.log('⚠️ direct_user failed, this endpoint may not be available');
+      // Don't try regular upload here - that's handled in the main route
     }
 
     if (!response.ok) {
@@ -84,7 +91,6 @@ export async function POST(request: NextRequest) {
         statusText: response.statusText,
         error: error.errors?.[0]?.message || errorText,
         fullError: error,
-        requestBody: requestBody,
       });
 
       return NextResponse.json(
@@ -94,7 +100,6 @@ export async function POST(request: NextRequest) {
             status: response.status,
             errorText: errorText,
             fullError: error,
-            requestBody: requestBody,
           }
         },
         { status: response.status }
