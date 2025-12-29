@@ -2320,9 +2320,13 @@ function DiscoverPageContent() {
                   
                   const artwork = item as Artwork;
                   
+                  // TEMPORARY: Videos ONLY show in grid view and single view
+                  // Filter out videos from other potential views (if any)
+                  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                  // Videos are allowed in grid view, so we continue
+                  
                   // Check if this is in initial viewport (first 12 tiles)
                   const isInitial = visibleFilteredArtworks.indexOf(artwork) < 12;
-                  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                   
                   return (
                     <ArtworkTile 
