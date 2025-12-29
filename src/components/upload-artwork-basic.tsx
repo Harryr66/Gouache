@@ -491,6 +491,37 @@ export function UploadArtworkBasic() {
       setUploadProgress(100);
       setCurrentUploadingFile('');
 
+      // Extract primary media info (first file)
+      const primaryMediaUrl = uploadedUrls[0];
+      const primaryMediaType = mediaTypes[0];
+      const primaryThumbnailUrl = thumbnailUrls[0];
+      
+      // Get image dimensions for primary image if it's an image
+      let primaryImageWidth: number | undefined;
+      let primaryImageHeight: number | undefined;
+      if (primaryMediaType === 'image' && processedFiles[0]) {
+        try {
+          const img = new Image();
+          const objectUrl = URL.createObjectURL(processedFiles[0]);
+          await new Promise((resolve, reject) => {
+            img.onload = () => {
+              primaryImageWidth = img.naturalWidth;
+              primaryImageHeight = img.naturalHeight;
+              URL.revokeObjectURL(objectUrl);
+              resolve(null);
+            };
+            img.onerror = reject;
+            img.src = objectUrl;
+          });
+        } catch (error) {
+          console.warn('Failed to get primary image dimensions:', error);
+        }
+      }
+      
+      // Get supporting media (all files after the first)
+      const supportingMedia = uploadedUrls.slice(1);
+      const supportingMediaTypes = mediaTypes.slice(1);
+
       // BULK UPLOAD SEPARATELY: If enabled and multiple files, upload each file as separate artwork
       if (bulkUploadSeparately && processedFiles.length > 1) {
         // Use already-uploaded URLs - files are already uploaded above
@@ -743,8 +774,38 @@ export function UploadArtworkBasic() {
       
       // CONTINUE WITH NORMAL SINGLE UPLOAD (existing logic below)
 
+      // Create artwork item for portfolio (only if adding to portfolio)
+      const artworkItem: any = addToPortfolio ? {
+        id: `artwork-${Date.now()}`,
+        ...(primaryMediaType === 'image' && { imageUrl: primaryMediaUrl }),
+        ...(primaryMediaType === 'video' && { videoUrl: primaryMediaUrl }),
+        mediaType: primaryMediaType,
+        mediaUrls: uploadedUrls,
+        mediaTypes: mediaTypes,
+        ...(supportingMedia.length > 0 && { supportingImages: supportingMedia }),
+        ...(supportingMedia.length > 0 && { supportingMedia: supportingMedia }),
+        ...(supportingMediaTypes.length > 0 && { supportingMediaTypes: supportingMediaTypes }),
+        title: finalTitle,
+        description: description.trim() || '',
+        type: 'artwork',
+        showInPortfolio: addToPortfolio,
+        showInShop: isForSale,
+        isForSale: isForSale,
+        artworkType: isOriginal ? 'original' : 'print',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        likes: 0,
+        commentsCount: 0,
+        tags: tags,
+        aiAssistance: 'none',
+        isAI: false,
+        ...(blurPlaceholderBase64 && { blurPlaceholder: blurPlaceholderBase64 }),
+        ...(primaryImageWidth && { imageWidth: primaryImageWidth }),
+        ...(primaryImageHeight && { imageHeight: primaryImageHeight }),
+      } : null;
+
       // Add sale-related fields if for sale (only relevant if adding to portfolio)
-      if (isForSale && addToPortfolio) {
+      if (artworkItem && isForSale && addToPortfolio) {
         if (priceType === 'fixed' && price.trim()) {
           artworkItem.price = parseFloat(price) * 100; // Convert to cents
           artworkItem.currency = currency;
@@ -760,7 +821,7 @@ export function UploadArtworkBasic() {
       }
 
       // Add dimensions if provided (only relevant if adding to portfolio)
-      if (addToPortfolio) {
+      if (artworkItem && addToPortfolio) {
         if (dimensions.width && dimensions.height) {
           artworkItem.dimensions = {
             width: parseFloat(dimensions.width) || 0,
@@ -793,10 +854,10 @@ export function UploadArtworkBasic() {
         return obj;
       };
 
-      const cleanPortfolioItem = removeUndefined(artworkItem);
+      const cleanPortfolioItem = artworkItem ? removeUndefined(artworkItem) : null;
 
       // NEW: Update user's portfolio in portfolioItems collection if toggle is enabled
-      if (addToPortfolio) {
+      if (addToPortfolio && artworkItem) {
         const { PortfolioService } = await import('@/lib/database');
         
         const portfolioItemData: any = {
@@ -842,7 +903,7 @@ export function UploadArtworkBasic() {
       // Always create artwork/post for Discover feed (regardless of portfolio toggle or sale status)
       // This ensures all uploads from this portal appear in Discover
       const artworkForDiscover: any = {
-        id: artworkItem.id,
+        id: artworkItem?.id || `artwork-${Date.now()}`,
         artist: {
           id: user.id,
           name: user.displayName || user.username || 'Artist',
@@ -922,7 +983,7 @@ export function UploadArtworkBasic() {
       await addContent(postForDiscover, artworkForDiscover);
 
       // If marked for sale, also add to artworks collection for shop display (legacy support)
-      if (isForSale && addToPortfolio) {
+      if (isForSale && addToPortfolio && artworkItem) {
         const artworkForShop: any = {
           id: artworkItem.id,
           artist: {
