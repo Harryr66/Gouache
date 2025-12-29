@@ -50,10 +50,25 @@ export async function uploadMedia(
       const formData = new FormData();
       formData.append('file', file);
       
+      console.log('📤 Making request to API route...', {
+        url: '/api/upload/cloudflare-stream?v=2',
+        method: 'POST',
+        fileSize: file.size,
+        fileName: file.name,
+      });
+      
       const response = await fetch('/api/upload/cloudflare-stream?v=2', {
         method: 'POST',
         body: formData,
         cache: 'no-store',
+      });
+      
+      console.log('📥 Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries()),
+        contentType: response.headers.get('content-type'),
       });
 
       if (response.ok) {
@@ -70,14 +85,33 @@ export async function uploadMedia(
         // Try to parse error as JSON, fallback to text
         let error;
         let errorText = '';
+        const contentType = response.headers.get('content-type') || '';
+        const isJson = contentType.includes('application/json');
+        
+        console.log('🔍 Parsing error response:', {
+          status: response.status,
+          contentType: contentType,
+          isJson: isJson,
+        });
+        
         try {
           errorText = await response.text();
-          try {
-            error = JSON.parse(errorText);
-          } catch {
+          console.log('📄 Raw response text:', errorText.substring(0, 500)); // First 500 chars
+          
+          if (isJson) {
+            try {
+              error = JSON.parse(errorText);
+              console.log('✅ Parsed as JSON:', error);
+            } catch (parseError) {
+              console.error('❌ Failed to parse JSON:', parseError);
+              error = { error: errorText || `HTTP ${response.status}: ${response.statusText}` };
+            }
+          } else {
+            console.warn('⚠️ Response is NOT JSON, it is:', contentType);
             error = { error: errorText || `HTTP ${response.status}: ${response.statusText}` };
           }
-        } catch {
+        } catch (textError) {
+          console.error('❌ Failed to read response text:', textError);
           error = { error: `HTTP ${response.status}: ${response.statusText}` };
         }
         
