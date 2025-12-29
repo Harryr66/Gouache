@@ -893,7 +893,7 @@ const generateArtistContent = (artist: Artist) => ({
                     setIsImageLoaded(false);
                     // Notify parent that video is playing
                     if (onVideoReady) {
-                      onVideoReady(artwork.id);
+                      onVideoReady();
                     }
                   }}
                   onPause={() => {
