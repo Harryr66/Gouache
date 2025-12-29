@@ -58,23 +58,29 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     });
 
     if (!createUrlResponse.ok) {
-      // Clone response to read it without consuming the body
+      // Clone response BEFORE any read attempts to avoid "body stream already read" error
       const responseClone = createUrlResponse.clone();
       let error;
+      let errorText = '';
+      
       try {
+        // Try to read as JSON first
         error = await responseClone.json();
-      } catch {
-        // If JSON parsing fails, try text
+      } catch (jsonError) {
+        // If JSON parsing fails, try text from a fresh clone
         try {
-          const errorText = await createUrlResponse.text();
+          const textClone = createUrlResponse.clone();
+          errorText = await textClone.text();
           error = { error: errorText || `HTTP ${createUrlResponse.status}` };
-        } catch {
+        } catch (textError) {
+          // If both fail, use status info
           error = { error: `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText}` };
         }
       }
       
       console.error('❌ Failed to create upload URL:', {
         status: createUrlResponse.status,
+        statusText: createUrlResponse.statusText,
         error: error.error || error.message,
         debug: error.debug,
       });
