@@ -39,62 +39,152 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 1: Upload video directly to Cloudflare Stream
-    // Cloudflare Stream expects multipart/form-data, not raw buffer
-    console.log('🔍 Cloudflare Stream API: Uploading video directly...', {
+    // Determine upload method based on file size
+    // Large files (>20MB) should use direct creator upload to avoid timeouts
+    const LARGE_FILE_THRESHOLD = 20 * 1024 * 1024; // 20MB
+    const useDirectCreatorUpload = file.size > LARGE_FILE_THRESHOLD;
+
+    console.log('🔍 Cloudflare Stream API: Uploading video...', {
       accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
       hasToken: !!apiToken,
       fileSize: file.size,
       fileName: file.name,
+      useDirectCreatorUpload,
+      method: useDirectCreatorUpload ? 'Direct Creator Upload' : 'Direct Upload',
     });
 
-    // Upload video directly to Cloudflare Stream
-    // Cloudflare Stream API expects the file as multipart/form-data
-    // Convert File to Blob for proper FormData handling in Node.js
-    const fileBuffer = await file.arrayBuffer();
-    const fileBlob = new Blob([fileBuffer], { type: file.type });
-    
-    const cloudflareFormData = new FormData();
-    cloudflareFormData.append('file', fileBlob, file.name);
+    let uploadResponse: Response | null = null;
+    let videoId: string | null = null;
 
-    console.log('📤 Sending to Cloudflare Stream:', {
-      fileSize: file.size,
-      fileName: file.name,
-      fileType: file.type,
-      formDataSize: fileBuffer.byteLength,
-      endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
-    });
+    if (useDirectCreatorUpload) {
+      // For large files: Use direct creator upload method
+      // Step 1: Create upload URL
+      console.log('📤 Creating direct creator upload URL for large file...');
+      try {
+        const createUploadResponse = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              maxDurationSeconds: 3600,
+              allowedOrigins: ['*'],
+            }),
+          }
+        );
 
-    let uploadResponse: Response;
-    try {
-      uploadResponse = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiToken}`,
-            // Don't set Content-Type - fetch will set it with boundary for FormData
-          },
-          body: cloudflareFormData,
+        if (!createUploadResponse.ok) {
+          const errorText = await createUploadResponse.text();
+          let error;
+          try {
+            error = JSON.parse(errorText);
+          } catch {
+            error = { errors: [{ message: errorText }] };
+          }
+          console.error('❌ Failed to create direct creator upload URL:', {
+            status: createUploadResponse.status,
+            error: error.errors?.[0]?.message || errorText,
+          });
+          return NextResponse.json(
+            { error: `Failed to create upload URL: ${error.errors?.[0]?.message || errorText}` },
+            { status: createUploadResponse.status }
+          );
         }
-      );
-    } catch (fetchError: any) {
-      console.error('❌ Error calling Cloudflare Stream API (fetch failed):', {
-        error: fetchError?.message,
-        stack: fetchError?.stack,
-        name: fetchError?.name,
-        code: fetchError?.code,
+
+        const { result } = await createUploadResponse.json();
+        const uploadUrl = result.uploadURL;
+        videoId = result.uid;
+
+        // Step 2: Upload file to the signed URL
+        console.log('📤 Uploading file to signed URL...');
+        const fileBuffer = await file.arrayBuffer();
+        const putResponse = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: fileBuffer,
+          headers: {
+            'Content-Type': file.type,
+          },
+        });
+
+        if (!putResponse.ok) {
+          const errorText = await putResponse.text();
+          console.error('❌ Failed to upload to signed URL:', {
+            status: putResponse.status,
+            statusText: putResponse.statusText,
+            errorText,
+          });
+          return NextResponse.json(
+            { error: `Failed to upload video: ${errorText || putResponse.statusText}` },
+            { status: putResponse.status }
+          );
+        }
+
+        // For direct creator upload, we already have the videoId
+        // Skip the response parsing and go straight to waiting for processing
+        console.log('✅ File uploaded to signed URL, videoId:', videoId);
+      } catch (fetchError: any) {
+        console.error('❌ Error in direct creator upload:', {
+          error: fetchError?.message,
+          stack: fetchError?.stack,
+        });
+        return NextResponse.json(
+          { 
+            error: `Network error: ${fetchError?.message || 'Unknown error'}`,
+            ...(process.env.NODE_ENV === 'development' && { details: fetchError?.stack })
+          },
+          { status: 500 }
+        );
+      }
+    } else {
+      // For smaller files: Use direct multipart/form-data upload
+      const fileBuffer = await file.arrayBuffer();
+      const fileBlob = new Blob([fileBuffer], { type: file.type });
+      
+      const cloudflareFormData = new FormData();
+      cloudflareFormData.append('file', fileBlob, file.name);
+
+      console.log('📤 Sending to Cloudflare Stream (direct upload):', {
+        fileSize: file.size,
+        fileName: file.name,
+        fileType: file.type,
+        formDataSize: fileBuffer.byteLength,
+        endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
       });
-      return NextResponse.json(
-        { 
-          error: `Network error calling Cloudflare Stream: ${fetchError?.message || 'Unknown error'}`,
-          ...(process.env.NODE_ENV === 'development' && { details: fetchError?.stack })
-        },
-        { status: 500 }
-      );
+
+      try {
+        uploadResponse = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiToken}`,
+              // Don't set Content-Type - fetch will set it with boundary for FormData
+            },
+            body: cloudflareFormData,
+          }
+        );
+      } catch (fetchError: any) {
+        console.error('❌ Error calling Cloudflare Stream API (fetch failed):', {
+          error: fetchError?.message,
+          stack: fetchError?.stack,
+          name: fetchError?.name,
+          code: fetchError?.code,
+        });
+        return NextResponse.json(
+          { 
+            error: `Network error calling Cloudflare Stream: ${fetchError?.message || 'Unknown error'}`,
+            ...(process.env.NODE_ENV === 'development' && { details: fetchError?.stack })
+          },
+          { status: 500 }
+        );
+      }
     }
 
-    if (!uploadResponse.ok) {
+    // Only check for errors if we used direct upload (not direct creator upload)
+    if (uploadResponse && !uploadResponse.ok) {
       let errorText: string;
       try {
         errorText = await uploadResponse.text();
@@ -159,8 +249,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { result } = await uploadResponse.json();
-    const videoId = result.uid;
+    // Get video ID from response (if not already set from direct creator upload)
+    if (!videoId && uploadResponse && uploadResponse.ok) {
+      const { result } = await uploadResponse.json();
+      videoId = result.uid;
+    }
+
+    // Ensure we have a videoId before proceeding
+    if (!videoId) {
+      console.error('❌ No video ID obtained from upload');
+      return NextResponse.json(
+        { error: 'Failed to obtain video ID from upload' },
+        { status: 500 }
+      );
+    }
 
     // Step 2: Wait for processing and get video details
     const videoDetails = await waitForVideoProcessing(accountId, apiToken, videoId);
