@@ -47,6 +47,13 @@ export default function RootLayout({
 }) {
   return (
   <html lang="en" suppressHydrationWarning className="overflow-x-hidden">
+      <head>
+        {/* Preconnect to Cloudflare CDN for faster image loading */}
+        <link rel="preconnect" href="https://imagedelivery.net" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://cloudflarestream.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://imagedelivery.net" />
+        <link rel="dns-prefetch" href="https://cloudflarestream.com" />
+      </head>
       <body
         className={cn(
           'min-h-screen w-full max-w-full overflow-x-hidden bg-background font-body antialiased',

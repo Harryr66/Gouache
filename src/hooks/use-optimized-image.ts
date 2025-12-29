@@ -42,7 +42,24 @@ export function useOptimizedImage({
   const [viewportWidth, setViewportWidth] = useState<number>(
     typeof window !== 'undefined' ? window.innerWidth : 1920
   );
-  const [bestFormat, setBestFormat] = useState<string>('jpg');
+
+  // Synchronous format detection (no async delay - critical for performance)
+  const bestFormat = useMemo(() => {
+    if (typeof window === 'undefined') return 'jpg';
+    // Check browser support synchronously using canvas
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      const supportsAVIF = canvas.toDataURL('image/avif').indexOf('data:image/avif') === 0;
+      if (supportsAVIF) return 'avif';
+      const supportsWebP = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+      if (supportsWebP) return 'webp';
+    } catch (e) {
+      // Fallback to jpg if detection fails
+    }
+    return 'jpg';
+  }, []);
 
   // Detect viewport size
   useEffect(() => {
@@ -56,20 +73,14 @@ export function useOptimizedImage({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Detect best format
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    import('@/lib/image-optimizer').then(({ getBestFormat }) => {
-      setBestFormat(getBestFormat());
-    });
-  }, []);
-
   // Calculate optimal size if not provided
+  // Default to thumbnail for grid view (Pinterest/Instagram style - fastest initial load)
   const optimalSize = useMemo(() => {
     if (size) return size;
+    // For grid view, default to thumbnail for fastest load, then upgrade
+    if (isGrid && !priority) return 'thumbnail';
     return getOptimalImageSize(viewportWidth, isGrid, isMobile);
-  }, [size, viewportWidth, isGrid, isMobile]);
+  }, [size, viewportWidth, isGrid, isMobile, priority]);
 
   // Generate optimized image data
   const imageData = useMemo(() => {

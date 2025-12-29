@@ -138,8 +138,10 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
       );
   
   // OPTIMIZED: Use optimized image hook for Pinterest/Instagram-style performance
+  // Use thumbnail for initial load (Pinterest/Instagram style), upgrade to medium when loaded
   const optimizedImage = useOptimizedImage({
     src: imageUrl || '',
+    size: isInitialViewport ? 'thumbnail' : undefined, // Use thumbnail for initial viewport, auto-detect for others
     isGrid: true,
     isMobile,
     enableBlur: true,
@@ -455,8 +457,8 @@ const generateArtistContent = (artist: Artist) => ({
     if (!tileRef.current || !artwork?.id) return;
 
     const connectionSpeed = getConnectionSpeed();
-    // Adjust rootMargin based on connection speed (lazy metadata loading)
-    const rootMargin = connectionSpeed === 'fast' ? '400px' : connectionSpeed === 'medium' ? '200px' : '100px';
+    // Aggressive preloading: Start loading images 500-800px before viewport (Pinterest/Instagram style)
+    const rootMargin = connectionSpeed === 'fast' ? '800px' : connectionSpeed === 'medium' ? '500px' : '300px';
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -920,42 +922,93 @@ const generateArtistContent = (artist: Artist) => ({
                   </div>
                 </div>
               )}
-              <Image
-                src={imageError && fallbackImageUrl ? fallbackImageUrl : optimizedImage.src}
-                alt={artwork.imageAiHint || artwork.title || 'Artwork'}
-                fill
-                className={`object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
-                loading={isInitialViewport ? "eager" : "lazy"}
-                priority={isInitialViewport}
-                sizes={optimizedImage.sizes}
-                quality={85}
-                key={retryCount} // Force re-render on retry
-                onLoad={() => {
-                  setIsImageLoaded(true);
-                  setImageError(false); // Clear error on successful load
-                  setRetryCount(0); // Reset retry count on success
-                  // Call onImageReady ONLY on successful load - this counts toward loading screen
-                  if (isInitialViewport && onImageReady) {
-                    onImageReady(false); // false = regular image, not video poster
-                  }
-                }}
-                onError={() => {
-                  // Retry up to 3 times with exponential backoff
-                  if (retryCount < 3 && !fallbackImageUrl) {
-                    const retryDelay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-                    setTimeout(() => {
-                      setRetryCount(prev => prev + 1);
-                      setIsImageLoaded(false); // Force retry
-                    }, retryDelay);
-                    return; // Don't set error yet, will retry
-                  }
-                  // After all retries failed, use placeholder - DO NOT call onImageReady
-                  setImageError(true);
-                  setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                  setIsImageLoaded(true);
-                  // DO NOT call onImageReady on error - loading screen must wait for successful loads
-                }}
-              />
+              {/* Use native img for Cloudflare CDN (faster), Next.js Image for Firebase/other */}
+              {(() => {
+                const imageSrc = imageError && fallbackImageUrl ? fallbackImageUrl : optimizedImage.src;
+                const isCloudflareImage = imageSrc.includes('imagedelivery.net') || imageSrc.includes('cloudflare');
+                
+                // For Cloudflare Images, use native img tag (no Next.js overhead)
+                if (isCloudflareImage) {
+                  return (
+                    <img
+                      src={imageSrc}
+                      alt={artwork.imageAiHint || artwork.title || 'Artwork'}
+                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
+                      loading={isInitialViewport ? "eager" : "lazy"}
+                      fetchPriority={isInitialViewport ? "high" : "auto"}
+                      decoding="async"
+                      key={retryCount}
+                      onLoad={() => {
+                        setIsImageLoaded(true);
+                        setImageError(false);
+                        setRetryCount(0);
+                        // Upgrade to medium quality after thumbnail loads (Pinterest style)
+                        if (isInitialViewport && imageSrc.includes('/thumbnail') && !imageSrc.includes('/medium')) {
+                          // Load medium quality in background
+                          const mediumUrl = imageSrc.replace('/thumbnail', '/medium');
+                          const img = new Image();
+                          img.src = mediumUrl;
+                          img.onload = () => {
+                            // Optionally swap to medium quality (for now, keep thumbnail for speed)
+                          };
+                        }
+                        if (isInitialViewport && onImageReady) {
+                          onImageReady(false);
+                        }
+                      }}
+                      onError={() => {
+                        if (retryCount < 3 && !fallbackImageUrl) {
+                          const retryDelay = Math.pow(2, retryCount) * 1000;
+                          setTimeout(() => {
+                            setRetryCount(prev => prev + 1);
+                            setIsImageLoaded(false);
+                          }, retryDelay);
+                          return;
+                        }
+                        setImageError(true);
+                        setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                        setIsImageLoaded(true);
+                      }}
+                    />
+                  );
+                }
+                
+                // For Firebase/other URLs, use Next.js Image (for optimization)
+                return (
+                  <Image
+                    src={imageSrc}
+                    alt={artwork.imageAiHint || artwork.title || 'Artwork'}
+                    fill
+                    className={`object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
+                    loading={isInitialViewport ? "eager" : "lazy"}
+                    priority={isInitialViewport}
+                    sizes={optimizedImage.sizes}
+                    quality={85}
+                    key={retryCount}
+                    onLoad={() => {
+                      setIsImageLoaded(true);
+                      setImageError(false);
+                      setRetryCount(0);
+                      if (isInitialViewport && onImageReady) {
+                        onImageReady(false);
+                      }
+                    }}
+                    onError={() => {
+                      if (retryCount < 3 && !fallbackImageUrl) {
+                        const retryDelay = Math.pow(2, retryCount) * 1000;
+                        setTimeout(() => {
+                          setRetryCount(prev => prev + 1);
+                          setIsImageLoaded(false);
+                        }, retryDelay);
+                        return;
+                      }
+                      setImageError(true);
+                      setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                      setIsImageLoaded(true);
+                    }}
+                  />
+                );
+              })()}
               {/* Error state - show placeholder instead of error message */}
               {imageError && fallbackImageUrl && (
                 <Image
