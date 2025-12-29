@@ -19,6 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { extractVideoThumbnail, blobToFile } from '@/lib/video-thumbnail';
 
 // List of countries for delivery selector
 const COUNTRIES = [
@@ -59,6 +60,8 @@ export function UploadArtworkBasic() {
   const router = useRouter();
   
   const [files, setFiles] = useState<File[]>([]);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -187,6 +190,32 @@ export function UploadArtworkBasic() {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type.startsWith('image/')) {
+        setThumbnailFile(file);
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setThumbnailPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast({
+          title: 'Invalid file type',
+          description: 'Thumbnail must be an image file.',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const removeThumbnail = () => {
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
+  };
+
   const triggerFileInput = () => {
     const input = document.getElementById('images') as HTMLInputElement;
     if (input) {
@@ -308,9 +337,31 @@ export function UploadArtworkBasic() {
         })
       );
 
-      // Step 2: Upload all files in parallel (with concurrency limit of 3)
+      // Step 2: Extract thumbnail from video if no custom thumbnail provided
+      let thumbnailToUpload: File | null = thumbnailFile;
+      const firstFile = processedFiles[0];
+      const isFirstFileVideo = firstFile.type.startsWith('video/');
+      
+      if (!thumbnailToUpload && isFirstFileVideo) {
+        try {
+          setCurrentUploadingFile('Extracting thumbnail from video...');
+          const thumbnailBlob = await extractVideoThumbnail(firstFile, 1);
+          thumbnailToUpload = blobToFile(thumbnailBlob, `thumbnail-${firstFile.name.replace(/\.[^/.]+$/, '.jpg')}`);
+          // Create preview
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setThumbnailPreview(reader.result as string);
+          };
+          reader.readAsDataURL(thumbnailBlob);
+        } catch (error) {
+          console.warn('Failed to extract video thumbnail, will use Cloudflare thumbnail if available:', error);
+        }
+      }
+
+      // Step 3: Upload all files in parallel (with concurrency limit of 3)
       const uploadedUrls: string[] = new Array(processedFiles.length);
       const mediaTypes: ('image' | 'video')[] = new Array(processedFiles.length);
+      const thumbnailUrls: (string | undefined)[] = new Array(processedFiles.length);
       const MAX_CONCURRENT_UPLOADS = 3;
       
       // Upload files in batches to avoid overwhelming the network
@@ -328,12 +379,24 @@ export function UploadArtworkBasic() {
             const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
             const uploadResult = await uploadMedia(file, mediaType, user.id);
             
+            // Handle thumbnail: prioritize Cloudflare thumbnail, then custom, then extracted
+            let thumbnailUrl = uploadResult.thumbnailUrl; // Use Cloudflare thumbnail if available (fastest)
+            if (globalIndex === 0 && thumbnailToUpload && !thumbnailUrl) {
+              // Only upload custom/extracted thumbnail if Cloudflare didn't provide one
+              try {
+                const { uploadMedia } = await import('@/lib/media-upload-v2');
+                const thumbnailResult = await uploadMedia(thumbnailToUpload, 'image', user.id);
+                thumbnailUrl = thumbnailResult.url;
+              } catch (error) {
+                console.warn('Failed to upload custom thumbnail:', error);
+              }
+            }
+            
             // Update progress
             const overallProgress = ((globalIndex + 1) * 100 / processedFiles.length);
             setUploadProgress(overallProgress);
             
-            
-            return { url: uploadResult.url, type: mediaType, index: globalIndex };
+            return { url: uploadResult.url, type: mediaType, index: globalIndex, thumbnailUrl };
           } catch (error) {
             console.error(`Error uploading file ${globalIndex + 1}:`, error);
             throw error;
@@ -350,6 +413,9 @@ export function UploadArtworkBasic() {
         batchResults.forEach((result) => {
           uploadedUrls[result.index] = result.url;
           mediaTypes[result.index] = result.type;
+          if (result.thumbnailUrl) {
+            thumbnailUrls[result.index] = result.thumbnailUrl;
+          }
         });
       }
       
@@ -366,10 +432,13 @@ export function UploadArtworkBasic() {
 
       // Create artwork item for discover feed (always created, regardless of portfolio toggle)
       // Portfolio array update happens separately if toggle is enabled
+      const primaryThumbnailUrl = thumbnailUrls[0];
       const artworkItem: any = {
         id: `artwork-${Date.now()}`,
         ...(primaryMediaType === 'image' && { imageUrl: primaryMediaUrl }), // For backward compatibility
         ...(primaryMediaType === 'video' && { videoUrl: primaryMediaUrl }),
+        // Use thumbnail URL for videos (faster loading), fallback to primary media URL
+        ...(primaryMediaType === 'video' && primaryThumbnailUrl && { imageUrl: primaryThumbnailUrl }),
         mediaType: primaryMediaType, // 'image' or 'video'
         mediaUrls: uploadedUrls, // All media URLs (images and videos)
         mediaTypes: mediaTypes, // Types for each media file
@@ -833,6 +902,50 @@ export function UploadArtworkBasic() {
               )}
             </div>
           </div>
+
+          {/* Thumbnail Upload (Optional - for videos) */}
+          {files.length > 0 && files[0].type.startsWith('video/') && (
+            <div className="space-y-2">
+              <Label htmlFor="thumbnail">Custom Thumbnail (Optional)</Label>
+              <p className="text-xs text-muted-foreground">
+                Upload a custom thumbnail image for your video. If not provided, a frame will be extracted from the video automatically.
+              </p>
+              
+              {thumbnailPreview ? (
+                <div className="relative inline-block">
+                  <div className="aspect-video w-full max-w-xs rounded-lg overflow-hidden border-2 border-muted">
+                    <img
+                      src={thumbnailPreview}
+                      alt="Thumbnail preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6"
+                    onClick={removeThumbnail}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    id="thumbnail"
+                    accept="image/*"
+                    onChange={handleThumbnailChange}
+                    className="flex-1"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Or we'll extract a frame from your video
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Title */}
           <div className="space-y-2">
