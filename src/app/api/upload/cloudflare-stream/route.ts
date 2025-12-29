@@ -129,12 +129,30 @@ export async function POST(request: NextRequest) {
         hint: uploadResponse.status === 403 ? 'Check API token permissions, account limits, or file size restrictions' : undefined,
       });
       
+      // Return full error details for debugging
       return NextResponse.json(
         { 
           error: `Failed to upload video: ${error.errors?.[0]?.message || errorText || 'Unknown error'}`,
           status: uploadResponse.status,
+          // Include full error details for debugging
+          debug: {
+            rawErrorText: errorText,
+            parsedError: error,
+            responseHeaders: responseHeaders,
+            fileInfo: {
+              size: file.size,
+              name: file.name,
+              type: file.type,
+            },
+            requestInfo: {
+              endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
+              method: 'POST',
+              hasToken: !!apiToken,
+              tokenLength: apiToken?.length || 0,
+            }
+          },
           ...(uploadResponse.status === 403 && {
-            hint: '403 Forbidden - Check: API token permissions, account usage limits, file size restrictions, or rate limiting'
+            hint: '403 Forbidden - Full error details in debug object above'
           })
         },
         { status: uploadResponse.status >= 400 && uploadResponse.status < 600 ? uploadResponse.status : 500 }

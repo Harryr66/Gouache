@@ -69,8 +69,9 @@ export async function uploadMedia(
       } else {
         // Try to parse error as JSON, fallback to text
         let error;
+        let errorText = '';
         try {
-          const errorText = await response.text();
+          errorText = await response.text();
           try {
             error = JSON.parse(errorText);
           } catch {
@@ -79,7 +80,17 @@ export async function uploadMedia(
         } catch {
           error = { error: `HTTP ${response.status}: ${response.statusText}` };
         }
-        console.log(`⚠️ uploadMedia: Cloudflare Stream API returned error:`, error.error || error.message || `HTTP ${response.status}`);
+        
+        // Log full error details for debugging
+        console.error(`⚠️ uploadMedia: Cloudflare Stream API returned error:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: error.error || error.message || errorText,
+          rawErrorText: errorText,
+          fullError: error,
+          // Include debug info if available
+          debug: (error as any).debug,
+        });
         // Fall through to Firebase
       }
     } catch (error: any) {
