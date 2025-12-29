@@ -82,13 +82,15 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     const { uploadURL, videoId } = await createUrlResponse.json();
 
     // Step 2: Upload file directly to Cloudflare (bypassing Vercel)
+    // According to Cloudflare docs: Use POST with multipart/form-data
     console.log('📤 Uploading file directly to Cloudflare...');
+    const formData = new FormData();
+    formData.append('file', file);
+    
     const uploadResponse = await fetch(uploadURL, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-      },
+      method: 'POST',
+      body: formData,
+      // Don't set Content-Type - browser will set it with boundary for FormData
     });
 
     if (!uploadResponse.ok) {

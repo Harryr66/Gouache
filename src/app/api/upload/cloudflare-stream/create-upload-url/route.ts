@@ -30,14 +30,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Create direct creator upload URL
-    // Try /stream/direct_upload endpoint first (this might be the correct endpoint)
+    // According to Cloudflare docs: POST to /stream/direct_upload with only maxDurationSeconds
     console.log('📤 Creating direct creator upload URL:', {
       accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
       hasToken: !!apiToken,
+      maxDurationSeconds,
     });
     
-    // Try /stream/direct_upload endpoint first
-    let response = await fetch(
+    // Use the correct endpoint: /stream/direct_upload
+    // Request body should only include maxDurationSeconds (not allowedOrigins)
+    const response = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/direct_upload`,
       {
         method: 'POST',
@@ -47,43 +49,9 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           maxDurationSeconds,
-          allowedOrigins,
         }),
       }
     );
-    
-    // If that fails, try the query parameter version
-    if (!response.ok && (response.status === 404 || response.status === 400)) {
-      console.log('⚠️ /stream/direct_upload failed, trying ?direct_user=true...');
-      response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            maxDurationSeconds,
-            allowedOrigins,
-          }),
-        }
-      );
-    }
-    
-    // If that also fails, try with empty body
-    if (!response.ok && response.status === 400) {
-      console.log('⚠️ Query parameter failed, trying with empty body...');
-      response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiToken}`,
-          },
-        }
-      );
-    }
 
     if (!response.ok) {
       const errorText = await response.text();
