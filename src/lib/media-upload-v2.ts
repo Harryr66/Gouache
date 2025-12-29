@@ -83,7 +83,11 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
 
     // Step 2: Upload file directly to Cloudflare (bypassing Vercel)
     // According to Cloudflare docs: Use POST with multipart/form-data
-    console.log('📤 Uploading file directly to Cloudflare...');
+    console.log('📤 Uploading file directly to Cloudflare...', {
+      uploadURL: uploadURL.substring(0, 100) + '...', // First 100 chars
+      fileSize: file.size,
+      fileName: file.name,
+    });
     const formData = new FormData();
     formData.append('file', file);
     
@@ -93,20 +97,38 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
       // Don't set Content-Type - browser will set it with boundary for FormData
     });
 
+    console.log('📥 Direct upload response:', {
+      status: uploadResponse.status,
+      statusText: uploadResponse.statusText,
+      ok: uploadResponse.ok,
+    });
+
     if (!uploadResponse.ok) {
-      throw new Error(`Failed to upload video: ${uploadResponse.statusText}`);
+      const errorText = await uploadResponse.text();
+      console.error('❌ Direct upload failed:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        errorText: errorText.substring(0, 500), // First 500 chars
+      });
+      throw new Error(`Failed to upload video: ${uploadResponse.statusText} - ${errorText.substring(0, 200)}`);
     }
+    
+    console.log('✅ File successfully uploaded directly to Cloudflare');
 
     // Step 3: Get video details from our API
+    console.log('📤 Calling API to get video details after direct upload...', { videoId });
     const detailsResponse = await fetch(`/api/upload/cloudflare-stream/video-details?videoId=${videoId}`, {
       method: 'GET',
     });
 
     if (!detailsResponse.ok) {
-      throw new Error('Failed to get video details');
+      const error = await detailsResponse.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('❌ Failed to get video details:', error);
+      throw new Error(`Failed to get video details: ${error.error || 'Unknown error'}`);
     }
 
     const details = await detailsResponse.json();
+    console.log('✅ Received video details:', details);
 
     return {
       url: details.playbackUrl,
