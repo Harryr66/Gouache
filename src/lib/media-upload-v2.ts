@@ -73,29 +73,40 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
 
     if (!createUrlResponse.ok) {
       let error: any = {};
+      let errorMessage = '';
       
+      // Try to read error details, but don't fail if body is already consumed
       try {
-        // Try to read as JSON from the first clone
-        error = await jsonClone.json();
-      } catch (jsonError) {
-        // If JSON parsing fails, try text from the second clone
         try {
-          const errorText = await textClone.text();
-          error = { error: errorText || `HTTP ${createUrlResponse.status}` };
-        } catch (textError) {
-          // If both fail, use status info only (don't try to read body)
-          error = { error: `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText || 'Forbidden'}` };
+          // Try JSON first
+          error = await jsonClone.json();
+          errorMessage = error.error || error.message || '';
+        } catch (jsonError) {
+          // If JSON fails, try text
+          try {
+            const errorText = await textClone.text();
+            errorMessage = errorText || '';
+            error = { error: errorText || `HTTP ${createUrlResponse.status}` };
+          } catch (textError) {
+            // If both fail, body was likely already consumed - use status only
+            errorMessage = `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText || 'Forbidden'}`;
+            error = { error: errorMessage };
+          }
         }
+      } catch (readError: any) {
+        // If all read attempts fail (body already consumed), just use status
+        errorMessage = `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText || 'Forbidden'}`;
+        error = { error: errorMessage };
       }
       
       console.error('❌ Failed to create upload URL:', {
         status: createUrlResponse.status,
         statusText: createUrlResponse.statusText,
-        error: error.error || error.message,
+        error: error.error || error.message || errorMessage,
         debug: error.debug,
       });
       
-      throw new Error(`Failed to create upload URL: ${error.error || error.message || 'Unknown error'}`);
+      throw new Error(`Failed to create upload URL: ${error.error || error.message || errorMessage || 'Unknown error'}`);
     }
 
     // Use the JSON clone for reading the successful response
