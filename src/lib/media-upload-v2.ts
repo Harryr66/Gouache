@@ -152,170 +152,100 @@ export async function uploadMedia(
 
   // ALWAYS try Cloudflare API route first - no client-side checks
   if (type === 'video') {
-    // For large files (>20MB), use direct creator upload from client to bypass Vercel size limits
-    // Vercel blocks requests >4.5MB with 403 before they reach our API route
-    const LARGE_FILE_THRESHOLD = 20 * 1024 * 1024; // 20MB
-    const isLargeFile = file.size > LARGE_FILE_THRESHOLD;
-    
-    if (isLargeFile) {
-      // Use direct creator upload from client side to bypass Vercel body size limits
-      console.log(`📤 uploadMedia: Large file detected (${(file.size / 1024 / 1024).toFixed(1)}MB), using direct creator upload from client...`);
-      try {
-        return await uploadVideoDirectCreatorUpload(file);
-      } catch (error: any) {
-        console.error('❌ Direct creator upload failed:', error.message);
-        throw new Error(`Failed to upload video to Cloudflare Stream: ${error.message}`);
-      }
-    }
-    
+    // For videos, ALWAYS use direct creator upload to bypass Vercel limits and rate limiting
+    // Vercel can block requests with 403 due to rate limiting or body size limits during bulk uploads
+    console.log(`📤 uploadMedia: Video detected (${(file.size / 1024 / 1024).toFixed(1)}MB), using direct creator upload from client to bypass Vercel limits...`);
     try {
-      console.log(`📤 uploadMedia: Calling Cloudflare Stream API...`);
-      const formData = new FormData();
-      formData.append('file', file);
+      return await uploadVideoDirectCreatorUpload(file);
+    } catch (error: any) {
+      console.error('❌ Direct creator upload failed:', error.message);
+      throw new Error(`Failed to upload video to Cloudflare Stream: ${error.message}`);
+    }
+  }
+  
+  // For images, use API route with retry logic for rate limiting
+  try {
+    console.log(`📤 uploadMedia: Calling Cloudflare Images API...`);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    console.log('📤 Making request to API route...', {
+      url: '/api/upload/cloudflare-images',
+      method: 'POST',
+      fileSize: file.size,
+      fileName: file.name,
+    });
+    
+    // Retry logic for rate limiting (403 errors from Vercel)
+    let lastError: any = null;
+    const maxRetries = 3;
+    const baseRetryDelay = 1000; // Start with 1 second
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      if (attempt > 0) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = baseRetryDelay * Math.pow(2, attempt - 1);
+        console.log(`⏳ Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms delay...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
       
-      console.log('📤 Making request to API route...', {
-        url: '/api/upload/cloudflare-stream?v=2',
-        method: 'POST',
-        fileSize: file.size,
-        fileName: file.name,
-      });
-      
-      const response = await fetch('/api/upload/cloudflare-stream?v=2', {
-        method: 'POST',
-        body: formData,
-        cache: 'no-store',
-      });
-      
-      console.log('📥 Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries()),
-        contentType: response.headers.get('content-type'),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log(`✅ uploadMedia: Cloudflare Stream success!`, result);
-        return {
-          url: result.playbackUrl,
-          thumbnailUrl: result.thumbnailUrl,
-          provider: 'cloudflare',
-          cloudflareId: result.videoId,
-          duration: result.duration,
-        };
-      } else {
-        // Try to parse error as JSON, fallback to text
-        let error;
-        let errorText = '';
-        const contentType = response.headers.get('content-type') || '';
-        const isJson = contentType.includes('application/json');
-        
-        console.log('🔍 Parsing error response:', {
-          status: response.status,
-          contentType: contentType,
-          isJson: isJson,
+      try {
+        const response = await fetch('/api/upload/cloudflare-images', {
+          method: 'POST',
+          body: formData,
+          cache: 'no-store',
         });
         
-        try {
-          errorText = await response.text();
-          console.log('📄 Raw response text:', errorText.substring(0, 500)); // First 500 chars
-          
-          if (isJson) {
-            try {
-              error = JSON.parse(errorText);
-              console.log('✅ Parsed as JSON:', error);
-            } catch (parseError) {
-              console.error('❌ Failed to parse JSON:', parseError);
-              error = { error: errorText || `HTTP ${response.status}: ${response.statusText}` };
-            }
-          } else {
-            console.warn('⚠️ Response is NOT JSON, it is:', contentType);
-            error = { error: errorText || `HTTP ${response.status}: ${response.statusText}` };
-          }
-        } catch (textError) {
-          console.error('❌ Failed to read response text:', textError);
-          error = { error: `HTTP ${response.status}: ${response.statusText}` };
-        }
-        
-        // Extract ALL information from the error response
-        const fullErrorDetails = {
-          // Response info
+        console.log('📥 Response received:', {
           status: response.status,
           statusText: response.statusText,
-          responseHeaders: Object.fromEntries(response.headers.entries()),
-          
-          // Error info
-          error: error.error || error.message || errorText,
-          rawErrorText: errorText,
-          fullError: error,
-          
-          // Debug info from API (if available)
-          debug: (error as any).debug || {},
-          
-          // Request info
-          requestUrl: '/api/upload/cloudflare-stream?v=2',
-          requestMethod: 'POST',
-        };
-        
-        // Log full error details for debugging
-        console.error(`⚠️ uploadMedia: Cloudflare Stream API returned error:`, fullErrorDetails);
-        
-        // Log the COMPLETE error object as formatted JSON
-        console.error(`🔍 COMPLETE ERROR OBJECT (formatted JSON):`, JSON.stringify(fullErrorDetails, null, 2));
-        
-        // Also log just the debug object if it exists
-        if ((error as any).debug && Object.keys((error as any).debug).length > 0) {
-          console.error(`🔍 DEBUG OBJECT FROM API:`, JSON.stringify((error as any).debug, null, 2));
+          ok: response.ok,
+          attempt: attempt + 1,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`✅ uploadMedia: Cloudflare Images success!`, result);
+          return {
+            url: result.url,
+            provider: 'cloudflare',
+            cloudflareId: result.imageId,
+            variants: result.variants,
+            width: result.width,
+            height: result.height,
+          };
+        } else if (response.status === 403 && attempt < maxRetries - 1) {
+          // 403 Forbidden - likely rate limiting, retry
+          const errorText = await response.text().catch(() => 'Forbidden');
+          console.warn(`⚠️ Rate limited (403), will retry... (attempt ${attempt + 1}/${maxRetries})`);
+          lastError = new Error(`Rate limited: ${errorText}`);
+          continue; // Retry
         } else {
-          console.error(`⚠️ No debug object in error response - API may not be returning full error details`);
+          // Other error or final attempt failed
+          const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+          lastError = new Error(`Cloudflare Images upload failed: ${error.error || 'Unknown error'}`);
+          if (attempt < maxRetries - 1) {
+            continue; // Retry
+          }
+          throw lastError;
         }
-        
-        // Throw error - no Firebase fallback
-        throw new Error(`Cloudflare Stream upload failed: ${error.error || error.message || 'Unknown error'}`);
+      } catch (fetchError: any) {
+        lastError = fetchError;
+        if (attempt < maxRetries - 1) {
+          console.warn(`⚠️ Network error, will retry... (attempt ${attempt + 1}/${maxRetries})`);
+          continue; // Retry
+        }
+        throw fetchError;
       }
-    } catch (error: any) {
-      console.error(`❌ uploadMedia: Cloudflare Stream API error:`, error.message);
-      // Re-throw - no Firebase fallback
-      throw error;
     }
+    
+    // If we get here, all retries failed
+    throw lastError || new Error('Failed to upload image after retries');
+  } catch (error: any) {
+    console.error(`❌ uploadMedia: Cloudflare Images API error:`, error.message);
+    throw error;
   }
-
-  if (type === 'image') {
-    try {
-      console.log(`📤 uploadMedia: Calling Cloudflare Images API...`);
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await fetch('/api/upload/cloudflare-images?v=2', {
-        method: 'POST',
-        body: formData,
-        cache: 'no-store',
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log(`✅ uploadMedia: Cloudflare Images success!`, result);
-        return {
-          url: result.url,
-          provider: 'cloudflare',
-          cloudflareId: result.imageId,
-          variants: result.variants,
-          width: result.width,
-          height: result.height,
-        };
-      } else {
-        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error(`❌ uploadMedia: Cloudflare Images API returned error:`, error.error);
-        // Throw error - no Firebase fallback
-        throw new Error(`Cloudflare Images upload failed: ${error.error || 'Unknown error'}`);
-      }
-    } catch (error: any) {
-      console.error(`❌ uploadMedia: Cloudflare Images API error:`, error.message);
-      // Re-throw - no Firebase fallback
-      throw error;
-    }
-  }
+}
 
   // This should never be reached, but TypeScript needs it
   throw new Error(`Unsupported media type: ${type}. Only 'image' and 'video' are supported.`);
