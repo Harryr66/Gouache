@@ -406,11 +406,15 @@ export function HueChatbot() {
       
       const url = getUrlFromArgs(args[0]);
       
+      // Skip intercepting upload endpoints to avoid consuming response body
+      const isUploadEndpoint = url.includes('/api/upload/');
+      
       try {
         const response = await originalFetch(...args);
         
         // Only report 5xx server errors as actual errors (4xx are usually intentional)
-        if (response.status >= 500) {
+        // Skip upload endpoints to avoid interfering with response body reading
+        if (!isUploadEndpoint && response.status >= 500) {
           const error = new Error(`Server Error ${response.status}: ${response.statusText}`);
           (error as any).code = `HTTP_${response.status}`;
           (error as any).status = response.status;
