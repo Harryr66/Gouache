@@ -33,6 +33,76 @@ export interface MediaUploadResult {
 }
 
 /**
+ * Upload video directly to Cloudflare Stream using direct creator upload
+ * This bypasses Vercel's body size limits by uploading directly from client to Cloudflare
+ */
+async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadResult> {
+  const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_API_TOKEN;
+
+  if (!accountId || !apiToken) {
+    throw new Error('Cloudflare Stream credentials not configured');
+  }
+
+  try {
+    // Step 1: Get upload URL from our API (this is a small request, no file)
+    const createUrlResponse = await fetch('/api/upload/cloudflare-stream/create-upload-url', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        maxDurationSeconds: 3600,
+        allowedOrigins: ['*'],
+      }),
+    });
+
+    if (!createUrlResponse.ok) {
+      const error = await createUrlResponse.json();
+      throw new Error(`Failed to create upload URL: ${error.error || 'Unknown error'}`);
+    }
+
+    const { uploadURL, videoId } = await createUrlResponse.json();
+
+    // Step 2: Upload file directly to Cloudflare (bypassing Vercel)
+    console.log('📤 Uploading file directly to Cloudflare...');
+    const uploadResponse = await fetch(uploadURL, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+      },
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Failed to upload video: ${uploadResponse.statusText}`);
+    }
+
+    // Step 3: Get video details from our API
+    const detailsResponse = await fetch(`/api/upload/cloudflare-stream/video-details?videoId=${videoId}`, {
+      method: 'GET',
+    });
+
+    if (!detailsResponse.ok) {
+      throw new Error('Failed to get video details');
+    }
+
+    const details = await detailsResponse.json();
+
+    return {
+      url: details.playbackUrl,
+      thumbnailUrl: details.thumbnailUrl,
+      provider: 'cloudflare',
+      cloudflareId: details.videoId,
+      duration: details.duration,
+    };
+  } catch (error: any) {
+    console.error('❌ Direct creator upload failed:', error);
+    throw error;
+  }
+}
+
+/**
  * Upload media file - ALWAYS tries Cloudflare first via API routes
  */
 export async function uploadMedia(
