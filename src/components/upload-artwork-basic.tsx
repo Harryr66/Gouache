@@ -693,9 +693,24 @@ export function UploadArtworkBasic() {
             aiAssistance: 'none',
             isAI: false,
           };
+
+          // Create post object for Discover feed
+          const postForDiscover = {
+            id: `post-${Date.now()}-${i}`,
+            artworkId: separateArtworkItem.id,
+            artist: artworkForDiscover.artist,
+            imageUrl: artworkForDiscover.imageUrl || artworkForDiscover.videoUrl || '',
+            imageAiHint: artworkForDiscover.imageAiHint,
+            caption: description.trim() || '',
+            likes: 0,
+            commentsCount: 0,
+            timestamp: new Date().toISOString(),
+            createdAt: Date.now(),
+            tags: tags,
+          };
           
           // Add to Discover feed
-          await addContent(artworkForDiscover);
+          await addContent(postForDiscover, artworkForDiscover);
           
           // Update progress
           const overallProgress = ((i + 1) * 100 / processedFiles.length);
