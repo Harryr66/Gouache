@@ -117,13 +117,27 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
       method: 'GET',
     });
 
-    if (!detailsResponse.ok) {
-      const error = await detailsResponse.json().catch(() => ({ error: 'Unknown error' }));
-      console.error('❌ Failed to get video details:', error);
-      throw new Error(`Failed to get video details: ${error.error || 'Unknown error'}`);
+    const details = await detailsResponse.json();
+
+    // Handle 202 Accepted (video still processing)
+    if (detailsResponse.status === 202) {
+      console.warn('⚠️ Video is still processing, but upload was successful:', details);
+      // Return what we have - video will be available shortly
+      // The playback URL might not be ready yet, but we have the video ID
+      return {
+        url: details.playbackUrl || `https://customer-${process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID}.cloudflarestream.com/${videoId}/manifest/video.m3u8`,
+        thumbnailUrl: details.thumbnailUrl || `https://customer-${process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`,
+        provider: 'cloudflare',
+        cloudflareId: details.videoId || videoId,
+        duration: details.duration || 0,
+      };
     }
 
-    const details = await detailsResponse.json();
+    if (!detailsResponse.ok) {
+      console.error('❌ Failed to get video details:', details);
+      throw new Error(`Failed to get video details: ${details.error || details.message || 'Unknown error'}`);
+    }
+
     console.log('✅ Received video details:', details);
 
     return {
