@@ -45,6 +45,16 @@ export async function uploadMedia(
 
   // ALWAYS try Cloudflare API route first - no client-side checks
   if (type === 'video') {
+    // For large files (>20MB), use direct creator upload from client to bypass Vercel size limits
+    const LARGE_FILE_THRESHOLD = 20 * 1024 * 1024; // 20MB
+    const isLargeFile = file.size > LARGE_FILE_THRESHOLD;
+    
+    if (isLargeFile) {
+      // Use direct creator upload from client side to bypass Vercel body size limits
+      console.log(`📤 uploadMedia: Large file detected (${(file.size / 1024 / 1024).toFixed(1)}MB), using direct creator upload from client...`);
+      return await uploadVideoDirectCreatorUpload(file);
+    }
+    
     try {
       console.log(`📤 uploadMedia: Calling Cloudflare Stream API...`);
       const formData = new FormData();

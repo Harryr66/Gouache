@@ -4,6 +4,15 @@ import { NextRequest, NextResponse } from 'next/server';
  * Server-side API route for uploading videos to Cloudflare Stream
  * This keeps API tokens secure and avoids CORS issues
  */
+
+// Increase body size limit for large video uploads (up to 100MB)
+export const config = {
+  api: {
+    bodyParser: false, // Disable body parser, we'll handle it manually
+  },
+  maxDuration: 300, // 5 minutes for large uploads
+};
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();

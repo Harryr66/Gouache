@@ -31,6 +31,13 @@ const nextConfig = {
   // Note: For Capacitor, we'll load from production URL instead of static export
   // This allows API routes and dynamic routes to work properly
   
+  // Increase body size limit for large video uploads
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '100mb',
+    },
+  },
+  
   // Explicitly expose environment variables to client-side
   // Next.js automatically exposes NEXT_PUBLIC_ vars, but we're being explicit here
   env: {
