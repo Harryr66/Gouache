@@ -40,12 +40,22 @@ export default function ArtistProfilePage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      // Ensure we have an artistId before fetching
+      if (!artistId) {
+        console.error('❌ No artistId provided in URL params');
+        setLoading(false);
+        return;
+      }
+      
       try {
+        console.log('🔍 Fetching profile for artistId:', artistId, 'Current logged-in user:', user?.id);
+        
         let profileDocRef = doc(db, 'userProfiles', artistId);
         let userDoc = await getDoc(profileDocRef);
 
         // If no doc by id, try lookup by handle/username
         if (!userDoc.exists()) {
+          console.log('⚠️ Profile not found by ID, trying handle lookup...');
           const { getDocs, collection, query, where, limit } = await import('firebase/firestore');
           const q = query(
             collection(db, 'userProfiles'),
@@ -55,6 +65,7 @@ export default function ArtistProfilePage() {
           const snap = await getDocs(q);
           if (!snap.empty) {
             const docMatch = snap.docs[0];
+            console.log('✅ Found profile by handle:', docMatch.id);
             profileDocRef = doc(db, 'userProfiles', docMatch.id);
             userDoc = await getDoc(profileDocRef);
           }
@@ -62,6 +73,16 @@ export default function ArtistProfilePage() {
 
         if (userDoc.exists()) {
           const data = userDoc.data();
+          
+          console.log('📋 Profile data from Firestore:', {
+            docId: userDoc.id,
+            name: data.name || data.displayName,
+            handle: data.handle || data.username,
+            isProfessional: data.isProfessional,
+            hideShop: data.hideShop,
+            hideLearn: data.hideLearn,
+            portfolioCount: (data.portfolio || []).length
+          });
           
           // Convert portfolio items from Firestore format (with Timestamps) to Date objects
           const portfolio = (data.portfolio || []).map((item: any) => ({
@@ -106,21 +127,25 @@ export default function ArtistProfilePage() {
             portfolio: portfolio, // Include portfolio for ProfileTabs
           };
           
-          console.log('📋 Profile loaded:', {
-            id: profileData.id,
-            name: profileData.displayName,
-            username: profileData.username,
+          console.log('✅ Profile loaded successfully:', {
+            profileId: profileData.id,
+            profileName: profileData.displayName,
+            profileUsername: profileData.username,
+            loggedInUserId: user?.id,
+            isOwnProfile: user?.id === profileData.id,
             portfolioCount: portfolio.length,
-            isProfessional: profileData.isProfessional
+            isProfessional: profileData.isProfessional,
+            hideShop: profileData.hideShop,
+            hideLearn: profileData.hideLearn
           });
           
           setProfileUser(profileData);
         } else {
-          console.error('❌ Profile not found:', artistId);
+          console.error('❌ Profile not found for artistId:', artistId);
           notFound();
         }
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ Error fetching profile:', error);
         notFound();
       } finally {
         setLoading(false);
@@ -130,7 +155,7 @@ export default function ArtistProfilePage() {
     if (artistId) {
       fetchProfile();
     }
-  }, [artistId]);
+  }, [artistId, user?.id]);
 
   // Load events for this artist (visible to all users including guests)
   useEffect(() => {
