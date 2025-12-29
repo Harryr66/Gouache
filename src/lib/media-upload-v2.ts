@@ -57,20 +57,20 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
       body: JSON.stringify(requestBody),
     });
 
-    // Clone response immediately to prevent "body stream already read" errors
-    // This ensures we can read it even if something else (like Hue interceptor) tries to read it
-    const responseClone = createUrlResponse.clone();
+    // Clone responses IMMEDIATELY before any checks to prevent "body stream already read" errors
+    // Create separate clones for JSON and text attempts
+    const jsonClone = createUrlResponse.clone();
+    const textClone = createUrlResponse.clone();
 
     if (!createUrlResponse.ok) {
       let error: any = {};
       
       try {
-        // Try to read as JSON from the clone
-        error = await responseClone.json();
+        // Try to read as JSON from the first clone
+        error = await jsonClone.json();
       } catch (jsonError) {
-        // If JSON parsing fails, try text from a fresh clone
+        // If JSON parsing fails, try text from the second clone
         try {
-          const textClone = createUrlResponse.clone();
           const errorText = await textClone.text();
           error = { error: errorText || `HTTP ${createUrlResponse.status}` };
         } catch (textError) {
@@ -89,8 +89,8 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
       throw new Error(`Failed to create upload URL: ${error.error || error.message || 'Unknown error'}`);
     }
 
-    // Use the clone for reading the successful response too
-    const { uploadURL, videoId } = await responseClone.json();
+    // Use the JSON clone for reading the successful response
+    const { uploadURL, videoId } = await jsonClone.json();
 
     // Step 2: Upload file directly to Cloudflare (bypassing Vercel)
     // According to Cloudflare docs: Use POST with multipart/form-data
