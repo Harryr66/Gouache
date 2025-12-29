@@ -237,16 +237,19 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
     }
     
     // For images, load image to detect aspect ratio and preload for display
+    // CRITICAL: Don't set isImageLoaded here - let the actual <img> tag's onLoad handle it
+    // This prevents race conditions where metadata loads but the actual image doesn't
     const img = document.createElement('img');
     img.onload = () => {
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       setMediaAspectRatio(aspectRatio);
-      setIsImageLoaded(true); // Image is fully loaded
+      // DON'T set isImageLoaded here - let the actual <img> tag handle it
+      // This ensures the image is only marked as loaded when it's actually visible
     };
     img.onerror = () => {
       setMediaAspectRatio(2/3); // Default to portrait aspect ratio (2:3) on error
       setImageError(true);
-      setIsImageLoaded(true); // Stop showing loader even on error
+      // Don't set isImageLoaded here either - let the error handler in the <img> tag handle it
     };
       img.src = imageUrl;
       img.loading = 'eager'; // Start loading immediately
@@ -1051,9 +1054,11 @@ const generateArtistContent = (artist: Artist) => ({
                   let cloudflareUrl = imageSrc;
                   
                   // Extract Cloudflare image ID and account hash to construct proper variant URL
-                  const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
+                  // URL format: https://imagedelivery.net/{accountHash}/{imageId}/{variant}
+                  // The regex needs to extract accountHash and imageId, ignoring the variant at the end
+                  const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)(?:\/([^/]+))?/);
                   if (cloudflareMatch) {
-                    const [, accountHash, imageId] = cloudflareMatch;
+                    const [, accountHash, imageId, existingVariant] = cloudflareMatch;
                     
                     // CRITICAL: Use /Thumbnail ONLY for video posters (placeholders before autoplay)
                     // Use /1080px for regular image artworks to match Instagram/Pinterest quality
@@ -1064,6 +1069,18 @@ const generateArtistContent = (artist: Artist) => ({
                       // Regular image artwork: Use /1080px variant - Instagram/Pinterest standard
                       // This matches Instagram's 1080px feed resolution for best quality
                       cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/1080px`;
+                    }
+                    
+                    // Debug logging
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log('🖼️ Cloudflare URL construction:', {
+                        original: imageSrc,
+                        accountHash,
+                        imageId,
+                        existingVariant,
+                        constructed: cloudflareUrl,
+                        hasVideo
+                      });
                     }
                   } else {
                     // Fallback: Determine variant based on whether it's a video
@@ -1078,6 +1095,14 @@ const generateArtistContent = (artist: Artist) => ({
                         cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/1080px');
                       }
                     }
+                    
+                    // Debug logging for fallback
+                    if (process.env.NODE_ENV === 'development') {
+                      console.warn('⚠️ Cloudflare URL regex failed, using fallback:', {
+                        original: imageSrc,
+                        fallback: cloudflareUrl
+                      });
+                    }
                   }
                   
                   // Calculate dimensions from aspect ratio to prevent layout shift
@@ -1088,23 +1113,47 @@ const generateArtistContent = (artist: Artist) => ({
                   const finalWidth = imgWidth && imgWidth > 0 ? imgWidth : tileWidth;
                   const finalHeight = imgHeight && imgHeight > 0 ? imgHeight : calculatedHeight;
                   
+                  // Add timeout fallback to show image even if onLoad doesn't fire
+                  React.useEffect(() => {
+                    if (!isImageLoaded && !imageError && cloudflareUrl) {
+                      const timeout = setTimeout(() => {
+                        // If image hasn't loaded after 3 seconds, assume it's loaded or show it anyway
+                        if (!isImageLoaded) {
+                          console.warn('⏱️ Image load timeout, showing anyway:', cloudflareUrl);
+                          setIsImageLoaded(true);
+                        }
+                      }, 3000);
+                      return () => clearTimeout(timeout);
+                    }
+                  }, [cloudflareUrl, isImageLoaded, imageError]);
+                  
                   return (
                     <img
                       src={cloudflareUrl}
                       alt={artwork.imageAiHint || artwork.title || 'Artwork'}
                       width={finalWidth}
                       height={finalHeight}
-                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${!isImageLoaded && !imageError ? 'opacity-0' : 'opacity-100'}`}
+                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${imageError ? 'opacity-0' : 'opacity-100'}`}
                       loading={isInitialViewport ? "eager" : "lazy"}
                       fetchPriority={isInitialViewport ? "high" : "auto"}
                       decoding="async"
                       key={`${cloudflareUrl}-${retryCount}`}
+                      onLoadStart={() => {
+                        // Debug: Log when image starts loading
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('🔄 Image load started:', cloudflareUrl);
+                        }
+                      }}
                       onLoad={() => {
                         setIsImageLoaded(true);
                         setImageError(false);
                         setRetryCount(0);
                         if (isInitialViewport && onImageReady) {
                           onImageReady(false);
+                        }
+                        // Debug logging
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('✅ Image loaded successfully:', cloudflareUrl);
                         }
                       }}
                       onError={(e) => {
