@@ -152,7 +152,48 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
       method: 'GET',
     });
 
-    const details = await detailsResponse.json();
+    // Clone response to check content type before parsing
+    const detailsClone = detailsResponse.clone();
+    const contentType = detailsResponse.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    
+    let details: any = {};
+    
+    if (isJson) {
+      try {
+        details = await detailsClone.json();
+      } catch (jsonError) {
+        // If JSON parsing fails, try to get text to see what we got
+        try {
+          const textClone = detailsResponse.clone();
+          const responseText = await textClone.text();
+          console.error('❌ Failed to parse JSON response:', responseText.substring(0, 200));
+          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
+        } catch {
+          throw new Error(`Failed to parse response as JSON`);
+        }
+      }
+    } else {
+      // Response is not JSON (likely HTML error page from Vercel)
+      try {
+        const textClone = detailsResponse.clone();
+        const responseText = await textClone.text();
+        console.error('❌ Received non-JSON response (likely HTML error page):', {
+          status: detailsResponse.status,
+          contentType,
+          preview: responseText.substring(0, 200)
+        });
+        
+        // If it's a 403, it's likely Vercel rate limiting
+        if (detailsResponse.status === 403) {
+          throw new Error(`Rate limited (403): Video details endpoint blocked. Video uploaded successfully but details unavailable. Video ID: ${videoId}`);
+        }
+        
+        throw new Error(`Unexpected response format (${contentType}): ${detailsResponse.status} ${detailsResponse.statusText}`);
+      } catch (textError: any) {
+        throw new Error(`Failed to get video details: ${textError.message || 'Unknown error'}`);
+      }
+    }
 
     // Handle 202 Accepted (video still processing)
     if (detailsResponse.status === 202) {
@@ -169,8 +210,13 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     }
 
     if (!detailsResponse.ok) {
-      console.error('❌ Failed to get video details:', details);
-      throw new Error(`Failed to get video details: ${details.error || details.message || 'Unknown error'}`);
+      console.error('❌ Failed to get video details:', {
+        status: detailsResponse.status,
+        statusText: detailsResponse.statusText,
+        error: details.error || details.message,
+        contentType
+      });
+      throw new Error(`Failed to get video details: ${details.error || details.message || `HTTP ${detailsResponse.status}`}`);
     }
 
     console.log('✅ Received video details:', details);
