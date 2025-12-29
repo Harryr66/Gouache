@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Artist } from '@/lib/types';
 import { getAuth } from 'firebase/auth';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, serverTimestamp, increment } from 'firebase/firestore';
 
 // Generate Gouache avatar placeholder URLs
 const generateAvatarPlaceholderUrl = (width: number = 150, height: number = 150) => {
@@ -194,29 +194,22 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
         console.error('Error fetching artist data:', error);
       }
 
-      // Update follower count on artist's profile
+      // Update follower count on artist's profile using increment
       try {
         const artistDocRef = doc(db, 'userProfiles', artistId);
-        const artistDoc = await getDoc(artistDocRef);
-        if (artistDoc.exists()) {
-          await updateDoc(artistDocRef, {
-            followerCount: (artistDoc.data().followerCount || 0) + 1,
-          });
-        }
+        await updateDoc(artistDocRef, {
+          followerCount: increment(1),
+        });
       } catch (error) {
         console.error('Error updating follower count:', error);
       }
 
-      // Update following count on user's own profile
+      // Update following count on user's own profile using increment
       try {
         const userDocRef = doc(db, 'userProfiles', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          const currentFollowing = userDoc.data().following || [];
-          await updateDoc(userDocRef, {
-            followingCount: currentFollowing.length + 1,
-          });
-        }
+        await updateDoc(userDocRef, {
+          followingCount: increment(1),
+        });
       } catch (error) {
         console.error('Error updating following count:', error);
       }
@@ -260,30 +253,22 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
       });
       setFollowedArtists(prev => prev.filter(artist => artist.id !== artistId));
 
-      // Update follower count on artist's profile
+      // Update follower count on artist's profile using increment
       try {
         const artistDocRef = doc(db, 'userProfiles', artistId);
-        const artistDoc = await getDoc(artistDocRef);
-        if (artistDoc.exists()) {
-          const currentCount = artistDoc.data().followerCount || 0;
-          await updateDoc(artistDocRef, {
-            followerCount: Math.max(0, currentCount - 1),
-          });
-        }
+        await updateDoc(artistDocRef, {
+          followerCount: increment(-1),
+        });
       } catch (error) {
         console.error('Error updating follower count:', error);
       }
 
-      // Update following count on user's own profile
+      // Update following count on user's own profile using increment
       try {
         const userDocRef = doc(db, 'userProfiles', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          const currentFollowing = userDoc.data().following || [];
-          await updateDoc(userDocRef, {
-            followingCount: Math.max(0, currentFollowing.length - 1),
-          });
-        }
+        await updateDoc(userDocRef, {
+          followingCount: increment(-1),
+        });
       } catch (error) {
         console.error('Error updating following count:', error);
       }

@@ -8,6 +8,7 @@ import { useEffect, useState, startTransition } from 'react';
 import { ProfileHeader } from '@/components/profile-header';
 import { ProfileTabs } from '@/components/profile-tabs';
 import { useAuth } from '@/providers/auth-provider';
+import { useFollow } from '@/providers/follow-provider';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,10 +22,10 @@ export default function ArtistProfilePage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { isFollowing: checkIsFollowing, followArtist, unfollowArtist } = useFollow();
   const artistId = params.id as string;
   
   const [profileUser, setProfileUser] = useState<any>(null);
-  const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
@@ -197,9 +198,34 @@ export default function ArtistProfilePage() {
     loadEvents();
   }, [profileUser?.id]);
 
+  // Check if user is following this artist
+  const isFollowing = user ? checkIsFollowing(profileUser?.id) : false;
+
   const handleFollowToggle = async () => {
-    // TODO: Implement follow/unfollow logic
-    setIsFollowing(!isFollowing);
+    if (!user || !profileUser) return;
+    
+    if (isFollowing) {
+      // Unfollow
+      await unfollowArtist(profileUser.id);
+    } else {
+      // Follow
+      await followArtist(profileUser.id);
+    }
+    
+    // Refresh profile data to get updated follower count
+    try {
+      const profileDocRef = doc(db, 'userProfiles', profileUser.id);
+      const userDoc = await getDoc(profileDocRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setProfileUser((prev: any) => ({
+          ...prev,
+          followerCount: data.followerCount || 0,
+        }));
+      }
+    } catch (error) {
+      console.error('Error refreshing profile after follow/unfollow:', error);
+    }
   };
 
   if (loading) {
