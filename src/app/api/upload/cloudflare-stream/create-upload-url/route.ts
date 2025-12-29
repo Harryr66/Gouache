@@ -86,11 +86,19 @@ export async function POST(request: NextRequest) {
         error = { errors: [{ message: errorText }] };
       }
       
+      // Log ALL response headers for debugging
+      const responseHeaders: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+      
       console.error('❌ Failed to create direct creator upload URL:', {
         status: response.status,
         statusText: response.statusText,
         error: error.errors?.[0]?.message || errorText,
         fullError: error,
+        responseHeaders: responseHeaders,
+        rawErrorText: errorText.substring(0, 1000), // First 1000 chars
       });
 
       return NextResponse.json(
@@ -98,8 +106,10 @@ export async function POST(request: NextRequest) {
           error: error.errors?.[0]?.message || errorText,
           debug: {
             status: response.status,
+            statusText: response.statusText,
             errorText: errorText,
             fullError: error,
+            responseHeaders: responseHeaders,
           }
         },
         { status: response.status }
