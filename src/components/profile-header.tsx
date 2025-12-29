@@ -247,7 +247,7 @@ export function ProfileHeader({
                 </>
               ) : (
                 <Button 
-                  variant="outline"
+                  variant={isFollowing ? "gradient" : "outline"}
                   size="sm"
                   className="text-xs md:text-sm"
                   onClick={onFollowToggle}

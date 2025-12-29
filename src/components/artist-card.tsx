@@ -52,8 +52,8 @@ export function ArtistCard({ artist }: { artist: Artist }) {
                  )}
             </div>
             <Button 
-              variant="outline" 
-              className={cn("w-full hover:gradient-border", isFollowing && "gradient-border")} 
+              variant={isFollowing ? "gradient" : "outline"}
+              className="w-full" 
               onClick={handleFollowToggle}
             >
                 {isFollowing ? <UserCheck className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}

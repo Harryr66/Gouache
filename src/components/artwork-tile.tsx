@@ -1692,7 +1692,7 @@ const generateArtistContent = (artist: Artist) => ({
                     </div>
                     <div className="flex flex-col gap-2 w-full sm:w-auto">
                       <Button
-                        variant={following ? 'outline' : 'secondary'}
+                        variant={following ? 'gradient' : 'secondary'}
                         onClick={handleFollowToggle}
                         className="flex items-center gap-2 w-full sm:w-auto"
                       >
