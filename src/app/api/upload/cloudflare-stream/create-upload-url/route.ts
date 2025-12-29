@@ -30,35 +30,45 @@ export async function POST(request: NextRequest) {
     }
 
     // Create direct creator upload URL
-    // Try with minimal body first - Cloudflare might not need all parameters
-    const requestBody: any = {};
-    
-    // Only include parameters if they're provided and not defaults
-    if (maxDurationSeconds !== 3600) {
-      requestBody.maxDurationSeconds = maxDurationSeconds;
-    }
-    if (allowedOrigins && allowedOrigins.length > 0 && !(allowedOrigins.length === 1 && allowedOrigins[0] === '*')) {
-      requestBody.allowedOrigins = allowedOrigins;
-    }
-    
+    // Cloudflare Stream direct_user endpoint - try with NO body first
+    // Some APIs require empty body or no body at all
     console.log('📤 Creating direct creator upload URL:', {
       accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
       hasToken: !!apiToken,
-      requestBody: requestBody,
-      bodyString: JSON.stringify(requestBody),
+      endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
     });
     
-    const response = await fetch(
+    // Try with empty body first (no Content-Type header)
+    let response = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiToken}`,
-          'Content-Type': 'application/json',
+          // Don't set Content-Type - let Cloudflare determine it
         },
-        body: Object.keys(requestBody).length > 0 ? JSON.stringify(requestBody) : '{}',
+        // No body at all
       }
     );
+    
+    // If that fails, try with JSON body
+    if (!response.ok && response.status === 400) {
+      console.log('⚠️ Empty body failed, trying with JSON body...');
+      response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            maxDurationSeconds,
+            allowedOrigins,
+          }),
+        }
+      );
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
