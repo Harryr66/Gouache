@@ -932,15 +932,18 @@ export function HueChatbot() {
             ? "border-red-500/30 w-[320px] max-w-[calc(100vw-2rem)]" // Smaller, subtle for errors
             : "border-primary/50 w-[90vw] max-w-md" // Normal size for chat
         )}>
-          <CardHeader className="relative">
+          <CardHeader className={cn("relative", hasError && "pb-2")}>
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2 flex-1 min-w-0">
+              <CardTitle className={cn("flex items-center gap-2 flex-1 min-w-0", hasError && "text-sm")}>
                 <div className={cn(
-                  "w-8 h-8 rounded-full story-gradient-border flex items-center justify-center flex-shrink-0"
+                  "rounded-full story-gradient-border flex items-center justify-center flex-shrink-0",
+                  hasError ? "w-6 h-6" : "w-8 h-8"
                 )}>
                   <div className="w-full h-full rounded-full bg-background" />
                 </div>
-                <span className="text-base whitespace-nowrap">Hey, I'm Hue</span>
+                <span className={cn("whitespace-nowrap", hasError ? "text-sm" : "text-base")}>
+                  {hasError ? "Error Report" : "Hey, I'm Hue"}
+                </span>
               </CardTitle>
               <div className="flex items-center gap-1 flex-shrink-0">
                 {!hasError && (
@@ -957,19 +960,19 @@ export function HueChatbot() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6"
+                  className={hasError ? "h-5 w-5" : "h-6 w-6"}
                   onClick={() => {
                     setIsExpanded(false);
                     // Always reset all state when closing, including error states
                     resetAllState();
                   }}
                 >
-                  <X className="h-4 w-4" />
+                  <X className={hasError ? "h-3.5 w-3.5" : "h-4 w-4"} />
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className={cn("space-y-4", hasError && "space-y-2 p-4 pt-2")}>
             {isSubmitted ? (
               <div className="text-center py-4">
                 <p className="text-sm text-muted-foreground">
@@ -978,18 +981,18 @@ export function HueChatbot() {
               </div>
             ) : hasError && errorReport ? (
               <>
-                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                  <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                    Looks like something's broken
+                <div className="p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+                  <p className="text-xs font-medium mb-1 flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                    <span>Something went wrong</span>
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground line-clamp-2">
                     {errorReport.message}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm mb-2">
-                    Tell me what you were trying to do—I'll get someone to fix it. <span className="text-muted-foreground">(Optional)</span>
+                  <p className="text-xs mb-1.5">
+                    What were you doing? <span className="text-muted-foreground">(Optional)</span>
                   </p>
                   <Textarea
                     value={userContext}
@@ -1007,11 +1010,11 @@ export function HueChatbot() {
                     }}
                     placeholder="I was trying to..."
                     className={cn(
-                      "min-h-[100px] resize-none",
+                      "min-h-[60px] text-xs resize-none",
                       isOverLimit && "border-destructive"
                     )}
                   />
-                  <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center justify-between mt-1">
                     <p className={cn(
                       "text-xs",
                       isOverLimit ? "text-destructive" : "text-muted-foreground"
@@ -1020,7 +1023,7 @@ export function HueChatbot() {
                     </p>
                     {isOverLimit && (
                       <p className="text-xs text-destructive font-medium">
-                        Please keep it under {maxWords} words
+                        Max {maxWords} words
                       </p>
                     )}
                   </div>
@@ -1028,10 +1031,11 @@ export function HueChatbot() {
                 <Button
                   onClick={handleSend}
                   disabled={isOverLimit || isSubmitting}
-                  className="w-full gradient-button"
+                  className="w-full gradient-button text-xs h-8"
+                  size="sm"
                 >
-                  <Send className="h-4 w-4 mr-2" />
-                  {isSubmitting ? 'Sending...' : 'Send Report'}
+                  <Send className="h-3 w-3 mr-1.5" />
+                  {isSubmitting ? 'Sending...' : 'Send'}
                 </Button>
               </>
             ) : (
