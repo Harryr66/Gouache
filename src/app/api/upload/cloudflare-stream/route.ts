@@ -61,23 +61,56 @@ export async function POST(request: NextRequest) {
       // For large files: Use direct creator upload method
       // Step 1: Create upload URL
       console.log('📤 Creating direct creator upload URL for large file...');
+      
+      // First, verify the API token works with a simple request
+      try {
+        const verifyResponse = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${apiToken}`,
+            },
+          }
+        );
+        
+        if (!verifyResponse.ok && verifyResponse.status === 403) {
+          console.error('❌ API token verification failed with 403 - token may not have Stream permissions');
+        } else {
+          console.log('✅ API token verified - can access Stream API');
+        }
+      } catch (verifyError) {
+        console.warn('⚠️ Could not verify API token (non-critical):', verifyError);
+      }
+      
       try {
         // Direct creator upload: Create upload URL
-        // According to Cloudflare docs, we need to POST to /stream with direct_user=true
-        // and include the metadata in the request body
+        // Cloudflare Stream API: POST to /stream with direct_user=true query parameter
+        // Request body contains metadata for the upload
+        const requestUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`;
+        const requestBody = {
+          maxDurationSeconds: 3600,
+          allowedOrigins: ['*'],
+          requireSignedURLs: false,
+        };
+        
+        console.log('📤 Direct creator upload request:', {
+          url: requestUrl,
+          method: 'POST',
+          body: requestBody,
+          hasToken: !!apiToken,
+          tokenPrefix: apiToken ? apiToken.substring(0, 10) + '...' : 'MISSING',
+        });
+        
         const createUploadResponse = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
+          requestUrl,
           {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${apiToken}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              maxDurationSeconds: 3600,
-              allowedOrigins: ['*'],
-              requireSignedURLs: false,
-            }),
+            body: JSON.stringify(requestBody),
           }
         );
 
@@ -100,12 +133,15 @@ export async function POST(request: NextRequest) {
             statusText: createUploadResponse.statusText,
             error: error.errors?.[0]?.message || errorText,
             fullError: error,
+            errorText: errorText,
             responseHeaders: responseHeaders,
             requestInfo: {
-              endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
+              endpoint: requestUrl,
               method: 'POST',
+              requestBody: requestBody,
               hasToken: !!apiToken,
               tokenLength: apiToken?.length || 0,
+              tokenPrefix: apiToken ? apiToken.substring(0, 10) + '...' : 'MISSING',
               accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
             },
           });
@@ -132,10 +168,12 @@ export async function POST(request: NextRequest) {
                 parsedError: error,
                 responseHeaders: responseHeaders,
                 requestInfo: {
-                  endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
+                  endpoint: requestUrl,
                   method: 'POST',
+                  requestBody: requestBody,
                   hasToken: !!apiToken,
                   tokenLength: apiToken?.length || 0,
+                  tokenPrefix: apiToken ? apiToken.substring(0, 10) + '...' : 'MISSING',
                 },
               },
             },
