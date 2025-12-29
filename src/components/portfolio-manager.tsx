@@ -859,14 +859,49 @@ export function PortfolioManager() {
     setShowDeleteConfirm(null); // Close dialog
 
     try {
-      // Delete image from storage
+      // Delete media from Cloudflare or Firebase Storage
       if (item.imageUrl) {
-        const imageRef = ref(storage, item.imageUrl);
-        try {
-          await deleteObject(imageRef);
-        } catch (error) {
-          console.error('Error deleting image from storage:', error);
-          // Continue even if storage delete fails
+        const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
+        
+        // Check if it's a Cloudflare URL
+        const isCloudflare = item.imageUrl.includes('cloudflarestream.com') || item.imageUrl.includes('imagedelivery.net');
+        
+        if (isCloudflare) {
+          try {
+            await deleteCloudflareMediaByUrl(item.imageUrl);
+          } catch (error) {
+            console.error('Error deleting media from Cloudflare:', error);
+            // Continue even if Cloudflare delete fails
+          }
+        } else {
+          // Delete from Firebase Storage
+          try {
+            const imageRef = ref(storage, item.imageUrl);
+            await deleteObject(imageRef);
+          } catch (error) {
+            console.error('Error deleting image from Firebase Storage:', error);
+            // Continue even if storage delete fails
+          }
+        }
+      }
+      
+      // Also delete supporting images/media if they exist
+      if (item.supportingImages && Array.isArray(item.supportingImages)) {
+        const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
+        for (const url of item.supportingImages) {
+          if (!url || typeof url !== 'string') continue;
+          try {
+            const isCloudflare = url.includes('cloudflarestream.com') || url.includes('imagedelivery.net');
+            if (isCloudflare) {
+              await deleteCloudflareMediaByUrl(url);
+            } else {
+              const imageRef = ref(storage, url);
+              await deleteObject(imageRef);
+            }
+          } catch (error) {
+            console.error('Error deleting supporting media:', url, error);
+            // Continue with other files
+          }
         }
       }
 

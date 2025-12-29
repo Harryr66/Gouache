@@ -710,7 +710,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           }
         }
 
-        // Delete media files from Firebase Storage
+        // Delete media files from Cloudflare and Firebase Storage
         if (itemData) {
           const urlsToDelete: string[] = [];
 
@@ -731,11 +731,21 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             urlsToDelete.push(...itemData.mediaUrls);
           }
 
-          // Delete each file from storage
+          // Delete each file from Cloudflare or Firebase Storage
+          const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
+          
           for (const url of urlsToDelete) {
             if (!url || typeof url !== 'string') continue;
             
             try {
+              // First, try to delete from Cloudflare (if it's a Cloudflare URL)
+              const isCloudflare = url.includes('cloudflarestream.com') || url.includes('imagedelivery.net');
+              if (isCloudflare) {
+                await deleteCloudflareMediaByUrl(url);
+                continue; // Skip Firebase deletion for Cloudflare URLs
+              }
+              
+              // For Firebase Storage URLs, delete from Firebase
               let storagePath: string | null = null;
               
               // Check if it's a full Firebase Storage URL or just a path
@@ -767,7 +777,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               if (storagePath) {
                 const fileRef = ref(storage, storagePath);
                 await deleteObject(fileRef);
-                console.log('✅ Deleted file from storage:', storagePath);
+                console.log('✅ Deleted file from Firebase Storage:', storagePath);
               }
             } catch (storageError) {
               console.error('Error deleting file from storage:', url, storageError);

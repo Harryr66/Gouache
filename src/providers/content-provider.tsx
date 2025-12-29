@@ -201,6 +201,47 @@ export const ContentProvider = ({ children }: { children: ReactNode }) => {
     const postToDelete = posts.find(p => p.artworkId === artworkId);
     
     try {
+        // Delete media from Cloudflare or Firebase Storage before deleting from database
+        if (artworkToDelete) {
+          const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
+          const urlsToDelete: string[] = [];
+          
+          // Collect all media URLs
+          if (artworkToDelete.imageUrl) urlsToDelete.push(artworkToDelete.imageUrl);
+          if (artworkToDelete.videoUrl) urlsToDelete.push(artworkToDelete.videoUrl);
+          if (artworkToDelete.supportingImages && Array.isArray(artworkToDelete.supportingImages)) {
+            urlsToDelete.push(...artworkToDelete.supportingImages);
+          }
+          if (artworkToDelete.mediaUrls && Array.isArray(artworkToDelete.mediaUrls)) {
+            urlsToDelete.push(...artworkToDelete.mediaUrls);
+          }
+          
+          // Delete each URL from Cloudflare or Firebase
+          for (const url of urlsToDelete) {
+            if (!url || typeof url !== 'string') continue;
+            try {
+              const isCloudflare = url.includes('cloudflarestream.com') || url.includes('imagedelivery.net');
+              if (isCloudflare) {
+                await deleteCloudflareMediaByUrl(url);
+              } else if (url.includes('firebasestorage.googleapis.com')) {
+                // Extract Firebase Storage path and delete
+                const { ref, deleteObject } = await import('firebase/storage');
+                const { storage } = await import('@/lib/firebase');
+                const urlParts = url.split('/o/');
+                if (urlParts.length > 1) {
+                  const pathParts = urlParts[1].split('?');
+                  const storagePath = decodeURIComponent(pathParts[0]);
+                  const fileRef = ref(storage, storagePath);
+                  await deleteObject(fileRef);
+                }
+              }
+            } catch (error) {
+              console.error('Error deleting media:', url, error);
+              // Continue with other files
+            }
+          }
+        }
+        
         const batch = writeBatch(db);
         batch.delete(doc(db, 'artworks', artworkId));
         if (postToDelete) {
