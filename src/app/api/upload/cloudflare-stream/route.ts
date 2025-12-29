@@ -310,17 +310,15 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // For smaller files: Use direct multipart/form-data upload
-      const fileBuffer = await file.arrayBuffer();
-      const fileBlob = new Blob([fileBuffer], { type: file.type });
-      
+      // Create FormData and append the file directly
+      // The File from request.formData() should work in Node.js 18+
       const cloudflareFormData = new FormData();
-      cloudflareFormData.append('file', fileBlob, file.name);
+      cloudflareFormData.append('file', file, file.name);
 
       console.log('📤 Sending to Cloudflare Stream (direct upload):', {
         fileSize: file.size,
         fileName: file.name,
         fileType: file.type,
-        formDataSize: fileBuffer.byteLength,
         endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
       });
 

@@ -29,13 +29,7 @@ export function HueChatbot() {
   const router = useRouter();
   const pathname = usePathname();
   
-  // Early return: Don't show Hue on the homepage or while auth is loading
-  // This prevents Hue from appearing before sign-in/auth is completed
-  const isHomepage = !pathname || pathname === '/' || pathname === '';
-  if (isHomepage || loading) {
-    return null;
-  }
-  
+  // All hooks must be called before any conditional returns
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorReport, setErrorReport] = useState<ErrorReport | null>(null);
@@ -854,8 +848,12 @@ export function HueChatbot() {
     return () => clearInterval(typeInterval);
   }, [answer]);
 
-  // Don't render if disabled (unless error detected)
-  if (!hueEnabled && !hasError) {
+  // Early return: Don't show Hue on the homepage or while auth is loading
+  // This prevents Hue from appearing before sign-in/auth is completed
+  const isHomepage = !pathname || pathname === '/' || pathname === '';
+  
+  // Don't render if disabled (unless error detected) or on homepage or loading
+  if ((!hueEnabled && !hasError) || isHomepage || loading) {
     return null;
   }
 

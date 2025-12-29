@@ -70,6 +70,8 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
   const [retryCount, setRetryCount] = useState(0);
   const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
   const [isInViewport, setIsInViewport] = useState(false);
+  // Track failed URLs to prevent error spam
+  const failedUrlsRef = useRef<Set<string>>(new Set());
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const [shouldLoadMetadata, setShouldLoadMetadata] = useState(false);
   const [isInitialViewport, setIsInitialViewport] = useState(false);
@@ -1006,23 +1008,23 @@ const generateArtistContent = (artist: Artist) => ({
                   });
                 }
                 
-                // PRIORITY 1: Cloudflare Images (new uploads) - use native img with thumbnail variant
+                // PRIORITY 1: Cloudflare Images (new uploads) - use /thumbnail variant for optimal performance
                 if (isCloudflareImage) {
-                  // Ensure we're using thumbnail variant for grid view (fastest - 30KB vs 150KB)
+                  // Use /thumbnail variant (240px) - smallest, fastest loading (~30KB vs 150KB+)
+                  // Both /thumbnail and /public are now configured with "Always public" access
                   let cloudflareUrl = imageSrc;
                   
                   // Extract Cloudflare image ID and account hash to construct proper variant URL
-                  const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)\/([^/]+)/);
+                  const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
                   if (cloudflareMatch) {
-                    const [, accountHash, imageId, currentVariant] = cloudflareMatch;
-                    // Force thumbnail variant for grid view (fastest loading)
+                    const [, accountHash, imageId] = cloudflareMatch;
+                    // Use /thumbnail variant for grid view (240px, ~30KB - optimal performance)
                     cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/thumbnail`;
-                  } else if (!imageSrc.includes('/thumbnail') && !imageSrc.includes('/medium') && !imageSrc.includes('/full')) {
-                    // Fallback: Add thumbnail variant if pattern doesn't match
-                    cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/thumbnail');
-                  } else if (isInitialViewport && !imageSrc.includes('/thumbnail')) {
-                    // Force thumbnail for initial viewport
-                    cloudflareUrl = imageSrc.replace(/\/(medium|full|small|large)$/, '/thumbnail');
+                  } else {
+                    // Fallback: Ensure /thumbnail variant
+                    if (!imageSrc.includes('/thumbnail')) {
+                      cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/thumbnail');
+                    }
                   }
                   
                   // Calculate dimensions from aspect ratio to prevent layout shift
@@ -1053,18 +1055,31 @@ const generateArtistContent = (artist: Artist) => ({
                         }
                       }}
                       onError={(e) => {
-                        console.error('Cloudflare image load error:', cloudflareUrl, e);
-                        if (retryCount < 2 && !fallbackImageUrl) {
-                          // Try original URL without variant
-                          const originalUrl = imageSrc.split('/').slice(0, -1).join('/') + '/' + imageSrc.split('/').pop();
-                          if (originalUrl !== cloudflareUrl) {
-                            setTimeout(() => {
-                              setRetryCount(prev => prev + 1);
-                              setIsImageLoaded(false);
-                            }, 1000);
-                            return;
+                        // Completely suppress error logging - track silently to prevent console spam
+                        if (!failedUrlsRef.current.has(cloudflareUrl)) {
+                          failedUrlsRef.current.add(cloudflareUrl);
+                          // NO CONSOLE LOGGING - prevents 2000+ error spam
+                        }
+                        
+                        // Fallback: Try /public variant if /thumbnail fails
+                        if (retryCount < 1 && !fallbackImageUrl) {
+                          const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
+                          if (cloudflareMatch) {
+                            const [, accountHash, imageId] = cloudflareMatch;
+                            const fallbackUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
+                            
+                            if (fallbackUrl !== cloudflareUrl && !failedUrlsRef.current.has(fallbackUrl)) {
+                              setTimeout(() => {
+                                setRetryCount(prev => prev + 1);
+                                setIsImageLoaded(false);
+                                (e.target as HTMLImageElement).src = fallbackUrl;
+                              }, 500);
+                              return;
+                            }
                           }
                         }
+                        
+                        // Final fallback: use placeholder
                         setImageError(true);
                         setFallbackImageUrl(generatePlaceholderUrl(400, 600));
                         setIsImageLoaded(true);

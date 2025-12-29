@@ -1786,8 +1786,8 @@ function DiscoverPageContent() {
       // PRIORITY: Cloudflare images first (new uploads), Firebase only for legacy
       let preloadUrl = imageUrl;
       if (imageUrl.includes('imagedelivery.net')) {
-        // Cloudflare: Use thumbnail variant (smallest, fastest - 30KB)
-        const cloudflareMatch = imageUrl.match(/imagedelivery\.net\/([^/]+)\/([^/]+)\/([^/]+)/);
+        // Cloudflare: Use /thumbnail variant (240px, ~30KB - fastest loading)
+        const cloudflareMatch = imageUrl.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
         if (cloudflareMatch) {
           const [, accountHash, imageId] = cloudflareMatch;
           preloadUrl = `https://imagedelivery.net/${accountHash}/${imageId}/thumbnail`;
