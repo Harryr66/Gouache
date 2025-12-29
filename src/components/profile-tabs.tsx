@@ -855,6 +855,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       try {
         let deletedCount = 0;
         let errorCount = 0;
+        const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
 
         // Process items in batches (Firestore batch limit is 500)
         const batchSize = 500;
@@ -864,6 +865,55 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           
           for (const item of batchItems) {
             try {
+              // First, delete media files from Cloudflare or Firebase Storage
+              if (item.type === 'artwork') {
+                try {
+                  const artworkDoc = await getDoc(doc(db, 'artworks', item.id));
+                  if (artworkDoc.exists()) {
+                    const itemData = artworkDoc.data();
+                    const urlsToDelete: string[] = [];
+                    
+                    // Collect all media URLs
+                    if (itemData.imageUrl) urlsToDelete.push(itemData.imageUrl);
+                    if (itemData.videoUrl) urlsToDelete.push(itemData.videoUrl);
+                    if (itemData.supportingImages && Array.isArray(itemData.supportingImages)) {
+                      urlsToDelete.push(...itemData.supportingImages);
+                    }
+                    if (itemData.supportingMedia && Array.isArray(itemData.supportingMedia)) {
+                      urlsToDelete.push(...itemData.supportingMedia);
+                    }
+                    if (itemData.mediaUrls && Array.isArray(itemData.mediaUrls)) {
+                      urlsToDelete.push(...itemData.mediaUrls);
+                    }
+                    
+                    // Delete each URL from Cloudflare or Firebase
+                    for (const url of urlsToDelete) {
+                      if (!url || typeof url !== 'string') continue;
+                      try {
+                        const isCloudflare = url.includes('cloudflarestream.com') || url.includes('imagedelivery.net');
+                        if (isCloudflare) {
+                          await deleteCloudflareMediaByUrl(url);
+                        } else if (url.includes('firebasestorage.googleapis.com')) {
+                          const urlParts = url.split('/o/');
+                          if (urlParts.length > 1) {
+                            const pathParts = urlParts[1].split('?');
+                            const storagePath = decodeURIComponent(pathParts[0]);
+                            const fileRef = ref(storage, storagePath);
+                            await deleteObject(fileRef);
+                          }
+                        }
+                      } catch (mediaError) {
+                        console.error('Error deleting media:', url, mediaError);
+                        // Continue with other files
+                      }
+                    }
+                  }
+                } catch (mediaError) {
+                  console.error('Error fetching artwork for media deletion:', item.id, mediaError);
+                  // Continue with Firestore deletion even if media deletion fails
+                }
+              }
+              
               // Mark as deleted in Firestore
               if (item.type === 'artwork') {
           const artworkRef = doc(db, 'artworks', item.id);
