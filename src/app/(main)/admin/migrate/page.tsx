@@ -207,7 +207,7 @@ export default function MigratePage() {
           {/* Start Migration */}
           <Button
             onClick={startMigration}
-            disabled={migrating || (status && status.needsMigration === 0)}
+            disabled={migrating || (status?.needsMigration === 0)}
             className="w-full"
             size="lg"
           >
