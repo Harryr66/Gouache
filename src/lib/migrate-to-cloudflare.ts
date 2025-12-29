@@ -57,11 +57,31 @@ export function extractFirebasePath(url: string): string | null {
 /**
  * Download a file from Firebase Storage and convert to File object
  */
-async function downloadFileFromFirebase(storagePath: string, fileName: string): Promise<File> {
+async function downloadFileFromFirebase(storagePath: string, fileName: string, mimeType?: string): Promise<File> {
   const fileRef = ref(storage, storagePath);
   const bytes = await getBytes(fileRef);
-  const blob = new Blob([bytes]);
-  return new File([blob], fileName, { type: blob.type || 'application/octet-stream' });
+  
+  // Try to determine MIME type from file extension if not provided
+  let detectedType = mimeType;
+  if (!detectedType) {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (ext === 'mp4' || ext === 'mov' || ext === 'webm') {
+      detectedType = `video/${ext === 'mov' ? 'quicktime' : ext}`;
+    } else if (ext === 'jpg' || ext === 'jpeg') {
+      detectedType = 'image/jpeg';
+    } else if (ext === 'png') {
+      detectedType = 'image/png';
+    } else if (ext === 'gif') {
+      detectedType = 'image/gif';
+    } else if (ext === 'webp') {
+      detectedType = 'image/webp';
+    } else {
+      detectedType = 'application/octet-stream';
+    }
+  }
+  
+  const blob = new Blob([bytes], { type: detectedType });
+  return new File([blob], fileName, { type: detectedType });
 }
 
 /**
@@ -91,7 +111,7 @@ async function migrateArtworkMedia(artworkId: string, artworkData: any): Promise
       const storagePath = extractFirebasePath(artworkData.imageUrl);
       if (storagePath) {
         const fileName = storagePath.split('/').pop() || 'image.jpg';
-        const file = await downloadFileFromFirebase(storagePath, fileName);
+        const file = await downloadFileFromFirebase(storagePath, fileName, 'image/jpeg');
         const { url } = await uploadToCloudflare(file, false);
         updates.imageUrl = url;
         hasUpdates = true;
@@ -104,7 +124,7 @@ async function migrateArtworkMedia(artworkId: string, artworkData: any): Promise
       const storagePath = extractFirebasePath(artworkData.videoUrl);
       if (storagePath) {
         const fileName = storagePath.split('/').pop() || 'video.mp4';
-        const file = await downloadFileFromFirebase(storagePath, fileName);
+        const file = await downloadFileFromFirebase(storagePath, fileName, 'video/mp4');
         const { url } = await uploadToCloudflare(file, true);
         updates.videoUrl = url;
         hasUpdates = true;
@@ -120,7 +140,7 @@ async function migrateArtworkMedia(artworkId: string, artworkData: any): Promise
             const storagePath = extractFirebasePath(url);
             if (storagePath) {
               const fileName = storagePath.split('/').pop() || 'image.jpg';
-              const file = await downloadFileFromFirebase(storagePath, fileName);
+              const file = await downloadFileFromFirebase(storagePath, fileName, 'image/jpeg');
               const { url: newUrl } = await uploadToCloudflare(file, false);
               return newUrl;
             }
