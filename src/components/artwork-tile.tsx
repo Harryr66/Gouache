@@ -111,12 +111,10 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
       // Handle both formats:
       // 1. https://customer-{accountId}.cloudflarestream.com/{videoId}
       // 2. https://videodelivery.net/{videoId}
-      let videoId: string | null = null;
-      let accountId: string | null = null;
       
       // CRITICAL FIX: Always use environment variable account ID, not the one in the URL
       // The account ID in stored URLs might be wrong (from old uploads or different accounts)
-      accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || null;
+      let accountId: string | null = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || null;
       
       // Extract video ID from various URL formats
       let videoId: string | null = null;

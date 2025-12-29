@@ -356,11 +356,11 @@ export function UploadArtworkBasic() {
       
       // Generate blur placeholder for first image (for instant visual feedback)
       let blurPlaceholderBase64: string | undefined;
-      const firstImageFile = processedFiles.find(f => f.type.startsWith('image/'));
-      if (firstImageFile) {
+      const firstImageFileForBlur = processedFiles.find(f => f.type.startsWith('image/'));
+      if (firstImageFileForBlur) {
         try {
           setCurrentUploadingFile('Generating blur placeholder...');
-          blurPlaceholderBase64 = await generateBlurPlaceholder(firstImageFile);
+          blurPlaceholderBase64 = await generateBlurPlaceholder(firstImageFileForBlur);
         } catch (error) {
           console.warn('Failed to generate blur placeholder:', error);
         }
