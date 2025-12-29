@@ -9,6 +9,7 @@ import { LikesProvider } from '@/providers/likes-provider';
 import { VideoControlProvider } from '@/providers/video-control-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { HueChatbot } from '@/components/hue-chatbot';
+import { CloudflarePreconnect } from '@/components/cloudflare-preconnect';
 import { cn } from '@/lib/utils';
 
 const fontHeadline = Belleza({
@@ -72,6 +73,7 @@ export default function RootLayout({
               <CourseProvider>
                 <DiscoverSettingsProvider>
                   <VideoControlProvider>
+                    <CloudflarePreconnect />
                     {children}
                     <Toaster />
                     <HueChatbot />
