@@ -1718,9 +1718,10 @@ function DiscoverPageContent() {
       
       // Calculate column count for masonry layout based on screen width
       let newColumnCount = 2; // mobile default
-      if (width >= 1280) newColumnCount = 5; // xl
-      else if (width >= 1024) newColumnCount = 4; // lg
-      else if (width >= 768) newColumnCount = 3; // md
+      if (width >= 1536) newColumnCount = 6; // 2xl - large desktop
+      else if (width >= 1280) newColumnCount = 5; // xl - desktop
+      else if (width >= 1024) newColumnCount = 4; // lg - large tablet/small desktop
+      else if (width >= 768) newColumnCount = 3; // md - tablet
       setColumnCount(newColumnCount);
       
       // Ensure visibleCount is a multiple of itemsPerRow when it changes
@@ -1790,9 +1791,9 @@ function DiscoverPageContent() {
         const cloudflareMatch = imageUrl.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
         if (cloudflareMatch) {
           const [, accountHash, imageId] = cloudflareMatch;
-          preloadUrl = `https://imagedelivery.net/${accountHash}/${imageId}/thumbnail`;
+          preloadUrl = `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`;
         } else {
-          preloadUrl = imageUrl.replace(/\/[^/]+$/, '/thumbnail');
+          preloadUrl = imageUrl.replace(/\/[^/]+$/, '/Thumbnail');
         }
       } else if (imageUrl.includes('firebasestorage') || imageUrl.includes('firebase')) {
         // Firebase (legacy): Use Next.js Image Optimization API with 240px

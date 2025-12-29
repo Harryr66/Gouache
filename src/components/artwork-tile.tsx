@@ -1018,12 +1018,13 @@ const generateArtistContent = (artist: Artist) => ({
                   const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
                   if (cloudflareMatch) {
                     const [, accountHash, imageId] = cloudflareMatch;
-                    // Use /thumbnail variant for grid view (240px, ~30KB - optimal performance)
-                    cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/thumbnail`;
+                    // Use /Thumbnail variant (capital T - matches Cloudflare variant name exactly)
+                    // Variant names are case-sensitive in Cloudflare
+                    cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`;
                   } else {
-                    // Fallback: Ensure /thumbnail variant
-                    if (!imageSrc.includes('/thumbnail')) {
-                      cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/thumbnail');
+                    // Fallback: Ensure /Thumbnail variant (capital T)
+                    if (!imageSrc.includes('/Thumbnail') && !imageSrc.includes('/thumbnail')) {
+                      cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/Thumbnail');
                     }
                   }
                   
@@ -1066,7 +1067,10 @@ const generateArtistContent = (artist: Artist) => ({
                           const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
                           if (cloudflareMatch) {
                             const [, accountHash, imageId] = cloudflareMatch;
-                            const fallbackUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
+                            // Try /Thumbnail first (capital T), then /public
+                            const fallbackUrl = cloudflareUrl.includes('/Thumbnail') 
+                              ? `https://imagedelivery.net/${accountHash}/${imageId}/public`
+                              : `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`;
                             
                             if (fallbackUrl !== cloudflareUrl && !failedUrlsRef.current.has(fallbackUrl)) {
                               setTimeout(() => {
