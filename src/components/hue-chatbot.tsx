@@ -863,9 +863,19 @@ export function HueChatbot() {
       className="fixed z-[9999] pointer-events-none"
       style={{
         ...(isExpanded ? {
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
+          // For error reports: position in bottom-right corner, smaller and subtle
+          // For normal chat: center on screen
+          ...(hasError ? {
+            right: '1rem',
+            bottom: '1rem',
+            left: 'auto',
+            top: 'auto',
+            transform: 'none',
+          } : {
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+          })
         } : {
           left: `${position.x}px`,
           top: `${position.y}px`,
@@ -917,8 +927,10 @@ export function HueChatbot() {
       {/* Expanded Error Report Card */}
       {isExpanded && (
         <Card className={cn(
-          "pointer-events-auto w-[90vw] max-w-md shadow-2xl border-2 transition-all duration-300",
-          hasError ? "border-red-500/50" : "border-primary/50"
+          "pointer-events-auto shadow-2xl border-2 transition-all duration-300",
+          hasError 
+            ? "border-red-500/30 w-[320px] max-w-[calc(100vw-2rem)]" // Smaller, subtle for errors
+            : "border-primary/50 w-[90vw] max-w-md" // Normal size for chat
         )}>
           <CardHeader className="relative">
             <div className="flex items-center justify-between gap-2">
