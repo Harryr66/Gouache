@@ -13,7 +13,7 @@ interface ViewSelectorProps {
 
 export function ViewSelector({ view, onViewChange, className }: ViewSelectorProps) {
   return (
-    <div className={cn('relative flex items-center bg-muted rounded-md p-1', className)}>
+    <div className={cn('relative flex items-center bg-muted rounded-l-none p-1', className)}>
       <button
         onClick={() => onViewChange('list')}
         className={cn(

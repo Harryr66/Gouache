@@ -2115,8 +2115,8 @@ function DiscoverPageContent() {
           }}
           className="mb-6"
         >
-          <div className="flex items-center gap-3 w-full">
-            <TabsList className="flex flex-1 gap-0">
+          <div className="flex items-center gap-0 w-full">
+            <TabsList className="flex flex-1 gap-0 rounded-r-none">
               <TabsTrigger value="artwork" className="flex items-center justify-center gap-2 flex-1 px-4 md:px-6 h-10">
                 <Palette className="h-4 w-4" />
                 <span className="hidden sm:inline">Discover</span>
@@ -2133,7 +2133,7 @@ function DiscoverPageContent() {
                 <Button
                   variant="outline"
                   onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                  className="shrink-0 h-10 px-4 md:px-6"
+                  className="shrink-0 h-10 px-4 md:px-6 rounded-l-none border-l-0"
                 >
                   <Filter className="h-4 w-4" />
                 </Button>
@@ -2141,7 +2141,7 @@ function DiscoverPageContent() {
                 <Button
                   variant="outline"
                   onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
-                  className="shrink-0 h-10 px-4 md:px-6"
+                  className="shrink-0 h-10 px-4 md:px-6 rounded-l-none border-l-0"
                 >
                   <Filter className="h-4 w-4" />
                 </Button>
@@ -2155,11 +2155,11 @@ function DiscoverPageContent() {
             <div className="mb-6 space-y-4">
               {/* Mobile: Filter and View Toggle - mirror top row layout (50/50 split) */}
               {isMobile && (
-                <div className="flex items-center gap-2 w-full">
+                <div className="flex items-center gap-0 w-full">
                   <Button
                     variant="outline"
                     onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                    className="flex-1 h-10 px-4"
+                    className="flex-1 h-10 px-4 rounded-r-none border-r-0"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
