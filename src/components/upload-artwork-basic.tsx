@@ -1237,28 +1237,32 @@ export function UploadArtworkBasic() {
                   </div>
                   
                   {files.length > 1 && (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground text-center">
-                        First file is the main display. Others will appear in carousel.
-                      </p>
-                      <div className="flex items-center space-x-2 p-3 border rounded-lg bg-muted/50">
+                    <div className="space-y-3 p-4 border-2 border-primary/30 rounded-lg bg-primary/10">
+                      <div className="flex items-start space-x-3">
                         <Checkbox
                           id="bulkUploadSeparately"
                           checked={bulkUploadSeparately}
                           onCheckedChange={(checked) => setBulkUploadSeparately(checked === true)}
+                          className="h-5 w-5 mt-0.5"
                         />
-                        <Label
-                          htmlFor="bulkUploadSeparately"
-                          className="text-sm font-normal cursor-pointer"
-                        >
-                          Bulk upload separately
-                        </Label>
+                        <div className="flex-1 space-y-1">
+                          <Label
+                            htmlFor="bulkUploadSeparately"
+                            className="text-sm font-semibold cursor-pointer block"
+                          >
+                            Upload each file as separate artwork
+                          </Label>
+                          {bulkUploadSeparately ? (
+                            <p className="text-xs text-muted-foreground">
+                              ✓ Each file will be uploaded as a separate artwork with the same title, description, and tags.
+                            </p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              All files will be combined into one artwork. First file is the main display, others will appear in carousel.
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      {bulkUploadSeparately && (
-                        <p className="text-xs text-muted-foreground text-center">
-                          Each file will be uploaded as a separate artwork with the same title and tags.
-                        </p>
-                      )}
                     </div>
                   )}
                 </div>
