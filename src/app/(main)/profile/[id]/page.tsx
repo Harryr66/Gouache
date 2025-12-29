@@ -218,7 +218,13 @@ export default function ArtistProfilePage() {
     notFound();
   }
 
-  const isOwnProfile = user?.id === artistId;
+  // Compare against the actual profile user ID, not the URL parameter (which might be a handle)
+  const isOwnProfile = user?.id === profileUser.id;
+  
+  // Safety check: ensure profileUser matches the requested artistId
+  if (profileUser.id !== artistId && !profileUser.username?.toLowerCase().includes(artistId.toLowerCase())) {
+    console.warn('⚠️ Profile ID/username mismatch! Requested:', artistId, 'Got profile ID:', profileUser.id, 'Got username:', profileUser.username);
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
