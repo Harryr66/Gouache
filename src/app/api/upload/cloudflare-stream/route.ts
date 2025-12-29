@@ -55,14 +55,16 @@ export async function POST(request: NextRequest) {
 
     let uploadResponse: Response | null = null;
     let videoId: string | null = null;
-    let directCreatorUploadSucceeded = false;
 
-    // Try direct creator upload first for large files
+    // Use direct creator upload for large files
     if (useDirectCreatorUpload) {
       // For large files: Use direct creator upload method
       // Step 1: Create upload URL
       console.log('📤 Creating direct creator upload URL for large file...');
       try {
+        // Direct creator upload: Create upload URL
+        // According to Cloudflare docs, we need to POST to /stream with direct_user=true
+        // and include the metadata in the request body
         const createUploadResponse = await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
           {
@@ -74,40 +76,71 @@ export async function POST(request: NextRequest) {
             body: JSON.stringify({
               maxDurationSeconds: 3600,
               allowedOrigins: ['*'],
+              requireSignedURLs: false,
             }),
           }
         );
 
         if (!createUploadResponse.ok) {
           const errorText = await createUploadResponse.text();
+          const responseHeaders: Record<string, string> = {};
+          createUploadResponse.headers.forEach((value, key) => {
+            responseHeaders[key] = value;
+          });
+          
           let error;
           try {
             error = JSON.parse(errorText);
           } catch {
             error = { errors: [{ message: errorText }] };
           }
+          
           console.error('❌ Failed to create direct creator upload URL:', {
             status: createUploadResponse.status,
+            statusText: createUploadResponse.statusText,
             error: error.errors?.[0]?.message || errorText,
-            hint: 'Falling back to direct upload method',
+            fullError: error,
+            responseHeaders: responseHeaders,
+            requestInfo: {
+              endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
+              method: 'POST',
+              hasToken: !!apiToken,
+              tokenLength: apiToken?.length || 0,
+              accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
+            },
           });
           
-          // If 403 or permission error, fall back to direct upload
-          // This can happen if the API token doesn't have permission for direct_user=true
-          // or if the account doesn't have direct creator uploads enabled
-          if (createUploadResponse.status === 403 || createUploadResponse.status === 401) {
-            console.log('⚠️ Direct creator upload not available (403/401), falling back to direct upload...');
-            // Will fall through to direct upload below
-          } else {
-            return NextResponse.json(
-              { 
-                error: `Failed to create upload URL: ${error.errors?.[0]?.message || errorText}`,
-                status: createUploadResponse.status,
-                hint: 'If this is a 403, your API token may not have permission for direct creator uploads. Try using direct upload instead.',
-              },
-              { status: createUploadResponse.status }
-            );
+          // Return detailed error with instructions
+          let errorMessage = `Failed to create direct creator upload URL: ${error.errors?.[0]?.message || errorText}`;
+          let hint = '';
+          
+          if (createUploadResponse.status === 403) {
+            hint = '403 Forbidden - Your API token may not have permission for direct creator uploads. ' +
+                   'Ensure your API token has "Stream:Edit" permission and that direct creator uploads are enabled in your Cloudflare account. ' +
+                   'Check: My Profile → API Tokens → Verify token has "Account.Cloudflare Stream.Edit" permission.';
+          } else if (createUploadResponse.status === 401) {
+            hint = '401 Unauthorized - Invalid API token. Verify your NEXT_PUBLIC_CLOUDFLARE_STREAM_API_TOKEN is correct.';
           }
+          
+          return NextResponse.json(
+            { 
+              error: errorMessage,
+              status: createUploadResponse.status,
+              hint: hint,
+              debug: {
+                rawErrorText: errorText,
+                parsedError: error,
+                responseHeaders: responseHeaders,
+                requestInfo: {
+                  endpoint: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
+                  method: 'POST',
+                  hasToken: !!apiToken,
+                  tokenLength: apiToken?.length || 0,
+                },
+              },
+            },
+            { status: createUploadResponse.status }
+          );
         } else {
           // Success - get the upload URL and video ID
           const { result } = await createUploadResponse.json();
@@ -132,63 +165,25 @@ export async function POST(request: NextRequest) {
               statusText: putResponse.statusText,
               errorText,
             });
-            // Fall back to direct upload on PUT failure
-            console.log('⚠️ Failed to upload to signed URL, falling back to direct upload...');
-          } else {
-            // Success - we're done with direct creator upload
-            console.log('✅ File uploaded to signed URL, videoId:', videoId);
-            directCreatorUploadSucceeded = true;
+            return NextResponse.json(
+              { error: `Failed to upload video to signed URL: ${errorText || putResponse.statusText}` },
+              { status: putResponse.status }
+            );
           }
+
+          // Success - we're done with direct creator upload
+          console.log('✅ File uploaded to signed URL, videoId:', videoId);
         }
       } catch (fetchError: any) {
         console.error('❌ Error in direct creator upload:', {
           error: fetchError?.message,
           stack: fetchError?.stack,
-        });
-        // On error, fall back to direct upload
-        console.log('⚠️ Error in direct creator upload, falling back to direct upload...');
-      }
-    }
-    
-    // Use direct upload if direct creator upload failed or wasn't attempted
-    if (!directCreatorUploadSucceeded) {
-
-        // Step 2: Upload file to the signed URL
-        console.log('📤 Uploading file to signed URL...');
-        const fileBuffer = await file.arrayBuffer();
-        const putResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          body: fileBuffer,
-          headers: {
-            'Content-Type': file.type,
-          },
-        });
-
-        if (!putResponse.ok) {
-          const errorText = await putResponse.text();
-          console.error('❌ Failed to upload to signed URL:', {
-            status: putResponse.status,
-            statusText: putResponse.statusText,
-            errorText,
-          });
-          return NextResponse.json(
-            { error: `Failed to upload video: ${errorText || putResponse.statusText}` },
-            { status: putResponse.status }
-          );
-        }
-
-        // For direct creator upload, we already have the videoId
-        // Skip the response parsing and go straight to waiting for processing
-        console.log('✅ File uploaded to signed URL, videoId:', videoId);
-      } catch (fetchError: any) {
-        console.error('❌ Error in direct creator upload:', {
-          error: fetchError?.message,
-          stack: fetchError?.stack,
+          name: fetchError?.name,
         });
         return NextResponse.json(
           { 
-            error: `Network error: ${fetchError?.message || 'Unknown error'}`,
-            ...(process.env.NODE_ENV === 'development' && { details: fetchError?.stack })
+            error: `Direct creator upload failed: ${fetchError?.message || 'Unknown error'}`,
+            details: process.env.NODE_ENV === 'development' ? fetchError?.stack : undefined
           },
           { status: 500 }
         );
