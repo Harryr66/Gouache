@@ -6,7 +6,17 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // Parse request body - handle both JSON and form data
+    let body: any = {};
+    const contentType = request.headers.get('content-type') || '';
+    
+    if (contentType.includes('application/json')) {
+      body = await request.json();
+    } else {
+      // If no body, use defaults
+      body = {};
+    }
+    
     const { maxDurationSeconds = 3600, allowedOrigins = ['*'] } = body;
 
     const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
@@ -20,6 +30,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Create direct creator upload URL
+    const requestBody = {
+      maxDurationSeconds,
+      allowedOrigins,
+      requireSignedURLs: false,
+    };
+    
+    console.log('📤 Creating direct creator upload URL:', {
+      accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
+      hasToken: !!apiToken,
+      requestBody: requestBody,
+    });
+    
     const response = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`,
       {
@@ -28,11 +50,7 @@ export async function POST(request: NextRequest) {
           'Authorization': `Bearer ${apiToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          maxDurationSeconds,
-          allowedOrigins,
-          requireSignedURLs: false,
-        }),
+        body: JSON.stringify(requestBody),
       }
     );
 
@@ -44,9 +62,25 @@ export async function POST(request: NextRequest) {
       } catch {
         error = { errors: [{ message: errorText }] };
       }
+      
+      console.error('❌ Failed to create direct creator upload URL:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: error.errors?.[0]?.message || errorText,
+        fullError: error,
+        requestBody: requestBody,
+      });
 
       return NextResponse.json(
-        { error: error.errors?.[0]?.message || errorText },
+        { 
+          error: error.errors?.[0]?.message || errorText,
+          debug: {
+            status: response.status,
+            errorText: errorText,
+            fullError: error,
+            requestBody: requestBody,
+          }
+        },
         { status: response.status }
       );
     }

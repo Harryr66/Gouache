@@ -46,20 +46,37 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
 
   try {
     // Step 1: Get upload URL from our API (this is a small request, no file)
+    const requestBody = {
+      maxDurationSeconds: 3600,
+      allowedOrigins: ['*'],
+    };
+    
+    console.log('📤 Requesting upload URL from API...', requestBody);
+    
     const createUrlResponse = await fetch('/api/upload/cloudflare-stream/create-upload-url', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        maxDurationSeconds: 3600,
-        allowedOrigins: ['*'],
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!createUrlResponse.ok) {
-      const error = await createUrlResponse.json();
-      throw new Error(`Failed to create upload URL: ${error.error || 'Unknown error'}`);
+      let error;
+      try {
+        error = await createUrlResponse.json();
+      } catch {
+        const errorText = await createUrlResponse.text();
+        error = { error: errorText || `HTTP ${createUrlResponse.status}` };
+      }
+      
+      console.error('❌ Failed to create upload URL:', {
+        status: createUrlResponse.status,
+        error: error.error || error.message,
+        debug: error.debug,
+      });
+      
+      throw new Error(`Failed to create upload URL: ${error.error || error.message || 'Unknown error'}`);
     }
 
     const { uploadURL, videoId } = await createUrlResponse.json();
