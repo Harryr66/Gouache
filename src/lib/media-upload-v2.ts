@@ -81,19 +81,38 @@ export async function uploadMedia(
           error = { error: `HTTP ${response.status}: ${response.statusText}` };
         }
         
-        // Log full error details for debugging
-        console.error(`⚠️ uploadMedia: Cloudflare Stream API returned error:`, {
+        // Extract ALL information from the error response
+        const fullErrorDetails = {
+          // Response info
           status: response.status,
           statusText: response.statusText,
+          responseHeaders: Object.fromEntries(response.headers.entries()),
+          
+          // Error info
           error: error.error || error.message || errorText,
           rawErrorText: errorText,
           fullError: error,
-          // Include ALL debug info if available - this is critical for debugging
-          debug: (error as any).debug,
-        });
+          
+          // Debug info from API (if available)
+          debug: (error as any).debug || {},
+          
+          // Request info
+          requestUrl: '/api/upload/cloudflare-stream?v=2',
+          requestMethod: 'POST',
+        };
         
-        // Also log the complete error object to console for easy inspection
-        console.error(`🔍 COMPLETE ERROR OBJECT:`, JSON.stringify(error, null, 2));
+        // Log full error details for debugging
+        console.error(`⚠️ uploadMedia: Cloudflare Stream API returned error:`, fullErrorDetails);
+        
+        // Log the COMPLETE error object as formatted JSON
+        console.error(`🔍 COMPLETE ERROR OBJECT (formatted JSON):`, JSON.stringify(fullErrorDetails, null, 2));
+        
+        // Also log just the debug object if it exists
+        if ((error as any).debug && Object.keys((error as any).debug).length > 0) {
+          console.error(`🔍 DEBUG OBJECT FROM API:`, JSON.stringify((error as any).debug, null, 2));
+        } else {
+          console.error(`⚠️ No debug object in error response - API may not be returning full error details`);
+        }
         // Fall through to Firebase
       }
     } catch (error: any) {
