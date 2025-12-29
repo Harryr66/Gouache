@@ -49,18 +49,27 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     
     console.log('📤 Requesting upload URL from API...', requestBody);
     
-    const createUrlResponse = await fetch('/api/upload/cloudflare-stream/create-upload-url', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
+    let createUrlResponse: Response;
+    let jsonClone: Response;
+    let textClone: Response;
+    
+    try {
+      createUrlResponse = await fetch('/api/upload/cloudflare-stream/create-upload-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
 
-    // Clone responses IMMEDIATELY before any checks to prevent "body stream already read" errors
-    // Create separate clones for JSON and text attempts
-    const jsonClone = createUrlResponse.clone();
-    const textClone = createUrlResponse.clone();
+      // Clone responses IMMEDIATELY after fetch, before ANY other code runs
+      // This prevents interceptors or other code from consuming the body first
+      jsonClone = createUrlResponse.clone();
+      textClone = createUrlResponse.clone();
+    } catch (fetchError: any) {
+      console.error('❌ Network error creating upload URL:', fetchError);
+      throw new Error(`Network error: ${fetchError.message || 'Failed to connect to server'}`);
+    }
 
     if (!createUrlResponse.ok) {
       let error: any = {};
