@@ -57,23 +57,24 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
       body: JSON.stringify(requestBody),
     });
 
+    // Clone response immediately to prevent "body stream already read" errors
+    // This ensures we can read it even if something else (like Hue interceptor) tries to read it
+    const responseClone = createUrlResponse.clone();
+
     if (!createUrlResponse.ok) {
-      // Clone response BEFORE any read attempts to avoid "body stream already read" error
-      // We need separate clones for JSON and text attempts
       let error: any = {};
       
       try {
-        // Try to read as JSON first
-        const jsonClone = createUrlResponse.clone();
-        error = await jsonClone.json();
+        // Try to read as JSON from the clone
+        error = await responseClone.json();
       } catch (jsonError) {
-        // If JSON parsing fails, try text from a separate clone
+        // If JSON parsing fails, try text from a fresh clone
         try {
           const textClone = createUrlResponse.clone();
           const errorText = await textClone.text();
           error = { error: errorText || `HTTP ${createUrlResponse.status}` };
         } catch (textError) {
-          // If both fail, use status info only
+          // If both fail, use status info only (don't try to read body)
           error = { error: `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText || 'Forbidden'}` };
         }
       }
@@ -88,7 +89,8 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
       throw new Error(`Failed to create upload URL: ${error.error || error.message || 'Unknown error'}`);
     }
 
-    const { uploadURL, videoId } = await createUrlResponse.json();
+    // Use the clone for reading the successful response too
+    const { uploadURL, videoId } = await responseClone.json();
 
     // Step 2: Upload file directly to Cloudflare (bypassing Vercel)
     // According to Cloudflare docs: Use POST with multipart/form-data
