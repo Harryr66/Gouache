@@ -441,6 +441,9 @@ export interface Artwork {
   description?: string;
   imageUrl: string;
   imageAiHint: string;
+  imageWidth?: number; // Pixel width for HTML attributes (prevents layout shift)
+  imageHeight?: number; // Pixel height for HTML attributes (prevents layout shift)
+  blurPlaceholder?: string; // Base64-encoded blur placeholder for instant visual feedback (Pinterest/Instagram style)
   discussionId?: string;
   tags: string[];
   price?: number;

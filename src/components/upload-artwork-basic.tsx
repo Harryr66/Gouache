@@ -335,8 +335,10 @@ export function UploadArtworkBasic() {
     setUploading(true);
 
     try {
-      // Step 1: Compress images before upload (videos stay as-is for now)
+      // Step 1: Compress images and generate blur placeholders before upload
       setCurrentUploadingFile('Preparing files...');
+      const { generateBlurPlaceholder } = await import('@/lib/blur-placeholder');
+      
       const processedFiles = await Promise.all(
         files.map(async (file) => {
           if (file.type.startsWith('image/')) {
@@ -351,6 +353,18 @@ export function UploadArtworkBasic() {
           return file; // Videos not compressed yet
         })
       );
+      
+      // Generate blur placeholder for first image (for instant visual feedback)
+      let blurPlaceholderBase64: string | undefined;
+      const firstImageFile = processedFiles.find(f => f.type.startsWith('image/'));
+      if (firstImageFile) {
+        try {
+          setCurrentUploadingFile('Generating blur placeholder...');
+          blurPlaceholderBase64 = await generateBlurPlaceholder(firstImageFile);
+        } catch (error) {
+          console.warn('Failed to generate blur placeholder:', error);
+        }
+      }
 
       // Step 2: Use thumbnail (priority: custom file > extracted from selector > extract now)
       let thumbnailToUpload: File | null = thumbnailFile; // Custom uploaded file takes priority
@@ -452,6 +466,30 @@ export function UploadArtworkBasic() {
       // Create artwork item for discover feed (always created, regardless of portfolio toggle)
       // Portfolio array update happens separately if toggle is enabled
       const primaryThumbnailUrl = thumbnailUrls[0];
+      
+      // Get image dimensions for first image to prevent layout shift
+      let imageWidth: number | undefined;
+      let imageHeight: number | undefined;
+      const firstImageFile = processedFiles.find(f => f.type.startsWith('image/'));
+      if (firstImageFile) {
+        try {
+          const img = new Image();
+          const objectUrl = URL.createObjectURL(firstImageFile);
+          await new Promise((resolve, reject) => {
+            img.onload = () => {
+              imageWidth = img.naturalWidth;
+              imageHeight = img.naturalHeight;
+              URL.revokeObjectURL(objectUrl);
+              resolve(null);
+            };
+            img.onerror = reject;
+            img.src = objectUrl;
+          });
+        } catch (error) {
+          console.warn('Failed to get image dimensions:', error);
+        }
+      }
+      
       const artworkItem: any = {
         id: `artwork-${Date.now()}`,
         ...(primaryMediaType === 'image' && { imageUrl: primaryMediaUrl }), // For backward compatibility
@@ -464,6 +502,9 @@ export function UploadArtworkBasic() {
         ...(supportingMedia.length > 0 && { supportingImages: supportingMedia }),
         ...(supportingMedia.length > 0 && { supportingMedia: supportingMedia }),
         ...(supportingMediaTypes.length > 0 && { supportingMediaTypes: supportingMediaTypes }),
+        ...(imageWidth && { imageWidth }), // Add dimensions to prevent layout shift
+        ...(imageHeight && { imageHeight }),
+        ...(blurPlaceholderBase64 && { blurPlaceholder: blurPlaceholderBase64 }), // Add blur placeholder for instant visual feedback
         title: title.trim(),
         description: description.trim() || '',
         type: 'artwork',

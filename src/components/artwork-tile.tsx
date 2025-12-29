@@ -102,16 +102,60 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
   let fullVideoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
   
   // If Cloudflare Stream, ensure we're using the HLS manifest
-  if (isCloudflareStream && videoUrl && !videoUrl.includes('.m3u8')) {
-    // Extract video ID from Cloudflare Stream URL
-    const videoIdMatch = videoUrl.match(/cloudflarestream\.com\/([^/]+)/) || 
-                         videoUrl.match(/videodelivery\.net\/([^/]+)/);
-    if (videoIdMatch) {
-      const videoId = videoIdMatch[1];
-      const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
-      if (accountId) {
+  if (isCloudflareStream && videoUrl) {
+    // If URL already has .m3u8, use it as-is
+    if (videoUrl.includes('.m3u8')) {
+      fullVideoUrl = videoUrl;
+    } else {
+      // Extract video ID from Cloudflare Stream URL
+      // Handle both formats:
+      // 1. https://customer-{accountId}.cloudflarestream.com/{videoId}
+      // 2. https://videodelivery.net/{videoId}
+      let videoId: string | null = null;
+      let accountId: string | null = null;
+      
+      // CRITICAL FIX: Always use environment variable account ID, not the one in the URL
+      // The account ID in stored URLs might be wrong (from old uploads or different accounts)
+      accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || null;
+      
+      // Extract video ID from various URL formats
+      let videoId: string | null = null;
+      
+      // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
+      const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
+      if (customerMatch) {
+        videoId = customerMatch[1];
+      } else {
+        // Try videodelivery.net format: videodelivery.net/{videoId}
+        const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
+        if (videoDeliveryMatch) {
+          videoId = videoDeliveryMatch[1];
+        } else {
+          // Fallback: try to extract from any cloudflarestream.com URL
+          const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
+          if (fallbackMatch) {
+            videoId = fallbackMatch[1];
+          }
+        }
+      }
+      
+      if (videoId && accountId) {
+        // Use environment variable account ID (correct one) instead of URL account ID
         videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
-        fullVideoUrl = videoUrl; // Same for full quality (adaptive streaming)
+        fullVideoUrl = videoUrl;
+        console.log('✅ Constructed Cloudflare Stream HLS URL:', {
+          videoId,
+          accountId,
+          url: videoUrl,
+          originalUrl: (artwork as any).videoUrl
+        });
+      } else {
+        console.error('❌ Failed to extract Cloudflare Stream video ID or account ID:', {
+          originalUrl: videoUrl,
+          extractedVideoId: videoId,
+          envAccountId: accountId,
+          hasAccountId: !!process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID
+        });
       }
     }
   }
@@ -138,11 +182,12 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
       );
   
   // OPTIMIZED: Use optimized image hook for Pinterest/Instagram-style performance
-  // Use thumbnail for initial load (Pinterest/Instagram style), upgrade to medium when loaded
+  // Force thumbnail size for initial viewport to ensure fast loading (240px instead of full-size)
+  // This is critical for Firebase images which don't have variants
   const optimizedImage = useOptimizedImage({
     src: imageUrl || '',
-    size: isInitialViewport ? 'thumbnail' : undefined, // Use thumbnail for initial viewport, auto-detect for others
-    isGrid: true,
+    size: isInitialViewport ? 'thumbnail' : (isMobile ? 'small' : 'medium'), // Force smaller sizes for faster loading
+    isGrid: true, // Always grid view in discover feed
     isMobile,
     enableBlur: true,
     priority: isInitialViewport,
@@ -902,11 +947,11 @@ const generateArtistContent = (artist: Artist) => ({
           ) : (
             <>
               {/* Blur-up placeholder (Pinterest/Instagram style) - shows instantly */}
-              {!isImageLoaded && !imageError && optimizedImage.placeholder && (
+              {!isImageLoaded && !imageError && (artwork.blurPlaceholder || optimizedImage.placeholder) && (
                 <div 
                   className="absolute inset-0 z-0 blur-xl scale-110"
                   style={{
-                    backgroundImage: `url(${optimizedImage.placeholder})`,
+                    backgroundImage: `url(${artwork.blurPlaceholder || optimizedImage.placeholder})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     filter: 'blur(20px)',
@@ -922,47 +967,173 @@ const generateArtistContent = (artist: Artist) => ({
                   </div>
                 </div>
               )}
-              {/* Use native img for Cloudflare CDN (faster), Next.js Image for Firebase/other */}
+              {/* Use native img for ALL CDN images (faster), Next.js Image only as fallback */}
               {(() => {
-                const imageSrc = imageError && fallbackImageUrl ? fallbackImageUrl : optimizedImage.src;
+                // CRITICAL FIX: Always use original imageUrl directly - never use optimizedImage.src
+                // optimizedImage.src can be broken/empty, causing images to not load
+                const imageSrc = imageError && fallbackImageUrl ? fallbackImageUrl : (imageUrl || '');
                 const isCloudflareImage = imageSrc.includes('imagedelivery.net') || imageSrc.includes('cloudflare');
+                const isFirebaseImage = imageSrc.includes('firebasestorage') || imageSrc.includes('firebase');
                 
-                // For Cloudflare Images, use native img tag (no Next.js overhead)
+                // Debug: Log image URL for troubleshooting
+                if (!imageUrl || imageUrl === '') {
+                  console.warn('⚠️ ArtworkTile: Missing imageUrl', {
+                    artworkId: artwork.id,
+                    title: artwork.title,
+                    hasVideo: hasVideo,
+                    videoUrl: (artwork as any).videoUrl,
+                    supportingImages: (artwork as any).supportingImages,
+                    mediaUrls: (artwork as any).mediaUrls,
+                    fullArtwork: artwork
+                  });
+                }
+                
+                // If no image URL at all, show placeholder
+                if (!imageSrc || imageSrc === '') {
+                  return (
+                    <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
+                      <div className="text-muted-foreground text-xs text-center px-2">No image</div>
+                    </div>
+                  );
+                }
+                
+                // Debug: Log the actual image source being used
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('🖼️ ArtworkTile loading image:', {
+                    artworkId: artwork.id,
+                    imageSrc,
+                    isCloudflare: isCloudflareImage,
+                    isFirebase: isFirebaseImage,
+                    isInitialViewport
+                  });
+                }
+                
+                // PRIORITY 1: Cloudflare Images (new uploads) - use native img with thumbnail variant
                 if (isCloudflareImage) {
+                  // Ensure we're using thumbnail variant for grid view (fastest - 30KB vs 150KB)
+                  let cloudflareUrl = imageSrc;
+                  
+                  // Extract Cloudflare image ID and account hash to construct proper variant URL
+                  const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)\/([^/]+)/);
+                  if (cloudflareMatch) {
+                    const [, accountHash, imageId, currentVariant] = cloudflareMatch;
+                    // Force thumbnail variant for grid view (fastest loading)
+                    cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/thumbnail`;
+                  } else if (!imageSrc.includes('/thumbnail') && !imageSrc.includes('/medium') && !imageSrc.includes('/full')) {
+                    // Fallback: Add thumbnail variant if pattern doesn't match
+                    cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/thumbnail');
+                  } else if (isInitialViewport && !imageSrc.includes('/thumbnail')) {
+                    // Force thumbnail for initial viewport
+                    cloudflareUrl = imageSrc.replace(/\/(medium|full|small|large)$/, '/thumbnail');
+                  }
+                  
+                  // Calculate dimensions from aspect ratio to prevent layout shift
+                  const tileWidth = 400;
+                  const calculatedHeight = Math.round(tileWidth / aspectRatio);
+                  const imgWidth = artwork.imageWidth || tileWidth;
+                  const imgHeight = artwork.imageHeight || calculatedHeight;
+                  const finalWidth = imgWidth && imgWidth > 0 ? imgWidth : tileWidth;
+                  const finalHeight = imgHeight && imgHeight > 0 ? imgHeight : calculatedHeight;
+                  
                   return (
                     <img
-                      src={imageSrc}
+                      src={cloudflareUrl}
                       alt={artwork.imageAiHint || artwork.title || 'Artwork'}
+                      width={finalWidth}
+                      height={finalHeight}
                       className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
                       loading={isInitialViewport ? "eager" : "lazy"}
                       fetchPriority={isInitialViewport ? "high" : "auto"}
                       decoding="async"
-                      key={retryCount}
+                      key={`${cloudflareUrl}-${retryCount}`}
                       onLoad={() => {
                         setIsImageLoaded(true);
                         setImageError(false);
                         setRetryCount(0);
-                        // Upgrade to medium quality after thumbnail loads (Pinterest style)
-                        if (isInitialViewport && imageSrc.includes('/thumbnail') && !imageSrc.includes('/medium')) {
-                          // Load medium quality in background
-                          const mediumUrl = imageSrc.replace('/thumbnail', '/medium');
-                          const img = document.createElement('img');
-                          img.src = mediumUrl;
-                          img.onload = () => {
-                            // Optionally swap to medium quality (for now, keep thumbnail for speed)
-                          };
-                        }
                         if (isInitialViewport && onImageReady) {
                           onImageReady(false);
                         }
                       }}
-                      onError={() => {
-                        if (retryCount < 3 && !fallbackImageUrl) {
-                          const retryDelay = Math.pow(2, retryCount) * 1000;
+                      onError={(e) => {
+                        console.error('Cloudflare image load error:', cloudflareUrl, e);
+                        if (retryCount < 2 && !fallbackImageUrl) {
+                          // Try original URL without variant
+                          const originalUrl = imageSrc.split('/').slice(0, -1).join('/') + '/' + imageSrc.split('/').pop();
+                          if (originalUrl !== cloudflareUrl) {
+                            setTimeout(() => {
+                              setRetryCount(prev => prev + 1);
+                              setIsImageLoaded(false);
+                            }, 1000);
+                            return;
+                          }
+                        }
+                        setImageError(true);
+                        setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                        setIsImageLoaded(true);
+                      }}
+                    />
+                  );
+                }
+                
+                // PRIORITY 2: Firebase Images (legacy content only) - use direct URL
+                // NOTE: New uploads go to Cloudflare, but old content may still have Firebase URLs
+                // These should be migrated to Cloudflare using the migration tool
+                if (isFirebaseImage) {
+                  console.warn('⚠️ Loading legacy Firebase image (should be migrated to Cloudflare):', imageSrc);
+                  const tileWidth = 400;
+                  const calculatedHeight = Math.round(tileWidth / aspectRatio);
+                  const imgWidth = artwork.imageWidth || tileWidth;
+                  const imgHeight = artwork.imageHeight || calculatedHeight;
+                  const finalWidth = imgWidth && imgWidth > 0 ? imgWidth : tileWidth;
+                  const finalHeight = imgHeight && imgHeight > 0 ? imgHeight : calculatedHeight;
+                  
+                  return (
+                    <img
+                      src={imageSrc}
+                      alt={artwork.imageAiHint || artwork.title || 'Artwork'}
+                      width={finalWidth}
+                      height={finalHeight}
+                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
+                      loading={isInitialViewport ? "eager" : "lazy"}
+                      fetchPriority={isInitialViewport ? "high" : "auto"}
+                      decoding="async"
+                      key={`${imageSrc}-${retryCount}`}
+                      onLoad={() => {
+                        setIsImageLoaded(true);
+                        setImageError(false);
+                        setRetryCount(0);
+                        if (isInitialViewport && onImageReady) {
+                          onImageReady(false);
+                        }
+                      }}
+                      onError={(e) => {
+                        console.error('❌ Firebase image load error:', {
+                          url: imageSrc,
+                          artworkId: artwork.id,
+                          title: artwork.title,
+                          error: e,
+                          retryCount,
+                          hasFallback: !!fallbackImageUrl,
+                          imageUrl: imageUrl,
+                          fullArtwork: artwork
+                        });
+                        
+                        // Check if URL is actually valid
+                        if (!imageSrc || imageSrc === '' || !imageSrc.startsWith('http')) {
+                          console.error('❌ Invalid image URL:', imageSrc);
+                          setImageError(true);
+                          setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                          setIsImageLoaded(true);
+                          return;
+                        }
+                        
+                        if (retryCount < 1 && !fallbackImageUrl) {
+                          // Retry once with original URL
+                          console.log('🔄 Retrying image load:', imageSrc);
                           setTimeout(() => {
                             setRetryCount(prev => prev + 1);
                             setIsImageLoaded(false);
-                          }, retryDelay);
+                          }, 1000);
                           return;
                         }
                         setImageError(true);
@@ -973,7 +1144,13 @@ const generateArtistContent = (artist: Artist) => ({
                   );
                 }
                 
-                // For Firebase/other URLs, use Next.js Image (for optimization)
+                // For other URLs, use Next.js Image with proper size optimization
+                // CRITICAL: Use sizes prop to force Next.js to generate 240px images for grid view
+                // This ensures Firebase images load at thumbnail size (240px) instead of full-size
+                const firebaseSizes = isInitialViewport 
+                  ? "240px" // Force 240px for initial viewport (thumbnail)
+                  : "(max-width: 640px) 240px, (max-width: 1024px) 480px, 720px"; // Responsive for others
+                
                 return (
                   <Image
                     src={imageSrc}
@@ -982,8 +1159,8 @@ const generateArtistContent = (artist: Artist) => ({
                     className={`object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
                     loading={isInitialViewport ? "eager" : "lazy"}
                     priority={isInitialViewport}
-                    sizes={optimizedImage.sizes}
-                    quality={85}
+                    sizes={firebaseSizes} // CRITICAL: Forces Next.js to generate 240px images for grid
+                    quality={isInitialViewport ? 75 : 85} // Lower quality for thumbnails (faster load)
                     key={retryCount}
                     onLoad={() => {
                       setIsImageLoaded(true);

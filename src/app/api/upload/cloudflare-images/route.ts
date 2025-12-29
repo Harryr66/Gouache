@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
       hasVariants: !!accountHash,
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       imageId,
       url: variants.medium, // Default to medium size
       variants,
@@ -227,6 +227,11 @@ export async function POST(request: NextRequest) {
       width: result.metadata?.width || result.dimensions?.width,
       height: result.metadata?.height || result.dimensions?.height,
     });
+
+    // Set cache headers for optimal browser caching
+    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    
+    return response;
   } catch (error: any) {
     const errorDetails = {
       message: error?.message,

@@ -10,6 +10,7 @@ import { VideoControlProvider } from '@/providers/video-control-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { HueChatbot } from '@/components/hue-chatbot';
 import { CloudflarePreconnect } from '@/components/cloudflare-preconnect';
+import { ServiceWorkerRegister } from '@/components/service-worker-register';
 import { cn } from '@/lib/utils';
 
 const fontHeadline = Belleza({
@@ -74,6 +75,7 @@ export default function RootLayout({
                 <DiscoverSettingsProvider>
                   <VideoControlProvider>
                     <CloudflarePreconnect />
+                    <ServiceWorkerRegister />
                     {children}
                     <Toaster />
                     <HueChatbot />

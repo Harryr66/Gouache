@@ -437,13 +437,18 @@ export async function POST(request: NextRequest) {
     // Step 2: Wait for processing and get video details
     const videoDetails = await waitForVideoProcessing(accountId, apiToken, videoId);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       videoId: videoDetails.uid,
       playbackUrl: `https://customer-${accountId}.cloudflarestream.com/${videoDetails.uid}/manifest/video.m3u8`,
       thumbnailUrl: videoDetails.thumbnail || `https://customer-${accountId}.cloudflarestream.com/${videoDetails.uid}/thumbnails/thumbnail.jpg`,
       duration: videoDetails.duration || 0,
       provider: 'cloudflare',
     });
+
+    // Set cache headers for optimal browser caching
+    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    
+    return response;
   } catch (error: any) {
     console.error('Error uploading video to Cloudflare Stream:', error);
     return NextResponse.json(

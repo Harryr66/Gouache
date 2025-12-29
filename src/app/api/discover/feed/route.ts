@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       startAfter: startAfter ? JSON.parse(startAfter) : undefined,
     });
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       items: result.items,
       lastDoc: result.lastDoc ? {
@@ -42,6 +42,12 @@ export async function GET(request: NextRequest) {
       } : null,
       timestamp: Date.now(),
     });
+
+    // Set cache headers for optimal browser caching
+    // Public cache for 5 minutes (matches revalidate time)
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    
+    return response;
   } catch (error: any) {
     console.error('Error fetching discover feed:', error);
     return NextResponse.json(

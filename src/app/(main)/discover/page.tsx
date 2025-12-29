@@ -1771,6 +1771,48 @@ function DiscoverPageContent() {
     return () => observer.disconnect();
   }, [filteredAndSortedArtworks, itemsPerRow, visibleCount, hasMore, isLoadingMore, loadMoreArtworks]);
 
+  // Critical image preloading - preload first 6-12 images for instant display
+  useEffect(() => {
+    if (typeof window === 'undefined' || filteredAndSortedArtworks.length === 0) return;
+    
+    // Preload first 6-12 images (depending on viewport size)
+    const preloadCount = Math.min(columnCount * 2, 12, filteredAndSortedArtworks.length);
+    const criticalArtworks = filteredAndSortedArtworks.slice(0, preloadCount);
+    
+    criticalArtworks.forEach((artwork) => {
+      const imageUrl = artwork.imageUrl;
+      if (!imageUrl) return;
+      
+      // PRIORITY: Cloudflare images first (new uploads), Firebase only for legacy
+      let preloadUrl = imageUrl;
+      if (imageUrl.includes('imagedelivery.net')) {
+        // Cloudflare: Use thumbnail variant (smallest, fastest - 30KB)
+        const cloudflareMatch = imageUrl.match(/imagedelivery\.net\/([^/]+)\/([^/]+)\/([^/]+)/);
+        if (cloudflareMatch) {
+          const [, accountHash, imageId] = cloudflareMatch;
+          preloadUrl = `https://imagedelivery.net/${accountHash}/${imageId}/thumbnail`;
+        } else {
+          preloadUrl = imageUrl.replace(/\/[^/]+$/, '/thumbnail');
+        }
+      } else if (imageUrl.includes('firebasestorage') || imageUrl.includes('firebase')) {
+        // Firebase (legacy): Use Next.js Image Optimization API with 240px
+        // NOTE: These should be migrated to Cloudflare for better performance
+        const encodedUrl = encodeURIComponent(imageUrl);
+        preloadUrl = `/_next/image?url=${encodedUrl}&w=240&q=75`;
+      }
+      
+      // Create preload link
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = preloadUrl;
+      link.setAttribute('fetchpriority', imageUrl.includes('imagedelivery.net') ? 'high' : 'auto');
+      document.head.appendChild(link);
+    });
+    
+    log(`🚀 Preloaded ${preloadCount} critical images for instant display`);
+  }, [filteredAndSortedArtworks, columnCount]);
+
   const visibleFilteredArtworks = useMemo(() => {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
     
