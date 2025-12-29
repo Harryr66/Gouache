@@ -5,13 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
  * This keeps API tokens secure and avoids CORS issues
  */
 
-// Increase body size limit for large video uploads (up to 100MB)
-export const config = {
-  api: {
-    bodyParser: false, // Disable body parser, we'll handle it manually
-  },
-  maxDuration: 300, // 5 minutes for large uploads
-};
+// Route segment config for Next.js App Router
+export const maxDuration = 300; // 5 minutes for large uploads
+export const runtime = 'nodejs'; // Use Node.js runtime
 
 export async function POST(request: NextRequest) {
   try {
