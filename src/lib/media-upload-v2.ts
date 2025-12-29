@@ -245,8 +245,7 @@ export async function uploadMedia(
     console.error(`❌ uploadMedia: Cloudflare Images API error:`, error.message);
     throw error;
   }
-}
-
+  
   // This should never be reached, but TypeScript needs it
   throw new Error(`Unsupported media type: ${type}. Only 'image' and 'video' are supported.`);
 }
