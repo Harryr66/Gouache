@@ -120,6 +120,7 @@ export default function ProfileEditPage() {
     eventEndDate: '',
     showcaseLocations: [] as ShowcaseLocation[],
     newsletterLink: '',
+    newsletterProvider: null as 'convertkit' | 'mailchimp' | 'substack' | 'custom' | null,
     socialLinks: {
       website: '',
       instagram: '',
@@ -183,6 +184,7 @@ export default function ProfileEditPage() {
               ? (changes.showcaseLocations || user.showcaseLocations || [])
               : [],
             newsletterLink: user.isProfessional ? (changes.newsletterLink || user.newsletterLink || '') : '',
+            newsletterProvider: user.isProfessional ? ((user as any).newsletterProvider || null) : null,
             socialLinks: {
               website: changes.socialLinks?.website || user.socialLinks?.website || '',
               instagram: changes.socialLinks?.instagram || user.socialLinks?.instagram || '',
@@ -274,6 +276,7 @@ export default function ProfileEditPage() {
           eventEndDate: user.isProfessional ? ((user as any).eventEndDate || '') : '',
           showcaseLocations: user.isProfessional ? (user.showcaseLocations || []) : [],
           newsletterLink: user.isProfessional ? ((user as any).newsletterLink || '') : '',
+          newsletterProvider: user.isProfessional ? ((user as any).newsletterProvider || null) : null,
           socialLinks: {
             website: socialLinks.website || '',
             instagram: socialLinks.instagram || '',
