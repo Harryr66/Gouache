@@ -39,10 +39,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine upload method based on file size
-    // Large files (>20MB) should use direct creator upload to avoid timeouts
+    // TEMPORARILY DISABLED: Use regular direct upload for all files
+    // Direct creator upload (direct_user=true) is returning 403 errors
+    // Testing if regular direct upload works for large files
     const LARGE_FILE_THRESHOLD = 20 * 1024 * 1024; // 20MB
-    let useDirectCreatorUpload = file.size > LARGE_FILE_THRESHOLD;
+    let useDirectCreatorUpload = false; // DISABLED - use regular upload for all files
 
     console.log('🔍 Cloudflare Stream API: Uploading video...', {
       accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
