@@ -469,6 +469,9 @@ export interface Artwork {
   materialsList?: string;
   supportingImages?: string[];
   supportingVideos?: string[];
+  supportingMedia?: string[]; // Alternative name for supporting media
+  mediaUrls?: string[]; // Array of all media URLs (images and videos)
+  mediaTypes?: string[]; // Types for each media file ('image' or 'video')
   statement?: string;
   // Stripe fees handling
   stripeFeesIncluded?: boolean; // If true, price includes Stripe fees (seller pays fees). If false, fees are added on top (buyer pays fees).
