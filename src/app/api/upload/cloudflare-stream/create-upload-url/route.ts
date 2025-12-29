@@ -30,16 +30,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Create direct creator upload URL
-    const requestBody = {
-      maxDurationSeconds,
-      allowedOrigins,
-      requireSignedURLs: false,
-    };
+    // Try with minimal body first - Cloudflare might not need all parameters
+    const requestBody: any = {};
+    
+    // Only include parameters if they're provided and not defaults
+    if (maxDurationSeconds !== 3600) {
+      requestBody.maxDurationSeconds = maxDurationSeconds;
+    }
+    if (allowedOrigins && allowedOrigins.length > 0 && !(allowedOrigins.length === 1 && allowedOrigins[0] === '*')) {
+      requestBody.allowedOrigins = allowedOrigins;
+    }
     
     console.log('📤 Creating direct creator upload URL:', {
       accountId: accountId ? `${accountId.substring(0, 8)}...` : 'MISSING',
       hasToken: !!apiToken,
       requestBody: requestBody,
+      bodyString: JSON.stringify(requestBody),
     });
     
     const response = await fetch(
@@ -50,7 +56,7 @@ export async function POST(request: NextRequest) {
           'Authorization': `Bearer ${apiToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: Object.keys(requestBody).length > 0 ? JSON.stringify(requestBody) : '{}',
       }
     );
 
