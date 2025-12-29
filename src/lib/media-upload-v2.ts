@@ -59,22 +59,22 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
 
     if (!createUrlResponse.ok) {
       // Clone response BEFORE any read attempts to avoid "body stream already read" error
-      const responseClone = createUrlResponse.clone();
-      let error;
-      let errorText = '';
+      // We need separate clones for JSON and text attempts
+      let error: any = {};
       
       try {
         // Try to read as JSON first
-        error = await responseClone.json();
+        const jsonClone = createUrlResponse.clone();
+        error = await jsonClone.json();
       } catch (jsonError) {
-        // If JSON parsing fails, try text from a fresh clone
+        // If JSON parsing fails, try text from a separate clone
         try {
           const textClone = createUrlResponse.clone();
-          errorText = await textClone.text();
+          const errorText = await textClone.text();
           error = { error: errorText || `HTTP ${createUrlResponse.status}` };
         } catch (textError) {
-          // If both fail, use status info
-          error = { error: `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText}` };
+          // If both fail, use status info only
+          error = { error: `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText || 'Forbidden'}` };
         }
       }
       
