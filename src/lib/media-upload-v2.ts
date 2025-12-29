@@ -88,9 +88,12 @@ export async function uploadMedia(
           error: error.error || error.message || errorText,
           rawErrorText: errorText,
           fullError: error,
-          // Include debug info if available
+          // Include ALL debug info if available - this is critical for debugging
           debug: (error as any).debug,
         });
+        
+        // Also log the complete error object to console for easy inspection
+        console.error(`🔍 COMPLETE ERROR OBJECT:`, JSON.stringify(error, null, 2));
         // Fall through to Firebase
       }
     } catch (error: any) {
