@@ -20,6 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { extractVideoThumbnail, blobToFile } from '@/lib/video-thumbnail';
+import { VideoThumbnailSelector } from '@/components/video-thumbnail-selector';
 
 // List of countries for delivery selector
 const COUNTRIES = [
@@ -62,6 +63,7 @@ export function UploadArtworkBasic() {
   const [files, setFiles] = useState<File[]>([]);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [extractedThumbnailBlob, setExtractedThumbnailBlob] = useState<Blob | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -195,6 +197,8 @@ export function UploadArtworkBasic() {
       const file = e.target.files[0];
       if (file.type.startsWith('image/')) {
         setThumbnailFile(file);
+        // Clear extracted thumbnail when custom thumbnail is selected
+        setExtractedThumbnailBlob(null);
         // Create preview
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -214,6 +218,17 @@ export function UploadArtworkBasic() {
   const removeThumbnail = () => {
     setThumbnailFile(null);
     setThumbnailPreview(null);
+    setExtractedThumbnailBlob(null);
+  };
+
+  const handleThumbnailExtracted = (blob: Blob) => {
+    setExtractedThumbnailBlob(blob);
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setThumbnailPreview(reader.result as string);
+    };
+    reader.readAsDataURL(blob);
   };
 
   const triggerFileInput = () => {
@@ -337,24 +352,28 @@ export function UploadArtworkBasic() {
         })
       );
 
-      // Step 2: Extract thumbnail from video if no custom thumbnail provided
-      let thumbnailToUpload: File | null = thumbnailFile;
+      // Step 2: Use thumbnail (priority: custom file > extracted from selector > extract now)
+      let thumbnailToUpload: File | null = thumbnailFile; // Custom uploaded file takes priority
       const firstFile = processedFiles[0];
       const isFirstFileVideo = firstFile.type.startsWith('video/');
       
+      // If no custom thumbnail, use extracted from selector or extract now
       if (!thumbnailToUpload && isFirstFileVideo) {
-        try {
-          setCurrentUploadingFile('Extracting thumbnail from video...');
-          const thumbnailBlob = await extractVideoThumbnail(firstFile, 1);
-          thumbnailToUpload = blobToFile(thumbnailBlob, `thumbnail-${firstFile.name.replace(/\.[^/.]+$/, '.jpg')}`);
-          // Create preview
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setThumbnailPreview(reader.result as string);
-          };
-          reader.readAsDataURL(thumbnailBlob);
-        } catch (error) {
-          console.warn('Failed to extract video thumbnail, will use Cloudflare thumbnail if available:', error);
+        if (extractedThumbnailBlob) {
+          // Use thumbnail extracted from the selector
+          thumbnailToUpload = blobToFile(
+            extractedThumbnailBlob,
+            `thumbnail-${firstFile.name.replace(/\.[^/.]+$/, '.jpg')}`
+          );
+        } else {
+          // Fallback: extract at 1 second if no selection was made
+          try {
+            setCurrentUploadingFile('Extracting thumbnail from video...');
+            const thumbnailBlob = await extractVideoThumbnail(firstFile, 1);
+            thumbnailToUpload = blobToFile(thumbnailBlob, `thumbnail-${firstFile.name.replace(/\.[^/.]+$/, '.jpg')}`);
+          } catch (error) {
+            console.warn('Failed to extract video thumbnail, will use Cloudflare thumbnail if available:', error);
+          }
         }
       }
 
@@ -903,47 +922,61 @@ export function UploadArtworkBasic() {
             </div>
           </div>
 
-          {/* Thumbnail Upload (Optional - for videos) */}
+          {/* Thumbnail Selection (for videos) */}
           {files.length > 0 && files[0].type.startsWith('video/') && (
-            <div className="space-y-2">
-              <Label htmlFor="thumbnail">Custom Thumbnail (Optional)</Label>
-              <p className="text-xs text-muted-foreground">
-                Upload a custom thumbnail image for your video. If not provided, a frame will be extracted from the video automatically.
-              </p>
+            <div className="space-y-4 p-4 border rounded-lg">
+              <div className="space-y-2">
+                <Label>Select Video Thumbnail</Label>
+                <p className="text-xs text-muted-foreground">
+                  Scrub through your video to select the perfect frame for the thumbnail. You can also upload a custom thumbnail image below.
+                </p>
+              </div>
               
-              {thumbnailPreview ? (
-                <div className="relative inline-block">
-                  <div className="aspect-video w-full max-w-xs rounded-lg overflow-hidden border-2 border-muted">
-                    <img
-                      src={thumbnailPreview}
-                      alt="Thumbnail preview"
-                      className="w-full h-full object-cover"
-                    />
+              {/* Video thumbnail selector */}
+              <VideoThumbnailSelector
+                videoFile={files[0]}
+                onThumbnailSelected={handleThumbnailExtracted}
+                initialTime={1}
+              />
+              
+              {/* Option to upload custom thumbnail instead */}
+              <div className="space-y-2 pt-4 border-t">
+                <Label htmlFor="thumbnail">Or Upload Custom Thumbnail Image (Optional)</Label>
+                {thumbnailFile && !extractedThumbnailBlob ? (
+                  <div className="relative inline-block">
+                    <div className="aspect-video w-full max-w-xs rounded-lg overflow-hidden border-2 border-muted">
+                      <img
+                        src={thumbnailPreview || ''}
+                        alt="Custom thumbnail preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6"
+                      onClick={() => {
+                        setThumbnailFile(null);
+                        setThumbnailPreview(null);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-6 w-6"
-                    onClick={removeThumbnail}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
+                ) : (
                   <Input
                     type="file"
                     id="thumbnail"
                     accept="image/*"
                     onChange={handleThumbnailChange}
-                    className="flex-1"
+                    className="w-full"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Or we'll extract a frame from your video
-                  </p>
-                </div>
-              )}
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Uploading a custom thumbnail will override the selected frame above.
+                </p>
+              </div>
             </div>
           )}
 
