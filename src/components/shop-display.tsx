@@ -481,7 +481,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             </div>
           ) : (
             // Desktop: Grid view
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+            <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
               {artworks.map((item) => (
                 <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
                   <div className="relative aspect-square">

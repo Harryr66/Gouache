@@ -102,6 +102,7 @@ export default function ArtistProfilePage() {
             eventDate: data.eventDate || undefined,
             showcaseLocations: data.showcaseLocations || [],
             newsletterLink: data.newsletterLink || undefined,
+            newsletterProvider: data.newsletterProvider || undefined,
             portfolio: portfolio, // Include portfolio for ProfileTabs
           };
           

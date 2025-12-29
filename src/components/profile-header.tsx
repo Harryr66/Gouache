@@ -36,6 +36,7 @@ import { TipDialog } from './tip-dialog';
 import { CountryFlag } from './country-flag';
 import { ShowcaseLocation } from '@/lib/types';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { NewsletterSubscribeModal } from './newsletter-subscribe-modal';
 
 interface ProfileHeaderProps {
   user: {
@@ -67,6 +68,7 @@ interface ProfileHeaderProps {
     eventEndDate?: string;
     showcaseLocations?: ShowcaseLocation[];
     newsletterLink?: string;
+    newsletterProvider?: 'convertkit' | 'mailchimp' | 'substack' | 'custom' | null;
   };
   isOwnProfile: boolean;
   isFollowing?: boolean;
@@ -77,13 +79,14 @@ interface ProfileHeaderProps {
 export function ProfileHeader({ 
   user, 
   isOwnProfile, 
-  isFollowing = false, 
+  isFollowing = false,
   onFollowToggle,
   currentTab
 }: ProfileHeaderProps) {
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [isEventsExpanded, setIsEventsExpanded] = useState(false);
+  const [showNewsletterModal, setShowNewsletterModal] = useState(false);
 
   // Early return if user is not properly loaded
   if (!user) {
@@ -154,27 +157,51 @@ export function ProfileHeader({
               </div>
             </div>
 
-            {/* Newsletter Link - Prominent Display */}
-            {user.newsletterLink && (
+            {/* Newsletter Link - Under Followers/Following */}
+            {(user.newsletterProvider || user.newsletterLink) && (
               <div className="flex items-center gap-2">
-                <Button 
-                  asChild
-                  variant="gradient"
-                  size="sm"
-                  className="font-semibold text-xs md:text-sm md:size-lg"
-                >
-                  <a 
-                    href={user.newsletterLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 md:gap-2"
+                {user.newsletterProvider && user.newsletterProvider !== 'custom' ? (
+                  // API-based provider: Show modal
+                  <>
+                    <Button 
+                      onClick={() => setShowNewsletterModal(true)}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs md:text-sm"
+                    >
+                      <Mail className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                      <span className="hidden sm:inline">Newsletter</span>
+                      <span className="sm:hidden">News</span>
+                    </Button>
+                    <NewsletterSubscribeModal
+                      open={showNewsletterModal}
+                      onOpenChange={setShowNewsletterModal}
+                      artistId={user.id}
+                      artistName={user.displayName}
+                      provider={user.newsletterProvider}
+                    />
+                  </>
+                ) : (
+                  // Custom provider or legacy newsletterLink: Show redirect link
+                  <Button 
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="text-xs md:text-sm"
                   >
-                    <Mail className="h-3 w-3 md:h-4 md:w-4" />
-                    <span className="hidden sm:inline">Subscribe to Newsletter</span>
-                    <span className="sm:hidden">Newsletter</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </Button>
+                    <a 
+                      href={user.newsletterLink || '#'} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 md:gap-2"
+                    >
+                      <Mail className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                      <span className="hidden sm:inline">Newsletter</span>
+                      <span className="sm:hidden">News</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </Button>
+                )}
               </div>
             )}
 

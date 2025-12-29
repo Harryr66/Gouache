@@ -416,7 +416,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     }
 
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1">
+      <div className="grid grid-cols-3 lg:grid-cols-4 gap-1">
         {portfolio.map((item) => {
           const imageUrl = item.imageUrl || item.supportingImages?.[0] || '/assets/placeholder-light.png';
           return (
@@ -1019,7 +1019,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           </div>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+        <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
           {discoverContent.map((item) => {
             const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.mediaUrls?.[0] || '/assets/placeholder-light.png';
             const isVideo = item.mediaType === 'video' || item.videoUrl;
@@ -1210,7 +1210,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
         )}
 
         {likedArtworks.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+          <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
             {likedArtworks.map((artwork) => (
               <ArtworkCard
                 key={artwork.id}

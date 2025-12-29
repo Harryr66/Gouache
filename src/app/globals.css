@@ -211,10 +211,13 @@ html {
     border-radius: 50% !important;
   }
 
-  /* Switch gradient background for checked state - uses theme-aware gradient */
+  /* Switch gradient border for checked state - matches gradient button style (no background) */
   .switch-gradient {
-    background: var(--gradient-border) !important;
     border: 2px solid transparent !important;
+    background:
+      linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+      var(--gradient-border) border-box !important;
+    background-clip: padding-box, border-box !important;
   }
 }
 

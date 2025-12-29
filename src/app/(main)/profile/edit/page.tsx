@@ -22,6 +22,7 @@ import { toast } from '@/hooks/use-toast';
 import { ArtistRequest, ShowcaseLocation } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
 import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
+import { NewsletterIntegrationWizard } from '@/components/newsletter-integration-wizard';
 import { Suspense } from 'react';
 
 // Countries list for dropdowns
@@ -1450,27 +1451,27 @@ export default function ProfileEditPage() {
           </CardContent>
         </Card>
 
-        {/* Newsletter Link Section */}
-        {isArtistAccount && (
+        {/* Simple Newsletter Link Section - Quick Option */}
+        {isArtistAccount && !formData.newsletterProvider && (
         <Card id="newsletter-link">
           <CardHeader>
-            <CardTitle>Newsletter Link</CardTitle>
+            <CardTitle>Newsletter Link (Simple)</CardTitle>
             <CardDescription>
-              Add a publicly visible newsletter subscription link to your profile
+              Quickly add a link to your newsletter signup page or landing page. This appears under your follower count on your profile.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newsletterLink">Newsletter URL</Label>
+              <Label htmlFor="newsletterLink">Newsletter or Landing Page URL</Label>
               <Input
                 id="newsletterLink"
                 type="url"
                 value={formData.newsletterLink}
                 onChange={(e) => handleInputChange('newsletterLink', e.target.value)}
-                placeholder="https://example.com/newsletter"
+                placeholder="https://example.com/newsletter or https://example.com/signup"
               />
               <p className="text-xs text-muted-foreground">
-                Add a link to your newsletter signup page. This will be displayed prominently on your profile as a gradient button.
+                Add any URL to your newsletter signup page, landing page, or website. For advanced integrations, use the Newsletter Integration section below.
               </p>
             </div>
           </CardContent>
@@ -1743,6 +1744,23 @@ export default function ProfileEditPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Newsletter Integration - Only for professional artists */}
+        {isArtistAccount && (
+          <Card id="newsletter-integration">
+            <CardHeader>
+              <CardTitle>Newsletter Integration</CardTitle>
+              <CardDescription>
+                Connect your newsletter provider to allow visitors to subscribe directly from your profile.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<div className="p-4 text-center text-muted-foreground">Loading newsletter setup...</div>}>
+                <NewsletterIntegrationWizard />
+              </Suspense>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stripe Payment Setup - Only for professional artists */}
         {isArtistAccount && (

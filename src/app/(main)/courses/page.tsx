@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Brain, Star, Users, Clock } from 'lucide-react';
 import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from '@/components/theme-loading';
+import { TypewriterJoke } from '@/components/typewriter-joke';
 import Image from 'next/image';
 import Link from 'next/link';
 import { fetchActiveAds, mixAdsIntoContent } from '@/lib/ad-fetcher';
@@ -19,6 +20,13 @@ export default function CoursesPage() {
   const { user } = useAuth();
   const [ads, setAds] = useState<any[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Loading screen state - identical to Discover page
+  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
+  const [coursesLoaded, setCoursesLoaded] = useState(false);
+  const jokeCompleteTimeRef = useRef<number | null>(null);
+  const MIN_JOKE_DISPLAY_TIME = 2000; // 2 seconds minimum after joke completes
+  const loadingStartTimeRef = useRef<number>(Date.now());
 
   // Detect mobile device
   useEffect(() => {
@@ -36,6 +44,12 @@ export default function CoursesPage() {
     fetchActiveAds('learn', user?.id).then(setAds).catch(console.error);
   }, [user]);
 
+  // Handle joke completion - called AFTER joke finishes typing + 2s pause
+  const handleJokeComplete = useCallback(() => {
+    console.log('🎭 Joke animation FULLY completed (typing + 2s pause) at:', new Date().toISOString());
+    jokeCompleteTimeRef.current = Date.now();
+  }, []);
+
   // Courses are already filtered by CourseProvider to only include published and approved courses
   const publishedCourses = courses;
 
@@ -44,17 +58,78 @@ export default function CoursesPage() {
     return mixAdsIntoContent(publishedCourses, ads, 2);
   }, [publishedCourses, ads]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <ThemeLoading text="" size="lg" />
-      </div>
-    );
-  }
+  // Mark courses as loaded when they're available
+  useEffect(() => {
+    if (!isLoading && publishedCourses.length >= 0) {
+      setCoursesLoaded(true);
+    }
+  }, [isLoading, publishedCourses.length]);
+
+  // Dismiss loading screen when both joke is complete + 2s AND courses are loaded
+  useEffect(() => {
+    if (!showLoadingScreen) return;
+
+    const checkIfReadyToDismiss = () => {
+      const jokeComplete = !!jokeCompleteTimeRef.current;
+      const timeSinceJoke = jokeComplete && jokeCompleteTimeRef.current 
+        ? Date.now() - jokeCompleteTimeRef.current 
+        : Infinity;
+      const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
+      
+      // Dismiss when joke is complete + 2s AND courses are loaded
+      if (jokeTimeMet && coursesLoaded && !isLoading) {
+        console.log('✅ Ready to dismiss: Joke complete + 2s, courses loaded.');
+        setShowLoadingScreen(false);
+        return;
+      }
+      
+      // Fallback timeout: Maximum 15 seconds total
+      const totalTime = Date.now() - loadingStartTimeRef.current;
+      if (totalTime > 15000) {
+        console.warn('⚠️ Timeout after 15s, dismissing anyway');
+        setShowLoadingScreen(false);
+        return;
+      }
+    };
+
+    const interval = setInterval(() => {
+      if (showLoadingScreen) {
+        checkIfReadyToDismiss();
+      } else {
+        clearInterval(interval);
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [showLoadingScreen, coursesLoaded, isLoading]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 sm:px-6 py-8">
+    <>
+      {/* Fixed Loading Screen Overlay - Identical to Discover page */}
+      {showLoadingScreen && typeof window !== 'undefined' ? (
+        <div 
+          className="fixed inset-0 bg-background flex items-center justify-center"
+          style={{
+            zIndex: 50, // Below navigation (z-[60]) but above content
+            pointerEvents: 'none', // Never block navigation or content clicks
+            isolation: 'isolate', // Create own stacking context
+          }}
+          aria-hidden="true"
+        >
+          <div 
+            className="flex flex-col items-center justify-center gap-6"
+            style={{
+              pointerEvents: 'auto', // Allow interaction with loading animation itself
+            }}
+          >
+            <ThemeLoading size="lg" />
+            <TypewriterJoke key="loading-joke" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
+          </div>
+        </div>
+      ) : null}
+      
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Brain className="h-8 w-8 text-primary" />
@@ -143,7 +218,8 @@ export default function CoursesPage() {
             })}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

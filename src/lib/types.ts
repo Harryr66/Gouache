@@ -882,6 +882,12 @@ export interface User {
   platformDonationOneTimeAmount?: number; // One-time donation amount in cents
   platformDonationOneTimeCompleted?: boolean; // Whether one-time donation has been completed
   platformDonationOneTimeCurrency?: string; // Currency for one-time donation (e.g., 'usd', 'gbp', 'eur')
+  // Newsletter integration fields
+  newsletterProvider?: 'convertkit' | 'mailchimp' | 'substack' | 'custom' | null;
+  newsletterApiKey?: string; // Encrypted server-side, never exposed to client
+  newsletterFormId?: string; // ConvertKit form ID, Mailchimp list ID, etc.
+  newsletterConnectedAt?: Date;
+  newsletterSubscriberCount?: number; // Cached subscriber count
 }
 
 export interface Follow {

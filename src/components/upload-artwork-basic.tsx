@@ -85,6 +85,7 @@ export function UploadArtworkBasic() {
   const [addToPortfolio, setAddToPortfolio] = useState(false); // Default to false - content goes to Discover only unless toggle is enabled
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentUploadingFile, setCurrentUploadingFile] = useState<string>('');
+  const [bulkUploadSeparately, setBulkUploadSeparately] = useState(false); // Bulk upload each file separately
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -278,10 +279,10 @@ export function UploadArtworkBasic() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !files.length || !title.trim()) {
+    if (!user || !files.length) {
       toast({
         title: 'Missing information',
-        description: 'Please select at least one image or video and enter a title.',
+        description: 'Please select at least one image or video.',
         variant: 'destructive',
       });
       return;
@@ -323,14 +324,10 @@ export function UploadArtworkBasic() {
       return;
     }
 
-    if (tags.length === 0) {
-      toast({
-        title: 'Tags required',
-        description: 'Please add at least one discovery tag.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    // Title is optional - default to "Untitled" if not provided
+    const finalTitle = title.trim() || 'Untitled';
+    
+    // Tags are optional - no validation needed
 
     setUploading(true);
 
@@ -494,70 +491,242 @@ export function UploadArtworkBasic() {
       setUploadProgress(100);
       setCurrentUploadingFile('');
 
-      // First media file is the main display
-      const primaryMediaUrl = uploadedUrls[0];
-      const primaryMediaType = mediaTypes[0];
-      // Remaining files are carousel items
-      const supportingMedia = uploadedUrls.slice(1);
-      const supportingMediaTypes = mediaTypes.slice(1);
-
-      // Create artwork item for discover feed (always created, regardless of portfolio toggle)
-      // Portfolio array update happens separately if toggle is enabled
-      const primaryThumbnailUrl = thumbnailUrls[0];
-      
-      // Get image dimensions for first image to prevent layout shift
-      let imageWidth: number | undefined;
-      let imageHeight: number | undefined;
-      const firstImageFile = processedFiles.find(f => f.type.startsWith('image/'));
-      if (firstImageFile) {
-        try {
-          const img = new Image();
-          const objectUrl = URL.createObjectURL(firstImageFile);
-          await new Promise((resolve, reject) => {
-            img.onload = () => {
-              imageWidth = img.naturalWidth;
-              imageHeight = img.naturalHeight;
-              URL.revokeObjectURL(objectUrl);
-              resolve(null);
+      // BULK UPLOAD SEPARATELY: If enabled and multiple files, upload each file as separate artwork
+      if (bulkUploadSeparately && processedFiles.length > 1) {
+        // Use already-uploaded URLs - files are already uploaded above
+        for (let i = 0; i < processedFiles.length; i++) {
+          const file = processedFiles[i];
+          const isVideo = file.type.startsWith('video/');
+          const mediaType = mediaTypes[i];
+          const uploadedUrl = uploadedUrls[i];
+          const thumbnailUrl = thumbnailUrls[i];
+          
+          setCurrentUploadingFile(`Creating artwork ${i + 1}/${processedFiles.length}: ${file.name}`);
+          
+          // Get image dimensions if it's an image
+          let imageWidth: number | undefined;
+          let imageHeight: number | undefined;
+          if (!isVideo) {
+            try {
+              const img = new Image();
+              const objectUrl = URL.createObjectURL(file);
+              await new Promise((resolve, reject) => {
+                img.onload = () => {
+                  imageWidth = img.naturalWidth;
+                  imageHeight = img.naturalHeight;
+                  URL.revokeObjectURL(objectUrl);
+                  resolve(null);
+                };
+                img.onerror = reject;
+                img.src = objectUrl;
+              });
+            } catch (error) {
+              console.warn('Failed to get image dimensions:', error);
+            }
+          }
+          
+          // Generate blur placeholder for images (only for first image to save time)
+          let fileBlurPlaceholder: string | undefined;
+          if (!isVideo && i === 0) {
+            // Use the already-generated blur placeholder for first image
+            fileBlurPlaceholder = blurPlaceholderBase64;
+          } else if (!isVideo) {
+            // Generate for other images
+            try {
+              fileBlurPlaceholder = await generateBlurPlaceholder(file);
+            } catch (error) {
+              console.warn('Failed to generate blur placeholder:', error);
+            }
+          }
+          
+          // Create separate artwork item for this file
+          const separateArtworkItem: any = {
+            id: `artwork-${Date.now()}-${i}`,
+            ...(mediaType === 'image' && { imageUrl: uploadedUrl }),
+            ...(mediaType === 'video' && { videoUrl: uploadedUrl }),
+            ...(mediaType === 'video' && thumbnailUrl && { imageUrl: thumbnailUrl }),
+            mediaType: mediaType,
+            mediaUrls: [uploadedUrl],
+            mediaTypes: [mediaType],
+            ...(imageWidth && { imageWidth }),
+            ...(imageHeight && { imageHeight }),
+            ...(blurPlaceholderBase64 && { blurPlaceholder: blurPlaceholderBase64 }),
+            title: finalTitle, // Use same title for all, or could use file name
+            description: description.trim() || '',
+            type: 'artwork',
+            showInPortfolio: addToPortfolio,
+            showInShop: isForSale,
+            isForSale: isForSale,
+            artworkType: isOriginal ? 'original' : 'print',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            likes: 0,
+            commentsCount: 0,
+            tags: tags,
+            aiAssistance: 'none',
+            isAI: false,
+          };
+          
+          // Add sale-related fields if for sale
+          if (isForSale && addToPortfolio) {
+            if (priceType === 'fixed' && price.trim()) {
+              separateArtworkItem.price = parseFloat(price) * 100;
+              separateArtworkItem.currency = currency;
+            } else if (priceType === 'contact') {
+              separateArtworkItem.priceType = 'contact';
+              separateArtworkItem.contactForPrice = true;
+              separateArtworkItem.contactEmail = useAccountEmail ? (user.email || '') : alternativeEmail.trim();
+            }
+            separateArtworkItem.deliveryScope = deliveryScope;
+            if (deliveryScope === 'specific' && selectedCountries.length > 0) {
+              separateArtworkItem.deliveryCountries = selectedCountries.join(', ');
+            }
+          }
+          
+          // Add dimensions if provided
+          if (addToPortfolio) {
+            if (dimensions.width && dimensions.height) {
+              separateArtworkItem.dimensions = {
+                width: parseFloat(dimensions.width) || 0,
+                height: parseFloat(dimensions.height) || 0,
+                unit: dimensions.unit,
+              };
+            } else {
+              separateArtworkItem.dimensions = { width: 0, height: 0, unit: 'cm' };
+            }
+          }
+          
+          // Recursive function to remove all undefined values
+          const removeUndefined = (obj: any): any => {
+            if (obj === null || obj === undefined) {
+              return null;
+            }
+            if (Array.isArray(obj)) {
+              return obj.map(item => removeUndefined(item)).filter(item => item !== undefined && item !== null);
+            }
+            if (typeof obj === 'object' && obj.constructor === Object) {
+              const cleaned: any = {};
+              Object.keys(obj).forEach(key => {
+                const value = removeUndefined(obj[key]);
+                if (value !== undefined && value !== null) {
+                  cleaned[key] = value;
+                }
+              });
+              return cleaned;
+            }
+            return obj;
+          };
+          
+          const cleanArtworkItem = removeUndefined(separateArtworkItem);
+          
+          // Add to portfolio if enabled
+          if (addToPortfolio) {
+            const { PortfolioService } = await import('@/lib/database');
+            const portfolioItemData: any = {
+              userId: user.id,
+              ...cleanArtworkItem,
+              showInPortfolio: true,
+              deleted: false,
             };
-            img.onerror = reject;
-            img.src = objectUrl;
-          });
-        } catch (error) {
-          console.warn('Failed to get image dimensions:', error);
+            
+            const existingItem = await PortfolioService.getPortfolioItem(separateArtworkItem.id);
+            if (existingItem) {
+              await PortfolioService.updatePortfolioItem(separateArtworkItem.id, portfolioItemData);
+            } else {
+              await setDoc(doc(db, 'portfolioItems', separateArtworkItem.id), {
+                ...portfolioItemData,
+                id: separateArtworkItem.id,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+              });
+            }
+            
+            // Backward compatibility: Update userProfiles.portfolio array
+            try {
+              const userDocRef = doc(db, 'userProfiles', user.id);
+              const userDoc = await getDoc(userDocRef);
+              const currentPortfolio = userDoc.exists() ? (userDoc.data().portfolio || []) : [];
+              const cleanedExistingPortfolio = currentPortfolio.map((item: any) => removeUndefined(item));
+              const updatedPortfolio = [...cleanedExistingPortfolio, cleanArtworkItem];
+              const finalCleanedPortfolio = removeUndefined(updatedPortfolio);
+              
+              await updateDoc(userDocRef, {
+                portfolio: finalCleanedPortfolio,
+                updatedAt: new Date(),
+              });
+            } catch (legacyError) {
+              console.warn('⚠️ Failed to update legacy userProfiles.portfolio (non-critical):', legacyError);
+            }
+          }
+          
+          // Create artwork/post for Discover feed
+          const artworkForDiscover: any = {
+            id: separateArtworkItem.id,
+            artist: {
+              id: user.id,
+              name: user.displayName || user.username || 'Artist',
+              handle: user.username || '',
+              avatarUrl: user.avatarUrl || null,
+              followerCount: user.followerCount || 0,
+              followingCount: user.followingCount || 0,
+              createdAt: user.createdAt || new Date(),
+            },
+            title: finalTitle,
+            description: description.trim() || '',
+            ...(mediaType === 'image' && { imageUrl: uploadedUrl }),
+            ...(mediaType === 'video' && { videoUrl: uploadedUrl }),
+            mediaType: mediaType,
+            mediaUrls: [uploadedUrl],
+            mediaTypes: [mediaType],
+            ...(mediaType === 'video' && thumbnailUrl && { imageUrl: thumbnailUrl }),
+            ...(imageWidth && { imageWidth }),
+            ...(imageHeight && { imageHeight }),
+            ...(fileBlurPlaceholder && { blurPlaceholder: fileBlurPlaceholder }),
+            imageAiHint: description.trim() || finalTitle,
+            type: 'artwork',
+            tags: tags,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            likes: 0,
+            commentsCount: 0,
+            views: 0,
+            aiAssistance: 'none',
+            isAI: false,
+          };
+          
+          // Add to Discover feed
+          await addContent(artworkForDiscover);
+          
+          // Update progress
+          const overallProgress = ((i + 1) * 100 / processedFiles.length);
+          setUploadProgress(overallProgress);
         }
+        
+        // All bulk uploads complete
+        setUploadProgress(100);
+        setCurrentUploadingFile('');
+        
+        toast({
+          title: 'Upload complete',
+          description: `Successfully uploaded ${processedFiles.length} items separately.`,
+        });
+        
+        // Reset form
+        setFiles([]);
+        setTitle('');
+        setDescription('');
+        setTags([]);
+        setTagInput('');
+        setThumbnailFile(null);
+        setThumbnailPreview(null);
+        setExtractedThumbnailBlob(null);
+        setBulkUploadSeparately(false);
+        
+        router.refresh();
+        return; // Exit early - bulk upload is complete
       }
       
-      const artworkItem: any = {
-        id: `artwork-${Date.now()}`,
-        ...(primaryMediaType === 'image' && { imageUrl: primaryMediaUrl }), // For backward compatibility
-        ...(primaryMediaType === 'video' && { videoUrl: primaryMediaUrl }),
-        // Use thumbnail URL for videos (faster loading), fallback to primary media URL
-        ...(primaryMediaType === 'video' && primaryThumbnailUrl && { imageUrl: primaryThumbnailUrl }),
-        mediaType: primaryMediaType, // 'image' or 'video'
-        mediaUrls: uploadedUrls, // All media URLs (images and videos)
-        mediaTypes: mediaTypes, // Types for each media file
-        ...(supportingMedia.length > 0 && { supportingImages: supportingMedia }),
-        ...(supportingMedia.length > 0 && { supportingMedia: supportingMedia }),
-        ...(supportingMediaTypes.length > 0 && { supportingMediaTypes: supportingMediaTypes }),
-        ...(imageWidth && { imageWidth }), // Add dimensions to prevent layout shift
-        ...(imageHeight && { imageHeight }),
-        ...(blurPlaceholderBase64 && { blurPlaceholder: blurPlaceholderBase64 }), // Add blur placeholder for instant visual feedback
-        title: title.trim(),
-        description: description.trim() || '',
-        type: 'artwork',
-        showInPortfolio: addToPortfolio, // Controls visibility in portfolio tab
-        showInShop: isForSale, // Controls visibility in shop
-        isForSale: isForSale,
-        artworkType: isOriginal ? 'original' : 'print',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        likes: 0,
-        commentsCount: 0,
-        tags: tags,
-        aiAssistance: 'none',
-        isAI: false,
-      };
+      // CONTINUE WITH NORMAL SINGLE UPLOAD (existing logic below)
 
       // Add sale-related fields if for sale (only relevant if adding to portfolio)
       if (isForSale && addToPortfolio) {
@@ -668,7 +837,7 @@ export function UploadArtworkBasic() {
           followingCount: user.followingCount || 0,
           createdAt: user.createdAt || new Date(),
         },
-        title: title.trim(),
+        title: finalTitle,
         description: description.trim() || '',
         ...(primaryMediaType === 'image' && { imageUrl: primaryMediaUrl }),
         ...(primaryMediaType === 'video' && { videoUrl: primaryMediaUrl }),
@@ -678,7 +847,7 @@ export function UploadArtworkBasic() {
         ...(supportingMedia.length > 0 && { supportingImages: supportingMedia }),
         ...(supportingMedia.length > 0 && { supportingMedia: supportingMedia }),
         ...(supportingMediaTypes.length > 0 && { supportingMediaTypes: supportingMediaTypes }),
-        imageAiHint: description.trim() || title.trim() || '',
+        imageAiHint: description.trim() || finalTitle || '',
         tags: tags,
         type: 'artwork',
         showInPortfolio: addToPortfolio, // Controls visibility in portfolio tab
@@ -750,7 +919,7 @@ export function UploadArtworkBasic() {
             followingCount: user.followingCount || 0,
             createdAt: user.createdAt || new Date(),
           },
-          title: title.trim(),
+          title: finalTitle,
           description: description.trim() || '',
           imageUrl: primaryMediaType === 'image' ? primaryMediaUrl : undefined,
           videoUrl: primaryMediaType === 'video' ? primaryMediaUrl : undefined,
@@ -992,9 +1161,29 @@ export function UploadArtworkBasic() {
                   </div>
                   
                   {files.length > 1 && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      First file is the main display. Others will appear in carousel.
-                    </p>
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground text-center">
+                        First file is the main display. Others will appear in carousel.
+                      </p>
+                      <div className="flex items-center space-x-2 p-3 border rounded-lg bg-muted/50">
+                        <Checkbox
+                          id="bulkUploadSeparately"
+                          checked={bulkUploadSeparately}
+                          onCheckedChange={(checked) => setBulkUploadSeparately(checked === true)}
+                        />
+                        <Label
+                          htmlFor="bulkUploadSeparately"
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          Bulk upload separately
+                        </Label>
+                      </div>
+                      {bulkUploadSeparately && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          Each file will be uploaded as a separate artwork with the same title and tags.
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -1061,13 +1250,12 @@ export function UploadArtworkBasic() {
 
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title">Title {bulkUploadSeparately && files.length > 1 ? '(Optional - defaults to "Untitled")' : '(Optional - defaults to "Untitled")'}</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter title"
-              required
+              placeholder="Enter title (or leave blank for 'Untitled')"
             />
           </div>
 
@@ -1085,7 +1273,7 @@ export function UploadArtworkBasic() {
 
           {/* Discovery Tags */}
           <div className="space-y-2">
-            <Label htmlFor="tags">Discovery Tags *</Label>
+            <Label htmlFor="tags">Discovery Tags (Optional)</Label>
             <div className="flex flex-wrap gap-2 pb-2 min-h-[2.5rem]">
               {tags.map((tag) => (
                 <Badge
@@ -1123,7 +1311,7 @@ export function UploadArtworkBasic() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Add at least one tag. Tags help users discover your artwork through search and filters.
+              Tags help users discover your artwork through search and filters. Optional but recommended.
             </p>
           </div>
 
@@ -1476,7 +1664,7 @@ export function UploadArtworkBasic() {
             <Button 
               type="submit" 
               variant="gradient" 
-              disabled={uploading || !files.length || !title.trim() || !agreedToTerms || tags.length === 0} 
+              disabled={uploading || !files.length || !agreedToTerms} 
               className="w-full"
             >
               {uploading ? 'Uploading...' : 'Upload Artwork'}
