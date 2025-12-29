@@ -146,78 +146,56 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     
     console.log('✅ File successfully uploaded directly to Cloudflare');
 
-    // Step 3: Get video details from our API
-    console.log('📤 Calling API to get video details after direct upload...', { videoId });
-    const detailsResponse = await fetch(`/api/upload/cloudflare-stream/video-details?videoId=${videoId}`, {
-      method: 'GET',
-    });
-
-    // Clone response to check content type before parsing
-    const detailsClone = detailsResponse.clone();
-    const contentType = detailsResponse.headers.get('content-type') || '';
-    const isJson = contentType.includes('application/json');
-    
+    // Step 3: Get video details from our API (optional - we can construct URLs ourselves)
+    // If the API call fails (rate limiting), we'll construct URLs directly from the video ID
     let details: any = {};
+    let detailsAvailable = false;
     
-    if (isJson) {
-      try {
-        details = await detailsClone.json();
-      } catch (jsonError) {
-        // If JSON parsing fails, try to get text to see what we got
-        try {
-          const textClone = detailsResponse.clone();
-          const responseText = await textClone.text();
-          console.error('❌ Failed to parse JSON response:', responseText.substring(0, 200));
-          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
-        } catch {
-          throw new Error(`Failed to parse response as JSON`);
-        }
-      }
-    } else {
-      // Response is not JSON (likely HTML error page from Vercel)
-      try {
-        const textClone = detailsResponse.clone();
-        const responseText = await textClone.text();
-        console.error('❌ Received non-JSON response (likely HTML error page):', {
-          status: detailsResponse.status,
-          contentType,
-          preview: responseText.substring(0, 200)
-        });
-        
-        // If it's a 403, it's likely Vercel rate limiting
-        if (detailsResponse.status === 403) {
-          throw new Error(`Rate limited (403): Video details endpoint blocked. Video uploaded successfully but details unavailable. Video ID: ${videoId}`);
-        }
-        
-        throw new Error(`Unexpected response format (${contentType}): ${detailsResponse.status} ${detailsResponse.statusText}`);
-      } catch (textError: any) {
-        throw new Error(`Failed to get video details: ${textError.message || 'Unknown error'}`);
-      }
-    }
-
-    // Handle 202 Accepted (video still processing)
-    if (detailsResponse.status === 202) {
-      console.warn('⚠️ Video is still processing, but upload was successful:', details);
-      // Return what we have - video will be available shortly
-      // The playback URL might not be ready yet, but we have the video ID
-      return {
-        url: details.playbackUrl || `https://customer-${process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID}.cloudflarestream.com/${videoId}/manifest/video.m3u8`,
-        thumbnailUrl: details.thumbnailUrl || `https://customer-${process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`,
-        provider: 'cloudflare',
-        cloudflareId: details.videoId || videoId,
-        duration: details.duration || 0,
-      };
-    }
-
-    if (!detailsResponse.ok) {
-      console.error('❌ Failed to get video details:', {
-        status: detailsResponse.status,
-        statusText: detailsResponse.statusText,
-        error: details.error || details.message,
-        contentType
+    try {
+      console.log('📤 Calling API to get video details after direct upload...', { videoId });
+      const detailsResponse = await fetch(`/api/upload/cloudflare-stream/video-details?videoId=${videoId}`, {
+        method: 'GET',
       });
-      throw new Error(`Failed to get video details: ${details.error || details.message || `HTTP ${detailsResponse.status}`}`);
+
+      // Clone response to check content type before parsing
+      const detailsClone = detailsResponse.clone();
+      const contentType = detailsResponse.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
+      
+      if (isJson && detailsResponse.ok) {
+        try {
+          details = await detailsClone.json();
+          detailsAvailable = true;
+          console.log('✅ Received video details:', details);
+        } catch (jsonError) {
+          console.warn('⚠️ Failed to parse JSON response, will construct URLs directly');
+        }
+      } else if (detailsResponse.status === 403) {
+        // Rate limited - this is expected, we'll construct URLs directly
+        console.warn('⚠️ Video details endpoint rate limited (403), constructing URLs directly from video ID');
+      } else {
+        // Other error - log but don't fail
+        console.warn('⚠️ Video details endpoint returned non-JSON response, constructing URLs directly');
+      }
+    } catch (detailsError: any) {
+      // API call failed - not critical, we can construct URLs ourselves
+      console.warn('⚠️ Video details API call failed, constructing URLs directly:', detailsError.message);
     }
+
+    // Construct Cloudflare Stream URLs directly from video ID
+    // This works even if the API call failed
+    const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || '';
+    const playbackUrl = details.playbackUrl || `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
+    const thumbnailUrl = details.thumbnailUrl || `https://customer-${accountId}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`;
+    
+    // If we got details from the API, use them; otherwise use defaults
+    return {
+      url: playbackUrl,
+      thumbnailUrl: thumbnailUrl,
+      provider: 'cloudflare',
+      cloudflareId: details.videoId || videoId,
+      duration: details.duration || 0, // Will be 0 if API call failed, but video will still work
+    };
 
     console.log('✅ Received video details:', details);
 
