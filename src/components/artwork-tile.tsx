@@ -946,7 +946,7 @@ const generateArtistContent = (artist: Artist) => ({
                         if (isInitialViewport && imageSrc.includes('/thumbnail') && !imageSrc.includes('/medium')) {
                           // Load medium quality in background
                           const mediumUrl = imageSrc.replace('/thumbnail', '/medium');
-                          const img = new Image();
+                          const img = document.createElement('img');
                           img.src = mediumUrl;
                           img.onload = () => {
                             // Optionally swap to medium quality (for now, keep thumbnail for speed)
