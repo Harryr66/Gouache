@@ -102,6 +102,12 @@ export async function POST(request: NextRequest) {
         errorText = `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`;
       }
       
+      // Log response headers for debugging
+      const responseHeaders: Record<string, string> = {};
+      uploadResponse.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+      
       let error;
       try {
         error = JSON.parse(errorText);
@@ -116,7 +122,11 @@ export async function POST(request: NextRequest) {
         error: error.errors?.[0]?.message || errorText,
         fullError: error,
         errorText: errorText,
-        hint: uploadResponse.status === 403 ? 'Check API token permissions for Cloudflare Stream' : undefined,
+        responseHeaders: responseHeaders,
+        fileSize: file.size,
+        fileName: file.name,
+        fileType: file.type,
+        hint: uploadResponse.status === 403 ? 'Check API token permissions, account limits, or file size restrictions' : undefined,
       });
       
       return NextResponse.json(
@@ -124,7 +134,7 @@ export async function POST(request: NextRequest) {
           error: `Failed to upload video: ${error.errors?.[0]?.message || errorText || 'Unknown error'}`,
           status: uploadResponse.status,
           ...(uploadResponse.status === 403 && {
-            hint: 'API token may not have Stream permissions. Check token permissions in Cloudflare dashboard.'
+            hint: '403 Forbidden - Check: API token permissions, account usage limits, file size restrictions, or rate limiting'
           })
         },
         { status: uploadResponse.status >= 400 && uploadResponse.status < 600 ? uploadResponse.status : 500 }
