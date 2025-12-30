@@ -2511,7 +2511,7 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : !showLoadingScreen && artworkView === 'list' ? (
+            ) : !showLoadingScreen && artworkView === 'grid' ? (
               <MasonryGrid
                 items={(() => {
                   // Grid view shows ONLY images (no videos)
@@ -2567,7 +2567,7 @@ function DiscoverPageContent() {
                 }}
                 loadMoreRef={loadMoreRef}
               />
-            ) : !showLoadingScreen && artworkView === 'grid' ? (
+            ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
                 {/* Video feed - Only videos, 1 per row, 1 column, full width */}
                 {(() => {
