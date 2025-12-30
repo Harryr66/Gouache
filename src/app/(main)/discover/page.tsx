@@ -2190,7 +2190,7 @@ function DiscoverPageContent() {
 
   // Render initial tiles invisibly during loading so poster images can preload
   // Videos will load in background and autoplay when ready (onCanPlay)
-  const shouldPreloadTiles: boolean = showLoadingScreen && initialImagesTotal > 0;
+  const shouldPreloadTiles = useMemo(() => showLoadingScreen && initialImagesTotal > 0, [showLoadingScreen, initialImagesTotal]);
 
   return (
     <>
