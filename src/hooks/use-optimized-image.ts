@@ -39,6 +39,19 @@ export function useOptimizedImage({
   enableBlur = true,
   priority = false,
 }: UseOptimizedImageOptions): OptimizedImageData {
+  // Early return for Cloudflare Stream URLs - they should be used directly, not optimized
+  if (src.includes('cloudflarestream.com')) {
+    return {
+      src: src, // Return as-is
+      srcSet: undefined,
+      sizes: undefined,
+      placeholder: enableBlur ? src : undefined, // Use original URL as placeholder
+      format: 'jpg',
+      width: 400,
+      height: 400,
+    };
+  }
+  
   const [viewportWidth, setViewportWidth] = useState<number>(
     typeof window !== 'undefined' ? window.innerWidth : 1920
   );
