@@ -2136,6 +2136,7 @@ function DiscoverPageContent() {
     };
     
     // Marketplace tab is hidden; skip fetching marketplace products.
+    // fetchMarketplaceProducts(); // Commented out since marketplace tab is hidden
   }, [theme, mounted]);
 
   useEffect(() => {
