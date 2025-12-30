@@ -700,21 +700,7 @@ function DiscoverPageContent() {
       return; // No artworks at all yet, wait
     }
     
-    // PARALLEL: Check media readiness continuously (don't wait for joke)
-    // Media can start loading immediately while joke plays
-    checkIfReadyToDismiss();
-    
-    // Re-check every 500ms to catch when conditions are met
-    const interval = setInterval(() => {
-      if (showLoadingScreen) {
-        checkIfReadyToDismiss();
-      } else {
-        clearInterval(interval);
-      }
-    }, 500);
-    
-    return () => clearInterval(interval);
-    
+    // Define checkIfReadyToDismiss function BEFORE using it
     function checkIfReadyToDismiss() {
       // Get itemsToWaitFor from the memoized value
       const itemsToWaitForValue = itemsToWaitFor;
@@ -780,6 +766,21 @@ function DiscoverPageContent() {
         console.log(`⏳ Waiting for media: ${initialImagesReady}/${effectiveImagesTotal} images, ${initialVideoPostersReady}/${effectiveVideoPostersTotal} posters`);
       }
     }
+    
+    // PARALLEL: Check media readiness continuously (don't wait for joke)
+    // Media can start loading immediately while joke plays
+    checkIfReadyToDismiss();
+    
+    // Re-check every 500ms to catch when conditions are met
+    const interval = setInterval(() => {
+      if (showLoadingScreen) {
+        checkIfReadyToDismiss();
+      } else {
+        clearInterval(interval);
+      }
+    }, 500);
+    
+    return () => clearInterval(interval);
   }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor]);
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
