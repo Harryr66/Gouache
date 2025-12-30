@@ -58,8 +58,15 @@ export function getOptimizedImageUrl(
 
   const preset = SIZE_PRESETS[size];
   
+  // Cloudflare Stream thumbnails - return as-is (already optimized, different URL format)
+  // Format: https://customer-{accountId}.cloudflarestream.com/{videoId}/thumbnails/thumbnail.jpg
+  if (originalUrl.includes('cloudflarestream.com')) {
+    // Cloudflare Stream URLs are already optimized thumbnails - don't modify them
+    return originalUrl;
+  }
+  
   // Cloudflare Images - use variant URLs
-  if (originalUrl.includes('imagedelivery.net') || originalUrl.includes('cloudflare')) {
+  if (originalUrl.includes('imagedelivery.net')) {
     // Extract image ID and variant from URL
     // Format: https://imagedelivery.net/{accountHash}/{imageId}/{variant}
     const urlParts = originalUrl.split('/');
@@ -112,6 +119,11 @@ export function getResponsiveImageSrcSet(
   originalUrl: string,
   baseSize: ImageSize = 'medium'
 ): { srcSet: string; sizes: string } {
+  // Cloudflare Stream thumbnails are already optimized - no srcSet needed
+  if (originalUrl.includes('cloudflarestream.com')) {
+    return { srcSet: '', sizes: '' };
+  }
+  
   const sizes = [
     { size: 'thumbnail' as ImageSize, media: '(max-width: 640px)' },      // Mobile grid
     { size: 'small' as ImageSize, media: '(max-width: 1024px)' },          // Tablet
@@ -145,6 +157,13 @@ export function generateBlurPlaceholder(
   quality: number = 20
 ): string {
   // CRITICAL: Don't add query params to Cloudflare URLs - they don't support them
+  // Cloudflare Stream thumbnails - return as-is (already optimized)
+  if (originalUrl.includes('cloudflarestream.com')) {
+    // Cloudflare Stream thumbnails are already optimized - use directly
+    // Don't add query params - Cloudflare will return 400/403
+    return originalUrl;
+  }
+  
   // Cloudflare Images uses variants, not query params
   if (originalUrl.includes('imagedelivery.net')) {
     // For Cloudflare Images, use the Thumbnail variant for blur placeholder
