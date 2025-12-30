@@ -637,24 +637,24 @@ function CourseSubmissionPageContent() {
         }
       }
 
-      // Upload thumbnail (only if new file provided)
+      // Upload thumbnail (only if new file provided) - Use Cloudflare Images (NO Firebase Storage)
       let thumbnailUrl: string | undefined;
       if (thumbnailFile) {
-        const thumbnailRef = ref(storage, `course-thumbnails/${user.id}/${Date.now()}_${thumbnailFile.name}`);
-        await uploadBytes(thumbnailRef, thumbnailFile);
-        thumbnailUrl = await getDownloadURL(thumbnailRef);
+        const { uploadMedia } = await import('@/lib/media-upload-v2');
+        const thumbnailResult = await uploadMedia(thumbnailFile, 'image', user.id);
+        thumbnailUrl = thumbnailResult.url;
       } else if (isEditing && thumbnailPreview) {
         // Keep existing thumbnail if no new one uploaded
         thumbnailUrl = thumbnailPreview;
       }
 
-      // Upload optional trailer
+      // Upload optional trailer - Use Cloudflare Stream (NO Firebase Storage)
       let trailerUrl: string | undefined;
       if (trailerFile) {
-        // New file uploaded - upload it
-        const trailerRef = ref(storage, `course-trailers/${user.id}/${Date.now()}_${trailerFile.name}`);
-        await uploadBytes(trailerRef, trailerFile);
-        trailerUrl = await getDownloadURL(trailerRef);
+        // New file uploaded - upload it to Cloudflare Stream
+        const { uploadMedia } = await import('@/lib/media-upload-v2');
+        const trailerResult = await uploadMedia(trailerFile, 'video', user.id);
+        trailerUrl = trailerResult.url;
       } else if (isEditing && existingCourse?.previewVideoUrl && trailerPreviewUrl) {
         // Editing mode: keep existing trailer if:
         // 1. Course had a previewVideoUrl originally
