@@ -2845,6 +2845,7 @@ function DiscoverPageContent() {
           </TabsContent>
         </Tabs>
         </div>
+        </div>
       </div>
     </>
   );
