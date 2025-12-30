@@ -443,6 +443,7 @@ const VideoPlayer = ({
   const hlsRef = useRef<Hls | null>(null);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -531,17 +532,25 @@ const VideoPlayer = ({
         readyState: video.readyState
       });
       
-      // Only set error if it's a fatal error (not just loading issues)
-      if (error && (error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || error.code === MediaError.MEDIA_ERR_DECODE)) {
-        setHasError(true);
-      } else {
-        // For network errors, try to recover
-        console.log('⚠️ Non-fatal video error, will retry...');
+      // Retry up to 3 times for network errors
+      if (retryCountRef.current < 3 && error && error.code === MediaError.MEDIA_ERR_NETWORK) {
+        retryCountRef.current++;
+        console.log(`⚠️ Network error, retrying (${retryCountRef.current}/3)...`);
         setTimeout(() => {
           if (video && videoUrl) {
             video.load();
           }
-        }, 1000);
+        }, 1000 * retryCountRef.current);
+        return;
+      }
+      
+      // Only set error if it's a fatal error after retries
+      if (error && (error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || error.code === MediaError.MEDIA_ERR_DECODE)) {
+        console.error('❌ Fatal video error, showing unavailable');
+        setHasError(true);
+      } else if (retryCountRef.current >= 3) {
+        console.error('❌ Max retries reached, showing unavailable');
+        setHasError(true);
       }
     });
 
