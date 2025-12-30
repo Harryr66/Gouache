@@ -8,18 +8,20 @@ interface ViewSelectorProps {
   view: 'grid' | 'list';
   onViewChange: (view: 'grid' | 'list') => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export function ViewSelector({ view, onViewChange, className }: ViewSelectorProps) {
-  const hasExplicitWidth = className?.includes('w-[') || className?.includes('w-1/') || className?.includes('!w-') || className?.includes('flex-[');
+export function ViewSelector({ view, onViewChange, className, style }: ViewSelectorProps) {
+  const hasExplicitWidth = className?.includes('w-[') || className?.includes('w-1/') || className?.includes('!w-') || className?.includes('flex-[') || style?.flex;
   return (
     <div 
       className={cn(
         'flex h-10 rounded-l-md rounded-r-md border-l-0 border-2 border-border bg-background relative overflow-hidden',
-        // Only use flex-1 if no explicit width/flex-basis is provided in className
+        // Only use flex-1 if no explicit width/flex-basis is provided in className or style
         !hasExplicitWidth && 'flex-1',
         className
       )}
+      style={style}
     >
       {/* Shaded background indicator */}
       <div
