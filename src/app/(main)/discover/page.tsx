@@ -2142,6 +2142,7 @@ function DiscoverPageContent() {
 
   useEffect(() => {
     if (!mounted) return;
+    
     const fetchEvents = async () => {
       try {
         const placeholderImage = theme === 'dark' ? '/assets/placeholder-dark.png' : '/assets/placeholder-light.png';
@@ -2187,10 +2188,8 @@ function DiscoverPageContent() {
         setEvents(placeholderEvents);
       }
     };
-
-    if (mounted) {
-      fetchEvents();
-    }
+    
+    fetchEvents();
   }, [theme, mounted]);
 
   // Render initial tiles invisibly during loading so poster images can preload
