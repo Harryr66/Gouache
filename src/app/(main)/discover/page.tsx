@@ -515,9 +515,34 @@ const VideoPlayer = ({
       setIsVideoReady(true);
     });
 
+    video.addEventListener('loadedmetadata', () => {
+      console.log('✅ Video metadata loaded:', videoUrl);
+      setIsVideoReady(true);
+    });
+
     video.addEventListener('error', (e) => {
-      console.error('❌ Video error:', e, videoUrl);
-      setHasError(true);
+      const error = video.error;
+      console.error('❌ Video error:', {
+        error,
+        code: error?.code,
+        message: error?.message,
+        videoUrl,
+        networkState: video.networkState,
+        readyState: video.readyState
+      });
+      
+      // Only set error if it's a fatal error (not just loading issues)
+      if (error && (error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || error.code === MediaError.MEDIA_ERR_DECODE)) {
+        setHasError(true);
+      } else {
+        // For network errors, try to recover
+        console.log('⚠️ Non-fatal video error, will retry...');
+        setTimeout(() => {
+          if (video && videoUrl) {
+            video.load();
+          }
+        }, 1000);
+      }
     });
 
     return () => {
