@@ -273,4 +273,8 @@ button[type="button"] {
   display: grid !important;
   grid-template-columns: 45% 55% !important;
   width: 100% !important;
+  flex: none !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  flex-basis: auto !important;
 }
