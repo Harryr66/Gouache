@@ -2490,7 +2490,7 @@ function DiscoverPageContent() {
                 items={(() => {
                   // Grid view shows ONLY images (no videos)
                   // Videos will only appear in video feed (list view)
-                  return visibleFilteredArtworks.filter((item) => {
+                  const imageOnlyArtworks = visibleFilteredArtworks.filter((item) => {
                     // Keep ads
                     if ('type' in item && item.type === 'ad') return true;
                     // Filter out videos - only show images in grid view
@@ -2498,6 +2498,13 @@ function DiscoverPageContent() {
                     const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                     return !hasVideo; // Only include items without videos
                   });
+                  console.log('🖼️ Grid view (images only):', {
+                    artworkView,
+                    totalArtworks: visibleFilteredArtworks.length,
+                    imageArtworksCount: imageOnlyArtworks.length,
+                    filteredOut: visibleFilteredArtworks.length - imageOnlyArtworks.length
+                  });
+                  return imageOnlyArtworks;
                 })()}
                 columnCount={columnCount}
                 gap={1}
@@ -2545,10 +2552,11 @@ function DiscoverPageContent() {
                     return (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                   });
                   
-                  console.log('🎬 Video feed rendering:', {
+                  console.log('🎬 Video feed (list view - videos only):', {
                     artworkView,
                     totalArtworks: visibleFilteredArtworks.length,
                     videoArtworksCount: videoArtworks.length,
+                    filteredOut: visibleFilteredArtworks.length - videoArtworks.length,
                     videoArtworks: videoArtworks.map((a: any) => ({
                       id: a.id,
                       title: a.title,
