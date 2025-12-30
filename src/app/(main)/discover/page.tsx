@@ -2305,32 +2305,32 @@ function DiscoverPageContent() {
                 Events
               </TabsTrigger>
             </TabsList>
-            {/* Filter Button and View Selector - positioned next to tabs, aligned - hidden on mobile */}
-            <div className="hidden md:flex items-center gap-0 flex-1">
-              {activeTab === 'artwork' ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                    className="flex-1 h-10 px-4 md:px-6 rounded-l-none rounded-r-none border-l-0 border-r-0"
-                  >
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1" />
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
-                    className="flex-1 h-10 px-4 md:px-6 rounded-l-none rounded-r-none border-l-0 border-r-0"
-                  >
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                  <ViewSelector view={eventsView} onViewChange={setEventsView} className="flex-1" />
-                </>
-              )}
-            </div>
+          </div>
+          {/* Bottom row - Filter and View Selector aligned with top row split */}
+          <div className="hidden md:flex items-center gap-0 w-full">
+            {activeTab === 'artwork' ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => startTransition(() => setShowFilters(!showFilters))}
+                  className="flex-1 h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-r-0"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+                <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1" />
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
+                  className="flex-1 h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-r-0"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+                <ViewSelector view={eventsView} onViewChange={setEventsView} className="flex-1" />
+              </>
+            )}
           </div>
 
           {/* Artwork Tab */}
