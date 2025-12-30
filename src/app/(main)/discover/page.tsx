@@ -2485,7 +2485,7 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : !showLoadingScreen && artworkView === 'grid' ? (
+            ) : !showLoadingScreen && artworkView === 'list' ? (
               <MasonryGrid
                 items={(() => {
                   // Grid view shows ONLY images (no videos)
