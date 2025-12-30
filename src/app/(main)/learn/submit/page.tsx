@@ -455,23 +455,28 @@ function CourseSubmissionPageContent() {
     }
 
     let videoUrl = '';
+    let thumbnailUrl = '';
     
-    // Upload video file
+    // Upload video file to Cloudflare Stream (NO Firebase Storage)
     setUploadingVideo(true);
     try {
       if (!user) throw new Error('User not authenticated');
-      const videoRef = ref(storage, `courses/${user.id}/${Date.now()}_${lessonFormData.videoFile.name}`);
-      await uploadBytes(videoRef, lessonFormData.videoFile);
-      videoUrl = await getDownloadURL(videoRef);
+      
+      // Use Cloudflare Stream for video uploads
+      const { uploadMedia } = await import('@/lib/media-upload-v2');
+      const uploadResult = await uploadMedia(lessonFormData.videoFile, 'video', user.id);
+      videoUrl = uploadResult.url;
+      thumbnailUrl = uploadResult.thumbnailUrl || '';
+      
       toast({
         title: "Video uploaded",
-        description: "Your video has been uploaded successfully.",
+        description: "Your video has been uploaded successfully to Cloudflare Stream.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading video:', error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload video. Please try again.",
+        description: error.message || "Failed to upload video. Please try again.",
         variant: "destructive",
       });
       setUploadingVideo(false);
