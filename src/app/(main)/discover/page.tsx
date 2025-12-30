@@ -995,14 +995,38 @@ function DiscoverPageContent() {
           
           try {
             // Fallback to direct Firestore query
+            // Query BOTH portfolio items (showInPortfolio: true) AND discover content (showInPortfolio: false)
+            // This ensures videos uploaded via Discover portal appear in the feed
             const { PortfolioService } = await import('@/lib/database');
-            const result = await PortfolioService.getDiscoverPortfolioItems({
+            
+            // Query portfolio items
+            const portfolioResult = await PortfolioService.getDiscoverPortfolioItems({
               showInPortfolio: true,
               deleted: false,
               hideAI: discoverSettings.hideAiAssistedArt,
-              limit: INITIAL_FETCH_LIMIT,
+              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for portfolio items
             });
-            portfolioItems = result.items;
+            
+            // Query discover content (videos uploaded via Discover portal)
+            const discoverResult = await PortfolioService.getDiscoverPortfolioItems({
+              showInPortfolio: false,
+              deleted: false,
+              hideAI: discoverSettings.hideAiAssistedArt,
+              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for discover content
+            });
+            
+            // Combine results, portfolio items first, then discover content
+            portfolioItems = [...portfolioResult.items, ...discoverResult.items];
+            
+            // Sort combined results by createdAt (newest first)
+            portfolioItems.sort((a, b) => {
+              const aTime = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+              const bTime = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+              return bTime - aTime;
+            });
+            
+            // Limit to INITIAL_FETCH_LIMIT after combining
+            portfolioItems = portfolioItems.slice(0, INITIAL_FETCH_LIMIT);
             log(`📦 Discover: Found ${portfolioItems.length} portfolio items from direct Firestore (fallback)`);
             
             // Store last document for pagination
@@ -2487,7 +2511,7 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : !showLoadingScreen && artworkView === 'list' ? (
+            ) : !showLoadingScreen && artworkView === 'grid' ? (
               <MasonryGrid
                 items={(() => {
                   // Grid view shows ONLY images (no videos)
