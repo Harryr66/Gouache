@@ -2308,13 +2308,14 @@ function DiscoverPageContent() {
           </div>
           {/* Bottom row - Filter and View Selector aligned with top row split */}
           <div className="hidden md:flex items-center gap-0 w-full">
-            <div className="flex flex-1 gap-0 rounded-l-md rounded-r-none" style={{ display: 'grid', gridTemplateColumns: '45% 55%' }}>
+            <div className="flex-1 gap-0 rounded-l-md rounded-r-none" style={{ display: 'grid !important', gridTemplateColumns: '45% 55%', width: '100%' }}>
               {activeTab === 'artwork' ? (
                 <>
                   <Button
                     variant="outline"
                     onClick={() => startTransition(() => setShowFilters(!showFilters))}
                     className="h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                    style={{ width: '100%' }}
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
@@ -2326,6 +2327,7 @@ function DiscoverPageContent() {
                     variant="outline"
                     onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
                     className="h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                    style={{ width: '100%' }}
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
