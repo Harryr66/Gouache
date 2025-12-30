@@ -100,37 +100,68 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     if (!createUrlResponse.ok) {
       let error: any = {};
       let errorMessage = '';
+      const contentType = createUrlResponse.headers.get('content-type') || '';
+      const isHtml = contentType.includes('text/html') || contentType.includes('text/plain');
+      const is522Error = createUrlResponse.status === 522;
       
       // Try to read error details, but don't fail if body is already consumed
       try {
         try {
-          // Try JSON first
-          error = await jsonClone.json();
-          errorMessage = error.error || error.message || '';
+          // Check if response is HTML (like Cloudflare 522 error pages)
+          if (isHtml) {
+            const errorText = await textClone.text();
+            // Extract meaningful error from HTML if possible
+            if (errorText.includes('522') || errorText.includes('Connection timed out')) {
+              errorMessage = is522Error 
+                ? 'Cloudflare API connection timed out (522). This usually means Vercel\'s serverless function timed out. Please try again.'
+                : `Server error (${createUrlResponse.status}): ${createUrlResponse.statusText}`;
+            } else {
+              errorMessage = errorText.substring(0, 200); // First 200 chars
+            }
+            error = { error: errorMessage };
+          } else {
+            // Try JSON first for non-HTML responses
+            error = await jsonClone.json();
+            errorMessage = error.error || error.message || '';
+          }
         } catch (jsonError) {
-          // If JSON fails, try text
+          // If JSON parsing fails, try text
           try {
             const errorText = await textClone.text();
             errorMessage = errorText || '';
             error = { error: errorText || `HTTP ${createUrlResponse.status}` };
           } catch (textError) {
             // If both fail, body was likely already consumed - use status only
-            errorMessage = `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText || 'Forbidden'}`;
+            errorMessage = is522Error
+              ? 'Cloudflare API connection timed out (522). Please try again.'
+              : `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText || 'Forbidden'}`;
             error = { error: errorMessage };
           }
         }
       } catch (readError: any) {
         // If all read attempts fail (body already consumed), just use status
-        errorMessage = `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText || 'Forbidden'}`;
+        errorMessage = is522Error
+          ? 'Cloudflare API connection timed out (522). Please try again.'
+          : `HTTP ${createUrlResponse.status} ${createUrlResponse.statusText || 'Forbidden'}`;
         error = { error: errorMessage };
       }
       
       console.error('❌ Failed to create upload URL:', {
         status: createUrlResponse.status,
         statusText: createUrlResponse.statusText,
+        contentType,
+        isHtml,
         error: error.error || error.message || errorMessage,
         debug: error.debug,
       });
+      
+      // For 522 errors, throw a retryable error that the retry logic can catch
+      if (is522Error) {
+        const retryError: any = new Error(`Connection timed out (522): ${errorMessage}`);
+        retryError.isRetryable = true;
+        retryError.status = 522;
+        throw retryError;
+      }
       
       throw new Error(`Failed to create upload URL: ${error.error || error.message || errorMessage || 'Unknown error'}`);
     }
