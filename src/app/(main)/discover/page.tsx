@@ -2192,66 +2192,58 @@ function DiscoverPageContent() {
       ) : null}
       
       <div className="min-h-screen bg-background">
-        {/* Preload tiles invisibly during loading - contained within main area */}
+        {/* Preload tiles invisibly during loading - use position absolute but allow images to load */}
         {shouldPreloadTiles && (
-          <div className="absolute inset-0 opacity-0 pointer-events-none overflow-hidden" style={{ zIndex: -1, visibility: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
-            <div 
-              style={{ 
-                columnCount: columnCount,
-                columnGap: '2px',
-                columnFill: 'auto' as const, // Fill columns sequentially from top to bottom
-              }}
-            >
-              {(() => {
-                // Connection-aware preload count and video limiting
-                const connectionSpeed = getConnectionSpeed();
-                const preloadCount = connectionSpeed === 'fast' ? 3 : connectionSpeed === 'medium' ? 2 : 1;
-                const MAX_VIDEOS_PER_VIEWPORT = 3;
+          <div className="absolute inset-0 pointer-events-none" style={{ zIndex: -1, opacity: 0, position: 'fixed', top: '-9999px', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }} aria-hidden="true">
+            {(() => {
+              // Connection-aware preload count and video limiting
+              const connectionSpeed = getConnectionSpeed();
+              const preloadCount = connectionSpeed === 'fast' ? 3 : connectionSpeed === 'medium' ? 2 : 1;
+              const MAX_VIDEOS_PER_VIEWPORT = 3;
+              
+              const preloadTiles: Artwork[] = [];
+              let preloadVideoCount = 0;
+              
+              for (const item of visibleFilteredArtworks) {
+                if (preloadTiles.length >= preloadCount) break;
+                if ('type' in item && item.type === 'ad') continue;
                 
-                const preloadTiles: Artwork[] = [];
-                let preloadVideoCount = 0;
+                const artwork = item as Artwork;
+                const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                 
-                for (const item of visibleFilteredArtworks) {
-                  if (preloadTiles.length >= preloadCount) break;
-                  if ('type' in item && item.type === 'ad') continue;
-                  
-                  const artwork = item as Artwork;
-                  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                  
-                  if (hasVideo) {
-                    if (preloadVideoCount < MAX_VIDEOS_PER_VIEWPORT) {
-                      preloadTiles.push(artwork);
-                      preloadVideoCount++;
-                    }
-                  } else {
+                if (hasVideo) {
+                  if (preloadVideoCount < MAX_VIDEOS_PER_VIEWPORT) {
                     preloadTiles.push(artwork);
+                    preloadVideoCount++;
                   }
+                } else {
+                  preloadTiles.push(artwork);
                 }
+              }
+              
+              // Only preload viewport + 1 row worth of items for faster loading
+              const preloadSlice = preloadTiles.slice(0, itemsToWaitFor);
+              
+              return preloadSlice.map((artwork) => {
+                const isInitial = true;
+                const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                const hasImage = !!artwork.imageUrl;
                 
-                // Only preload viewport + 1 row worth of items for faster loading
-                const preloadSlice = preloadTiles.slice(0, itemsToWaitFor);
-                
-                return preloadSlice.map((artwork) => {
-                  const isInitial = true;
-                  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                  const hasImage = !!artwork.imageUrl;
-                  
-                  return (
-                    <ArtworkTile 
-                      key={`preload-${artwork.id}`}
-                      artwork={artwork} 
-                      hideBanner={isMobile && artworkView === 'grid'}
-                      // Mark as initial viewport so videos start loading immediately and autoplay when ready
-                      isInitialViewport={isInitial && (hasVideo || hasImage) ? true : undefined}
-                      // Track image loading (including video posters) - ArtworkTile will pass isVideoPoster flag
-                      onImageReady={isInitial && (hasImage || hasVideo) ? (isVideoPoster) => handleImageReady(artwork.id, isVideoPoster) : undefined}
-                      // Track video metadata loading
-                      onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
-                    />
-                  );
-                });
-              })()}
-            </div>
+                return (
+                  <ArtworkTile 
+                    key={`preload-${artwork.id}`}
+                    artwork={artwork} 
+                    hideBanner={isMobile && artworkView === 'grid'}
+                    // Mark as initial viewport so videos start loading immediately and autoplay when ready
+                    isInitialViewport={isInitial && (hasVideo || hasImage) ? true : undefined}
+                    // Track image loading (including video posters) - ArtworkTile will pass isVideoPoster flag
+                    onImageReady={isInitial && (hasImage || hasVideo) ? (isVideoPoster) => handleImageReady(artwork.id, isVideoPoster) : undefined}
+                    // Track video metadata loading
+                    onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
+                  />
+                );
+              });
+            })()}
           </div>
         )}
         
@@ -2455,7 +2447,7 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : !showLoadingScreen && (artworkView === 'grid' || !isMobile) ? (
+            ) : (artworkView === 'grid' || !isMobile) ? (
               <MasonryGrid
                 items={(() => {
                   // TEMPORARY TEST: Grid view shows ONLY images (no videos)

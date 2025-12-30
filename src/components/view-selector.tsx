@@ -3,7 +3,7 @@
 import React from 'react';
 import { Grid3X3, List, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TabsList } from '@/components/ui/tabs';
+import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ViewSelectorProps {
   view: 'grid' | 'list';
