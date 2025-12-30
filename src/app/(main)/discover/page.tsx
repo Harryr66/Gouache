@@ -1030,8 +1030,9 @@ function DiscoverPageContent() {
             log(`📦 Discover: Found ${portfolioItems.length} portfolio items from direct Firestore (fallback)`);
             
             // Store last document for pagination
-            if (result.lastDoc) {
-              setLastDocument(result.lastDoc);
+            if (portfolioItems.length > 0) {
+              const lastDoc = portfolioItems[portfolioItems.length - 1];
+              setLastDocument(lastDoc as any);
               setHasMore(portfolioItems.length === INITIAL_FETCH_LIMIT);
             } else {
               setHasMore(false);
@@ -2558,7 +2559,7 @@ function DiscoverPageContent() {
                   return (
                     <ArtworkTile 
                       artwork={artwork} 
-                      hideBanner={isMobile && artworkView === 'list'}
+                      hideBanner={isMobile && (artworkView as string) === 'list'}
                       isInitialViewport={isInitial && hasVideo}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
                     />
