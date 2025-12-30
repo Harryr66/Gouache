@@ -433,6 +433,8 @@ export function UploadArtworkBasic() {
       
       // Upload files sequentially (one at a time) to avoid rate limiting
       // This is slower but more reliable, especially for bulk uploads
+      const failedFiles: { name: string; error: string }[] = [];
+      
       for (let i = 0; i < processedFiles.length; i++) {
         const file = processedFiles[i];
         const isVideo = file.type.startsWith('video/');
@@ -467,46 +469,101 @@ export function UploadArtworkBasic() {
           // Update progress
           const overallProgress = ((i + 1) * 100 / processedFiles.length);
           setUploadProgress(overallProgress);
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error uploading file ${i + 1}:`, error);
-          throw error;
+          // Track failed file but continue with others
+          failedFiles.push({
+            name: file.name,
+            error: error.message || 'Upload failed'
+          });
+          // Mark this slot as failed (don't store URL)
+          uploadedUrls[i] = '';
+          mediaTypes[i] = isVideo ? 'video' : 'image';
         }
       }
+      
+      // Show error popup if any files failed
+      if (failedFiles.length > 0) {
+        const failedCount = failedFiles.length;
+        const fileWord = failedCount === 1 ? 'file' : 'files';
+        toast({
+          title: 'Upload failed',
+          description: `${failedCount} ${fileWord} failed to upload. ${failedCount === processedFiles.length ? 'Please try again.' : 'Other files uploaded successfully.'}`,
+          variant: 'destructive',
+          duration: 5000,
+        });
+        
+        // If ALL files failed, stop here
+        if (failedCount === processedFiles.length) {
+          setUploading(false);
+          setCurrentUploadingFile('');
+          return;
+        }
+      }
+      
+      // Filter out failed uploads (empty URLs)
+      const successfulUploads: string[] = [];
+      const successfulTypes: ('image' | 'video')[] = [];
+      const successfulThumbnails: (string | undefined)[] = [];
+      
+      for (let i = 0; i < uploadedUrls.length; i++) {
+        if (uploadedUrls[i]) {
+          successfulUploads.push(uploadedUrls[i]);
+          successfulTypes.push(mediaTypes[i]);
+          successfulThumbnails.push(thumbnailUrls[i]);
+        }
+      }
+      
+      // If no successful uploads, stop
+      if (successfulUploads.length === 0) {
+        setUploading(false);
+        setCurrentUploadingFile('');
+        return;
+      }
+      
+      // Use only successful uploads
+      const finalUploadedUrls = successfulUploads;
+      const finalMediaTypes = successfulTypes;
+      const finalThumbnailUrls = successfulThumbnails;
       
       // Reset progress after all uploads complete
       setUploadProgress(100);
       setCurrentUploadingFile('');
 
-      // Extract primary media info (first file)
-      const primaryMediaUrl = uploadedUrls[0];
-      const primaryMediaType = mediaTypes[0];
-      const primaryThumbnailUrl = thumbnailUrls[0];
+      // Extract primary media info (first successful file)
+      const primaryMediaUrl = finalUploadedUrls[0];
+      const primaryMediaType = finalMediaTypes[0];
+      const primaryThumbnailUrl = finalThumbnailUrls[0];
       
       // Get image dimensions for primary image if it's an image
       let primaryImageWidth: number | undefined;
       let primaryImageHeight: number | undefined;
-      if (primaryMediaType === 'image' && processedFiles[0]) {
-        try {
-          const img = new Image();
-          const objectUrl = URL.createObjectURL(processedFiles[0]);
-          await new Promise((resolve, reject) => {
-            img.onload = () => {
-              primaryImageWidth = img.naturalWidth;
-              primaryImageHeight = img.naturalHeight;
-              URL.revokeObjectURL(objectUrl);
-              resolve(null);
-            };
-            img.onerror = reject;
-            img.src = objectUrl;
-          });
-        } catch (error) {
-          console.warn('Failed to get primary image dimensions:', error);
+      if (primaryMediaType === 'image') {
+        // Find the corresponding file for the first successful upload
+        const firstSuccessfulIndex = uploadedUrls.findIndex((url, idx) => url && idx < processedFiles.length);
+        if (firstSuccessfulIndex >= 0 && processedFiles[firstSuccessfulIndex]) {
+          try {
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(processedFiles[firstSuccessfulIndex]);
+            await new Promise((resolve, reject) => {
+              img.onload = () => {
+                primaryImageWidth = img.naturalWidth;
+                primaryImageHeight = img.naturalHeight;
+                URL.revokeObjectURL(objectUrl);
+                resolve(null);
+              };
+              img.onerror = reject;
+              img.src = objectUrl;
+            });
+          } catch (error) {
+            console.warn('Failed to get primary image dimensions:', error);
+          }
         }
       }
       
-      // Get supporting media (all files after the first)
-      const supportingMedia = uploadedUrls.slice(1);
-      const supportingMediaTypes = mediaTypes.slice(1);
+      // Get supporting media (all successful files after the first)
+      const supportingMedia = finalUploadedUrls.slice(1);
+      const supportingMediaTypes = finalMediaTypes.slice(1);
 
       // BULK UPLOAD SEPARATELY: If enabled and multiple files, upload each file as separate artwork
       if (bulkUploadSeparately && processedFiles.length > 1) {
@@ -1060,7 +1117,7 @@ export function UploadArtworkBasic() {
           id: `post-${Date.now()}`,
           artworkId: artworkForShop.id,
           artist: artworkForShop.artist,
-          imageUrl: primaryMediaType === 'image' ? primaryMediaUrl : (uploadedUrls.find((_, i) => mediaTypes[i] === 'image') || primaryMediaUrl),
+          imageUrl: primaryMediaType === 'image' ? primaryMediaUrl : (finalUploadedUrls.find((_, i) => finalMediaTypes[i] === 'image') || primaryMediaUrl),
           imageAiHint: artworkForShop.imageAiHint,
           caption: description.trim() || '',
           likes: 0,
