@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Grid3X3, List, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TabsList } from '@/components/ui/tabs';
 
 interface ViewSelectorProps {
   view: 'grid' | 'list';
@@ -13,14 +13,18 @@ interface ViewSelectorProps {
 
 export function ViewSelector({ view, onViewChange, className }: ViewSelectorProps) {
   return (
-    <div className={cn('relative flex items-center bg-muted rounded-l-none p-1', className)}>
+    <TabsList className={cn('flex flex-1 gap-0 rounded-l-none', className)}>
       <button
         onClick={() => onViewChange('list')}
+        data-state={view === 'list' ? 'active' : 'inactive'}
         className={cn(
-          'relative z-10 flex items-center justify-center h-10 px-4 md:px-6 rounded-md transition-all duration-200 text-sm font-medium flex-1',
+          'inline-flex h-10 items-center justify-center whitespace-nowrap rounded-md px-4 md:px-6 text-sm font-medium transition-colors flex-1',
+          'ring-offset-background focus-visible:outline-none focus-visible:ring-transparent',
+          'border-2 border-border',
+          'hover:border-muted-foreground',
           view === 'list'
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
+            ? 'border-primary text-foreground'
+            : 'text-muted-foreground'
         )}
         aria-label="Video feed"
       >
@@ -28,16 +32,20 @@ export function ViewSelector({ view, onViewChange, className }: ViewSelectorProp
       </button>
       <button
         onClick={() => onViewChange('grid')}
+        data-state={view === 'grid' ? 'active' : 'inactive'}
         className={cn(
-          'relative z-10 flex items-center justify-center h-10 px-4 md:px-6 rounded-md transition-all duration-200 text-sm font-medium flex-1',
+          'inline-flex h-10 items-center justify-center whitespace-nowrap rounded-md px-4 md:px-6 text-sm font-medium transition-colors flex-1',
+          'ring-offset-background focus-visible:outline-none focus-visible:ring-transparent',
+          'border-2 border-border',
+          'hover:border-muted-foreground',
           view === 'grid'
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
+            ? 'border-primary text-foreground'
+            : 'text-muted-foreground'
         )}
         aria-label="Grid view"
       >
         <List className="h-4 w-4" />
       </button>
-    </div>
+    </TabsList>
   );
 }
