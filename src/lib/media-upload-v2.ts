@@ -181,9 +181,17 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     
     try {
       console.log('📤 Calling API to get video details after direct upload...', { videoId });
+      
+      // Add timeout to prevent hanging on network errors (ERR_NETWORK_IO_SUSPENDED, etc.)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const detailsResponse = await fetch(`/api/upload/cloudflare-stream/video-details?videoId=${videoId}`, {
         method: 'GET',
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
 
       // Clone response to check content type before parsing
       const detailsClone = detailsResponse.clone();
