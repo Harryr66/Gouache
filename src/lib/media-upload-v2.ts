@@ -352,16 +352,6 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
       cloudflareId: details.videoId || videoId,
       duration: details.duration || 0,
     };
-
-    console.log('✅ Received video details:', details);
-
-    return {
-      url: details.playbackUrl,
-      thumbnailUrl: details.thumbnailUrl,
-      provider: 'cloudflare',
-      cloudflareId: details.videoId,
-      duration: details.duration,
-    };
   } catch (error: any) {
     console.error('❌ Direct creator upload failed:', error);
     throw error;
