@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, startTransition } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Eye, Fingerprint, Globe, Brain } from 'lucide-react';
 
@@ -15,7 +15,7 @@ const navigation = [
 
 export function DesktopHeader() {
   const pathname = usePathname();
-  const headerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   
   // Memoize active states to prevent re-computation during scroll
   // Normalize pathname to handle query params and ensure stable comparison
@@ -29,51 +29,21 @@ export function DesktopHeader() {
     }));
   }, [pathname]);
 
-  // Add native event listeners as absolute fallback
-  useEffect(() => {
-    if (!headerRef.current) return;
-    
-    const header = headerRef.current;
-    const links = header.querySelectorAll('a');
-    
-    const nativeHandlers = Array.from(links).map((link) => {
-      const handleNativeClick = (e: Event) => {
-        const href = (link as HTMLAnchorElement).href;
-        if (href && href !== window.location.href) {
-          window.location.href = href;
-        }
-      };
-      
-      link.addEventListener('click', handleNativeClick, { capture: true, passive: false });
-      return { link, handler: handleNativeClick };
-    });
-    
-    return () => {
-      nativeHandlers.forEach(({ link, handler }) => {
-        link.removeEventListener('click', handler, { capture: true });
-      });
-    };
-  }, [activeStates]);
-
   return (
     <div 
-      ref={headerRef}
       className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6 relative z-[9999]"
       style={{
-        position: 'relative', // Keep relative for z-index to work
-        pointerEvents: 'auto',
+        position: 'relative',
         touchAction: 'manipulation',
-        isolation: 'isolate', // Create new stacking context to ensure it's always on top
-        zIndex: 9999, // Maximum z-index
+        isolation: 'isolate',
+        zIndex: 9999,
       }}
     >
       <Link 
         href="/" 
         className="flex items-center"
         style={{
-          pointerEvents: 'auto',
           touchAction: 'manipulation',
-          zIndex: 1,
         }}
       >
         <span className="sr-only">Gouache</span>
@@ -96,9 +66,7 @@ export function DesktopHeader() {
       <nav 
         className="hidden md:flex items-center space-x-6"
         style={{
-          pointerEvents: 'auto',
           touchAction: 'manipulation',
-          zIndex: 1,
         }}
       >
         {activeStates.map((item) => {
@@ -114,16 +82,13 @@ export function DesktopHeader() {
                 }
               )}
               style={{
-                pointerEvents: 'auto',
                 touchAction: 'manipulation',
-                zIndex: 1,
               }}
               onClick={(e) => {
-                e.stopPropagation();
-                // Force navigation as backup
-                if (!e.defaultPrevented) {
-                  window.location.href = item.href;
-                }
+                // Use startTransition for non-urgent navigation updates
+                startTransition(() => {
+                  router.push(item.href);
+                });
               }}
             >
               <item.icon className="h-4 w-4" />
