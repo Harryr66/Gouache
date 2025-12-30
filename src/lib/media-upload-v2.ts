@@ -50,12 +50,11 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     console.log('📤 Requesting upload URL from API...', requestBody);
     
     // Step 1: Get upload URL from our API (with retry logic for network errors)
-    let createUrlResponse: Response;
-    let jsonClone: Response;
-    let textClone: Response;
+    let createUrlResponse: Response | null = null;
+    let jsonClone: Response | null = null;
+    let textClone: Response | null = null;
     
     const maxRetries = 3;
-    let lastError: any = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -73,10 +72,8 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
         textClone = createUrlResponse.clone();
         
         // Success - break out of retry loop
-        lastError = null;
         break;
       } catch (fetchError: any) {
-        lastError = fetchError;
         const isNetworkError = fetchError.message?.includes('Failed to fetch') || 
                               fetchError.message?.includes('NetworkError') ||
                               fetchError.name === 'TypeError';
@@ -95,8 +92,9 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
       }
     }
     
-    if (lastError) {
-      throw new Error(`Network error: ${lastError.message || 'Failed to connect to server after retries'}`);
+    // TypeScript guard - these should be set if we got here, but check anyway
+    if (!createUrlResponse || !jsonClone || !textClone) {
+      throw new Error('Failed to create upload URL: Response not available after retries');
     }
 
     if (!createUrlResponse.ok) {
