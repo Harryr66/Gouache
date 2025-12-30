@@ -15,6 +15,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { X, Mail, Heart } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useLikes } from '@/providers/likes-provider';
+import Hls from 'hls.js';
 
 interface ArtworkView {
   id: string;
@@ -55,6 +56,8 @@ export default function ArtworkPage() {
   const [showImageModal, setShowImageModal] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalVideoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const modalHlsRef = useRef<Hls | null>(null);
 
   useEffect(() => {
     const fetchArtwork = async () => {
@@ -412,26 +415,127 @@ export default function ArtworkPage() {
     fetchArtwork();
   }, [artworkId]);
 
-  // Autoplay video when artwork loads and it's a video
+  // Setup HLS video player when artwork loads
   useEffect(() => {
-    if (artwork && artwork.videoUrl && artwork.mediaType === 'video' && videoRef.current) {
-      // Attempt to play the video
-      videoRef.current.play().catch((error) => {
-        // Autoplay may be blocked by browser - this is expected
-        console.log('Video autoplay prevented by browser:', error);
-      });
+    const video = videoRef.current;
+    if (!artwork || !artwork.videoUrl || artwork.mediaType !== 'video' || !video) return;
+
+    const videoUrl = (artwork as any).videoVariants?.full || artwork.videoUrl;
+    const isHLS = videoUrl.includes('.m3u8') || videoUrl.includes('cloudflarestream.com');
+    
+    // Cleanup previous HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
     }
+
+    if (isHLS) {
+      // Check if browser natively supports HLS (Safari)
+      const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
+      
+      if (canPlayHLS) {
+        // Native HLS support (Safari)
+        video.src = videoUrl;
+        console.log('✅ Using native HLS support for:', videoUrl);
+      } else if (Hls.isSupported()) {
+        // Use hls.js for browsers that don't support HLS natively
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+        });
+        
+        hls.loadSource(videoUrl);
+        hls.attachMedia(video);
+        hlsRef.current = hls;
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          console.log('✅ HLS manifest parsed, video ready');
+          video.play().catch((error) => {
+            console.log('Autoplay prevented:', error);
+          });
+        });
+        
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            console.error('❌ HLS fatal error:', data);
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+              hls.startLoad();
+            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+              hls.recoverMediaError();
+            }
+          }
+        });
+      } else {
+        console.error('❌ HLS not supported in this browser');
+      }
+    } else {
+      // Non-HLS video (MP4, etc.)
+      video.src = videoUrl;
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
   }, [artwork]);
 
-  // Autoplay video in modal when modal opens
+  // Setup HLS video player for modal
   useEffect(() => {
-    if (showImageModal && artwork && artwork.videoUrl && artwork.mediaType === 'video' && modalVideoRef.current) {
-      // Attempt to play the video in modal
-      modalVideoRef.current.play().catch((error) => {
-        // Autoplay may be blocked by browser - this is expected
-        console.log('Modal video autoplay prevented by browser:', error);
-      });
+    const video = modalVideoRef.current;
+    if (!showImageModal || !artwork || !artwork.videoUrl || artwork.mediaType !== 'video' || !video) return;
+
+    const videoUrl = (artwork as any).videoVariants?.full || artwork.videoUrl;
+    const isHLS = videoUrl.includes('.m3u8') || videoUrl.includes('cloudflarestream.com');
+    
+    // Cleanup previous HLS instance
+    if (modalHlsRef.current) {
+      modalHlsRef.current.destroy();
+      modalHlsRef.current = null;
     }
+
+    if (isHLS) {
+      const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
+      
+      if (canPlayHLS) {
+        video.src = videoUrl;
+      } else if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+        });
+        
+        hls.loadSource(videoUrl);
+        hls.attachMedia(video);
+        modalHlsRef.current = hls;
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch((error) => {
+            console.log('Modal video autoplay prevented:', error);
+          });
+        });
+        
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+              hls.startLoad();
+            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+              hls.recoverMediaError();
+            }
+          }
+        });
+      }
+    } else {
+      video.src = videoUrl;
+    }
+
+    return () => {
+      if (modalHlsRef.current) {
+        modalHlsRef.current.destroy();
+        modalHlsRef.current = null;
+      }
+    };
   }, [showImageModal, artwork]);
 
   if (loading) {
@@ -480,13 +584,13 @@ export default function ArtworkPage() {
                 {artwork.videoUrl && artwork.mediaType === 'video' ? (
                   <video
                     ref={videoRef}
-                    src={(artwork as any).videoVariants?.full || artwork.videoUrl}
                     controls
                     className="w-full h-full object-contain"
                     playsInline
                     autoPlay
                     muted={false}
                     loop={false}
+                    poster={artwork.imageUrl || undefined}
                   />
                 ) : (
                   <div className="cursor-zoom-in">
@@ -669,13 +773,13 @@ export default function ArtworkPage() {
             {artwork.videoUrl && artwork.mediaType === 'video' ? (
               <video
                 ref={modalVideoRef}
-                src={(artwork as any).videoVariants?.full || artwork.videoUrl}
                 controls
                 className="max-w-full max-h-[70vh] w-auto h-auto"
                 playsInline
                 autoPlay
                 muted={false}
                 loop={false}
+                poster={artwork.imageUrl || undefined}
               />
             ) : (
               <Image

@@ -446,16 +446,37 @@ export function UploadArtworkBasic() {
           const mediaType: 'image' | 'video' = isVideo ? 'video' : 'image';
           const uploadResult = await uploadMedia(file, mediaType, user.id);
           
-          // Handle thumbnail: prioritize Cloudflare thumbnail, then custom, then extracted
-          let thumbnailUrl = uploadResult.thumbnailUrl; // Use Cloudflare thumbnail if available (fastest)
-          if (i === 0 && thumbnailToUpload && !thumbnailUrl) {
-            // Only upload custom/extracted thumbnail if Cloudflare didn't provide one
+          // Handle thumbnail: prioritize custom thumbnail, then Cloudflare thumbnail, then extracted
+          let thumbnailUrl: string | undefined = undefined;
+          
+          // FIRST: Try custom uploaded thumbnail (user's selection takes priority)
+          if (i === 0 && thumbnailToUpload) {
             try {
               const { uploadMedia } = await import('@/lib/media-upload-v2');
               const thumbnailResult = await uploadMedia(thumbnailToUpload, 'image', user.id);
               thumbnailUrl = thumbnailResult.url;
+              console.log('✅ Using custom uploaded thumbnail:', thumbnailUrl);
             } catch (error) {
-              console.warn('Failed to upload custom thumbnail:', error);
+              console.warn('Failed to upload custom thumbnail, falling back to Cloudflare:', error);
+            }
+          }
+          
+          // SECOND: Fall back to Cloudflare's auto-generated thumbnail if no custom thumbnail
+          if (!thumbnailUrl && uploadResult.thumbnailUrl) {
+            thumbnailUrl = uploadResult.thumbnailUrl;
+            console.log('✅ Using Cloudflare auto-generated thumbnail:', thumbnailUrl);
+          }
+          
+          // THIRD: If still no thumbnail and we have extracted one, use it
+          if (!thumbnailUrl && i === 0 && extractedThumbnailBlob) {
+            try {
+              const { uploadMedia } = await import('@/lib/media-upload-v2');
+              const thumbnailFile = blobToFile(extractedThumbnailBlob, 'thumbnail.jpg');
+              const thumbnailResult = await uploadMedia(thumbnailFile, 'image', user.id);
+              thumbnailUrl = thumbnailResult.url;
+              console.log('✅ Using extracted thumbnail:', thumbnailUrl);
+            } catch (error) {
+              console.warn('Failed to upload extracted thumbnail:', error);
             }
           }
           
