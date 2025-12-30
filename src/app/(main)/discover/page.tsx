@@ -2188,7 +2188,9 @@ function DiscoverPageContent() {
       }
     };
 
-    fetchEvents();
+    if (mounted) {
+      fetchEvents();
+    }
   }, [theme, mounted]);
 
   // Render initial tiles invisibly during loading so poster images can preload
