@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LayoutGrid, PlaySquare } from 'lucide-react';
+import { LayoutGrid, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ViewSelectorProps {
@@ -39,7 +39,9 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
           view === 'list' ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
-        <PlaySquare className="h-4 w-4 rounded-md" />
+        <div className="relative w-4 h-4 rounded-md border-2 border-current flex items-center justify-center">
+          <Play className="h-2.5 w-2.5 ml-0.5" fill="currentColor" />
+        </div>
       </button>
       
       {/* Grid option - RIGHT */}
