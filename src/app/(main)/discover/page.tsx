@@ -2312,7 +2312,18 @@ function DiscoverPageContent() {
               </div>
             ) : !showLoadingScreen && (artworkView === 'grid' || !isMobile) ? (
               <MasonryGrid
-                items={visibleFilteredArtworks}
+                items={(() => {
+                  // TEMPORARY TEST: Grid view shows ONLY images (no videos)
+                  // Videos will only appear in single view
+                  return visibleFilteredArtworks.filter((item) => {
+                    // Keep ads
+                    if ('type' in item && item.type === 'ad') return true;
+                    // Filter out videos - only show images in grid view
+                    const artwork = item as Artwork;
+                    const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                    return !hasVideo; // Only include items without videos
+                  });
+                })()}
                 columnCount={columnCount}
                 gap={1}
                 renderItem={(item) => {
@@ -2331,10 +2342,8 @@ function DiscoverPageContent() {
                   
                   const artwork = item as Artwork;
                   
-                  // TEMPORARY: Videos ONLY show in grid view and single view
-                  // Filter out videos from other potential views (if any)
+                  // Grid view only shows images (videos filtered out above)
                   const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                  // Videos are allowed in grid view, so we continue
                   
                   // Check if this is in initial viewport (first 12 tiles)
                   const isInitial = visibleFilteredArtworks.indexOf(artwork) < 12;
