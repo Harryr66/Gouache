@@ -2575,7 +2575,24 @@ function DiscoverPageContent() {
                   const videoArtworks = visibleFilteredArtworks.filter((item) => {
                     if ('type' in item && item.type === 'ad') return false; // Exclude ads
                     const artwork = item as Artwork;
-                    return (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                    const hasVideo = (artwork as any).videoUrl || 
+                                    (artwork as any).mediaType === 'video' ||
+                                    ((artwork as any).mediaUrls && (artwork as any).mediaTypes?.includes('video'));
+                    
+                    // Debug logging for each item
+                    if (visibleFilteredArtworks.length < 20) {
+                      console.log('🔍 Checking item for video:', {
+                        id: artwork.id,
+                        title: artwork.title,
+                        hasVideoUrl: !!(artwork as any).videoUrl,
+                        mediaType: (artwork as any).mediaType,
+                        mediaUrls: (artwork as any).mediaUrls,
+                        mediaTypes: (artwork as any).mediaTypes,
+                        isVideo: hasVideo
+                      });
+                    }
+                    
+                    return hasVideo;
                   });
                   
                   console.log('🎬 Video feed (list view - videos only):', {
@@ -2583,16 +2600,28 @@ function DiscoverPageContent() {
                     totalArtworks: visibleFilteredArtworks.length,
                     videoArtworksCount: videoArtworks.length,
                     filteredOut: visibleFilteredArtworks.length - videoArtworks.length,
+                    allArtworkIds: visibleFilteredArtworks.slice(0, 10).map((a: any) => a.id),
+                    videoArtworkIds: videoArtworks.slice(0, 10).map((a: any) => a.id),
                     videoArtworks: videoArtworks.map((a: any) => ({
                       id: a.id,
                       title: a.title,
                       videoUrl: (a as any).videoUrl,
-                      mediaType: (a as any).mediaType
+                      mediaType: (a as any).mediaType,
+                      mediaUrls: (a as any).mediaUrls,
+                      mediaTypes: (a as any).mediaTypes
                     }))
                   });
                   
                   if (videoArtworks.length === 0) {
                     console.warn('⚠️ No videos found in video feed. Total artworks:', visibleFilteredArtworks.length);
+                    console.warn('⚠️ Sample artworks:', visibleFilteredArtworks.slice(0, 5).map((a: any) => ({
+                      id: a.id,
+                      title: a.title,
+                      hasVideoUrl: !!(a as any).videoUrl,
+                      mediaType: (a as any).mediaType,
+                      mediaUrls: (a as any).mediaUrls,
+                      mediaTypes: (a as any).mediaTypes
+                    })));
                   }
                   
                   return (
