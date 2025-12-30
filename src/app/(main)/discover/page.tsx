@@ -2294,7 +2294,7 @@ function DiscoverPageContent() {
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
-                  <ViewSelector view={artworkView} onViewChange={setArtworkView} />
+                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1" />
                 </div>
               )}
 
@@ -2507,7 +2507,7 @@ function DiscoverPageContent() {
                             // Already correct
                           } else {
                             // Extract video ID and construct HLS manifest URL
-                            let accountId: string | null = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || null;
+                            const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
                             let videoId: string | null = null;
                             
                             // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
@@ -2534,8 +2534,17 @@ function DiscoverPageContent() {
                             } else if (videoId) {
                               // Fallback: use videodelivery.net if account ID not available
                               videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+                            } else {
+                              // If we can't extract video ID, log error but don't break
+                              console.error('❌ Could not extract video ID from Cloudflare Stream URL:', videoUrl);
                             }
                           }
+                        }
+                        
+                        // Ensure videoUrl is valid before proceeding
+                        if (!videoUrl) {
+                          console.error('❌ No valid video URL found for artwork:', artwork.id);
+                          return null;
                         }
                         
                         const avatarPlaceholder = theme === 'dark'
