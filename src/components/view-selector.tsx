@@ -18,7 +18,7 @@ export function ViewSelector({ view, onViewChange, className }: ViewSelectorProp
         value="grid"
         onClick={() => onViewChange('grid')}
         className={cn(
-          'flex-1 h-10 rounded-r-none border-r-0',
+          'flex items-center justify-center flex-1 h-10 rounded-r-none border-r-0',
           view === 'grid' ? 'gradient-border' : ''
         )}
       >
@@ -28,7 +28,7 @@ export function ViewSelector({ view, onViewChange, className }: ViewSelectorProp
         value="list"
         onClick={() => onViewChange('list')}
         className={cn(
-          'flex-1 h-10 rounded-l-none border-l-0',
+          'flex items-center justify-center flex-1 h-10 rounded-l-none border-l-0',
           view === 'list' ? 'gradient-border' : ''
         )}
       >
