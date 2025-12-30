@@ -637,12 +637,9 @@ const VideoPlayer = ({
       <Link href={`/artwork/${artwork.id}`}>
         <Card className="relative w-full overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
           {/* Video container with 9:16 portrait aspect ratio */}
-          <div className="relative w-full" style={{ aspectRatio: '9/16' }}>
-            {hasError ? (
-              <div className="w-full h-full bg-muted flex items-center justify-center">
-                <p className="text-muted-foreground text-sm">Video unavailable</p>
-              </div>
-            ) : (
+          {/* Hide completely if video failed - no black box */}
+          {!hasError && (
+            <div className="relative w-full" style={{ aspectRatio: '9/16' }}>
               <video
                 ref={videoRef}
                 className="w-full h-full object-cover"
