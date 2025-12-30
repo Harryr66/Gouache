@@ -14,7 +14,9 @@ export function ViewSelector({ view, onViewChange, className }: ViewSelectorProp
   return (
     <div 
       className={cn(
-        'flex flex-1 h-10 rounded-l-md rounded-r-md border-l-0 border-2 border-border bg-background relative overflow-hidden',
+        'flex h-10 rounded-l-md rounded-r-md border-l-0 border-2 border-border bg-background relative overflow-hidden',
+        // Only use flex-1 if no explicit width is provided in className
+        !className?.includes('w-[') && !className?.includes('w-1/') && 'flex-1',
         className
       )}
     >
