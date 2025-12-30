@@ -2161,14 +2161,15 @@ function DiscoverPageContent() {
         {shouldPreloadTiles && (
           <div className="absolute inset-0 opacity-0 pointer-events-none" style={{ zIndex: -1 }} aria-hidden="true">
             {(() => {
-              // Connection-aware preload count and video limiting
+              // AGGRESSIVE: Preload many more items for faster loading
               const connectionSpeed = getConnectionSpeed();
-              const preloadCount = connectionSpeed === 'fast' ? 3 : connectionSpeed === 'medium' ? 2 : 1;
+              const preloadCount = connectionSpeed === 'fast' ? 18 : connectionSpeed === 'medium' ? 12 : 9;
               const MAX_VIDEOS_PER_VIEWPORT = 3;
               
               const preloadTiles: Artwork[] = [];
               let preloadVideoCount = 0;
               
+              // Preload ALL initial viewport items, not just a few
               for (const item of visibleFilteredArtworks) {
                 if (preloadTiles.length >= preloadCount) break;
                 if ('type' in item && item.type === 'ad') continue;
