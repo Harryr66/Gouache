@@ -2308,36 +2308,28 @@ function DiscoverPageContent() {
           </div>
           {/* Bottom row - Filter and View Selector aligned with top row split */}
           <div className="hidden md:flex items-center gap-0 w-full">
-            <div className="flex flex-1 gap-0 rounded-l-md rounded-r-none">
+            <div className="flex flex-1 gap-0 rounded-l-md rounded-r-none" style={{ display: 'grid', gridTemplateColumns: '45% 55%' }}>
               {activeTab === 'artwork' ? (
                 <>
-                  <div style={{ flex: '0 0 45%', minWidth: 0, maxWidth: '45%', width: '45%' }}>
-                    <Button
-                      variant="outline"
-                      onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                      className="w-full h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
-                    >
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div style={{ flex: '0 0 55%', minWidth: 0, maxWidth: '55%', width: '55%' }}>
-                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="w-full" />
-                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => startTransition(() => setShowFilters(!showFilters))}
+                    className="h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="w-full" />
                 </>
               ) : (
                 <>
-                  <div style={{ flex: '0 0 45%', minWidth: 0, maxWidth: '45%', width: '45%' }}>
-                    <Button
-                      variant="outline"
-                      onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
-                      className="w-full h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
-                    >
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div style={{ flex: '0 0 55%', minWidth: 0, maxWidth: '55%', width: '55%' }}>
-                    <ViewSelector view={eventsView} onViewChange={setEventsView} className="w-full" />
-                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
+                    className="h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                  <ViewSelector view={eventsView} onViewChange={setEventsView} className="w-full" />
                 </>
               )}
             </div>
