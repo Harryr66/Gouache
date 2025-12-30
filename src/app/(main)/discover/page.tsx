@@ -2312,7 +2312,7 @@ function DiscoverPageContent() {
                   <Button
                     variant="outline"
                     onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                    className="flex-1 h-10 px-4 md:px-6 rounded-l-none rounded-r-md border-l-0"
+                    className="flex-1 h-10 px-4 md:px-6 rounded-l-none rounded-r-none border-l-0 border-r-0"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
@@ -2323,7 +2323,7 @@ function DiscoverPageContent() {
                   <Button
                     variant="outline"
                     onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
-                    className="flex-1 h-10 px-4 md:px-6 rounded-l-none rounded-r-md border-l-0"
+                    className="flex-1 h-10 px-4 md:px-6 rounded-l-none rounded-r-none border-l-0 border-r-0"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
