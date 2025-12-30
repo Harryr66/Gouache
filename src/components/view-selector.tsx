@@ -23,10 +23,10 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
       )}
       style={style}
     >
-      {/* Shaded background indicator */}
+      {/* Shaded background indicator - pill shaped */}
       <div
         className={cn(
-          'absolute inset-y-0 w-1/2 bg-muted transition-transform duration-200 ease-in-out',
+          'absolute inset-y-0 w-1/2 bg-muted transition-transform duration-200 ease-in-out rounded-md',
           view === 'list' ? 'translate-x-full' : 'translate-x-0'
         )}
       />
