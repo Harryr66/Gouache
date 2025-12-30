@@ -3,7 +3,6 @@
 import React from 'react';
 import { List, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ViewSelectorProps {
   view: 'grid' | 'list';
@@ -13,27 +12,41 @@ interface ViewSelectorProps {
 
 export function ViewSelector({ view, onViewChange, className }: ViewSelectorProps) {
   return (
-    <TabsList className={cn('flex flex-1 gap-0 rounded-l-none border-l-0 h-10 p-0', className)}>
-      <TabsTrigger
-        value="grid"
+    <div 
+      className={cn(
+        'flex flex-1 h-10 rounded-md rounded-l-none border-l-0 border-2 border-border bg-background relative overflow-hidden',
+        className
+      )}
+    >
+      {/* Shaded background indicator */}
+      <div
+        className={cn(
+          'absolute inset-y-0 w-1/2 bg-muted transition-transform duration-200 ease-in-out',
+          view === 'list' ? 'translate-x-full' : 'translate-x-0'
+        )}
+      />
+      
+      {/* Grid option */}
+      <button
         onClick={() => onViewChange('grid')}
         className={cn(
-          'flex items-center justify-center flex-1 h-10 rounded-r-none border-r-0',
-          view === 'grid' ? 'gradient-border' : ''
+          'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
+          view === 'grid' ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
         <Square className="h-4 w-4" />
-      </TabsTrigger>
-      <TabsTrigger
-        value="list"
+      </button>
+      
+      {/* List option */}
+      <button
         onClick={() => onViewChange('list')}
         className={cn(
-          'flex items-center justify-center flex-1 h-10 rounded-l-none border-l-0',
-          view === 'list' ? 'gradient-border' : ''
+          'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
+          view === 'list' ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
         <List className="h-4 w-4" />
-      </TabsTrigger>
-    </TabsList>
+      </button>
+    </div>
   );
 }
