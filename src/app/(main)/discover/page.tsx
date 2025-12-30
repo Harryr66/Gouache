@@ -2157,9 +2157,9 @@ function DiscoverPageContent() {
       <div className="min-h-screen bg-background">
         {/* Main content - render immediately so images/videos can load, but hide visually during loading */}
         <div className={showLoadingScreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}>
-        {/* Preload tiles invisibly during loading - render in normal flow but off-screen */}
+        {/* Preload tiles invisibly during loading - render in viewport but hidden so browser loads images */}
         {shouldPreloadTiles && (
-          <div className="absolute" style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
+          <div className="absolute inset-0 opacity-0 pointer-events-none" style={{ zIndex: -1 }} aria-hidden="true">
             {(() => {
               // Connection-aware preload count and video limiting
               const connectionSpeed = getConnectionSpeed();
