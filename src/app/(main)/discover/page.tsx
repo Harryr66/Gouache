@@ -1048,11 +1048,18 @@ function DiscoverPageContent() {
             }
             
             // Convert to Artwork object
+            // For videos without imageUrl, construct thumbnail URL from video URL
+            let finalImageUrl = imageUrl || '';
+            if (!finalImageUrl && videoUrl && videoUrl.includes('cloudflarestream.com')) {
+              // Construct thumbnail URL from video URL
+              finalImageUrl = videoUrl.replace(/\/manifest\/video\.m3u8$/, '/thumbnails/thumbnail.jpg');
+            }
+            
             const artwork: Artwork = {
               id: artworkDoc.id,
               title: artworkData.title || 'Untitled',
               description: artworkData.description || '',
-              imageUrl: imageUrl || '',
+              imageUrl: finalImageUrl,
               imageAiHint: artworkData.description || '',
               ...(videoUrl && { videoUrl: videoUrl as any }),
               ...(mediaType && { mediaType: mediaType as any }),

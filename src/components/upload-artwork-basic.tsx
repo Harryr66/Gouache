@@ -561,7 +561,12 @@ export function UploadArtworkBasic() {
             id: `artwork-${Date.now()}-${i}`,
             ...(mediaType === 'image' && { imageUrl: uploadedUrl }),
             ...(mediaType === 'video' && { videoUrl: uploadedUrl }),
-            ...(mediaType === 'video' && thumbnailUrl && { imageUrl: thumbnailUrl }),
+            // For videos, always set imageUrl (poster/thumbnail) - use thumbnailUrl if available, otherwise construct from video URL
+            ...(mediaType === 'video' && {
+              imageUrl: thumbnailUrl || (uploadedUrl.includes('cloudflarestream.com') 
+                ? uploadedUrl.replace(/\/manifest\/video\.m3u8$/, '/thumbnails/thumbnail.jpg')
+                : undefined)
+            }),
             mediaType: mediaType,
             mediaUrls: [uploadedUrl],
             mediaTypes: [mediaType],
@@ -695,7 +700,12 @@ export function UploadArtworkBasic() {
             mediaType: mediaType,
             mediaUrls: [uploadedUrl],
             mediaTypes: [mediaType],
-            ...(mediaType === 'video' && thumbnailUrl && { imageUrl: thumbnailUrl }),
+            // For videos, always set imageUrl (poster/thumbnail) - use thumbnailUrl if available, otherwise construct from video URL
+            ...(mediaType === 'video' && {
+              imageUrl: thumbnailUrl || (uploadedUrl.includes('cloudflarestream.com')
+                ? uploadedUrl.replace(/\/manifest\/video\.m3u8$/, '/thumbnails/thumbnail.jpg')
+                : undefined)
+            }),
             ...(imageWidth && { imageWidth }),
             ...(imageHeight && { imageHeight }),
             ...(fileBlurPlaceholder && { blurPlaceholder: fileBlurPlaceholder }),
@@ -910,6 +920,12 @@ export function UploadArtworkBasic() {
         description: description.trim() || '',
         ...(primaryMediaType === 'image' && { imageUrl: primaryMediaUrl }),
         ...(primaryMediaType === 'video' && { videoUrl: primaryMediaUrl }),
+        // For videos, always set imageUrl (poster/thumbnail) - use primaryThumbnailUrl if available, otherwise construct from video URL
+        ...(primaryMediaType === 'video' && {
+          imageUrl: primaryThumbnailUrl || (primaryMediaUrl.includes('cloudflarestream.com')
+            ? primaryMediaUrl.replace(/\/manifest\/video\.m3u8$/, '/thumbnails/thumbnail.jpg')
+            : undefined)
+        }),
         mediaType: primaryMediaType,
         mediaUrls: uploadedUrls,
         mediaTypes: mediaTypes,
