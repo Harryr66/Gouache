@@ -535,50 +535,32 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           </Button>
         )}
         <div className="relative aspect-square">
-          {isVideo && (item.videoUrl || item.mediaUrls?.[0]) ? (
-            <video
-              ref={videoRef}
-              src={item.videoUrl || item.mediaUrls?.[0]}
+          {/* Always show thumbnail/poster image for videos - video plays on click/navigation */}
+          {imageUrl.includes('cloudflarestream.com') ? (
+            <img
+              src={imageUrl}
+              alt={item.title || item.caption || 'Content'}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              muted
-              loop
-              playsInline
-              preload="auto"
-              webkit-playsinline="true"
-              x5-playsinline="true"
               onError={(e) => {
-                // Suppress 404 errors - video doesn't exist, hide it
-                const video = e.currentTarget;
-                if (video.error?.code === 4 || video.networkState === 3) {
-                  // 404 - video not found, hide the video element
-                  video.style.display = 'none';
-                  // Show image fallback if available
-                  const parent = video.parentElement;
-                  if (parent && imageUrl && !imageUrl.includes('cloudflarestream.com')) {
-                    const img = document.createElement('img');
-                    img.src = imageUrl;
-                    img.className = 'w-full h-full object-cover';
-                    img.alt = item.title || item.caption || 'Content';
-                    parent.appendChild(img);
-                  }
-                }
+                // If thumbnail fails, try to show placeholder
+                const img = e.currentTarget;
+                img.src = '/assets/placeholder-light.png';
               }}
             />
           ) : (
-            imageUrl.includes('cloudflarestream.com') ? (
-              <img
-                src={imageUrl}
-                alt={item.title || item.caption || 'Content'}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            ) : (
-              <Image
-                src={imageUrl}
-                alt={item.title || item.caption || 'Content'}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            )
+            <Image
+              src={imageUrl}
+              alt={item.title || item.caption || 'Content'}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          )}
+          {/* Video indicator badge */}
+          {isVideo && (
+            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1 flex items-center gap-1">
+              <Play className="h-3 w-3 text-white" fill="white" />
+              <span className="text-xs text-white font-medium">Video</span>
+            </div>
           )}
         </div>
         <CardContent className="p-4">
@@ -1054,8 +1036,29 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
 
         <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
           {discoverContent.map((item) => {
-            const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.mediaUrls?.[0] || '/assets/placeholder-light.png';
+            // For videos, prioritize thumbnail/poster image, fallback to video URL for construction
             const isVideo = item.mediaType === 'video' || item.videoUrl;
+            let imageUrl = item.imageUrl || item.supportingImages?.[0] || '/assets/placeholder-light.png';
+            
+            // If video but no imageUrl, try to construct thumbnail from videoUrl
+            if (isVideo && !imageUrl && item.videoUrl) {
+              // Extract video ID from Cloudflare Stream URL and construct thumbnail
+              const videoIdMatch = item.videoUrl.match(/\/manifest\/video\.m3u8$/);
+              if (videoIdMatch) {
+                const videoId = item.videoUrl.split('/').slice(-2, -1)[0];
+                const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || '';
+                if (videoId && accountId) {
+                  imageUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`;
+                }
+              }
+            }
+            
+            // Fallback to mediaUrls if still no imageUrl (but not for videos)
+            if (!imageUrl || imageUrl === '/assets/placeholder-light.png') {
+              if (!isVideo && item.mediaUrls?.[0]) {
+                imageUrl = item.mediaUrls[0];
+              }
+            }
             
             return (
               <DiscoverContentTile
