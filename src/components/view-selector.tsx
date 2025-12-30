@@ -3,7 +3,7 @@
 import React from 'react';
 import { List, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import * as SwitchPrimitives from '@radix-ui/react-switch';
+import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ViewSelectorProps {
   view: 'grid' | 'list';
@@ -12,31 +12,28 @@ interface ViewSelectorProps {
 }
 
 export function ViewSelector({ view, onViewChange, className }: ViewSelectorProps) {
-  const isList = view === 'list';
-  
   return (
-    <SwitchPrimitives.Root
-      checked={isList}
-      onCheckedChange={() => onViewChange(isList ? 'grid' : 'list')}
-      className={cn(
-        'flex flex-1 h-10 items-center justify-center rounded-md rounded-l-none border-l-0 transition-all duration-200',
-        'border-2 border-border',
-        'bg-background shadow-sm',
-        'hover:border-muted-foreground',
-        'data-[state=checked]:switch-gradient',
-        'data-[state=unchecked]:bg-background data-[state=unchecked]:border-border',
-        'cursor-pointer',
-        className
-      )}
-      aria-label={isList ? 'Switch to grid view' : 'Switch to video feed'}
-    >
-      <div className="flex items-center justify-center w-full h-full">
-        {isList ? (
-          <Square className="h-4 w-4" />
-        ) : (
-          <List className="h-4 w-4" />
+    <TabsList className={cn('flex flex-1 gap-0 rounded-l-none border-l-0 h-10 p-0', className)}>
+      <TabsTrigger
+        value="grid"
+        onClick={() => onViewChange('grid')}
+        className={cn(
+          'flex-1 h-10 rounded-r-none border-r-0',
+          view === 'grid' ? 'gradient-border' : ''
         )}
-      </div>
-    </SwitchPrimitives.Root>
+      >
+        <Square className="h-4 w-4" />
+      </TabsTrigger>
+      <TabsTrigger
+        value="list"
+        onClick={() => onViewChange('list')}
+        className={cn(
+          'flex-1 h-10 rounded-l-none border-l-0',
+          view === 'list' ? 'gradient-border' : ''
+        )}
+      >
+        <List className="h-4 w-4" />
+      </TabsTrigger>
+    </TabsList>
   );
 }
