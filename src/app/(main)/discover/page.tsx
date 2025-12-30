@@ -2080,67 +2080,9 @@ function DiscoverPageContent() {
     setVisibleCount(initialCount);
   }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, getConnectionSpeed]);
 
-  useEffect(() => {
-    const fetchMarketplaceProducts = async () => {
-      try {
-        const productsQuery = query(
-          collection(db, 'marketplaceProducts'),
-          where('isActive', '==', true),
-          orderBy('createdAt', 'desc'),
-          limit(50)
-        );
-        
-        const snapshot = await getDocs(productsQuery);
-        const fetchedProducts: MarketplaceProduct[] = [];
-        
-        snapshot.docs.forEach((doc) => {
-          const data = doc.data();
-          const product: MarketplaceProduct = {
-            id: doc.id,
-            title: data.title || 'Untitled Product',
-            description: data.description || '',
-            price: data.price || 0,
-            currency: data.currency || 'USD',
-            category: data.category || '',
-            subcategory: data.subcategory || '',
-            images: data.images || [],
-            sellerId: data.sellerId || '',
-            sellerName: data.sellerName || 'Unknown Seller',
-            isAffiliate: data.isAffiliate || false,
-            isActive: data.isActive !== false,
-            stock: data.stock || 1,
-            rating: data.rating || 0,
-            reviewCount: data.reviewCount || 0,
-            tags: data.tags || [],
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || data.createdAt?.toDate() || new Date(),
-            salesCount: data.salesCount || 0,
-            isOnSale: data.isOnSale || false,
-            isApproved: data.isApproved !== false,
-            status: data.status || 'approved',
-          };
-          
-          if (product.isApproved && (product.status === 'approved' || !product.status)) {
-            fetchedProducts.push(product);
-          }
-        });
-        
-        // Always add placeholder products to simulate marketplace
-        const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 20);
-        setMarketplaceProducts([...fetchedProducts, ...placeholderProducts]);
-      } catch (err) {
-        error('Error fetching marketplace products:', err);
-        // Even on error, show placeholder products
-        const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 20);
-        setMarketplaceProducts(placeholderProducts);
-      }
-    };
-    
-    // Marketplace tab is hidden; skip fetching marketplace products.
-    // fetchMarketplaceProducts(); // Commented out since marketplace tab is hidden
-  }, [theme, mounted]);
+  // Marketplace products useEffect removed - marketplace tab is hidden
 
-  useEffect(function fetchEventsEffect() {
+  useEffect(() => {
     if (!mounted) return;
     
     async function fetchEvents() {
