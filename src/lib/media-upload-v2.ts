@@ -246,14 +246,19 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     console.log('✅ File successfully uploaded directly to Cloudflare');
 
     // Step 3: VERIFY video exists in Cloudflare before returning (CRITICAL for reliability)
+    // IMPORTANT: Cloudflare needs a moment to create the video record after upload
+    // Wait 2 seconds first, then verify
+    console.log('⏳ Waiting 2 seconds for Cloudflare to create video record...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     // We don't need to wait for "ready" - just confirm it exists (even if still processing)
     // This ensures we only store video IDs for videos that actually exist
     const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || '';
     let details: any = {};
     let videoExists = false;
     let verificationAttempts = 0;
-    const maxVerificationAttempts = 3;
-    const verificationRetryDelays = [2000, 4000, 8000]; // Exponential backoff: 2s, 4s, 8s
+    const maxVerificationAttempts = 5; // Increased from 3 to 5 for more reliability
+    const verificationRetryDelays = [2000, 3000, 5000, 8000, 10000]; // Exponential backoff: 2s, 3s, 5s, 8s, 10s
     
     // Retry verification up to 3 times with exponential backoff
     while (!videoExists && verificationAttempts < maxVerificationAttempts) {
@@ -261,9 +266,10 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
         verificationAttempts++;
         console.log(`🔍 Verifying video exists (attempt ${verificationAttempts}/${maxVerificationAttempts})...`, { videoId });
         
-        // Add timeout to prevent hanging
+        // Add timeout to prevent hanging (increased for first attempt since Cloudflare needs time)
+        const timeoutDuration = verificationAttempts === 1 ? 15000 : 10000; // 15s for first attempt, 10s for retries
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout per attempt
+        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
         
         const detailsResponse = await fetch(`/api/upload/cloudflare-stream/video-details?videoId=${videoId}`, {
           method: 'GET',
