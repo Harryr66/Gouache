@@ -684,8 +684,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               // Only include posts where showInPortfolio is explicitly false (Discover content, not portfolio)
               const notInPortfolio = data.showInPortfolio === false;
               
-              // Must have media
-              const hasMedia = data.imageUrl || data.mediaUrls?.length > 0;
+              // Must have media (including videos)
+              const hasMedia = data.imageUrl || data.videoUrl || data.mediaUrls?.length > 0;
               
               if (belongsToUser && notInPortfolio && hasMedia) {
                 // Spread data first, then override with document ID to ensure it's correct
