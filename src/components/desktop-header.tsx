@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo, startTransition } from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Eye, Fingerprint, Globe, Brain } from 'lucide-react';
 
@@ -15,7 +15,6 @@ const navigation = [
 
 export function DesktopHeader() {
   const pathname = usePathname();
-  const router = useRouter();
   
   // Memoize active states to prevent re-computation during scroll
   // Normalize pathname to handle query params and ensure stable comparison
@@ -83,12 +82,6 @@ export function DesktopHeader() {
               )}
               style={{
                 touchAction: 'manipulation',
-              }}
-              onClick={(e) => {
-                // Use startTransition for non-urgent navigation updates
-                startTransition(() => {
-                  router.push(item.href);
-                });
               }}
             >
               <item.icon className="h-4 w-4" />
