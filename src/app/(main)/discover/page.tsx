@@ -2294,7 +2294,7 @@ function DiscoverPageContent() {
           className="mb-6"
         >
           <div className="flex items-center gap-0 w-full">
-            <TabsList className="flex flex-1 gap-0 rounded-l-md rounded-r-none border-r-0">
+            <TabsList className="!flex flex-1 gap-0 rounded-l-md rounded-r-none border-r-0">
               <TabsTrigger value="artwork" className="flex items-center justify-center gap-2 flex-1 px-4 md:px-6 h-10 rounded-l-md rounded-r-none border-r-0">
                 <Palette className="h-4 w-4" />
                 <span className="hidden sm:inline">Discover</span>
@@ -2308,7 +2308,7 @@ function DiscoverPageContent() {
           </div>
           {/* Bottom row - Filter and View Selector aligned with top row split */}
           <div className="hidden md:flex items-center gap-0 w-full">
-            <div className="flex flex-1 gap-0 rounded-l-md rounded-r-none border-r-0">
+            <div className="flex flex-1 gap-0 rounded-l-md rounded-r-none">
               {activeTab === 'artwork' ? (
                 <>
                   <Button
