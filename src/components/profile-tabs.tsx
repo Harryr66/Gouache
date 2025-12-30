@@ -546,6 +546,23 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               preload="auto"
               webkit-playsinline="true"
               x5-playsinline="true"
+              onError={(e) => {
+                // Suppress 404 errors - video doesn't exist, hide it
+                const video = e.currentTarget;
+                if (video.error?.code === 4 || video.networkState === 3) {
+                  // 404 - video not found, hide the video element
+                  video.style.display = 'none';
+                  // Show image fallback if available
+                  const parent = video.parentElement;
+                  if (parent && imageUrl && !imageUrl.includes('cloudflarestream.com')) {
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.className = 'w-full h-full object-cover';
+                    img.alt = item.title || item.caption || 'Content';
+                    parent.appendChild(img);
+                  }
+                }
+              }}
             />
           ) : (
             imageUrl.includes('cloudflarestream.com') ? (

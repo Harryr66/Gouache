@@ -558,18 +558,24 @@ const VideoPlayer = ({
 
     video.addEventListener('error', (e) => {
       const error = video.error;
-      const is404 = videoUrl && (videoUrl.includes('404') || error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED);
+      // Detect 404 errors (networkState 3 = NETWORK_NO_SOURCE, code 4 = MEDIA_ERR_SRC_NOT_SUPPORTED)
+      const is404 = video.networkState === 3 || error?.code === 4;
       
-      console.error('❌ Video error:', {
-        error,
-        code: error?.code,
-        message: error?.message,
-        videoUrl,
-        networkState: video.networkState,
-        readyState: video.readyState,
-        hlsInstance: !!hlsRef.current,
-        is404
-      });
+      // Only log non-404 errors to reduce console noise
+      if (!is404) {
+        console.error('❌ Video error:', {
+          error,
+          code: error?.code,
+          message: error?.message,
+          videoUrl,
+          networkState: video.networkState,
+          readyState: video.readyState,
+          hlsInstance: !!hlsRef.current
+        });
+      } else {
+        // Silently handle 404s - video doesn't exist, no need to spam console
+        console.debug('⚠️ Video not found (404), will try fallback or hide:', videoUrl.substring(0, 80) + '...');
+      }
       
       // If 404, try videodelivery.net fallback (only once)
       if (is404 && retryCountRef.current === 0 && videoUrl.includes('cloudflarestream.com')) {
