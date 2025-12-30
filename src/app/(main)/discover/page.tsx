@@ -500,12 +500,6 @@ const VideoPlayer = ({
         });
 
         hlsRef.current = hls;
-
-        return () => {
-          if (hlsRef.current) {
-            hlsRef.current.destroy();
-          }
-        };
       } else {
         // Fallback: try direct URL (might work for some formats)
         console.warn('⚠️ HLS not supported, trying direct URL:', videoUrl);
@@ -2133,7 +2127,7 @@ function DiscoverPageContent() {
         // Always add placeholder products to simulate marketplace
         const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 20);
         setMarketplaceProducts([...fetchedProducts, ...placeholderProducts]);
-    } catch (err) {
+      } catch (err) {
         error('Error fetching marketplace products:', err);
         // Even on error, show placeholder products
         const placeholderProducts = generatePlaceholderMarketplaceProducts(mounted ? theme : undefined, 20);
