@@ -2308,7 +2308,7 @@ function DiscoverPageContent() {
           </div>
           {/* Bottom row - Filter and View Selector aligned with top row split */}
           <div className="hidden md:flex items-center gap-0 w-full">
-            <div className="gap-0 rounded-l-md rounded-r-none filter-view-grid">
+            <div className="flex-1 gap-0 rounded-l-md rounded-r-none filter-view-grid">
               {activeTab === 'artwork' ? (
                 <>
                   <Button
