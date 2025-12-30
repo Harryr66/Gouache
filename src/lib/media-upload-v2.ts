@@ -245,63 +245,106 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     
     console.log('✅ File successfully uploaded directly to Cloudflare');
 
-    // Step 3: Get video details from our API (optional - we can construct URLs ourselves)
-    // If the API call fails (rate limiting), we'll construct URLs directly from the video ID
-    let details: any = {};
-    let detailsAvailable = false;
-    
-    try {
-      console.log('📤 Calling API to get video details after direct upload...', { videoId });
-      
-      // Add timeout to prevent hanging on network errors (ERR_NETWORK_IO_SUSPENDED, etc.)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const detailsResponse = await fetch(`/api/upload/cloudflare-stream/video-details?videoId=${videoId}`, {
-        method: 'GET',
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
-
-      // Clone response to check content type before parsing
-      const detailsClone = detailsResponse.clone();
-      const contentType = detailsResponse.headers.get('content-type') || '';
-      const isJson = contentType.includes('application/json');
-      
-      if (isJson && detailsResponse.ok) {
-        try {
-          details = await detailsClone.json();
-          detailsAvailable = true;
-          console.log('✅ Received video details:', details);
-        } catch (jsonError) {
-          console.warn('⚠️ Failed to parse JSON response, will construct URLs directly');
-        }
-      } else if (detailsResponse.status === 403) {
-        // Rate limited - this is expected, we'll construct URLs directly
-        console.warn('⚠️ Video details endpoint rate limited (403), constructing URLs directly from video ID');
-      } else {
-        // Other error - log but don't fail
-        console.warn('⚠️ Video details endpoint returned non-JSON response, constructing URLs directly');
-      }
-    } catch (detailsError: any) {
-      // API call failed - not critical, we can construct URLs ourselves
-      console.warn('⚠️ Video details API call failed, constructing URLs directly:', detailsError.message);
-    }
-
-    // Construct Cloudflare Stream URLs directly from video ID
-    // This works even if the API call failed
+    // Step 3: VERIFY video exists in Cloudflare before returning (CRITICAL for reliability)
+    // We don't need to wait for "ready" - just confirm it exists (even if still processing)
+    // This ensures we only store video IDs for videos that actually exist
     const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || '';
+    let details: any = {};
+    let videoExists = false;
+    let verificationAttempts = 0;
+    const maxVerificationAttempts = 3;
+    const verificationRetryDelays = [2000, 4000, 8000]; // Exponential backoff: 2s, 4s, 8s
+    
+    // Retry verification up to 3 times with exponential backoff
+    while (!videoExists && verificationAttempts < maxVerificationAttempts) {
+      try {
+        verificationAttempts++;
+        console.log(`🔍 Verifying video exists (attempt ${verificationAttempts}/${maxVerificationAttempts})...`, { videoId });
+        
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout per attempt
+        
+        const detailsResponse = await fetch(`/api/upload/cloudflare-stream/video-details?videoId=${videoId}`, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+
+        // Clone response to check content type before parsing
+        const detailsClone = detailsResponse.clone();
+        const contentType = detailsResponse.headers.get('content-type') || '';
+        const isJson = contentType.includes('application/json');
+        
+        if (isJson && detailsResponse.ok) {
+          try {
+            details = await detailsClone.json();
+            // Video exists if we get a response (even if still processing)
+            // We check for 404 specifically - if video doesn't exist, API returns 404
+            videoExists = true;
+            console.log('✅ Video verified to exist:', {
+              videoId,
+              status: details.status || 'ready',
+              hasPlaybackUrl: !!details.playbackUrl
+            });
+            break; // Success - exit retry loop
+          } catch (jsonError) {
+            console.warn('⚠️ Failed to parse JSON response, will retry...');
+          }
+        } else if (detailsResponse.status === 404) {
+          // Video doesn't exist - this is a real problem
+          throw new Error(`Video not found in Cloudflare Stream (404). Video ID: ${videoId}`);
+        } else if (detailsResponse.status === 403) {
+          // Rate limited - retry with backoff
+          console.warn(`⚠️ Rate limited (403), will retry in ${verificationRetryDelays[verificationAttempts - 1]}ms...`);
+          if (verificationAttempts < maxVerificationAttempts) {
+            await new Promise(resolve => setTimeout(resolve, verificationRetryDelays[verificationAttempts - 1]));
+            continue; // Retry
+          }
+        } else {
+          // Other error - retry
+          console.warn(`⚠️ Verification failed (${detailsResponse.status}), will retry...`);
+          if (verificationAttempts < maxVerificationAttempts) {
+            await new Promise(resolve => setTimeout(resolve, verificationRetryDelays[verificationAttempts - 1]));
+            continue; // Retry
+          }
+        }
+      } catch (detailsError: any) {
+        // Network/timeout error - retry if we have attempts left
+        if (verificationAttempts < maxVerificationAttempts) {
+          const retryDelay = verificationRetryDelays[verificationAttempts - 1];
+          console.warn(`⚠️ Verification error (${detailsError.message}), retrying in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          continue; // Retry
+        } else {
+          // All retries exhausted
+          throw new Error(`Failed to verify video exists after ${maxVerificationAttempts} attempts: ${detailsError.message}`);
+        }
+      }
+    }
+    
+    // If we couldn't verify video exists after all retries, fail the upload
+    if (!videoExists) {
+      throw new Error(`Could not verify video exists in Cloudflare Stream after ${maxVerificationAttempts} attempts. The video may not have been uploaded successfully.`);
+    }
+    
+    // Construct Cloudflare Stream URLs (video exists, so these URLs will work)
     const playbackUrl = details.playbackUrl || `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
     const thumbnailUrl = details.thumbnailUrl || `https://customer-${accountId}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`;
     
-    // If we got details from the API, use them; otherwise use defaults
+    console.log('✅ Video verified and ready to store:', {
+      videoId,
+      playbackUrl: playbackUrl.substring(0, 80) + '...',
+      status: details.status || 'ready'
+    });
+    
     return {
       url: playbackUrl,
       thumbnailUrl: thumbnailUrl,
       provider: 'cloudflare',
       cloudflareId: details.videoId || videoId,
-      duration: details.duration || 0, // Will be 0 if API call failed, but video will still work
+      duration: details.duration || 0,
     };
 
     console.log('✅ Received video details:', details);

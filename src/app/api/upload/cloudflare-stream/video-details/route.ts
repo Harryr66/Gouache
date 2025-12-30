@@ -55,6 +55,13 @@ export async function GET(request: NextRequest) {
 
         if (!response.ok) {
           const errorText = await response.text().catch(() => response.statusText);
+          // 404 means video doesn't exist - this is critical
+          if (response.status === 404) {
+            return NextResponse.json(
+              { error: 'Video not found', videoId, status: 404 },
+              { status: 404 }
+            );
+          }
           throw new Error(`Failed to check video status (${response.status}): ${errorText}`);
         }
 
@@ -62,12 +69,22 @@ export async function GET(request: NextRequest) {
 
         // Check for API errors
         if (errors && errors.length > 0) {
+          // 404 error in response means video doesn't exist
+          if (errors[0].code === 10009 || errors[0].message?.includes('not found')) {
+            return NextResponse.json(
+              { error: 'Video not found', videoId, status: 404 },
+              { status: 404 }
+            );
+          }
           throw new Error(`Cloudflare API error: ${errors[0].message || 'Unknown error'}`);
         }
 
         if (!result) {
           throw new Error('No result returned from Cloudflare API');
         }
+        
+        // Video exists if we got here (even if still processing)
+        // This is what we need to verify - existence, not readiness
 
         // Video is ready
         if (result.status?.state === 'ready') {
