@@ -2509,9 +2509,31 @@ function DiscoverPageContent() {
                     return (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                   });
                   
+                  console.log('🎬 Video feed rendering:', {
+                    artworkView,
+                    totalArtworks: visibleFilteredArtworks.length,
+                    videoArtworksCount: videoArtworks.length,
+                    videoArtworks: videoArtworks.map((a: any) => ({
+                      id: a.id,
+                      title: a.title,
+                      videoUrl: (a as any).videoUrl,
+                      mediaType: (a as any).mediaType
+                    }))
+                  });
+                  
+                  if (videoArtworks.length === 0) {
+                    console.warn('⚠️ No videos found in video feed. Total artworks:', visibleFilteredArtworks.length);
+                  }
+                  
                   return (
                     <div className="w-full space-y-6 flex flex-col items-center">
-                      {videoArtworks.map((item) => {
+                      {videoArtworks.length === 0 ? (
+                        <div className="w-full py-12 text-center text-muted-foreground">
+                          <p>No videos available</p>
+                          <p className="text-sm mt-2">Switch to grid view to see images</p>
+                        </div>
+                      ) : (
+                        videoArtworks.map((item) => {
                         const artwork = item as Artwork;
                         const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                         let videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
@@ -2596,7 +2618,7 @@ function DiscoverPageContent() {
                             toggleLike={toggleLike}
                           />
                         );
-                      })}
+                      }))}
                     </div>
                   );
                 })()}
