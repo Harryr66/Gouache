@@ -190,11 +190,18 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
         debug: error.debug,
       });
       
-      // For 522 errors, throw a retryable error that the retry logic can catch
-      if (is522Error) {
-        const retryError: any = new Error(`Connection timed out (522): ${errorMessage}`);
+      // For retryable errors (403, 522, 5xx), throw a retryable error that the retry logic can catch
+      const isRetryableError = createUrlResponse.status === 403 || 
+                               createUrlResponse.status === 522 || 
+                               (createUrlResponse.status >= 500 && createUrlResponse.status < 600);
+      
+      if (isRetryableError) {
+        const errorType = createUrlResponse.status === 403 ? 'Rate limited (403)' :
+                         createUrlResponse.status === 522 ? 'Connection timed out (522)' :
+                         `Server error (${createUrlResponse.status})`;
+        const retryError: any = new Error(`${errorType}: ${errorMessage || createUrlResponse.statusText || 'Please try again'}`);
         retryError.isRetryable = true;
-        retryError.status = 522;
+        retryError.status = createUrlResponse.status;
         throw retryError;
       }
       
