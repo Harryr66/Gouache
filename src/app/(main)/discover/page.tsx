@@ -1426,7 +1426,14 @@ function DiscoverPageContent() {
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
         setArtworksLoaded(true); // Mark artworks as loaded
-        // DO NOT set loading to false here - must wait for joke to complete + 2s minimum
+        
+        // If we only have placeholders, mark images as "ready" immediately (they don't need to load)
+        if (safeArtworks.length === 0 && placeholderArtworks.length > 0) {
+          // Placeholders don't have real images that need loading, so mark them as ready immediately
+          setInitialImagesReady(placeholderArtworks.length);
+          setInitialImagesTotal(placeholderArtworks.length);
+          console.log(`✅ Placeholders only: Marking ${placeholderArtworks.length} items as ready immediately`);
+        }
         
         // Count initial viewport media for preloading with connection-aware limits
         // Strategy: Load poster images first (fast), limit videos to 3 per viewport, connection-aware preload count
