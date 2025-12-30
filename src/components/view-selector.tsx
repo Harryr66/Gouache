@@ -34,10 +34,7 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
       {/* Video feed option - LEFT */}
       <button
         onClick={() => onViewChange('list')}
-        className={cn(
-          'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
-          view === 'list' ? 'text-foreground' : 'text-muted-foreground'
-        )}
+        className="flex-1 flex items-center justify-center h-full relative z-10"
       >
         <div className="relative w-4 h-4 rounded-sm border-2 border-current flex items-center justify-center" style={{ borderRadius: '4px' }}>
           <Play className="h-2 w-2" fill="currentColor" style={{ marginLeft: '1px' }} />
@@ -47,10 +44,7 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
       {/* Grid option - RIGHT */}
       <button
         onClick={() => onViewChange('grid')}
-        className={cn(
-          'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
-          view === 'grid' ? 'text-foreground' : 'text-muted-foreground'
-        )}
+        className="flex-1 flex items-center justify-center h-full relative z-10"
       >
         <LayoutGrid className="h-4 w-4" />
       </button>
