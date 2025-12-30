@@ -71,15 +71,20 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
         jsonClone = createUrlResponse.clone();
         textClone = createUrlResponse.clone();
         
-        // Check if response is retryable (522 timeout, 5xx errors)
+        // Check if response is retryable (403 rate limit, 522 timeout, 5xx errors)
         // If so, throw an error to trigger retry logic
         if (!createUrlResponse.ok) {
-          const isRetryableStatus = createUrlResponse.status === 522 || 
+          // 403 from Vercel is often rate limiting and should be retried
+          const isRetryableStatus = createUrlResponse.status === 403 || 
+                                   createUrlResponse.status === 522 || 
                                    (createUrlResponse.status >= 500 && createUrlResponse.status < 600);
           
           if (isRetryableStatus && attempt < maxRetries) {
             // This is a retryable error - throw to trigger retry
-            const retryError: any = new Error(`Server error ${createUrlResponse.status}: ${createUrlResponse.statusText || 'Connection timeout'}`);
+            const errorType = createUrlResponse.status === 403 ? 'Rate limited (403)' :
+                             createUrlResponse.status === 522 ? 'Connection timeout (522)' :
+                             `Server error (${createUrlResponse.status})`;
+            const retryError: any = new Error(`${errorType}: ${createUrlResponse.statusText || 'Please try again'}`);
             retryError.isRetryable = true;
             retryError.status = createUrlResponse.status;
             throw retryError;
@@ -94,16 +99,18 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
                               fetchError.message?.includes('NetworkError') ||
                               fetchError.name === 'TypeError';
         
-        // Also retry on 522 errors (connection timeout) and other 5xx errors
+        // Also retry on 403 (rate limiting), 522 errors (connection timeout), and other 5xx errors
         const isRetryable = isNetworkError || 
                            fetchError.isRetryable || 
+                           fetchError.status === 403 ||
                            fetchError.status === 522 ||
                            (fetchError.status >= 500 && fetchError.status < 600);
         
         if (attempt < maxRetries && isRetryable) {
           // Exponential backoff: 1s, 2s, 4s
           const delay = Math.pow(2, attempt - 1) * 1000;
-          const errorType = fetchError.status === 522 ? 'Connection timeout (522)' : 
+          const errorType = fetchError.status === 403 ? 'Rate limited (403)' :
+                           fetchError.status === 522 ? 'Connection timeout (522)' : 
                            fetchError.status >= 500 ? `Server error (${fetchError.status})` : 
                            'Network error';
           console.warn(`⚠️ ${errorType} creating upload URL (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`, fetchError.message);
