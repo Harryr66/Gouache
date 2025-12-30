@@ -632,15 +632,18 @@ const VideoPlayer = ({
     };
   }, [videoUrl]);
 
+  // Don't render at all if video failed
+  if (hasError) {
+    return null;
+  }
+
   return (
     <div className="relative group w-full max-w-md mx-auto">
       <Link href={`/artwork/${artwork.id}`}>
         <Card className="relative w-full overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
           {/* Video container with 9:16 portrait aspect ratio */}
-          {/* Hide completely if video failed - no black box */}
-          {!hasError && (
-            <div className="relative w-full" style={{ aspectRatio: '9/16' }}>
-              <video
+          <div className="relative w-full" style={{ aspectRatio: '9/16' }}>
+            <video
                 ref={videoRef}
                 className="w-full h-full object-cover"
                 playsInline
