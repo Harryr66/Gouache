@@ -39,7 +39,7 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
           view === 'grid' ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
-        <PlaySquare className="h-4 w-4" />
+        <LayoutGrid className="h-4 w-4" />
       </button>
       
       {/* Video feed option */}
@@ -50,7 +50,7 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
           view === 'list' ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
-        <LayoutGrid className="h-4 w-4" />
+        <PlaySquare className="h-4 w-4" />
       </button>
     </div>
   );
