@@ -2082,58 +2082,58 @@ function DiscoverPageContent() {
 
   // Marketplace products useEffect removed - marketplace tab is hidden
 
-  // Events useEffect - temporarily simplified to fix build issue
-  useEffect(() => {
+  // Events useEffect - using useCallback to avoid parsing issues
+  const fetchEventsCallback = useCallback(async () => {
     if (!mounted) return;
     
-    const fetchEvents = async () => {
-      try {
-        const placeholderImage = theme === 'dark' ? '/assets/placeholder-dark.png' : '/assets/placeholder-light.png';
-        const eventsSnapshot = await getDocs(query(collection(db, 'events'), orderBy('date', 'desc')));
-        const fetchedEvents: EventType[] = eventsSnapshot.docs.map((doc) => {
-          const data = doc.data() as any;
-          const eventType: EventType['type'] =
-            data.type === 'Auction' || data.type === 'Workshop' || data.type === 'Exhibition'
-              ? data.type
-              : 'Exhibition';
-          return {
-            id: doc.id,
-            title: data.title || 'Untitled Event',
-            description: data.description || '',
-            imageUrl: data.imageUrl || placeholderImage,
-            imageAiHint: data.imageAiHint || data.title || 'Event',
-            date: data.date || new Date().toISOString(),
-            endDate: data.endDate || undefined,
-            type: eventType,
-            artist: {
-              id: data.artistId || '',
-              name: data.artistName || 'Artist',
-              handle: data.artistHandle || '',
-              avatarUrl: data.artistAvatarUrl || '',
-              followerCount: data.artistFollowerCount || 0,
-              followingCount: 0,
-              createdAt: new Date(),
-            },
-            locationType: 'In-person',
-            locationName: data.venue || data.location || '',
-            locationAddress: data.location || '',
-            discussionId: data.discussionId || `event-${doc.id}`,
-            attendees: data.attendees || [],
-            maxAttendees: data.maxAttendees,
-            price: data.price ?? undefined,
-          };
-        });
-        const placeholderEvents = generatePlaceholderEvents(theme, 12);
-        setEvents([...fetchedEvents, ...placeholderEvents]);
-      } catch (err) {
-        error('Failed to load events:', err);
-        const placeholderEvents = generatePlaceholderEvents(theme, 12);
-        setEvents(placeholderEvents);
-      }
-    };
-    
-    fetchEvents();
+    try {
+      const placeholderImage = theme === 'dark' ? '/assets/placeholder-dark.png' : '/assets/placeholder-light.png';
+      const eventsSnapshot = await getDocs(query(collection(db, 'events'), orderBy('date', 'desc')));
+      const fetchedEvents: EventType[] = eventsSnapshot.docs.map((doc) => {
+        const data = doc.data() as any;
+        const eventType: EventType['type'] =
+          data.type === 'Auction' || data.type === 'Workshop' || data.type === 'Exhibition'
+            ? data.type
+            : 'Exhibition';
+        return {
+          id: doc.id,
+          title: data.title || 'Untitled Event',
+          description: data.description || '',
+          imageUrl: data.imageUrl || placeholderImage,
+          imageAiHint: data.imageAiHint || data.title || 'Event',
+          date: data.date || new Date().toISOString(),
+          endDate: data.endDate || undefined,
+          type: eventType,
+          artist: {
+            id: data.artistId || '',
+            name: data.artistName || 'Artist',
+            handle: data.artistHandle || '',
+            avatarUrl: data.artistAvatarUrl || '',
+            followerCount: data.artistFollowerCount || 0,
+            followingCount: 0,
+            createdAt: new Date(),
+          },
+          locationType: 'In-person',
+          locationName: data.venue || data.location || '',
+          locationAddress: data.location || '',
+          discussionId: data.discussionId || `event-${doc.id}`,
+          attendees: data.attendees || [],
+          maxAttendees: data.maxAttendees,
+          price: data.price ?? undefined,
+        };
+      });
+      const placeholderEvents = generatePlaceholderEvents(theme, 12);
+      setEvents([...fetchedEvents, ...placeholderEvents]);
+    } catch (err) {
+      error('Failed to load events:', err);
+      const placeholderEvents = generatePlaceholderEvents(theme, 12);
+      setEvents(placeholderEvents);
+    }
   }, [theme, mounted]);
+
+  useEffect(() => {
+    fetchEventsCallback();
+  }, [fetchEventsCallback]);
 
   // Render initial tiles invisibly during loading so poster images can preload
   // Videos will load in background and autoplay when ready (onCanPlay)
