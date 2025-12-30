@@ -49,26 +49,54 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
     
     console.log('📤 Requesting upload URL from API...', requestBody);
     
+    // Step 1: Get upload URL from our API (with retry logic for network errors)
     let createUrlResponse: Response;
     let jsonClone: Response;
     let textClone: Response;
     
-    try {
-      createUrlResponse = await fetch('/api/upload/cloudflare-stream/create-upload-url', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+    const maxRetries = 3;
+    let lastError: any = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        createUrlResponse = await fetch('/api/upload/cloudflare-stream/create-upload-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
 
-      // Clone responses IMMEDIATELY after fetch, before ANY other code runs
-      // This prevents interceptors or other code from consuming the body first
-      jsonClone = createUrlResponse.clone();
-      textClone = createUrlResponse.clone();
-    } catch (fetchError: any) {
-      console.error('❌ Network error creating upload URL:', fetchError);
-      throw new Error(`Network error: ${fetchError.message || 'Failed to connect to server'}`);
+        // Clone responses IMMEDIATELY after fetch, before ANY other code runs
+        // This prevents interceptors or other code from consuming the body first
+        jsonClone = createUrlResponse.clone();
+        textClone = createUrlResponse.clone();
+        
+        // Success - break out of retry loop
+        lastError = null;
+        break;
+      } catch (fetchError: any) {
+        lastError = fetchError;
+        const isNetworkError = fetchError.message?.includes('Failed to fetch') || 
+                              fetchError.message?.includes('NetworkError') ||
+                              fetchError.name === 'TypeError';
+        
+        if (attempt < maxRetries && isNetworkError) {
+          // Exponential backoff: 1s, 2s, 4s
+          const delay = Math.pow(2, attempt - 1) * 1000;
+          console.warn(`⚠️ Network error creating upload URL (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`, fetchError.message);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        } else {
+          // Last attempt failed or non-network error
+          console.error(`❌ Network error creating upload URL (attempt ${attempt}/${maxRetries}):`, fetchError);
+          throw new Error(`Network error: ${fetchError.message || 'Failed to connect to server'}`);
+        }
+      }
+    }
+    
+    if (lastError) {
+      throw new Error(`Network error: ${lastError.message || 'Failed to connect to server after retries'}`);
     }
 
     if (!createUrlResponse.ok) {
