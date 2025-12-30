@@ -2187,8 +2187,8 @@ function DiscoverPageContent() {
                 }
               }
               
-              // Only preload viewport + 1 row worth of items for faster loading
-              const preloadSlice = preloadTiles.slice(0, itemsToWaitFor);
+              // Preload ALL items we collected (up to preloadCount) for maximum speed
+              const preloadSlice = preloadTiles;
               
               return preloadSlice.map((artwork) => {
                 const isInitial = true;
