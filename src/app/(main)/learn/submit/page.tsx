@@ -17,8 +17,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { useCourses } from '@/providers/course-provider';
 import { toast } from '@/hooks/use-toast';
-import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
-import { storage, db } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, query, setDoc, where, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 
 const COURSE_CATEGORIES = {
