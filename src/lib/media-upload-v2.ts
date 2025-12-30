@@ -71,22 +71,50 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
         jsonClone = createUrlResponse.clone();
         textClone = createUrlResponse.clone();
         
-        // Success - break out of retry loop
-        break;
+        // Check if response is retryable (522 timeout, 5xx errors)
+        // If so, throw an error to trigger retry logic
+        if (!createUrlResponse.ok) {
+          const isRetryableStatus = createUrlResponse.status === 522 || 
+                                   (createUrlResponse.status >= 500 && createUrlResponse.status < 600);
+          
+          if (isRetryableStatus && attempt < maxRetries) {
+            // This is a retryable error - throw to trigger retry
+            const retryError: any = new Error(`Server error ${createUrlResponse.status}: ${createUrlResponse.statusText || 'Connection timeout'}`);
+            retryError.isRetryable = true;
+            retryError.status = createUrlResponse.status;
+            throw retryError;
+          }
+          // If not retryable or last attempt, let it fall through to error handling below
+        } else {
+          // Success - break out of retry loop
+          break;
+        }
       } catch (fetchError: any) {
         const isNetworkError = fetchError.message?.includes('Failed to fetch') || 
                               fetchError.message?.includes('NetworkError') ||
                               fetchError.name === 'TypeError';
         
-        if (attempt < maxRetries && isNetworkError) {
+        // Also retry on 522 errors (connection timeout) and other 5xx errors
+        const isRetryable = isNetworkError || 
+                           fetchError.isRetryable || 
+                           fetchError.status === 522 ||
+                           (fetchError.status >= 500 && fetchError.status < 600);
+        
+        if (attempt < maxRetries && isRetryable) {
           // Exponential backoff: 1s, 2s, 4s
           const delay = Math.pow(2, attempt - 1) * 1000;
-          console.warn(`⚠️ Network error creating upload URL (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`, fetchError.message);
+          const errorType = fetchError.status === 522 ? 'Connection timeout (522)' : 
+                           fetchError.status >= 500 ? `Server error (${fetchError.status})` : 
+                           'Network error';
+          console.warn(`⚠️ ${errorType} creating upload URL (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`, fetchError.message);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         } else {
-          // Last attempt failed or non-network error
-          console.error(`❌ Network error creating upload URL (attempt ${attempt}/${maxRetries}):`, fetchError);
+          // Last attempt failed or non-retryable error
+          const errorType = fetchError.status === 522 ? 'Connection timeout (522)' : 
+                           fetchError.status >= 500 ? `Server error (${fetchError.status})` : 
+                           'Network error';
+          console.error(`❌ ${errorType} creating upload URL (attempt ${attempt}/${maxRetries}):`, fetchError);
           throw new Error(`Network error: ${fetchError.message || 'Failed to connect to server'}`);
         }
       }
