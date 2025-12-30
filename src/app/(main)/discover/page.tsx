@@ -485,16 +485,51 @@ const VideoPlayer = ({
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
                 console.error('Fatal network error, trying to recover...');
-                hls.startLoad();
+                // Try to recover from network errors
+                if (retryCountRef.current < 3) {
+                  retryCountRef.current++;
+                  setTimeout(() => {
+                    hls.startLoad();
+                  }, 1000 * retryCountRef.current);
+                } else {
+                  console.error('Max HLS network retries reached');
+                  setHasError(true);
+                }
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
                 console.error('Fatal media error, trying to recover...');
-                hls.recoverMediaError();
+                // Try to recover from media errors
+                if (retryCountRef.current < 3) {
+                  retryCountRef.current++;
+                  setTimeout(() => {
+                    hls.recoverMediaError();
+                  }, 1000 * retryCountRef.current);
+                } else {
+                  console.error('Max HLS media retries reached');
+                  setHasError(true);
+                }
                 break;
               default:
                 console.error('Fatal error, destroying HLS instance');
-                hls.destroy();
-                setHasError(true);
+                // Only show error after retries
+                if (retryCountRef.current < 3) {
+                  retryCountRef.current++;
+                  setTimeout(() => {
+                    hls.destroy();
+                    // Recreate HLS instance
+                    const newHls = new Hls({
+                      enableWorker: true,
+                      lowLatencyMode: false,
+                      backBufferLength: 90,
+                    });
+                    newHls.loadSource(videoUrl);
+                    newHls.attachMedia(video);
+                    hlsRef.current = newHls;
+                  }, 1000 * retryCountRef.current);
+                } else {
+                  hls.destroy();
+                  setHasError(true);
+                }
                 break;
             }
           }
@@ -529,29 +564,30 @@ const VideoPlayer = ({
         message: error?.message,
         videoUrl,
         networkState: video.networkState,
-        readyState: video.readyState
+        readyState: video.readyState,
+        hlsInstance: !!hlsRef.current
       });
       
-      // Retry up to 3 times for network errors
-      if (retryCountRef.current < 3 && error && error.code === MediaError.MEDIA_ERR_NETWORK) {
+      // Don't show error immediately - retry first
+      if (retryCountRef.current < 5) {
         retryCountRef.current++;
-        console.log(`⚠️ Network error, retrying (${retryCountRef.current}/3)...`);
+        const retryDelay = Math.min(1000 * retryCountRef.current, 5000);
+        console.log(`⚠️ Video error, retrying (${retryCountRef.current}/5) in ${retryDelay}ms...`);
+        
         setTimeout(() => {
           if (video && videoUrl) {
+            // Reset error state
+            setHasError(false);
+            // Reload video
             video.load();
           }
-        }, 1000 * retryCountRef.current);
+        }, retryDelay);
         return;
       }
       
-      // Only set error if it's a fatal error after retries
-      if (error && (error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || error.code === MediaError.MEDIA_ERR_DECODE)) {
-        console.error('❌ Fatal video error, showing unavailable');
-        setHasError(true);
-      } else if (retryCountRef.current >= 3) {
-        console.error('❌ Max retries reached, showing unavailable');
-        setHasError(true);
-      }
+      // Only show error after all retries exhausted
+      console.error('❌ Max retries reached, showing unavailable');
+      setHasError(true);
     });
 
     return () => {
@@ -2487,26 +2523,32 @@ function DiscoverPageContent() {
                         if (isCloudflareStream && videoUrl) {
                           // If URL already has .m3u8, use it as-is
                           if (videoUrl.includes('.m3u8')) {
+                            console.log('✅ Video URL already has .m3u8, using as-is:', videoUrl);
                             // Already correct
                           } else {
                             // Extract video ID and construct HLS manifest URL
                             const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
                             let videoId: string | null = null;
                             
+                            console.log('🔍 Extracting video ID from:', videoUrl, 'Account ID:', accountId ? 'Set' : 'Missing');
+                            
                             // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
                             const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
                             if (customerMatch) {
                               videoId = customerMatch[1];
+                              console.log('✅ Extracted video ID from customer subdomain:', videoId);
                             } else {
                               // Try videodelivery.net format: videodelivery.net/{videoId}
                               const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
                               if (videoDeliveryMatch) {
                                 videoId = videoDeliveryMatch[1];
+                                console.log('✅ Extracted video ID from videodelivery.net:', videoId);
                               } else {
                                 // Fallback: try to extract from any cloudflarestream.com URL
                                 const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
                                 if (fallbackMatch) {
                                   videoId = fallbackMatch[1];
+                                  console.log('✅ Extracted video ID from fallback match:', videoId);
                                 }
                               }
                             }
@@ -2514,14 +2556,19 @@ function DiscoverPageContent() {
                             if (videoId && accountId) {
                               // Construct HLS manifest URL using environment variable account ID
                               videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
+                              console.log('✅ Constructed HLS manifest URL:', videoUrl);
                             } else if (videoId) {
                               // Fallback: use videodelivery.net if account ID not available
                               videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+                              console.log('⚠️ Using videodelivery.net fallback (no account ID):', videoUrl);
                             } else {
                               // If we can't extract video ID, log error but don't break
                               console.error('❌ Could not extract video ID from Cloudflare Stream URL:', videoUrl);
+                              console.error('❌ Original artwork data:', artwork);
                             }
                           }
+                        } else {
+                          console.log('⚠️ Video URL is not Cloudflare Stream:', videoUrl);
                         }
                         
                         // Ensure videoUrl is valid before proceeding
