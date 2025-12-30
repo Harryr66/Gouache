@@ -2051,9 +2051,9 @@ function DiscoverPageContent() {
           });
         }
       });
-    }, { 
-      rootMargin: '400px', // Start loading 400px before reaching bottom for smoother continuous scroll (Pinterest-style)
-      threshold: 0.1, // Trigger when 10% of sentinel is visible
+    }, {
+      rootMargin: '400px',
+      threshold: 0.1,
     });
 
     observer.observe(sentinel);
