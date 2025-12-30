@@ -422,12 +422,20 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           return (
           <Card key={item.id || `portfolio-${item.imageUrl || Date.now()}`} className="group hover:shadow-lg transition-shadow overflow-hidden">
             <div className="relative aspect-square">
-              <Image
-                src={imageUrl}
-                alt={item.title || 'Artwork'}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-              />
+              {imageUrl.includes('cloudflarestream.com') ? (
+                <img
+                  src={imageUrl}
+                  alt={item.title || 'Artwork'}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
+                <Image
+                  src={imageUrl}
+                  alt={item.title || 'Artwork'}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              )}
             </div>
             <CardContent className="p-2">
               <h4 className="font-semibold text-xs mb-1 line-clamp-1">{item.title || 'Untitled Artwork'}</h4>
@@ -540,12 +548,20 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               x5-playsinline="true"
             />
           ) : (
-            <Image
-              src={imageUrl}
-              alt={item.title || item.caption || 'Content'}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
+            imageUrl.includes('cloudflarestream.com') ? (
+              <img
+                src={imageUrl}
+                alt={item.title || item.caption || 'Content'}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <Image
+                src={imageUrl}
+                alt={item.title || item.caption || 'Content'}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            )
           )}
         </div>
         <CardContent className="p-4">

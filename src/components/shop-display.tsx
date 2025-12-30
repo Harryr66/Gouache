@@ -421,12 +421,20 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                   <div className="flex flex-col md:flex-row gap-4 p-4">
                     <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
                       {item.imageUrl ? (
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.title}
-                          fill
-                          className="object-cover"
-                        />
+                        item.imageUrl.includes('cloudflarestream.com') ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.title}
+                            fill
+                            className="object-cover"
+                          />
+                        )
                       ) : (
                         <div className="w-full h-full bg-muted flex items-center justify-center">
                           <ImageIcon className="h-12 w-12 text-muted-foreground" />

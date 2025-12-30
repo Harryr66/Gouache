@@ -34,12 +34,20 @@ export function ArtworkCard({
     <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={onClick}>
       <div className="relative overflow-hidden rounded-t-lg">
         <div className="aspect-square relative">
-          <Image
-            src={artwork.imageUrl}
-            alt={artwork.imageAiHint}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+          {artwork.imageUrl && artwork.imageUrl.includes('cloudflarestream.com') ? (
+            <img
+              src={artwork.imageUrl}
+              alt={artwork.imageAiHint}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <Image
+              src={artwork.imageUrl}
+              alt={artwork.imageAiHint}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          )}
         </div>
         
 
