@@ -918,12 +918,11 @@ function DiscoverPageContent() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Force grid view on desktop (only artwork); events grid default on mobile too
+  // Set default views based on device
   useEffect(() => {
     if (!isMobile) {
-      setArtworkView('grid');
-      setMarketView('grid');
-      setEventsView('grid');
+      // Desktop: default to grid view, but allow user to switch
+      // Don't force it - let user's choice persist
     } else {
       // On mobile, ensure correct defaults
       setArtworkView('grid');
