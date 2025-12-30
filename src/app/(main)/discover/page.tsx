@@ -2376,9 +2376,12 @@ function DiscoverPageContent() {
               {isMobile && (
                 <div className="flex items-center gap-0 w-full">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                    className="flex-1 h-10 px-4 rounded-l-md rounded-r-none border-r-0"
+                    className={cn(
+                      "flex-1 h-10 px-4 rounded-l-md rounded-r-none border-2 border-r-0 border-border",
+                      showFilters && "bg-muted"
+                    )}
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
