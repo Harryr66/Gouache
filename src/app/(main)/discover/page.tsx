@@ -2308,10 +2308,10 @@ function DiscoverPageContent() {
           </div>
           {/* Bottom row - Filter and View Selector aligned with top row split */}
           <div className="hidden md:flex items-center gap-0 w-full">
-            <div className="flex flex-1 gap-0 rounded-l-md rounded-r-none">
+            <div className="flex flex-1 gap-0 rounded-l-md rounded-r-none" style={{ display: 'flex' }}>
               {activeTab === 'artwork' ? (
                 <>
-                  <div style={{ display: 'flex', flex: '0 0 45%', flexGrow: 0, flexShrink: 0, flexBasis: '45%' }}>
+                  <div style={{ flex: '0 0 45%', minWidth: 0, maxWidth: '45%' }}>
                     <Button
                       variant="outline"
                       onClick={() => startTransition(() => setShowFilters(!showFilters))}
@@ -2320,11 +2320,13 @@ function DiscoverPageContent() {
                       <Filter className="h-4 w-4" />
                     </Button>
                   </div>
-                  <ViewSelector view={artworkView} onViewChange={setArtworkView} style={{ display: 'flex', flex: '0 0 55%', flexGrow: 0, flexShrink: 0, flexBasis: '55%' }} />
+                  <div style={{ flex: '0 0 55%', minWidth: 0, maxWidth: '55%' }}>
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} />
+                  </div>
                 </>
               ) : (
                 <>
-                  <div style={{ display: 'flex', flex: '0 0 45%', flexGrow: 0, flexShrink: 0, flexBasis: '45%' }}>
+                  <div style={{ flex: '0 0 45%', minWidth: 0, maxWidth: '45%' }}>
                     <Button
                       variant="outline"
                       onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
@@ -2333,7 +2335,9 @@ function DiscoverPageContent() {
                       <Filter className="h-4 w-4" />
                     </Button>
                   </div>
-                  <ViewSelector view={eventsView} onViewChange={setEventsView} style={{ display: 'flex', flex: '0 0 55%', flexGrow: 0, flexShrink: 0, flexBasis: '55%' }} />
+                  <div style={{ flex: '0 0 55%', minWidth: 0, maxWidth: '55%' }}>
+                    <ViewSelector view={eventsView} onViewChange={setEventsView} />
+                  </div>
                 </>
               )}
             </div>
