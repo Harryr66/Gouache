@@ -2527,11 +2527,11 @@ function DiscoverPageContent() {
                 }}
                 loadMoreRef={loadMoreRef}
               />
-            ) : (
+            ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
                 {/* Video feed - Only videos, 1 per row, 1 column, full width */}
                 {(() => {
-                  // Filter to only videos for video feed
+                  // Filter to only videos for video feed (list view)
                   const videoArtworks = visibleFilteredArtworks.filter((item) => {
                     if ('type' in item && item.type === 'ad') return false; // Exclude ads
                     const artwork = item as Artwork;
