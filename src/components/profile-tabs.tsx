@@ -1041,15 +1041,34 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             let imageUrl = item.imageUrl || item.supportingImages?.[0] || '/assets/placeholder-light.png';
             
             // If video but no imageUrl, try to construct thumbnail from videoUrl
-            if (isVideo && !imageUrl && item.videoUrl) {
+            if (isVideo && (!imageUrl || imageUrl === '/assets/placeholder-light.png') && item.videoUrl) {
               // Extract video ID from Cloudflare Stream URL and construct thumbnail
-              const videoIdMatch = item.videoUrl.match(/\/manifest\/video\.m3u8$/);
-              if (videoIdMatch) {
-                const videoId = item.videoUrl.split('/').slice(-2, -1)[0];
-                const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || '';
-                if (videoId && accountId) {
-                  imageUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`;
+              let videoId: string | null = null;
+              const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || '';
+              
+              // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}/manifest/video.m3u8
+              const customerMatch = item.videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
+              if (customerMatch) {
+                videoId = customerMatch[1];
+              } else {
+                // Try videodelivery.net format: videodelivery.net/{videoId}/manifest/video.m3u8
+                const videoDeliveryMatch = item.videoUrl.match(/videodelivery\.net\/([^/?]+)/);
+                if (videoDeliveryMatch) {
+                  videoId = videoDeliveryMatch[1];
+                } else {
+                  // Fallback: try to extract from any cloudflarestream.com URL
+                  const fallbackMatch = item.videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
+                  if (fallbackMatch) {
+                    videoId = fallbackMatch[1];
+                  }
                 }
+              }
+              
+              if (videoId && accountId) {
+                imageUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`;
+              } else if (videoId) {
+                // Fallback: use videodelivery.net if account ID not available
+                imageUrl = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
               }
             }
             
