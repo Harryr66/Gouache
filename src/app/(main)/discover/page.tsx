@@ -448,6 +448,10 @@ const VideoPlayer = ({
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !videoUrl) return;
+    
+    // Reset error state when video URL changes
+    setHasError(false);
+    retryCountRef.current = 0;
 
     const isHLS = videoUrl.includes('.m3u8');
     const isCloudflareStream = videoUrl.includes('cloudflarestream.com') || videoUrl.includes('videodelivery.net');
@@ -561,68 +565,37 @@ const VideoPlayer = ({
       // Detect 404 errors (networkState 3 = NETWORK_NO_SOURCE, code 4 = MEDIA_ERR_SRC_NOT_SUPPORTED)
       const is404 = video.networkState === 3 || error?.code === 4;
       
-      // Only log non-404 errors to reduce console noise
-      if (!is404) {
-        console.error('❌ Video error:', {
-          error,
-          code: error?.code,
-          message: error?.message,
-          videoUrl,
-          networkState: video.networkState,
-          readyState: video.readyState,
-          hlsInstance: !!hlsRef.current
-        });
-      } else {
-        // Silently handle 404s - video doesn't exist, no need to spam console
-        console.debug('⚠️ Video not found (404), will try fallback or hide:', videoUrl.substring(0, 80) + '...');
-      }
-      
-      // If 404, try videodelivery.net fallback (only once)
-      if (is404 && retryCountRef.current === 0 && videoUrl.includes('cloudflarestream.com')) {
-        const videoIdMatch = videoUrl.match(/cloudflarestream\.com\/([^/]+)/);
-        if (videoIdMatch) {
-          const videoId = videoIdMatch[1];
-          const fallbackUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-          console.log('🔄 404 detected, trying videodelivery.net fallback:', fallbackUrl);
-          retryCountRef.current++;
-          
-          setTimeout(() => {
-            if (video && hlsRef.current) {
-              hlsRef.current.destroy();
-            }
-            if (video) {
-              video.src = fallbackUrl;
-              video.load();
-            }
-          }, 1000);
-          return;
+      // For 404 errors, immediately hide the video - no retries, no fallbacks
+      // If video doesn't exist in Cloudflare Stream, it won't exist in videodelivery.net either
+      if (is404) {
+        // Silently hide - video doesn't exist, no need to spam console
+        setHasError(true);
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
         }
+        return;
       }
       
-      // Don't show error immediately - retry first
-      if (retryCountRef.current < 5) {
+      // For non-404 errors, retry a few times
+      if (retryCountRef.current < 3) {
         retryCountRef.current++;
-        const retryDelay = Math.min(1000 * retryCountRef.current, 5000);
-        console.log(`⚠️ Video error, retrying (${retryCountRef.current}/5) in ${retryDelay}ms...`);
+        const retryDelay = Math.min(1000 * retryCountRef.current, 3000);
+        console.debug(`⚠️ Video error (non-404), retrying (${retryCountRef.current}/3) in ${retryDelay}ms...`);
         
         setTimeout(() => {
-          if (video && videoUrl) {
-            // Reset error state
-            setHasError(false);
-            // Reload video
+          if (video && videoUrl && !hasError) {
             video.load();
           }
         }, retryDelay);
         return;
       }
       
-      // Only show error after all retries exhausted
-      if (is404) {
-        console.error('❌ Video not found (404) - video may need to be reuploaded:', videoUrl);
-      } else {
-        console.error('❌ Max retries reached, showing unavailable');
-      }
+      // Max retries reached for non-404 errors
+      console.debug('❌ Max retries reached for video error');
       setHasError(true);
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+      }
     });
 
     return () => {
