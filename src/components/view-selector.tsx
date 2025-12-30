@@ -39,7 +39,7 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
           view === 'list' ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
-        <div className="relative w-4 h-4 rounded-md border-2 border-current flex items-center justify-center">
+        <div className="relative w-4 h-4 rounded-sm border-2 border-current flex items-center justify-center" style={{ borderRadius: '4px' }}>
           <Play className="h-2.5 w-2.5 ml-0.5" fill="currentColor" />
         </div>
       </button>
