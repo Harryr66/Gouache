@@ -1398,6 +1398,45 @@ const generateArtistContent = (artist: Artist) => ({
                   );
                 }
                 
+                // FINAL SAFETY CHECK: Never use Next.js Image for Cloudflare Stream URLs
+                // This is a last-resort check to prevent any Cloudflare Stream URLs from reaching Next.js Image
+                if (imageSrc && typeof imageSrc === 'string' && imageSrc.includes('cloudflarestream.com')) {
+                  console.error('🚨 CRITICAL: Cloudflare Stream URL reached Next.js Image fallback! Using native img instead:', imageSrc);
+                  const tileWidth = 400;
+                  const calculatedHeight = Math.round(tileWidth / aspectRatio);
+                  const imgWidth = artwork.imageWidth || tileWidth;
+                  const imgHeight = artwork.imageHeight || calculatedHeight;
+                  const finalWidth = imgWidth && imgWidth > 0 ? imgWidth : tileWidth;
+                  const finalHeight = imgHeight && imgHeight > 0 ? imgHeight : calculatedHeight;
+                  
+                  return (
+                    <img
+                      src={imageSrc}
+                      alt={artwork.imageAiHint || artwork.title || 'Artwork'}
+                      width={finalWidth}
+                      height={finalHeight}
+                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${imageError ? 'opacity-0' : 'opacity-100'}`}
+                      loading={isInitialViewport ? "eager" : "lazy"}
+                      fetchPriority={isInitialViewport ? "high" : "auto"}
+                      decoding="async"
+                      key={`${imageSrc}-${retryCount}`}
+                      onLoad={() => {
+                        setIsImageLoaded(true);
+                        setImageError(false);
+                        setRetryCount(0);
+                        if (isInitialViewport && onImageReady) {
+                          onImageReady(false);
+                        }
+                      }}
+                      onError={() => {
+                        setImageError(true);
+                        setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                        setIsImageLoaded(true);
+                      }}
+                    />
+                  );
+                }
+                
                 // For other URLs, use Next.js Image with proper size optimization
                 // CRITICAL: Use sizes prop to force Next.js to generate 240px images for grid view
                 // This ensures Firebase images load at thumbnail size (240px) instead of full-size
