@@ -34,6 +34,7 @@ import { engagementScorer } from '@/lib/engagement-scorer';
 import { useFollow } from '@/providers/follow-provider';
 import { useVideoControl } from '@/providers/video-control-provider';
 import Hls from 'hls.js';
+import { cn } from '@/lib/utils';
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
