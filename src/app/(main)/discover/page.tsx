@@ -2314,7 +2314,7 @@ function DiscoverPageContent() {
               <MasonryGrid
                 items={(() => {
                   // TEMPORARY TEST: Grid view shows ONLY images (no videos)
-                  // Videos will only appear in single view
+                  // Videos will only appear in video feed
                   return visibleFilteredArtworks.filter((item) => {
                     // Keep ads
                     if ('type' in item && item.type === 'ad') return true;
@@ -2361,9 +2361,9 @@ function DiscoverPageContent() {
               />
             ) : (
               <>
-                {/* Single view - Only videos, 1 per row, 1 column, full width */}
+                {/* Video feed - Only videos, 1 per row, 1 column, full width */}
                 {(() => {
-                  // Filter to only videos for single view
+                  // Filter to only videos for video feed
                   const videoArtworks = visibleFilteredArtworks.filter((item) => {
                     if ('type' in item && item.type === 'ad') return false; // Exclude ads
                     const artwork = item as Artwork;
@@ -2375,7 +2375,49 @@ function DiscoverPageContent() {
                       {videoArtworks.map((item) => {
                         const artwork = item as Artwork;
                         const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                        const videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
+                        let videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
+                        
+                        // Handle Cloudflare Stream URLs - need to use HLS manifest
+                        const isCloudflareStream = videoUrl?.includes('cloudflarestream.com') || 
+                                                   videoUrl?.includes('videodelivery.net');
+                        
+                        if (isCloudflareStream && videoUrl) {
+                          // If URL already has .m3u8, use it as-is
+                          if (videoUrl.includes('.m3u8')) {
+                            // Already correct
+                          } else {
+                            // Extract video ID and construct HLS manifest URL
+                            let accountId: string | null = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID || null;
+                            let videoId: string | null = null;
+                            
+                            // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
+                            const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
+                            if (customerMatch) {
+                              videoId = customerMatch[1];
+                            } else {
+                              // Try videodelivery.net format: videodelivery.net/{videoId}
+                              const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
+                              if (videoDeliveryMatch) {
+                                videoId = videoDeliveryMatch[1];
+                              } else {
+                                // Fallback: try to extract from any cloudflarestream.com URL
+                                const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
+                                if (fallbackMatch) {
+                                  videoId = fallbackMatch[1];
+                                }
+                              }
+                            }
+                            
+                            if (videoId && accountId) {
+                              // Construct HLS manifest URL using environment variable account ID
+                              videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
+                            } else if (videoId) {
+                              // Fallback: use videodelivery.net if account ID not available
+                              videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+                            }
+                          }
+                        }
+                        
                         const avatarPlaceholder = theme === 'dark'
                           ? '/assets/placeholder-dark.png'
                           : '/assets/placeholder-light.png';
@@ -2398,6 +2440,16 @@ function DiscoverPageContent() {
                                     muted
                                     loop
                                     autoPlay
+                                    controls={false}
+                                    onError={(e) => {
+                                      console.error('Video load error:', e, videoUrl);
+                                    }}
+                                    onLoadStart={() => {
+                                      console.log('Video loading started:', videoUrl);
+                                    }}
+                                    onCanPlay={() => {
+                                      console.log('Video can play:', videoUrl);
+                                    }}
                                   />
                                 </div>
                                 <div className="absolute inset-x-0 bottom-0 bg-background/80 backdrop-blur-sm p-3 flex items-center gap-2">
@@ -2450,7 +2502,7 @@ function DiscoverPageContent() {
                     </div>
                   );
                 })()}
-                {/* Sentinel element for infinite scroll in single view */}
+                {/* Sentinel element for infinite scroll in video feed */}
                 <div ref={loadMoreRef} className="h-20 w-full" />
               </>
             )}

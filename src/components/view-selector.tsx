@@ -22,7 +22,7 @@ export function ViewSelector({ view, onViewChange, className }: ViewSelectorProp
             ? 'bg-background text-foreground shadow-sm'
             : 'text-muted-foreground hover:text-foreground'
         )}
-        aria-label="Single view"
+        aria-label="Video feed"
       >
         <Square className="h-4 w-4" />
       </button>
