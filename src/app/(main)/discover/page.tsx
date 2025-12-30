@@ -851,7 +851,20 @@ function DiscoverPageContent() {
       const timeSinceJoke = jokeComplete && jokeCompleteTimeRef.current ? Date.now() - jokeCompleteTimeRef.current : Infinity;
       const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
       
-      // PINTEREST-LEVEL: Wait for ALL initial viewport images to fully load
+      // Check if we only have placeholders (no real content)
+      const hasOnlyPlaceholders = artworks.every((a: any) => {
+        const tags = Array.isArray(a.tags) ? a.tags : [];
+        return tags.includes('_placeholder') || a.id?.startsWith('placeholder-');
+      });
+      
+      // If only placeholders, dismiss immediately after joke (no need to wait for image loads)
+      if (hasOnlyPlaceholders && jokeTimeMet && artworksLoaded && artworks.length > 0) {
+        console.log(`✅ Only placeholders detected, dismissing immediately after joke + 2s`);
+        setShowLoadingScreen(false);
+        return;
+      }
+      
+      // PINTEREST-LEVEL: Wait for ALL initial viewport images to fully load (only for real content)
       // This ensures zero loading states after screen dismisses
       const imagesReady = effectiveImagesTotal > 0 && initialImagesReady >= effectiveImagesTotal;
       const videoPostersReady = effectiveVideoPostersTotal > 0 && initialVideoPostersReady >= effectiveVideoPostersTotal;
@@ -864,10 +877,10 @@ function DiscoverPageContent() {
         return;
       }
       
-      // Fallback timeout: If joke is done + 2s but media still loading, wait max 5s more
+      // Fallback timeout: If joke is done + 2s but media still loading, wait max 3s more (reduced from 5s)
       // This prevents infinite waiting if some images fail
-      if (jokeTimeMet && jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 7000) {
-        console.warn(`⚠️ Timeout after joke + 2s + 5s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
+      if (jokeTimeMet && jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 5000) {
+        console.warn(`⚠️ Timeout after joke + 2s + 3s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
         setShowLoadingScreen(false);
         return;
       }
