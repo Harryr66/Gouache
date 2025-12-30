@@ -2308,29 +2308,31 @@ function DiscoverPageContent() {
           </div>
           {/* Bottom row - Filter and View Selector aligned with top row split */}
           <div className="hidden md:flex items-center gap-0 w-full">
-            {activeTab === 'artwork' ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                  className="flex-1 h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
-                >
-                  <Filter className="h-4 w-4" />
-                </Button>
-                <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1" />
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
-                  className="flex-1 h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
-                >
-                  <Filter className="h-4 w-4" />
-                </Button>
-                <ViewSelector view={eventsView} onViewChange={setEventsView} className="flex-1" />
-              </>
-            )}
+            <div className="flex flex-1 gap-0">
+              {activeTab === 'artwork' ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => startTransition(() => setShowFilters(!showFilters))}
+                    className="flex-1 h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1" />
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
+                    className="flex-1 h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                  <ViewSelector view={eventsView} onViewChange={setEventsView} className="flex-1" />
+                </>
+              )}
+            </div>
           </div>
 
           {/* Artwork Tab */}
@@ -2486,8 +2488,8 @@ function DiscoverPageContent() {
             ) : !showLoadingScreen && artworkView === 'grid' ? (
               <MasonryGrid
                 items={(() => {
-                  // TEMPORARY TEST: Grid view shows ONLY images (no videos)
-                  // Videos will only appear in video feed
+                  // Grid view shows ONLY images (no videos)
+                  // Videos will only appear in video feed (list view)
                   return visibleFilteredArtworks.filter((item) => {
                     // Keep ads
                     if ('type' in item && item.type === 'ad') return true;
