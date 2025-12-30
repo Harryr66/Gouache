@@ -50,7 +50,7 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
           view === 'list' ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
-        <PlaySquare className="h-4 w-4" />
+        <PlaySquare className="h-4 w-4 rounded-md" />
       </button>
     </div>
   );
