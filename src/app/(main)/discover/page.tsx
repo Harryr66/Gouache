@@ -2155,7 +2155,7 @@ function DiscoverPageContent() {
         const placeholderEvents = generatePlaceholderEvents(theme, 12);
         setEvents(placeholderEvents);
       }
-    }
+    };
     
     fetchEvents();
   }, [theme, mounted]);
