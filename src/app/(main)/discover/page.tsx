@@ -2311,26 +2311,28 @@ function DiscoverPageContent() {
             <div className="flex flex-1 gap-0 rounded-l-md rounded-r-none">
               {activeTab === 'artwork' ? (
                 <>
-                  <Button
-                    variant="outline"
-                    onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                    className="h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
-                    style={{ display: 'flex', flex: '0 0 45%', flexGrow: 0, flexShrink: 0, flexBasis: '45%' }}
-                  >
-                    <Filter className="h-4 w-4" />
-                  </Button>
+                  <div style={{ display: 'flex', flex: '0 0 45%', flexGrow: 0, flexShrink: 0, flexBasis: '45%' }}>
+                    <Button
+                      variant="outline"
+                      onClick={() => startTransition(() => setShowFilters(!showFilters))}
+                      className="w-full h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                    >
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <ViewSelector view={artworkView} onViewChange={setArtworkView} style={{ display: 'flex', flex: '0 0 55%', flexGrow: 0, flexShrink: 0, flexBasis: '55%' }} />
                 </>
               ) : (
                 <>
-                  <Button
-                    variant="outline"
-                    onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
-                    className="h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
-                    style={{ display: 'flex', flex: '0 0 45%', flexGrow: 0, flexShrink: 0, flexBasis: '45%' }}
-                  >
-                    <Filter className="h-4 w-4" />
-                  </Button>
+                  <div style={{ display: 'flex', flex: '0 0 45%', flexGrow: 0, flexShrink: 0, flexBasis: '45%' }}>
+                    <Button
+                      variant="outline"
+                      onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
+                      className="w-full h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                    >
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <ViewSelector view={eventsView} onViewChange={setEventsView} style={{ display: 'flex', flex: '0 0 55%', flexGrow: 0, flexShrink: 0, flexBasis: '55%' }} />
                 </>
               )}
