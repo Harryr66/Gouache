@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { List, Square } from 'lucide-react';
+import { LayoutGrid, PlaySquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ViewSelectorProps {
@@ -39,10 +39,10 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
           view === 'grid' ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
-        <Square className="h-4 w-4" />
+        <LayoutGrid className="h-4 w-4" />
       </button>
       
-      {/* List option */}
+      {/* Video feed option */}
       <button
         onClick={() => onViewChange('list')}
         className={cn(
@@ -50,7 +50,7 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
           view === 'list' ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
-        <List className="h-4 w-4" />
+        <PlaySquare className="h-4 w-4" />
       </button>
     </div>
   );
