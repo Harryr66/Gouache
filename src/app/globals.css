@@ -267,3 +267,10 @@ button[type="button"] {
 .hue-orb-idle {
   animation: hue-pulse 3s ease-in-out infinite;
 }
+
+/* Force grid display for filter/view selector alignment */
+.filter-view-grid {
+  display: grid !important;
+  grid-template-columns: 45% 55% !important;
+  width: 100% !important;
+}
