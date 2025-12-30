@@ -608,6 +608,12 @@ function DiscoverPageContent() {
   const { user } = useAuth();
   const { getFollowedArtists, isFollowing } = useFollow();
   const { getConnectionSpeed } = useVideoControl();
+  const { settings: discoverSettings } = useDiscoverSettings();
+  const { theme } = useTheme();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams?.get?.('tab');
+  const initialTab: 'artwork' | 'events' = (tabParam === 'artwork' || tabParam === 'events') ? tabParam : 'artwork';
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [ads, setAds] = useState<any[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
@@ -782,12 +788,6 @@ function DiscoverPageContent() {
     
     return () => clearInterval(interval);
   }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor]);
-  const { settings: discoverSettings } = useDiscoverSettings();
-  const { theme } = useTheme();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const tabParam = searchParams?.get?.('tab');
-  const initialTab: 'artwork' | 'events' = (tabParam === 'artwork' || tabParam === 'events') ? tabParam : 'artwork';
   
   useEffect(() => {
     setMounted(true);
