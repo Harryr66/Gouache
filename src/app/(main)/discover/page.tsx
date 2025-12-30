@@ -2337,9 +2337,12 @@ function DiscoverPageContent() {
               {activeTab === 'artwork' ? (
                 <>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                    className="h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                    className={cn(
+                      "h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0 border-border",
+                      showFilters && "bg-muted"
+                    )}
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
@@ -2348,9 +2351,12 @@ function DiscoverPageContent() {
               ) : (
                 <>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
-                    className="h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                    className={cn(
+                      "h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0 border-border",
+                      showEventFilters && "bg-muted"
+                    )}
                     style={{ width: '100%' }}
                   >
                     <Filter className="h-4 w-4" />
@@ -2575,16 +2581,40 @@ function DiscoverPageContent() {
                   const videoArtworks = visibleFilteredArtworks.filter((item) => {
                     if ('type' in item && item.type === 'ad') return false; // Exclude ads
                     const artwork = item as Artwork;
-                    const hasVideo = (artwork as any).videoUrl || 
-                                    (artwork as any).mediaType === 'video' ||
-                                    ((artwork as any).mediaUrls && (artwork as any).mediaTypes?.includes('video'));
+                    
+                    // Check for video in multiple ways:
+                    // 1. Direct videoUrl field
+                    const hasVideoUrl = !!(artwork as any).videoUrl;
+                    // 2. mediaType field
+                    const hasVideoMediaType = (artwork as any).mediaType === 'video';
+                    // 3. mediaUrls array with video type
+                    const hasVideoInMediaUrls = (artwork as any).mediaUrls && 
+                                               Array.isArray((artwork as any).mediaTypes) && 
+                                               (artwork as any).mediaTypes.includes('video');
+                    // 4. Check if imageUrl is actually a Cloudflare Stream thumbnail (indicates video)
+                    const imageUrl = (artwork as any).imageUrl || artwork.imageUrl || '';
+                    const isCloudflareThumbnail = imageUrl.includes('cloudflarestream.com') && 
+                                                  (imageUrl.includes('/thumbnails/') || imageUrl.includes('thumbnail'));
+                    // 5. Check if videoUrl contains Cloudflare Stream indicators
+                    const videoUrl = (artwork as any).videoUrl || '';
+                    const isCloudflareVideo = videoUrl.includes('cloudflarestream.com') || 
+                                             videoUrl.includes('videodelivery.net') ||
+                                             videoUrl.includes('.m3u8');
+                    
+                    const hasVideo = hasVideoUrl || hasVideoMediaType || hasVideoInMediaUrls || isCloudflareThumbnail || isCloudflareVideo;
                     
                     // Debug logging for each item
                     if (visibleFilteredArtworks.length < 20) {
                       console.log('🔍 Checking item for video:', {
                         id: artwork.id,
                         title: artwork.title,
-                        hasVideoUrl: !!(artwork as any).videoUrl,
+                        hasVideoUrl,
+                        hasVideoMediaType,
+                        hasVideoInMediaUrls,
+                        isCloudflareThumbnail,
+                        isCloudflareVideo,
+                        videoUrl,
+                        imageUrl,
                         mediaType: (artwork as any).mediaType,
                         mediaUrls: (artwork as any).mediaUrls,
                         mediaTypes: (artwork as any).mediaTypes,
