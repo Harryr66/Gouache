@@ -2222,7 +2222,7 @@ function DiscoverPageContent() {
         {/* Main content - render immediately so images/videos can load, but hide visually during loading */}
         <div className={showLoadingScreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}>
         {/* Preload tiles invisibly during loading - render in viewport but hidden so browser loads images */}
-        {showLoadingScreen && initialImagesTotal > 0 && (
+        {(showLoadingScreen && initialImagesTotal > 0) && (
           <div className="absolute inset-0 opacity-0 pointer-events-none" style={{ zIndex: -1 }} aria-hidden="true">
             {(() => {
               // AGGRESSIVE: Preload many more items for faster loading
