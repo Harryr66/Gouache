@@ -1511,7 +1511,10 @@ function DiscoverPageContent() {
         const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 6);
         setArtworks(placeholderArtworks);
         setArtworksLoaded(true); // Mark artworks as loaded even on error
-        log(`⚠️ Discover: Showing ${placeholderArtworks.length} placeholder artworks due to error`);
+        // Mark placeholders as ready immediately (they don't need to load)
+        setInitialImagesReady(placeholderArtworks.length);
+        setInitialImagesTotal(placeholderArtworks.length);
+        log(`⚠️ Discover: Showing ${placeholderArtworks.length} placeholder artworks due to error (marked as ready immediately)`);
         
         // Count initial viewport media for preloading with connection-aware limits
         const connectionSpeed = getConnectionSpeed();
