@@ -2177,7 +2177,7 @@ function DiscoverPageContent() {
     const connectionSpeed = getConnectionSpeed();
     const initialCount = connectionSpeed === 'fast' ? 9 : 6;
     setVisibleCount(initialCount);
-  }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, getConnectionSpeed]);
+  }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation]);
 
   // Marketplace products useEffect removed - marketplace tab is hidden
 
