@@ -2197,7 +2197,7 @@ function DiscoverPageContent() {
         </Button>
       </div>
     );
-  }
+  };
 
   return (
     <>
