@@ -2021,7 +2021,7 @@ function DiscoverPageContent() {
   const shouldPreloadTiles = showLoadingScreen && initialImagesTotal > 0;
 
   // Video Player Component with HLS support
-  function VideoPlayer({ 
+  const VideoPlayer = ({ 
     videoUrl, 
     artwork, 
     avatarPlaceholder, 
@@ -2033,7 +2033,7 @@ function DiscoverPageContent() {
     avatarPlaceholder: string; 
     liked: boolean; 
     toggleLike: (id: string) => Promise<void>;
-  }) {
+  }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
     const [isVideoReady, setIsVideoReady] = useState(false);
