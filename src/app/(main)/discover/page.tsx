@@ -2140,10 +2140,10 @@ function DiscoverPageContent() {
     // fetchMarketplaceProducts(); // Commented out since marketplace tab is hidden
   }, [theme, mounted]);
 
-  useEffect(() => {
+  useEffect(function fetchEventsEffect() {
     if (!mounted) return;
     
-    const fetchEvents = async () => {
+    async function fetchEvents() {
       try {
         const placeholderImage = theme === 'dark' ? '/assets/placeholder-dark.png' : '/assets/placeholder-light.png';
         const eventsSnapshot = await getDocs(query(collection(db, 'events'), orderBy('date', 'desc')));
@@ -2187,7 +2187,7 @@ function DiscoverPageContent() {
         const placeholderEvents = generatePlaceholderEvents(theme, 12);
         setEvents(placeholderEvents);
       }
-    };
+    }
     
     fetchEvents();
   }, [theme, mounted]);
