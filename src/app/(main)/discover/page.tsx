@@ -2412,7 +2412,7 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : (artworkView === 'grid' || !isMobile) ? (
+            ) : !showLoadingScreen && (artworkView === 'grid' || !isMobile) ? (
               <MasonryGrid
                 items={(() => {
                   // TEMPORARY TEST: Grid view shows ONLY images (no videos)
