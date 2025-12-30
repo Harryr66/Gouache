@@ -757,7 +757,11 @@ export function UploadArtworkBasic() {
         setExtractedThumbnailBlob(null);
         setBulkUploadSeparately(false);
         
-        router.refresh();
+        setUploading(false);
+        
+        // Redirect to profile Discover tab (since these are discover uploads)
+        router.push('/profile?tab=discover');
+        
         return; // Exit early - bulk upload is complete
       }
       
