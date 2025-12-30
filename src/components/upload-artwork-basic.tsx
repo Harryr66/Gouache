@@ -566,14 +566,22 @@ export function UploadArtworkBasic() {
       const supportingMediaTypes = finalMediaTypes.slice(1);
 
       // BULK UPLOAD SEPARATELY: If enabled and multiple files, upload each file as separate artwork
-      if (bulkUploadSeparately && processedFiles.length > 1) {
-        // Use already-uploaded URLs - files are already uploaded above
-        for (let i = 0; i < processedFiles.length; i++) {
-          const file = processedFiles[i];
+      if (bulkUploadSeparately && finalUploadedUrls.length > 1) {
+        // Use only successful uploads - skip failed ones
+        for (let i = 0; i < finalUploadedUrls.length; i++) {
+          const uploadedUrl = finalUploadedUrls[i];
+          const mediaType = finalMediaTypes[i];
+          const thumbnailUrl = finalThumbnailUrls[i];
+          
+          // Skip if this upload failed (shouldn't happen since we filtered, but safety check)
+          if (!uploadedUrl) continue;
+          
+          // Find corresponding file (may not match index due to failed uploads)
+          const originalIndex = uploadedUrls.indexOf(uploadedUrl);
+          const file = originalIndex >= 0 ? processedFiles[originalIndex] : null;
+          if (!file) continue;
+          
           const isVideo = file.type.startsWith('video/');
-          const mediaType = mediaTypes[i];
-          const uploadedUrl = uploadedUrls[i];
-          const thumbnailUrl = thumbnailUrls[i];
           
           setCurrentUploadingFile(`Creating artwork ${i + 1}/${processedFiles.length}: ${file.name}`);
           
@@ -1035,7 +1043,7 @@ export function UploadArtworkBasic() {
         id: `post-${Date.now()}`,
         artworkId: artworkForDiscover.id,
         artist: artworkForDiscover.artist,
-        imageUrl: primaryMediaType === 'image' ? primaryMediaUrl : (uploadedUrls.find((_, i) => mediaTypes[i] === 'image') || primaryMediaUrl),
+        imageUrl: primaryMediaType === 'image' ? primaryMediaUrl : (finalUploadedUrls.find((_, i) => finalMediaTypes[i] === 'image') || primaryMediaUrl),
         imageAiHint: artworkForDiscover.imageAiHint,
         caption: description.trim() || '',
         likes: 0,
