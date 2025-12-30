@@ -558,6 +558,8 @@ const VideoPlayer = ({
 
     video.addEventListener('error', (e) => {
       const error = video.error;
+      const is404 = videoUrl && (videoUrl.includes('404') || error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED);
+      
       console.error('❌ Video error:', {
         error,
         code: error?.code,
@@ -565,8 +567,31 @@ const VideoPlayer = ({
         videoUrl,
         networkState: video.networkState,
         readyState: video.readyState,
-        hlsInstance: !!hlsRef.current
+        hlsInstance: !!hlsRef.current,
+        is404
       });
+      
+      // If 404, try videodelivery.net fallback (only once)
+      if (is404 && retryCountRef.current === 0 && videoUrl.includes('cloudflarestream.com')) {
+        const videoIdMatch = videoUrl.match(/cloudflarestream\.com\/([^/]+)/);
+        if (videoIdMatch) {
+          const videoId = videoIdMatch[1];
+          const fallbackUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+          console.log('🔄 404 detected, trying videodelivery.net fallback:', fallbackUrl);
+          retryCountRef.current++;
+          
+          setTimeout(() => {
+            if (video && hlsRef.current) {
+              hlsRef.current.destroy();
+            }
+            if (video) {
+              video.src = fallbackUrl;
+              video.load();
+            }
+          }, 1000);
+          return;
+        }
+      }
       
       // Don't show error immediately - retry first
       if (retryCountRef.current < 5) {
@@ -586,7 +611,11 @@ const VideoPlayer = ({
       }
       
       // Only show error after all retries exhausted
-      console.error('❌ Max retries reached, showing unavailable');
+      if (is404) {
+        console.error('❌ Video not found (404) - video may need to be reuploaded:', videoUrl);
+      } else {
+        console.error('❌ Max retries reached, showing unavailable');
+      }
       setHasError(true);
     });
 
@@ -2576,7 +2605,7 @@ function DiscoverPageContent() {
                             }
                             
                             if (videoId && accountId) {
-                              // Construct HLS manifest URL using environment variable account ID
+                              // Try customer subdomain first
                               videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
                               console.log('✅ Constructed HLS manifest URL:', videoUrl);
                             } else if (videoId) {
@@ -2587,6 +2616,13 @@ function DiscoverPageContent() {
                               // If we can't extract video ID, log error but don't break
                               console.error('❌ Could not extract video ID from Cloudflare Stream URL:', videoUrl);
                               console.error('❌ Original artwork data:', artwork);
+                            }
+                            
+                            // If we have a videoId, also try videodelivery.net as a fallback if customer subdomain fails
+                            // Store both URLs for fallback
+                            const fallbackVideoUrl = videoId ? `https://videodelivery.net/${videoId}/manifest/video.m3u8` : null;
+                            if (fallbackVideoUrl) {
+                              console.log('📋 Fallback URL available:', fallbackVideoUrl);
                             }
                           }
                         } else {
