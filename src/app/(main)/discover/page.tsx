@@ -2660,7 +2660,7 @@ function DiscoverPageContent() {
                 {/* Sentinel element for infinite scroll in video feed */}
                 <div ref={loadMoreRef} className="h-20 w-full" />
               </>
-            )}
+            ) : null}
           </TabsContent>
 
           {/* Events Tab */}
