@@ -653,7 +653,6 @@ const VideoPlayer = ({
                 controls={false}
                 style={{ opacity: isVideoReady ? 1 : 0 }}
               />
-            )}
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-background/80 backdrop-blur-sm p-3 flex items-center gap-2">
             <Avatar className="h-9 w-9 flex-shrink-0">
