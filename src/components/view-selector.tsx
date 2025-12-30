@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Grid3X3, List, Square } from 'lucide-react';
+import { List, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import * as SwitchPrimitives from '@radix-ui/react-switch';
 
 interface ViewSelectorProps {
   view: 'grid' | 'list';
@@ -11,23 +12,31 @@ interface ViewSelectorProps {
 }
 
 export function ViewSelector({ view, onViewChange, className }: ViewSelectorProps) {
+  const isList = view === 'list';
+  
   return (
-    <button
-      onClick={() => onViewChange(view === 'grid' ? 'list' : 'grid')}
+    <SwitchPrimitives.Root
+      checked={isList}
+      onCheckedChange={() => onViewChange(isList ? 'grid' : 'list')}
       className={cn(
         'flex flex-1 h-10 items-center justify-center rounded-md rounded-l-none border-l-0 transition-all duration-200',
         'border-2 border-border',
-        'bg-background text-foreground shadow-sm',
+        'bg-background shadow-sm',
         'hover:border-muted-foreground',
+        'data-[state=checked]:switch-gradient',
+        'data-[state=unchecked]:bg-background data-[state=unchecked]:border-border',
+        'cursor-pointer',
         className
       )}
-      aria-label={view === 'grid' ? 'Switch to video feed' : 'Switch to grid view'}
+      aria-label={isList ? 'Switch to grid view' : 'Switch to video feed'}
     >
-      {view === 'grid' ? (
-        <List className="h-4 w-4" />
-      ) : (
-        <Square className="h-4 w-4" />
-      )}
-    </button>
+      <div className="flex items-center justify-center w-full h-full">
+        {isList ? (
+          <Square className="h-4 w-4" />
+        ) : (
+          <List className="h-4 w-4" />
+        )}
+      </div>
+    </SwitchPrimitives.Root>
   );
 }
