@@ -2263,7 +2263,7 @@ function DiscoverPageContent() {
                   <ArtworkTile 
                     key={`preload-${artwork.id}`}
                     artwork={artwork} 
-                    hideBanner={isMobile && artworkView === 'grid'}
+                    hideBanner={isMobile && artworkView === 'list'}
                     // Mark as initial viewport so videos start loading immediately and autoplay when ready
                     isInitialViewport={isInitial && (hasVideo || hasImage) ? true : undefined}
                     // Track image loading (including video posters) - ArtworkTile will pass isVideoPoster flag
