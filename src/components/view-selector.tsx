@@ -31,18 +31,7 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
         )}
       />
       
-      {/* Grid option */}
-      <button
-        onClick={() => onViewChange('grid')}
-        className={cn(
-          'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
-          view === 'grid' ? 'text-foreground' : 'text-muted-foreground'
-        )}
-      >
-        <LayoutGrid className="h-4 w-4" />
-      </button>
-      
-      {/* Video feed option */}
+      {/* Video feed option - LEFT */}
       <button
         onClick={() => onViewChange('list')}
         className={cn(
@@ -51,6 +40,17 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
         )}
       >
         <PlaySquare className="h-4 w-4 rounded-md" />
+      </button>
+      
+      {/* Grid option - RIGHT */}
+      <button
+        onClick={() => onViewChange('grid')}
+        className={cn(
+          'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
+          view === 'grid' ? 'text-foreground' : 'text-muted-foreground'
+        )}
+      >
+        <LayoutGrid className="h-4 w-4" />
       </button>
     </div>
   );
