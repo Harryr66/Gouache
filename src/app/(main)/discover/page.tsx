@@ -2533,7 +2533,7 @@ function DiscoverPageContent() {
                   return (
                     <ArtworkTile 
                       artwork={artwork} 
-                      hideBanner={isMobile && artworkView === 'grid'}
+                      hideBanner={isMobile && artworkView === 'list'}
                       isInitialViewport={isInitial && hasVideo}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
                     />
