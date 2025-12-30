@@ -11,12 +11,12 @@ interface ViewSelectorProps {
 }
 
 export function ViewSelector({ view, onViewChange, className }: ViewSelectorProps) {
-  const hasExplicitWidth = className?.includes('w-[') || className?.includes('w-1/') || className?.includes('!w-');
+  const hasExplicitWidth = className?.includes('w-[') || className?.includes('w-1/') || className?.includes('!w-') || className?.includes('flex-[');
   return (
     <div 
       className={cn(
         'flex h-10 rounded-l-md rounded-r-md border-l-0 border-2 border-border bg-background relative overflow-hidden',
-        // Only use flex-1 if no explicit width is provided in className
+        // Only use flex-1 if no explicit width/flex-basis is provided in className
         !hasExplicitWidth && 'flex-1',
         className
       )}

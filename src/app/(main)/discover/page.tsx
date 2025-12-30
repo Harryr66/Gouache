@@ -2314,22 +2314,22 @@ function DiscoverPageContent() {
                   <Button
                     variant="outline"
                     onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                    className="!w-[45%] flex-shrink-0 h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                    className="flex-[0_0_45%] h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
-                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="!w-[55%] flex-shrink-0" />
+                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-[0_0_55%]" />
                 </>
               ) : (
                 <>
                   <Button
                     variant="outline"
                     onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
-                    className="!w-[45%] flex-shrink-0 h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
+                    className="flex-[0_0_45%] h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
-                  <ViewSelector view={eventsView} onViewChange={setEventsView} className="!w-[55%] flex-shrink-0" />
+                  <ViewSelector view={eventsView} onViewChange={setEventsView} className="flex-[0_0_55%]" />
                 </>
               )}
             </div>
