@@ -1013,7 +1013,8 @@ const generateArtistContent = (artist: Artist) => ({
                 // CRITICAL FIX: Always use original imageUrl directly - never use optimizedImage.src
                 // optimizedImage.src can be broken/empty, causing images to not load
                 const imageSrc = imageError && fallbackImageUrl ? fallbackImageUrl : (imageUrl || '');
-                const isCloudflareImage = imageSrc.includes('imagedelivery.net') || imageSrc.includes('cloudflare');
+                const isCloudflareImage = imageSrc.includes('imagedelivery.net');
+                const isCloudflareStreamThumbnail = imageSrc.includes('cloudflarestream.com');
                 const isFirebaseImage = imageSrc.includes('firebasestorage') || imageSrc.includes('firebase');
                 
                 // Debug: Log image URL for troubleshooting
@@ -1043,13 +1044,89 @@ const generateArtistContent = (artist: Artist) => ({
                   console.log('🖼️ ArtworkTile loading image:', {
                     artworkId: artwork.id,
                     imageSrc,
-                    isCloudflare: isCloudflareImage,
+                    isCloudflareImage: isCloudflareImage,
+                    isCloudflareStreamThumbnail: isCloudflareStreamThumbnail,
                     isFirebase: isFirebaseImage,
                     isInitialViewport
                   });
                 }
                 
-                // PRIORITY 1: Cloudflare Images (new uploads)
+                // PRIORITY 1: Cloudflare Stream thumbnails (use directly, no variant manipulation)
+                if (isCloudflareStreamThumbnail) {
+                  // Cloudflare Stream thumbnails are already optimized and should be used as-is
+                  // Format: https://customer-{accountId}.cloudflarestream.com/{videoId}/thumbnails/thumbnail.jpg
+                  const cloudflareUrl = imageSrc;
+                  
+                  // Calculate dimensions from aspect ratio to prevent layout shift
+                  const tileWidth = 400;
+                  const calculatedHeight = Math.round(tileWidth / aspectRatio);
+                  const imgWidth = artwork.imageWidth || tileWidth;
+                  const imgHeight = artwork.imageHeight || calculatedHeight;
+                  const finalWidth = imgWidth && imgWidth > 0 ? imgWidth : tileWidth;
+                  const finalHeight = imgHeight && imgHeight > 0 ? imgHeight : calculatedHeight;
+                  
+                  // Add timeout fallback to show image even if onLoad doesn't fire
+                  React.useEffect(() => {
+                    if (!isImageLoaded && !imageError && cloudflareUrl) {
+                      const timeout = setTimeout(() => {
+                        // If image hasn't loaded after 3 seconds, assume it's loaded or show it anyway
+                        if (!isImageLoaded) {
+                          console.warn('⏱️ Image load timeout, showing anyway:', cloudflareUrl);
+                          setIsImageLoaded(true);
+                        }
+                      }, 3000);
+                      return () => clearTimeout(timeout);
+                    }
+                  }, [cloudflareUrl, isImageLoaded, imageError]);
+                  
+                  return (
+                    <img
+                      src={cloudflareUrl}
+                      alt={artwork.imageAiHint || artwork.title || 'Artwork'}
+                      width={finalWidth}
+                      height={finalHeight}
+                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${imageError ? 'opacity-0' : 'opacity-100'}`}
+                      loading={isInitialViewport ? "eager" : "lazy"}
+                      fetchPriority={isInitialViewport ? "high" : "auto"}
+                      decoding="async"
+                      key={`${cloudflareUrl}-${retryCount}`}
+                      onLoadStart={() => {
+                        // Debug: Log when image starts loading
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('🔄 Image load started:', cloudflareUrl);
+                        }
+                      }}
+                      onLoad={() => {
+                        setIsImageLoaded(true);
+                        setImageError(false);
+                        setRetryCount(0);
+                        if (isInitialViewport && onImageReady) {
+                          onImageReady(false);
+                        }
+                        // Debug logging
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('✅ Image loaded successfully:', cloudflareUrl);
+                        }
+                      }}
+                      onError={(e) => {
+                        // Log error for debugging (but only once per URL)
+                        if (!failedUrlsRef.current.has(cloudflareUrl)) {
+                          failedUrlsRef.current.add(cloudflareUrl);
+                          console.warn('⚠️ Cloudflare Stream thumbnail load error:', {
+                            url: cloudflareUrl,
+                            artworkId: artwork.id,
+                            retryCount,
+                            originalUrl: imageSrc
+                          });
+                        }
+                        setImageError(true);
+                        setIsImageLoaded(false);
+                      }}
+                    />
+                  );
+                }
+                
+                // PRIORITY 2: Cloudflare Images (new uploads)
                 if (isCloudflareImage) {
                   let cloudflareUrl = imageSrc;
                   

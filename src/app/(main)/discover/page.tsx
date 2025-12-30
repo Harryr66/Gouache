@@ -1794,7 +1794,7 @@ function DiscoverPageContent() {
       // PRIORITY: Cloudflare images first (new uploads), Firebase only for legacy
       let preloadUrl = imageUrl;
       if (imageUrl.includes('imagedelivery.net')) {
-        // Cloudflare: Use appropriate variant based on media type
+        // Cloudflare Images: Use appropriate variant based on media type
         const cloudflareMatch = imageUrl.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
         if (cloudflareMatch) {
           const [, accountHash, imageId] = cloudflareMatch;
@@ -1811,6 +1811,10 @@ function DiscoverPageContent() {
             ? imageUrl.replace(/\/[^/]+$/, '/Thumbnail')
             : imageUrl.replace(/\/[^/]+$/, '/1080px'); // 1080px (Instagram standard)
         }
+      } else if (imageUrl.includes('cloudflarestream.com')) {
+        // Cloudflare Stream thumbnails: Use directly (no Next.js optimization needed)
+        // These are already optimized thumbnails from Cloudflare Stream
+        preloadUrl = imageUrl;
       } else if (imageUrl.includes('firebasestorage') || imageUrl.includes('firebase')) {
         // Firebase (legacy): Use Next.js Image Optimization API with 240px
         // NOTE: These should be migrated to Cloudflare for better performance
@@ -1823,7 +1827,7 @@ function DiscoverPageContent() {
       link.rel = 'preload';
       link.as = 'image';
       link.href = preloadUrl;
-      link.setAttribute('fetchpriority', imageUrl.includes('imagedelivery.net') ? 'high' : 'auto');
+      link.setAttribute('fetchpriority', (imageUrl.includes('imagedelivery.net') || imageUrl.includes('cloudflarestream.com')) ? 'high' : 'auto');
       document.head.appendChild(link);
     });
     
