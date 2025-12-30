@@ -1999,8 +1999,8 @@ function DiscoverPageContent() {
   useEffect(() => {
     if (typeof window === 'undefined' || filteredAndSortedArtworks.length === 0) return;
     
-    // Preload first 6-12 images (depending on viewport size)
-    const preloadCount = Math.min(columnCount * 2, 12, filteredAndSortedArtworks.length);
+    // AGGRESSIVE: Preload first 12-18 images (viewport + 2 rows) for instant display
+    const preloadCount = Math.min(columnCount * 3, 18, filteredAndSortedArtworks.length);
     const criticalArtworks = filteredAndSortedArtworks.slice(0, preloadCount);
     
     criticalArtworks.forEach((artwork) => {
