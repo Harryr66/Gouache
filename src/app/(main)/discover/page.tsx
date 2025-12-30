@@ -2190,7 +2190,6 @@ function DiscoverPageContent() {
 
   // Render initial tiles invisibly during loading so poster images can preload
   // Videos will load in background and autoplay when ready (onCanPlay)
-  const shouldPreloadTiles = useMemo(() => showLoadingScreen && initialImagesTotal > 0, [showLoadingScreen, initialImagesTotal]);
 
   return (
     <>
@@ -2223,7 +2222,7 @@ function DiscoverPageContent() {
         {/* Main content - render immediately so images/videos can load, but hide visually during loading */}
         <div className={showLoadingScreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}>
         {/* Preload tiles invisibly during loading - render in viewport but hidden so browser loads images */}
-        {shouldPreloadTiles && (
+        {showLoadingScreen && initialImagesTotal > 0 && (
           <div className="absolute inset-0 opacity-0 pointer-events-none" style={{ zIndex: -1 }} aria-hidden="true">
             {(() => {
               // AGGRESSIVE: Preload many more items for faster loading
