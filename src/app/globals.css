@@ -268,13 +268,12 @@ button[type="button"] {
   animation: hue-pulse 3s ease-in-out infinite;
 }
 
-/* Force grid display for filter/view selector alignment */
+/* Force grid display for filter/view selector alignment - must override flex-1 */
 .filter-view-grid {
   display: grid !important;
   grid-template-columns: 45% 55% !important;
   width: 100% !important;
-  flex: none !important;
-  flex-grow: 0 !important;
-  flex-shrink: 0 !important;
-  flex-basis: auto !important;
+  max-width: 100% !important;
+  flex: 1 1 0% !important; /* Match flex-1 behavior but grid takes precedence */
+  min-width: 0 !important;
 }
