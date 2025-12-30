@@ -56,14 +56,30 @@ export function ExpandedArtworkView({ artwork, discussion, onClose }: ExpandedAr
                     {/* Image Section */}
                     <div className="lg:w-2/3 bg-muted flex items-center justify-center p-4 allow-pinch-zoom">
                         <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
-                            <Image
-                                src={artwork.imageUrl}
-                                alt={artwork.imageAiHint}
-                                width={800}
-                                height={600}
-                                className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
-                                style={{ maxWidth: '100%', maxHeight: '100%' }}
-                            />
+                            {(() => {
+                                // Use native img for Cloudflare Stream URLs to prevent Next.js Image optimization
+                                if (artwork.imageUrl && artwork.imageUrl.includes('cloudflarestream.com')) {
+                                    return (
+                                        <img
+                                            src={artwork.imageUrl}
+                                            alt={artwork.imageAiHint}
+                                            className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
+                                            style={{ maxWidth: '100%', maxHeight: '100%' }}
+                                        />
+                                    );
+                                }
+                                // Use Next.js Image for other URLs
+                                return (
+                                    <Image
+                                        src={artwork.imageUrl}
+                                        alt={artwork.imageAiHint}
+                                        width={800}
+                                        height={600}
+                                        className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
+                                        style={{ maxWidth: '100%', maxHeight: '100%' }}
+                                    />
+                                );
+                            })()}
                         </div>
                     </div>
 

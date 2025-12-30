@@ -490,14 +490,31 @@ export default function ArtworkPage() {
                   />
                 ) : (
                   <div className="cursor-zoom-in">
-                    <Image
-                      src={artwork.imageUrl || artwork.videoUrl || '/assets/placeholder-light.png'}
-                      alt={artwork.title}
-                      fill
-                      className="object-contain"
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      priority
-                    />
+                    {(() => {
+                      const imageSrc = artwork.imageUrl || artwork.videoUrl || '/assets/placeholder-light.png';
+                      // Use native img for Cloudflare Stream URLs to prevent Next.js Image optimization
+                      if (imageSrc.includes('cloudflarestream.com')) {
+                        return (
+                          <img
+                            src={imageSrc}
+                            alt={artwork.title}
+                            className="w-full h-full object-contain"
+                            style={{ maxHeight: '60vh', minHeight: '300px' }}
+                          />
+                        );
+                      }
+                      // Use Next.js Image for other URLs
+                      return (
+                        <Image
+                          src={imageSrc}
+                          alt={artwork.title}
+                          fill
+                          className="object-contain"
+                          sizes="(max-width: 1024px) 100vw, 50vw"
+                          priority
+                        />
+                      );
+                    })()}
                   </div>
                 )}
               </div>
