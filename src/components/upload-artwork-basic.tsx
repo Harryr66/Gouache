@@ -702,6 +702,9 @@ export function UploadArtworkBasic() {
             imageAiHint: description.trim() || finalTitle,
             type: 'artwork',
             tags: tags,
+            showInPortfolio: addToPortfolio, // CRITICAL: Set this so Discover tab can filter correctly
+            showInShop: isForSale,
+            isForSale: isForSale,
             createdAt: new Date(),
             updatedAt: new Date(),
             likes: 0,
