@@ -425,6 +425,185 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   );
 }
 
+// Video Player Component with HLS support
+const VideoPlayer = ({ 
+  videoUrl, 
+  artwork, 
+  avatarPlaceholder, 
+  liked, 
+  toggleLike 
+}: { 
+  videoUrl: string; 
+  artwork: Artwork; 
+  avatarPlaceholder: string; 
+  liked: boolean; 
+  toggleLike: (id: string) => Promise<void>;
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !videoUrl) return;
+
+    const isHLS = videoUrl.includes('.m3u8');
+    const isCloudflareStream = videoUrl.includes('cloudflarestream.com') || videoUrl.includes('videodelivery.net');
+
+    // Check if browser natively supports HLS (Safari on iOS/macOS)
+    const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
+
+    if (isHLS || isCloudflareStream) {
+      if (canPlayHLS) {
+        // Native HLS support (Safari)
+        video.src = videoUrl;
+        console.log('✅ Using native HLS support for:', videoUrl);
+      } else if (Hls.isSupported()) {
+        // Use hls.js for browsers that don't support HLS natively
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          backBufferLength: 90,
+        });
+        
+        hls.loadSource(videoUrl);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          console.log('✅ HLS manifest parsed, video ready:', videoUrl);
+          setIsVideoReady(true);
+          video.play().catch((error) => {
+            console.log('Autoplay prevented:', error);
+          });
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('❌ HLS error:', data);
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.error('Fatal network error, trying to recover...');
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.error('Fatal media error, trying to recover...');
+                hls.recoverMediaError();
+                break;
+              default:
+                console.error('Fatal error, destroying HLS instance');
+                hls.destroy();
+                setHasError(true);
+                break;
+            }
+          }
+        });
+
+        hlsRef.current = hls;
+
+        return () => {
+          if (hlsRef.current) {
+            hlsRef.current.destroy();
+          }
+        };
+      } else {
+        // Fallback: try direct URL (might work for some formats)
+        console.warn('⚠️ HLS not supported, trying direct URL:', videoUrl);
+        video.src = videoUrl;
+      }
+    } else {
+      // Not HLS, use direct URL
+      video.src = videoUrl;
+    }
+
+    video.addEventListener('canplay', () => {
+      console.log('✅ Video can play:', videoUrl);
+      setIsVideoReady(true);
+    });
+
+    video.addEventListener('error', (e) => {
+      console.error('❌ Video error:', e, videoUrl);
+      setHasError(true);
+    });
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+      }
+    };
+  }, [videoUrl]);
+
+  return (
+    <div className="relative group w-full max-w-md mx-auto">
+      <Link href={`/artwork/${artwork.id}`}>
+        <Card className="relative w-full overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
+          {/* Video container with 9:16 portrait aspect ratio */}
+          <div className="relative w-full" style={{ aspectRatio: '9/16' }}>
+            {hasError ? (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <p className="text-muted-foreground text-sm">Video unavailable</p>
+              </div>
+            ) : (
+              <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                playsInline
+                muted
+                loop
+                autoPlay
+                controls={false}
+                style={{ opacity: isVideoReady ? 1 : 0 }}
+              />
+            )}
+          </div>
+          <div className="absolute inset-x-0 bottom-0 bg-background/80 backdrop-blur-sm p-3 flex items-center gap-2">
+            <Avatar className="h-9 w-9 flex-shrink-0">
+              <AvatarImage src={artwork.artist.avatarUrl || avatarPlaceholder} />
+              <AvatarFallback>{artwork.artist.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">by {artwork.artist.name}</p>
+              {artwork.artist.location && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                  <MapPin className="h-3 w-3" />
+                  {artwork.artist.location}
+                </p>
+              )}
+            </div>
+            {artwork.sold ? (
+              <Badge variant="destructive" className="text-xs px-2 py-1 flex-shrink-0">
+                Sold
+              </Badge>
+            ) : artwork.isForSale ? (
+              <Badge className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 flex-shrink-0">
+                {artwork.priceType === 'contact' || artwork.contactForPrice ? 'For Sale' : artwork.price ? `$${artwork.price.toLocaleString()}` : 'For Sale'}
+              </Badge>
+            ) : null}
+          </div>
+        </Card>
+      </Link>
+      {/* Upvote Button - positioned on the tile */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`absolute top-3 right-3 h-10 w-10 rounded-full bg-background/90 backdrop-blur-sm border-2 transition-all z-10 ${
+          liked 
+            ? 'border-primary text-primary bg-primary/10' 
+            : 'border-border hover:border-primary/50 hover:text-primary'
+        }`}
+        onClick={async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          await toggleLike(artwork.id);
+        }}
+        aria-label={liked ? 'Remove upvote' : 'Upvote artwork'}
+      >
+        <ArrowUp className={`h-5 w-5 ${liked ? 'fill-current' : ''}`} />
+      </Button>
+    </div>
+  );
+};
+
 function DiscoverPageContent() {
   const isDev = process.env.NODE_ENV === 'development';
   // Always log critical messages in production for debugging
