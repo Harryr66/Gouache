@@ -2168,7 +2168,7 @@ function DiscoverPageContent() {
     
     const resultPlaceholderCount = placeholderItems.length;
     
-    log('✅ visibleFilteredArtworks: Returning', final.length, 'items (', resultPlaceholderCount, 'placeholders)');
+    log('✅ visibleFilteredArtworks: Returning', final.length, 'items', resultPlaceholderCount, 'placeholders');
     return final;
   }, [filteredAndSortedArtworks, visibleCount, ads]);
 
