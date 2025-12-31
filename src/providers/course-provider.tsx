@@ -33,6 +33,7 @@ interface CourseContextType {
   unenrollFromCourse: (courseId: string) => Promise<void>;
   updateEnrollmentProgress: (enrollmentId: string, progress: number, currentWeek: number, currentLesson: number) => Promise<void>;
   markLessonComplete: (courseId: string, lessonId: string) => Promise<void>;
+  verifyEnrollment: (courseId: string, paymentIntentId: string, maxAttempts?: number) => Promise<boolean>;
   
   // Instructor operations
   createInstructor: (instructorData: Omit<Instructor, 'id'>) => Promise<void>;
@@ -323,6 +324,59 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       });
       throw error;
     }
+  };
+
+  // CRITICAL: Verify enrollment was created by webhook after payment
+  // Polls Firestore to wait for webhook to create enrollment record
+  // This prevents navigating to course before access is granted
+  const verifyEnrollment = async (
+    courseId: string,
+    paymentIntentId: string,
+    maxAttempts: number = 10
+  ): Promise<boolean> => {
+    if (!user) {
+      console.error('[verifyEnrollment] No user logged in');
+      return false;
+    }
+
+    console.log(`[verifyEnrollment] Starting verification for course ${courseId}, payment ${paymentIntentId}`);
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        console.log(`[verifyEnrollment] Attempt ${attempt}/${maxAttempts}`);
+        
+        // Query for enrollment created by webhook with this payment intent
+        const enrollmentQuery = query(
+          collection(db, 'courseEnrollments'),
+          where('courseId', '==', courseId),
+          where('userId', '==', user.id),
+          where('paymentIntentId', '==', paymentIntentId)
+        );
+        
+        const snapshot = await getDocs(enrollmentQuery);
+        
+        if (!snapshot.empty) {
+          console.log(`[verifyEnrollment] ✅ Enrollment found!`);
+          return true;
+        }
+        
+        // If not found and not last attempt, wait 2 seconds before trying again
+        if (attempt < maxAttempts) {
+          console.log(`[verifyEnrollment] Enrollment not found yet, waiting 2 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error(`[verifyEnrollment] Error on attempt ${attempt}:`, error);
+        
+        // If not last attempt, wait and retry
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+    }
+    
+    console.log(`[verifyEnrollment] ❌ Timeout: Enrollment not found after ${maxAttempts} attempts (${maxAttempts * 2} seconds)`);
+    return false;
   };
 
   const unenrollFromCourse = async (courseId: string): Promise<void> => {
@@ -655,6 +709,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     unenrollFromCourse,
     updateEnrollmentProgress,
     markLessonComplete,
+    verifyEnrollment,
     createInstructor,
     updateInstructor,
     createCourse,

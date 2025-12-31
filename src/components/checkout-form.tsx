@@ -28,7 +28,7 @@ interface CheckoutFormProps {
   itemType: 'original' | 'print' | 'book' | 'course' | 'merchandise' | 'product';
   itemTitle: string;
   buyerId: string;
-  onSuccess?: () => void;
+  onSuccess?: (paymentIntentId: string) => void; // ← CHANGED: Now passes payment intent ID
   onCancel?: () => void;
 }
 
@@ -192,15 +192,14 @@ function CheckoutFormContent({
           variant: 'destructive',
         });
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        toast({
-          title: 'Payment Successful!',
-          description: 'Your purchase has been completed successfully.',
-        });
+        // Payment succeeded - don't show immediate success toast
+        // Parent component will handle verification and show appropriate messages
         
         if (onSuccess) {
-          onSuccess();
+          // CRITICAL: Pass payment intent ID to parent for verification
+          onSuccess(paymentIntent.id);
         } else {
-          // Redirect to success page
+          // Fallback: redirect to success page
           router.push(`/purchase-success?payment_intent=${paymentIntent.id}`);
         }
       } else if (paymentIntent && paymentIntent.status === 'requires_action') {

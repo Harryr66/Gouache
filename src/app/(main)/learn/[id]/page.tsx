@@ -197,7 +197,7 @@ The course includes live demonstrations, step-by-step tutorials, and personalize
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const courseId = params.id as string;
-  const { getCourse, enrollInCourse, courseEnrollments } = useCourses();
+  const { getCourse, enrollInCourse, courseEnrollments, verifyEnrollment } = useCourses();
   const { user } = useAuth();
   
   const [course, setCourse] = useState<any>(null);
@@ -211,6 +211,10 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  
+  // NEW: Critical payment safety states
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
+  const [isVerifying, setIsVerifying] = useState(false); // Shows verification overlay
   
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(800, 450);
@@ -269,6 +273,21 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   }, [courseId, user, courseEnrollments, getCourse]);
 
   const handleEnroll = async () => {
+    // ============================================
+    // CRITICAL: COMPREHENSIVE PRE-PAYMENT VALIDATION
+    // DO NOT PROCEED TO PAYMENT IF ANY CHECK FAILS
+    // ============================================
+    
+    // Check 1: Idempotency - prevent double clicks
+    if (isProcessingPayment) {
+      toast({
+        title: "Please Wait",
+        description: "Payment is already being processed.",
+      });
+      return;
+    }
+    
+    // Check 2: User authentication
     if (!user) {
       toast({
         title: "Login required",
@@ -279,6 +298,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       return;
     }
 
+    // Check 3: Course data loaded
     if (!course) {
       toast({
         title: "Error",
@@ -288,8 +308,69 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       return;
     }
 
+    // Check 4: Course ID valid
+    if (!courseId || courseId === 'undefined' || courseId === 'null') {
+      toast({
+        title: "Error",
+        description: "Invalid course ID. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check 5: Not already enrolled
+    if (isEnrolled) {
+      toast({
+        title: "Already Enrolled",
+        description: "You're already enrolled in this course.",
+      });
+      router.push(`/learn/${courseId}/player`);
+      return;
+    }
+
+    // Check 6: Race condition protection - verify enrollment doesn't exist
+    const existingEnrollment = courseEnrollments.find(e => e.courseId === courseId && e.userId === user.id);
+    if (existingEnrollment) {
+      toast({
+        title: "Already Enrolled",
+        description: "You're already enrolled in this course.",
+      });
+      setIsEnrolled(true);
+      router.push(`/learn/${courseId}/player`);
+      return;
+    }
+
+    // Check 7: For paid courses, validate instructor and Stripe setup
+    if (course.price && course.price > 0) {
+      if (!course.instructor?.userId) {
+        toast({
+          title: "Payment Unavailable",
+          description: "Instructor account not configured. Contact support.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if Stripe is available
+      const stripePromise = getStripePromise();
+      if (!stripePromise) {
+        toast({
+          title: "Payment Unavailable",
+          description: "Payment processing is not configured. Contact support.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // ============================================
+    // VALIDATION PASSED - SAFE TO PROCEED
+    // ============================================
+    
+    setIsProcessingPayment(true);
+
     try {
-      // For course links, redirect to external URL after payment
+      // For course links, redirect to external URL
       if (course.courseType === 'affiliate' && course.externalUrl) {
         const platformName = course.hostingPlatform 
           ? course.hostingPlatform.charAt(0).toUpperCase() + course.hostingPlatform.slice(1)
@@ -312,32 +393,13 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         }
       } else if (course.courseType === 'hosted') {
         // For hosted courses, check if payment is required
-        if (course.price && course.price > 0 && course.instructor?.userId) {
-          // Get Stripe promise using singleton function to ensure it's available
-          const stripePromise = getStripePromise();
-          
-          // Validate course data before proceeding (no logging to avoid object serialization issues)
-          
-          // loadStripe returns a Promise, so we just check if it's not null/undefined
-          if (stripePromise !== null && stripePromise !== undefined) {
-            // Show Stripe checkout for paid courses
-            console.log('[DEBUG] Opening checkout dialog - stripePromise is valid');
-            setShowCheckout(true);
-          } else {
-            console.error('[DEBUG] Stripe not available - stripePromise check failed:', {
-              isNull: stripePromise === null,
-              isUndefined: stripePromise === undefined,
-              value: stripePromise,
-              type: typeof stripePromise
-            });
-            toast({
-              title: "Payment unavailable",
-              description: "Payment processing is not available. Please contact support.",
-              variant: "destructive",
-            });
-          }
+        if (course.price && course.price > 0) {
+          // Paid course - show Stripe checkout
+          console.log('[handleEnroll] Opening checkout for paid course');
+          setShowCheckout(true);
         } else {
           // Free course - enroll directly
+          console.log('[handleEnroll] Enrolling in free course');
           await enrollInCourse(courseId);
           setIsEnrolled(true);
           router.push(`/learn/${courseId}/player`);
@@ -350,13 +412,75 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     } catch (error) {
       console.error('Error enrolling:', error);
       // Error toast is handled by enrollInCourse
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
-  const handleCheckoutSuccess = () => {
-    setShowCheckout(false);
-    setIsEnrolled(true);
-    router.push(`/learn/${courseId}/player`);
+  // ============================================
+  // CRITICAL: PAYMENT SUCCESS HANDLER WITH VERIFICATION
+  // This prevents UI crashes by verifying enrollment before navigating
+  // ============================================
+  const handleCheckoutSuccess = async (paymentIntentId: string) => {
+    console.log('[handleCheckoutSuccess] Payment succeeded, payment intent:', paymentIntentId);
+    
+    setIsVerifying(true);
+    
+    try {
+      // Close checkout modal immediately
+      setShowCheckout(false);
+      
+      // Show verification toast (will stay visible during polling)
+      toast({
+        title: "Payment Successful!",
+        description: "Verifying your enrollment...",
+        duration: 30000, // Keep visible during verification
+      });
+      
+      // CRITICAL: Wait for webhook to create enrollment in Firestore
+      // Polls database every 2 seconds for up to 20 seconds
+      console.log('[handleCheckoutSuccess] Starting enrollment verification...');
+      const verified = await verifyEnrollment(courseId, paymentIntentId, 10);
+      
+      if (verified) {
+        // SUCCESS: Enrollment confirmed in database
+        console.log('[handleCheckoutSuccess] ✅ Enrollment verified!');
+        setIsEnrolled(true);
+        
+        toast({
+          title: "Enrollment Complete!",
+          description: "Welcome to the course!",
+        });
+        
+        // Safe to navigate now - enrollment exists
+        router.push(`/learn/${courseId}/player`);
+      } else {
+        // TIMEOUT: Enrollment not found yet (webhook might be slow)
+        console.log('[handleCheckoutSuccess] ⏱️ Verification timeout');
+        
+        toast({
+          title: "Payment Processing",
+          description: "Your payment is being processed. You'll receive an email with course access shortly. If you don't see the course in a few minutes, refresh this page.",
+          variant: "default",
+          duration: 10000,
+        });
+        
+        // Stay on current page - user can refresh to check enrollment status
+        // Enrollment will appear once webhook completes
+      }
+    } catch (error) {
+      console.error('[handleCheckoutSuccess] Error verifying enrollment:', error);
+      
+      toast({
+        title: "Payment Received",
+        description: "Your payment was successful. If you don't see the course in a few minutes, contact support.",
+        variant: "default",
+        duration: 10000,
+      });
+    } finally {
+      setIsVerifying(false);
+      setIsProcessingPayment(false);
+    }
   };
 
   if (isLoading || !course) {
@@ -411,6 +535,24 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
   return (
     <div className="min-h-screen bg-background">
+      {/* CRITICAL: Verification Loading Overlay - prevents user interaction during enrollment verification */}
+      {isVerifying && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <Card className="w-full max-w-md p-6 mx-4">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <h3 className="font-semibold text-lg text-center">Verifying Enrollment</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Your payment was successful. We're verifying your enrollment with the course database...
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                This usually takes just a few seconds.
+              </p>
+            </div>
+          </Card>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="bg-background border-b border-border pt-4">
         <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5">
