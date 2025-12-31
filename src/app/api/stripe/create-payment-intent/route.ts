@@ -145,31 +145,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 0% platform commission - artist receives full payment
-    const platformCommissionPercentage = 0; // 0% platform fee - artist gets 100%
+    // 0% platform commission - artist receives full payment minus Stripe fees
+    const platformCommissionPercentage = 0; // 0% platform fee
     const platformCommissionAmount = 0; // No commission
-    
-    // No application fee - artist receives full amount
     const applicationFeeAmount = 0;
 
-    // Calculate Stripe fees and add to amount (seller pays fees, baked into price)
-    // Stripe fee: 2.9% + $0.30 per transaction
-    // Formula: totalAmount = (sellerAmount + 0.30) / (1 - 0.029)
-    // This ensures seller receives the original amount after Stripe fees
-    const STRIPE_FEE_PERCENTAGE = 0.029; // 2.9%
-    const STRIPE_FIXED_FEE = 30; // $0.30 in cents
-    const sellerAmountInCents = amountInCents; // Original seller-set price
-    const totalAmountInCents = Math.ceil((sellerAmountInCents + STRIPE_FIXED_FEE) / (1 - STRIPE_FEE_PERCENTAGE));
-    const stripeFeeAmount = totalAmountInCents - sellerAmountInCents;
+    // SIMPLE: Charge exactly what artist set, Stripe deducts fees from ARTIST
+    // Artist sets $1.00 → Buyer pays $1.00 → Artist receives ~$0.67 after Stripe fees
+    // Platform pays NOTHING
+    const totalAmountInCents = amountInCents; // Charge exactly what artist set
+    const stripeFeeAmount = 0; // Stripe deducts from artist automatically
 
     // Create payment intent with MANUAL CAPTURE
     // This authorizes the card but doesn't charge until we capture it
     // If enrollment fails, we cancel the authorization - NO CHARGE
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalAmountInCents, // Total amount buyer pays (includes Stripe fees)
+      amount: totalAmountInCents, // Charge exactly what artist set
       currency: currency.toLowerCase(),
       capture_method: 'manual', // CRITICAL: Don't charge yet, only authorize
-      // Transfer to connected account (artist receives full amount)
+      // Transfer to connected account - Stripe automatically deducts fees from artist
       transfer_data: {
         destination: stripeAccountId,
       },
@@ -180,11 +174,11 @@ export async function POST(request: NextRequest) {
         itemId: itemId,
         itemTitle: itemData.title || 'Untitled',
         platform: 'gouache',
-        productAmount: sellerAmountInCents.toString(), // Original seller price (what seller receives)
-        totalAmount: totalAmountInCents.toString(), // Total amount buyer pays
-        stripeFeeAmount: stripeFeeAmount.toString(), // Stripe fees (paid by seller)
-        platformCommissionAmount: platformCommissionAmount.toString(), // 0% platform commission
-        platformCommissionPercentage: platformCommissionPercentage.toString(), // 0% commission - artist gets 100%
+        productAmount: totalAmountInCents.toString(), // What artist set
+        totalAmount: totalAmountInCents.toString(), // What buyer pays (same)
+        stripeFeeAmount: '0', // Stripe deducts from artist automatically
+        platformCommissionAmount: platformCommissionAmount.toString(), // 0%
+        platformCommissionPercentage: platformCommissionPercentage.toString(), // 0%
         ...(itemType === 'merchandise' || itemType === 'product' ? { stock: (itemData.stock || 0).toString() } : {}),
       },
       description: description || `Purchase: ${itemData.title || itemType}`,
@@ -197,12 +191,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
-      amount: paymentIntent.amount, // Total amount buyer pays (includes Stripe fees)
+      amount: paymentIntent.amount, // What buyer pays (what artist set)
       currency: paymentIntent.currency,
-      applicationFeeAmount, // 0% platform commission - artist receives 100%
-      productAmount: sellerAmountInCents, // Original seller price
-      totalAmount: totalAmountInCents, // Total amount buyer pays
-      stripeFeeAmount, // Stripe fees (paid by seller)
+      applicationFeeAmount, // 0%
+      productAmount: totalAmountInCents, // What artist set
+      totalAmount: totalAmountInCents, // What buyer pays
+      stripeFeeAmount: 0, // Stripe deducts from artist
       platformCommissionAmount,
       platformCommissionPercentage,
     });
