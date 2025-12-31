@@ -2585,7 +2585,7 @@ function DiscoverPageContent() {
                   return imageOnlyArtworks;
                 })()}
                 columnCount={columnCount}
-                gap={1}
+                gap={2}
                 renderItem={(item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
