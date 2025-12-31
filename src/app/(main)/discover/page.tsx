@@ -2513,7 +2513,7 @@ function DiscoverPageContent() {
 
               {/* Active Filters Display */}
               {(selectedMedium !== 'All' || selectedArtworkType !== 'All' || searchQuery) && (
-                <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex flex-wrap gap-2 items-center mb-0">
                   <span className="text-sm text-muted-foreground">Active filters:</span>
                   {searchQuery && (
                     <Badge variant="secondary" className="gap-1">
