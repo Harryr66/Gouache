@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, ShoppingCart, Heart, Package, TrendingUp, Check, X, Edit, Plus, Minus, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart, Package, TrendingUp, Check, X, Edit, Plus, Minus, Save, Trash2, Loader2 } from 'lucide-react';
 import { MarketplaceProduct } from '@/lib/types';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -25,11 +25,10 @@ import Link from 'next/link';
 import { AboutTheArtist } from '@/components/about-the-artist';
 import { CheckoutForm } from '@/components/checkout-form';
 import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+import { getStripePromise } from '@/lib/stripe-client';
+import { verifyMarketplacePurchase } from '@/lib/purchase-verification';
 
-// Initialize Stripe with proper error handling
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
+// Use shared Stripe promise utility
 
 // Placeholder products generator (same as marketplace page)
 const generatePlaceholderProducts = (generatePlaceholderUrl: (w: number, h: number) => string): MarketplaceProduct[] => {
@@ -303,6 +302,10 @@ function ProductDetailPage() {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   
+  // CRITICAL: Payment safety states
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
+  const [isVerifying, setIsVerifying] = useState(false); // Shows verification overlay
+  
   // Edit mode state
   const isEditMode = searchParams?.get('edit') === 'true';
   const isOwner = user && product && user.id === product.sellerId;
@@ -552,17 +555,74 @@ function ProductDetailPage() {
   const mainImage = images[selectedImageIndex] || placeholderImage;
 
   const handlePurchase = () => {
+    // ========================================
+    // CRITICAL: COMPREHENSIVE PRE-PAYMENT VALIDATION
+    // DO NOT PROCEED IF ANY CHECK FAILS
+    // ========================================
+    
+    // Check 1: Affiliate products - redirect to external site
     if (product.isAffiliate && product.affiliateLink) {
       window.open(product.affiliateLink, '_blank');
       return;
     }
 
+    // Check 2: Idempotency - prevent double clicks
+    if (isProcessingPayment) {
+      toast({
+        title: "Please Wait",
+        description: "Payment is already being processed.",
+      });
+      return;
+    }
+
+    // Check 3: User authentication
     if (!user) {
       router.push('/login?redirect=' + encodeURIComponent(`/marketplace/${product.id}`));
       return;
     }
 
-    // Check if Stripe is configured before showing checkout
+    // Check 4: Product data validation
+    if (!product || !product.id) {
+      toast({
+        title: 'Error',
+        description: 'Product data not loaded. Please refresh the page.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Check 5: Product price validation
+    if (!product.price || product.price <= 0) {
+      toast({
+        title: 'Invalid Price',
+        description: 'Product price is not set correctly.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Check 6: Seller information validation
+    if (!product.sellerId) {
+      toast({
+        title: 'Seller information missing',
+        description: 'Unable to process purchase. Seller information is not available.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Check 7: Stock availability (for non-unlimited items)
+    if (product.stock !== 'unlimited' && product.stock <= 0) {
+      toast({
+        title: 'Out of Stock',
+        description: 'This product is currently out of stock.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Check 8: Stripe availability
+    const stripePromise = getStripePromise();
     if (!stripePromise) {
       toast({
         title: 'Payment processing unavailable',
@@ -572,19 +632,73 @@ function ProductDetailPage() {
       return;
     }
 
-    // Show checkout dialog for non-affiliate products
+    // ========================================
+    // VALIDATION PASSED - SAFE TO PROCEED
+    // ========================================
+    setIsProcessingPayment(true);
     setShowCheckout(true);
   };
 
-  const handleCheckoutSuccess = () => {
-    setShowCheckout(false);
-    toast({
-      title: 'Purchase Successful!',
-      description: 'Your purchase has been completed. You will receive a confirmation email shortly.',
-    });
-    // Optionally reload the product to update stock
-    if (productId) {
-      // Product data will update via real-time listeners if implemented
+  const handleCheckoutSuccess = async (paymentIntentId: string) => {
+    // ========================================
+    // CRITICAL: PAYMENT SUCCESS WITH VERIFICATION
+    // This prevents crashes by waiting for webhook
+    // ========================================
+    console.log('[Marketplace] Payment succeeded, payment intent:', paymentIntentId);
+    
+    setIsVerifying(true);
+    
+    try {
+      // Close checkout modal immediately
+      setShowCheckout(false);
+      
+      // Show verification toast
+      toast({
+        title: "Payment Successful!",
+        description: "Verifying your purchase...",
+        duration: 30000, // Keep visible during verification
+      });
+      
+      // CRITICAL: Wait for webhook to create purchase record
+      console.log('[Marketplace] Starting purchase verification...');
+      const verified = await verifyMarketplacePurchase(product!.id, paymentIntentId, user!.id, 10);
+      
+      if (verified) {
+        // SUCCESS: Purchase confirmed in database
+        console.log('[Marketplace] ✅ Purchase verified!');
+        
+        toast({
+          title: "Purchase Complete!",
+          description: "Your purchase has been completed. You will receive a confirmation email shortly.",
+        });
+        
+        // Reload product to show updated stock
+        window.location.reload();
+      } else {
+        // TIMEOUT: Purchase not found yet (webhook might be slow)
+        console.log('[Marketplace] ⏱️ Verification timeout');
+        
+        toast({
+          title: "Payment Processing",
+          description: "Your payment is being processed. You'll receive an email with purchase confirmation shortly. If you don't receive it in a few minutes, contact support.",
+          variant: "default",
+          duration: 10000,
+        });
+        
+        // Stay on current page - user can refresh to check status
+      }
+    } catch (error) {
+      console.error('[Marketplace] Error verifying purchase:', error);
+      
+      toast({
+        title: "Payment Received",
+        description: "Your payment was successful. You'll receive a confirmation email shortly. If you have issues, contact support.",
+        variant: "default",
+        duration: 10000,
+      });
+    } finally {
+      setIsVerifying(false);
+      setIsProcessingPayment(false);
     }
   };
 
@@ -1164,13 +1278,16 @@ function ProductDetailPage() {
 
       {/* Checkout Dialog */}
       {product && product.price && product.price > 0 && product.sellerId && !product.isAffiliate && (
-        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+        <Dialog open={showCheckout} onOpenChange={(open) => {
+          setShowCheckout(open);
+          if (!open) setIsProcessingPayment(false); // Reset processing state if dialog closed
+        }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Purchase Product</DialogTitle>
             </DialogHeader>
-            {stripePromise ? (
-              <Elements stripe={stripePromise}>
+            {getStripePromise() ? (
+              <Elements stripe={getStripePromise()!}>
               <CheckoutForm
                 amount={product.price}
                 currency={product.currency || 'USD'}
@@ -1180,7 +1297,10 @@ function ProductDetailPage() {
                 itemTitle={product.title}
                 buyerId={user?.id || ''}
                 onSuccess={handleCheckoutSuccess}
-                onCancel={() => setShowCheckout(false)}
+                onCancel={() => {
+                  setShowCheckout(false);
+                  setIsProcessingPayment(false);
+                }}
               />
               </Elements>
             ) : (
@@ -1188,13 +1308,34 @@ function ProductDetailPage() {
                 <p className="text-muted-foreground mb-4">
                   Payment processing is not configured. Please contact support.
                 </p>
-                <Button variant="outline" onClick={() => setShowCheckout(false)}>
+                <Button variant="outline" onClick={() => {
+                  setShowCheckout(false);
+                  setIsProcessingPayment(false);
+                }}>
                   Close
                 </Button>
               </div>
             )}
           </DialogContent>
         </Dialog>
+      )}
+      
+      {/* CRITICAL: Verification Loading Overlay */}
+      {isVerifying && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <Card className="w-full max-w-md p-6 mx-4">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <h3 className="font-semibold text-lg text-center">Verifying Purchase</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Your payment was successful. We're verifying your purchase with the database...
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                This usually takes just a few seconds.
+              </p>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );
