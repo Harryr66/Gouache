@@ -611,8 +611,8 @@ function ProductDetailPage() {
       return;
     }
 
-    // Check 7: Stock availability (for non-unlimited items)
-    if (product.stock !== 'unlimited' && product.stock <= 0) {
+    // Check 7: Stock availability
+    if (product.stock !== undefined && product.stock <= 0) {
       toast({
         title: 'Out of Stock',
         description: 'This product is currently out of stock.',
