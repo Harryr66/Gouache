@@ -87,18 +87,6 @@ export default function PartnerLoginPage() {
           setIsLoading(false);
           return;
         }
-
-        toast({
-          title: "Login Successful!",
-          description: `Welcome back, ${partnerData.companyName || partnerData.contactName}!`,
-        });
-      } else if (isAdmin) {
-        // Admin account
-        const adminData = userProfileDoc.data();
-        toast({
-          title: "Login Successful!",
-          description: `Welcome back, ${adminData?.displayName || adminData?.name || adminData?.username || 'Admin'}!`,
-        });
       }
 
       // Redirect to partner dashboard

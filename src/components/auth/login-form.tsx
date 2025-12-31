@@ -131,11 +131,6 @@ export function LoginForm() {
       const user = userCredential.user;
       console.log('User signed in:', user);
       
-      toast({
-        title: "Login Successful!",
-        description: `Welcome back to Gouache, ${user.displayName || user.email}!`,
-      });
-      
       // Redirect to discover
       router.push('/discover');
       
