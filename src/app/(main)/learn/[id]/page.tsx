@@ -921,39 +921,54 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       </AlertDialog>
 
       {/* Checkout Dialog */}
-      {course && course.price && course.price > 0 && course.instructor?.userId && (
-        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Purchase Course</DialogTitle>
-            </DialogHeader>
-            {getStripePromise() ? (
-              <Elements stripe={getStripePromise()!}>
-                <CheckoutForm
-                  amount={typeof course.price === 'number' ? course.price : 0}
-                  currency={typeof course.currency === 'string' ? course.currency : 'USD'}
-                  artistId={typeof course.instructor?.userId === 'string' ? course.instructor.userId : ''}
-                  itemId={typeof courseId === 'string' ? courseId : ''}
-                  itemType="course"
-                  itemTitle={typeof course.title === 'string' ? course.title : 'Course'}
-                  buyerId={typeof user?.id === 'string' ? user.id : ''}
-                  onSuccess={handleCheckoutSuccess}
-                  onCancel={() => setShowCheckout(false)}
-                />
-              </Elements>
-            ) : (
-              <div className="p-8 text-center">
-                <p className="text-muted-foreground mb-4">
-                  Payment processing is not configured. Please contact support.
-                </p>
-                <Button variant="outline" onClick={() => setShowCheckout(false)}>
-                  Close
-                </Button>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      )}
+      {course && course.price && course.price > 0 && course.instructor?.userId && (() => {
+        // Extract and validate all values to ensure no objects are passed
+        const safePrice = typeof course.price === 'number' ? course.price : 0;
+        const safeCurrency = typeof course.currency === 'string' ? course.currency : 'USD';
+        const safeArtistId = course.instructor?.userId && typeof course.instructor.userId === 'string' ? course.instructor.userId : '';
+        const safeItemId = typeof courseId === 'string' ? courseId : '';
+        const safeItemTitle = typeof course.title === 'string' ? course.title : 'Course';
+        const safeBuyerId = user?.id && typeof user.id === 'string' ? user.id : '';
+
+        // Don't render if any critical value is invalid
+        if (!safeArtistId || !safeItemId || !safeBuyerId || safePrice <= 0) {
+          return null;
+        }
+
+        return (
+          <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Purchase Course</DialogTitle>
+              </DialogHeader>
+              {getStripePromise() ? (
+                <Elements stripe={getStripePromise()!}>
+                  <CheckoutForm
+                    amount={safePrice}
+                    currency={safeCurrency}
+                    artistId={safeArtistId}
+                    itemId={safeItemId}
+                    itemType="course"
+                    itemTitle={safeItemTitle}
+                    buyerId={safeBuyerId}
+                    onSuccess={handleCheckoutSuccess}
+                    onCancel={() => setShowCheckout(false)}
+                  />
+                </Elements>
+              ) : (
+                <div className="p-8 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    Payment processing is not configured. Please contact support.
+                  </p>
+                  <Button variant="outline" onClick={() => setShowCheckout(false)}>
+                    Close
+                  </Button>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }
