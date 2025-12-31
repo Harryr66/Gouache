@@ -2408,7 +2408,7 @@ function DiscoverPageContent() {
           </div>
 
           {/* Artwork Tab */}
-          <TabsContent value="artwork" className="!mt-0">
+          <TabsContent value="artwork" className="!mt-0 !pt-0">
             {/* Search and Filter Bar */}
             <div className="mb-0 space-y-2">
               {/* Remove gap between filter bar and content */}
