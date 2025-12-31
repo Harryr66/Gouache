@@ -555,11 +555,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           )}
-          {/* Video indicator badge */}
+          {/* Video play button icon - top right corner */}
           {isVideo && (
-            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1 flex items-center gap-1">
-              <Play className="h-3 w-3 text-white" fill="white" />
-              <span className="text-xs text-white font-medium">Video</span>
+            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-full p-2 flex items-center justify-center">
+              <Play className="h-4 w-4 text-white" fill="white" />
             </div>
           )}
         </div>
