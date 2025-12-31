@@ -16,9 +16,11 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
   return (
     <div 
       className={cn(
-        'flex h-10 rounded-md border-2 border-border bg-background relative overflow-hidden',
+        'flex h-10 rounded-md border-2 border-border bg-background relative',
         // Only use flex-1 if no explicit width/flex-basis is provided in className or style
         !hasExplicitWidth && 'flex-1',
+        // Only use overflow-hidden if not explicitly overridden
+        !className?.includes('overflow-visible') && 'overflow-hidden',
         className
       )}
       style={style}
