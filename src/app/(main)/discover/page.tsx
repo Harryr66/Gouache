@@ -2372,7 +2372,7 @@ function DiscoverPageContent() {
             </TabsList>
           </div>
           {/* Bottom row - Filter and View Selector aligned with top row split */}
-          <div className="hidden md:flex items-center gap-2 w-full overflow-visible mb-0">
+          <div className="hidden md:flex items-center gap-0 w-full overflow-visible mb-0">
             <div className="flex-1 filter-view-grid">
               {activeTab === 'artwork' ? (
                 <>
@@ -2380,13 +2380,14 @@ function DiscoverPageContent() {
                     variant="ghost"
                     onClick={() => startTransition(() => setShowFilters(!showFilters))}
                     className={cn(
-                      "h-10 px-4 md:px-6 rounded-md border-2 border-border",
+                      "h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0 border-border w-full",
                       showFilters && "bg-muted"
                     )}
+                    style={{ width: '100%' }}
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
-                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-md" />
+                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-l-none rounded-r-md border-l-0 w-full" style={{ width: '100%' }} />
                 </>
               ) : (
                 <>
@@ -2420,13 +2421,14 @@ function DiscoverPageContent() {
                       variant="ghost"
                       onClick={() => startTransition(() => setShowFilters(!showFilters))}
                       className={cn(
-                        "h-10 px-4 rounded-md border-2 border-border",
+                        "h-10 px-4 rounded-l-md rounded-r-none border-2 border-r-0 border-border w-full",
                         showFilters && "bg-muted"
                       )}
+                      style={{ width: '100%' }}
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
-                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-md" />
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-l-none rounded-r-md border-l-0 w-full" style={{ width: '100%' }} />
                   </div>
                 </div>
               )}
@@ -2718,7 +2720,7 @@ function DiscoverPageContent() {
                   }
                   
                   return (
-                    <div className="w-full space-y-6 flex flex-col items-center mt-0">
+                    <div className="w-full space-y-0 flex flex-col items-center mt-0">
                       {videoArtworks.length === 0 ? (
                         <div className="w-full py-12 text-center text-muted-foreground">
                           <p>No videos available</p>

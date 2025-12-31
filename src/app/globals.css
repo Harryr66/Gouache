@@ -277,7 +277,7 @@ button[type="button"] {
   flex: 1 1 0% !important; /* Match flex-1 behavior but grid takes precedence */
   min-width: 0 !important;
   overflow: visible !important; /* Allow rounded corners to show */
-  gap: 0.5rem !important; /* Add gap between filter and toggle */
+  gap: 0 !important; /* No gap between filter and toggle for seamless connection */
 }
 
 /* Mobile: Ensure filter-view-grid works on mobile too */
