@@ -2564,7 +2564,6 @@ function DiscoverPageContent() {
                 )}
               </div>
             ) : !showLoadingScreen && artworkView === 'grid' ? (
-              <div className="mt-4">
               <MasonryGrid
                 items={(() => {
                   // Grid view shows ONLY images (no videos)
@@ -2620,7 +2619,6 @@ function DiscoverPageContent() {
                 }}
                 loadMoreRef={loadMoreRef}
               />
-              </div>
             ) : !showLoadingScreen && artworkView === 'list' ? (
               <div className="mt-0">
               <>
