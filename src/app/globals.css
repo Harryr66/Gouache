@@ -356,12 +356,12 @@ button[type="button"] {
     overflow: visible !important;
   }
   
-  /* Change container overflow to clip (allows rounded corners) instead of hidden */
-  .container.mx-auto.px-4[class*="overflow-x-hidden"] {
-    overflow-x: clip !important;
+  /* Add extra padding to container on mobile to allow rounded corner to show */
+  .container.mx-auto {
+    padding-right: 1.5rem !important;
   }
   
-  /* Ensure ViewSelector shows rounded corner on mobile - match desktop behavior */
+  /* Ensure ViewSelector shows rounded corner on mobile */
   [data-radix-tabs-content][value="artwork"] .mobile-filter-toggle-wrapper {
     overflow: visible !important;
   }
