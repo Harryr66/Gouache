@@ -521,38 +521,46 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                       </Avatar>
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg">{course.instructor.name}</h3>
-                          {course.instructor.verified && (
+                          <h3 className="font-semibold text-lg">{course.instructor?.name || 'Instructor'}</h3>
+                          {course.instructor?.verified && (
                             <Award className="h-4 w-4 text-primary" />
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">{course.instructor.bio}</p>
+                        {course.instructor?.bio && (
+                          <p className="text-sm text-muted-foreground">{course.instructor.bio}</p>
+                        )}
                         <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span>{course.instructor.rating}</span>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Users className="h-4 w-4" />
-                            <span>{course.instructor.students.toLocaleString()} <span className="hidden sm:inline">students</span></span>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <BookOpen className="h-4 w-4" />
-                            <span>{course.instructor.courses} <span className="hidden sm:inline">courses</span></span>
-                          </div>
+                          {course.instructor?.rating !== undefined && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                              <span>{course.instructor.rating}</span>
+                            </div>
+                          )}
+                          {course.instructor?.students !== undefined && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Users className="h-4 w-4" />
+                              <span>{course.instructor.students.toLocaleString()} <span className="hidden sm:inline">students</span></span>
+                            </div>
+                          )}
+                          {course.instructor?.courses !== undefined && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <BookOpen className="h-4 w-4" />
+                              <span>{course.instructor.courses} <span className="hidden sm:inline">courses</span></span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
-                          {course.instructor.location && (
+                          {course.instructor?.location && (
                             <div className="flex items-center gap-1 shrink-0">
-                            <MapPin className="h-4 w-4" />
+                              <MapPin className="h-4 w-4" />
                               <span className="break-words">{course.instructor.location}</span>
-                          </div>
+                            </div>
                           )}
-                          {course.instructor.website && (
+                          {course.instructor?.website && (
                             <div className="flex items-center gap-1 shrink-0">
-                            <Globe className="h-4 w-4" />
+                              <Globe className="h-4 w-4" />
                               <a href={course.instructor.website} className="hover:text-primary break-all">Website</a>
-                          </div>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -865,6 +873,30 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Checkout Dialog */}
+      {course && course.price && course.price > 0 && course.instructor?.userId && (
+        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Purchase Course</DialogTitle>
+            </DialogHeader>
+            <Elements stripe={stripePromise}>
+              <CheckoutForm
+                amount={course.price}
+                currency={course.currency || 'USD'}
+                artistId={course.instructor.userId}
+                itemId={courseId}
+                itemType="course"
+                itemTitle={course.title}
+                buyerId={user?.id || ''}
+                onSuccess={handleCheckoutSuccess}
+                onCancel={() => setShowCheckout(false)}
+              />
+            </Elements>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
