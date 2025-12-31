@@ -223,7 +223,15 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           isActive: instructorData.isActive !== false,
           location: typeof instructorData.location === 'string' ? instructorData.location : (instructorData.location ? String(instructorData.location) : ''),
           website: typeof instructorData.website === 'string' ? instructorData.website : (instructorData.website ? String(instructorData.website) : ''),
-          socialLinks: typeof instructorData.socialLinks === 'object' && instructorData.socialLinks !== null ? instructorData.socialLinks : {},
+          // CRITICAL: Flatten socialLinks to only contain string primitives to prevent React error #31
+          socialLinks: {
+            instagram: typeof instructorData.socialLinks?.instagram === 'string' ? instructorData.socialLinks.instagram : '',
+            twitter: typeof instructorData.socialLinks?.twitter === 'string' ? instructorData.socialLinks.twitter : '',
+            x: typeof instructorData.socialLinks?.x === 'string' ? instructorData.socialLinks.x : '',
+            facebook: typeof instructorData.socialLinks?.facebook === 'string' ? instructorData.socialLinks.facebook : '',
+            youtube: typeof instructorData.socialLinks?.youtube === 'string' ? instructorData.socialLinks.youtube : '',
+            website: typeof instructorData.socialLinks?.website === 'string' ? instructorData.socialLinks.website : '',
+          },
           createdAt: instructorData.createdAt?.toDate ? instructorData.createdAt.toDate() : (instructorData.createdAt instanceof Date ? instructorData.createdAt : new Date()),
           updatedAt: instructorData.updatedAt?.toDate ? instructorData.updatedAt.toDate() : (instructorData.updatedAt instanceof Date ? instructorData.updatedAt : new Date()),
         } : {
@@ -240,7 +248,15 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           isActive: true,
           location: '',
           website: '',
-          socialLinks: {},
+          // CRITICAL: socialLinks must contain only string primitives
+          socialLinks: {
+            instagram: '',
+            twitter: '',
+            x: '',
+            facebook: '',
+            youtube: '',
+            website: '',
+          },
           createdAt: new Date(),
           updatedAt: new Date(),
         };
