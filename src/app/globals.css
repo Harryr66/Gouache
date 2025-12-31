@@ -282,8 +282,13 @@ button[type="button"] {
 
 /* Mobile: Ensure filter-view-grid works on mobile too */
 @media (max-width: 768px) {
-  /* Fix: Override main element overflow-x-hidden on mobile to allow toggle rounded corner */
+  /* Fix: Override main element and parent div overflow-x-hidden on mobile to allow toggle rounded corner */
   main.overflow-x-hidden {
+    overflow-x: visible !important;
+  }
+  
+  /* Also override parent div with overflow-x-hidden */
+  div.flex.min-h-screen.w-full.max-w-full.overflow-x-hidden {
     overflow-x: visible !important;
   }
   
