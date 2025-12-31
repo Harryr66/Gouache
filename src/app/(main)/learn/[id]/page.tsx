@@ -45,6 +45,13 @@ import { loadStripe } from '@stripe/stripe-js';
 
 // Initialize Stripe with proper error handling
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+console.log('[DEBUG] Stripe key check:', {
+  keyExists: !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+  keyLength: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.length || 0,
+  keyPrefix: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 10) || 'N/A',
+  stripeKey,
+  willLoadStripe: !!stripeKey
+});
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 // Mock course data - in real app, this would come from API

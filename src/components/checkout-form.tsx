@@ -18,6 +18,14 @@ import { useAuth } from '@/providers/auth-provider';
 
 // Initialize Stripe with proper error handling
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+console.log('[DEBUG CheckoutForm] Stripe initialization:', {
+  keyExists: !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+  keyLength: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.length || 0,
+  keyPrefix: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 10) || 'N/A',
+  stripeKey,
+  willLoadStripe: !!stripeKey,
+  stripePromiseResult: stripeKey ? 'will load' : 'null'
+});
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 interface CheckoutFormProps {
