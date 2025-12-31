@@ -2421,14 +2421,13 @@ function DiscoverPageContent() {
                       variant="ghost"
                       onClick={() => startTransition(() => setShowFilters(!showFilters))}
                       className={cn(
-                        "h-10 px-4 rounded-l-md rounded-r-none border-2 border-r-0 border-border w-full",
+                        "h-10 px-4 rounded-l-md rounded-r-none border-2 border-r-0 border-border",
                         showFilters && "bg-muted"
                       )}
-                      style={{ width: '100%' }}
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
-                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-l-none rounded-r-md border-l-0 w-full" style={{ width: '100%' }} />
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-l-none rounded-r-md border-l-0" />
                   </div>
                 </div>
               )}
