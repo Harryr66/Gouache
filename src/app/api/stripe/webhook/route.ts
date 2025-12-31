@@ -154,12 +154,20 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         updatedAt: new Date(),
       });
 
-      // Add enrollment record
+      // CRITICAL: Add complete enrollment record with all required fields
+      // This must match CourseEnrollment type definition to prevent data integrity issues
       await addDoc(collection(db, 'courseEnrollments'), {
         courseId: itemId,
         userId: userId,
         paymentIntentId: paymentIntent.id,
         enrolledAt: new Date(),
+        progress: 0,
+        currentWeek: 1,
+        currentLesson: 1,
+        completedLessons: [],
+        lastAccessedAt: new Date(),
+        certificateEarned: false,
+        isActive: true,
       });
 
       // Send course access email to customer

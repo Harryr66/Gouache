@@ -397,6 +397,7 @@ export interface CourseEnrollment {
   id: string;
   userId: string;
   courseId: string;
+  paymentIntentId?: string; // CRITICAL: Added for paid course verification
   enrolledAt: Date;
   completedAt?: Date;
   progress: number; // 0-100
