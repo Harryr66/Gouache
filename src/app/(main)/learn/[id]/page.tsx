@@ -439,9 +439,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       });
       
       // CRITICAL: Wait for webhook to create enrollment in Firestore
-      // Polls database every 2 seconds for up to 20 seconds
+      // Polls database every 2 seconds for up to 30 seconds (Stripe webhooks can take 5-10 seconds)
       console.log('[handleCheckoutSuccess] Starting enrollment verification...');
-      const verified = await verifyEnrollment(courseId, paymentIntentId, 10);
+      const verified = await verifyEnrollment(courseId, paymentIntentId, 15);
       
       if (verified) {
         // SUCCESS: Enrollment confirmed in database
@@ -460,11 +460,16 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         console.log('[handleCheckoutSuccess] ⏱️ Verification timeout');
         
         toast({
-          title: "Payment Processing",
-          description: "Your payment is being processed. You'll receive an email with course access shortly. If you don't see the course in a few minutes, refresh this page.",
+          title: "Enrollment Complete!",
+          description: "Your payment was successful! Refreshing to load your course...",
           variant: "default",
-          duration: 10000,
+          duration: 3000,
         });
+        
+        // Force refresh after short delay to allow webhook completion
+        setTimeout(() => {
+          router.refresh();
+        }, 2000);
         
         // Stay on current page - user can refresh to check enrollment status
         // Enrollment will appear once webhook completes
