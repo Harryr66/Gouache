@@ -2333,7 +2333,7 @@ function DiscoverPageContent() {
             </TabsList>
           </div>
           {/* Bottom row - Filter and View Selector aligned with top row split */}
-          <div className="hidden md:flex items-center gap-0 w-full">
+          <div className="hidden md:flex items-center gap-0 w-full overflow-visible">
             <div className="flex-1 filter-view-grid">
               {activeTab === 'artwork' ? (
                 <>
