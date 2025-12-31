@@ -2433,8 +2433,8 @@ function DiscoverPageContent() {
                     <ViewSelector 
                       view={artworkView} 
                       onViewChange={setArtworkView} 
-                      className="rounded-l-none rounded-r-md border-l-0 w-full" 
-                      style={{ width: '100%', flex: 'none', maxWidth: '100%', boxSizing: 'border-box' }}
+                      className="rounded-l-none rounded-r-md border-l-0 w-full overflow-visible" 
+                      style={{ width: '100%', flex: 'none', maxWidth: '100%', boxSizing: 'border-box', overflow: 'visible' }}
                     />
                   </div>
                 </div>
