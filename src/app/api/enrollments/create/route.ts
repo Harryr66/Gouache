@@ -2,28 +2,41 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
-// Initialize Firebase Admin (for server-side)
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
-
-const adminDb = getFirestore();
-
 /**
  * IMMEDIATE ENROLLMENT CREATION - SERVER-SIDE
  * Uses Firebase Admin SDK for reliable server-side writes
  */
 
+// Initialize Firebase Admin only once
+function getAdminDb() {
+  if (getApps().length === 0) {
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+    if (!privateKey || !clientEmail || !projectId) {
+      throw new Error('Missing Firebase Admin credentials');
+    }
+
+    initializeApp({
+      credential: cert({
+        projectId,
+        clientEmail,
+        privateKey: privateKey.replace(/\\n/g, '\n'),
+      }),
+    });
+  }
+
+  return getFirestore();
+}
+
 export async function POST(request: NextRequest) {
   console.log('[CREATE ENROLLMENT] API called');
   
   try {
+    // Initialize Firebase Admin at runtime
+    const adminDb = getAdminDb();
+    
     const body = await request.json();
     const { courseId, userId, paymentIntentId } = body;
 
