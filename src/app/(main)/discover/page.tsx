@@ -566,10 +566,44 @@ const VideoPlayer = ({
       // Detect 404 errors (networkState 3 = NETWORK_NO_SOURCE, code 4 = MEDIA_ERR_SRC_NOT_SUPPORTED)
       const is404 = video.networkState === 3 || error?.code === 4;
       
-      // For 404 errors, immediately hide the video - no retries, no fallbacks
-      // If video doesn't exist in Cloudflare Stream, it won't exist in videodelivery.net either
+      // For 404 errors, try videodelivery.net fallback if using customer subdomain
+      if (is404 && videoUrl.includes('customer-') && videoUrl.includes('.cloudflarestream.com')) {
+        // Extract video ID and try videodelivery.net format
+        const videoIdMatch = videoUrl.match(/\/([^/]+)\/manifest\/video\.m3u8/);
+        if (videoIdMatch && videoIdMatch[1] && retryCountRef.current === 0) {
+          const videoId = videoIdMatch[1];
+          const fallbackUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+          console.log('🔄 404 on customer subdomain, trying videodelivery.net fallback:', fallbackUrl);
+          
+          // Try fallback URL
+          if (hlsRef.current) {
+            hlsRef.current.destroy();
+          }
+          
+          // Reset error state and try fallback
+          setHasError(false);
+          retryCountRef.current = 1; // Mark that we've tried fallback
+          
+          // Use native HLS if supported, otherwise hls.js
+          if (canPlayHLS) {
+            video.src = fallbackUrl;
+          } else if (Hls.isSupported()) {
+            const hls = new Hls({
+              enableWorker: true,
+              lowLatencyMode: false,
+              backBufferLength: 90,
+            });
+            hls.loadSource(fallbackUrl);
+            hls.attachMedia(video);
+            hlsRef.current = hls;
+          }
+          return;
+        }
+      }
+      
+      // If 404 and no fallback available, or fallback also failed, hide the video
       if (is404) {
-        // Silently hide - video doesn't exist, no need to spam console
+        console.debug('❌ Video not found (404), hiding:', videoUrl);
         setHasError(true);
         if (hlsRef.current) {
           hlsRef.current.destroy();
