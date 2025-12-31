@@ -265,7 +265,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
             })) || [],
           })) || [],
           curriculum: data.curriculum || [],
-        } as Course;
+        } as unknown as Course;
       }
       return null;
     } catch (error) {
