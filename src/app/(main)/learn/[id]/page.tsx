@@ -282,9 +282,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       return;
     }
 
+    if (!course) {
+      toast({
+        title: "Error",
+        description: "Course information is not available. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // For course links, redirect to external URL after payment
-      if (course?.courseType === 'affiliate' && course.externalUrl) {
+      if (course.courseType === 'affiliate' && course.externalUrl) {
         const platformName = course.hostingPlatform 
           ? course.hostingPlatform.charAt(0).toUpperCase() + course.hostingPlatform.slice(1)
           : 'external platform';
@@ -304,7 +313,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         if (confirm(message)) {
           window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
         }
-      } else if (course?.courseType === 'hosted') {
+      } else if (course.courseType === 'hosted') {
         // For hosted courses, check if payment is required
         if (course.price && course.price > 0 && course.instructor?.userId) {
           // Show Stripe checkout for paid courses
