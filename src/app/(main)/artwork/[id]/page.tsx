@@ -765,6 +765,14 @@ export default function ArtworkPage() {
                               });
                               return;
                             }
+                            if (!stripePromise) {
+                              toast({
+                                title: 'Payment processing unavailable',
+                                description: 'Payment processing is not configured. Please contact support.',
+                                variant: 'destructive'
+                              });
+                              return;
+                            }
                             setShowCheckout(true);
                           }}
                         >

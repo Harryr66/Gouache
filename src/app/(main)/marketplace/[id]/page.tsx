@@ -562,6 +562,16 @@ function ProductDetailPage() {
       return;
     }
 
+    // Check if Stripe is configured before showing checkout
+    if (!stripePromise) {
+      toast({
+        title: 'Payment processing unavailable',
+        description: 'Payment processing is not configured. Please contact support.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     // Show checkout dialog for non-affiliate products
     setShowCheckout(true);
   };
