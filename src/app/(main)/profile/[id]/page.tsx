@@ -30,6 +30,7 @@ export default function ArtistProfilePage() {
   const [events, setEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [showEvents, setShowEvents] = useState(true); // Expanded by default for public view
+  const [hasApprovedArtistRequest, setHasApprovedArtistRequest] = useState(false);
 
   useEffect(() => {
     // Only prevent guest (anonymous) users from viewing their own profile
@@ -91,7 +92,22 @@ export default function ArtistProfilePage() {
             createdAt: item.createdAt?.toDate?.() || (item.createdAt instanceof Date ? item.createdAt : new Date())
           }));
           
-          const isProfessionalFlag = data.isProfessional || (portfolio.length > 0);
+          // Check if user has an approved artist request (fallback for missing isProfessional flag)
+          let hasApprovedRequest = false;
+          try {
+            const artistRequestQuery = query(
+              collection(db, 'artistRequests'),
+              where('userId', '==', userDoc.id),
+              where('status', '==', 'approved')
+            );
+            const artistRequestSnap = await getDocs(artistRequestQuery);
+            hasApprovedRequest = !artistRequestSnap.empty;
+            setHasApprovedArtistRequest(hasApprovedRequest);
+          } catch (error) {
+            console.error('Error checking artist request:', error);
+          }
+          
+          const isProfessionalFlag = data.isProfessional || (portfolio.length > 0) || hasApprovedRequest;
           
           // Map Firestore data to ProfileHeader expected format
           const profileData = {
@@ -267,8 +283,8 @@ export default function ArtistProfilePage() {
           onFollowToggle={handleFollowToggle}
         />
 
-        {/* Events Carousel - Visible to all users including guests */}
-        {!profileUser.hideUpcomingEvents && (
+        {/* Events Carousel - Only show for professional artists */}
+        {profileUser.isProfessional && !profileUser.hideUpcomingEvents && (
           eventsLoading ? (
             <ThemeLoading text="" size="sm" />
           ) : events.length > 0 ? (

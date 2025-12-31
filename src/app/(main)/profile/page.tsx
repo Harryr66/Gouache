@@ -175,8 +175,8 @@ export default function ProfilePage() {
           currentTab={currentTab}
         />
 
-        {/* Events Carousel */}
-        {eventsLoading ? (
+        {/* Events Carousel - Only show for professional artists */}
+        {effectiveUser.isProfessional && (eventsLoading ? (
           <ThemeLoading text="" size="sm" />
         ) : (
           <Collapsible 
@@ -282,7 +282,7 @@ export default function ProfilePage() {
               </CollapsibleContent>
             </Card>
           </Collapsible>
-        )}
+        ))}
 
         {(() => {
           const isProf = effectiveUser.isProfessional || hasApprovedArtistRequest || false;
