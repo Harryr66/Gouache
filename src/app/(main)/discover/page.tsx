@@ -2535,7 +2535,7 @@ function DiscoverPageContent() {
                   )}
                         </div>
               )}
-                      </div>
+            </div>
             
             {/* Artworks Grid */}
             {/* Show content when loading screen is dismissed */}
