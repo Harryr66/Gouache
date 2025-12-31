@@ -283,7 +283,12 @@ button[type="button"] {
 /* Mobile: Ensure filter-view-grid works on mobile too */
 @media (max-width: 768px) {
   .filter-view-grid {
-    gap: 0.5rem !important;
+    gap: 0 !important; /* No gap between filter and toggle on mobile */
+  }
+  
+  /* Add padding between tabs and content on mobile */
+  [data-radix-tabs-content][value="artwork"] {
+    margin-top: 1rem !important; /* Match desktop padding */
   }
 }
 
