@@ -2537,7 +2537,7 @@ function DiscoverPageContent() {
               )}
             </div>
             
-            {/* Artworks Grid */}
+            {/* Artworks Grid - No margin to keep flush with filter bar */}
             {/* Show content when loading screen is dismissed */}
             {!showLoadingScreen && filteredAndSortedArtworks.length === 0 ? (
               <div className="text-center py-16">
