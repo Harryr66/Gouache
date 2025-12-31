@@ -49,7 +49,7 @@ export function MobileHeader() {
         zIndex: 9999, // Maximum z-index
       }}
     >
-      <div className="container flex h-14 items-center pt-2">
+      <div className="container flex min-h-14 items-center py-3">
         {/* Gouache Logo */}
         <div className="flex-shrink-0">
           <Link 

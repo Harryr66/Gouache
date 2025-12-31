@@ -316,8 +316,17 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       } else if (course.courseType === 'hosted') {
         // For hosted courses, check if payment is required
         if (course.price && course.price > 0 && course.instructor?.userId) {
-          // Show Stripe checkout for paid courses
-          setShowCheckout(true);
+          // Check if Stripe is available before showing checkout
+          if (stripePromise) {
+            // Show Stripe checkout for paid courses
+            setShowCheckout(true);
+          } else {
+            toast({
+              title: "Payment unavailable",
+              description: "Payment processing is not available. Please contact support.",
+              variant: "destructive",
+            });
+          }
         } else {
           // Free course - enroll directly
           await enrollInCourse(courseId);
@@ -394,8 +403,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-background border-b border-border">
-        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+      <div className="bg-background border-b border-border pt-4">
+        <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5">
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <div className="flex items-center gap-2">
               <Link href="/marketplace">

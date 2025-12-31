@@ -30,7 +30,7 @@ export function DesktopHeader() {
 
   return (
     <div 
-      className="flex items-center justify-between bg-card border-b h-16 px-4 sm:px-6 pt-2 relative z-[9999]"
+      className="flex items-center justify-between bg-card border-b min-h-16 px-4 sm:px-6 py-3 relative z-[9999]"
       style={{
         position: 'relative',
         touchAction: 'manipulation',
