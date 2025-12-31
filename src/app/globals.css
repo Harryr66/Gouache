@@ -279,3 +279,10 @@ button[type="button"] {
   overflow: visible !important; /* Allow rounded corners to show */
   gap: 0.5rem !important; /* Add gap between filter and toggle */
 }
+
+/* Mobile: Ensure filter-view-grid works on mobile too */
+@media (max-width: 768px) {
+  .filter-view-grid {
+    gap: 0.5rem !important;
+  }
+}

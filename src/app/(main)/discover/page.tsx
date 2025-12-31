@@ -2414,17 +2414,19 @@ function DiscoverPageContent() {
               {/* Mobile: Filter and View Toggle - mirror top row layout (50/50 split) */}
               {isMobile && (
                 <div className="flex items-center gap-0 w-full">
-                  <Button
-                    variant="ghost"
-                    onClick={() => startTransition(() => setShowFilters(!showFilters))}
-                    className={cn(
-                      "flex-1 h-10 px-4 rounded-l-md rounded-r-none border-2 border-r-0 border-border",
-                      showFilters && "bg-muted"
-                    )}
-                  >
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                  <ViewSelector view={artworkView} onViewChange={setArtworkView} className="flex-1" />
+                  <div className="flex-1 filter-view-grid">
+                    <Button
+                      variant="ghost"
+                      onClick={() => startTransition(() => setShowFilters(!showFilters))}
+                      className={cn(
+                        "h-10 px-4 rounded-md border-2 border-border",
+                        showFilters && "bg-muted"
+                      )}
+                    >
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-md" />
+                  </div>
                 </div>
               )}
 
