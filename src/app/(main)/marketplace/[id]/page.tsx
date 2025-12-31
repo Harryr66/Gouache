@@ -23,6 +23,11 @@ import { useAuth } from '@/providers/auth-provider';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AboutTheArtist } from '@/components/about-the-artist';
+import { CheckoutForm } from '@/components/checkout-form';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 // Placeholder products generator (same as marketplace page)
 const generatePlaceholderProducts = (generatePlaceholderUrl: (w: number, h: number) => string): MarketplaceProduct[] => {
@@ -294,6 +299,7 @@ function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   
   // Edit mode state
   const isEditMode = searchParams?.get('edit') === 'true';
@@ -543,7 +549,7 @@ function ProductDetailPage() {
   const images = product.images && product.images.length > 0 ? product.images : [placeholderImage];
   const mainImage = images[selectedImageIndex] || placeholderImage;
 
-  const handlePurchase = async () => {
+  const handlePurchase = () => {
     if (product.isAffiliate && product.affiliateLink) {
       window.open(product.affiliateLink, '_blank');
       return;
@@ -554,39 +560,19 @@ function ProductDetailPage() {
       return;
     }
 
-    try {
-      const productPriceInCents = Math.round(product.price * 100);
-      
-      // Create payment intent
-      const response = await fetch('/api/stripe/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: productPriceInCents,
-          currency: product.currency.toLowerCase(),
-          artistId: product.sellerId,
-          itemId: product.id,
-          itemType: 'merchandise', // Products from marketplaceProducts collection
-          buyerId: user.id,
-          description: `Purchase: ${product.title}`,
-        }),
-      });
+    // Show checkout dialog for non-affiliate products
+    setShowCheckout(true);
+  };
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create payment');
-      }
-
-      const { clientSecret } = await response.json();
-      
-      // TODO: Integrate Stripe Elements or Checkout to complete payment
-      // For now, show success message
-      alert(`Payment intent created! Total: ${product.currency} ${product.price.toFixed(2)}`);
-    } catch (error: any) {
-      console.error('Purchase error:', error);
-      alert(error.message || 'Failed to process purchase. Please try again.');
+  const handleCheckoutSuccess = () => {
+    setShowCheckout(false);
+    toast({
+      title: 'Purchase Successful!',
+      description: 'Your purchase has been completed. You will receive a confirmation email shortly.',
+    });
+    // Optionally reload the product to update stock
+    if (productId) {
+      // Product data will update via real-time listeners if implemented
     }
   };
 
@@ -1163,6 +1149,30 @@ function ProductDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Checkout Dialog */}
+      {product && product.price && product.price > 0 && product.sellerId && !product.isAffiliate && (
+        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Purchase Product</DialogTitle>
+            </DialogHeader>
+            <Elements stripe={stripePromise}>
+              <CheckoutForm
+                amount={product.price}
+                currency={product.currency || 'USD'}
+                artistId={product.sellerId}
+                itemId={product.id}
+                itemType="merchandise"
+                itemTitle={product.title}
+                buyerId={user?.id || ''}
+                onSuccess={handleCheckoutSuccess}
+                onCancel={() => setShowCheckout(false)}
+              />
+            </Elements>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

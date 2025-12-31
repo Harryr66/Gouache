@@ -26,7 +26,7 @@ interface CheckoutFormProps {
   currency?: string;
   artistId: string;
   itemId: string;
-  itemType: 'original' | 'print' | 'book' | 'course';
+  itemType: 'original' | 'print' | 'book' | 'course' | 'merchandise' | 'product';
   itemTitle: string;
   buyerId: string;
   onSuccess?: () => void;

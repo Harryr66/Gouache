@@ -11,11 +11,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { AboutTheArtist } from '@/components/about-the-artist';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { X, Mail, Heart } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { X, Mail, Heart, ShoppingCart } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useLikes } from '@/providers/likes-provider';
+import { useAuth } from '@/providers/auth-provider';
+import { CheckoutForm } from '@/components/checkout-form';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import Hls from 'hls.js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 interface ArtworkView {
   id: string;
@@ -46,6 +52,7 @@ export default function ArtworkPage() {
   const params = useParams();
   const router = useRouter();
   const { toggleLike, isLiked, loading: likesLoading } = useLikes();
+  const { user } = useAuth();
   // Extract and clean the ID from URL params
   const rawId = Array.isArray(params?.id) ? params.id[0] : (params?.id as string | undefined);
   // Decode URL encoding and remove trailing slashes
@@ -54,6 +61,8 @@ export default function ArtworkPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [isPrint, setIsPrint] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalVideoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -725,9 +734,33 @@ export default function ArtworkPage() {
                       </div>
                     )}
                     {artwork.isForSale && artwork.price !== undefined && artwork.priceType !== 'contact' && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">Price:</span>
-                        <span>{artwork.currency || 'USD'} {(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="gradient"
+                          onClick={() => {
+                            if (!user) {
+                              toast({
+                                title: 'Login Required',
+                                description: 'Please log in to purchase artwork.',
+                                variant: 'destructive'
+                              });
+                              router.push('/login?redirect=' + encodeURIComponent(`/artwork/${artwork.id}`));
+                              return;
+                            }
+                            if (!artwork.artist?.id) {
+                              toast({
+                                title: 'Artist information missing',
+                                description: 'Unable to process purchase. Artist information is not available.',
+                                variant: 'destructive'
+                              });
+                              return;
+                            }
+                            setShowCheckout(true);
+                          }}
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Buy Now - {artwork.currency || 'USD'} {(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </Button>
                       </div>
                     )}
                     {artwork.deliveryScope && (
@@ -794,6 +827,36 @@ export default function ArtworkPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Checkout Dialog */}
+      {artwork && artwork.isForSale && artwork.price && artwork.price > 0 && artwork.artist?.id && (
+        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Purchase Artwork</DialogTitle>
+            </DialogHeader>
+            <Elements stripe={stripePromise}>
+              <CheckoutForm
+                amount={artwork.price / 100} // Convert from cents to dollars
+                currency={artwork.currency || 'USD'}
+                artistId={artwork.artist.id}
+                itemId={artwork.id}
+                itemType={isPrint ? 'print' : 'original'}
+                itemTitle={artwork.title}
+                buyerId={user?.id || ''}
+                onSuccess={() => {
+                  setShowCheckout(false);
+                  toast({
+                    title: 'Purchase Successful!',
+                    description: 'Your purchase has been completed. You will receive a confirmation email shortly.',
+                  });
+                }}
+                onCancel={() => setShowCheckout(false)}
+              />
+            </Elements>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
