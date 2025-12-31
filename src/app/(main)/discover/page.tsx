@@ -2416,26 +2416,22 @@ function DiscoverPageContent() {
             {/* Search and Filter Bar */}
             <div className="mb-0 space-y-2 overflow-visible">
               {/* Remove gap between filter bar and content */}
-              {/* Mobile: Filter and View Toggle - mirror top row layout (50/50 split) */}
+              {/* Mobile: Filter and View Toggle - use exact same structure as desktop */}
               {isMobile && (
-                <div className="flex items-center gap-0 w-full mb-0 overflow-visible mobile-filter-toggle-wrapper" style={{ paddingRight: '0.5rem' }}>
-                  <div className="flex-1 filter-view-grid overflow-visible">
+                <div className="flex items-center gap-0 w-full overflow-visible mb-0 mt-0">
+                  <div className="flex-1 filter-view-grid">
                     <Button
                       variant="ghost"
                       onClick={() => startTransition(() => setShowFilters(!showFilters))}
                       className={cn(
-                        "h-10 px-4 rounded-l-md rounded-r-none border-2 border-r-0 border-border",
+                        "h-10 px-4 rounded-l-md rounded-r-none border-2 border-r-0 border-border w-full",
                         showFilters && "bg-muted"
                       )}
+                      style={{ width: '100%' }}
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
-                    <ViewSelector 
-                      view={artworkView} 
-                      onViewChange={setArtworkView} 
-                      className="rounded-l-none rounded-r-md border-l-0 w-full overflow-visible" 
-                      style={{ width: '100%', flex: 'none', maxWidth: '100%', boxSizing: 'border-box', overflow: 'visible' }}
-                    />
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-md w-full" style={{ width: '100%' }} />
                   </div>
                 </div>
               )}
