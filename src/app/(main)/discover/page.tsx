@@ -2427,7 +2427,7 @@ function DiscoverPageContent() {
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
-                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-l-none rounded-r-md border-l-0" />
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-l-none rounded-r-md border-l-0 overflow-visible" />
                   </div>
                 </div>
               )}

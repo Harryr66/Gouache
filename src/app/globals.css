@@ -284,6 +284,7 @@ button[type="button"] {
 @media (max-width: 768px) {
   .filter-view-grid {
     gap: 0 !important; /* No gap between filter and toggle on mobile */
+    overflow: visible !important; /* Allow rounded corners to show */
   }
   
   /* Add padding between tabs and content on mobile - ensure it applies */
@@ -292,10 +293,16 @@ button[type="button"] {
     padding-top: 0 !important;
   }
   
-  /* Ensure mobile filter row has no gap from tabs */
+  /* Ensure mobile filter row has no gap from tabs but allow overflow for rounded corners */
   [data-radix-tabs-content][value="artwork"] > div:first-child {
     margin-top: 0 !important;
     padding-top: 0 !important;
+    overflow: visible !important;
+  }
+  
+  /* Ensure ViewSelector rounded corners are visible on mobile */
+  [data-radix-tabs-content][value="artwork"] .filter-view-grid > div:last-child {
+    overflow: visible !important;
   }
 }
 
