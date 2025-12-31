@@ -235,6 +235,21 @@ function CheckoutFormContent({
 }
 
 export function CheckoutForm(props: CheckoutFormProps) {
+  if (!stripePromise) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-muted-foreground mb-4">
+          Payment processing is not configured. Please contact support.
+        </p>
+        {props.onCancel && (
+          <Button variant="outline" onClick={props.onCancel}>
+            Close
+          </Button>
+        )}
+      </div>
+    );
+  }
+
   const options: StripeElementsOptions = {
     mode: 'payment',
     amount: Math.round(props.amount * 100),
