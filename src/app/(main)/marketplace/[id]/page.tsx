@@ -27,7 +27,9 @@ import { CheckoutForm } from '@/components/checkout-form';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+// Initialize Stripe with proper error handling
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 // Placeholder products generator (same as marketplace page)
 const generatePlaceholderProducts = (generatePlaceholderUrl: (w: number, h: number) => string): MarketplaceProduct[] => {
@@ -1157,7 +1159,8 @@ function ProductDetailPage() {
             <DialogHeader>
               <DialogTitle>Purchase Product</DialogTitle>
             </DialogHeader>
-            <Elements stripe={stripePromise}>
+            {stripePromise ? (
+              <Elements stripe={stripePromise}>
               <CheckoutForm
                 amount={product.price}
                 currency={product.currency || 'USD'}
@@ -1169,7 +1172,17 @@ function ProductDetailPage() {
                 onSuccess={handleCheckoutSuccess}
                 onCancel={() => setShowCheckout(false)}
               />
-            </Elements>
+              </Elements>
+            ) : (
+              <div className="p-8 text-center">
+                <p className="text-muted-foreground mb-4">
+                  Payment processing is not configured. Please contact support.
+                </p>
+                <Button variant="outline" onClick={() => setShowCheckout(false)}>
+                  Close
+                </Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       )}
