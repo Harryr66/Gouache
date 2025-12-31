@@ -305,6 +305,68 @@ function ProductDetailPage() {
   // CRITICAL: Payment safety states
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
   const [isVerifying, setIsVerifying] = useState(false); // Shows verification overlay
+
+  // ============================================
+  // PAYMENT SUCCESS HANDLER - WAIT FOR WEBHOOK
+  // ============================================
+  const handleCheckoutSuccess = async (paymentIntentId: string) => {
+    console.log('[Marketplace] Payment succeeded, waiting for webhook...');
+    
+    setIsVerifying(true);
+    
+    try {
+      setShowCheckout(false);
+      
+      toast({
+        title: "Payment Successful!",
+        description: "Verifying your purchase...",
+        duration: 60000,
+      });
+      
+      // Wait for webhook to create purchase record (up to 60 seconds)
+      console.log('[Marketplace] Polling for purchase confirmation...');
+      const verified = await verifyMarketplacePurchase(product!.id, paymentIntentId, user!.id, 30); // 30 attempts × 2s = 60 seconds
+      
+      if (verified) {
+        console.log('[Marketplace] ✅ Purchase confirmed!');
+        
+        toast({
+          title: "Purchase Complete!",
+          description: "You will receive a confirmation email shortly.",
+        });
+        
+        window.location.reload();
+      } else {
+        // Timeout - show message to refresh
+        console.log('[Marketplace] Timeout - purchase pending');
+        
+        toast({
+          title: "Processing...",
+          description: "Your payment succeeded! Refreshing page...",
+          duration: 5000,
+        });
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('[Marketplace] Error:', error);
+      
+      toast({
+        title: "Payment Received",
+        description: "Your payment was successful. Refresh the page in a moment to see your purchase.",
+        duration: 10000,
+      });
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 5000);
+    } finally {
+      setIsVerifying(false);
+      setIsProcessingPayment(false);
+    }
+  };
   
   // Edit mode state
   const isEditMode = searchParams?.get('edit') === 'true';

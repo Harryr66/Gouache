@@ -69,6 +69,68 @@ export default function ArtworkPage() {
   // CRITICAL: Payment safety states
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
   const [isVerifying, setIsVerifying] = useState(false); // Shows verification overlay
+
+  // ============================================
+  // PAYMENT SUCCESS HANDLER - WAIT FOR WEBHOOK
+  // ============================================
+  const handleCheckoutSuccess = async (paymentIntentId: string) => {
+    console.log('[Artwork] Payment succeeded, waiting for webhook...');
+    
+    setIsVerifying(true);
+    
+    try {
+      setShowCheckout(false);
+      
+      toast({
+        title: "Payment Successful!",
+        description: "Verifying your purchase...",
+        duration: 60000,
+      });
+      
+      // Wait for webhook to mark artwork as sold (up to 60 seconds)
+      console.log('[Artwork] Polling for purchase confirmation...');
+      const verified = await verifyArtworkPurchase(artwork!.id, paymentIntentId, 30); // 30 attempts × 2s = 60 seconds
+      
+      if (verified) {
+        console.log('[Artwork] ✅ Purchase confirmed!');
+        
+        toast({
+          title: "Purchase Complete!",
+          description: "You will receive a confirmation email shortly.",
+        });
+        
+        window.location.reload();
+      } else {
+        // Timeout - show message to refresh
+        console.log('[Artwork] Timeout - purchase pending');
+        
+        toast({
+          title: "Processing...",
+          description: "Your payment succeeded! Refreshing page...",
+          duration: 5000,
+        });
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('[Artwork] Error:', error);
+      
+      toast({
+        title: "Payment Received",
+        description: "Your payment was successful. Refresh the page in a moment to see your purchase.",
+        duration: 10000,
+      });
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 5000);
+    } finally {
+      setIsVerifying(false);
+      setIsProcessingPayment(false);
+    }
+  };
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalVideoRef = useRef<HTMLVideoElement>(null);
@@ -929,68 +991,7 @@ export default function ArtworkPage() {
                 itemType={isPrint ? 'print' : 'original'}
                 itemTitle={artwork.title}
                 buyerId={user?.id || ''}
-                onSuccess={async (paymentIntentId: string) => {
-                  // ========================================
-                  // CRITICAL: PAYMENT SUCCESS WITH VERIFICATION
-                  // This prevents crashes by waiting for webhook
-                  // ========================================
-                  console.log('[Artwork] Payment succeeded, payment intent:', paymentIntentId);
-                  
-                  setIsVerifying(true);
-                  
-                  try {
-                    // Close checkout modal immediately
-                    setShowCheckout(false);
-                    
-                    // Show verification toast
-                    toast({
-                      title: "Payment Successful!",
-                      description: "Verifying your purchase...",
-                      duration: 30000, // Keep visible during verification
-                    });
-                    
-                    // CRITICAL: Wait for webhook to mark artwork as sold
-                    console.log('[Artwork] Starting purchase verification...');
-                    const verified = await verifyArtworkPurchase(artwork.id, paymentIntentId, 10);
-                    
-                    if (verified) {
-                      // SUCCESS: Purchase confirmed in database
-                      console.log('[Artwork] ✅ Purchase verified!');
-                      
-                      toast({
-                        title: "Purchase Complete!",
-                        description: "Your purchase has been completed. You will receive a confirmation email shortly.",
-                      });
-                      
-                      // Reload artwork to show sold status
-                      window.location.reload();
-                    } else {
-                      // TIMEOUT: Purchase not found yet (webhook might be slow)
-                      console.log('[Artwork] ⏱️ Verification timeout');
-                      
-                      toast({
-                        title: "Payment Processing",
-                        description: "Your payment is being processed. You'll receive an email with purchase confirmation shortly. If you don't receive it in a few minutes, contact support.",
-                        variant: "default",
-                        duration: 10000,
-                      });
-                      
-                      // Stay on current page - user can refresh to see sold status
-                    }
-                  } catch (error) {
-                    console.error('[Artwork] Error verifying purchase:', error);
-                    
-                    toast({
-                      title: "Payment Received",
-                      description: "Your payment was successful. You'll receive a confirmation email shortly. If you have issues, contact support.",
-                      variant: "default",
-                      duration: 10000,
-                    });
-                  } finally {
-                    setIsVerifying(false);
-                    setIsProcessingPayment(false);
-                  }
-                }}
+                onSuccess={handleCheckoutSuccess}
                 onCancel={() => {
                   setShowCheckout(false);
                   setIsProcessingPayment(false);
