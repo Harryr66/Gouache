@@ -49,12 +49,12 @@ export function MobileHeader() {
         zIndex: 9999, // Maximum z-index
       }}
     >
-      <div className="container flex min-h-14 items-center py-3">
+      <div className="container flex min-h-14 items-center pt-4 pb-4">
         {/* Gouache Logo */}
         <div className="flex-shrink-0">
           <Link 
             href="/" 
-            className="flex items-center pl-2"
+            className="flex items-center pl-4"
             style={{
               pointerEvents: 'auto', // Ensure logo link is clickable
               touchAction: 'manipulation',
