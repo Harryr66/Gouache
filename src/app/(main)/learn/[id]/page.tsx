@@ -39,6 +39,11 @@ import { toast } from '@/hooks/use-toast';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ThemeLoading } from '@/components/theme-loading';
+import { CheckoutForm } from '@/components/checkout-form';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 // Mock course data - in real app, this would come from API
 const mockCourse = {
@@ -206,6 +211,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [isOwner, setIsOwner] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(800, 450);
@@ -270,39 +276,51 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     try {
       // For course links, redirect to external URL after payment
       if (course?.courseType === 'affiliate' && course.externalUrl) {
-      const platformName = course.hostingPlatform 
-        ? course.hostingPlatform.charAt(0).toUpperCase() + course.hostingPlatform.slice(1)
-        : 'external platform';
-      
-      let message = `You will be redirected to ${platformName} to access this course.`;
-      
-      if (course.linkType === 'enrollment') {
-        message += ' You will be automatically enrolled.';
-      } else if (course.linkType === 'affiliate') {
-        message += ' You may need to complete enrollment on the platform.';
-      } else {
-        message += ' You may need to sign in or enroll manually.';
-      }
-      
-      message += '\n\nContinue?';
-      
-      if (confirm(message)) {
-        window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
-      }
+        const platformName = course.hostingPlatform 
+          ? course.hostingPlatform.charAt(0).toUpperCase() + course.hostingPlatform.slice(1)
+          : 'external platform';
+        
+        let message = `You will be redirected to ${platformName} to access this course.`;
+        
+        if (course.linkType === 'enrollment') {
+          message += ' You will be automatically enrolled.';
+        } else if (course.linkType === 'affiliate') {
+          message += ' You may need to complete enrollment on the platform.';
+        } else {
+          message += ' You may need to sign in or enroll manually.';
+        }
+        
+        message += '\n\nContinue?';
+        
+        if (confirm(message)) {
+          window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
+        }
       } else if (course?.courseType === 'hosted') {
-        // For hosted courses, enroll and redirect to player
+        // For hosted courses, check if payment is required
+        if (course.price && course.price > 0 && course.instructor?.userId) {
+          // Show Stripe checkout for paid courses
+          setShowCheckout(true);
+        } else {
+          // Free course - enroll directly
+          await enrollInCourse(courseId);
+          setIsEnrolled(true);
+          router.push(`/learn/${courseId}/player`);
+        }
+      } else {
+        // Fallback: try to enroll anyway (shouldn't happen)
         await enrollInCourse(courseId);
         setIsEnrolled(true);
-        router.push(`/learn/${courseId}/player`);
-    } else {
-        // Fallback: try to enroll anyway
-        await enrollInCourse(courseId);
-      setIsEnrolled(true);
       }
     } catch (error) {
       console.error('Error enrolling:', error);
       // Error toast is handled by enrollInCourse
     }
+  };
+
+  const handleCheckoutSuccess = () => {
+    setShowCheckout(false);
+    setIsEnrolled(true);
+    router.push(`/learn/${courseId}/player`);
   };
 
   if (isLoading || !course) {
@@ -498,8 +516,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   <CardContent>
                     <div className="flex items-start gap-4">
                       <Avatar className="h-16 w-16">
-                        <AvatarImage src={course.instructor.avatar} alt={course.instructor.name} />
-                        <AvatarFallback>{course.instructor.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
+                        <AvatarImage src={course.instructor?.avatar || course.instructor?.avatarUrl} alt={course.instructor?.name || 'Instructor'} />
+                        <AvatarFallback>{(course.instructor?.name || 'Instructor').split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2">
