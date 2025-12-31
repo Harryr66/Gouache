@@ -419,31 +419,26 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   };
 
   // ============================================
-  // CRITICAL: CREATE ENROLLMENT BEFORE PAYMENT
-  // 1. Create enrollment FIRST (with pending status)
-  // 2. Process payment
-  // 3. If payment succeeds, enrollment already exists
-  // 4. If payment fails, delete the pending enrollment
+  // PAYMENT SUCCESS HANDLER - WAIT FOR WEBHOOK
+  // Payment succeeded, now wait for webhook to create enrollment
   // ============================================
   const handleCheckoutSuccess = async (paymentIntentId: string) => {
-    console.log('[handleCheckoutSuccess] Payment succeeded, payment intent:', paymentIntentId);
+    console.log('[handleCheckoutSuccess] Payment succeeded, waiting for enrollment creation...');
     
     setIsVerifying(true);
     
     try {
-      // Close checkout modal immediately
       setShowCheckout(false);
       
       toast({
         title: "Payment Successful!",
-        description: "Finalizing your enrollment...",
-        duration: 5000,
+        description: "Creating your enrollment...",
+        duration: 30000,
       });
       
-      // Enrollment was created BEFORE payment (see handleEnroll)
-      // Just verify it exists and navigate
-      console.log('[handleCheckoutSuccess] Verifying enrollment exists...');
-      const verified = await verifyEnrollment(courseId, paymentIntentId, 3);
+      // Wait for webhook to create enrollment (up to 60 seconds)
+      console.log('[handleCheckoutSuccess] Polling for enrollment...');
+      const verified = await verifyEnrollment(courseId, paymentIntentId, 30); // 30 attempts × 2s = 60 seconds
       
       if (verified) {
         console.log('[handleCheckoutSuccess] ✅ Enrollment confirmed!');
@@ -452,60 +447,38 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         toast({
           title: "Enrollment Complete!",
           description: "Welcome to the course!",
-          variant: "default",
         });
         
         router.push(`/learn/${courseId}/player`);
       } else {
-        // Enrollment exists but query hasn't picked it up yet
-        console.log('[handleCheckoutSuccess] Enrollment created, navigating...');
-        setIsEnrolled(true);
-        router.push(`/learn/${courseId}/player`);
+        // Timeout - show message to refresh
+        console.log('[handleCheckoutSuccess] Timeout - enrollment pending');
+        
+        toast({
+          title: "Processing...",
+          description: "Your payment succeeded! Refreshing page to load your enrollment...",
+          duration: 5000,
+        });
+        
+        setTimeout(() => {
+          router.refresh();
+        }, 3000);
       }
-      
     } catch (error) {
       console.error('[handleCheckoutSuccess] Error:', error);
       
       toast({
-        title: "Enrollment Complete!",
-        description: "Welcome to the course!",
-        variant: "default",
+        title: "Payment Received",
+        description: "Your payment was successful. Refresh the page in a moment to access your course.",
+        duration: 10000,
       });
       
-      router.push(`/learn/${courseId}/player`);
+      setTimeout(() => {
+        router.refresh();
+      }, 5000);
     } finally {
       setIsVerifying(false);
       setIsProcessingPayment(false);
-    }
-  };
-
-  // New function: Create enrollment before payment
-  const createEnrollmentBeforePayment = async (paymentIntentId: string) => {
-    console.log('[createEnrollmentBeforePayment] Creating enrollment before charging card...');
-    
-    try {
-      const enrollmentResponse = await fetch('/api/enrollments/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          courseId,
-          userId: user?.id,
-          paymentIntentId,
-        }),
-      });
-
-      if (!enrollmentResponse.ok) {
-        throw new Error('Failed to create enrollment');
-      }
-
-      const enrollmentData = await enrollmentResponse.json();
-      console.log('[createEnrollmentBeforePayment] ✅ Enrollment created:', enrollmentData);
-      return true;
-    } catch (error) {
-      console.error('[createEnrollmentBeforePayment] Error:', error);
-      return false;
     }
   };
 
