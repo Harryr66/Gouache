@@ -2718,7 +2718,7 @@ function DiscoverPageContent() {
                   }
                   
                   return (
-                    <div className="w-full space-y-6 flex flex-col items-center">
+                    <div className="w-full space-y-6 flex flex-col items-center mt-0">
                       {videoArtworks.length === 0 ? (
                         <div className="w-full py-12 text-center text-muted-foreground">
                           <p>No videos available</p>
