@@ -283,6 +283,8 @@ button[type="button"] {
 /* Mobile: Ensure filter-view-grid works on mobile too */
 @media (max-width: 768px) {
   /* Fix: Override main element and parent div overflow-x-hidden on mobile to allow toggle rounded corner */
+  /* SAFE because: html/body still have overflow-x:hidden (line 6-7), providing a root-level safety net */
+  /* This only allows child overflow within the clipped root, preventing page-wide horizontal scroll */
   main.overflow-x-hidden {
     overflow-x: visible !important;
   }

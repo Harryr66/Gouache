@@ -41,56 +41,7 @@ import { db } from '@/lib/firebase';
 import { ThemeLoading } from '@/components/theme-loading';
 import { CheckoutForm } from '@/components/checkout-form';
 import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-
-// Initialize Stripe using singleton pattern to avoid code splitting issues
-let stripePromiseInstance: Promise<any> | null = null;
-
-function getStripePromise() {
-  // Always check the env var fresh (don't cache the check)
-  const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-  
-  console.log('[DEBUG] getStripePromise() called - RAW CHECK:', {
-    rawEnvVar: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-    keyExists: !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-    keyLength: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.length || 0,
-    stripeKey: stripeKey,
-    stripeKeyLength: stripeKey.length,
-    hasKey: stripeKey.length > 0,
-    instanceExists: stripePromiseInstance !== null,
-    allProcessEnv: Object.keys(process.env).filter(k => k.includes('STRIPE'))
-  });
-  
-  // If we already have an instance, return it
-  if (stripePromiseInstance !== null) {
-    console.log('[DEBUG] Returning existing stripePromiseInstance');
-    return stripePromiseInstance;
-  }
-  
-  // If no key, return null immediately
-  if (!stripeKey || stripeKey.length === 0) {
-    console.error('[ERROR] getStripePromise() - NO STRIPE KEY FOUND!');
-    stripePromiseInstance = null;
-    return null;
-  }
-  
-  // Create new instance
-  console.log('[DEBUG] Creating NEW stripePromise with key length:', stripeKey.length);
-  try {
-    stripePromiseInstance = loadStripe(stripeKey);
-    console.log('[DEBUG] loadStripe() returned:', {
-      isNull: stripePromiseInstance === null,
-      isPromise: stripePromiseInstance instanceof Promise,
-      type: typeof stripePromiseInstance,
-      value: stripePromiseInstance
-    });
-    return stripePromiseInstance;
-  } catch (error) {
-    console.error('[ERROR] loadStripe() threw error:', error);
-    stripePromiseInstance = null;
-    return null;
-  }
-}
+import { getStripePromise } from '@/lib/stripe-client';
 
 // Mock course data - in real app, this would come from API
 const mockCourse = {
