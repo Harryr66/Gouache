@@ -291,4 +291,18 @@ button[type="button"] {
 [data-radix-tabs-content][value="artwork"] {
   margin-top: 0 !important;
   padding-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Remove spacing between video tiles in video feed for seamless scroll */
+[data-radix-tabs-content][value="artwork"] .space-y-0 > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Ensure VideoPlayer wrapper has no margin */
+[data-radix-tabs-content][value="artwork"] .space-y-0 > div {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
