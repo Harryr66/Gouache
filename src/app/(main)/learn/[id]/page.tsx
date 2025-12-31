@@ -549,7 +549,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <h3 className="font-semibold text-lg text-center">Verifying Enrollment</h3>
               <p className="text-sm text-muted-foreground text-center">
-                Your payment was successful. We're verifying your enrollment with the course database...
+                Your payment was successful. We're verifying your enrollment...
               </p>
               <p className="text-xs text-muted-foreground text-center">
                 This usually takes just a few seconds.
