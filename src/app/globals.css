@@ -286,3 +286,9 @@ button[type="button"] {
     gap: 0.5rem !important;
   }
 }
+
+/* Remove all spacing between filter bar and content in Discover page */
+[data-radix-tabs-content][value="artwork"] {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
