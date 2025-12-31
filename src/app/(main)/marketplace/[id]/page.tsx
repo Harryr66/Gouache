@@ -701,69 +701,6 @@ function ProductDetailPage() {
     setShowCheckout(true);
   };
 
-  const handleCheckoutSuccess = async (paymentIntentId: string) => {
-    // ========================================
-    // CRITICAL: PAYMENT SUCCESS WITH VERIFICATION
-    // This prevents crashes by waiting for webhook
-    // ========================================
-    console.log('[Marketplace] Payment succeeded, payment intent:', paymentIntentId);
-    
-    setIsVerifying(true);
-    
-    try {
-      // Close checkout modal immediately
-      setShowCheckout(false);
-      
-      // Show verification toast
-      toast({
-        title: "Payment Successful!",
-        description: "Verifying your purchase...",
-        duration: 30000, // Keep visible during verification
-      });
-      
-      // CRITICAL: Wait for webhook to create purchase record
-      console.log('[Marketplace] Starting purchase verification...');
-      const verified = await verifyMarketplacePurchase(product!.id, paymentIntentId, user!.id, 10);
-      
-      if (verified) {
-        // SUCCESS: Purchase confirmed in database
-        console.log('[Marketplace] ✅ Purchase verified!');
-        
-        toast({
-          title: "Purchase Complete!",
-          description: "Your purchase has been completed. You will receive a confirmation email shortly.",
-        });
-        
-        // Reload product to show updated stock
-        window.location.reload();
-      } else {
-        // TIMEOUT: Purchase not found yet (webhook might be slow)
-        console.log('[Marketplace] ⏱️ Verification timeout');
-        
-        toast({
-          title: "Payment Processing",
-          description: "Your payment is being processed. You'll receive an email with purchase confirmation shortly. If you don't receive it in a few minutes, contact support.",
-          variant: "default",
-          duration: 10000,
-        });
-        
-        // Stay on current page - user can refresh to check status
-      }
-    } catch (error) {
-      console.error('[Marketplace] Error verifying purchase:', error);
-      
-      toast({
-        title: "Payment Received",
-        description: "Your payment was successful. You'll receive a confirmation email shortly. If you have issues, contact support.",
-        variant: "default",
-        duration: 10000,
-      });
-    } finally {
-      setIsVerifying(false);
-      setIsProcessingPayment(false);
-    }
-  };
-
   const handleSaveEdit = async () => {
     if (!product || !user || user.id !== product.sellerId) return;
 
