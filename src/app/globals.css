@@ -287,9 +287,9 @@ button[type="button"] {
   }
 }
 
-/* Remove all spacing between filter bar and content in Discover page */
+/* Add padding between tabs and content in Discover page */
 [data-radix-tabs-content][value="artwork"] {
-  margin-top: 0 !important;
+  margin-top: 1rem !important; /* Add gap between tabs and content */
   padding-top: 0 !important;
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
