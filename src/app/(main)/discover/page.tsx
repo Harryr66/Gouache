@@ -2581,26 +2581,44 @@ function DiscoverPageContent() {
               <>
                 {/* Video feed - Only videos, 1 per row, 1 column, full width */}
                 {(() => {
+                  // CRITICAL: Log all artworks first to see what we're working with
+                  console.log('🎬 VIDEO FEED DEBUG - All visibleFilteredArtworks:', {
+                    total: visibleFilteredArtworks.length,
+                    sample: visibleFilteredArtworks.slice(0, 5).map((item: any) => ({
+                      id: item.id,
+                      title: item.title,
+                      videoUrl: item.videoUrl,
+                      mediaType: item.mediaType,
+                      mediaUrls: item.mediaUrls,
+                      mediaTypes: item.mediaTypes,
+                      imageUrl: item.imageUrl,
+                      allKeys: Object.keys(item)
+                    }))
+                  });
+                  
                   // Filter to only videos for video feed (list view)
                   const videoArtworks = visibleFilteredArtworks.filter((item) => {
                     if ('type' in item && item.type === 'ad') return false; // Exclude ads
-                    const artwork = item as Artwork;
+                    
+                    // Access videoUrl directly from item (not through artwork cast)
+                    const videoUrl = (item as any).videoUrl || '';
+                    const mediaType = (item as any).mediaType || '';
+                    const mediaUrls = (item as any).mediaUrls || [];
+                    const mediaTypes = (item as any).mediaTypes || [];
+                    const imageUrl = (item as any).imageUrl || '';
                     
                     // Check for video in multiple ways:
-                    // 1. Direct videoUrl field
-                    const hasVideoUrl = !!(artwork as any).videoUrl;
+                    // 1. Direct videoUrl field (most reliable)
+                    const hasVideoUrl = !!videoUrl && videoUrl.length > 0;
                     // 2. mediaType field
-                    const hasVideoMediaType = (artwork as any).mediaType === 'video';
+                    const hasVideoMediaType = mediaType === 'video';
                     // 3. mediaUrls array with video type
-                    const hasVideoInMediaUrls = (artwork as any).mediaUrls && 
-                                               Array.isArray((artwork as any).mediaTypes) && 
-                                               (artwork as any).mediaTypes.includes('video');
+                    const hasVideoInMediaUrls = Array.isArray(mediaUrls) && mediaUrls.length > 0 && 
+                                               Array.isArray(mediaTypes) && mediaTypes.includes('video');
                     // 4. Check if imageUrl is actually a Cloudflare Stream thumbnail (indicates video)
-                    const imageUrl = (artwork as any).imageUrl || artwork.imageUrl || '';
                     const isCloudflareThumbnail = imageUrl.includes('cloudflarestream.com') && 
                                                   (imageUrl.includes('/thumbnails/') || imageUrl.includes('thumbnail'));
                     // 5. Check if videoUrl contains Cloudflare Stream indicators
-                    const videoUrl = (artwork as any).videoUrl || '';
                     const isCloudflareVideo = videoUrl.includes('cloudflarestream.com') || 
                                              videoUrl.includes('videodelivery.net') ||
                                              videoUrl.includes('.m3u8');
@@ -2608,23 +2626,22 @@ function DiscoverPageContent() {
                     const hasVideo = hasVideoUrl || hasVideoMediaType || hasVideoInMediaUrls || isCloudflareThumbnail || isCloudflareVideo;
                     
                     // Debug logging for each item
-                    if (visibleFilteredArtworks.length < 20) {
-                      console.log('🔍 Checking item for video:', {
-                        id: artwork.id,
-                        title: artwork.title,
-                        hasVideoUrl,
-                        hasVideoMediaType,
-                        hasVideoInMediaUrls,
-                        isCloudflareThumbnail,
-                        isCloudflareVideo,
-                        videoUrl,
-                        imageUrl,
-                        mediaType: (artwork as any).mediaType,
-                        mediaUrls: (artwork as any).mediaUrls,
-                        mediaTypes: (artwork as any).mediaTypes,
-                        isVideo: hasVideo
-                      });
-                    }
+                    console.log('🔍 Checking item for video:', {
+                      id: (item as any).id,
+                      title: (item as any).title,
+                      hasVideoUrl,
+                      hasVideoMediaType,
+                      hasVideoInMediaUrls,
+                      isCloudflareThumbnail,
+                      isCloudflareVideo,
+                      videoUrl,
+                      imageUrl,
+                      mediaType,
+                      mediaUrls,
+                      mediaTypes,
+                      isVideo: hasVideo,
+                      itemKeys: Object.keys(item)
+                    });
                     
                     return hasVideo;
                   });
