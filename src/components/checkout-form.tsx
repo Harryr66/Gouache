@@ -191,12 +191,12 @@ function CheckoutFormContent({
           description: confirmError.message || 'Your payment could not be processed.',
           variant: 'destructive',
         });
-      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        // Payment succeeded - don't show immediate success toast
-        // Parent component will handle verification and show appropriate messages
+      } else if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_capture')) {
+        // Payment authorized (requires_capture) or succeeded (automatic capture)
+        // Both cases mean payment is ready - call parent's onSuccess
         
         if (onSuccess) {
-          // CRITICAL: Pass payment intent ID to parent for verification
+          // CRITICAL: Pass payment intent ID to parent for enrollment creation + capture
           onSuccess(paymentIntent.id);
         } else {
           // Fallback: redirect to success page
