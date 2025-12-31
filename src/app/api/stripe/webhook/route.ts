@@ -6,7 +6,8 @@ import { doc, getDoc, updateDoc, collection, addDoc, increment } from 'firebase/
 export async function POST(request: NextRequest) {
   // Initialize Stripe inside the handler to avoid build-time initialization
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecretConnected = process.env.STRIPE_WEBHOOK_SECRET; // Connected accounts
+  const webhookSecretPlatform = process.env.STRIPE_WEBHOOK_SECRET_PLATFORM; // Platform payments
 
   if (!stripeSecretKey) {
     console.error('STRIPE_SECRET_KEY is not set');
@@ -16,8 +17,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET is not set');
+  if (!webhookSecretConnected && !webhookSecretPlatform) {
+    console.error('No webhook secrets configured');
     return NextResponse.json(
       { error: 'Webhook secret not configured' },
       { status: 500 }
@@ -39,16 +40,44 @@ export async function POST(request: NextRequest) {
   }
 
   let event: Stripe.Event;
+  let webhookSource = 'unknown';
 
-  try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message);
+  // Try platform webhook secret first (for courses, artwork, marketplace)
+  if (webhookSecretPlatform) {
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecretPlatform);
+      webhookSource = 'platform';
+      console.log('✅ Webhook verified with PLATFORM secret');
+    } catch (err: any) {
+      // Platform secret failed, will try connected accounts secret next
+      console.log('Platform webhook secret failed, trying connected accounts secret...');
+    }
+  }
+
+  // If platform secret failed or doesn't exist, try connected accounts secret
+  if (!event! && webhookSecretConnected) {
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecretConnected);
+      webhookSource = 'connected';
+      console.log('✅ Webhook verified with CONNECTED ACCOUNTS secret');
+    } catch (err: any) {
+      console.error('Both webhook secrets failed:', err.message);
+      return NextResponse.json(
+        { error: `Webhook Error: ${err.message}` },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (!event!) {
+    console.error('Webhook signature verification failed for both secrets');
     return NextResponse.json(
-      { error: `Webhook Error: ${err.message}` },
+      { error: 'Webhook signature verification failed' },
       { status: 400 }
     );
   }
+
+  console.log(`📨 Webhook event received: ${event.type} from ${webhookSource} source`);
 
   // Handle the event
   try {
