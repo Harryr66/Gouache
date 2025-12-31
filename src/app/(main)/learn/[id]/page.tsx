@@ -47,32 +47,49 @@ import { loadStripe } from '@stripe/stripe-js';
 let stripePromiseInstance: Promise<any> | null = null;
 
 function getStripePromise() {
-  if (stripePromiseInstance !== null) {
-    return stripePromiseInstance;
-  }
-  
+  // Always check the env var fresh (don't cache the check)
   const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-  console.log('[DEBUG COURSE PAGE] getStripePromise called:', {
+  
+  console.log('[DEBUG] getStripePromise() called - RAW CHECK:', {
+    rawEnvVar: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     keyExists: !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     keyLength: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.length || 0,
-    keyPrefix: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 20) || 'N/A',
+    stripeKey: stripeKey,
     stripeKeyLength: stripeKey.length,
-    willLoadStripe: !!stripeKey,
-    instanceExists: stripePromiseInstance !== null
+    hasKey: stripeKey.length > 0,
+    instanceExists: stripePromiseInstance !== null,
+    allProcessEnv: Object.keys(process.env).filter(k => k.includes('STRIPE'))
   });
   
-  if (stripeKey) {
-    stripePromiseInstance = loadStripe(stripeKey);
-    console.log('[DEBUG COURSE PAGE] Created new stripePromise:', {
-      isNull: stripePromiseInstance === null,
-      isPromise: stripePromiseInstance instanceof Promise,
-      type: typeof stripePromiseInstance
-    });
+  // If we already have an instance, return it
+  if (stripePromiseInstance !== null) {
+    console.log('[DEBUG] Returning existing stripePromiseInstance');
     return stripePromiseInstance;
   }
   
-  stripePromiseInstance = null;
-  return null;
+  // If no key, return null immediately
+  if (!stripeKey || stripeKey.length === 0) {
+    console.error('[ERROR] getStripePromise() - NO STRIPE KEY FOUND!');
+    stripePromiseInstance = null;
+    return null;
+  }
+  
+  // Create new instance
+  console.log('[DEBUG] Creating NEW stripePromise with key length:', stripeKey.length);
+  try {
+    stripePromiseInstance = loadStripe(stripeKey);
+    console.log('[DEBUG] loadStripe() returned:', {
+      isNull: stripePromiseInstance === null,
+      isPromise: stripePromiseInstance instanceof Promise,
+      type: typeof stripePromiseInstance,
+      value: stripePromiseInstance
+    });
+    return stripePromiseInstance;
+  } catch (error) {
+    console.error('[ERROR] loadStripe() threw error:', error);
+    stripePromiseInstance = null;
+    return null;
+  }
 }
 
 // Mock course data - in real app, this would come from API
