@@ -286,9 +286,16 @@ button[type="button"] {
     gap: 0 !important; /* No gap between filter and toggle on mobile */
   }
   
-  /* Add padding between tabs and content on mobile */
+  /* Add padding between tabs and content on mobile - ensure it applies */
   [data-radix-tabs-content][value="artwork"] {
     margin-top: 1rem !important; /* Match desktop padding */
+    padding-top: 0 !important;
+  }
+  
+  /* Ensure mobile filter row has no gap from tabs */
+  [data-radix-tabs-content][value="artwork"] > div:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
   }
 }
 
