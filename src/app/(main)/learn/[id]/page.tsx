@@ -43,7 +43,9 @@ import { CheckoutForm } from '@/components/checkout-form';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+// Initialize Stripe with proper error handling
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 // Mock course data - in real app, this would come from API
 const mockCourse = {
@@ -229,12 +231,19 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             setIsOwner(true);
           }
           
-          // Check enrollment status
+          // Check enrollment status - for paid courses, only consider enrollments with paymentIntentId
           if (user) {
             const enrollment = courseEnrollments.find(
               e => e.courseId === courseId && e.userId === user.id
             );
-            setIsEnrolled(!!enrollment);
+            // For paid courses, only consider enrollment valid if it has a paymentIntentId (meaning it was paid for)
+            // For free courses, any enrollment is valid
+            const isValidEnrollment = enrollment && (
+              (courseData.price && courseData.price > 0) 
+                ? (enrollment as any).paymentIntentId // Paid courses must have paymentIntentId
+                : true // Free courses don't need paymentIntentId
+            );
+            setIsEnrolled(!!isValidEnrollment);
           }
           
           // Fetch instructor's profile to check hideAboutArtist setting
@@ -875,25 +884,36 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       </AlertDialog>
 
       {/* Checkout Dialog */}
-      {course && course.price && course.price > 0 && course.instructor?.userId && (
+      {course && course.price && course.price > 0 && course.instructor?.userId && stripePromise && (
         <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Purchase Course</DialogTitle>
             </DialogHeader>
-            <Elements stripe={stripePromise}>
-              <CheckoutForm
-                amount={course.price}
-                currency={course.currency || 'USD'}
-                artistId={course.instructor.userId}
-                itemId={courseId}
-                itemType="course"
-                itemTitle={course.title}
-                buyerId={user?.id || ''}
-                onSuccess={handleCheckoutSuccess}
-                onCancel={() => setShowCheckout(false)}
-              />
-            </Elements>
+            {stripePromise ? (
+              <Elements stripe={stripePromise}>
+                <CheckoutForm
+                  amount={course.price}
+                  currency={course.currency || 'USD'}
+                  artistId={course.instructor?.userId || ''}
+                  itemId={courseId}
+                  itemType="course"
+                  itemTitle={course.title}
+                  buyerId={user?.id || ''}
+                  onSuccess={handleCheckoutSuccess}
+                  onCancel={() => setShowCheckout(false)}
+                />
+              </Elements>
+            ) : (
+              <div className="p-8 text-center">
+                <p className="text-muted-foreground mb-4">
+                  Payment processing is not available. Please contact support.
+                </p>
+                <Button variant="outline" onClick={() => setShowCheckout(false)}>
+                  Close
+                </Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       )}

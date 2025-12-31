@@ -211,10 +211,23 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
           publishedAt: data.publishedAt?.toDate(),
-          instructor: {
+          instructor: data.instructor ? {
             ...data.instructor,
-            createdAt: data.instructor?.createdAt?.toDate() || new Date(),
-            updatedAt: data.instructor?.updatedAt?.toDate() || new Date(),
+            createdAt: data.instructor.createdAt?.toDate() || new Date(),
+            updatedAt: data.instructor.updatedAt?.toDate() || new Date(),
+          } : {
+            id: '',
+            userId: '',
+            name: 'Unknown Instructor',
+            avatar: '',
+            bio: '',
+            rating: 0,
+            students: 0,
+            courses: 0,
+            verified: false,
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
           },
           reviews: data.reviews?.map((review: any) => ({
             ...review,
