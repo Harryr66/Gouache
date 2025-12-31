@@ -2538,8 +2538,9 @@ function DiscoverPageContent() {
               )}
             </div>
             
-            {/* Artworks Grid - No margin to keep flush with filter bar */}
+            {/* Artworks Grid - Padding from filter bar above */}
             {/* Show content when loading screen is dismissed */}
+            <div className="mt-4 md:mt-0">
             {!showLoadingScreen && filteredAndSortedArtworks.length === 0 ? (
               <div className="text-center py-16">
                 <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />

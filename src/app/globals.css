@@ -300,15 +300,26 @@ button[type="button"] {
     overflow: visible !important;
   }
   
+  /* Add padding AFTER the filter row, before the image grid */
+  [data-radix-tabs-content][value="artwork"] > div:first-child + * {
+    margin-top: 1rem !important;
+  }
+  
   /* Ensure ViewSelector rounded corners are visible on mobile - target the actual component */
   [data-radix-tabs-content][value="artwork"] .filter-view-grid > div:last-child,
-  [data-radix-tabs-content][value="artwork"] [class*="rounded-l-none"] {
+  [data-radix-tabs-content][value="artwork"] [class*="rounded-l-none"],
+  [data-radix-tabs-content][value="artwork"] [class*="rounded-r-md"] {
     overflow: visible !important;
-    border-radius: 0.375rem 0.375rem 0.375rem 0.375rem !important; /* rounded-r-md */
+    border-radius: 0 0.375rem 0.375rem 0 !important; /* rounded-r-md - right side rounded */
   }
   
   /* Ensure parent containers don't clip */
   [data-radix-tabs-content][value="artwork"] > div {
+    overflow: visible !important;
+  }
+  
+  /* Force overflow visible on all filter/toggle containers */
+  [data-radix-tabs-content][value="artwork"] .flex.items-center {
     overflow: visible !important;
   }
 }
