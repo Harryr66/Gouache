@@ -315,18 +315,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
           // Get Stripe promise using singleton function to ensure it's available
           const stripePromise = getStripePromise();
           
-          console.log('[DEBUG] Enroll button clicked - Full check:', {
-            coursePrice: course.price,
-            instructorId: course.instructor?.userId,
-            stripePromise: stripePromise,
-            stripePromiseType: typeof stripePromise,
-            stripePromiseIsNull: stripePromise === null,
-            stripePromiseIsUndefined: stripePromise === undefined,
-            stripePromiseExists: !!stripePromise,
-            stripePromiseIsPromise: stripePromise instanceof Promise,
-            stripeKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 20) || 'NOT SET',
-            stripeKeyExists: !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-          });
+          // Validate course data before proceeding (no logging to avoid object serialization issues)
           
           // loadStripe returns a Promise, so we just check if it's not null/undefined
           if (stripePromise !== null && stripePromise !== undefined) {
@@ -921,14 +910,19 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       </AlertDialog>
 
       {/* Checkout Dialog */}
-      {course && course.price && course.price > 0 && course.instructor?.userId && (() => {
-        // Extract and validate all values to ensure no objects are passed
+      {(() => {
+        // Extract ALL values BEFORE any conditional rendering to ensure no objects leak into React
+        if (!course || !course.price || course.price <= 0) return null;
+        
+        const instructorUserId = course.instructor?.userId;
+        if (!instructorUserId || typeof instructorUserId !== 'string') return null;
+        
         const safePrice = typeof course.price === 'number' ? course.price : 0;
         const safeCurrency = typeof course.currency === 'string' ? course.currency : 'USD';
-        const safeArtistId = course.instructor?.userId && typeof course.instructor.userId === 'string' ? course.instructor.userId : '';
+        const safeArtistId = String(instructorUserId);
         const safeItemId = typeof courseId === 'string' ? courseId : '';
         const safeItemTitle = typeof course.title === 'string' ? course.title : 'Course';
-        const safeBuyerId = user?.id && typeof user.id === 'string' ? user.id : '';
+        const safeBuyerId = user?.id && typeof user.id === 'string' ? String(user.id) : '';
 
         // Don't render if any critical value is invalid
         if (!safeArtistId || !safeItemId || !safeBuyerId || safePrice <= 0) {
