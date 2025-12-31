@@ -12,18 +12,17 @@ import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { AboutTheArtist } from '@/components/about-the-artist';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { X, Mail, Heart, ShoppingCart } from 'lucide-react';
+import { X, Mail, Heart, ShoppingCart, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useLikes } from '@/providers/likes-provider';
 import { useAuth } from '@/providers/auth-provider';
 import { CheckoutForm } from '@/components/checkout-form';
 import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+import { getStripePromise } from '@/lib/stripe-client';
 import Hls from 'hls.js';
+import { verifyArtworkPurchase } from '@/lib/purchase-verification';
 
-// Initialize Stripe with proper error handling
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
+// Use shared Stripe promise utility
 
 interface ArtworkView {
   id: string;
@@ -65,6 +64,11 @@ export default function ArtworkPage() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [isPrint, setIsPrint] = useState(false);
+  
+  // CRITICAL: Payment safety states
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
+  const [isVerifying, setIsVerifying] = useState(false); // Shows verification overlay
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalVideoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -747,7 +751,23 @@ export default function ArtworkPage() {
                       <div className="flex items-center gap-2">
                         <Button
                           variant="gradient"
+                          disabled={isProcessingPayment}
                           onClick={() => {
+                            // ========================================
+                            // CRITICAL: COMPREHENSIVE PRE-PAYMENT VALIDATION
+                            // DO NOT PROCEED IF ANY CHECK FAILS
+                            // ========================================
+                            
+                            // Check 1: Idempotency - prevent double clicks
+                            if (isProcessingPayment) {
+                              toast({
+                                title: "Please Wait",
+                                description: "Payment is already being processed.",
+                              });
+                              return;
+                            }
+                            
+                            // Check 2: User authentication
                             if (!user) {
                               toast({
                                 title: 'Login Required',
@@ -757,6 +777,28 @@ export default function ArtworkPage() {
                               router.push('/login?redirect=' + encodeURIComponent(`/artwork/${artwork.id}`));
                               return;
                             }
+                            
+                            // Check 3: Artwork data validation
+                            if (!artwork || !artwork.id) {
+                              toast({
+                                title: 'Error',
+                                description: 'Artwork data not loaded. Please refresh the page.',
+                                variant: 'destructive'
+                              });
+                              return;
+                            }
+                            
+                            // Check 4: Artwork not already sold
+                            if (artwork.sold) {
+                              toast({
+                                title: 'Already Sold',
+                                description: 'This artwork has already been sold.',
+                                variant: 'destructive'
+                              });
+                              return;
+                            }
+                            
+                            // Check 5: Artist information validation
                             if (!artwork.artist?.id) {
                               toast({
                                 title: 'Artist information missing',
@@ -765,6 +807,19 @@ export default function ArtworkPage() {
                               });
                               return;
                             }
+                            
+                            // Check 6: Price validation
+                            if (!artwork.price || artwork.price <= 0) {
+                              toast({
+                                title: 'Invalid Price',
+                                description: 'Artwork price is not set correctly.',
+                                variant: 'destructive'
+                              });
+                              return;
+                            }
+                            
+                            // Check 7: Stripe availability
+                            const stripePromise = getStripePromise();
                             if (!stripePromise) {
                               toast({
                                 title: 'Payment processing unavailable',
@@ -773,6 +828,11 @@ export default function ArtworkPage() {
                               });
                               return;
                             }
+                            
+                            // ========================================
+                            // VALIDATION PASSED - SAFE TO PROCEED
+                            // ========================================
+                            setIsProcessingPayment(true);
                             setShowCheckout(true);
                           }}
                         >
@@ -848,13 +908,16 @@ export default function ArtworkPage() {
 
       {/* Checkout Dialog */}
       {artwork && artwork.isForSale && artwork.price && artwork.price > 0 && artwork.artist?.id && (
-        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+        <Dialog open={showCheckout} onOpenChange={(open) => {
+          setShowCheckout(open);
+          if (!open) setIsProcessingPayment(false); // Reset processing state if dialog closed
+        }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Purchase Artwork</DialogTitle>
             </DialogHeader>
-            {stripePromise ? (
-              <Elements stripe={stripePromise}>
+            {getStripePromise() ? (
+              <Elements stripe={getStripePromise()!}>
               <CheckoutForm
                 amount={artwork.price / 100} // Convert from cents to dollars
                 currency={artwork.currency || 'USD'}
@@ -863,14 +926,72 @@ export default function ArtworkPage() {
                 itemType={isPrint ? 'print' : 'original'}
                 itemTitle={artwork.title}
                 buyerId={user?.id || ''}
-                onSuccess={() => {
-                  setShowCheckout(false);
-                  toast({
-                    title: 'Purchase Successful!',
-                    description: 'Your purchase has been completed. You will receive a confirmation email shortly.',
-                  });
+                onSuccess={async (paymentIntentId: string) => {
+                  // ========================================
+                  // CRITICAL: PAYMENT SUCCESS WITH VERIFICATION
+                  // This prevents crashes by waiting for webhook
+                  // ========================================
+                  console.log('[Artwork] Payment succeeded, payment intent:', paymentIntentId);
+                  
+                  setIsVerifying(true);
+                  
+                  try {
+                    // Close checkout modal immediately
+                    setShowCheckout(false);
+                    
+                    // Show verification toast
+                    toast({
+                      title: "Payment Successful!",
+                      description: "Verifying your purchase...",
+                      duration: 30000, // Keep visible during verification
+                    });
+                    
+                    // CRITICAL: Wait for webhook to mark artwork as sold
+                    console.log('[Artwork] Starting purchase verification...');
+                    const verified = await verifyArtworkPurchase(artwork.id, paymentIntentId, 10);
+                    
+                    if (verified) {
+                      // SUCCESS: Purchase confirmed in database
+                      console.log('[Artwork] ✅ Purchase verified!');
+                      
+                      toast({
+                        title: "Purchase Complete!",
+                        description: "Your purchase has been completed. You will receive a confirmation email shortly.",
+                      });
+                      
+                      // Reload artwork to show sold status
+                      window.location.reload();
+                    } else {
+                      // TIMEOUT: Purchase not found yet (webhook might be slow)
+                      console.log('[Artwork] ⏱️ Verification timeout');
+                      
+                      toast({
+                        title: "Payment Processing",
+                        description: "Your payment is being processed. You'll receive an email with purchase confirmation shortly. If you don't receive it in a few minutes, contact support.",
+                        variant: "default",
+                        duration: 10000,
+                      });
+                      
+                      // Stay on current page - user can refresh to see sold status
+                    }
+                  } catch (error) {
+                    console.error('[Artwork] Error verifying purchase:', error);
+                    
+                    toast({
+                      title: "Payment Received",
+                      description: "Your payment was successful. You'll receive a confirmation email shortly. If you have issues, contact support.",
+                      variant: "default",
+                      duration: 10000,
+                    });
+                  } finally {
+                    setIsVerifying(false);
+                    setIsProcessingPayment(false);
+                  }
                 }}
-                onCancel={() => setShowCheckout(false)}
+                onCancel={() => {
+                  setShowCheckout(false);
+                  setIsProcessingPayment(false);
+                }}
               />
               </Elements>
             ) : (
@@ -878,13 +999,34 @@ export default function ArtworkPage() {
                 <p className="text-muted-foreground mb-4">
                   Payment processing is not configured. Please contact support.
                 </p>
-                <Button variant="outline" onClick={() => setShowCheckout(false)}>
+                <Button variant="outline" onClick={() => {
+                  setShowCheckout(false);
+                  setIsProcessingPayment(false);
+                }}>
                   Close
                 </Button>
               </div>
             )}
           </DialogContent>
         </Dialog>
+      )}
+      
+      {/* CRITICAL: Verification Loading Overlay */}
+      {isVerifying && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <Card className="w-full max-w-md p-6 mx-4">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <h3 className="font-semibold text-lg text-center">Verifying Purchase</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Your payment was successful. We're verifying your purchase with the database...
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                This usually takes just a few seconds.
+              </p>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );
