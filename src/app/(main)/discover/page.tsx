@@ -2345,7 +2345,7 @@ function DiscoverPageContent() {
         {/* Main content - always clickable, navigation outside this container */}
         <div 
           className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 w-full max-w-full overflow-y-visible"
-          style={isMobile ? { overflowX: 'visible' } : { overflowX: 'hidden' }}
+          style={isMobile ? { overflowX: 'visible', paddingRight: '1.5rem' } : { overflowX: 'hidden' }}
         >
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
