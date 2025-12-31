@@ -419,24 +419,27 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   };
 
   // ============================================
-  // PAYMENT SUCCESS - CREATE ENROLLMENT IMMEDIATELY
-  // NO WEBHOOK NEEDED - WE CREATE IT RIGHT NOW
+  // PAYMENT SUCCESS - AUTHORIZE THEN CAPTURE
+  // 1. Payment AUTHORIZED (card NOT charged yet)
+  // 2. Create enrollment
+  // 3. If success → CAPTURE payment (charge card)
+  // 4. If fail → Cancel authorization (NO CHARGE)
   // ============================================
   const handleCheckoutSuccess = async (paymentIntentId: string) => {
-    console.log('[handleCheckoutSuccess] Payment succeeded, creating enrollment NOW...');
+    console.log('[handleCheckoutSuccess] Payment AUTHORIZED (not charged yet), creating enrollment...');
     
     setIsVerifying(true);
     setShowCheckout(false);
     
     try {
       toast({
-        title: "Payment Successful!",
-        description: "Creating your enrollment...",
-        duration: 10000,
+        title: "Creating Your Enrollment...",
+        description: "Please wait, do not close this page.",
+        duration: 30000,
       });
       
-      // CREATE ENROLLMENT IMMEDIATELY - NO WEBHOOK
-      console.log('[handleCheckoutSuccess] Creating enrollment via API...');
+      // STEP 1: CREATE ENROLLMENT FIRST (card is authorized but NOT charged)
+      console.log('[handleCheckoutSuccess] Step 1: Creating enrollment...');
       const enrollmentResponse = await fetch('/api/enrollments/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -448,11 +451,28 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       });
 
       if (!enrollmentResponse.ok) {
-        throw new Error('Failed to create enrollment');
+        const errorData = await enrollmentResponse.json();
+        throw new Error(errorData.error || 'Failed to create enrollment');
       }
 
       const enrollmentData = await enrollmentResponse.json();
-      console.log('[handleCheckoutSuccess] ✅ Enrollment created:', enrollmentData);
+      console.log('[handleCheckoutSuccess] ✅ Step 1 complete: Enrollment created');
+      
+      // STEP 2: CAPTURE PAYMENT (charge the card NOW that enrollment exists)
+      console.log('[handleCheckoutSuccess] Step 2: Capturing payment...');
+      const captureResponse = await fetch('/api/stripe/capture-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentIntentId }),
+      });
+
+      if (!captureResponse.ok) {
+        const errorData = await captureResponse.json();
+        throw new Error(errorData.error || 'Failed to capture payment');
+      }
+
+      const captureData = await captureResponse.json();
+      console.log('[handleCheckoutSuccess] ✅ Step 2 complete: Payment captured');
       
       setIsEnrolled(true);
       
@@ -461,40 +481,23 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         description: "Welcome to the course!",
       });
       
-      // Navigate to course immediately
+      // Navigate to course
       router.push(`/learn/${courseId}/player`);
       
-    } catch (error) {
-      console.error('[handleCheckoutSuccess] Error creating enrollment:', error);
+    } catch (error: any) {
+      console.error('[handleCheckoutSuccess] ❌ ERROR:', error);
       
-      // Fallback: Try polling for webhook (in case immediate creation failed)
+      // Payment was AUTHORIZED but NOT captured
+      // The authorization will expire in 7 days - customer NOT charged
       toast({
-        title: "Processing...",
-        description: "Finalizing your enrollment...",
+        title: "Enrollment Failed",
+        description: "Your card was NOT charged. Error: " + error.message,
+        variant: "destructive",
         duration: 30000,
       });
       
-      const verified = await verifyEnrollment(courseId, paymentIntentId, 15); // 30 seconds fallback
-      
-      if (verified) {
-        console.log('[handleCheckoutSuccess] ✅ Enrollment confirmed via webhook fallback');
-        setIsEnrolled(true);
-        
-        toast({
-          title: "Enrollment Complete!",
-          description: "Welcome to the course!",
-        });
-        
-        router.push(`/learn/${courseId}/player`);
-      } else {
-        // Still failed - show error
-        toast({
-          title: "Error",
-          description: "Your payment succeeded but enrollment failed. Contact support with payment ID: " + paymentIntentId.substring(0, 20),
-          variant: "destructive",
-          duration: 30000,
-        });
-      }
+      setIsVerifying(false);
+      setIsProcessingPayment(false);
     } finally {
       setIsVerifying(false);
       setIsProcessingPayment(false);
