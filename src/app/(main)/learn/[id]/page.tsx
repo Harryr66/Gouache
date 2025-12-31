@@ -324,10 +324,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         // For hosted courses, check if payment is required
         if (course.price && course.price > 0 && course.instructor?.userId) {
           // Check if Stripe is available before showing checkout
+          console.log('[DEBUG] Enroll button clicked:', {
+            coursePrice: course.price,
+            instructorId: course.instructor?.userId,
+            stripePromiseExists: !!stripePromise,
+            stripeKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 20) || 'NOT SET'
+          });
           if (stripePromise) {
             // Show Stripe checkout for paid courses
+            console.log('[DEBUG] Opening checkout dialog');
             setShowCheckout(true);
           } else {
+            console.error('[DEBUG] Stripe not available - stripePromise is null');
             toast({
               title: "Payment unavailable",
               description: "Payment processing is not available. Please contact support.",
