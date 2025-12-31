@@ -2620,7 +2620,6 @@ function DiscoverPageContent() {
                 loadMoreRef={loadMoreRef}
               />
             ) : !showLoadingScreen && artworkView === 'list' ? (
-              <div className="mt-0">
               <>
                 {/* Video feed - Only videos, 1 per row, 1 column, full width */}
                 {(() => {
@@ -2816,7 +2815,6 @@ function DiscoverPageContent() {
                 {/* Sentinel element for infinite scroll in video feed */}
                 <div ref={loadMoreRef} className="h-20 w-full" />
               </>
-              </div>
             ) : null}
           </TabsContent>
 
