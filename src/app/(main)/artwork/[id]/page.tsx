@@ -35,6 +35,7 @@ interface ArtworkView {
   price?: number;
   currency?: string;
   isForSale?: boolean;
+  sold?: boolean; // Added for purchase validation
   priceType?: 'fixed' | 'contact';
   contactForPrice?: boolean;
   deliveryScope?: 'worldwide' | 'specific';
@@ -164,6 +165,7 @@ export default function ArtworkPage() {
               price: data.price,
               currency: data.currency || 'USD',
               isForSale: data.isForSale,
+              sold: data.sold || false, // Added for purchase validation
               priceType: data.priceType || (data.contactForPrice ? 'contact' : 'fixed'),
               contactForPrice: data.contactForPrice || data.priceType === 'contact',
               deliveryScope: data.deliveryScope,
@@ -228,6 +230,7 @@ export default function ArtworkPage() {
                 price: data.price,
                 currency: data.currency || 'USD',
                 isForSale: data.isForSale,
+                sold: data.sold || false, // Added for purchase validation
                 priceType: data.priceType || (data.contactForPrice ? 'contact' : 'fixed'),
                 contactForPrice: data.contactForPrice || data.priceType === 'contact',
                 deliveryScope: data.deliveryScope,
