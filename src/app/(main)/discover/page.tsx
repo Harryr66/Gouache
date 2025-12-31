@@ -2698,58 +2698,49 @@ function DiscoverPageContent() {
                                                    videoUrl?.includes('videodelivery.net');
                         
                         if (isCloudflareStream && videoUrl) {
-                          // If URL already has .m3u8, use it as-is
-                          if (videoUrl.includes('.m3u8')) {
-                            console.log('✅ Video URL already has .m3u8, using as-is:', videoUrl);
-                            // Already correct
+                          // Extract video ID first (needed for fallback)
+                          let videoId: string | null = null;
+                          const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
+                          
+                          // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
+                          const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
+                          if (customerMatch) {
+                            videoId = customerMatch[1];
                           } else {
-                            // Extract video ID and construct HLS manifest URL
-                            const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
-                            let videoId: string | null = null;
-                            
-                            console.log('🔍 Extracting video ID from:', videoUrl, 'Account ID:', accountId ? 'Set' : 'Missing');
-                            
-                            // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
-                            const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
-                            if (customerMatch) {
-                              videoId = customerMatch[1];
-                              console.log('✅ Extracted video ID from customer subdomain:', videoId);
+                            // Try videodelivery.net format: videodelivery.net/{videoId}
+                            const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
+                            if (videoDeliveryMatch) {
+                              videoId = videoDeliveryMatch[1];
                             } else {
-                              // Try videodelivery.net format: videodelivery.net/{videoId}
-                              const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
-                              if (videoDeliveryMatch) {
-                                videoId = videoDeliveryMatch[1];
-                                console.log('✅ Extracted video ID from videodelivery.net:', videoId);
-                              } else {
-                                // Fallback: try to extract from any cloudflarestream.com URL
-                                const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
-                                if (fallbackMatch) {
-                                  videoId = fallbackMatch[1];
-                                  console.log('✅ Extracted video ID from fallback match:', videoId);
-                                }
+                              // Fallback: try to extract from any cloudflarestream.com URL
+                              const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
+                              if (fallbackMatch) {
+                                videoId = fallbackMatch[1];
                               }
                             }
-                            
-                            if (videoId && accountId) {
-                              // Try customer subdomain first
+                          }
+                          
+                          // If URL already has .m3u8, use it as-is but store videoId for fallback
+                          if (videoUrl.includes('.m3u8')) {
+                            console.log('✅ Video URL already has .m3u8, using as-is:', videoUrl);
+                            // Store videoId for potential fallback if this URL fails
+                            if (!videoId) {
+                              // Extract from .m3u8 URL
+                              const m3u8Match = videoUrl.match(/\/([^/]+)\/manifest\/video\.m3u8/);
+                              if (m3u8Match) videoId = m3u8Match[1];
+                            }
+                          } else if (videoId) {
+                            // Construct HLS manifest URL - try customer subdomain first, then videodelivery.net
+                            if (accountId) {
                               videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
-                              console.log('✅ Constructed HLS manifest URL:', videoUrl);
-                            } else if (videoId) {
-                              // Fallback: use videodelivery.net if account ID not available
-                              videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-                              console.log('⚠️ Using videodelivery.net fallback (no account ID):', videoUrl);
+                              console.log('✅ Constructed HLS manifest URL (customer subdomain):', videoUrl);
                             } else {
-                              // If we can't extract video ID, log error but don't break
-                              console.error('❌ Could not extract video ID from Cloudflare Stream URL:', videoUrl);
-                              console.error('❌ Original artwork data:', artwork);
+                              videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+                              console.log('⚠️ Using videodelivery.net (no account ID):', videoUrl);
                             }
-                            
-                            // If we have a videoId, also try videodelivery.net as a fallback if customer subdomain fails
-                            // Store both URLs for fallback
-                            const fallbackVideoUrl = videoId ? `https://videodelivery.net/${videoId}/manifest/video.m3u8` : null;
-                            if (fallbackVideoUrl) {
-                              console.log('📋 Fallback URL available:', fallbackVideoUrl);
-                            }
+                          } else {
+                            console.error('❌ Could not extract video ID from Cloudflare Stream URL:', videoUrl);
+                            console.error('❌ Original artwork data:', artwork);
                           }
                         } else {
                           console.log('⚠️ Video URL is not Cloudflare Stream:', videoUrl);
