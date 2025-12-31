@@ -930,13 +930,13 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             {getStripePromise() ? (
               <Elements stripe={getStripePromise()!}>
                 <CheckoutForm
-                  amount={course.price}
-                  currency={course.currency || 'USD'}
-                  artistId={course.instructor?.userId || ''}
-                  itemId={courseId}
+                  amount={typeof course.price === 'number' ? course.price : 0}
+                  currency={typeof course.currency === 'string' ? course.currency : 'USD'}
+                  artistId={typeof course.instructor?.userId === 'string' ? course.instructor.userId : ''}
+                  itemId={typeof courseId === 'string' ? courseId : ''}
                   itemType="course"
-                  itemTitle={course.title}
-                  buyerId={user?.id || ''}
+                  itemTitle={typeof course.title === 'string' ? course.title : 'Course'}
+                  buyerId={typeof user?.id === 'string' ? user.id : ''}
                   onSuccess={handleCheckoutSuccess}
                   onCancel={() => setShowCheckout(false)}
                 />
