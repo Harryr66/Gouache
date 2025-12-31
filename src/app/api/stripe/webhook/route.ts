@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection, addDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, increment, query, where, getDocs } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
   // Initialize Stripe inside the handler to avoid build-time initialization
@@ -183,21 +183,43 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         updatedAt: new Date(),
       });
 
-      // CRITICAL: Add complete enrollment record with all required fields
-      // This must match CourseEnrollment type definition to prevent data integrity issues
-      await addDoc(collection(db, 'courseEnrollments'), {
-        courseId: itemId,
-        userId: userId,
-        paymentIntentId: paymentIntent.id,
-        enrolledAt: new Date(),
-        progress: 0,
-        currentWeek: 1,
-        currentLesson: 1,
-        completedLessons: [],
-        lastAccessedAt: new Date(),
-        certificateEarned: false,
-        isActive: true,
-      });
+      // Check if enrollment already exists (might have been created immediately after payment)
+      const enrollmentQuery = query(
+        collection(db, 'courseEnrollments'),
+        where('courseId', '==', itemId),
+        where('userId', '==', userId),
+        where('paymentIntentId', '==', paymentIntent.id)
+      );
+      
+      const existingEnrollments = await getDocs(enrollmentQuery);
+      
+      if (existingEnrollments.empty) {
+        // Create enrollment if it doesn't exist (fallback for old flow)
+        console.log(`✅ Creating enrollment via webhook for payment ${paymentIntent.id}`);
+        await addDoc(collection(db, 'courseEnrollments'), {
+          courseId: itemId,
+          userId: userId,
+          paymentIntentId: paymentIntent.id,
+          enrolledAt: new Date(),
+          progress: 0,
+          currentWeek: 1,
+          currentLesson: 1,
+          completedLessons: [],
+          lastAccessedAt: new Date(),
+          certificateEarned: false,
+          isActive: true,
+          createdBy: 'webhook', // Mark as created by webhook
+        });
+      } else {
+        // Enrollment already exists (created immediately after payment)
+        console.log(`✅ Enrollment already exists for payment ${paymentIntent.id}, created by immediate API`);
+        
+        // Optionally update it to confirm webhook processed
+        const enrollmentDoc = existingEnrollments.docs[0];
+        await updateDoc(doc(db, 'courseEnrollments', enrollmentDoc.id), {
+          webhookConfirmedAt: new Date(),
+        });
+      }
 
       // Send course access email to customer
       try {
