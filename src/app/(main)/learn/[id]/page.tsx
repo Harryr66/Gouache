@@ -29,7 +29,8 @@ import {
   ShoppingBag,
   ExternalLink,
   Edit,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
