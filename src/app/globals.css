@@ -300,8 +300,15 @@ button[type="button"] {
     overflow: visible !important;
   }
   
-  /* Ensure ViewSelector rounded corners are visible on mobile */
-  [data-radix-tabs-content][value="artwork"] .filter-view-grid > div:last-child {
+  /* Ensure ViewSelector rounded corners are visible on mobile - target the actual component */
+  [data-radix-tabs-content][value="artwork"] .filter-view-grid > div:last-child,
+  [data-radix-tabs-content][value="artwork"] [class*="rounded-l-none"] {
+    overflow: visible !important;
+    border-radius: 0.375rem 0.375rem 0.375rem 0.375rem !important; /* rounded-r-md */
+  }
+  
+  /* Ensure parent containers don't clip */
+  [data-radix-tabs-content][value="artwork"] > div {
     overflow: visible !important;
   }
 }
