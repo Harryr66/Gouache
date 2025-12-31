@@ -2409,13 +2409,13 @@ function DiscoverPageContent() {
           </div>
 
           {/* Artwork Tab */}
-          <TabsContent value="artwork" className="!pt-0">
+          <TabsContent value="artwork" className="!pt-0 mobile-artwork-tab">
             {/* Search and Filter Bar */}
-            <div className="mb-0 space-y-2">
+            <div className="mb-0 space-y-2 overflow-visible">
               {/* Remove gap between filter bar and content */}
               {/* Mobile: Filter and View Toggle - mirror top row layout (50/50 split) */}
               {isMobile && (
-                <div className="flex items-center gap-0 w-full mb-0 overflow-visible">
+                <div className="flex items-center gap-0 w-full mb-0 overflow-visible mobile-filter-toggle-wrapper">
                   <div className="flex-1 filter-view-grid overflow-visible">
                     <Button
                       variant="ghost"
@@ -2427,7 +2427,12 @@ function DiscoverPageContent() {
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
-                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-l-none rounded-r-md border-l-0 overflow-visible" />
+                    <ViewSelector 
+                      view={artworkView} 
+                      onViewChange={setArtworkView} 
+                      className="rounded-l-none rounded-r-md border-l-0 w-full" 
+                      style={{ width: '100%', flex: 'none', maxWidth: '100%', boxSizing: 'border-box' }}
+                    />
                   </div>
                 </div>
               )}

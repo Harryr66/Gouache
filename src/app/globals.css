@@ -287,10 +287,19 @@ button[type="button"] {
     overflow: visible !important; /* Allow rounded corners to show */
   }
   
+  /* Ensure grid items fill their cells completely */
+  .filter-view-grid > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
   /* Add padding between tabs and content on mobile - ensure it applies */
   [data-radix-tabs-content][value="artwork"] {
     margin-top: 1rem !important; /* Match desktop padding */
     padding-top: 0 !important;
+    padding-right: 0 !important;
+    overflow-x: visible !important;
   }
   
   /* Ensure mobile filter row has no gap from tabs but allow overflow for rounded corners */
@@ -306,11 +315,25 @@ button[type="button"] {
   }
   
   /* Ensure ViewSelector rounded corners are visible on mobile - target the actual component */
-  [data-radix-tabs-content][value="artwork"] .filter-view-grid > div:last-child,
-  [data-radix-tabs-content][value="artwork"] [class*="rounded-l-none"],
-  [data-radix-tabs-content][value="artwork"] [class*="rounded-r-md"] {
+  [data-radix-tabs-content][value="artwork"] .filter-view-grid > div:last-child {
     overflow: visible !important;
     border-radius: 0 0.375rem 0.375rem 0 !important; /* rounded-r-md - right side rounded */
+    width: 100% !important; /* Fill grid cell completely */
+    min-width: 0 !important; /* Allow shrinking if needed */
+    box-sizing: border-box !important; /* Include border in width calculation */
+    flex: none !important; /* Remove flex-1 behavior in grid context */
+    max-width: 100% !important; /* Prevent overflow */
+  }
+  
+  /* Target ViewSelector by its classes for additional specificity */
+  [data-radix-tabs-content][value="artwork"] .filter-view-grid > div[class*="rounded-r-md"] {
+    overflow: visible !important;
+    border-radius: 0 0.375rem 0.375rem 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    flex: none !important;
+    max-width: 100% !important;
   }
   
   /* Ensure parent containers don't clip */
@@ -320,6 +343,35 @@ button[type="button"] {
   
   /* Force overflow visible on all filter/toggle containers */
   [data-radix-tabs-content][value="artwork"] .flex.items-center {
+    overflow: visible !important;
+  }
+  
+  /* Ensure the ViewSelector's rounded right edge is fully visible - target the wrapper div */
+  [data-radix-tabs-content][value="artwork"] .flex.items-center > div.filter-view-grid {
+    overflow: visible !important;
+  }
+  
+  /* Ensure parent container allows overflow - target the div that contains filter/view toggle */
+  [data-radix-tabs-content][value="artwork"] > div:first-of-type {
+    overflow: visible !important;
+  }
+  
+  /* Change container overflow to clip (allows rounded corners) instead of hidden */
+  .container.mx-auto.px-4[class*="overflow-x-hidden"] {
+    overflow-x: clip !important;
+  }
+  
+  /* Ensure ViewSelector shows rounded corner on mobile - match desktop behavior */
+  [data-radix-tabs-content][value="artwork"] .mobile-filter-toggle-wrapper {
+    overflow: visible !important;
+  }
+  
+  [data-radix-tabs-content][value="artwork"] .filter-view-grid {
+    overflow: visible !important;
+  }
+  
+  [data-radix-tabs-content][value="artwork"] .filter-view-grid > div:last-child {
+    border-radius: 0 0.375rem 0.375rem 0 !important;
     overflow: visible !important;
   }
 }
