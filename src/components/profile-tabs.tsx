@@ -1242,8 +1242,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       </TabsList>
 
       {/* Liked Tab */}
-      <TabsContent value="liked" className="space-y-4">
-        {(likesLoading || likedFetchLoading) && (
+      <TabsContent value="liked" className="space-y-4 relative">
+        {(likesLoading || likedFetchLoading) && likedArtworks.length === 0 && (
           <div className="flex justify-center py-12">
             <ThemeLoading text="" size="md" />
           </div>
