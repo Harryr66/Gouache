@@ -1345,14 +1345,19 @@ function DiscoverPageContent() {
               finalImageUrl = videoUrl.replace(/\/manifest\/video\.m3u8$/, '/thumbnails/thumbnail.jpg');
             }
             
-            const artwork: Artwork = {
+            // CRITICAL: Use 'any' type to ensure videoUrl and mediaType are always included
+            const artwork: any = {
               id: artworkDoc.id,
               title: artworkData.title || 'Untitled',
               description: artworkData.description || '',
               imageUrl: finalImageUrl,
               imageAiHint: artworkData.description || '',
-              ...(videoUrl && { videoUrl: videoUrl as any }),
-              ...(mediaType && { mediaType: mediaType as any }),
+              // Always include videoUrl and mediaType if they exist (don't use conditional spread)
+              videoUrl: videoUrl || undefined,
+              mediaType: mediaType || undefined,
+              // Also preserve mediaUrls and mediaTypes arrays for video detection
+              mediaUrls: artworkData.mediaUrls || (videoUrl ? [videoUrl] : undefined),
+              mediaTypes: artworkData.mediaTypes || (videoUrl ? ['video'] : undefined),
               artist: {
                 id: artistId || '',
                 name: artistName,
