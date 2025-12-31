@@ -162,13 +162,13 @@ export async function POST(request: NextRequest) {
     const totalAmountInCents = Math.ceil((sellerAmountInCents + STRIPE_FIXED_FEE) / (1 - STRIPE_FEE_PERCENTAGE));
     const stripeFeeAmount = totalAmountInCents - sellerAmountInCents;
 
-    // Create payment intent with transfer to connected account
-    // Charge happens on platform account, then transfers to artist's connected account
-    // Buyer pays: totalAmountInCents (includes Stripe fees)
-    // Seller receives: sellerAmountInCents (after Stripe deducts fees)
+    // Create payment intent with MANUAL CAPTURE
+    // This authorizes the card but doesn't charge until we capture it
+    // If enrollment fails, we cancel the authorization - NO CHARGE
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmountInCents, // Total amount buyer pays (includes Stripe fees)
       currency: currency.toLowerCase(),
+      capture_method: 'manual', // CRITICAL: Don't charge yet, only authorize
       // Transfer to connected account (artist receives full amount)
       transfer_data: {
         destination: stripeAccountId,

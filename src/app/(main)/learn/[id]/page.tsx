@@ -419,12 +419,14 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   };
 
   // ============================================
-  // CRITICAL: IMMEDIATE ENROLLMENT CREATION
-  // Creates enrollment INSTANTLY after payment, no waiting for webhooks
-  // This is the industry-standard approach (Udemy, Coursera, etc.)
+  // CRITICAL: AUTHORIZE → ENROLL → CAPTURE FLOW
+  // 1. Card is AUTHORIZED (not charged)
+  // 2. Enrollment created
+  // 3. Payment CAPTURED only after enrollment succeeds
+  // 4. If enrollment fails, authorization expires - NO CHARGE
   // ============================================
   const handleCheckoutSuccess = async (paymentIntentId: string) => {
-    console.log('[handleCheckoutSuccess] Payment succeeded, payment intent:', paymentIntentId);
+    console.log('[handleCheckoutSuccess] Payment AUTHORIZED (not charged yet), payment intent:', paymentIntentId);
     
     setIsVerifying(true);
     
@@ -434,13 +436,13 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       
       // Show creating enrollment message
       toast({
-        title: "Payment Successful!",
+        title: "Card Authorized!",
         description: "Creating your enrollment...",
         duration: 10000,
       });
       
-      // STEP 1: Create enrollment IMMEDIATELY via API (no waiting for webhook)
-      console.log('[handleCheckoutSuccess] Creating immediate enrollment...');
+      // STEP 1: Create enrollment FIRST (before charging)
+      console.log('[handleCheckoutSuccess] Creating enrollment before charging card...');
       
       const enrollmentResponse = await fetch('/api/enrollments/create', {
         method: 'POST',
@@ -461,57 +463,47 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       const enrollmentData = await enrollmentResponse.json();
       console.log('[handleCheckoutSuccess] ✅ Enrollment created:', enrollmentData);
 
-      // STEP 2: Verify enrollment exists in database (quick sanity check)
-      console.log('[handleCheckoutSuccess] Verifying enrollment in database...');
-      const verified = await verifyEnrollment(courseId, paymentIntentId, 3); // Only 3 attempts = 6 seconds max
+      // STEP 2: Now that enrollment is confirmed, CAPTURE the payment
+      console.log('[handleCheckoutSuccess] Enrollment confirmed, capturing payment...');
+      
+      const captureResponse = await fetch('/api/stripe/capture-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentIntentId,
+        }),
+      });
 
-      if (verified) {
-        // SUCCESS: Enrollment confirmed
-        console.log('[handleCheckoutSuccess] ✅ Enrollment verified!');
-        setIsEnrolled(true);
-        
-        toast({
-          title: "Enrollment Complete!",
-          description: "Welcome to the course!",
-          variant: "default",
-        });
-        
-        // Navigate to course player
-        router.push(`/learn/${courseId}/player`);
+      if (!captureResponse.ok) {
+        console.error('[handleCheckoutSuccess] Failed to capture payment, but enrollment exists');
+        // Enrollment exists, payment will be captured by webhook
       } else {
-        // Enrollment created but not showing in query yet (cache issue)
-        // Navigate anyway - enrollment exists
-        console.log('[handleCheckoutSuccess] Enrollment created but verification pending, navigating anyway...');
-        setIsEnrolled(true);
-        
-        toast({
-          title: "Enrollment Complete!",
-          description: "Welcome to the course!",
-          variant: "default",
-        });
-        
-        router.push(`/learn/${courseId}/player`);
+        console.log('[handleCheckoutSuccess] ✅ Payment captured successfully');
       }
+
+      // STEP 3: Navigate to course (enrollment confirmed, payment captured)
+      setIsEnrolled(true);
+      
+      toast({
+        title: "Enrollment Complete!",
+        description: "Welcome to the course!",
+        variant: "default",
+      });
+      
+      router.push(`/learn/${courseId}/player`);
       
     } catch (error) {
-      console.error('[handleCheckoutSuccess] Error creating enrollment:', error);
+      console.error('[handleCheckoutSuccess] Error in enrollment flow:', error);
       
-      // Even if API fails, try to verify (webhook might have created it)
-      console.log('[handleCheckoutSuccess] API failed, checking if webhook created enrollment...');
-      const verified = await verifyEnrollment(courseId, paymentIntentId, 5);
-      
-      if (verified) {
-        console.log('[handleCheckoutSuccess] ✅ Webhook created enrollment, navigating...');
-        setIsEnrolled(true);
-        router.push(`/learn/${courseId}/player`);
-      } else {
-        toast({
-          title: "Enrollment Pending",
-          description: "Your payment was successful! If you don't see the course in 1 minute, refresh this page or contact support.",
-          variant: "default",
-          duration: 10000,
-        });
-      }
+      // Enrollment failed - authorization will expire, no charge will occur
+      toast({
+        title: "Enrollment Failed",
+        description: "Your card was not charged. Please try again or contact support.",
+        variant: "destructive",
+        duration: 10000,
+      });
     } finally {
       setIsVerifying(false);
       setIsProcessingPayment(false);
