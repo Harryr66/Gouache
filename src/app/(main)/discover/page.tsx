@@ -2818,6 +2818,7 @@ function DiscoverPageContent() {
                 <div ref={loadMoreRef} className="h-20 w-full" />
               </>
             ) : null}
+            </div>
           </TabsContent>
 
           {/* Events Tab */}
