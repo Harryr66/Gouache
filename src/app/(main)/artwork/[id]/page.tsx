@@ -74,25 +74,39 @@ export default function ArtworkPage() {
   // PAYMENT SUCCESS HANDLER - WAIT FOR WEBHOOK
   // ============================================
   const handleCheckoutSuccess = async (paymentIntentId: string) => {
-    console.log('[Artwork] Payment succeeded, waiting for webhook...');
+    console.log('[Artwork] Payment AUTHORIZED, marking as sold...');
     
     setIsVerifying(true);
+    setShowCheckout(false);
     
     try {
-      setShowCheckout(false);
-      
       toast({
-        title: "Payment Successful!",
-        description: "Verifying your purchase...",
-        duration: 60000,
+        title: "Processing Purchase...",
+        description: "Please wait, do not close this page.",
+        duration: 30000,
       });
       
-      // Wait for webhook to mark artwork as sold (up to 60 seconds)
-      console.log('[Artwork] Polling for purchase confirmation...');
-      const verified = await verifyArtworkPurchase(artwork!.id, paymentIntentId, 30); // 30 attempts × 2s = 60 seconds
+      // STEP 1: Mark artwork as sold (via webhook trigger OR immediate update)
+      // For now, let webhook handle it, but capture payment ONLY after confirming sold status
+      console.log('[Artwork] Step 1: Checking if artwork marked as sold...');
+      
+      // Poll briefly to confirm webhook processed the sale
+      const verified = await verifyArtworkPurchase(artwork!.id, paymentIntentId, 5); // 10 seconds
       
       if (verified) {
-        console.log('[Artwork] ✅ Purchase confirmed!');
+        // Artwork marked as sold, now capture payment
+        console.log('[Artwork] Step 2: Capturing payment...');
+        const captureResponse = await fetch('/api/stripe/capture-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentIntentId }),
+        });
+
+        if (!captureResponse.ok) {
+          throw new Error('Failed to capture payment');
+        }
+
+        console.log('[Artwork] ✅ Payment captured, purchase complete');
         
         toast({
           title: "Purchase Complete!",
@@ -101,31 +115,22 @@ export default function ArtworkPage() {
         
         window.location.reload();
       } else {
-        // Timeout - show message to refresh
-        console.log('[Artwork] Timeout - purchase pending');
-        
+        // Webhook didn't fire yet, payment still authorized but NOT captured
         toast({
           title: "Processing...",
-          description: "Your payment succeeded! Refreshing page...",
-          duration: 5000,
+          description: "Your payment is being processed. Your card has NOT been charged yet. Please refresh in a moment.",
+          duration: 10000,
         });
-        
-        setTimeout(() => {
-          window.location.reload();
-        }, 3000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Artwork] Error:', error);
       
       toast({
-        title: "Payment Received",
-        description: "Your payment was successful. Refresh the page in a moment to see your purchase.",
-        duration: 10000,
+        title: "Purchase Processing",
+        description: "Your card was NOT charged. Error: " + error.message,
+        variant: "destructive",
+        duration: 30000,
       });
-      
-      setTimeout(() => {
-        window.location.reload();
-      }, 5000);
     } finally {
       setIsVerifying(false);
       setIsProcessingPayment(false);
