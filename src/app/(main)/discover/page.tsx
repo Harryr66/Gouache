@@ -2415,7 +2415,7 @@ function DiscoverPageContent() {
               {/* Remove gap between filter bar and content */}
               {/* Mobile: Filter and View Toggle - mirror top row layout (50/50 split) */}
               {isMobile && (
-                <div className="flex items-center gap-0 w-full">
+                <div className="flex items-center gap-0 w-full mb-0">
                   <div className="flex-1 filter-view-grid">
                     <Button
                       variant="ghost"
@@ -2428,7 +2428,7 @@ function DiscoverPageContent() {
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
-                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-md w-full" style={{ width: '100%' }} />
+                    <ViewSelector view={artworkView} onViewChange={setArtworkView} className="rounded-l-none rounded-r-md border-l-0 w-full" style={{ width: '100%' }} />
                   </div>
                 </div>
               )}
