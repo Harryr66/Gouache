@@ -419,29 +419,65 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   };
 
   // ============================================
-  // PAYMENT SUCCESS HANDLER - WAIT FOR WEBHOOK
-  // Payment succeeded, now wait for webhook to create enrollment
+  // PAYMENT SUCCESS - CREATE ENROLLMENT IMMEDIATELY
+  // NO WEBHOOK NEEDED - WE CREATE IT RIGHT NOW
   // ============================================
   const handleCheckoutSuccess = async (paymentIntentId: string) => {
-    console.log('[handleCheckoutSuccess] Payment succeeded, waiting for enrollment creation...');
+    console.log('[handleCheckoutSuccess] Payment succeeded, creating enrollment NOW...');
     
     setIsVerifying(true);
+    setShowCheckout(false);
     
     try {
-      setShowCheckout(false);
-      
       toast({
         title: "Payment Successful!",
         description: "Creating your enrollment...",
+        duration: 10000,
+      });
+      
+      // CREATE ENROLLMENT IMMEDIATELY - NO WEBHOOK
+      console.log('[handleCheckoutSuccess] Creating enrollment via API...');
+      const enrollmentResponse = await fetch('/api/enrollments/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId,
+          userId: user?.id,
+          paymentIntentId,
+        }),
+      });
+
+      if (!enrollmentResponse.ok) {
+        throw new Error('Failed to create enrollment');
+      }
+
+      const enrollmentData = await enrollmentResponse.json();
+      console.log('[handleCheckoutSuccess] ✅ Enrollment created:', enrollmentData);
+      
+      setIsEnrolled(true);
+      
+      toast({
+        title: "Enrollment Complete!",
+        description: "Welcome to the course!",
+      });
+      
+      // Navigate to course immediately
+      router.push(`/learn/${courseId}/player`);
+      
+    } catch (error) {
+      console.error('[handleCheckoutSuccess] Error creating enrollment:', error);
+      
+      // Fallback: Try polling for webhook (in case immediate creation failed)
+      toast({
+        title: "Processing...",
+        description: "Finalizing your enrollment...",
         duration: 30000,
       });
       
-      // Wait for webhook to create enrollment (up to 60 seconds)
-      console.log('[handleCheckoutSuccess] Polling for enrollment...');
-      const verified = await verifyEnrollment(courseId, paymentIntentId, 30); // 30 attempts × 2s = 60 seconds
+      const verified = await verifyEnrollment(courseId, paymentIntentId, 15); // 30 seconds fallback
       
       if (verified) {
-        console.log('[handleCheckoutSuccess] ✅ Enrollment confirmed!');
+        console.log('[handleCheckoutSuccess] ✅ Enrollment confirmed via webhook fallback');
         setIsEnrolled(true);
         
         toast({
@@ -451,31 +487,14 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         
         router.push(`/learn/${courseId}/player`);
       } else {
-        // Timeout - show message to refresh
-        console.log('[handleCheckoutSuccess] Timeout - enrollment pending');
-        
+        // Still failed - show error
         toast({
-          title: "Processing...",
-          description: "Your payment succeeded! Refreshing page to load your enrollment...",
-          duration: 5000,
+          title: "Error",
+          description: "Your payment succeeded but enrollment failed. Contact support with payment ID: " + paymentIntentId.substring(0, 20),
+          variant: "destructive",
+          duration: 30000,
         });
-        
-        setTimeout(() => {
-          router.refresh();
-        }, 3000);
       }
-    } catch (error) {
-      console.error('[handleCheckoutSuccess] Error:', error);
-      
-      toast({
-        title: "Payment Received",
-        description: "Your payment was successful. Refresh the page in a moment to access your course.",
-        duration: 10000,
-      });
-      
-      setTimeout(() => {
-        router.refresh();
-      }, 5000);
     } finally {
       setIsVerifying(false);
       setIsProcessingPayment(false);
