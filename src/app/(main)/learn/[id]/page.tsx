@@ -42,6 +42,7 @@ import { ThemeLoading } from '@/components/theme-loading';
 import { CheckoutForm } from '@/components/checkout-form';
 import { Elements } from '@stripe/react-stripe-js';
 import { getStripePromise } from '@/lib/stripe-client';
+import { safeCheckoutData, safeInstructorUserId } from '@/utils/safe-render';
 
 // Mock course data - in real app, this would come from API
 const mockCourse = {
@@ -909,25 +910,19 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Checkout Dialog */}
+      {/* Checkout Dialog - CRITICAL: All values must be primitives to prevent React error #31 */}
       {(() => {
-        // Extract ALL values BEFORE any conditional rendering to ensure no objects leak into React
-        if (!course || !course.price || course.price <= 0) return null;
+        // Use safe utility function to extract ONLY primitive values
+        // This prevents ANY object from being passed to React
+        const checkoutData = safeCheckoutData(course, courseId, user?.id);
         
-        const instructorUserId = course.instructor?.userId;
-        if (!instructorUserId || typeof instructorUserId !== 'string') return null;
-        
-        const safePrice = typeof course.price === 'number' ? course.price : 0;
-        const safeCurrency = typeof course.currency === 'string' ? course.currency : 'USD';
-        const safeArtistId = String(instructorUserId);
-        const safeItemId = typeof courseId === 'string' ? courseId : '';
-        const safeItemTitle = typeof course.title === 'string' ? course.title : 'Course';
-        const safeBuyerId = user?.id && typeof user.id === 'string' ? String(user.id) : '';
-
-        // Don't render if any critical value is invalid
-        if (!safeArtistId || !safeItemId || !safeBuyerId || safePrice <= 0) {
+        // Don't render if data is invalid - prevents crashes
+        if (!checkoutData.isValid || !showCheckout) {
           return null;
         }
+        
+        // ALL values are now guaranteed to be primitives (string/number)
+        // This ensures React will NEVER receive an object as a child
 
         return (
           <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
@@ -939,13 +934,13 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               {getStripePromise() ? (
                 <Elements stripe={getStripePromise()!}>
                   <CheckoutForm
-                    amount={safePrice}
-                    currency={safeCurrency}
-                    artistId={safeArtistId}
-                    itemId={safeItemId}
+                    amount={checkoutData.price}
+                    currency={checkoutData.currency}
+                    artistId={checkoutData.artistId}
+                    itemId={checkoutData.itemId}
                     itemType="course"
-                    itemTitle={safeItemTitle}
-                    buyerId={safeBuyerId}
+                    itemTitle={checkoutData.title}
+                    buyerId={checkoutData.buyerId}
                     onSuccess={handleCheckoutSuccess}
                     onCancel={() => setShowCheckout(false)}
                   />

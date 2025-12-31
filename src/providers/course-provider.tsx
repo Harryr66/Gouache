@@ -205,30 +205,52 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       const courseDoc = await getDoc(doc(db, 'courses', courseId));
       if (courseDoc.exists()) {
         const data = courseDoc.data();
+        
+        // Safely extract instructor data - ensure userId is always a string, never an object
+        const instructorData = data.instructor;
+        const safeInstructor = instructorData ? {
+          id: typeof instructorData.id === 'string' ? instructorData.id : String(instructorData.id || ''),
+          userId: typeof instructorData.userId === 'string' ? instructorData.userId : String(instructorData.userId || ''),
+          name: typeof instructorData.name === 'string' ? instructorData.name : String(instructorData.name || 'Unknown Instructor'),
+          avatar: typeof instructorData.avatar === 'string' ? instructorData.avatar : String(instructorData.avatar || ''),
+          avatarUrl: typeof instructorData.avatarUrl === 'string' ? instructorData.avatarUrl : (instructorData.avatarUrl ? String(instructorData.avatarUrl) : ''),
+          bio: typeof instructorData.bio === 'string' ? instructorData.bio : (instructorData.bio ? String(instructorData.bio) : ''),
+          rating: typeof instructorData.rating === 'number' ? instructorData.rating : Number(instructorData.rating || 0),
+          students: typeof instructorData.students === 'number' ? instructorData.students : Number(instructorData.students || 0),
+          courses: typeof instructorData.courses === 'number' ? instructorData.courses : Number(instructorData.courses || 0),
+          verified: Boolean(instructorData.verified),
+          isActive: instructorData.isActive !== false,
+          location: typeof instructorData.location === 'string' ? instructorData.location : (instructorData.location ? String(instructorData.location) : ''),
+          website: typeof instructorData.website === 'string' ? instructorData.website : (instructorData.website ? String(instructorData.website) : ''),
+          socialLinks: typeof instructorData.socialLinks === 'object' && instructorData.socialLinks !== null ? instructorData.socialLinks : {},
+          createdAt: instructorData.createdAt?.toDate ? instructorData.createdAt.toDate() : (instructorData.createdAt instanceof Date ? instructorData.createdAt : new Date()),
+          updatedAt: instructorData.updatedAt?.toDate ? instructorData.updatedAt.toDate() : (instructorData.updatedAt instanceof Date ? instructorData.updatedAt : new Date()),
+        } : {
+          id: '',
+          userId: '',
+          name: 'Unknown Instructor',
+          avatar: '',
+          avatarUrl: '',
+          bio: '',
+          rating: 0,
+          students: 0,
+          courses: 0,
+          verified: false,
+          isActive: true,
+          location: '',
+          website: '',
+          socialLinks: {},
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        
         return {
           id: courseDoc.id,
           ...data,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
           publishedAt: data.publishedAt?.toDate(),
-          instructor: data.instructor ? {
-            ...data.instructor,
-            createdAt: data.instructor.createdAt?.toDate() || new Date(),
-            updatedAt: data.instructor.updatedAt?.toDate() || new Date(),
-          } : {
-            id: '',
-            userId: '',
-            name: 'Unknown Instructor',
-            avatar: '',
-            bio: '',
-            rating: 0,
-            students: 0,
-            courses: 0,
-            verified: false,
-            isActive: true,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
+          instructor: safeInstructor,
           reviews: data.reviews?.map((review: any) => ({
             ...review,
             createdAt: review.createdAt?.toDate() || new Date(),
