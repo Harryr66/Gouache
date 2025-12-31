@@ -357,7 +357,7 @@ button[type="button"] {
   }
   
   /* Override container overflow-x-hidden on mobile to allow rounded corners */
-  div.container.mx-auto.px-4.overflow-x-hidden {
+  .mobile-container-override {
     overflow-x: visible !important;
   }
 }
