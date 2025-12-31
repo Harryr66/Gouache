@@ -902,7 +902,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       </AlertDialog>
 
       {/* Checkout Dialog */}
-      {course && course.price && course.price > 0 && course.instructor?.userId && stripePromise && (
+      {course && course.price && course.price > 0 && course.instructor?.userId && (
         <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -925,7 +925,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             ) : (
               <div className="p-8 text-center">
                 <p className="text-muted-foreground mb-4">
-                  Payment processing is not available. Please contact support.
+                  Payment processing is not configured. Please contact support.
                 </p>
                 <Button variant="outline" onClick={() => setShowCheckout(false)}>
                   Close
