@@ -59,9 +59,17 @@ console.log('[DEBUG COURSE PAGE] Stripe initialization at module load:', {
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 console.log('[DEBUG COURSE PAGE] stripePromise result:', {
   isNull: stripePromise === null,
+  isUndefined: stripePromise === undefined,
   isPromise: stripePromise instanceof Promise,
-  type: typeof stripePromise
+  type: typeof stripePromise,
+  value: stripePromise,
+  truthy: !!stripePromise
 });
+// Store reference for debugging
+if (typeof window !== 'undefined') {
+  (window as any).__stripePromise = stripePromise;
+  console.log('[DEBUG COURSE PAGE] Stripe promise stored to window.__stripePromise');
+}
 
 // Mock course data - in real app, this would come from API
 const mockCourse = {
@@ -333,18 +341,31 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         // For hosted courses, check if payment is required
         if (course.price && course.price > 0 && course.instructor?.userId) {
           // Check if Stripe is available before showing checkout
-          console.log('[DEBUG] Enroll button clicked:', {
+          console.log('[DEBUG] Enroll button clicked - Full check:', {
             coursePrice: course.price,
             instructorId: course.instructor?.userId,
+            stripePromise: stripePromise,
+            stripePromiseType: typeof stripePromise,
+            stripePromiseIsNull: stripePromise === null,
+            stripePromiseIsUndefined: stripePromise === undefined,
             stripePromiseExists: !!stripePromise,
-            stripeKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 20) || 'NOT SET'
+            stripePromiseIsPromise: stripePromise instanceof Promise,
+            stripeKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 20) || 'NOT SET',
+            stripeKeyExists: !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
           });
-          if (stripePromise) {
+          
+          // loadStripe returns a Promise, so we just check if it's not null/undefined
+          if (stripePromise !== null && stripePromise !== undefined) {
             // Show Stripe checkout for paid courses
-            console.log('[DEBUG] Opening checkout dialog');
+            console.log('[DEBUG] Opening checkout dialog - stripePromise is valid');
             setShowCheckout(true);
           } else {
-            console.error('[DEBUG] Stripe not available - stripePromise is null');
+            console.error('[DEBUG] Stripe not available - stripePromise check failed:', {
+              isNull: stripePromise === null,
+              isUndefined: stripePromise === undefined,
+              value: stripePromise,
+              type: typeof stripePromise
+            });
             toast({
               title: "Payment unavailable",
               description: "Payment processing is not available. Please contact support.",
