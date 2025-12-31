@@ -43,32 +43,36 @@ import { CheckoutForm } from '@/components/checkout-form';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
-// Initialize Stripe with proper error handling
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-console.log('[DEBUG COURSE PAGE] Stripe initialization at module load:', {
-  keyExists: !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-  keyValue: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'UNDEFINED',
-  keyLength: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.length || 0,
-  keyPrefix: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 20) || 'N/A',
-  stripeKey,
-  stripeKeyLength: stripeKey.length,
-  willLoadStripe: !!stripeKey,
-  typeofEnvVar: typeof process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-  allEnvKeys: Object.keys(process.env).filter(k => k.includes('STRIPE'))
-});
-const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
-console.log('[DEBUG COURSE PAGE] stripePromise result:', {
-  isNull: stripePromise === null,
-  isUndefined: stripePromise === undefined,
-  isPromise: stripePromise instanceof Promise,
-  type: typeof stripePromise,
-  value: stripePromise,
-  truthy: !!stripePromise
-});
-// Store reference for debugging
-if (typeof window !== 'undefined') {
-  (window as any).__stripePromise = stripePromise;
-  console.log('[DEBUG COURSE PAGE] Stripe promise stored to window.__stripePromise');
+// Initialize Stripe using singleton pattern to avoid code splitting issues
+let stripePromiseInstance: Promise<any> | null = null;
+
+function getStripePromise() {
+  if (stripePromiseInstance !== null) {
+    return stripePromiseInstance;
+  }
+  
+  const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+  console.log('[DEBUG COURSE PAGE] getStripePromise called:', {
+    keyExists: !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    keyLength: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.length || 0,
+    keyPrefix: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 20) || 'N/A',
+    stripeKeyLength: stripeKey.length,
+    willLoadStripe: !!stripeKey,
+    instanceExists: stripePromiseInstance !== null
+  });
+  
+  if (stripeKey) {
+    stripePromiseInstance = loadStripe(stripeKey);
+    console.log('[DEBUG COURSE PAGE] Created new stripePromise:', {
+      isNull: stripePromiseInstance === null,
+      isPromise: stripePromiseInstance instanceof Promise,
+      type: typeof stripePromiseInstance
+    });
+    return stripePromiseInstance;
+  }
+  
+  stripePromiseInstance = null;
+  return null;
 }
 
 // Mock course data - in real app, this would come from API
@@ -340,7 +344,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       } else if (course.courseType === 'hosted') {
         // For hosted courses, check if payment is required
         if (course.price && course.price > 0 && course.instructor?.userId) {
-          // Check if Stripe is available before showing checkout
+          // Get Stripe promise using singleton function to ensure it's available
+          const stripePromise = getStripePromise();
+          
           console.log('[DEBUG] Enroll button clicked - Full check:', {
             coursePrice: course.price,
             instructorId: course.instructor?.userId,
@@ -953,8 +959,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             <DialogHeader>
               <DialogTitle>Purchase Course</DialogTitle>
             </DialogHeader>
-            {stripePromise ? (
-              <Elements stripe={stripePromise}>
+            {getStripePromise() ? (
+              <Elements stripe={getStripePromise()!}>
                 <CheckoutForm
                   amount={course.price}
                   currency={course.currency || 'USD'}
