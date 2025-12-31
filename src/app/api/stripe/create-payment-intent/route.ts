@@ -162,41 +162,36 @@ export async function POST(request: NextRequest) {
     const totalAmountInCents = Math.ceil((sellerAmountInCents + STRIPE_FIXED_FEE) / (1 - STRIPE_FEE_PERCENTAGE));
     const stripeFeeAmount = totalAmountInCents - sellerAmountInCents;
 
-    // Create payment intent on the connected account
+    // Create payment intent with transfer to connected account
+    // Charge happens on platform account, then transfers to artist's connected account
     // Buyer pays: totalAmountInCents (includes Stripe fees)
     // Seller receives: sellerAmountInCents (after Stripe deducts fees)
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: totalAmountInCents, // Total amount buyer pays (includes Stripe fees)
-        currency: currency.toLowerCase(),
-        // No application fee - artist receives 100% of payment
-        transfer_data: {
-          destination: stripeAccountId,
-        },
-        metadata: {
-          userId: buyerId,
-          artistId: artistId,
-          itemType: itemType,
-          itemId: itemId,
-          itemTitle: itemData.title || 'Untitled',
-          platform: 'gouache',
-          productAmount: sellerAmountInCents.toString(), // Original seller price (what seller receives)
-          totalAmount: totalAmountInCents.toString(), // Total amount buyer pays
-          stripeFeeAmount: stripeFeeAmount.toString(), // Stripe fees (paid by seller)
-          platformCommissionAmount: platformCommissionAmount.toString(), // 0% platform commission
-          platformCommissionPercentage: platformCommissionPercentage.toString(), // 0% commission - artist gets 100%
-          ...(itemType === 'merchandise' || itemType === 'product' ? { stock: (itemData.stock || 0).toString() } : {}),
-        },
-        description: description || `Purchase: ${itemData.title || itemType}`,
-        automatic_payment_methods: {
-          enabled: true,
-        },
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalAmountInCents, // Total amount buyer pays (includes Stripe fees)
+      currency: currency.toLowerCase(),
+      // Transfer to connected account (artist receives full amount)
+      transfer_data: {
+        destination: stripeAccountId,
       },
-      {
-        // Charge and transfer on the connected account
-        stripeAccount: stripeAccountId,
-      }
-    );
+      metadata: {
+        userId: buyerId,
+        artistId: artistId,
+        itemType: itemType,
+        itemId: itemId,
+        itemTitle: itemData.title || 'Untitled',
+        platform: 'gouache',
+        productAmount: sellerAmountInCents.toString(), // Original seller price (what seller receives)
+        totalAmount: totalAmountInCents.toString(), // Total amount buyer pays
+        stripeFeeAmount: stripeFeeAmount.toString(), // Stripe fees (paid by seller)
+        platformCommissionAmount: platformCommissionAmount.toString(), // 0% platform commission
+        platformCommissionPercentage: platformCommissionPercentage.toString(), // 0% commission - artist gets 100%
+        ...(itemType === 'merchandise' || itemType === 'product' ? { stock: (itemData.stock || 0).toString() } : {}),
+      },
+      description: description || `Purchase: ${itemData.title || itemType}`,
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
 
     // Return client secret for frontend
     return NextResponse.json({
