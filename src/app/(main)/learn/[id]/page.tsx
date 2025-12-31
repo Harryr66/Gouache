@@ -1053,14 +1053,14 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Checkout Dialog - CRITICAL: All values must be primitives to prevent React error #31 */}
-      {(() => {
+      {/* Checkout Dialog - CRITICAL: Only render when shown to prevent evaluation */}
+      {showCheckout && (() => {
         // Use safe utility function to extract ONLY primitive values
         // This prevents ANY object from being passed to React
         const checkoutData = safeCheckoutData(course, courseId, user?.id);
         
         // Don't render if data is invalid - prevents crashes
-        if (!checkoutData.isValid || !showCheckout) {
+        if (!checkoutData.isValid) {
           return null;
         }
         
