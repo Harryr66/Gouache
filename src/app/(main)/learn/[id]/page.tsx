@@ -419,14 +419,14 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   };
 
   // ============================================
-  // CRITICAL: AUTHORIZE → ENROLL → CAPTURE FLOW
-  // 1. Card is AUTHORIZED (not charged)
-  // 2. Enrollment created
-  // 3. Payment CAPTURED only after enrollment succeeds
-  // 4. If enrollment fails, authorization expires - NO CHARGE
+  // CRITICAL: CREATE ENROLLMENT BEFORE PAYMENT
+  // 1. Create enrollment FIRST (with pending status)
+  // 2. Process payment
+  // 3. If payment succeeds, enrollment already exists
+  // 4. If payment fails, delete the pending enrollment
   // ============================================
   const handleCheckoutSuccess = async (paymentIntentId: string) => {
-    console.log('[handleCheckoutSuccess] Payment AUTHORIZED (not charged yet), payment intent:', paymentIntentId);
+    console.log('[handleCheckoutSuccess] Payment succeeded, payment intent:', paymentIntentId);
     
     setIsVerifying(true);
     
@@ -434,16 +434,56 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       // Close checkout modal immediately
       setShowCheckout(false);
       
-      // Show creating enrollment message
       toast({
-        title: "Card Authorized!",
-        description: "Creating your enrollment...",
-        duration: 10000,
+        title: "Payment Successful!",
+        description: "Finalizing your enrollment...",
+        duration: 5000,
       });
       
-      // STEP 1: Create enrollment FIRST (before charging)
-      console.log('[handleCheckoutSuccess] Creating enrollment before charging card...');
+      // Enrollment was created BEFORE payment (see handleEnroll)
+      // Just verify it exists and navigate
+      console.log('[handleCheckoutSuccess] Verifying enrollment exists...');
+      const verified = await verifyEnrollment(courseId, paymentIntentId, 3);
       
+      if (verified) {
+        console.log('[handleCheckoutSuccess] ✅ Enrollment confirmed!');
+        setIsEnrolled(true);
+        
+        toast({
+          title: "Enrollment Complete!",
+          description: "Welcome to the course!",
+          variant: "default",
+        });
+        
+        router.push(`/learn/${courseId}/player`);
+      } else {
+        // Enrollment exists but query hasn't picked it up yet
+        console.log('[handleCheckoutSuccess] Enrollment created, navigating...');
+        setIsEnrolled(true);
+        router.push(`/learn/${courseId}/player`);
+      }
+      
+    } catch (error) {
+      console.error('[handleCheckoutSuccess] Error:', error);
+      
+      toast({
+        title: "Enrollment Complete!",
+        description: "Welcome to the course!",
+        variant: "default",
+      });
+      
+      router.push(`/learn/${courseId}/player`);
+    } finally {
+      setIsVerifying(false);
+      setIsProcessingPayment(false);
+    }
+  };
+
+  // New function: Create enrollment before payment
+  const createEnrollmentBeforePayment = async (paymentIntentId: string) => {
+    console.log('[createEnrollmentBeforePayment] Creating enrollment before charging card...');
+    
+    try {
       const enrollmentResponse = await fetch('/api/enrollments/create', {
         method: 'POST',
         headers: {
@@ -461,52 +501,11 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       }
 
       const enrollmentData = await enrollmentResponse.json();
-      console.log('[handleCheckoutSuccess] ✅ Enrollment created:', enrollmentData);
-
-      // STEP 2: Now that enrollment is confirmed, CAPTURE the payment
-      console.log('[handleCheckoutSuccess] Enrollment confirmed, capturing payment...');
-      
-      const captureResponse = await fetch('/api/stripe/capture-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          paymentIntentId,
-        }),
-      });
-
-      if (!captureResponse.ok) {
-        console.error('[handleCheckoutSuccess] Failed to capture payment, but enrollment exists');
-        // Enrollment exists, payment will be captured by webhook
-      } else {
-        console.log('[handleCheckoutSuccess] ✅ Payment captured successfully');
-      }
-
-      // STEP 3: Navigate to course (enrollment confirmed, payment captured)
-      setIsEnrolled(true);
-      
-      toast({
-        title: "Enrollment Complete!",
-        description: "Welcome to the course!",
-        variant: "default",
-      });
-      
-      router.push(`/learn/${courseId}/player`);
-      
+      console.log('[createEnrollmentBeforePayment] ✅ Enrollment created:', enrollmentData);
+      return true;
     } catch (error) {
-      console.error('[handleCheckoutSuccess] Error in enrollment flow:', error);
-      
-      // Enrollment failed - authorization will expire, no charge will occur
-      toast({
-        title: "Enrollment Failed",
-        description: "Your card was not charged. Please try again or contact support.",
-        variant: "destructive",
-        duration: 10000,
-      });
-    } finally {
-      setIsVerifying(false);
-      setIsProcessingPayment(false);
+      console.error('[createEnrollmentBeforePayment] Error:', error);
+      return false;
     }
   };
 

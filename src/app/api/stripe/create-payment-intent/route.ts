@@ -156,13 +156,11 @@ export async function POST(request: NextRequest) {
     const totalAmountInCents = amountInCents; // Charge exactly what artist set
     const stripeFeeAmount = 0; // Stripe deducts from artist automatically
 
-    // Create payment intent with MANUAL CAPTURE
-    // This authorizes the card but doesn't charge until we capture it
-    // If enrollment fails, we cancel the authorization - NO CHARGE
+    // Create payment intent with AUTOMATIC capture (default)
+    // We'll create enrollment BEFORE calling confirmPayment in frontend
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmountInCents, // Charge exactly what artist set
       currency: currency.toLowerCase(),
-      capture_method: 'manual', // CRITICAL: Don't charge yet, only authorize
       // Transfer to connected account - Stripe automatically deducts fees from artist
       transfer_data: {
         destination: stripeAccountId,
