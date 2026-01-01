@@ -2284,7 +2284,7 @@ function DiscoverPageContent() {
           aria-hidden="true"
         >
           <div 
-            className="flex flex-col items-center justify-center gap-6"
+            className="flex flex-col items-center justify-center gap-6 pt-24"
             style={{
               pointerEvents: 'auto', // Allow interaction with loading animation itself
             }}
