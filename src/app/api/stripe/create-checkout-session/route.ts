@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
     // Create Stripe Checkout Session
     // NOTE: We removed transfer_data from here because it's incompatible with shipping_address_collection
     // Transfers to connected accounts will be handled in the webhook after payment is captured
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       payment_method_types: ['card'],
       mode: 'payment',
       payment_intent_data: {
@@ -228,7 +228,6 @@ export async function POST(request: NextRequest) {
         },
         quantity: 1,
       }],
-      shipping_address_collection: shippingConfig,
       success_url: successUrl,
       cancel_url: cancelUrl,
       customer_email: buyerEmail || undefined, // BUYER's email, not seller's
@@ -241,7 +240,18 @@ export async function POST(request: NextRequest) {
         itemTitle: itemData.title || 'Untitled',
         platform: 'gouache',
       },
-    });
+    };
+
+    // Add shipping collection for physical products
+    if (shippingConfig) {
+      sessionConfig.shipping_address_collection = shippingConfig;
+      sessionConfig.phone_number_collection = {
+        enabled: true,
+      };
+      console.log('📦 Shipping address collection enabled for physical product');
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     console.log('✅ Checkout session created:', {
       sessionId: session.id,
