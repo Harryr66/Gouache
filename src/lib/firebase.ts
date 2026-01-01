@@ -49,6 +49,16 @@ try {
 // Initialize and export Firebase services
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// Set auth persistence to LOCAL (survives browser refresh)
+if (typeof window !== 'undefined') {
+  import('firebase/auth').then(({ setPersistence, browserLocalPersistence }) => {
+    setPersistence(auth, browserLocalPersistence).catch((error) => {
+      console.error('Error setting auth persistence:', error);
+    });
+  });
+}
+
 const storage = getStorage(app);
 
 // Initialize messaging (only in browser)
