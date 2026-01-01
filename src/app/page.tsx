@@ -51,11 +51,6 @@ export default function RootPage() {
       // Wait for auth provider to update
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      toast({
-        title: "Welcome!",
-        description: "You're now browsing as a guest. You can explore the platform, but some features require an account.",
-      });
-      
       // Force redirect to discover page - don't wait for state updates
       window.location.href = '/discover';
     } catch (error: any) {
