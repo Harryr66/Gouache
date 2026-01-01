@@ -307,6 +307,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       const enrollmentRef = await adminDb.collection('enrollments').add({
         courseId: itemId,
         courseTitle: courseData.title || itemTitle,
+        imageUrl: courseData.thumbnailUrl || courseData.imageUrl || null, // Store course image
         userId: userId,
         instructorId: artistId,
         enrolledAt: new Date(),
@@ -327,6 +328,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         buyerName: buyerDisplayName,
         itemTitle: courseData.title || itemTitle,
         itemType: 'Course',
+        imageUrl: courseData.thumbnailUrl || courseData.imageUrl || undefined,
         amount: session.amount_total ? (session.amount_total / 100) : 0,
         currency: (session.currency || 'USD').toUpperCase(),
       });
@@ -439,6 +441,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         buyerName: buyerDisplayName,
         itemType: 'Artwork',
         itemTitle: artworkData.title || itemTitle || 'Artwork',
+        imageUrl: artworkData.imageUrl || artworkData.videoUrl || undefined,
         amount: artworkData.price / 100,
         currency: artworkData.currency || 'USD',
         shippingAddress: {
@@ -564,6 +567,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         sellerId: artistId,
         itemType: 'merchandise', // Added for Order History filtering
         itemTitle: itemTitle || productData.title || 'Product',
+        imageUrl: productData.images?.[0] || productData.imageUrl || null, // Store product image
         price: productData.price,
         currency: productData.currency || 'USD',
         paymentIntentId: paymentIntentId,
@@ -593,6 +597,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           buyerName: buyerDisplayName,
           itemType: 'Product',
           itemTitle: productData.title || itemTitle || 'Product',
+          imageUrl: productData.images?.[0] || productData.imageUrl || undefined,
           amount: productData.price,
           currency: productData.currency || 'USD',
           shippingAddress: {

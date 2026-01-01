@@ -12,6 +12,7 @@ import { Loader2, LogIn, UserPlus, User } from 'lucide-react';
 import Link from 'next/link';
 import { LoadingTransition } from '@/components/loading-transition';
 import { SiteFooter } from '@/components/site-footer';
+import Head from 'next/head';
 
 export default function RootPage() {
   const router = useRouter();
@@ -103,7 +104,23 @@ export default function RootPage() {
   // Show homepage for logged-out users or anonymous users
   if (!user || isAnonymousUser) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <>
+        <Head>
+          {/* Preload hero images for instant display */}
+          <link 
+            rel="preload" 
+            as="image" 
+            href="/assets/Gouache Hero Light.png"
+            media="(prefers-color-scheme: light)"
+          />
+          <link 
+            rel="preload" 
+            as="image" 
+            href="/assets/Gouache Hero Dark.png"
+            media="(prefers-color-scheme: dark)"
+          />
+        </Head>
+        <div className="min-h-screen bg-background flex flex-col">
         {/* Header */}
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center">
@@ -208,6 +225,7 @@ export default function RootPage() {
         {/* Footer */}
         <SiteFooter />
       </div>
+      </>
     );
   }
 

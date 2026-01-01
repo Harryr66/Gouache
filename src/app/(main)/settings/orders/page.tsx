@@ -18,6 +18,7 @@ interface Order {
   courseId?: string;
   artworkId?: string;
   itemTitle?: string;
+  imageUrl?: string;
   price: number;
   currency: string;
   status: string;
@@ -71,6 +72,7 @@ export default function OrderHistoryPage() {
           id: doc.id,
           productId: data.productId,
           itemTitle: data.itemTitle || 'Product',
+          imageUrl: data.imageUrl || null,
           price: data.price || 0,
           currency: data.currency || 'USD',
           status: data.status || 'completed',
@@ -96,6 +98,7 @@ export default function OrderHistoryPage() {
           id: doc.id,
           courseId: data.courseId,
           itemTitle: data.courseTitle || 'Course',
+          imageUrl: data.imageUrl || null,
           price: 0, // Would need to fetch from course doc
           currency: 'USD',
           status: data.status || 'active',
@@ -118,6 +121,7 @@ export default function OrderHistoryPage() {
           id: doc.id,
           artworkId: doc.id,
           itemTitle: data.title || 'Artwork',
+          imageUrl: data.imageUrl || data.videoUrl || null,
           price: data.price || 0,
           currency: data.currency || 'USD',
           status: 'completed',
@@ -247,6 +251,15 @@ export default function OrderHistoryPage() {
               <Card key={order.id} className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start gap-4 flex-1">
+                    {order.imageUrl && (
+                      <div className="shrink-0">
+                        <img 
+                          src={order.imageUrl} 
+                          alt={order.itemTitle}
+                          className="w-20 h-20 object-cover rounded-md"
+                        />
+                      </div>
+                    )}
                     <div className="mt-1">
                       {getStatusIcon(order.status)}
                     </div>

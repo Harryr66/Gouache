@@ -55,6 +55,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://cloudflarestream.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://imagedelivery.net" />
         <link rel="dns-prefetch" href="https://cloudflarestream.com" />
+        
+        {/* Preload critical hero images for instant homepage load */}
+        <link rel="preload" as="image" href="/assets/Gouache Hero Light.png" media="(prefers-color-scheme: light)" />
+        <link rel="preload" as="image" href="/assets/Gouache Hero Dark.png" media="(prefers-color-scheme: dark)" />
       </head>
       <body
         className={cn(

@@ -22,6 +22,7 @@ export interface PurchaseConfirmationEmail {
   amount: number;
   currency: string;
   itemId?: string;
+  imageUrl?: string;
   shippingAddress?: {
     name: string;
     line1: string;
@@ -89,6 +90,7 @@ export async function sendPurchaseConfirmationEmail(data: PurchaseConfirmationEm
         itemType: data.itemType,
         formattedAmount,
         itemId: data.itemId,
+        imageUrl: data.imageUrl,
         shippingAddress: data.shippingAddress,
       })
     );

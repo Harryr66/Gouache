@@ -20,6 +20,7 @@ interface PurchaseConfirmationEmailProps {
   itemType: 'Course' | 'Artwork' | 'Product' | 'course' | 'artwork' | 'product';
   formattedAmount: string;
   itemId?: string;
+  imageUrl?: string;
   shippingAddress?: {
     name: string;
     line1: string;
@@ -37,6 +38,7 @@ export const PurchaseConfirmationEmail = ({
   itemType = 'product',
   formattedAmount = '$0.00',
   itemId,
+  imageUrl,
   shippingAddress,
 }: PurchaseConfirmationEmailProps) => {
   const itemTypeLabel = itemType === 'course' || itemType === 'Course' ? 'Course' : 
@@ -67,6 +69,18 @@ export const PurchaseConfirmationEmail = ({
           <Text style={text}>
             Your order has been confirmed. Here are the details:
           </Text>
+
+          {imageUrl && (
+            <Section style={imageSection}>
+              <Img
+                src={imageUrl}
+                alt={itemTitle}
+                width="400"
+                height="300"
+                style={productImage}
+              />
+            </Section>
+          )}
 
           <Section style={orderSection}>
             <Text style={orderDetail}>
@@ -169,6 +183,20 @@ const orderSection = {
   padding: '0',
 };
 
+const imageSection = {
+  margin: '24px 32px',
+  padding: '0',
+  textAlign: 'center' as const,
+};
+
+const productImage = {
+  borderRadius: '8px',
+  maxWidth: '100%',
+  height: 'auto',
+  display: 'block',
+  margin: '0 auto',
+};
+
 const orderDetail = {
   color: '#525f7f',
   fontSize: '16px',
@@ -228,5 +256,17 @@ const footer = {
 const link = {
   color: '#5e5ce6',
   textDecoration: 'underline',
+};
+
+const imageSection = {
+  margin: '32px auto',
+  textAlign: 'center' as const,
+};
+
+const productImage = {
+  borderRadius: '8px',
+  maxWidth: '100%',
+  height: 'auto',
+  objectFit: 'cover' as const,
 };
 
