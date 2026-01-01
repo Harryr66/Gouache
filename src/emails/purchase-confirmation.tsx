@@ -68,9 +68,7 @@ export const PurchaseConfirmationEmail = ({
             Your order has been confirmed. Here are the details:
           </Text>
 
-          <Section style={orderBox}>
-            <Text style={orderTitle}>Order Confirmation</Text>
-            <Hr style={hr} />
+          <Section style={orderSection}>
             <Text style={orderDetail}>
               <strong>{itemTypeLabel}:</strong> {itemTitle}
             </Text>
@@ -80,21 +78,23 @@ export const PurchaseConfirmationEmail = ({
           </Section>
 
           {shippingAddress && (
-            <Section style={shippingBox}>
-              <Text style={shippingTitle}>Shipping Address</Text>
+            <>
               <Hr style={hr} />
-              <Text style={shippingDetail}>{shippingAddress.name}</Text>
-              <Text style={shippingDetail}>{shippingAddress.line1}</Text>
-              {shippingAddress.line2 && (
-                <Text style={shippingDetail}>{shippingAddress.line2}</Text>
-              )}
-              <Text style={shippingDetail}>
-                {shippingAddress.city}
-                {shippingAddress.state && `, ${shippingAddress.state}`}
-                {shippingAddress.postalCode && ` ${shippingAddress.postalCode}`}
-              </Text>
-              <Text style={shippingDetail}>{shippingAddress.country}</Text>
-            </Section>
+              <Section style={shippingSection}>
+                <Text style={shippingTitle}>Shipping Address</Text>
+                <Text style={shippingDetail}>{shippingAddress.name}</Text>
+                <Text style={shippingDetail}>{shippingAddress.line1}</Text>
+                {shippingAddress.line2 && (
+                  <Text style={shippingDetail}>{shippingAddress.line2}</Text>
+                )}
+                <Text style={shippingDetail}>
+                  {shippingAddress.city}
+                  {shippingAddress.state && `, ${shippingAddress.state}`}
+                  {shippingAddress.postalCode && ` ${shippingAddress.postalCode}`}
+                </Text>
+                <Text style={shippingDetail}>{shippingAddress.country}</Text>
+              </Section>
+            </>
           )}
 
           {(itemType === 'course' || itemType === 'Course') && itemId && (
@@ -149,9 +149,9 @@ const logo = {
 
 const h1 = {
   color: '#1a1a1a',
-  fontSize: '28px',
+  fontSize: '32px',
   fontWeight: 'bold',
-  margin: '30px 0',
+  margin: '32px 32px 24px 32px',
   padding: '0',
   textAlign: 'center' as const,
 };
@@ -164,18 +164,9 @@ const text = {
   margin: '16px 32px',
 };
 
-const orderBox = {
-  backgroundColor: '#f6f9fc',
-  borderRadius: '8px',
-  margin: '32px 32px',
-  padding: '24px',
-};
-
-const orderTitle = {
-  color: '#1a1a1a',
-  fontSize: '18px',
-  fontWeight: '600',
-  margin: '0 0 12px 0',
+const orderSection = {
+  margin: '24px 32px',
+  padding: '0',
 };
 
 const orderDetail = {
@@ -185,27 +176,22 @@ const orderDetail = {
   margin: '8px 0',
 };
 
-const shippingBox = {
-  backgroundColor: '#eff6ff',
-  borderRadius: '8px',
-  margin: '32px 32px',
-  padding: '24px',
-  borderLeft: '4px solid #5e5ce6',
+const shippingSection = {
+  margin: '24px 32px',
+  padding: '0',
 };
 
 const shippingTitle = {
-  color: '#5e5ce6',
-  fontSize: '14px',
+  color: '#1a1a1a',
+  fontSize: '16px',
   fontWeight: '600',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.5px',
   margin: '0 0 12px 0',
 };
 
 const shippingDetail = {
   color: '#525f7f',
-  fontSize: '16px',
-  lineHeight: '24px',
+  fontSize: '15px',
+  lineHeight: '22px',
   margin: '4px 0',
 };
 

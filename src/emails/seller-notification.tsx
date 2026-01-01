@@ -67,9 +67,7 @@ export const SellerNotificationEmail = ({
             Great news! <strong>{buyerName}</strong> just purchased your {itemTypeLabel}:
           </Text>
 
-          <Section style={saleBox}>
-            <Text style={saleTitle}>Sale Details</Text>
-            <Hr style={hr} />
+          <Section style={saleDetailsSection}>
             <Text style={itemTitleStyle}>
               "{itemTitle}"
             </Text>
@@ -79,34 +77,38 @@ export const SellerNotificationEmail = ({
           </Section>
 
           {shippingAddress && (
-            <Section style={shippingBox}>
-              <Text style={shippingTitle}>📦 Ship To</Text>
+            <>
               <Hr style={hr} />
-              <Text style={shippingDetail}>{shippingAddress.name}</Text>
-              <Text style={shippingDetail}>{shippingAddress.line1}</Text>
-              {shippingAddress.line2 && (
-                <Text style={shippingDetail}>{shippingAddress.line2}</Text>
-              )}
-              <Text style={shippingDetail}>
-                {shippingAddress.city}
-                {shippingAddress.state && `, ${shippingAddress.state}`}
-                {shippingAddress.postalCode && ` ${shippingAddress.postalCode}`}
-              </Text>
-              <Text style={shippingDetail}>{shippingAddress.country}</Text>
-            </Section>
+              <Section style={shippingSection}>
+                <Text style={shippingTitle}>Shipping Address</Text>
+                <Text style={shippingDetail}>{shippingAddress.name}</Text>
+                <Text style={shippingDetail}>{shippingAddress.line1}</Text>
+                {shippingAddress.line2 && (
+                  <Text style={shippingDetail}>{shippingAddress.line2}</Text>
+                )}
+                <Text style={shippingDetail}>
+                  {shippingAddress.city}
+                  {shippingAddress.state && `, ${shippingAddress.state}`}
+                  {shippingAddress.postalCode && ` ${shippingAddress.postalCode}`}
+                </Text>
+                <Text style={shippingDetail}>{shippingAddress.country}</Text>
+              </Section>
+            </>
           )}
 
-          <Section style={infoBox}>
+          <Hr style={hr} />
+
+          <Section style={infoSection}>
             <Text style={infoText}>
-              💰 The payment will be transferred to your Stripe account according to your payout schedule.
+              The payment will be transferred to your Stripe account according to your payout schedule.
             </Text>
             {shippingAddress && (
               <Text style={infoText}>
-                📦 Please ship the item to the address above as soon as possible.
+                Please ship the item to the address above as soon as possible.
               </Text>
             )}
             <Text style={infoText}>
-              📊 You can view all your sales and earnings in your Gouache dashboard.
+              You can view all your sales and earnings in your Gouache dashboard.
             </Text>
           </Section>
 
@@ -153,31 +155,31 @@ const logo = {
 };
 
 const celebrationBanner = {
-  backgroundColor: '#f0fdf4',
-  borderRadius: '12px',
-  margin: '32px 32px',
-  padding: '32px',
+  backgroundColor: '#ffffff',
+  borderRadius: '0',
+  margin: '32px 32px 24px 32px',
+  padding: '0',
   textAlign: 'center' as const,
 };
 
 const celebrationEmoji = {
   fontSize: '48px',
-  margin: '0',
+  margin: '0 0 16px 0',
   lineHeight: '1',
 };
 
 const h1 = {
   color: '#1a1a1a',
-  fontSize: '28px',
+  fontSize: '32px',
   fontWeight: 'bold',
-  margin: '16px 0 8px 0',
+  margin: '0 0 8px 0',
   padding: '0',
 };
 
 const celebrationText = {
-  color: '#10b981',
-  fontSize: '18px',
-  fontWeight: '600',
+  color: '#525f7f',
+  fontSize: '16px',
+  fontWeight: '500',
   margin: '0',
 };
 
@@ -189,21 +191,9 @@ const text = {
   margin: '16px 32px',
 };
 
-const saleBox = {
-  backgroundColor: '#f0fdf4',
-  borderRadius: '8px',
-  borderLeft: '4px solid #10b981',
-  margin: '32px 32px',
-  padding: '24px',
-};
-
-const saleTitle = {
-  color: '#10b981',
-  fontSize: '14px',
-  fontWeight: '600',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.5px',
-  margin: '0 0 12px 0',
+const saleDetailsSection = {
+  margin: '24px 32px',
+  padding: '0',
 };
 
 const itemTitleStyle = {
@@ -211,26 +201,23 @@ const itemTitleStyle = {
   fontSize: '20px',
   fontWeight: '600',
   lineHeight: '28px',
-  margin: '8px 0',
+  margin: '0 0 8px 0',
 };
 
 const amountStyle = {
-  color: '#10b981',
-  fontSize: '24px',
+  color: '#1a1a1a',
+  fontSize: '32px',
   fontWeight: 'bold',
-  margin: '12px 0 0 0',
+  margin: '0',
 };
 
-const shippingBox = {
-  backgroundColor: '#fff7ed',
-  borderRadius: '8px',
-  borderLeft: '4px solid #f97316',
-  margin: '32px 32px',
-  padding: '24px',
+const shippingSection = {
+  margin: '24px 32px',
+  padding: '0',
 };
 
 const shippingTitle = {
-  color: '#f97316',
+  color: '#1a1a1a',
   fontSize: '16px',
   fontWeight: '600',
   margin: '0 0 12px 0',
@@ -238,20 +225,18 @@ const shippingTitle = {
 
 const shippingDetail = {
   color: '#525f7f',
-  fontSize: '16px',
-  lineHeight: '24px',
+  fontSize: '15px',
+  lineHeight: '22px',
   margin: '4px 0',
 };
 
-const infoBox = {
-  backgroundColor: '#eff6ff',
-  borderRadius: '8px',
-  margin: '32px 32px',
-  padding: '20px',
+const infoSection = {
+  margin: '24px 32px',
+  padding: '0',
 };
 
 const infoText = {
-  color: '#525f7f',
+  color: '#8898aa',
   fontSize: '14px',
   lineHeight: '20px',
   margin: '8px 0',
