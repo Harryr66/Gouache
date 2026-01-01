@@ -153,10 +153,47 @@ function CourseSubmissionPageContent() {
   const [slug, setSlug] = useState('');
   const [isSlugUnique, setIsSlugUnique] = useState(true);
 
-  // Load course data if editing
+  // Load course data if editing, OR reset form if creating new
   useEffect(() => {
     const loadCourseForEdit = async () => {
       const editId = searchParams?.get('edit');
+      
+      // CRITICAL: Reset form when creating NEW course (no edit parameter)
+      if (!editId) {
+        setIsEditing(false);
+        setEditingCourseId(null);
+        setFormData({
+          title: '',
+          description: '',
+          category: '',
+          subcategory: '',
+          difficulty: '',
+          duration: '',
+          price: '',
+          currency: 'USD',
+          tags: [],
+          instructorBio: '',
+          metaTitle: '',
+          metaDescription: '',
+          slug: '',
+          curriculum: [],
+          supplyList: [],
+          courseType: 'affiliate',
+          externalUrl: '',
+          hostingPlatform: '',
+          isPublished: false,
+          originalityDisclaimer: false,
+        });
+        setThumbnailFile(null);
+        setThumbnailPreview(null);
+        setTrailerFile(null);
+        setTrailerPreviewUrl(null);
+        setSlug('');
+        setActiveStep('basics');
+        return;
+      }
+      
+      // Load existing course for editing
       if (editId && user) {
         setIsLoadingCourse(true);
         setIsEditing(true);
