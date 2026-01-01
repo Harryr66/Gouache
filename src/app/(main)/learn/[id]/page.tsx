@@ -530,24 +530,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
   return (
     <div className="min-h-screen bg-background">
-      {/* CRITICAL: Verification Loading Overlay - prevents user interaction during enrollment verification */}
-      {isVerifying && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <Card className="w-full max-w-md p-6 mx-4">
-            <div className="flex flex-col items-center gap-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <h3 className="font-semibold text-lg text-center">Verifying Enrollment</h3>
-              <p className="text-sm text-muted-foreground text-center">
-                Your payment was successful. We're verifying your enrollment...
-              </p>
-              <p className="text-xs text-muted-foreground text-center">
-                This usually takes just a few seconds.
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
-      
       {/* Header */}
       <div className="bg-background border-b border-border pt-4">
         <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5">
