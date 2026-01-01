@@ -301,6 +301,7 @@ function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [sellerProfilePicture, setSellerProfilePicture] = useState<string | null>(null);
   
   // CRITICAL: Payment safety states
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
@@ -588,6 +589,25 @@ function ProductDetailPage() {
       fetchProduct();
     }
   }, [productId]);
+
+  // Fetch seller profile picture
+  useEffect(() => {
+    const fetchSellerProfile = async () => {
+      if (!product?.sellerId) return;
+      
+      try {
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', product.sellerId));
+        if (sellerDoc.exists()) {
+          const sellerData = sellerDoc.data();
+          setSellerProfilePicture(sellerData.profilePicture || sellerData.photoURL || null);
+        }
+      } catch (error) {
+        console.error('Error fetching seller profile:', error);
+      }
+    };
+
+    fetchSellerProfile();
+  }, [product?.sellerId]);
 
   if (loading) {
     return (
@@ -1117,7 +1137,7 @@ function ProductDetailPage() {
                 {/* Seller Info */}
                 <div className="flex items-center gap-3 mb-4">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={avatarPlaceholder} alt={product.sellerName} />
+                    <AvatarImage src={sellerProfilePicture || avatarPlaceholder} alt={product.sellerName} />
                     <AvatarFallback>{product.sellerName.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
