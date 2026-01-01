@@ -593,13 +593,25 @@ function ProductDetailPage() {
   // Fetch seller profile picture
   useEffect(() => {
     const fetchSellerProfile = async () => {
-      if (!product?.sellerId) return;
+      if (!product?.sellerId) {
+        console.log('❌ No sellerId found for product:', product?.id);
+        return;
+      }
+      
+      console.log('🔍 Fetching seller profile for ID:', product.sellerId);
       
       try {
         const sellerDoc = await getDoc(doc(db, 'userProfiles', product.sellerId));
         if (sellerDoc.exists()) {
           const sellerData = sellerDoc.data();
+          console.log('✅ Seller profile found:', { 
+            sellerId: product.sellerId, 
+            hasProfilePicture: !!sellerData.profilePicture,
+            hasPhotoURL: !!sellerData.photoURL 
+          });
           setSellerProfilePicture(sellerData.profilePicture || sellerData.photoURL || null);
+        } else {
+          console.log('⚠️ Seller profile not found in userProfiles for ID:', product.sellerId);
         }
       } catch (error) {
         console.error('Error fetching seller profile:', error);
