@@ -174,6 +174,25 @@ export async function POST(request: NextRequest) {
     // Get item image
     const itemImage = itemData.imageUrl || itemData.images?.[0];
 
+    // Determine shipping address collection
+    const shippingConfig = itemType === 'course' ? undefined : {
+      allowed_countries: [
+        'US', 'CA', 'GB', 'AU', 'NZ', 'IE', 
+        'FR', 'DE', 'IT', 'ES', 'NL', 'BE', 'AT', 'CH',
+        'SE', 'NO', 'DK', 'FI', 'PT', 'PL', 'CZ', 'GR',
+        'JP', 'SG', 'HK', 'KR', 'MX', 'BR', 'AR', 'CL',
+      ],
+    };
+
+    console.log('🔍 Creating checkout session:', {
+      itemType,
+      itemId,
+      amountInCents,
+      currency,
+      needsShipping: itemType !== 'course',
+      shippingConfigPresent: !!shippingConfig,
+    });
+
     // Create Stripe Checkout Session
     // NOTE: We removed transfer_data from here because it's incompatible with shipping_address_collection
     // Transfers to connected accounts will be handled in the webhook after payment is captured
@@ -209,14 +228,7 @@ export async function POST(request: NextRequest) {
         },
         quantity: 1,
       }],
-      shipping_address_collection: itemType === 'course' ? undefined : {
-        allowed_countries: [
-          'US', 'CA', 'GB', 'AU', 'NZ', 'IE', 
-          'FR', 'DE', 'IT', 'ES', 'NL', 'BE', 'AT', 'CH',
-          'SE', 'NO', 'DK', 'FI', 'PT', 'PL', 'CZ', 'GR',
-          'JP', 'SG', 'HK', 'KR', 'MX', 'BR', 'AR', 'CL',
-        ], // Physical products need shipping, courses don't
-      },
+      shipping_address_collection: shippingConfig,
       success_url: successUrl,
       cancel_url: cancelUrl,
       customer_email: buyerEmail || undefined, // BUYER's email, not seller's
@@ -229,6 +241,12 @@ export async function POST(request: NextRequest) {
         itemTitle: itemData.title || 'Untitled',
         platform: 'gouache',
       },
+    });
+
+    console.log('✅ Checkout session created:', {
+      sessionId: session.id,
+      url: session.url,
+      hasShippingCollection: !!session.shipping_address_collection,
     });
 
     // Return checkout session URL
