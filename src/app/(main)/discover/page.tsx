@@ -306,16 +306,17 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           0
         );
 
-        const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) || 0;
+        // Measure height and add 1px buffer to prevent any overlap
+        const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) + 1 || 0;
         if (itemHeight <= 0) return; // Skip items with no height
         
         const left = shortestColumnIndex * (itemWidth + gap);
         // Calculate top position: if column is empty (height is 0), start at 0, otherwise add gap
-        // Add 1px extra to prevent sub-pixel overlap issues
+        // Use Math.ceil to prevent sub-pixel overlap issues
         const currentColumnHeight = columnHeights[shortestColumnIndex];
         const top = currentColumnHeight === 0 
           ? 0 
-          : Math.ceil(currentColumnHeight + gap);
+          : Math.ceil(currentColumnHeight) + gap;
 
         // Validate calculated values
         if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
