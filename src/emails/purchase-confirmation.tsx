@@ -17,7 +17,7 @@ import * as React from 'react';
 interface PurchaseConfirmationEmailProps {
   buyerName: string;
   itemTitle: string;
-  itemType: 'course' | 'artwork' | 'product';
+  itemType: 'Course' | 'Artwork' | 'Product' | 'course' | 'artwork' | 'product';
   formattedAmount: string;
   itemId?: string;
   shippingAddress?: {
@@ -39,10 +39,10 @@ export const PurchaseConfirmationEmail = ({
   itemId,
   shippingAddress,
 }: PurchaseConfirmationEmailProps) => {
-  const itemTypeLabel = itemType === 'course' ? 'Course' : 
-                        itemType === 'artwork' ? 'Artwork' : 'Product';
+  const itemTypeLabel = itemType === 'course' || itemType === 'Course' ? 'Course' : 
+                        itemType === 'artwork' || itemType === 'Artwork' ? 'Artwork' : 'Product';
   
-  const accessUrl = itemType === 'course' && itemId
+  const accessUrl = itemType === 'course' || itemType === 'Course' && itemId
     ? `https://www.gouache.art/learn/${itemId}/player`
     : 'https://www.gouache.art';
 
@@ -97,7 +97,7 @@ export const PurchaseConfirmationEmail = ({
             </Section>
           )}
 
-          {itemType === 'course' && itemId && (
+          {(itemType === 'course' || itemType === 'Course') && itemId && (
             <Section style={buttonContainer}>
               <Button style={button} href={accessUrl}>
                 Access Your Course

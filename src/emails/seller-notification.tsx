@@ -17,7 +17,7 @@ interface SellerNotificationEmailProps {
   sellerName: string;
   buyerName: string;
   itemTitle: string;
-  itemType: 'course' | 'artwork' | 'product';
+  itemType: 'Course' | 'Artwork' | 'Product' | 'course' | 'artwork' | 'product';
   formattedAmount: string;
   shippingAddress?: {
     name: string;
@@ -38,8 +38,8 @@ export const SellerNotificationEmail = ({
   formattedAmount = '$0.00',
   shippingAddress,
 }: SellerNotificationEmailProps) => {
-  const itemTypeLabel = itemType === 'course' ? 'course' : 
-                        itemType === 'artwork' ? 'artwork' : 'product';
+  const itemTypeLabel = itemType === 'course' || itemType === 'Course' ? 'course' : 
+                        itemType === 'artwork' || itemType === 'Artwork' ? 'artwork' : 'product';
 
   return (
     <Html>
