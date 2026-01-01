@@ -1074,13 +1074,16 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       </AlertDialog>
 
       {/* Checkout Dialog - CRITICAL: Only render when shown to prevent evaluation */}
-      {showCheckout && (() => {
+      {showCheckout && course && (() => {
         // Use safe utility function to extract ONLY primitive values
         // This prevents ANY object from being passed to React
         const checkoutData = safeCheckoutData(course, courseId, user?.id);
         
+        console.log('[CHECKOUT DIALOG] checkoutData:', JSON.stringify(checkoutData, null, 2));
+        
         // Don't render if data is invalid - prevents crashes
         if (!checkoutData.isValid) {
+          console.log('[CHECKOUT DIALOG] Invalid checkout data, not rendering');
           return null;
         }
         
