@@ -1070,16 +1070,9 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
           console.error('Error sending product emails:', emailError);
         }
         
-        // Record the purchase
-        await adminDb.collection('purchases').add({
-          productId: itemId,
-          buyerId: userId,
-          sellerId: paymentIntent.metadata.artistId,
-          paymentIntentId: paymentIntent.id,
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-          createdAt: new Date(),
-        });
+        // DON'T create purchase record here - already created in checkout.session.completed
+        // with full shipping address. This prevents duplicate order history entries.
+        console.log('ℹ️ Skipping purchase record creation - already handled by checkout.session.completed');
       }
     }
     
