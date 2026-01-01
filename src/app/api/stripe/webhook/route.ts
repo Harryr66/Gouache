@@ -384,6 +384,47 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
           });
         }
       }
+
+      // Send book purchase emails
+      try {
+        const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
+        
+        const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
+        const buyerData = buyerDoc.data();
+        const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
+        const buyerName = buyerData?.displayName || buyerData?.name || 'Customer';
+        
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        const sellerData = sellerDoc.data();
+        const sellerEmail = sellerData?.email;
+        const sellerName = sellerData?.displayName || sellerData?.name || 'Artist';
+        
+        if (buyerEmail) {
+          await sendPurchaseConfirmationEmail({
+            buyerEmail,
+            buyerName,
+            itemTitle: itemTitle || 'Book',
+            itemType: 'product',
+            amount: totalAmount,
+            currency: paymentIntent.currency,
+            itemId,
+          });
+        }
+        
+        if (sellerEmail) {
+          await sendSellerNotificationEmail({
+            sellerEmail,
+            sellerName,
+            buyerName,
+            itemTitle: itemTitle || 'Book',
+            itemType: 'product',
+            amount: productAmount,
+            currency: paymentIntent.currency,
+          });
+        }
+      } catch (emailError) {
+        console.error('Error sending book purchase emails:', emailError);
+      }
     } else if (itemType === 'merchandise' || itemType === 'product') {
       // Handle marketplace products
       const productRef = doc(db, 'marketplaceProducts', itemId);
@@ -456,6 +497,51 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
           currency: paymentIntent.currency,
           createdAt: new Date(),
         });
+      }
+    }
+    
+    // FALLBACK: Send emails for any other item types that might exist
+    // This ensures we ALWAYS send confirmation emails regardless of item type
+    if (!['course', 'original', 'print', 'book', 'merchandise', 'product'].includes(itemType)) {
+      console.warn(`⚠️ Unknown itemType: ${itemType}, sending generic emails`);
+      try {
+        const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
+        
+        const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
+        const buyerData = buyerDoc.data();
+        const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
+        const buyerName = buyerData?.displayName || buyerData?.name || 'Customer';
+        
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        const sellerData = sellerDoc.data();
+        const sellerEmail = sellerData?.email;
+        const sellerName = sellerData?.displayName || sellerData?.name || 'Seller';
+        
+        if (buyerEmail) {
+          await sendPurchaseConfirmationEmail({
+            buyerEmail,
+            buyerName,
+            itemTitle: itemTitle || 'Item',
+            itemType: 'product', // Default to 'product' for unknown types
+            amount: totalAmount,
+            currency: paymentIntent.currency,
+            itemId,
+          });
+        }
+        
+        if (sellerEmail) {
+          await sendSellerNotificationEmail({
+            sellerEmail,
+            sellerName,
+            buyerName,
+            itemTitle: itemTitle || 'Item',
+            itemType: 'product',
+            amount: productAmount,
+            currency: paymentIntent.currency,
+          });
+        }
+      } catch (emailError) {
+        console.error(`Error sending emails for unknown itemType ${itemType}:`, emailError);
       }
     }
 
