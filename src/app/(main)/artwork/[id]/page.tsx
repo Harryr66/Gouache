@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,6 +53,7 @@ interface ArtworkView {
 export default function ArtworkPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toggleLike, isLiked, loading: likesLoading } = useLikes();
   const { user } = useAuth();
   // Extract and clean the ID from URL params
@@ -573,6 +574,31 @@ export default function ArtworkPage() {
       }
     };
   }, [artwork]);
+
+  // Handle Stripe Checkout success return
+  useEffect(() => {
+    const sessionId = searchParams?.get('session_id');
+    if (sessionId && artwork && user) {
+      // User returned from Stripe Checkout
+      console.log('[Artwork] Returned from Stripe Checkout with session:', sessionId);
+      
+      toast({
+        title: "Payment Successful!",
+        description: "Your purchase has been confirmed. You should receive an email confirmation shortly.",
+        duration: 5000,
+      });
+      
+      // Clear the session_id from URL to prevent showing message again on refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete('session_id');
+      window.history.replaceState({}, '', url.toString());
+      
+      // Refresh artwork data to show sold status
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    }
+  }, [searchParams, artwork, user, toast]);
 
   // Setup HLS video player for modal
   useEffect(() => {

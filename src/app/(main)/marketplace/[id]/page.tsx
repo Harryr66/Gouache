@@ -621,6 +621,31 @@ function ProductDetailPage() {
     fetchSellerProfile();
   }, [product?.sellerId]);
 
+  // Handle Stripe Checkout success return
+  useEffect(() => {
+    const sessionId = searchParams?.get('session_id');
+    if (sessionId && product && user) {
+      // User returned from Stripe Checkout
+      console.log('[Marketplace] Returned from Stripe Checkout with session:', sessionId);
+      
+      toast({
+        title: "Payment Successful!",
+        description: "Your order has been confirmed. You should receive an email confirmation shortly.",
+        duration: 5000,
+      });
+      
+      // Clear the session_id from URL to prevent showing message again on refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete('session_id');
+      window.history.replaceState({}, '', url.toString());
+      
+      // Refresh product data to show updated stock
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    }
+  }, [searchParams, product, user, toast]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
