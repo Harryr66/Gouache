@@ -265,12 +265,13 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
       // Get seller email
       const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
-      const sellerEmail = sellerDoc.exists() ? sellerDoc.data().email : null;
+      const sellerData = sellerDoc.exists() ? sellerDoc.data() : null;
+      const sellerEmail = sellerData?.email || null;
 
-      if (sellerEmail) {
+      if (sellerEmail && sellerData) {
         await sendSellerNotificationEmail({
           sellerEmail,
-          sellerName: sellerDoc.data().displayName || 'Artist',
+          sellerName: sellerData.displayName || 'Artist',
           itemType: 'Artwork',
           itemTitle: artworkData.title || itemTitle || 'Artwork',
           amount: artworkData.price / 100,
@@ -361,12 +362,13 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
       // Get seller email
       const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
-      const sellerEmail = sellerDoc.exists() ? sellerDoc.data().email : null;
+      const sellerData = sellerDoc.exists() ? sellerDoc.data() : null;
+      const sellerEmail = sellerData?.email || null;
 
-      if (sellerEmail) {
+      if (sellerEmail && sellerData) {
         await sendSellerNotificationEmail({
           sellerEmail,
-          sellerName: sellerDoc.data().displayName || 'Seller',
+          sellerName: sellerData.displayName || 'Seller',
           itemType: 'Product',
           itemTitle: productData.title || itemTitle || 'Product',
           amount: productData.price,
