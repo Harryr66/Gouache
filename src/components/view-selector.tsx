@@ -28,8 +28,8 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
       {/* Shaded background indicator - pill shaped */}
       <div
         className={cn(
-          'absolute inset-y-0 w-1/2 bg-muted transition-transform duration-200 ease-in-out rounded-md',
-          view === 'grid' ? 'translate-x-full' : 'translate-x-0'
+          'absolute inset-y-0.5 w-[calc(50%-4px)] mx-0.5 bg-muted transition-transform duration-200 ease-in-out rounded-[4px]',
+          view === 'grid' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
         )}
       />
       
