@@ -301,7 +301,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       // CRITICAL: Capture payment AFTER enrollment created
       // If capture fails, we should delete the enrollment
       try {
-        await capturePaymentIntent(paymentIntentId);
+        await stripe.paymentIntents.capture(paymentIntentId);
         console.log('✅ Payment captured successfully:', paymentIntentId);
       } catch (captureError: any) {
         console.error('❌ CRITICAL: Payment capture failed after enrollment created:', captureError);
