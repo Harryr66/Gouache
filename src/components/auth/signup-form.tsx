@@ -77,6 +77,7 @@ export function SignUpForm() {
         // Store email in userProfiles for username login support
         await setDoc(doc(db, 'userProfiles', user.uid), {
           ...userData,
+          displayName: values.name, // CRITICAL: Set displayName for webhook emails
           email: values.email, // Store email for username login lookup
         });
       } catch (firestoreError) {
