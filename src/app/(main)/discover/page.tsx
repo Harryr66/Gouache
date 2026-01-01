@@ -2867,29 +2867,26 @@ function DiscoverPageContent() {
           {/* Events Tab */}
           <TabsContent value="events" className="!pt-0">
             {/* Search and Filter Bar */}
-            <div className="mb-6 space-y-4 pt-6">
-              <div className="flex flex-col sm:flex-row gap-4">
-                {isMobile ? (
-                  <div className="flex gap-2">
-          <Button
-                      variant="outline"
+            <div className="mb-0 space-y-2 overflow-visible">
+              {/* Mobile: Filter and View Toggle - match artwork tab structure */}
+              {isMobile && (
+                <div className="flex items-center gap-0 w-full overflow-visible mb-0 mt-0">
+                  <div className="flex-1 filter-view-grid">
+                    <Button
+                      variant="ghost"
                       onClick={() => setShowEventFilters(!showEventFilters)}
-                      className="flex-1"
+                      className={cn(
+                        "h-10 px-4 rounded-l-md rounded-r-none border-2 border-r-0 border-border w-full",
+                        showEventFilters && "bg-muted"
+                      )}
+                      style={{ width: '100%' }}
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
-                    <ViewSelector view={eventsView} onViewChange={setEventsView} className="flex-1 justify-center" />
+                    <ViewSelector view={eventsView} onViewChange={setEventsView} className="rounded-md w-full" style={{ width: '100%' }} />
                   </div>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowEventFilters(!showEventFilters)}
-                    className="shrink-0 md:hidden"
-                  >
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Filters Panel */}
               {showEventFilters && (
