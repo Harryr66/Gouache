@@ -126,15 +126,9 @@ export async function POST(request: NextRequest) {
 
     const currency = (itemData.currency || 'USD').toLowerCase();
     
-    // CRITICAL: Marketplace products are stored in CENTS in Firestore
-    // Artwork prices are stored in DOLLARS
-    // Only multiply by 100 for artwork, NOT for marketplace products
-    let amountInCents: number;
-    if (itemType === 'artwork' || itemType === 'original' || itemType === 'print') {
-      amountInCents = Math.round(price * 100); // Artwork: convert dollars to cents
-    } else {
-      amountInCents = Math.round(price); // Marketplace: already in cents
-    }
+    // CRITICAL: Both artwork AND marketplace products are stored in CENTS in Firestore
+    // NEVER multiply by 100 - price is already in cents
+    const amountInCents = Math.round(price); // Already in cents, use as-is
 
     if (amountInCents < 50) {
       return NextResponse.json(
