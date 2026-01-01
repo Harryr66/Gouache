@@ -1095,19 +1095,17 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 <DialogDescription>Complete your payment to enroll in this course.</DialogDescription>
               </DialogHeader>
               {getStripePromise() ? (
-                <Elements stripe={getStripePromise()!}>
-                  <CheckoutForm
-                    amount={checkoutData.price}
-                    currency={checkoutData.currency}
-                    artistId={checkoutData.artistId}
-                    itemId={checkoutData.itemId}
-                    itemType="course"
-                    itemTitle={checkoutData.title}
-                    buyerId={checkoutData.buyerId}
-                    onSuccess={handleCheckoutSuccess}
-                    onCancel={() => setShowCheckout(false)}
-                  />
-                </Elements>
+                <CheckoutForm
+                  amount={checkoutData.price}
+                  currency={checkoutData.currency}
+                  artistId={checkoutData.artistId}
+                  itemId={checkoutData.itemId}
+                  itemType="course"
+                  itemTitle={checkoutData.title}
+                  buyerId={checkoutData.buyerId}
+                  onSuccess={handleCheckoutSuccess}
+                  onCancel={() => setShowCheckout(false)}
+                />
               ) : (
                 <div className="p-8 text-center">
                   <p className="text-muted-foreground mb-4">

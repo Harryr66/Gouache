@@ -1290,7 +1290,6 @@ function ProductDetailPage() {
               <DialogTitle>Purchase Product</DialogTitle>
             </DialogHeader>
             {getStripePromise() ? (
-              <Elements stripe={getStripePromise()!}>
               <CheckoutForm
                 amount={product.price}
                 currency={product.currency || 'USD'}
@@ -1305,7 +1304,6 @@ function ProductDetailPage() {
                   setIsProcessingPayment(false);
                 }}
               />
-              </Elements>
             ) : (
               <div className="p-8 text-center">
                 <p className="text-muted-foreground mb-4">

@@ -987,7 +987,6 @@ export default function ArtworkPage() {
               <DialogTitle>Purchase Artwork</DialogTitle>
             </DialogHeader>
             {getStripePromise() ? (
-              <Elements stripe={getStripePromise()!}>
               <CheckoutForm
                 amount={artwork.price / 100} // Convert from cents to dollars
                 currency={artwork.currency || 'USD'}
@@ -1002,7 +1001,6 @@ export default function ArtworkPage() {
                   setIsProcessingPayment(false);
                 }}
               />
-              </Elements>
             ) : (
               <div className="p-8 text-center">
                 <p className="text-muted-foreground mb-4">
