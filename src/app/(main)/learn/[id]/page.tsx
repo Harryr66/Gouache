@@ -365,17 +365,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         });
         return;
       }
-
-      // Check if Stripe is available
-      const stripePromise = getStripePromise();
-      if (!stripePromise) {
-        toast({
-          title: "Payment Unavailable",
-          description: "Payment processing is not configured. Contact support.",
-          variant: "destructive",
-        });
-        return;
-      }
     }
 
     // ============================================
