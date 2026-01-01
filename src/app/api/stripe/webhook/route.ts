@@ -837,7 +837,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
             buyerName,
             itemTitle: itemTitle || 'Course',
             itemType: 'course',
-            amount: totalAmount,
+            amount: totalAmount / 100, // Convert cents to dollars
             currency: paymentIntent.currency,
             itemId,
           });
@@ -852,7 +852,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
             buyerName,
             itemTitle: itemTitle || 'Course',
             itemType: 'course',
-            amount: productAmount,
+            amount: productAmount / 100, // Convert cents to dollars
             currency: paymentIntent.currency,
           });
         }

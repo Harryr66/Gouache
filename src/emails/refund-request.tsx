@@ -56,39 +56,44 @@ export const RefundRequestEmail = ({
             A customer has requested a refund for one of your items. Please review the details below:
           </Text>
 
-          <Section style={orderBox}>
-            <Text style={orderTitle}>Order Details</Text>
-            <Hr style={hr} />
-            <Text style={orderDetail}>
+          <Hr style={hr} />
+
+          <Section style={section}>
+            <Text style={sectionTitle}>Order Details</Text>
+            <Text style={detail}>
               <strong>Item:</strong> {itemTitle}
             </Text>
-            <Text style={orderDetail}>
+            <Text style={detail}>
               <strong>Type:</strong> {orderType === 'product' ? 'Product' : orderType === 'course' ? 'Course' : 'Artwork'}
             </Text>
-            <Text style={orderDetail}>
+            <Text style={detail}>
               <strong>Amount:</strong> {formattedAmount}
             </Text>
-            <Text style={orderDetail}>
+            <Text style={detail}>
               <strong>Order ID:</strong> {orderId}
             </Text>
           </Section>
 
-          <Section style={customerBox}>
-            <Text style={customerTitle}>Customer Information</Text>
-            <Hr style={hr} />
-            <Text style={orderDetail}>
+          <Hr style={hr} />
+
+          <Section style={section}>
+            <Text style={sectionTitle}>Customer Information</Text>
+            <Text style={detail}>
               <strong>Name:</strong> {buyerName}
             </Text>
-            <Text style={orderDetail}>
+            <Text style={detail}>
               <strong>Email:</strong> {buyerEmail}
             </Text>
           </Section>
 
-          <Section style={reasonBox}>
-            <Text style={reasonTitle}>Reason for Refund</Text>
-            <Hr style={hr} />
+          <Hr style={hr} />
+
+          <Section style={section}>
+            <Text style={sectionTitle}>Reason for Refund</Text>
             <Text style={reasonText}>"{reason}"</Text>
           </Section>
+
+          <Hr style={hr} />
 
           <Text style={text}>
             <strong>Next Steps:</strong>
@@ -170,55 +175,19 @@ const actionText = {
   margin: '24px 32px',
 };
 
-const orderBox = {
-  backgroundColor: '#f6f9fc',
-  borderRadius: '8px',
-  margin: '32px 32px',
-  padding: '24px',
+const section = {
+  margin: '24px 32px',
+  padding: '0',
 };
 
-const customerBox = {
-  backgroundColor: '#eff6ff',
-  borderRadius: '8px',
-  margin: '32px 32px',
-  padding: '24px',
-  borderLeft: '4px solid #5e5ce6',
-};
-
-const reasonBox = {
-  backgroundColor: '#fff7ed',
-  borderRadius: '8px',
-  margin: '32px 32px',
-  padding: '24px',
-  borderLeft: '4px solid #f59e0b',
-};
-
-const orderTitle = {
+const sectionTitle = {
   color: '#1a1a1a',
-  fontSize: '18px',
+  fontSize: '16px',
   fontWeight: '600',
   margin: '0 0 12px 0',
 };
 
-const customerTitle = {
-  color: '#5e5ce6',
-  fontSize: '14px',
-  fontWeight: '600',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.5px',
-  margin: '0 0 12px 0',
-};
-
-const reasonTitle = {
-  color: '#f59e0b',
-  fontSize: '14px',
-  fontWeight: '600',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.5px',
-  margin: '0 0 12px 0',
-};
-
-const orderDetail = {
+const detail = {
   color: '#525f7f',
   fontSize: '16px',
   lineHeight: '24px',

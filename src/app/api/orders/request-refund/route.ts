@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
     const { sendRefundRequestEmail } = await import('@/lib/email');
     
     // Format the price correctly for the email
-    const amount = price / 100; // Convert from cents
+    // Courses are in dollars, products/artwork are in cents
+    const amount = orderType === 'course' ? price : (price / 100);
     const formattedAmount = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency.toUpperCase(),
