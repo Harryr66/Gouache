@@ -560,6 +560,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         productId: itemId,
         buyerId: userId,
         sellerId: artistId,
+        itemType: 'merchandise', // Added for Order History filtering
         itemTitle: itemTitle || productData.title || 'Product',
         price: productData.price,
         currency: productData.currency || 'USD',
