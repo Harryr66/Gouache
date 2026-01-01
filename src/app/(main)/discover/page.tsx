@@ -941,10 +941,9 @@ function DiscoverPageContent() {
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
-  // Initialize with a reasonable default that will be adjusted based on screen size
-  // Start with enough items to fill initial viewport, loading progressively from top to bottom
-  // AGGRESSIVE: Start with only 6-9 items (viewport + 1 row) for faster loading
-  const [visibleCount, setVisibleCount] = useState(9);
+  // Initialize with enough items to fill viewport + 2 rows for smooth scrolling
+  // 24 items covers: mobile (2 cols × 4 rows), tablet (3 cols × 3 rows), desktop (6 cols × 2 rows)
+  const [visibleCount, setVisibleCount] = useState(24);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market list, Events grid on mobile
@@ -1004,9 +1003,9 @@ function DiscoverPageContent() {
         let portfolioItems: any[] = [];
         let useFallback = false;
         
-        // AGGRESSIVE: Fetch only 12 items initially (viewport + 1 row)
-        // This is 2x faster than 25, and we can load more on scroll
-        const INITIAL_FETCH_LIMIT = 12;
+        // Fetch enough items to fill viewport + 2 rows for all screen sizes
+        // 30 items covers: mobile (2 cols × 5 rows), tablet (3 cols × 4 rows), desktop (6 cols × 3 rows)
+        const INITIAL_FETCH_LIMIT = 30;
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -2253,10 +2252,8 @@ function DiscoverPageContent() {
   }, [filteredAndSortedArtworks, visibleCount, ads]);
 
   useEffect(() => {
-    // AGGRESSIVE: Reset to minimal count when filters change (6-9 items based on connection)
-    const connectionSpeed = getConnectionSpeed();
-    const initialCount = connectionSpeed === 'fast' ? 9 : 6;
-    setVisibleCount(initialCount);
+    // Reset to fill viewport when filters change (24 items covers most screen sizes)
+    setVisibleCount(24);
   }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation]);
 
   // Marketplace products useEffect removed - marketplace tab is hidden
