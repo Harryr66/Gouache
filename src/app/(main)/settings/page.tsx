@@ -609,6 +609,21 @@ function SettingsPageContent() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm sm:text-base">Order History</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">View your past purchases and enrollments</p>
+                  </div>
+                  <Button 
+                    variant="outline"
+                    onClick={() => router.push('/settings/orders')}
+                    className="w-full sm:w-auto shrink-0"
+                    size="sm"
+                  >
+                    View Orders
+                  </Button>
+                </div>
+
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 border rounded-lg border-destructive/50">
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm sm:text-base">Sign Out</h4>
