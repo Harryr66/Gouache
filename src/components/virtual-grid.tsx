@@ -117,7 +117,7 @@ export function VirtualGrid<T>({
       )}
       
       {/* Render visible items */}
-      <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-5 gap-1" style={{ columnFill: 'auto', alignContent: 'start' }}>
+      <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-5 gap-1.5" style={{ columnFill: 'auto', alignContent: 'start' }}>
         {visibleItems.map((item, index) => {
           const actualIndex = visibleRange.start + index;
           return (
