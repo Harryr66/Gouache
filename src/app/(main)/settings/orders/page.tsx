@@ -95,6 +95,29 @@ export default function OrderHistoryPage() {
         });
       });
 
+      // Fetch artwork purchases - artworks marked as sold to this user
+      const artworkQuery = query(
+        collection(db, 'artworks'),
+        where('sold', '==', true),
+        where('soldTo', '==', user.id)
+      );
+      const artworkSnap = await getDocs(artworkQuery);
+      artworkSnap.forEach(doc => {
+        const data = doc.data();
+        allOrders.push({
+          id: doc.id,
+          artworkId: doc.id,
+          itemTitle: data.title || 'Artwork',
+          price: data.price || 0,
+          currency: data.currency || 'USD',
+          status: 'completed',
+          createdAt: data.soldAt || data.createdAt,
+          shippingAddress: data.shippingAddress,
+          type: 'artwork',
+          sellerId: data.artist?.userId || data.artistId,
+        });
+      });
+
       // Sort all orders by date
       allOrders.sort((a, b) => {
         const aTime = a.createdAt?.toDate?.() || new Date(0);

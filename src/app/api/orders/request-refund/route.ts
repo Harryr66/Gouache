@@ -3,9 +3,9 @@ import { getAdminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
-    const { orderId, orderType, itemTitle, price, currency, sellerId, reason } = await request.json();
+    const { orderId, orderType, itemTitle, price, currency, sellerId, reason, buyerEmail, buyerName } = await request.json();
 
-    if (!orderId || !orderType || !sellerId || !reason) {
+    if (!orderId || !orderType || !sellerId || !reason || !buyerEmail || !buyerName) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -34,13 +34,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get buyer details from the request user
-    // In a real implementation, you'd verify the user's auth token
-    const buyerEmail = request.headers.get('x-user-email') || 'customer@gouache.art';
-    const buyerName = request.headers.get('x-user-name') || 'Customer';
-
     // Send email to seller
     const { sendRefundRequestEmail } = await import('@/lib/email');
+    
+    // Format the price correctly for the email
+    const amount = price / 100; // Convert from cents
+    const formattedAmount = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    }).format(amount);
     
     await sendRefundRequestEmail({
       sellerEmail,
@@ -50,8 +52,7 @@ export async function POST(request: NextRequest) {
       itemTitle,
       orderId,
       orderType,
-      price: price / 100, // Convert from cents
-      currency: currency.toUpperCase(),
+      formattedAmount,
       reason,
     });
 

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/providers/auth-provider';
 import { Loader2 } from 'lucide-react';
 
 interface Order {
@@ -44,6 +45,7 @@ export function RefundRequestDialog({
   onSuccess,
 }: RefundRequestDialogProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -52,6 +54,15 @@ export function RefundRequestDialog({
       toast({
         title: 'Reason required',
         description: 'Please provide a reason for your refund request.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please log in to request a refund.',
         variant: 'destructive',
       });
       return;
@@ -71,6 +82,8 @@ export function RefundRequestDialog({
           currency: order.currency,
           sellerId: order.sellerId,
           reason: reason.trim(),
+          buyerEmail: user.email,
+          buyerName: user.displayName || user.username || 'Customer',
         }),
       });
 

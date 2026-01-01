@@ -560,6 +560,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         productId: itemId,
         buyerId: userId,
         sellerId: artistId,
+        itemTitle: itemTitle || productData.title || 'Product',
         price: productData.price,
         currency: productData.currency || 'USD',
         paymentIntentId: paymentIntentId,
