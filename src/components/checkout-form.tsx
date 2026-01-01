@@ -41,16 +41,16 @@ function CheckoutFormContent({
   itemTitle,
   buyerId,
   onSuccess,
-  onCancel
-}: CheckoutFormProps) {
+  onCancel,
+  clientSecret,
+  paymentIntentId,
+}: CheckoutFormProps & { clientSecret: string; paymentIntentId: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
 
   // Check auth before allowing purchase
   useEffect(() => {
@@ -64,98 +64,6 @@ function CheckoutFormContent({
       onCancel?.();
     }
   }, [user, router, onCancel]);
-
-  // Create payment intent when component mounts
-  useEffect(() => {
-    const createPaymentIntent = async () => {
-      // Validate all required props are strings/numbers (not objects)
-      if (typeof artistId !== 'string' || !artistId) {
-        const errorMsg = 'Invalid artist ID. Please refresh and try again.';
-        setError(errorMsg);
-        toast({
-          title: 'Payment Error',
-          description: errorMsg,
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (typeof itemId !== 'string' || !itemId) {
-        const errorMsg = 'Invalid item ID. Please refresh and try again.';
-        setError(errorMsg);
-        toast({
-          title: 'Payment Error',
-          description: errorMsg,
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (typeof buyerId !== 'string' || !buyerId) {
-        const errorMsg = 'Please log in to complete your purchase.';
-        setError(errorMsg);
-        toast({
-          title: 'Login Required',
-          description: errorMsg,
-          variant: 'destructive',
-        });
-        onCancel?.();
-        return;
-      }
-
-      if (typeof amount !== 'number' || amount <= 0) {
-        const errorMsg = 'Invalid amount. Please refresh and try again.';
-        setError(errorMsg);
-        toast({
-          title: 'Payment Error',
-          description: errorMsg,
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/stripe/create-payment-intent', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            amount: Math.round(amount * 100), // Convert to cents
-            currency: (typeof currency === 'string' ? currency : 'usd').toLowerCase(),
-            artistId: String(artistId),
-            itemId: String(itemId),
-            itemType: String(itemType),
-            buyerId: String(buyerId),
-            description: `Purchase: ${typeof itemTitle === 'string' ? itemTitle : 'Item'}`,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `Server error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (!data.clientSecret || typeof data.clientSecret !== 'string') {
-          throw new Error('Invalid response from payment server');
-        }
-        setClientSecret(data.clientSecret);
-        setPaymentIntentId(data.paymentIntentId || null);
-      } catch (err: any) {
-        console.error('Error creating payment intent:', err);
-        const errorMessage = err.message || 'Failed to initialize payment. Please try again.';
-        setError(errorMessage);
-        toast({
-          title: 'Payment Error',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      }
-    };
-
-    createPaymentIntent();
-  }, [amount, currency, artistId, itemId, itemType, buyerId, itemTitle, onCancel]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,17 +127,6 @@ function CheckoutFormContent({
     }
   };
 
-  if (!clientSecret) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Initializing payment...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
@@ -285,6 +182,9 @@ function CheckoutFormContent({
 
 export function CheckoutForm(props: CheckoutFormProps) {
   const stripePromise = getStripePromise();
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
   if (!stripePromise) {
     return (
@@ -301,10 +201,73 @@ export function CheckoutForm(props: CheckoutFormProps) {
     );
   }
 
-  // DON'T use mode: 'payment' - it forces automatic capture
-  // We create our own payment intent with manual capture
-  // So we just need appearance options
+  // Create payment intent when component mounts
+  useEffect(() => {
+    const createPaymentIntent = async () => {
+      try {
+        const response = await fetch('/api/stripe/create-payment-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: Math.round(props.amount * 100),
+            currency: (props.currency || 'usd').toLowerCase(),
+            artistId: props.artistId,
+            itemId: props.itemId,
+            itemType: props.itemType,
+            buyerId: props.buyerId,
+            description: `Purchase: ${props.itemTitle}`,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setClientSecret(data.clientSecret);
+        setPaymentIntentId(data.paymentIntentId);
+      } catch (err: any) {
+        console.error('Error creating payment intent:', err);
+        setError(err.message);
+        toast({
+          title: 'Payment Error',
+          description: err.message || 'Failed to initialize payment.',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    createPaymentIntent();
+  }, [props.amount, props.currency, props.artistId, props.itemId, props.itemType, props.buyerId, props.itemTitle]);
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-destructive mb-4">{error}</p>
+        {props.onCancel && (
+          <Button variant="outline" onClick={props.onCancel}>
+            Close
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  if (!clientSecret || !paymentIntentId) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground">Initializing payment...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Now we have clientSecret, pass it to Elements
   const options: StripeElementsOptions = {
+    clientSecret, // CRITICAL: Pass clientSecret to Elements
     appearance: {
       theme: 'stripe',
     },
@@ -312,7 +275,7 @@ export function CheckoutForm(props: CheckoutFormProps) {
 
   return (
     <Elements stripe={stripePromise} options={options}>
-      <CheckoutFormContent {...props} />
+      <CheckoutFormContent {...props} clientSecret={clientSecret} paymentIntentId={paymentIntentId} />
     </Elements>
   );
 }
