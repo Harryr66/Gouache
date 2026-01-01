@@ -101,7 +101,7 @@ export const RefundRequestEmail = ({
           <Text style={text}>
             1. Review the refund request reason carefully<br />
             2. Contact the customer directly at {buyerEmail} if you need more information<br />
-            3. Process the refund through your Business Dashboard on Gouache<br />
+            3. Process the refund through your Business Dashboard on Gouache or directly via your Stripe account dashboard<br />
             4. Respond to the customer within 48 hours
           </Text>
 
@@ -109,6 +109,10 @@ export const RefundRequestEmail = ({
             You can process this refund from your{' '}
             <Link href="https://www.gouache.art/profile?tab=business" style={link}>
               Business Dashboard
+            </Link>
+            {' '}or{' '}
+            <Link href="https://dashboard.stripe.com/payments" style={link}>
+              Stripe Dashboard
             </Link>
           </Text>
 
