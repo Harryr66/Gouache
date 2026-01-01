@@ -59,8 +59,8 @@ export default function OrderHistoryPage() {
       // Fetch marketplace purchases
       const purchasesQuery = query(
         collection(db, 'purchases'),
-        where('buyerId', '==', user.id),
-        orderBy('createdAt', 'desc')
+        where('buyerId', '==', user.id)
+        // Removed orderBy to avoid composite index requirement
       );
       const purchasesSnap = await getDocs(purchasesQuery);
       console.log('📦 PURCHASES FOUND:', purchasesSnap.size);
@@ -84,8 +84,8 @@ export default function OrderHistoryPage() {
       // Fetch course enrollments
       const enrollmentsQuery = query(
         collection(db, 'enrollments'),
-        where('userId', '==', user.id),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', user.id)
+        // Removed orderBy to avoid composite index requirement
       );
       const enrollmentsSnap = await getDocs(enrollmentsQuery);
       console.log('📚 ENROLLMENTS FOUND:', enrollmentsSnap.size);
@@ -133,6 +133,13 @@ export default function OrderHistoryPage() {
         const aTime = a.createdAt?.toDate?.() || new Date(0);
         const bTime = b.createdAt?.toDate?.() || new Date(0);
         return bTime.getTime() - aTime.getTime();
+      });
+
+      // Sort all orders by date in JavaScript (after fetching)
+      allOrders.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+        return dateB.getTime() - dateA.getTime();
       });
 
       setOrders(allOrders);
