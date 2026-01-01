@@ -134,10 +134,45 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Handle Stripe Checkout Session completion (for physical products with shipping)
+// Handle Stripe Checkout Session completion (for physical products with shipping AND donations)
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   console.log('🎉 Checkout session completed:', session.id);
 
+  // Check if this is a donation
+  const { artistId, donationType, itemId, itemType, userId, itemTitle } = session.metadata || {};
+  
+  if (donationType === 'one-time' && artistId && !itemId) {
+    // DONATION FLOW
+    try {
+      // Mark one-time donation as completed
+      const artistRef = doc(db, 'userProfiles', artistId);
+      await updateDoc(artistRef, {
+        platformDonationOneTimeCompleted: true,
+        platformDonationEnabled: true,
+        platformDonationType: 'one-time',
+      });
+
+      // Record the donation
+      await addDoc(collection(db, 'donations'), {
+        artistId: artistId,
+        donationType: 'one-time',
+        amount: session.amount_total || 0,
+        currency: session.currency || 'usd',
+        sessionId: session.id,
+        paymentIntentId: session.payment_intent as string,
+        completedAt: new Date(),
+        createdAt: new Date(),
+      });
+
+      console.log(`✅ One-time donation completed: ${session.id} for artist ${artistId}`);
+      return; // Exit early for donations
+    } catch (error) {
+      console.error('Error handling donation checkout session:', error);
+      throw error;
+    }
+  }
+
+  // PHYSICAL PRODUCT FLOW (artwork, marketplace)
   // Get payment intent from session
   const paymentIntentId = typeof session.payment_intent === 'string' 
     ? session.payment_intent 
@@ -147,9 +182,6 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     console.error('No payment intent found in checkout session:', session.id);
     return;
   }
-
-  // Get metadata from session
-  const { itemId, itemType, userId, artistId, itemTitle } = session.metadata || {};
 
   if (!itemId || !itemType || !userId || !artistId) {
     console.error('Missing required metadata in checkout session:', session.id);
@@ -841,39 +873,6 @@ async function handlePayoutFailed(payout: Stripe.Payout) {
     // You can update payout status and notify artist here
   } catch (error) {
     console.error('Error handling payout failed:', error);
-  }
-}
-
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  try {
-    const { artistId, donationType } = session.metadata || {};
-    
-    if (donationType === 'one-time' && artistId) {
-      // Mark one-time donation as completed
-      const artistRef = doc(db, 'userProfiles', artistId);
-      await updateDoc(artistRef, {
-        platformDonationOneTimeCompleted: true,
-        platformDonationEnabled: true,
-        platformDonationType: 'one-time',
-      });
-
-      // Record the donation
-      await addDoc(collection(db, 'donations'), {
-        artistId: artistId,
-        donationType: 'one-time',
-        amount: session.amount_total || 0,
-        currency: session.currency || 'usd',
-        sessionId: session.id,
-        paymentIntentId: session.payment_intent as string,
-        completedAt: new Date(),
-        createdAt: new Date(),
-      });
-
-      console.log(`✅ One-time donation completed: ${session.id} for artist ${artistId}`);
-    }
-  } catch (error) {
-    console.error('Error handling checkout session completion:', error);
-    throw error;
   }
 }
 
