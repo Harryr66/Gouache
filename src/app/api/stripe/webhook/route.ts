@@ -225,7 +225,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  if (needsShipping) {
+  if (needsShipping && shippingAddress) {
     console.log('📦 Shipping address:', {
       name: shippingName,
       line1: shippingAddress.line1,
