@@ -36,8 +36,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if already refunded
-    if (paymentIntent.status === 'canceled' || paymentIntent.amount_refunded >= paymentIntent.amount) {
+    // Check if already refunded (use type assertion for Stripe types)
+    const amount_refunded = (paymentIntent as any).amount_refunded || 0;
+    if (paymentIntent.status === 'canceled' || amount_refunded >= paymentIntent.amount) {
       return NextResponse.json(
         { error: 'This payment has already been refunded' },
         { status: 400 }
