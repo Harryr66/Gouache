@@ -230,7 +230,7 @@ export function TransactionsManager() {
 
   const formatDate = (timestamp: Timestamp | undefined) => {
     if (!timestamp) return 'N/A';
-    const date = timestamp.toDate?.() || new Date(timestamp);
+    const date = timestamp.toDate();
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric', 
