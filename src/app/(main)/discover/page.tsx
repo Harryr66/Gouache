@@ -317,6 +317,11 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         const top = currentColumnHeight === 0 
           ? 0 
           : Math.ceil(currentColumnHeight) + gap;
+        
+        // Debug log for verification
+        if (index === 0) {
+          console.log('🔧 Masonry grid fix active - Gap:', gap, 'Height buffer: +1px');
+        }
 
         // Validate calculated values
         if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
