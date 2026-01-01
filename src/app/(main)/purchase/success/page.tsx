@@ -93,7 +93,7 @@ function PurchaseSuccessContent() {
           <Button
             variant="default"
             className="flex-1"
-            onClick={() => router.push('/discover')}
+            onClick={() => router.push('/marketplace')}
           >
             Continue Shopping
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -101,9 +101,9 @@ function PurchaseSuccessContent() {
           <Button
             variant="outline"
             className="flex-1"
-            onClick={() => router.push('/profile')}
+            onClick={() => router.push('/')}
           >
-            View My Orders
+            Back to Home
           </Button>
         </div>
 

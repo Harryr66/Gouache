@@ -237,6 +237,16 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 
   try {
+    // Fetch buyer's profile to get their actual display name (not shipping name)
+    const buyerDoc = await adminDb.collection('userProfiles').doc(userId).get();
+    const buyerData = buyerDoc.exists ? buyerDoc.data() : null;
+    const buyerDisplayName = buyerData?.displayName || buyerData?.name || shippingName || 'Customer';
+    
+    console.log('👤 Buyer name resolved:', {
+      buyerId: userId,
+      displayName: buyerDisplayName,
+      shippingName,
+    });
     // CRITICAL: Verify payment status before granting access
     // For manual capture, payment intent should be in 'requires_capture' state
     // This confirms funds are authorized (held) and ready to capture
@@ -312,7 +322,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       
       await sendPurchaseConfirmationEmail({
         buyerEmail: customerEmail || '',
-        buyerName: shippingName || 'Student',
+        buyerName: buyerDisplayName,
         itemTitle: courseData.title || itemTitle,
         itemType: 'Course',
         amount: session.amount_total ? (session.amount_total / 100) : 0,
@@ -326,7 +336,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           await sendSellerNotificationEmail({
             sellerEmail: sellerData.email,
             sellerName: sellerData.displayName || 'Instructor',
-            buyerName: shippingName || 'Student',
+            buyerName: buyerDisplayName,
             itemTitle: courseData.title || itemTitle,
             itemType: 'Course',
             amount: session.amount_total ? (session.amount_total / 100) : 0,
@@ -424,7 +434,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       
       await sendPurchaseConfirmationEmail({
         buyerEmail: customerEmail || '',
-        buyerName: shippingName || 'Customer',
+        buyerName: buyerDisplayName,
         itemType: 'Artwork',
         itemTitle: artworkData.title || itemTitle || 'Artwork',
         amount: artworkData.price / 100,
@@ -453,7 +463,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           itemTitle: artworkData.title || itemTitle || 'Artwork',
           amount: artworkData.price / 100,
           currency: artworkData.currency || 'USD',
-          buyerName: shippingName || 'Customer',
+          buyerName: buyerDisplayName,
           shippingAddress: {
             name: shippingName || 'Customer',
             line1: shippingAddress!.line1 || '',
@@ -576,7 +586,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         console.log('📧 Sending buyer confirmation email to:', customerEmail);
         await sendPurchaseConfirmationEmail({
           buyerEmail: customerEmail || '',
-          buyerName: shippingName || 'Customer',
+          buyerName: buyerDisplayName,
           itemType: 'Product',
           itemTitle: productData.title || itemTitle || 'Product',
           amount: productData.price,
@@ -607,7 +617,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
             itemTitle: productData.title || itemTitle || 'Product',
             amount: productData.price,
             currency: productData.currency || 'USD',
-            buyerName: shippingName || 'Customer',
+            buyerName: buyerDisplayName,
             shippingAddress: {
               name: shippingName || 'Customer',
               line1: shippingAddress!.line1 || '',
