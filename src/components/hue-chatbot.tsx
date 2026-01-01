@@ -1052,7 +1052,7 @@ export function HueChatbot() {
                   size="sm"
                 >
                   <Send className="h-3 w-3 mr-1.5" />
-                  {isSubmitting ? 'Sending...' : 'Send'}
+                  {isSubmitting ? 'Reporting...' : 'Report Error'}
                 </Button>
               </>
             ) : (
