@@ -76,6 +76,7 @@ export async function sendPurchaseConfirmationEmail(data: PurchaseConfirmationEm
         itemType: data.itemType,
         formattedAmount,
         itemId: data.itemId,
+        shippingAddress: data.shippingAddress,
       })
     );
 
@@ -124,6 +125,7 @@ export async function sendSellerNotificationEmail(data: SellerNotificationEmail)
         itemTitle: data.itemTitle,
         itemType: data.itemType,
         formattedAmount,
+        shippingAddress: data.shippingAddress,
       })
     );
 

@@ -19,6 +19,15 @@ interface SellerNotificationEmailProps {
   itemTitle: string;
   itemType: 'course' | 'artwork' | 'product';
   formattedAmount: string;
+  shippingAddress?: {
+    name: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    state?: string;
+    postalCode?: string;
+    country: string;
+  };
 }
 
 export const SellerNotificationEmail = ({
@@ -27,6 +36,7 @@ export const SellerNotificationEmail = ({
   itemTitle = 'Your Item',
   itemType = 'product',
   formattedAmount = '$0.00',
+  shippingAddress,
 }: SellerNotificationEmailProps) => {
   const itemTypeLabel = itemType === 'course' ? 'course' : 
                         itemType === 'artwork' ? 'artwork' : 'product';
@@ -68,10 +78,33 @@ export const SellerNotificationEmail = ({
             </Text>
           </Section>
 
+          {shippingAddress && (
+            <Section style={shippingBox}>
+              <Text style={shippingTitle}>📦 Ship To</Text>
+              <Hr style={hr} />
+              <Text style={shippingDetail}>{shippingAddress.name}</Text>
+              <Text style={shippingDetail}>{shippingAddress.line1}</Text>
+              {shippingAddress.line2 && (
+                <Text style={shippingDetail}>{shippingAddress.line2}</Text>
+              )}
+              <Text style={shippingDetail}>
+                {shippingAddress.city}
+                {shippingAddress.state && `, ${shippingAddress.state}`}
+                {shippingAddress.postalCode && ` ${shippingAddress.postalCode}`}
+              </Text>
+              <Text style={shippingDetail}>{shippingAddress.country}</Text>
+            </Section>
+          )}
+
           <Section style={infoBox}>
             <Text style={infoText}>
               💰 The payment will be transferred to your Stripe account according to your payout schedule.
             </Text>
+            {shippingAddress && (
+              <Text style={infoText}>
+                📦 Please ship the item to the address above as soon as possible.
+              </Text>
+            )}
             <Text style={infoText}>
               📊 You can view all your sales and earnings in your Gouache dashboard.
             </Text>
@@ -186,6 +219,28 @@ const amountStyle = {
   fontSize: '24px',
   fontWeight: 'bold',
   margin: '12px 0 0 0',
+};
+
+const shippingBox = {
+  backgroundColor: '#fff7ed',
+  borderRadius: '8px',
+  borderLeft: '4px solid #f97316',
+  margin: '32px 32px',
+  padding: '24px',
+};
+
+const shippingTitle = {
+  color: '#f97316',
+  fontSize: '16px',
+  fontWeight: '600',
+  margin: '0 0 12px 0',
+};
+
+const shippingDetail = {
+  color: '#525f7f',
+  fontSize: '16px',
+  lineHeight: '24px',
+  margin: '4px 0',
 };
 
 const infoBox = {

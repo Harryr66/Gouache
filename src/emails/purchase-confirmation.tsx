@@ -20,6 +20,15 @@ interface PurchaseConfirmationEmailProps {
   itemType: 'course' | 'artwork' | 'product';
   formattedAmount: string;
   itemId?: string;
+  shippingAddress?: {
+    name: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    state?: string;
+    postalCode?: string;
+    country: string;
+  };
 }
 
 export const PurchaseConfirmationEmail = ({
@@ -28,6 +37,7 @@ export const PurchaseConfirmationEmail = ({
   itemType = 'product',
   formattedAmount = '$0.00',
   itemId,
+  shippingAddress,
 }: PurchaseConfirmationEmailProps) => {
   const itemTypeLabel = itemType === 'course' ? 'Course' : 
                         itemType === 'artwork' ? 'Artwork' : 'Product';
@@ -68,6 +78,24 @@ export const PurchaseConfirmationEmail = ({
               <strong>Amount:</strong> {formattedAmount}
             </Text>
           </Section>
+
+          {shippingAddress && (
+            <Section style={shippingBox}>
+              <Text style={shippingTitle}>Shipping Address</Text>
+              <Hr style={hr} />
+              <Text style={shippingDetail}>{shippingAddress.name}</Text>
+              <Text style={shippingDetail}>{shippingAddress.line1}</Text>
+              {shippingAddress.line2 && (
+                <Text style={shippingDetail}>{shippingAddress.line2}</Text>
+              )}
+              <Text style={shippingDetail}>
+                {shippingAddress.city}
+                {shippingAddress.state && `, ${shippingAddress.state}`}
+                {shippingAddress.postalCode && ` ${shippingAddress.postalCode}`}
+              </Text>
+              <Text style={shippingDetail}>{shippingAddress.country}</Text>
+            </Section>
+          )}
 
           {itemType === 'course' && itemId && (
             <Section style={buttonContainer}>
@@ -155,6 +183,30 @@ const orderDetail = {
   fontSize: '16px',
   lineHeight: '24px',
   margin: '8px 0',
+};
+
+const shippingBox = {
+  backgroundColor: '#eff6ff',
+  borderRadius: '8px',
+  margin: '32px 32px',
+  padding: '24px',
+  borderLeft: '4px solid #5e5ce6',
+};
+
+const shippingTitle = {
+  color: '#5e5ce6',
+  fontSize: '14px',
+  fontWeight: '600',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.5px',
+  margin: '0 0 12px 0',
+};
+
+const shippingDetail = {
+  color: '#525f7f',
+  fontSize: '16px',
+  lineHeight: '24px',
+  margin: '4px 0',
 };
 
 const buttonContainer = {
