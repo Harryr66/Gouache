@@ -50,6 +50,12 @@ export default function OrderHistoryPage() {
       setLoading(true);
       const allOrders: Order[] = [];
 
+      console.log('🔍 FETCHING ORDERS FOR USER:', {
+        userId: user.id,
+        userEmail: user.email,
+        userName: user.displayName || user.username,
+      });
+
       // Fetch marketplace purchases
       const purchasesQuery = query(
         collection(db, 'purchases'),
@@ -57,8 +63,10 @@ export default function OrderHistoryPage() {
         orderBy('createdAt', 'desc')
       );
       const purchasesSnap = await getDocs(purchasesQuery);
+      console.log('📦 PURCHASES FOUND:', purchasesSnap.size);
       purchasesSnap.forEach(doc => {
         const data = doc.data();
+        console.log('📦 Purchase:', { id: doc.id, data });
         allOrders.push({
           id: doc.id,
           productId: data.productId,
@@ -80,8 +88,10 @@ export default function OrderHistoryPage() {
         orderBy('createdAt', 'desc')
       );
       const enrollmentsSnap = await getDocs(enrollmentsQuery);
+      console.log('📚 ENROLLMENTS FOUND:', enrollmentsSnap.size);
       enrollmentsSnap.forEach(doc => {
         const data = doc.data();
+        console.log('📚 Enrollment:', { id: doc.id, data });
         allOrders.push({
           id: doc.id,
           courseId: data.courseId,
