@@ -423,7 +423,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       
       await sendPurchaseConfirmationEmail({
         buyerEmail: customerEmail || '',
-        buyerName: shippingName,
+        buyerName: shippingName || 'Customer',
         itemType: 'Artwork',
         itemTitle: artworkData.title || itemTitle || 'Artwork',
         amount: artworkData.price / 100,
@@ -452,7 +452,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           itemTitle: artworkData.title || itemTitle || 'Artwork',
           amount: artworkData.price / 100,
           currency: artworkData.currency || 'USD',
-          buyerName: shippingName,
+          buyerName: shippingName || 'Customer',
           shippingAddress: {
             name: shippingName,
             line1: shippingAddress!.line1,
@@ -575,7 +575,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         console.log('📧 Sending buyer confirmation email to:', customerEmail);
         await sendPurchaseConfirmationEmail({
           buyerEmail: customerEmail || '',
-          buyerName: shippingName,
+          buyerName: shippingName || 'Customer',
           itemType: 'Product',
           itemTitle: productData.title || itemTitle || 'Product',
           amount: productData.price,
@@ -606,7 +606,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
             itemTitle: productData.title || itemTitle || 'Product',
             amount: productData.price,
             currency: productData.currency || 'USD',
-            buyerName: shippingName,
+            buyerName: shippingName || 'Customer',
             shippingAddress: {
               name: shippingName,
               line1: shippingAddress!.line1,
