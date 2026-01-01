@@ -271,14 +271,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       console.log(`✅ Course enrollment created: ${enrollmentRef.id}`);
 
       // Send emails (no shipping address for courses)
+      const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
+      
       await sendPurchaseConfirmationEmail({
-        to: customerEmail,
+        buyerEmail: customerEmail || '',
         buyerName: shippingName || 'Student',
         itemTitle: courseData.title || itemTitle,
         itemType: 'Course',
-        amount: session.amount_total ? (session.amount_total / 100).toFixed(2) : '0.00',
+        amount: session.amount_total ? (session.amount_total / 100) : 0,
         currency: (session.currency || 'USD').toUpperCase(),
-        orderId: session.id,
       });
 
       const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
@@ -286,14 +287,13 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         const sellerData = sellerDoc.data();
         if (sellerData && sellerData.email) {
           await sendSellerNotificationEmail({
-            to: sellerData.email,
+            sellerEmail: sellerData.email,
             sellerName: sellerData.displayName || 'Instructor',
             buyerName: shippingName || 'Student',
             itemTitle: courseData.title || itemTitle,
             itemType: 'Course',
-            amount: session.amount_total ? (session.amount_total / 100).toFixed(2) : '0.00',
+            amount: session.amount_total ? (session.amount_total / 100) : 0,
             currency: (session.currency || 'USD').toUpperCase(),
-            orderId: session.id,
           });
         }
       }
