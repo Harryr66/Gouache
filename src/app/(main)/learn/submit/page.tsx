@@ -276,6 +276,34 @@ function CourseSubmissionPageContent() {
     }
   }, [searchParams, user, getCourse, router]);
 
+  // Load user's draft courses (unpublished)
+  useEffect(() => {
+    const loadDrafts = async () => {
+      if (!user) return;
+      
+      setLoadingDrafts(true);
+      try {
+        const draftsQuery = query(
+          collection(db, 'courses'),
+          where('instructor.userId', '==', user.id),
+          where('isPublished', '==', false)
+        );
+        const snapshot = await getDocs(draftsQuery);
+        const drafts = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setMyDrafts(drafts);
+      } catch (error) {
+        console.error('Error loading drafts:', error);
+      } finally {
+        setLoadingDrafts(false);
+      }
+    };
+
+    loadDrafts();
+  }, [user]);
+
   // Check Stripe connection status
   useEffect(() => {
     if (!user) return;
