@@ -301,10 +301,10 @@ export function CheckoutForm(props: CheckoutFormProps) {
     );
   }
 
+  // DON'T use mode: 'payment' - it forces automatic capture
+  // We create our own payment intent with manual capture
+  // So we just need appearance options
   const options: StripeElementsOptions = {
-    mode: 'payment',
-    amount: Math.round(props.amount * 100),
-    currency: props.currency?.toLowerCase() || 'usd',
     appearance: {
       theme: 'stripe',
     },
