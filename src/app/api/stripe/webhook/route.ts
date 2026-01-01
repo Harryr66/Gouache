@@ -708,7 +708,16 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     }
 
   } catch (error) {
-    console.error('Error handling checkout session completed:', error);
+    console.error('❌❌❌ CRITICAL ERROR in checkout.session.completed:', {
+      error: error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      sessionId: session.id,
+      itemType,
+      itemId,
+      userId,
+      artistId,
+    });
     throw error;
   }
 }
