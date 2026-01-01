@@ -2258,12 +2258,38 @@ function DiscoverPageContent() {
 
   // Marketplace products useEffect removed - marketplace tab is hidden
 
-  // Events useEffect - temporarily disabled to fix build
+  // Events useEffect - fetch real events from Firestore
   useEffect(() => {
     if (!mounted) return;
-    const placeholderEvents = generatePlaceholderEvents(theme, 12);
-    setEvents(placeholderEvents);
-  }, [theme, mounted]);
+    
+    const fetchEvents = async () => {
+      try {
+        log('🎫 Discover: Fetching events...');
+        const eventsQuery = query(
+          collection(db, 'events'),
+          where('status', '==', 'active'),
+          orderBy('date', 'desc'),
+          limit(50)
+        );
+        const eventsSnapshot = await getDocs(eventsQuery);
+        
+        const eventItems = eventsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        
+        log(`✅ Discover: Loaded ${eventItems.length} events`);
+        setEvents(eventItems);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        // Fallback to placeholder events on error
+        const placeholderEvents = generatePlaceholderEvents(theme, 12);
+        setEvents(placeholderEvents);
+      }
+    };
+    
+    fetchEvents();
+  }, [mounted, theme]);
 
   // Render initial tiles invisibly during loading so poster images can preload
   // Videos will load in background and autoplay when ready (onCanPlay)
