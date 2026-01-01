@@ -188,10 +188,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  // Get shipping address (using correct Stripe API property names)
-  const shippingAddress = session.shipping?.address;
-  const shippingName = session.shipping?.name;
-  const customerEmail = session.customer_email || session.customer_details?.email;
+  // Get shipping address - Stripe API uses shipping_details but TypeScript types may be outdated
+  // Access via type assertion to handle property access
+  const sessionWithShipping = session as any;
+  const shippingAddress = sessionWithShipping.shipping_details?.address || sessionWithShipping.shipping?.address;
+  const shippingName = sessionWithShipping.shipping_details?.name || sessionWithShipping.shipping?.name;
+  const customerEmail = session.customer_email || sessionWithShipping.customer_details?.email;
 
   if (!shippingAddress || !shippingName) {
     console.error('Missing shipping details in checkout session:', session.id);
