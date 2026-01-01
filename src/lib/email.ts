@@ -60,8 +60,7 @@ export interface RefundRequestEmail {
   itemTitle: string;
   orderId: string;
   orderType: string;
-  price: number;
-  currency: string;
+  formattedAmount: string;
   reason: string;
 }
 
@@ -278,13 +277,7 @@ export async function sendRefundRequestEmail(data: RefundRequestEmail) {
 
   const resend = new Resend(resendApiKey);
 
-  // Format amount
-  const formattedAmount = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: data.currency,
-  }).format(data.price);
-
-  // Render email template
+  // Render email template (formattedAmount already provided in data)
   const emailHtml = await render(
     RefundRequestTemplate({
       sellerName: data.sellerName,
@@ -293,7 +286,7 @@ export async function sendRefundRequestEmail(data: RefundRequestEmail) {
       itemTitle: data.itemTitle,
       orderId: data.orderId,
       orderType: data.orderType,
-      formattedAmount,
+      formattedAmount: data.formattedAmount,
       reason: data.reason,
     })
   );
