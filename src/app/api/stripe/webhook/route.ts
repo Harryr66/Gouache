@@ -237,15 +237,16 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 
   try {
-    // Fetch buyer's profile to get their actual display name (not shipping name)
-    // CRITICAL: Use the name from Stripe (what customer actually entered)
-    // DO NOT fetch from Firebase - that would give wrong name for all customers!
-    const buyerDisplayName = shippingName || 'Customer';
+    // CRITICAL: Fetch buyer's name from Firebase profile (logged-in user)
+    // This ensures we use their actual profile name, not Stripe's cached data
+    const buyerDoc = await adminDb.collection('userProfiles').doc(userId).get();
+    const buyerData = buyerDoc.exists ? buyerDoc.data() : null;
+    const buyerDisplayName = buyerData?.displayName || buyerData?.name || shippingName || 'Customer';
     
-    console.log('👤 Buyer name from Stripe:', {
+    console.log('👤 Buyer name resolved:', {
       buyerId: userId,
       buyerName: buyerDisplayName,
-      source: 'Stripe Checkout Form',
+      source: buyerData?.displayName ? 'Firebase Profile' : 'Stripe Checkout',
     });
     // CRITICAL: Verify payment status before granting access
     // For manual capture, payment intent should be in 'requires_capture' state

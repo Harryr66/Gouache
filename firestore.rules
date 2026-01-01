@@ -110,6 +110,18 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
     
+    // Allow access to purchases (user can read their own)
+    match /purchases/{purchaseId} {
+      allow read: if true; // Allow buyers to read their purchases
+      allow write: if false; // Only backend can write
+    }
+    
+    // Allow access to enrollments (user can read their own)
+    match /enrollments/{enrollmentId} {
+      allow read: if true; // Allow students to read their enrollments
+      allow write: if request.auth != null; // Allow backend and user updates
+    }
+    
     // Default rule - allow public read everywhere; writes require auth
     match /{document=**} {
       allow read: if true;
