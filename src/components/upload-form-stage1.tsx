@@ -57,7 +57,7 @@ export function UploadFormStage1() {
           console.log('✅ Upload successful - updating state');
           setFiles([]);
           setUploading(false);
-          alert(`Successfully uploaded ${files.length} file(s) to storage.`);
+          alert(`Successfully uploaded ${files.length} file(s).`);
         }, 0);
       } catch (error) {
         console.error('Upload error:', error);

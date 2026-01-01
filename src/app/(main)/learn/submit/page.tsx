@@ -506,7 +506,7 @@ function CourseSubmissionPageContent() {
       
       toast({
         title: "Video uploaded",
-        description: "Your video has been uploaded successfully to Cloudflare Stream.",
+        description: "Your video has been uploaded successfully.",
       });
     } catch (error: any) {
       console.error('Error uploading video:', error);

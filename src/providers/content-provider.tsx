@@ -108,7 +108,7 @@ export const ContentProvider = ({ children }: { children: ReactNode }) => {
 
         } catch (error) {
             console.error("Failed to initialize Firestore listeners:", error);
-            toast({ variant: 'destructive', title: 'Database Error', description: 'Could not connect to the database. Please check your Firebase setup and security rules.' });
+            toast({ variant: 'destructive', title: 'Database Error', description: 'Could not connect to the database. Please refresh the page or contact support.' });
             setIsLoaded(true); // Mark as loaded to prevent retries
         }
     };
