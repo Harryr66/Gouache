@@ -280,11 +280,6 @@ button[type="button"] {
   gap: 0 !important; /* No gap between filter and toggle for seamless connection */
 }
 
-/* CRITICAL: Ensure grid items include borders in their width calculation */
-.filter-view-grid > * {
-  box-sizing: border-box !important; /* Include border in 50% width */
-}
-
 /* Mobile: Ensure filter-view-grid works on mobile too */
 @media (max-width: 768px) {
   /* Fix: Override main element and parent div overflow-x-hidden on mobile to allow toggle rounded corner */
