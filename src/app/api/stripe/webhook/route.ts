@@ -407,12 +407,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         checkoutSessionId: session.id,
         shippingAddress: {
           name: shippingName,
-          line1: shippingAddress.line1,
-          line2: shippingAddress.line2 || '',
-          city: shippingAddress.city,
-          state: shippingAddress.state || '',
-          postalCode: shippingAddress.postal_code || '',
-          country: shippingAddress.country,
+          line1: shippingAddress!.line1,
+          line2: shippingAddress!.line2 || '',
+          city: shippingAddress!.city,
+          state: shippingAddress!.state || '',
+          postalCode: shippingAddress!.postal_code || '',
+          country: shippingAddress!.country,
         },
       });
 
@@ -430,12 +430,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         currency: artworkData.currency || 'USD',
         shippingAddress: {
           name: shippingName,
-          line1: shippingAddress.line1,
-          line2: shippingAddress.line2 || '',
-          city: shippingAddress.city,
-          state: shippingAddress.state || '',
-          postalCode: shippingAddress.postal_code || '',
-          country: shippingAddress.country,
+          line1: shippingAddress!.line1,
+          line2: shippingAddress!.line2 || '',
+          city: shippingAddress!.city,
+          state: shippingAddress!.state || '',
+          postalCode: shippingAddress!.postal_code || '',
+          country: shippingAddress!.country,
         },
       });
 
@@ -455,12 +455,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           buyerName: shippingName,
           shippingAddress: {
             name: shippingName,
-            line1: shippingAddress.line1,
-            line2: shippingAddress.line2 || '',
-            city: shippingAddress.city,
-            state: shippingAddress.state || '',
-            postalCode: shippingAddress.postal_code || '',
-            country: shippingAddress.country,
+            line1: shippingAddress!.line1,
+            line2: shippingAddress!.line2 || '',
+            city: shippingAddress!.city,
+            state: shippingAddress!.state || '',
+            postalCode: shippingAddress!.postal_code || '',
+            country: shippingAddress!.country,
           },
         });
       }
@@ -557,12 +557,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         createdAt: new Date(),
         shippingAddress: {
           name: shippingName,
-          line1: shippingAddress.line1,
-          line2: shippingAddress.line2 || '',
-          city: shippingAddress.city,
-          state: shippingAddress.state || '',
-          postalCode: shippingAddress.postal_code || '',
-          country: shippingAddress.country,
+          line1: shippingAddress!.line1,
+          line2: shippingAddress!.line2 || '',
+          city: shippingAddress!.city,
+          state: shippingAddress!.state || '',
+          postalCode: shippingAddress!.postal_code || '',
+          country: shippingAddress!.country,
         },
       });
 
@@ -582,12 +582,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           currency: productData.currency || 'USD',
           shippingAddress: {
             name: shippingName,
-            line1: shippingAddress.line1,
-            line2: shippingAddress.line2 || '',
-            city: shippingAddress.city,
-            state: shippingAddress.state || '',
-            postalCode: shippingAddress.postal_code || '',
-            country: shippingAddress.country,
+            line1: shippingAddress!.line1,
+            line2: shippingAddress!.line2 || '',
+            city: shippingAddress!.city,
+            state: shippingAddress!.state || '',
+            postalCode: shippingAddress!.postal_code || '',
+            country: shippingAddress!.country,
           },
         });
         console.log('✅ Buyer confirmation email sent');
@@ -609,12 +609,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
             buyerName: shippingName,
             shippingAddress: {
               name: shippingName,
-              line1: shippingAddress.line1,
-              line2: shippingAddress.line2 || '',
-              city: shippingAddress.city,
-              state: shippingAddress.state || '',
-              postalCode: shippingAddress.postal_code || '',
-              country: shippingAddress.country,
+              line1: shippingAddress!.line1,
+              line2: shippingAddress!.line2 || '',
+              city: shippingAddress!.city,
+              state: shippingAddress!.state || '',
+              postalCode: shippingAddress!.postal_code || '',
+              country: shippingAddress!.country,
             },
           });
           console.log('✅ Seller notification email sent');
