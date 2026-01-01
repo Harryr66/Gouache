@@ -476,41 +476,18 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
       console.log('✅ Product purchase recorded with shipping address:', itemId);
 
-      // Send emails
-      const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
-      
-      await sendPurchaseConfirmationEmail({
-        buyerEmail: customerEmail || '',
-        buyerName: shippingName,
-        itemType: 'Product',
-        itemTitle: productData.title || itemTitle || 'Product',
-        amount: productData.price,
-        currency: productData.currency || 'USD',
-        shippingAddress: {
-          name: shippingName,
-          line1: shippingAddress.line1,
-          line2: shippingAddress.line2 || '',
-          city: shippingAddress.city,
-          state: shippingAddress.state || '',
-          postalCode: shippingAddress.postal_code || '',
-          country: shippingAddress.country,
-        },
-      });
-
-      // Get seller email
-      const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
-      const sellerData = sellerDoc.exists() ? sellerDoc.data() : null;
-      const sellerEmail = sellerData?.email || null;
-
-      if (sellerEmail && sellerData) {
-        await sendSellerNotificationEmail({
-          sellerEmail,
-          sellerName: sellerData.displayName || 'Seller',
+      // Send emails with error handling
+      try {
+        const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
+        
+        console.log('📧 Sending buyer confirmation email to:', customerEmail);
+        await sendPurchaseConfirmationEmail({
+          buyerEmail: customerEmail || '',
+          buyerName: shippingName,
           itemType: 'Product',
           itemTitle: productData.title || itemTitle || 'Product',
           amount: productData.price,
           currency: productData.currency || 'USD',
-          buyerName: shippingName,
           shippingAddress: {
             name: shippingName,
             line1: shippingAddress.line1,
@@ -521,6 +498,45 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
             country: shippingAddress.country,
           },
         });
+        console.log('✅ Buyer confirmation email sent');
+
+        // Get seller email
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        const sellerData = sellerDoc.exists() ? sellerDoc.data() : null;
+        const sellerEmail = sellerData?.email || null;
+
+        if (sellerEmail && sellerData) {
+          console.log('📧 Sending seller notification email to:', sellerEmail);
+          await sendSellerNotificationEmail({
+            sellerEmail,
+            sellerName: sellerData.displayName || 'Seller',
+            itemType: 'Product',
+            itemTitle: productData.title || itemTitle || 'Product',
+            amount: productData.price,
+            currency: productData.currency || 'USD',
+            buyerName: shippingName,
+            shippingAddress: {
+              name: shippingName,
+              line1: shippingAddress.line1,
+              line2: shippingAddress.line2 || '',
+              city: shippingAddress.city,
+              state: shippingAddress.state || '',
+              postalCode: shippingAddress.postal_code || '',
+              country: shippingAddress.country,
+            },
+          });
+          console.log('✅ Seller notification email sent');
+        } else {
+          console.warn('⚠️ Seller email not found for artistId:', artistId);
+        }
+      } catch (emailError) {
+        console.error('❌ ERROR sending emails:', emailError);
+        console.error('Email error details:', {
+          buyerEmail: customerEmail,
+          artistId,
+          hasResendKey: !!process.env.RESEND_API_KEY,
+        });
+        // Don't fail the webhook if emails fail - continue with payment capture
       }
 
       // CRITICAL: Capture the authorized payment
