@@ -117,9 +117,9 @@ const nextConfig = {
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  // Disable API routes for static export (they won't work in native app anyway)
-  // API calls should point to your deployed server
-  trailingSlash: true,
+  // NOTE: trailingSlash removed to prevent API route redirect issues
+  // This was causing Stripe webhooks to fail with 308 redirects
+  // Pages will work with or without trailing slashes
 };
 
 module.exports = nextConfig;
