@@ -18,6 +18,7 @@ import {
   Info
 } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
+import { TransactionsManager } from '@/components/transactions-manager';
 import { toast } from '@/hooks/use-toast';
 import { ThemeLoading } from './theme-loading';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -603,6 +604,11 @@ export function BusinessManager({ onComplete }: BusinessManagerProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Transactions Manager */}
+      <div className="mt-8">
+        <TransactionsManager />
+      </div>
     </div>
   );
 }
