@@ -221,19 +221,57 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     if (sessionId && !isEnrolled) {
       // Stripe Checkout completed successfully
       // Webhook will handle enrollment creation and payment capture
-      // Just show success message and redirect to player
+      // Poll for enrollment verification before redirecting
+      
+      let pollAttempts = 0;
+      const maxAttempts = 30; // 30 attempts = 60 seconds max
+      
+      const pollForEnrollment = async () => {
+        pollAttempts++;
+        console.log(`[Enrollment Check] Attempt ${pollAttempts}/${maxAttempts}`);
+        
+        // Check if user is now enrolled (webhook completed)
+        const userEnrollment = courseEnrollments.find(
+          e => e.courseId === courseId && e.userId === user?.id
+        );
+        
+        if (userEnrollment) {
+          console.log('[Enrollment Check] ✅ Enrollment confirmed!');
+          toast({
+            title: "Enrollment Complete!",
+            description: "Welcome to the course!",
+            duration: 3000,
+          });
+          router.push(`/learn/${courseId}/player`);
+          return;
+        }
+        
+        if (pollAttempts >= maxAttempts) {
+          console.warn('[Enrollment Check] ⏱️ Timeout - redirecting to player anyway');
+          toast({
+            title: "Processing Complete",
+            description: "Redirecting to course...",
+            duration: 2000,
+          });
+          router.push(`/learn/${courseId}/player`);
+          return;
+        }
+        
+        // Wait 2 seconds before next check
+        setTimeout(pollForEnrollment, 2000);
+      };
+      
+      // Show initial message
       toast({
         title: "Payment Successful!",
-        description: "Processing your enrollment...",
-        duration: 3000,
+        description: "Setting up your course access...",
+        duration: 5000,
       });
-
-      // Wait a moment for webhook, then redirect
-      setTimeout(() => {
-        router.push(`/learn/${courseId}/player`);
-      }, 2000);
+      
+      // Start polling after 1 second (give webhook time to start)
+      setTimeout(pollForEnrollment, 1000);
     }
-  }, [searchParams, isEnrolled, courseId, router]);
+  }, [searchParams, isEnrolled, courseId, router, courseEnrollments, user?.id]);
 
   useEffect(() => {
     const loadCourse = async () => {
