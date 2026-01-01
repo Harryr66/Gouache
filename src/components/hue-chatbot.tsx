@@ -406,6 +406,11 @@ export function HueChatbot() {
       
       const url = getUrlFromArgs(args[0]);
       
+      // Extract request options for better context
+      const options = args[1] || {};
+      const method = options.method || (args[0] instanceof Request ? args[0].method : 'GET');
+      const requestBody = options.body ? (typeof options.body === 'string' ? options.body : '[FormData/Blob]') : null;
+      
       // Skip intercepting upload endpoints to avoid consuming response body
       const isUploadEndpoint = url.includes('/api/upload/');
       
@@ -418,7 +423,9 @@ export function HueChatbot() {
           const error = new Error(`Server Error ${response.status}: ${response.statusText}`);
           (error as any).code = `HTTP_${response.status}`;
           (error as any).status = response.status;
-          handleErrorReport(error, `API call to ${url}`, 'Server Error', `HTTP_${response.status}`);
+          (error as any).endpoint = url;
+          (error as any).method = method;
+          handleErrorReport(error, `API ${method} ${url}`, 'Server Error', `HTTP_${response.status}`);
         }
         
         return response;
@@ -436,9 +443,15 @@ export function HueChatbot() {
           throw error; // Re-throw to maintain original behavior
         }
         
+        // Add detailed context to error
+        (error as any).endpoint = url;
+        (error as any).method = method;
+        (error as any).requestBody = requestBody;
+        
         // Only report if it's not a user-initiated abort
         if (error?.name !== 'AbortError') {
-          handleErrorReport(error, `API call to ${url}`, 'Network Error', error?.code || error?.name);
+          const detailedContext = `API ${method} to ${url}${requestBody ? ` with body: ${requestBody.substring(0, 200)}` : ''}`;
+          handleErrorReport(error, detailedContext, 'Network Error', error?.code || error?.name);
         }
         throw error; // Re-throw to maintain original behavior
       }

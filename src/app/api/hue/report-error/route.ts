@@ -31,21 +31,44 @@ Error Details:
 - Stack Trace: ${stack || 'No stack trace available'}
 - User Context: ${userContext || 'No user context provided'}
 
-Analyze this error and provide a concise code fix. Focus on:
-1. Identifying the root cause
-2. Providing the exact code changes needed
-3. Including file paths and line numbers if possible
-4. Explaining the fix briefly
+Analyze this error systematically:
+
+1. **IDENTIFY THE EXACT ENDPOINT/API CALL** if this is a fetch error
+   - Extract the full URL path from the error message or context
+   - Specify the HTTP method (GET, POST, etc.)
+   - Note any request body parameters
+
+2. **LOCATE THE SOURCE** in the codebase
+   - Identify the exact file and line number where the error occurs
+   - Use the stack trace to pinpoint the calling function
+   - Specify whether it's in a component, API route, or utility function
+
+3. **DETERMINE ROOT CAUSE**
+   - Is the endpoint URL incorrect or misspelled?
+   - Does the API route exist in the codebase?
+   - Is there a typo in the fetch call?
+   - Is the server returning an error?
+   - Is there a network connectivity issue?
+
+4. **PROVIDE THE ACTUAL FIX** with real code
+   - Use the actual endpoint names from your analysis
+   - Include the correct file path (e.g., src/app/(main)/discover/page.tsx)
+   - Show the exact line numbers if possible
+   - Provide working code, not templates
 
 Format your response as:
-FILE: path/to/file.ts
-ISSUE: Brief description
-FIX:
+**ENDPOINT:** (if applicable) Full API URL and HTTP method
+**FILE:** Exact file path (e.g., src/app/(main)/discover/page.tsx line 123)
+**ROOT CAUSE:** One sentence explanation
+**FIX:**
 \`\`\`typescript
-// Your fix code here
+// Actual fix code with real endpoint names
 \`\`\`
 
-Keep it concise and actionable.`;
+**EXPLANATION:** Brief explanation of why this fix works
+
+Be specific, actionable, and use actual code paths from the error context. NO generic templates or placeholders.`;
+
 
         // Use Genkit's generate method
         const response = await ai.generate({
