@@ -406,7 +406,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         paymentIntentId: paymentIntentId,
         checkoutSessionId: session.id,
         shippingAddress: {
-          name: shippingName,
+          name: shippingName || 'Customer',
           line1: shippingAddress!.line1,
           line2: shippingAddress!.line2 || '',
           city: shippingAddress!.city,
@@ -429,7 +429,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         amount: artworkData.price / 100,
         currency: artworkData.currency || 'USD',
         shippingAddress: {
-          name: shippingName,
+          name: shippingName || 'Customer',
           line1: shippingAddress!.line1,
           line2: shippingAddress!.line2 || '',
           city: shippingAddress!.city,
@@ -454,7 +454,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           currency: artworkData.currency || 'USD',
           buyerName: shippingName || 'Customer',
           shippingAddress: {
-            name: shippingName,
+            name: shippingName || 'Customer',
             line1: shippingAddress!.line1,
             line2: shippingAddress!.line2 || '',
             city: shippingAddress!.city,
@@ -556,7 +556,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         status: 'completed',
         createdAt: new Date(),
         shippingAddress: {
-          name: shippingName,
+          name: shippingName || 'Customer',
           line1: shippingAddress!.line1,
           line2: shippingAddress!.line2 || '',
           city: shippingAddress!.city,
@@ -581,7 +581,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           amount: productData.price,
           currency: productData.currency || 'USD',
           shippingAddress: {
-            name: shippingName,
+            name: shippingName || 'Customer',
             line1: shippingAddress!.line1,
             line2: shippingAddress!.line2 || '',
             city: shippingAddress!.city,
@@ -608,7 +608,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
             currency: productData.currency || 'USD',
             buyerName: shippingName || 'Customer',
             shippingAddress: {
-              name: shippingName,
+              name: shippingName || 'Customer',
               line1: shippingAddress!.line1,
               line2: shippingAddress!.line2 || '',
               city: shippingAddress!.city,
