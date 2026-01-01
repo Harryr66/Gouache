@@ -197,6 +197,17 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     itemTitle,
   });
 
+  // Debug: Log the entire session object structure to see where shipping data is
+  console.log('🔍 Full session object keys:', Object.keys(session));
+  console.log('🔍 Session shipping-related fields:', {
+    shipping: session.shipping,
+    shipping_details: (session as any).shipping_details,
+    shipping_address_collection: session.shipping_address_collection,
+    shipping_cost: session.shipping_cost,
+    shipping_options: session.shipping_options,
+    customer_details: session.customer_details,
+  });
+
   // Get shipping address (not needed for courses)
   const sessionWithShipping = session as any;
   const shippingAddress = sessionWithShipping.shipping_details?.address || sessionWithShipping.shipping?.address;
