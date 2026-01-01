@@ -776,13 +776,13 @@ function DiscoverPageContent() {
   
   // Calculate how many items are in viewport + 1 row (for faster loading)
   // This is what we'll wait for before dismissing the loading screen
-  // AGGRESSIVE: Only wait for first visible row + 1 extra row (like Pinterest)
+  // Wait for viewport + 2 rows to ensure smooth initial display without gaps
   const itemsToWaitFor = useMemo(() => {
-    // Estimate viewport height: ~1-2 rows visible initially, plus 1 extra row = 2-3 rows total
-    // Use columnCount to calculate: 2 rows × columnCount (much faster than before)
-    const estimatedRowsInViewport = 1; // Aggressive - just first row
-    const extraRow = 1;
-    return columnCount * (estimatedRowsInViewport + extraRow);
+    // Viewport typically shows 2-3 rows, plus 2 extra rows for buffer = 4-5 rows total
+    // This matches our visibleCount of 24 and ensures no black spaces
+    const estimatedRowsInViewport = 2; // Increased from 1 to fill viewport
+    const extraRows = 2; // Increased from 1 to prevent gaps
+    return columnCount * (estimatedRowsInViewport + extraRows);
   }, [columnCount]);
   
   // Track when initial videos are ready
@@ -2143,8 +2143,8 @@ function DiscoverPageContent() {
   useEffect(() => {
     if (typeof window === 'undefined' || filteredAndSortedArtworks.length === 0) return;
     
-    // AGGRESSIVE: Preload first 12-18 images (viewport + 2 rows) for instant display
-    const preloadCount = Math.min(columnCount * 3, 18, filteredAndSortedArtworks.length);
+    // Preload first 24 images (viewport + 2 rows) for instant display without gaps
+    const preloadCount = Math.min(columnCount * 4, 24, filteredAndSortedArtworks.length);
     const criticalArtworks = filteredAndSortedArtworks.slice(0, preloadCount);
     
     criticalArtworks.forEach((artwork) => {
@@ -2302,9 +2302,9 @@ function DiscoverPageContent() {
         {(showLoadingScreen && initialImagesTotal > 0) && (
           <div className="absolute inset-0 opacity-0 pointer-events-none" style={{ zIndex: -1 }} aria-hidden="true">
             {(() => {
-              // AGGRESSIVE: Preload many more items for faster loading
+              // Preload enough items to fill viewport + 2 rows (matches itemsToWaitFor)
               const connectionSpeed = getConnectionSpeed();
-              const preloadCount = connectionSpeed === 'fast' ? 18 : connectionSpeed === 'medium' ? 12 : 9;
+              const preloadCount = connectionSpeed === 'fast' ? 24 : connectionSpeed === 'medium' ? 18 : 12;
               const MAX_VIDEOS_PER_VIEWPORT = 3;
               
               const preloadTiles: Artwork[] = [];
