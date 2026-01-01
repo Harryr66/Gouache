@@ -416,7 +416,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     }
 
     return (
-      <div className="grid grid-cols-3 lg:grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-3 lg:grid-cols-4 gap-1">
         {portfolio.map((item) => {
           const imageUrl = item.imageUrl || item.supportingImages?.[0] || '/assets/placeholder-light.png';
           return (

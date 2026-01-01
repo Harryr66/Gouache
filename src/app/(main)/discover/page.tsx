@@ -306,13 +306,14 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           0
         );
 
-        // Measure height and add 1px buffer to prevent any overlap
-        const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) + 1 || 0;
+        // Measure ACTUAL rendered height including all visual effects
+        // Use getBoundingClientRect for accurate measurement, Math.ceil to prevent sub-pixel overlap
+        // Add 2px buffer to account for shadows and any visual bleed
+        const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) + 2 || 0;
         if (itemHeight <= 0) return; // Skip items with no height
         
         const left = shortestColumnIndex * (itemWidth + gap);
-        // Calculate top position: if column is empty (height is 0), start at 0, otherwise add gap
-        // Use Math.ceil to prevent sub-pixel overlap issues
+        // Calculate top position with ceiling to prevent fractional pixels
         const currentColumnHeight = columnHeights[shortestColumnIndex];
         const top = currentColumnHeight === 0 
           ? 0 
@@ -320,7 +321,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         
         // Debug log for verification
         if (index === 0) {
-          console.log('🔧 Masonry grid fix active - Gap:', gap, 'Height buffer: +1px');
+          console.log('🔧 Masonry overlap fix - Gap:', gap, 'px, Height buffer: +2px');
         }
 
         // Validate calculated values
@@ -2598,7 +2599,7 @@ function DiscoverPageContent() {
                   return imageOnlyArtworks;
                 })()}
                 columnCount={columnCount}
-                gap={6}
+                gap={4}
                 renderItem={(item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
