@@ -159,17 +159,18 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
                     (request.headers.get('origin') || 'https://www.gouache.art');
 
-    // Determine success URL based on item type
-    let successUrl: string;
+    // Determine success URL - redirect to unified success page
+    const successUrl = `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`;
+    
+    // Cancel URL returns to the item page
+    let cancelUrl: string;
     if (itemType === 'artwork' || itemType === 'original' || itemType === 'print') {
-      successUrl = `${baseUrl}/artwork/${itemId}?session_id={CHECKOUT_SESSION_ID}`;
+      cancelUrl = `${baseUrl}/artwork/${itemId}`;
     } else if (itemType === 'course') {
-      successUrl = `${baseUrl}/learn/${itemId}?session_id={CHECKOUT_SESSION_ID}`;
+      cancelUrl = `${baseUrl}/learn/${itemId}`;
     } else {
-      successUrl = `${baseUrl}/marketplace/${itemId}?session_id={CHECKOUT_SESSION_ID}`;
+      cancelUrl = `${baseUrl}/marketplace/${itemId}`;
     }
-
-    const cancelUrl = successUrl.split('?')[0]; // Same page without session_id
 
     // Get item image
     const itemImage = itemData.imageUrl || itemData.images?.[0];
