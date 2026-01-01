@@ -279,7 +279,7 @@ export default function CoursePlayerPage() {
                       <VideoPlayer
                         videoUrl={currentLesson.videoUrl}
                         title={currentLesson.title}
-                        artist={course.instructor}
+                        artist={course.instructor?.name || 'Instructor'}
                         autoplay={false}
                       />
                     </div>
