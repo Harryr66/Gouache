@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getAdminDb, FieldValue } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   // Initialize Stripe inside the handler to avoid build-time initialization
@@ -267,12 +267,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     let stripeAccountId = session.metadata?.stripeAccountId || paymentIntent.metadata?.stripeAccountId;
     if (!stripeAccountId) {
       console.warn('⚠️ Missing stripeAccountId in metadata, fetching from artist profile...');
-      const artistDoc = await adminDb.collection('userProfiles').doc(artistId).get();
-      if (!artistDoc.exists || !artistDoc.data()?.stripeAccountId) {
+      const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
+      if (!artistDoc.exists() || !artistDoc.data().stripeAccountId) {
         console.error('❌ CRITICAL: Cannot transfer funds - no Stripe account ID found for artist:', artistId);
         return;
       }
-      stripeAccountId = artistDoc.data()!.stripeAccountId;
+      stripeAccountId = artistDoc.data().stripeAccountId;
     }
     console.log('✅ Stripe account ID found for transfer:', stripeAccountId);
 
@@ -281,18 +281,18 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       // CREATE ENROLLMENT
       console.log('📚 Creating course enrollment:', { courseId: itemId, userId });
       
-      const courseRef = adminDb.collection('courses').doc(itemId);
-      const courseDoc = await courseRef.get();
+      const courseRef = doc(db, 'courses', itemId);
+      const courseDoc = await getDoc(courseRef);
 
-      if (!courseDoc.exists) {
+      if (!courseDoc.exists()) {
         console.error('Course not found:', itemId);
         return;
       }
 
-      const courseData = courseDoc.data()!;
+      const courseData = courseDoc.data();
 
       // Create enrollment record
-      const enrollmentRef = await adminDb.collection('enrollments').add({
+      const enrollmentRef = await addDoc(collection(db, 'enrollments'), {
         courseId: itemId,
         courseTitle: courseData.title || itemTitle,
         userId: userId,
@@ -319,9 +319,9 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         currency: (session.currency || 'USD').toUpperCase(),
       });
 
-      const sellerDoc = await adminDb.collection('userProfiles').doc(artistId).get();
-      if (sellerDoc.exists) {
-        const sellerData = sellerDoc.data()!;
+      const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+      if (sellerDoc.exists()) {
+        const sellerData = sellerDoc.data();
         if (sellerData && sellerData.email) {
           await sendSellerNotificationEmail({
             sellerEmail: sellerData.email,
@@ -373,7 +373,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         console.error('❌ CRITICAL: Payment capture failed after enrollment created:', captureError);
         
         // Delete the enrollment we just created
-        await enrollmentRef.delete();
+        await deleteDoc(enrollmentRef);
         console.log('🔄 Rolled back enrollment due to payment capture failure');
         
         // This is critical - notify support
@@ -389,18 +389,18 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
     } else if (itemType === 'artwork' || itemType === 'original' || itemType === 'print') {
       // Mark artwork as sold
-      const artworkRef = adminDb.collection('artworks').doc(itemId);
-      const artworkDoc = await artworkRef.get();
+      const artworkRef = doc(db, 'artworks', itemId);
+      const artworkDoc = await getDoc(artworkRef);
 
-      if (!artworkDoc.exists) {
+      if (!artworkDoc.exists()) {
         console.error('Artwork not found:', itemId);
         return;
       }
 
-      const artworkData = artworkDoc.data()!;
+      const artworkData = artworkDoc.data();
 
       // Update artwork to sold status
-      await artworkRef.update({
+      await updateDoc(artworkRef, {
         sold: true,
         soldAt: new Date(),
         soldTo: userId,
@@ -441,8 +441,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       });
 
       // Get seller email
-      const sellerDoc = await adminDb.collection('userProfiles').doc(artistId).get();
-      const sellerData = sellerDoc.exists ? sellerDoc.data() : null;
+      const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+      const sellerData = sellerDoc.exists() ? sellerDoc.data() : null;
       const sellerEmail = sellerData?.email || null;
 
       if (sellerEmail && sellerData) {
@@ -506,7 +506,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         console.error('❌ CRITICAL: Payment capture failed after marking artwork as sold:', captureError);
         
         // Revert artwork to available (not sold)
-        await artworkRef.update({
+        await updateDoc(artworkRef, {
           sold: false,
           soldAt: null,
           soldTo: null,
@@ -529,24 +529,24 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
     } else if (itemType === 'merchandise' || itemType === 'product') {
       // Handle marketplace product
-      const productRef = adminDb.collection('marketplaceProducts').doc(itemId);
-      const productDoc = await productRef.get();
+      const productRef = doc(db, 'marketplaceProducts', itemId);
+      const productDoc = await getDoc(productRef);
 
-      if (!productDoc.exists) {
+      if (!productDoc.exists()) {
         console.error('Product not found:', itemId);
         return;
       }
 
-      const productData = productDoc.data()!;
+      const productData = productDoc.data();
 
       // Decrement stock
-      await productRef.update({
-        stock: FieldValue.increment(-1),
-        salesCount: FieldValue.increment(1),
+      await updateDoc(productRef, {
+        stock: increment(-1),
+        salesCount: increment(1),
       });
 
       // Create purchase record
-      const purchaseRef = await adminDb.collection('purchases').add({
+      const purchaseRef = await addDoc(collection(db, 'purchases'), {
         productId: itemId,
         buyerId: userId,
         sellerId: artistId,
@@ -594,8 +594,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         console.log('✅ Buyer confirmation email sent');
 
         // Get seller email
-        const sellerDoc = await adminDb.collection('userProfiles').doc(artistId).get();
-        const sellerData = sellerDoc.exists ? sellerDoc.data() : null;
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        const sellerData = sellerDoc.exists() ? sellerDoc.data() : null;
         const sellerEmail = sellerData?.email || null;
 
         if (sellerEmail && sellerData) {
@@ -674,12 +674,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         console.error('❌ CRITICAL: Payment capture failed after product purchase:', captureError);
         
         // Delete the purchase record
-        await purchaseRef.delete();
+        await deleteDoc(purchaseRef);
         
         // Restore product stock
-        await productRef.update({
-          stock: FieldValue.increment(1),
-          salesCount: FieldValue.increment(-1),
+        await updateDoc(productRef, {
+          stock: increment(1),
+          salesCount: increment(-1),
         });
         console.log('🔄 Rolled back product purchase due to payment capture failure');
         
@@ -704,8 +704,6 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   const { itemId, itemType, userId, artistId, itemTitle } = paymentIntent.metadata;
 
-  const adminDb = getAdminDb();
-
   if (!itemId || !itemType || !userId || !artistId) {
     console.error('Missing required metadata in payment intent:', paymentIntent.id);
     return;
@@ -725,7 +723,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     const artistPayoutAmount = productAmount; // Seller receives original price (fees already deducted by Stripe)
     
     // Record the sale in Firestore
-    await adminDb.collection('sales').add({
+    await addDoc(collection(db, 'sales'), {
       paymentIntentId: paymentIntent.id,
       itemId,
       itemType,
@@ -747,27 +745,29 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
 
     // Update item status based on type
     if (itemType === 'course') {
-      const courseRef = adminDb.collection('courses').doc(itemId);
-      const courseDoc = await courseRef.get();
-      const courseData = courseDoc.data()!;
+      const courseRef = doc(db, 'courses', itemId);
+      const courseDoc = await getDoc(courseRef);
+      const courseData = courseDoc.data();
       
-      await courseRef.update({
-        enrollments: FieldValue.increment(1),
+      await updateDoc(courseRef, {
+        enrollments: increment(1),
         updatedAt: new Date(),
       });
 
       // Check if enrollment already exists (might have been created immediately after payment)
-      const enrollmentQuery = adminDb.collection('courseEnrollments')
-        .where('courseId', '==', itemId)
-        .where('userId', '==', userId)
-        .where('paymentIntentId', '==', paymentIntent.id);
+      const enrollmentQuery = query(
+        collection(db, 'courseEnrollments'),
+        where('courseId', '==', itemId),
+        where('userId', '==', userId),
+        where('paymentIntentId', '==', paymentIntent.id)
+      );
       
-      const existingEnrollments = await enrollmentQuery.get();
+      const existingEnrollments = await getDocs(enrollmentQuery);
       
       if (existingEnrollments.empty) {
         // Create enrollment if it doesn't exist (fallback for old flow)
         console.log(`✅ Creating enrollment via webhook for payment ${paymentIntent.id}`);
-        await adminDb.collection('courseEnrollments').add({
+        await addDoc(collection(db, 'courseEnrollments'), {
           courseId: itemId,
           userId: userId,
           paymentIntentId: paymentIntent.id,
@@ -787,7 +787,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         
         // Optionally update it to confirm webhook processed
         const enrollmentDoc = existingEnrollments.docs[0];
-        await adminDb.collection('courseEnrollments').doc(enrollmentDoc.id).update({
+        await updateDoc(doc(db, 'courseEnrollments', enrollmentDoc.id), {
           webhookConfirmedAt: new Date(),
         });
       }
@@ -796,13 +796,13 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       try {
         const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
         
-        const buyerDoc = await adminDb.collection('userProfiles').doc(userId).get();
-        const buyerData = buyerDoc.data()!;
+        const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
+        const buyerData = buyerDoc.data();
         const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
         const buyerName = buyerData?.displayName || buyerData?.name || 'Customer';
         
-        const sellerDoc = await adminDb.collection('userProfiles').doc(artistId).get();
-        const sellerData = sellerDoc.data()!;
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        const sellerData = sellerDoc.data();
         const sellerEmail = sellerData?.email;
         const sellerName = sellerData?.displayName || sellerData?.name || 'Artist';
         
@@ -877,8 +877,8 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         // Don't throw - email failure shouldn't break the payment flow
       }
     } else if (itemType === 'original' || itemType === 'print') {
-      const artworkRef = adminDb.collection('artworks').doc(itemId);
-      await artworkRef.update({
+      const artworkRef = doc(db, 'artworks', itemId);
+      await updateDoc(artworkRef, {
         sold: true,
         soldAt: new Date(),
         buyerId: userId,
@@ -890,7 +890,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       if (itemType === 'print' && paymentIntent.metadata.stock) {
         const currentStock = parseInt(paymentIntent.metadata.stock) || 0;
         if (currentStock > 0) {
-          await artworkRef.update({
+          await updateDoc(artworkRef, {
             stock: currentStock - 1,
           });
         }
@@ -900,13 +900,13 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       try {
         const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
         
-        const buyerDoc = await adminDb.collection('userProfiles').doc(userId).get();
-        const buyerData = buyerDoc.data()!;
+        const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
+        const buyerData = buyerDoc.data();
         const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
         const buyerName = buyerData?.displayName || buyerData?.name || 'Customer';
         
-        const sellerDoc = await adminDb.collection('userProfiles').doc(artistId).get();
-        const sellerData = sellerDoc.data()!;
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        const sellerData = sellerDoc.data();
         const sellerEmail = sellerData?.email;
         const sellerName = sellerData?.displayName || sellerData?.name || 'Artist';
         
@@ -937,8 +937,8 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         console.error('Error sending artwork emails:', emailError);
       }
     } else if (itemType === 'book') {
-      const bookRef = adminDb.collection('books').doc(itemId);
-      await bookRef.update({
+      const bookRef = doc(db, 'books', itemId);
+      await updateDoc(bookRef, {
         sold: true,
         soldAt: new Date(),
         buyerId: userId,
@@ -950,7 +950,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       if (paymentIntent.metadata.stock) {
         const currentStock = parseInt(paymentIntent.metadata.stock) || 0;
         if (currentStock > 0) {
-          await bookRef.update({
+          await updateDoc(bookRef, {
             stock: currentStock - 1,
           });
         }
@@ -960,13 +960,13 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       try {
         const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
         
-        const buyerDoc = await adminDb.collection('userProfiles').doc(userId).get();
-        const buyerData = buyerDoc.data()!;
+        const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
+        const buyerData = buyerDoc.data();
         const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
         const buyerName = buyerData?.displayName || buyerData?.name || 'Customer';
         
-        const sellerDoc = await adminDb.collection('userProfiles').doc(artistId).get();
-        const sellerData = sellerDoc.data()!;
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        const sellerData = sellerDoc.data();
         const sellerEmail = sellerData?.email;
         const sellerName = sellerData?.displayName || sellerData?.name || 'Artist';
         
@@ -998,11 +998,11 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       }
     } else if (itemType === 'merchandise' || itemType === 'product') {
       // Handle marketplace products
-      const productRef = adminDb.collection('marketplaceProducts').doc(itemId);
-      const productDoc = await productRef.get();
+      const productRef = doc(db, 'marketplaceProducts', itemId);
+      const productDoc = await getDoc(productRef);
       
-      if (productDoc.exists) {
-        const productData = productDoc.data()!;
+      if (productDoc.exists()) {
+        const productData = productDoc.data();
         const currentStock = productData.stock || 0;
         
         // Update product - reduce stock if not unlimited
@@ -1015,19 +1015,19 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
           updateData.stock = currentStock - 1;
         }
         
-        await productRef.update(updateData);
+        await updateDoc(productRef, updateData);
         
         // Send marketplace product emails
         try {
           const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
           
-          const buyerDoc = await adminDb.collection('userProfiles').doc(userId).get();
-          const buyerData = buyerDoc.data()!;
+          const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
+          const buyerData = buyerDoc.data();
           const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
           const buyerName = buyerData?.displayName || buyerData?.name || 'Customer';
           
-          const sellerDoc = await adminDb.collection('userProfiles').doc(artistId).get();
-          const sellerData = sellerDoc.data()!;
+          const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+          const sellerData = sellerDoc.data();
           const sellerEmail = sellerData?.email;
           const sellerName = sellerData?.displayName || sellerData?.name || 'Seller';
           
@@ -1059,7 +1059,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         }
         
         // Record the purchase
-        await adminDb.collection('purchases').add({
+        await addDoc(collection(db, 'purchases'), {
           productId: itemId,
           buyerId: userId,
           sellerId: paymentIntent.metadata.artistId,
@@ -1078,13 +1078,13 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       try {
         const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
         
-        const buyerDoc = await adminDb.collection('userProfiles').doc(userId).get();
-        const buyerData = buyerDoc.data()!;
+        const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
+        const buyerData = buyerDoc.data();
         const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
         const buyerName = buyerData?.displayName || buyerData?.name || 'Customer';
         
-        const sellerDoc = await adminDb.collection('userProfiles').doc(artistId).get();
-        const sellerData = sellerDoc.data()!;
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        const sellerData = sellerDoc.data();
         const sellerEmail = sellerData?.email;
         const sellerName = sellerData?.displayName || sellerData?.name || 'Seller';
         
@@ -1126,11 +1126,9 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
 async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
   const { itemId, itemType, userId, artistId } = paymentIntent.metadata;
 
-  const adminDb = getAdminDb();
-
   try {
     // Log failed payment
-    await adminDb.collection('failedPayments').add({
+    await addDoc(collection(db, 'failedPayments'), {
       paymentIntentId: paymentIntent.id,
       itemId,
       itemType,
@@ -1151,8 +1149,7 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
 
 async function handleTransferCreated(transfer: Stripe.Transfer) {
   try {
-    const adminDb = getAdminDb();
-    await adminDb.collection('transfers').add({
+    await addDoc(collection(db, 'transfers'), {
       transferId: transfer.id,
       destination: transfer.destination,
       amount: transfer.amount,
@@ -1167,7 +1164,6 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
 
 async function handlePayoutPaid(payout: Stripe.Payout) {
   try {
-    const adminDb = getAdminDb();
     console.log(`✅ Payout paid: ${payout.id} - ${payout.amount} ${payout.currency}`);
     // You can update payout status in your database here if needed
   } catch (error) {
@@ -1177,7 +1173,6 @@ async function handlePayoutPaid(payout: Stripe.Payout) {
 
 async function handlePayoutFailed(payout: Stripe.Payout) {
   try {
-    const adminDb = getAdminDb();
     console.log(`❌ Payout failed: ${payout.id} - ${payout.amount} ${payout.currency}`);
     // You can update payout status and notify artist here
   } catch (error) {
@@ -1187,8 +1182,7 @@ async function handlePayoutFailed(payout: Stripe.Payout) {
 
 async function handleDisputeCreated(dispute: Stripe.Dispute) {
   try {
-    const adminDb = getAdminDb();
-    await adminDb.collection('disputes').add({
+    await addDoc(collection(db, 'disputes'), {
       disputeId: dispute.id,
       chargeId: dispute.charge,
       amount: dispute.amount,
