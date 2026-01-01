@@ -188,6 +188,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
+  // Log metadata for debugging
+  console.log('📋 Session metadata:', {
+    itemId,
+    itemType,
+    userId,
+    artistId,
+    itemTitle,
+  });
+
   // Get shipping address (not needed for courses)
   const sessionWithShipping = session as any;
   const shippingAddress = sessionWithShipping.shipping_details?.address || sessionWithShipping.shipping?.address;
@@ -197,8 +206,21 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   // Courses don't need shipping address
   const needsShipping = itemType !== 'course';
   
+  console.log('🚢 Shipping check:', {
+    itemType,
+    needsShipping,
+    hasShippingAddress: !!shippingAddress,
+    hasShippingName: !!shippingName,
+  });
+  
   if (needsShipping && (!shippingAddress || !shippingName)) {
-    console.error('Missing shipping details in checkout session:', session.id);
+    console.error('❌ Missing shipping details in checkout session:', {
+      sessionId: session.id,
+      itemType,
+      needsShipping,
+      hasShippingAddress: !!shippingAddress,
+      hasShippingName: !!shippingName,
+    });
     return;
   }
 
