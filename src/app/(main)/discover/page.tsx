@@ -288,7 +288,11 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         return; // Safety check: don't calculate if container has no width or invalid column count
       }
       
-      const itemWidth = (containerWidth - (gap * (columnCount - 1))) / columnCount;
+      // Calculate item width accounting for gaps
+      // Total gap space = gap * (columnCount - 1)
+      // Each column gets: (containerWidth - totalGapSpace) / columnCount
+      const totalGapSpace = gap * (columnCount - 1);
+      const itemWidth = (containerWidth - totalGapSpace) / columnCount;
       if (itemWidth <= 0 || !isFinite(itemWidth)) {
         return; // Safety check: prevent invalid width calculations
       }
@@ -312,8 +316,12 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) + 2 || 0;
         if (itemHeight <= 0) return; // Skip items with no height
         
+        // Calculate left position: column_index * (itemWidth + gap)
+        // This ensures uniform gap between columns
         const left = shortestColumnIndex * (itemWidth + gap);
+        
         // Calculate top position with ceiling to prevent fractional pixels
+        // This ensures uniform gap between rows
         const currentColumnHeight = columnHeights[shortestColumnIndex];
         const top = currentColumnHeight === 0 
           ? 0 
