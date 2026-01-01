@@ -223,10 +223,47 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
 
       // Send course access email to customer
       try {
+        const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
+        
         const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
         const buyerData = buyerDoc.data();
         const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
+        const buyerName = buyerData?.displayName || buyerData?.name || 'Customer';
         
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        const sellerData = sellerDoc.data();
+        const sellerEmail = sellerData?.email;
+        const sellerName = sellerData?.displayName || sellerData?.name || 'Artist';
+        
+        // Send buyer confirmation email
+        if (buyerEmail) {
+          console.log(`📧 Sending buyer confirmation email to ${buyerEmail}`);
+          await sendPurchaseConfirmationEmail({
+            buyerEmail,
+            buyerName,
+            itemTitle: itemTitle || 'Course',
+            itemType: 'course',
+            amount: totalAmount,
+            currency: paymentIntent.currency,
+            itemId,
+          });
+        }
+        
+        // Send seller notification email
+        if (sellerEmail) {
+          console.log(`📧 Sending seller notification email to ${sellerEmail}`);
+          await sendSellerNotificationEmail({
+            sellerEmail,
+            sellerName,
+            buyerName,
+            itemTitle: itemTitle || 'Course',
+            itemType: 'course',
+            amount: productAmount,
+            currency: paymentIntent.currency,
+          });
+        }
+        
+        // Legacy: Also send old-style course access email for external courses
         if (buyerEmail && courseData?.externalUrl) {
           const { Resend } = await import('resend');
           const resend = new Resend(process.env.RESEND_API_KEY);
@@ -287,6 +324,47 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
           });
         }
       }
+
+      // Send artwork purchase emails
+      try {
+        const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
+        
+        const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
+        const buyerData = buyerDoc.data();
+        const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
+        const buyerName = buyerData?.displayName || buyerData?.name || 'Customer';
+        
+        const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+        const sellerData = sellerDoc.data();
+        const sellerEmail = sellerData?.email;
+        const sellerName = sellerData?.displayName || sellerData?.name || 'Artist';
+        
+        if (buyerEmail) {
+          await sendPurchaseConfirmationEmail({
+            buyerEmail,
+            buyerName,
+            itemTitle: itemTitle || 'Artwork',
+            itemType: 'artwork',
+            amount: totalAmount,
+            currency: paymentIntent.currency,
+            itemId,
+          });
+        }
+        
+        if (sellerEmail) {
+          await sendSellerNotificationEmail({
+            sellerEmail,
+            sellerName,
+            buyerName,
+            itemTitle: itemTitle || 'Artwork',
+            itemType: 'artwork',
+            amount: productAmount,
+            currency: paymentIntent.currency,
+          });
+        }
+      } catch (emailError) {
+        console.error('Error sending artwork emails:', emailError);
+      }
     } else if (itemType === 'book') {
       const bookRef = doc(db, 'books', itemId);
       await updateDoc(bookRef, {
@@ -326,6 +404,47 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         }
         
         await updateDoc(productRef, updateData);
+        
+        // Send marketplace product emails
+        try {
+          const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
+          
+          const buyerDoc = await getDoc(doc(db, 'userProfiles', userId));
+          const buyerData = buyerDoc.data();
+          const buyerEmail = buyerData?.email || paymentIntent.metadata.buyerEmail;
+          const buyerName = buyerData?.displayName || buyerData?.name || 'Customer';
+          
+          const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+          const sellerData = sellerDoc.data();
+          const sellerEmail = sellerData?.email;
+          const sellerName = sellerData?.displayName || sellerData?.name || 'Seller';
+          
+          if (buyerEmail) {
+            await sendPurchaseConfirmationEmail({
+              buyerEmail,
+              buyerName,
+              itemTitle: itemTitle || 'Product',
+              itemType: 'product',
+              amount: totalAmount,
+              currency: paymentIntent.currency,
+              itemId,
+            });
+          }
+          
+          if (sellerEmail) {
+            await sendSellerNotificationEmail({
+              sellerEmail,
+              sellerName,
+              buyerName,
+              itemTitle: itemTitle || 'Product',
+              itemType: 'product',
+              amount: productAmount,
+              currency: paymentIntent.currency,
+            });
+          }
+        } catch (emailError) {
+          console.error('Error sending product emails:', emailError);
+        }
         
         // Record the purchase
         await addDoc(collection(db, 'purchases'), {
