@@ -596,6 +596,9 @@ function CourseSubmissionPageContent() {
       return;
     }
 
+    // CRITICAL: Determine if we're publishing based on current step
+    const isPublishing = activeStep === 'publish';
+
     // Check Stripe connection before allowing course submission
     if (!stripeStatus?.isComplete) {
       toast({
@@ -826,7 +829,8 @@ function CourseSubmissionPageContent() {
           isNew: true,
           isFeatured: false,
           status: 'pending' as const,
-          isPublished: false,
+          isPublished: isPublishing, // CRITICAL: Publish if submitted from publish step
+          ...(isPublishing ? { publishedAt: new Date() } : {}), // Add publishedAt when published
           reviews: [],
           discussions: [],
           enrollmentCount: 0,
