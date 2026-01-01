@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
       itemId, 
       itemType, // 'artwork', 'merchandise', 'product', 'course'
       buyerId,
+      buyerEmail, // BUYER's email for checkout form
     } = body;
 
     // Validate required fields
@@ -218,7 +219,7 @@ export async function POST(request: NextRequest) {
       },
       success_url: successUrl,
       cancel_url: cancelUrl,
-      customer_email: artistData.email || undefined,
+      customer_email: buyerEmail || undefined, // BUYER's email, not seller's
       metadata: {
         userId: buyerId,
         artistId: artistId,

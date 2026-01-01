@@ -743,6 +743,7 @@ function ProductDetailPage() {
         itemId: product.id,
         itemType: 'merchandise',
         buyerId: user.id,
+        buyerEmail: user.email, // BUYER's email for checkout
       }),
     })
     .then(async (response) => {

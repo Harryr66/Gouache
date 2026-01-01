@@ -448,6 +448,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               itemId: courseId,
               itemType: 'course',
               buyerId: user.id,
+              buyerEmail: user.email, // BUYER's email for checkout
             }),
           });
 

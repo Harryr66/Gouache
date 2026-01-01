@@ -912,6 +912,7 @@ export default function ArtworkPage() {
                                 itemId: artwork.id,
                                 itemType: 'artwork',
                                 buyerId: user.id,
+                                buyerEmail: user.email, // BUYER's email for checkout
                               }),
                             })
                             .then(async (response) => {
