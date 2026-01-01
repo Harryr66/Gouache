@@ -1,125 +1,107 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public read access to episodes for the home feed
+    // Allow public read for purchases (users need to see their order history)
+    match /purchases/{purchaseId} {
+      allow read: if true;
+      allow write: if false; // Only backend can write
+    }
+    
+    // Allow public read for enrollments (users need to see their courses)
+    match /enrollments/{enrollmentId} {
+      allow read: if true;
+      allow write: if false; // Only backend can write
+    }
+    
+    // All other existing rules
     match /episodes/{episodeId} {
       allow read: if true;
-      allow write: if true; // Allow admin uploads - in production, add proper admin authentication
+      allow write: if true;
     }
     
-    // Allow public read access to posts
     match /posts/{postId} {
       allow read: if true;
-      allow write: if true; // Allow authenticated users to create posts
+      allow write: if true;
     }
     
-    // Allow public read access to artworks
     match /artworks/{artworkId} {
       allow read: if true;
-      allow write: if true; // Allow authenticated users to create artworks
+      allow write: if true;
     }
     
-    // Allow public read access to discussions
     match /discussions/{discussionId} {
       allow read: if true;
-      allow write: if true; // Allow authenticated users to create discussions
+      allow write: if true;
     }
     
-    // Allow public read access to artist requests
     match /artistRequests/{requestId} {
       allow read: if true;
-      allow write: if true; // Allow users to submit artist requests
+      allow write: if true;
     }
 
-    // Allow access to artist invites (admin moderation required in production)
     match /artistInvites/{inviteId} {
       allow read: if true;
       allow write: if true;
     }
     
-    // Allow public read access to advertising applications
     match /advertisingApplications/{applicationId} {
       allow read: if true;
-      allow write: if true; // Allow companies to submit advertising applications
+      allow write: if true;
     }
     
-    // Allow public read access to user profiles
     match /userProfiles/{userId} {
       allow read: if true;
-      allow write: if true; // Allow users to update their profiles
+      allow write: if true;
     }
     
-    // Allow access to events
     match /events/{eventId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
     
-    // Allow access to marketplace products
     match /marketplaceProducts/{productId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
     
-    // Allow access to news articles
     match /newsArticles/{articleId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
     
-    // Allow access to content reports
     match /contentReports/{reportId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null;
     }
     
-    // Allow access to user reports
     match /userReports/{reportId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null;
     }
     
-    // Allow access to courses
     match /courses/{courseId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
     
-    // Allow access to books
     match /books/{bookId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
     
-    // Allow access to affiliate requests
     match /affiliateRequests/{requestId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null;
     }
     
-    // Allow access to advertisements
     match /advertisements/{adId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
     
-    // Allow access to advertisement analytics
     match /advertisementAnalytics/{analyticsId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null;
-    }
-    
-    // Allow access to purchases (user can read their own)
-    match /purchases/{purchaseId} {
-      allow read: if true; // Allow buyers to read their purchases
-      allow write: if false; // Only backend can write
-    }
-    
-    // Allow access to enrollments (user can read their own)
-    match /enrollments/{enrollmentId} {
-      allow read: if true; // Allow students to read their enrollments
-      allow write: if request.auth != null; // Allow backend and user updates
     }
     
     // Default rule - allow public read everywhere; writes require auth
