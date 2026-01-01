@@ -173,7 +173,7 @@ export function VideoPlayer({
         loop={loop}
         muted={false}
         playsInline
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
         preload="metadata"
       />
 
