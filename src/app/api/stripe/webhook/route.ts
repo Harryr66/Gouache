@@ -261,6 +261,19 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       amount: paymentIntent.amount,
     });
 
+    // Get stripeAccountId for manual transfer after capture
+    let stripeAccountId = session.metadata?.stripeAccountId || paymentIntent.metadata?.stripeAccountId;
+    if (!stripeAccountId) {
+      console.warn('⚠️ Missing stripeAccountId in metadata, fetching from artist profile...');
+      const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
+      if (!artistDoc.exists() || !artistDoc.data().stripeAccountId) {
+        console.error('❌ CRITICAL: Cannot transfer funds - no Stripe account ID found for artist:', artistId);
+        return;
+      }
+      stripeAccountId = artistDoc.data().stripeAccountId;
+    }
+    console.log('✅ Stripe account ID found for transfer:', stripeAccountId);
+
     // Handle based on item type
     if (itemType === 'course') {
       // CREATE ENROLLMENT
@@ -323,8 +336,37 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       // CRITICAL: Capture payment AFTER enrollment created
       // If capture fails, we should delete the enrollment
       try {
-        await stripe.paymentIntents.capture(paymentIntentId);
+        const capturedPayment = await stripe.paymentIntents.capture(paymentIntentId);
         console.log('✅ Payment captured successfully:', paymentIntentId);
+
+        // Transfer funds to connected account after successful capture
+        try {
+          const transfer = await stripe.transfers.create({
+            amount: capturedPayment.amount, // Full amount (no platform fee for now)
+            currency: capturedPayment.currency,
+            destination: stripeAccountId,
+            transfer_group: session.id,
+            metadata: {
+              paymentIntentId,
+              sessionId: session.id,
+              itemType,
+              itemId,
+              userId,
+              artistId,
+            },
+          });
+          console.log('✅ Funds transferred to connected account:', transfer.id);
+        } catch (transferError: any) {
+          console.error('❌ Transfer to connected account failed:', transferError);
+          // Don't rollback enrollment - payment was captured successfully
+          // Artist just won't receive funds automatically - manual intervention needed
+          console.error('⚠️ MANUAL INTERVENTION REQUIRED: Payment captured but transfer failed', {
+            sessionId: session.id,
+            paymentIntentId,
+            stripeAccountId,
+            artistId,
+          });
+        }
       } catch (captureError: any) {
         console.error('❌ CRITICAL: Payment capture failed after enrollment created:', captureError);
         
@@ -429,8 +471,35 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           apiVersion: '2025-10-29.clover',
         });
         
-        await stripe.paymentIntents.capture(paymentIntentId);
+        const capturedPayment = await stripe.paymentIntents.capture(paymentIntentId);
         console.log('💰 Payment captured after artwork marked as sold');
+
+        // Transfer funds to connected account after successful capture
+        try {
+          const transfer = await stripe.transfers.create({
+            amount: capturedPayment.amount,
+            currency: capturedPayment.currency,
+            destination: stripeAccountId,
+            transfer_group: session.id,
+            metadata: {
+              paymentIntentId,
+              sessionId: session.id,
+              itemType,
+              itemId,
+              userId,
+              artistId,
+            },
+          });
+          console.log('✅ Funds transferred to connected account:', transfer.id);
+        } catch (transferError: any) {
+          console.error('❌ Transfer to connected account failed:', transferError);
+          console.error('⚠️ MANUAL INTERVENTION REQUIRED: Payment captured but transfer failed', {
+            sessionId: session.id,
+            paymentIntentId,
+            stripeAccountId,
+            artistId,
+          });
+        }
       } catch (captureError: any) {
         console.error('❌ CRITICAL: Payment capture failed after marking artwork as sold:', captureError);
         
@@ -570,8 +639,35 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           apiVersion: '2025-10-29.clover',
         });
         
-        await stripe.paymentIntents.capture(paymentIntentId);
+        const capturedPayment = await stripe.paymentIntents.capture(paymentIntentId);
         console.log('💰 Payment captured after product purchase recorded');
+
+        // Transfer funds to connected account after successful capture
+        try {
+          const transfer = await stripe.transfers.create({
+            amount: capturedPayment.amount,
+            currency: capturedPayment.currency,
+            destination: stripeAccountId,
+            transfer_group: session.id,
+            metadata: {
+              paymentIntentId,
+              sessionId: session.id,
+              itemType,
+              itemId,
+              userId,
+              artistId,
+            },
+          });
+          console.log('✅ Funds transferred to connected account:', transfer.id);
+        } catch (transferError: any) {
+          console.error('❌ Transfer to connected account failed:', transferError);
+          console.error('⚠️ MANUAL INTERVENTION REQUIRED: Payment captured but transfer failed', {
+            sessionId: session.id,
+            paymentIntentId,
+            stripeAccountId,
+            artistId,
+          });
+        }
       } catch (captureError: any) {
         console.error('❌ CRITICAL: Payment capture failed after product purchase:', captureError);
         

@@ -175,17 +175,17 @@ export async function POST(request: NextRequest) {
     const itemImage = itemData.imageUrl || itemData.images?.[0];
 
     // Create Stripe Checkout Session
+    // NOTE: We removed transfer_data from here because it's incompatible with shipping_address_collection
+    // Transfers to connected accounts will be handled in the webhook after payment is captured
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
       payment_intent_data: {
         capture_method: 'manual', // CRITICAL: Authorize only, capture after confirmation
-        transfer_data: {
-          destination: stripeAccountId,
-        },
         metadata: {
           userId: buyerId,
           artistId: artistId,
+          stripeAccountId: stripeAccountId, // Store for webhook transfer
           itemType: itemType,
           itemId: itemId,
           itemTitle: itemData.title || 'Untitled',
@@ -223,6 +223,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         userId: buyerId,
         artistId: artistId,
+        stripeAccountId: stripeAccountId, // Store for webhook transfer
         itemType: itemType,
         itemId: itemId,
         itemTitle: itemData.title || 'Untitled',
