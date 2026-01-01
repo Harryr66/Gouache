@@ -2265,20 +2265,23 @@ function DiscoverPageContent() {
     const fetchEvents = async () => {
       try {
         log('🎫 Discover: Fetching events...');
+        // Simple query without composite index requirement
         const eventsQuery = query(
           collection(db, 'events'),
-          where('status', '==', 'active'),
-          orderBy('date', 'desc'),
+          orderBy('createdAt', 'desc'),
           limit(50)
         );
         const eventsSnapshot = await getDocs(eventsQuery);
         
-        const eventItems = eventsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        // Filter for active events in JavaScript to avoid composite index
+        const eventItems = eventsSnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .filter((event: any) => event.status === 'active');
         
-        log(`✅ Discover: Loaded ${eventItems.length} events`);
+        log(`✅ Discover: Loaded ${eventItems.length} active events (from ${eventsSnapshot.docs.length} total)`);
         setEvents(eventItems);
       } catch (error) {
         console.error('Error fetching events:', error);
