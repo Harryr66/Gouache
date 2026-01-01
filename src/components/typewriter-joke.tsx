@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes';
 const ART_JOKES = [
   "2 ships carrying red and blue paint collided at sea... // The crew were left marooned...",
   "Why did the artist steal their supplies? // They had no Monet...",
-  "Vincent Van Gogh walks into a bar… // The bartender offers him a drink... // \"No thanks\" Vincent said... // \"I've got one ere...\"",
+  "Vincent Van Gogh walks into a bar… // The bartender offers him a drink... // \"No thanks\" Vincent said... // \"I've got one ere\"...",
   "What did Dali eat for breakfast?... // A bowl of Surreal ...",
   "My canvas just broke up with me… // It said over the years I've stretched it too thin...",
   "A portrait artist asked his wife why she was annoyed with him… // She said \"don't use that tone with me!\"",
