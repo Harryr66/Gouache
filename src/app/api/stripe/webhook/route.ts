@@ -453,7 +453,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       });
 
       // Create purchase record
-      await addDoc(collection(db, 'purchases'), {
+      const purchaseRef = await addDoc(collection(db, 'purchases'), {
         productId: itemId,
         buyerId: userId,
         sellerId: artistId,
