@@ -247,6 +247,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       buyerId: userId,
       buyerName: buyerDisplayName,
       source: buyerData?.displayName ? 'Firebase Profile' : 'Stripe Checkout',
+      timestamp: new Date().toISOString(),
     });
     // CRITICAL: Verify payment status before granting access
     // For manual capture, payment intent should be in 'requires_capture' state
