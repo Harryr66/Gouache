@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { 
   Star, 
@@ -40,10 +39,6 @@ import { toast } from '@/hooks/use-toast';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ThemeLoading } from '@/components/theme-loading';
-import { CheckoutForm } from '@/components/checkout-form';
-import { Elements } from '@stripe/react-stripe-js';
-import { getStripePromise } from '@/lib/stripe-client';
-import { safeCheckoutData, safeInstructorUserId } from '@/utils/safe-render';
 
 // Mock course data - in real app, this would come from API
 const mockCourse = {
@@ -197,6 +192,7 @@ The course includes live demonstrations, step-by-step tutorials, and personalize
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const courseId = params.id as string;
   const { getCourse, enrollInCourse, courseEnrollments, verifyEnrollment } = useCourses();
   const { user } = useAuth();
@@ -211,15 +207,33 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [isOwner, setIsOwner] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [showCheckout, setShowCheckout] = useState(false);
   
   // NEW: Critical payment safety states
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
-  const [isVerifying, setIsVerifying] = useState(false); // Shows verification overlay
   
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(800, 450);
   const avatarPlaceholder = generateAvatarPlaceholderUrl(60, 60);
+
+  // Handle Stripe Checkout success return
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    if (sessionId && !isEnrolled) {
+      // Stripe Checkout completed successfully
+      // Webhook will handle enrollment creation and payment capture
+      // Just show success message and redirect to player
+      toast({
+        title: "Payment Successful!",
+        description: "Processing your enrollment...",
+        duration: 3000,
+      });
+
+      // Wait a moment for webhook, then redirect
+      setTimeout(() => {
+        router.push(`/learn/${courseId}/player`);
+      }, 2000);
+    }
+  }, [searchParams, isEnrolled, courseId, router]);
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -395,9 +409,28 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       } else if (course.courseType === 'hosted') {
         // For hosted courses, check if payment is required
         if (course.price && course.price > 0) {
-          // Paid course - show Stripe checkout
-          console.log('[handleEnroll] Opening checkout for paid course');
-          setShowCheckout(true);
+          // Paid course - redirect to Stripe Checkout
+          console.log('[handleEnroll] Creating Stripe Checkout Session for paid course');
+          
+          // Create Stripe Checkout Session
+          const response = await fetch('/api/stripe/create-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              itemId: courseId,
+              itemType: 'course',
+              buyerId: user.id,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create checkout session');
+          }
+
+          const data = await response.json();
+          // Redirect to Stripe Checkout
+          window.location.href = data.url;
         } else {
           // Free course - enroll directly
           console.log('[handleEnroll] Enrolling in free course');
@@ -414,92 +447,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       console.error('Error enrolling:', error);
       // Error toast is handled by enrollInCourse
     } finally {
-      setIsProcessingPayment(false);
-    }
-  };
-
-  // ============================================
-  // PAYMENT SUCCESS - AUTHORIZE THEN CAPTURE
-  // 1. Payment AUTHORIZED (card NOT charged yet)
-  // 2. Create enrollment
-  // 3. If success → CAPTURE payment (charge card)
-  // 4. If fail → Cancel authorization (NO CHARGE)
-  // ============================================
-  const handleCheckoutSuccess = async (paymentIntentId: string) => {
-    console.log('[handleCheckoutSuccess] Payment AUTHORIZED (not charged yet), creating enrollment...');
-    
-    setIsVerifying(true);
-    setShowCheckout(false);
-    
-    try {
-      toast({
-        title: "Creating Your Enrollment...",
-        description: "Please wait, do not close this page.",
-        duration: 30000,
-      });
-      
-      // STEP 1: CREATE ENROLLMENT FIRST (card is authorized but NOT charged)
-      console.log('[handleCheckoutSuccess] Step 1: Creating enrollment...');
-      const enrollmentResponse = await fetch('/api/enrollments/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          courseId,
-          userId: user?.id,
-          paymentIntentId,
-        }),
-      });
-
-      if (!enrollmentResponse.ok) {
-        const errorData = await enrollmentResponse.json();
-        throw new Error(errorData.error || 'Failed to create enrollment');
-      }
-
-      const enrollmentData = await enrollmentResponse.json();
-      console.log('[handleCheckoutSuccess] ✅ Step 1 complete: Enrollment created');
-      
-      // STEP 2: CAPTURE PAYMENT (charge the card NOW that enrollment exists)
-      console.log('[handleCheckoutSuccess] Step 2: Capturing payment...');
-      const captureResponse = await fetch('/api/stripe/capture-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentIntentId }),
-      });
-
-      if (!captureResponse.ok) {
-        const errorData = await captureResponse.json();
-        throw new Error(errorData.error || 'Failed to capture payment');
-      }
-
-      const captureData = await captureResponse.json();
-      console.log('[handleCheckoutSuccess] ✅ Step 2 complete: Payment captured');
-      
-      setIsEnrolled(true);
-      
-      toast({
-        title: "Enrollment Complete!",
-        description: "Welcome to the course!",
-      });
-      
-      // Navigate to course
-      router.push(`/learn/${courseId}/player`);
-      
-    } catch (error: any) {
-      console.error('[handleCheckoutSuccess] ❌ ERROR:', error);
-      
-      // Payment was AUTHORIZED but NOT captured
-      // The authorization will expire in 7 days - customer NOT charged
-      toast({
-        title: "Enrollment Failed",
-        description: "Your card was NOT charged. Error: " + error.message,
-        variant: "destructive",
-        duration: 30000,
-      });
-      
-      setIsVerifying(false);
-      setIsProcessingPayment(false);
-    } finally {
-      setIsVerifying(false);
       setIsProcessingPayment(false);
     }
   };
@@ -1072,57 +1019,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Checkout Dialog - CRITICAL: Only render when shown to prevent evaluation */}
-      {showCheckout && course && (() => {
-        // Use safe utility function to extract ONLY primitive values
-        // This prevents ANY object from being passed to React
-        const checkoutData = safeCheckoutData(course, courseId, user?.id);
-        
-        console.log('[CHECKOUT DIALOG] checkoutData:', JSON.stringify(checkoutData, null, 2));
-        
-        // Don't render if data is invalid - prevents crashes
-        if (!checkoutData.isValid) {
-          console.log('[CHECKOUT DIALOG] Invalid checkout data, not rendering');
-          return null;
-        }
-        
-        // ALL values are now guaranteed to be primitives (string/number)
-        // This ensures React will NEVER receive an object as a child
-
-        return (
-          <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Purchase Course</DialogTitle>
-                <DialogDescription>Complete your payment to enroll in this course.</DialogDescription>
-              </DialogHeader>
-              {getStripePromise() ? (
-                <CheckoutForm
-                  amount={checkoutData.price}
-                  currency={checkoutData.currency}
-                  artistId={checkoutData.artistId}
-                  itemId={checkoutData.itemId}
-                  itemType="course"
-                  itemTitle={checkoutData.title}
-                  buyerId={checkoutData.buyerId}
-                  onSuccess={handleCheckoutSuccess}
-                  onCancel={() => setShowCheckout(false)}
-                />
-              ) : (
-                <div className="p-8 text-center">
-                  <p className="text-muted-foreground mb-4">
-                    Payment processing is not configured. Please contact support.
-                  </p>
-                  <Button variant="outline" onClick={() => setShowCheckout(false)}>
-                    Close
-                  </Button>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-        );
-      })()}
     </div>
   );
 }

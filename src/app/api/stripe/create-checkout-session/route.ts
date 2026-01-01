@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { 
       itemId, 
-      itemType, // 'artwork', 'merchandise', 'product'
+      itemType, // 'artwork', 'merchandise', 'product', 'course'
       buyerId,
     } = body;
 
@@ -44,9 +44,12 @@ export async function POST(request: NextRequest) {
     } else if (itemType === 'merchandise' || itemType === 'product') {
       collectionName = 'marketplaceProducts';
       itemDoc = await getDoc(doc(db, 'marketplaceProducts', itemId));
+    } else if (itemType === 'course') {
+      collectionName = 'courses';
+      itemDoc = await getDoc(doc(db, 'courses', itemId));
     } else {
       return NextResponse.json(
-        { error: 'Invalid item type. Must be artwork, merchandise, or product.' },
+        { error: 'Invalid item type. Must be artwork, merchandise, product, or course.' },
         { status: 400 }
       );
     }
@@ -60,11 +63,11 @@ export async function POST(request: NextRequest) {
 
     itemData = itemDoc.data();
 
-    // Get artist/seller ID
-    const artistId = itemData.artist?.userId || itemData.artistId || itemData.sellerId;
+    // Get artist/seller/instructor ID
+    const artistId = itemData.artist?.userId || itemData.artistId || itemData.sellerId || itemData.instructor?.userId;
     if (!artistId) {
       return NextResponse.json(
-        { error: 'Artist/Seller information not found' },
+        { error: 'Artist/Seller/Instructor information not found' },
         { status: 400 }
       );
     }
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
     const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
     if (!artistDoc.exists()) {
       return NextResponse.json(
-        { error: 'Artist/Seller not found' },
+        { error: 'Artist/Seller/Instructor not found' },
         { status: 404 }
       );
     }
@@ -83,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     if (!stripeAccountId) {
       return NextResponse.json(
-        { error: 'Artist/Seller has not connected Stripe account' },
+        { error: 'Seller has not connected Stripe account' },
         { status: 400 }
       );
     }
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
         !artistData.stripeChargesEnabled || 
         !artistData.stripePayoutsEnabled) {
       return NextResponse.json(
-        { error: 'Artist/Seller Stripe account is not ready to accept payments' },
+        { error: 'Seller Stripe account is not ready to accept payments' },
         { status: 400 }
       );
     }
@@ -113,6 +116,13 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+    } else if (itemType === 'course') {
+      if (!itemData.isPublished || itemData.deleted) {
+        return NextResponse.json(
+          { error: 'Course is not available for purchase' },
+          { status: 400 }
+        );
+      }
     }
 
     // Get price
@@ -126,9 +136,16 @@ export async function POST(request: NextRequest) {
 
     const currency = (itemData.currency || 'USD').toLowerCase();
     
-    // CRITICAL: Both artwork AND marketplace products are stored in CENTS in Firestore
-    // NEVER multiply by 100 - price is already in cents
-    const amountInCents = Math.round(price); // Already in cents, use as-is
+    // CRITICAL PRICE CONVERSION LOGIC:
+    // - COURSES: Stored in DOLLARS (e.g., 125.00) → multiply by 100 to get cents
+    // - ARTWORK: Stored in CENTS (e.g., 12500) → use as-is
+    // - MARKETPLACE: Stored in CENTS (e.g., 50) → use as-is
+    let amountInCents: number;
+    if (itemType === 'course') {
+      amountInCents = Math.round(price * 100); // Course: convert dollars to cents
+    } else {
+      amountInCents = Math.round(price); // Artwork/Marketplace: already in cents
+    }
 
     if (amountInCents < 50) {
       return NextResponse.json(
@@ -145,6 +162,8 @@ export async function POST(request: NextRequest) {
     let successUrl: string;
     if (itemType === 'artwork' || itemType === 'original' || itemType === 'print') {
       successUrl = `${baseUrl}/artwork/${itemId}?session_id={CHECKOUT_SESSION_ID}`;
+    } else if (itemType === 'course') {
+      successUrl = `${baseUrl}/learn/${itemId}?session_id={CHECKOUT_SESSION_ID}`;
     } else {
       successUrl = `${baseUrl}/marketplace/${itemId}?session_id={CHECKOUT_SESSION_ID}`;
     }
@@ -181,7 +200,7 @@ export async function POST(request: NextRequest) {
         price_data: {
           currency: currency,
           product_data: {
-            name: itemData.title || 'Artwork',
+            name: itemData.title || (itemType === 'course' ? 'Course' : 'Artwork'),
             description: itemData.description || undefined,
             images: itemImage ? [itemImage] : undefined,
           },
@@ -189,13 +208,13 @@ export async function POST(request: NextRequest) {
         },
         quantity: 1,
       }],
-      shipping_address_collection: {
+      shipping_address_collection: itemType === 'course' ? undefined : {
         allowed_countries: [
           'US', 'CA', 'GB', 'AU', 'NZ', 'IE', 
           'FR', 'DE', 'IT', 'ES', 'NL', 'BE', 'AT', 'CH',
           'SE', 'NO', 'DK', 'FI', 'PT', 'PL', 'CZ', 'GR',
           'JP', 'SG', 'HK', 'KR', 'MX', 'BR', 'AR', 'CL',
-        ], // Major shipping countries
+        ], // Physical products need shipping, courses don't
       },
       success_url: successUrl,
       cancel_url: cancelUrl,

@@ -172,7 +172,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     }
   }
 
-  // PHYSICAL PRODUCT FLOW (artwork, marketplace)
+  // PHYSICAL PRODUCT + COURSE FLOW
   // Get payment intent from session
   const paymentIntentId = typeof session.payment_intent === 'string' 
     ? session.payment_intent 
@@ -188,29 +188,94 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  // Get shipping address - Stripe API uses shipping_details but TypeScript types may be outdated
-  // Access via type assertion to handle property access
+  // Get shipping address (not needed for courses)
   const sessionWithShipping = session as any;
   const shippingAddress = sessionWithShipping.shipping_details?.address || sessionWithShipping.shipping?.address;
   const shippingName = sessionWithShipping.shipping_details?.name || sessionWithShipping.shipping?.name;
   const customerEmail = session.customer_email || sessionWithShipping.customer_details?.email;
 
-  if (!shippingAddress || !shippingName) {
+  // Courses don't need shipping address
+  const needsShipping = itemType !== 'course';
+  
+  if (needsShipping && (!shippingAddress || !shippingName)) {
     console.error('Missing shipping details in checkout session:', session.id);
     return;
   }
 
-  console.log('📦 Shipping address:', {
-    name: shippingName,
-    line1: shippingAddress.line1,
-    city: shippingAddress.city,
-    state: shippingAddress.state,
-    country: shippingAddress.country,
-  });
+  if (needsShipping) {
+    console.log('📦 Shipping address:', {
+      name: shippingName,
+      line1: shippingAddress.line1,
+      city: shippingAddress.city,
+      state: shippingAddress.state,
+      country: shippingAddress.country,
+    });
+  }
 
   try {
     // Handle based on item type
-    if (itemType === 'artwork' || itemType === 'original' || itemType === 'print') {
+    if (itemType === 'course') {
+      // CREATE ENROLLMENT
+      console.log('📚 Creating course enrollment:', { courseId: itemId, userId });
+      
+      const courseRef = doc(db, 'courses', itemId);
+      const courseDoc = await getDoc(courseRef);
+
+      if (!courseDoc.exists()) {
+        console.error('Course not found:', itemId);
+        return;
+      }
+
+      const courseData = courseDoc.data();
+
+      // Create enrollment record
+      const enrollmentRef = await addDoc(collection(db, 'enrollments'), {
+        courseId: itemId,
+        courseTitle: courseData.title || itemTitle,
+        userId: userId,
+        instructorId: artistId,
+        enrolledAt: new Date(),
+        createdAt: new Date(),
+        paymentIntentId: paymentIntentId,
+        checkoutSessionId: session.id,
+        status: 'active',
+        progress: 0,
+      });
+
+      console.log(`✅ Course enrollment created: ${enrollmentRef.id}`);
+
+      // Send emails (no shipping address for courses)
+      await sendPurchaseConfirmationEmail({
+        to: customerEmail,
+        buyerName: shippingName || 'Student',
+        itemTitle: courseData.title || itemTitle,
+        itemType: 'Course',
+        amount: session.amount_total ? (session.amount_total / 100).toFixed(2) : '0.00',
+        currency: (session.currency || 'USD').toUpperCase(),
+        orderId: session.id,
+      });
+
+      const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+      if (sellerDoc.exists()) {
+        const sellerData = sellerDoc.data();
+        if (sellerData && sellerData.email) {
+          await sendSellerNotificationEmail({
+            to: sellerData.email,
+            sellerName: sellerData.displayName || 'Instructor',
+            buyerName: shippingName || 'Student',
+            itemTitle: courseData.title || itemTitle,
+            itemType: 'Course',
+            amount: session.amount_total ? (session.amount_total / 100).toFixed(2) : '0.00',
+            currency: (session.currency || 'USD').toUpperCase(),
+            orderId: session.id,
+          });
+        }
+      }
+
+      // Capture payment
+      await capturePaymentIntent(paymentIntentId);
+
+    } else if (itemType === 'artwork' || itemType === 'original' || itemType === 'print') {
       // Mark artwork as sold
       const artworkRef = doc(db, 'artworks', itemId);
       const artworkDoc = await getDoc(artworkRef);
