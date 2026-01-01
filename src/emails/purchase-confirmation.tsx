@@ -257,16 +257,3 @@ const link = {
   color: '#5e5ce6',
   textDecoration: 'underline',
 };
-
-const imageSection = {
-  margin: '32px auto',
-  textAlign: 'center' as const,
-};
-
-const productImage = {
-  borderRadius: '8px',
-  maxWidth: '100%',
-  height: 'auto',
-  objectFit: 'cover' as const,
-};
-
