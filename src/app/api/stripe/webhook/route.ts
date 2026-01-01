@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection, addDoc, increment, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, increment, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
   // Initialize Stripe inside the handler to avoid build-time initialization
@@ -213,6 +213,32 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 
   try {
+    // CRITICAL: Verify payment status before granting access
+    // For manual capture, payment intent should be in 'requires_capture' state
+    // This confirms funds are authorized (held) and ready to capture
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2025-10-29.clover',
+    });
+    
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    // Verify payment is in correct state
+    if (paymentIntent.status !== 'requires_capture' && paymentIntent.status !== 'succeeded') {
+      console.error('❌ Payment not authorized:', {
+        paymentIntentId,
+        status: paymentIntent.status,
+        sessionId: session.id,
+      });
+      console.error('❌ CRITICAL: Not creating enrollment - payment not authorized');
+      return; // EXIT - do not create enrollment if payment failed
+    }
+    
+    console.log('✅ Payment verified:', {
+      paymentIntentId,
+      status: paymentIntent.status,
+      amount: paymentIntent.amount,
+    });
+
     // Handle based on item type
     if (itemType === 'course') {
       // CREATE ENROLLMENT
@@ -272,8 +298,28 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         }
       }
 
-      // Capture payment
-      await capturePaymentIntent(paymentIntentId);
+      // CRITICAL: Capture payment AFTER enrollment created
+      // If capture fails, we should delete the enrollment
+      try {
+        await capturePaymentIntent(paymentIntentId);
+        console.log('✅ Payment captured successfully:', paymentIntentId);
+      } catch (captureError: any) {
+        console.error('❌ CRITICAL: Payment capture failed after enrollment created:', captureError);
+        
+        // Delete the enrollment we just created
+        await deleteDoc(enrollmentRef);
+        console.log('🔄 Rolled back enrollment due to payment capture failure');
+        
+        // This is critical - notify support
+        console.error('⚠️ MANUAL INTERVENTION REQUIRED: Payment authorized but capture failed', {
+          sessionId: session.id,
+          paymentIntentId,
+          userId,
+          courseId: itemId,
+        });
+        
+        throw captureError; // Re-throw to trigger error handler
+      }
 
     } else if (itemType === 'artwork' || itemType === 'original' || itemType === 'print') {
       // Mark artwork as sold
@@ -354,13 +400,39 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         });
       }
 
-      // Capture the authorized payment now that artwork is marked as sold
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2025-10-29.clover',
-      });
-      
-      await stripe.paymentIntents.capture(paymentIntentId);
-      console.log('💰 Payment captured after artwork marked as sold');
+      // CRITICAL: Capture the authorized payment now that artwork is marked as sold
+      // If capture fails, we should revert the sold status
+      try {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+          apiVersion: '2025-10-29.clover',
+        });
+        
+        await stripe.paymentIntents.capture(paymentIntentId);
+        console.log('💰 Payment captured after artwork marked as sold');
+      } catch (captureError: any) {
+        console.error('❌ CRITICAL: Payment capture failed after marking artwork as sold:', captureError);
+        
+        // Revert artwork to available (not sold)
+        await updateDoc(artworkRef, {
+          sold: false,
+          soldAt: null,
+          soldTo: null,
+          paymentIntentId: null,
+          checkoutSessionId: null,
+          shippingAddress: null,
+        });
+        console.log('🔄 Rolled back artwork sold status due to payment capture failure');
+        
+        // This is critical - notify support
+        console.error('⚠️ MANUAL INTERVENTION REQUIRED: Payment authorized but capture failed', {
+          sessionId: session.id,
+          paymentIntentId,
+          userId,
+          artworkId: itemId,
+        });
+        
+        throw captureError; // Re-throw to trigger error handler
+      }
 
     } else if (itemType === 'merchandise' || itemType === 'product') {
       // Handle marketplace product
@@ -451,13 +523,40 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         });
       }
 
-      // Capture the authorized payment
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2025-10-29.clover',
-      });
+      // CRITICAL: Capture the authorized payment
+      // If capture fails, we should revert the purchase and restore stock
+      const purchaseId = purchaseRef.id; // Save for rollback
       
-      await stripe.paymentIntents.capture(paymentIntentId);
-      console.log('💰 Payment captured after product purchase recorded');
+      try {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+          apiVersion: '2025-10-29.clover',
+        });
+        
+        await stripe.paymentIntents.capture(paymentIntentId);
+        console.log('💰 Payment captured after product purchase recorded');
+      } catch (captureError: any) {
+        console.error('❌ CRITICAL: Payment capture failed after product purchase:', captureError);
+        
+        // Delete the purchase record
+        await deleteDoc(purchaseRef);
+        
+        // Restore product stock
+        await updateDoc(productRef, {
+          stock: increment(1),
+          salesCount: increment(-1),
+        });
+        console.log('🔄 Rolled back product purchase due to payment capture failure');
+        
+        // This is critical - notify support
+        console.error('⚠️ MANUAL INTERVENTION REQUIRED: Payment authorized but capture failed', {
+          sessionId: session.id,
+          paymentIntentId,
+          userId,
+          productId: itemId,
+        });
+        
+        throw captureError; // Re-throw to trigger error handler
+      }
     }
 
   } catch (error) {
