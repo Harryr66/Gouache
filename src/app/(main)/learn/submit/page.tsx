@@ -60,6 +60,8 @@ function CourseSubmissionPageContent() {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [trailerFile, setTrailerFile] = useState<File | null>(null);
   const [trailerPreviewUrl, setTrailerPreviewUrl] = useState<string | null>(null);
+  const [myDrafts, setMyDrafts] = useState<any[]>([]);
+  const [loadingDrafts, setLoadingDrafts] = useState(false);
 
   // Kajabi-style multi-step wizard
   const steps = [
@@ -898,6 +900,54 @@ function CourseSubmissionPageContent() {
             </Button>
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* My Drafts Section */}
+      {!isEditing && myDrafts.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">My Drafts ({myDrafts.length})</CardTitle>
+            <CardDescription>Your unpublished courses. Click to continue editing.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {myDrafts.map((draft) => (
+                <button
+                  key={draft.id}
+                  onClick={() => router.push(`/learn/submit?edit=${draft.id}`)}
+                  className="group relative overflow-hidden rounded-lg border hover:border-primary transition-colors text-left"
+                >
+                  <div className="aspect-video bg-muted relative">
+                    {draft.thumbnail ? (
+                      <img 
+                        src={draft.thumbnail} 
+                        alt={draft.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <BookOpen className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="secondary" className="text-xs">
+                        Draft
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <h3 className="font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                      {draft.title || 'Untitled Course'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Last updated {new Date(draft.updatedAt?.toDate?.() || draft.updatedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-6">
