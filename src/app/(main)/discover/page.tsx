@@ -2862,9 +2862,9 @@ function DiscoverPageContent() {
           </TabsContent>
 
           {/* Events Tab */}
-          <TabsContent value="events" className="mt-6">
+          <TabsContent value="events" className="!pt-0">
             {/* Search and Filter Bar */}
-            <div className="mb-6 space-y-4">
+            <div className="mb-6 space-y-4 pt-6">
               <div className="flex flex-col sm:flex-row gap-4">
                 {isMobile ? (
                   <div className="flex gap-2">
