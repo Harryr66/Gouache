@@ -101,9 +101,9 @@ function PurchaseSuccessContent() {
           <Button
             variant="outline"
             className="flex-1"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/settings/orders')}
           >
-            Back to Home
+            View My Orders
           </Button>
         </div>
 
