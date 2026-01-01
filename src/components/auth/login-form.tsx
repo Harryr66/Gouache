@@ -356,8 +356,7 @@ export function LoginForm() {
         If you don't see the email within 5-10 minutes, please:
         1. Check your spam/junk folder
         2. Check that the email address is correct
-        3. Check Firebase Console email template settings
-        4. Contact support if the issue persists`,
+        3. Contact support if the issue persists`,
         duration: 10000, // Show for 10 seconds
       });
       
