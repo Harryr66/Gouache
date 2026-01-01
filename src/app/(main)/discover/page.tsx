@@ -306,7 +306,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           0
         );
 
-        const itemHeight = itemEl.offsetHeight || 0;
+        const itemHeight = itemEl.getBoundingClientRect().height || 0;
         if (itemHeight <= 0) return; // Skip items with no height
         
         const left = shortestColumnIndex * (itemWidth + gap);
