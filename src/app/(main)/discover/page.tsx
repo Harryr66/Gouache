@@ -310,10 +310,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           0
         );
 
-        // Measure ACTUAL rendered height including all visual effects
+        // Measure ACTUAL rendered height
         // Use getBoundingClientRect for accurate measurement, Math.ceil to prevent sub-pixel overlap
-        // Add 2px buffer to account for shadows and any visual bleed
-        const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) + 2 || 0;
+        const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) || 0;
         if (itemHeight <= 0) return; // Skip items with no height
         
         // Calculate left position: column_index * (itemWidth + gap)
