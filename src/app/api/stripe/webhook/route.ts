@@ -82,6 +82,10 @@ export async function POST(request: NextRequest) {
   // Handle the event
   try {
     switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
+
       case 'payment_intent.succeeded':
         await handlePaymentSuccess(event.data.object as Stripe.PaymentIntent);
         break;
@@ -127,6 +131,237 @@ export async function POST(request: NextRequest) {
       { error: 'Error processing webhook', details: error.message },
       { status: 200 }
     );
+  }
+}
+
+// Handle Stripe Checkout Session completion (for physical products with shipping)
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  console.log('🎉 Checkout session completed:', session.id);
+
+  // Get payment intent from session
+  const paymentIntentId = typeof session.payment_intent === 'string' 
+    ? session.payment_intent 
+    : session.payment_intent?.id;
+
+  if (!paymentIntentId) {
+    console.error('No payment intent found in checkout session:', session.id);
+    return;
+  }
+
+  // Get metadata from session
+  const { itemId, itemType, userId, artistId, itemTitle } = session.metadata || {};
+
+  if (!itemId || !itemType || !userId || !artistId) {
+    console.error('Missing required metadata in checkout session:', session.id);
+    return;
+  }
+
+  // Get shipping address
+  const shippingAddress = session.shipping_details?.address;
+  const shippingName = session.shipping_details?.name;
+  const customerEmail = session.customer_details?.email;
+
+  if (!shippingAddress || !shippingName) {
+    console.error('Missing shipping details in checkout session:', session.id);
+    return;
+  }
+
+  console.log('📦 Shipping address:', {
+    name: shippingName,
+    line1: shippingAddress.line1,
+    city: shippingAddress.city,
+    state: shippingAddress.state,
+    country: shippingAddress.country,
+  });
+
+  try {
+    // Handle based on item type
+    if (itemType === 'artwork' || itemType === 'original' || itemType === 'print') {
+      // Mark artwork as sold
+      const artworkRef = doc(db, 'artworks', itemId);
+      const artworkDoc = await getDoc(artworkRef);
+
+      if (!artworkDoc.exists()) {
+        console.error('Artwork not found:', itemId);
+        return;
+      }
+
+      const artworkData = artworkDoc.data();
+
+      // Update artwork to sold status
+      await updateDoc(artworkRef, {
+        sold: true,
+        soldAt: new Date(),
+        soldTo: userId,
+        paymentIntentId: paymentIntentId,
+        checkoutSessionId: session.id,
+        shippingAddress: {
+          name: shippingName,
+          line1: shippingAddress.line1,
+          line2: shippingAddress.line2 || '',
+          city: shippingAddress.city,
+          state: shippingAddress.state || '',
+          postalCode: shippingAddress.postal_code || '',
+          country: shippingAddress.country,
+        },
+      });
+
+      console.log('✅ Artwork marked as sold with shipping address:', itemId);
+
+      // Send emails
+      const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
+      
+      await sendPurchaseConfirmationEmail({
+        buyerEmail: customerEmail || '',
+        buyerName: shippingName,
+        itemType: 'Artwork',
+        itemTitle: artworkData.title || itemTitle || 'Artwork',
+        amount: artworkData.price / 100,
+        currency: artworkData.currency || 'USD',
+        shippingAddress: {
+          name: shippingName,
+          line1: shippingAddress.line1,
+          line2: shippingAddress.line2 || '',
+          city: shippingAddress.city,
+          state: shippingAddress.state || '',
+          postalCode: shippingAddress.postal_code || '',
+          country: shippingAddress.country,
+        },
+      });
+
+      // Get seller email
+      const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+      const sellerEmail = sellerDoc.exists() ? sellerDoc.data().email : null;
+
+      if (sellerEmail) {
+        await sendSellerNotificationEmail({
+          sellerEmail,
+          sellerName: sellerDoc.data().displayName || 'Artist',
+          itemType: 'Artwork',
+          itemTitle: artworkData.title || itemTitle || 'Artwork',
+          amount: artworkData.price / 100,
+          currency: artworkData.currency || 'USD',
+          buyerName: shippingName,
+          shippingAddress: {
+            name: shippingName,
+            line1: shippingAddress.line1,
+            line2: shippingAddress.line2 || '',
+            city: shippingAddress.city,
+            state: shippingAddress.state || '',
+            postalCode: shippingAddress.postal_code || '',
+            country: shippingAddress.country,
+          },
+        });
+      }
+
+      // Capture the authorized payment now that artwork is marked as sold
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2025-10-29.clover',
+      });
+      
+      await stripe.paymentIntents.capture(paymentIntentId);
+      console.log('💰 Payment captured after artwork marked as sold');
+
+    } else if (itemType === 'merchandise' || itemType === 'product') {
+      // Handle marketplace product
+      const productRef = doc(db, 'marketplaceProducts', itemId);
+      const productDoc = await getDoc(productRef);
+
+      if (!productDoc.exists()) {
+        console.error('Product not found:', itemId);
+        return;
+      }
+
+      const productData = productDoc.data();
+
+      // Decrement stock
+      await updateDoc(productRef, {
+        stock: increment(-1),
+        salesCount: increment(1),
+      });
+
+      // Create purchase record
+      await addDoc(collection(db, 'purchases'), {
+        productId: itemId,
+        buyerId: userId,
+        sellerId: artistId,
+        price: productData.price,
+        currency: productData.currency || 'USD',
+        paymentIntentId: paymentIntentId,
+        checkoutSessionId: session.id,
+        status: 'completed',
+        createdAt: new Date(),
+        shippingAddress: {
+          name: shippingName,
+          line1: shippingAddress.line1,
+          line2: shippingAddress.line2 || '',
+          city: shippingAddress.city,
+          state: shippingAddress.state || '',
+          postalCode: shippingAddress.postal_code || '',
+          country: shippingAddress.country,
+        },
+      });
+
+      console.log('✅ Product purchase recorded with shipping address:', itemId);
+
+      // Send emails
+      const { sendPurchaseConfirmationEmail, sendSellerNotificationEmail } = await import('@/lib/email');
+      
+      await sendPurchaseConfirmationEmail({
+        buyerEmail: customerEmail || '',
+        buyerName: shippingName,
+        itemType: 'Product',
+        itemTitle: productData.title || itemTitle || 'Product',
+        amount: productData.price,
+        currency: productData.currency || 'USD',
+        shippingAddress: {
+          name: shippingName,
+          line1: shippingAddress.line1,
+          line2: shippingAddress.line2 || '',
+          city: shippingAddress.city,
+          state: shippingAddress.state || '',
+          postalCode: shippingAddress.postal_code || '',
+          country: shippingAddress.country,
+        },
+      });
+
+      // Get seller email
+      const sellerDoc = await getDoc(doc(db, 'userProfiles', artistId));
+      const sellerEmail = sellerDoc.exists() ? sellerDoc.data().email : null;
+
+      if (sellerEmail) {
+        await sendSellerNotificationEmail({
+          sellerEmail,
+          sellerName: sellerDoc.data().displayName || 'Seller',
+          itemType: 'Product',
+          itemTitle: productData.title || itemTitle || 'Product',
+          amount: productData.price,
+          currency: productData.currency || 'USD',
+          buyerName: shippingName,
+          shippingAddress: {
+            name: shippingName,
+            line1: shippingAddress.line1,
+            line2: shippingAddress.line2 || '',
+            city: shippingAddress.city,
+            state: shippingAddress.state || '',
+            postalCode: shippingAddress.postal_code || '',
+            country: shippingAddress.country,
+          },
+        });
+      }
+
+      // Capture the authorized payment
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2025-10-29.clover',
+      });
+      
+      await stripe.paymentIntents.capture(paymentIntentId);
+      console.log('💰 Payment captured after product purchase recorded');
+    }
+
+  } catch (error) {
+    console.error('Error handling checkout session completed:', error);
+    throw error;
   }
 }
 

@@ -17,10 +17,19 @@ export interface PurchaseConfirmationEmail {
   buyerEmail: string;
   buyerName: string;
   itemTitle: string;
-  itemType: 'course' | 'artwork' | 'product';
+  itemType: 'Course' | 'Artwork' | 'Product' | 'course' | 'artwork' | 'product';
   amount: number;
   currency: string;
-  itemId: string;
+  itemId?: string;
+  shippingAddress?: {
+    name: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    state?: string;
+    postalCode?: string;
+    country: string;
+  };
 }
 
 export interface SellerNotificationEmail {
@@ -28,9 +37,18 @@ export interface SellerNotificationEmail {
   sellerName: string;
   buyerName: string;
   itemTitle: string;
-  itemType: 'course' | 'artwork' | 'product';
+  itemType: 'Course' | 'Artwork' | 'Product' | 'course' | 'artwork' | 'product';
   amount: number;
   currency: string;
+  shippingAddress?: {
+    name: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    state?: string;
+    postalCode?: string;
+    country: string;
+  };
 }
 
 export async function sendPurchaseConfirmationEmail(data: PurchaseConfirmationEmail) {

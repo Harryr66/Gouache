@@ -687,22 +687,52 @@ function ProductDetailPage() {
       return;
     }
 
-    // Check 8: Stripe availability
-    const stripePromise = getStripePromise();
-    if (!stripePromise) {
+    // Check 8: Cannot purchase own product
+    if (user.id === product.sellerId) {
       toast({
-        title: 'Payment processing unavailable',
-        description: 'Payment processing is not configured. Please contact support.',
+        title: 'Cannot Purchase Own Product',
+        description: 'You cannot purchase your own product.',
         variant: 'destructive'
       });
       return;
     }
 
     // ========================================
-    // VALIDATION PASSED - SAFE TO PROCEED
+    // VALIDATION PASSED - REDIRECT TO STRIPE CHECKOUT
+    // Physical products require shipping address collection
     // ========================================
     setIsProcessingPayment(true);
-    setShowCheckout(true);
+
+    // Create Stripe Checkout Session for shipping address collection
+    fetch('/api/stripe/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        itemId: product.id,
+        itemType: 'merchandise',
+        buyerId: user.id,
+      }),
+    })
+    .then(async (response) => {
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create checkout session');
+      }
+      return response.json();
+    })
+    .then((data) => {
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
+    })
+    .catch((error) => {
+      console.error('Error creating checkout session:', error);
+      setIsProcessingPayment(false);
+      toast({
+        title: 'Checkout Error',
+        description: error.message || 'Failed to start checkout process.',
+        variant: 'destructive'
+      });
+    });
   };
 
   const handleSaveEdit = async () => {
