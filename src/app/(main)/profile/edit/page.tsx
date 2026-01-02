@@ -183,8 +183,8 @@ export default function ProfileEditPage() {
             showcaseLocations: user.isProfessional
               ? (changes.showcaseLocations || user.showcaseLocations || [])
               : [],
-            newsletterLink: user.isProfessional ? (changes.newsletterLink || user.newsletterLink || '') : '',
-            newsletterProvider: user.isProfessional ? ((user as any).newsletterProvider || null) : null,
+            newsletterLink: changes.newsletterLink || user.newsletterLink || '',
+            newsletterProvider: (user as any).newsletterProvider || null,
             socialLinks: {
               website: changes.socialLinks?.website || user.socialLinks?.website || '',
               instagram: changes.socialLinks?.instagram || user.socialLinks?.instagram || '',
@@ -275,8 +275,8 @@ export default function ProfileEditPage() {
           eventStartDate: user.isProfessional ? ((user as any).eventStartDate || '') : '',
           eventEndDate: user.isProfessional ? ((user as any).eventEndDate || '') : '',
           showcaseLocations: user.isProfessional ? (user.showcaseLocations || []) : [],
-          newsletterLink: user.isProfessional ? ((user as any).newsletterLink || '') : '',
-          newsletterProvider: user.isProfessional ? ((user as any).newsletterProvider || null) : null,
+          newsletterLink: (user as any).newsletterLink || '',
+          newsletterProvider: (user as any).newsletterProvider || null,
           socialLinks: {
             website: socialLinks.website || '',
             instagram: socialLinks.instagram || '',
