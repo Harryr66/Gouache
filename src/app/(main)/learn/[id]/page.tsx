@@ -30,7 +30,8 @@ import {
   ExternalLink,
   Edit,
   Trash2,
-  Loader2
+  Loader2,
+  Search
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
