@@ -535,90 +535,36 @@ export default function ArtworkPage() {
     const video = videoRef.current;
     if (!artwork || !artwork.videoUrl || artwork.mediaType !== 'video' || !video) return;
 
-    let videoUrl = (artwork as any).videoVariants?.full || artwork.videoUrl;
-    const originalUrl = videoUrl; // Capture before any changes
+    // Extract video ID and construct manifest URL directly
+    let videoUrl = artwork.videoUrl;
+    let videoId: string | null = null;
     
-    console.log('🎬 Video player initializing with URL:', videoUrl);
-    console.log('🔍 Original URL captured:', originalUrl);
+    // Extract video ID from any Cloudflare URL format
+    const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
+    const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
+    const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
     
-    // Handle Cloudflare Stream URLs - need to use HLS manifest
-    const isCloudflareStream = videoUrl?.includes('cloudflarestream.com') || 
-                               videoUrl?.includes('videodelivery.net');
-    
-    console.log('🔍 isCloudflareStream:', isCloudflareStream);
-    
-    let extractedVideoId: string | null = null;
-    
-    if (isCloudflareStream && videoUrl) {
-      console.log('🔍 Entering Cloudflare URL conversion block');
-      
-      // Extract video ID first (needed for fallback)
-      let videoId: string | null = null;
-      
-      // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
-      const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
-      console.log('🔍 Customer match result:', customerMatch);
-      
-      if (customerMatch) {
-        videoId = customerMatch[1];
-        console.log('📹 Extracted video ID from customer subdomain:', videoId);
-      } else {
-        // Try videodelivery.net format: videodelivery.net/{videoId}
-        const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
-        console.log('🔍 Video delivery match result:', videoDeliveryMatch);
-        
-        if (videoDeliveryMatch) {
-          videoId = videoDeliveryMatch[1];
-          console.log('📹 Extracted video ID from videodelivery.net:', videoId);
-        } else {
-          // Fallback: try to extract from any cloudflarestream.com URL
-          const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
-          console.log('🔍 Fallback match result:', fallbackMatch);
-          
-          if (fallbackMatch) {
-            videoId = fallbackMatch[1];
-            console.log('📹 Extracted video ID from cloudflarestream.com:', videoId);
-          }
-        }
-      }
-      
-      console.log('🔍 Final extracted videoId:', videoId);
-      extractedVideoId = videoId;
-      
-      // Check if URL already has .m3u8 manifest path
-      const hasManifest = videoUrl.includes('.m3u8');
-      console.log('🔍 URL has .m3u8:', hasManifest);
-      
-      if (hasManifest) {
-        console.log('✅ Video URL already has .m3u8, using as-is:', videoUrl);
-      } else if (videoId) {
-        // ALWAYS construct HLS manifest URL using videodelivery.net
-        const newUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-        console.log('🔄 Converting URL from:', videoUrl);
-        console.log('🔄 Converting URL to:', newUrl);
-        videoUrl = newUrl;
-        console.log('✅ videoUrl after conversion:', videoUrl);
-      } else {
-        console.error('❌ Could not extract video ID from Cloudflare Stream URL:', originalUrl);
-      }
-      
-      console.log('🔍 About to set debug info with:', {
-        originalUrl,
-        convertedUrl: videoUrl,
-        videoId: extractedVideoId
-      });
-      
-      // Set debug info for display
-      setVideoDebugInfo({
-        originalUrl,
-        convertedUrl: videoUrl,
-        videoId: extractedVideoId
-      });
+    if (customerMatch) {
+      videoId = customerMatch[1];
+    } else if (videoDeliveryMatch) {
+      videoId = videoDeliveryMatch[1];
+    } else if (fallbackMatch) {
+      videoId = fallbackMatch[1];
     }
     
-    console.log('🎬 Final videoUrl to be used:', videoUrl);
+    // If we have a video ID, construct the manifest URL
+    if (videoId && !videoUrl.includes('.m3u8')) {
+      videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+    }
     
-    const isHLS = videoUrl.includes('.m3u8') || isCloudflareStream;
+    // Set debug info
+    setVideoDebugInfo({
+      originalUrl: artwork.videoUrl,
+      convertedUrl: videoUrl,
+      videoId: videoId
+    });
+    
+    const isHLS = videoUrl.includes('.m3u8');
     
     // Cleanup previous HLS instance
     if (hlsRef.current) {
@@ -627,26 +573,18 @@ export default function ArtworkPage() {
     }
 
     if (isHLS) {
-      // Check if browser natively supports HLS (Safari)
       const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
       
       if (canPlayHLS) {
         // Native HLS support (Safari)
-        console.log('✅ Using native HLS support (Safari)');
         video.src = videoUrl;
-        video.load(); // Ensure video is loaded
-        
-        // Don't force autoplay - let user click play with controls
-        video.addEventListener('loadeddata', () => {
-          console.log('✅ Video loaded successfully');
-        }, { once: true });
+        video.load();
       } else if (Hls.isSupported()) {
-        // Use hls.js for browsers that don't support HLS natively
-        console.log('✅ Using HLS.js for video playback');
+        // Use hls.js
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: false,
-          startLevel: -1, // Auto quality selection
+          startLevel: -1,
           debug: false,
         });
         
@@ -656,37 +594,22 @@ export default function ArtworkPage() {
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           console.log('✅ HLS manifest parsed, video ready');
-          // Don't force autoplay - let user click play with controls
         });
         
         hls.on(Hls.Events.ERROR, (event, data) => {
           if (data.fatal) {
             console.error('❌ HLS fatal error:', data);
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              console.log('🔄 Attempting to recover from network error...');
               hls.startLoad();
             } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-              console.log('🔄 Attempting to recover from media error...');
               hls.recoverMediaError();
-            } else {
-              console.error('💀 Unrecoverable HLS error, destroying player');
-              hls.destroy();
             }
           }
         });
-      } else {
-        console.error('❌ HLS not supported in this browser');
       }
     } else {
-      // Non-HLS video (MP4, etc.)
-      console.log('✅ Using direct video (MP4)');
       video.src = videoUrl;
       video.load();
-      
-      // Don't force autoplay - let user click play with controls
-      video.addEventListener('loadeddata', () => {
-        console.log('✅ Direct video loaded successfully');
-      }, { once: true });
     }
 
     return () => {
@@ -727,52 +650,29 @@ export default function ArtworkPage() {
     const video = modalVideoRef.current;
     if (!showImageModal || !artwork || !artwork.videoUrl || artwork.mediaType !== 'video' || !video) return;
 
-    let videoUrl = (artwork as any).videoVariants?.full || artwork.videoUrl;
+    // Extract video ID and construct manifest URL directly
+    let videoUrl = artwork.videoUrl;
+    let videoId: string | null = null;
     
-    console.log('🎬 Modal video player initializing with URL:', videoUrl);
+    // Extract video ID from any Cloudflare URL format
+    const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
+    const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
+    const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
     
-    // Handle Cloudflare Stream URLs - need to use HLS manifest
-    const isCloudflareStream = videoUrl?.includes('cloudflarestream.com') || 
-                               videoUrl?.includes('videodelivery.net');
-    
-    if (isCloudflareStream && videoUrl) {
-      // Extract video ID first (needed for fallback)
-      let videoId: string | null = null;
-      
-      // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
-      const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
-      if (customerMatch) {
-        videoId = customerMatch[1];
-        console.log('📹 Modal: Extracted video ID from customer subdomain:', videoId);
-      } else {
-        // Try videodelivery.net format: videodelivery.net/{videoId}
-        const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
-        if (videoDeliveryMatch) {
-          videoId = videoDeliveryMatch[1];
-          console.log('📹 Modal: Extracted video ID from videodelivery.net:', videoId);
-        } else {
-          // Fallback: try to extract from any cloudflarestream.com URL
-          const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
-          if (fallbackMatch) {
-            videoId = fallbackMatch[1];
-            console.log('📹 Modal: Extracted video ID from cloudflarestream.com:', videoId);
-          }
-        }
-      }
-      
-      // Check if URL already has .m3u8 manifest path
-      if (videoUrl.includes('.m3u8')) {
-        console.log('✅ Modal video URL already has .m3u8, using as-is:', videoUrl);
-      } else if (videoId) {
-        // ALWAYS construct HLS manifest URL using videodelivery.net
-        videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-        console.log('✅ Constructed HLS manifest URL for modal (videodelivery.net):', videoUrl);
-      } else {
-        console.error('❌ Could not extract video ID from Cloudflare Stream URL (modal):', videoUrl);
-      }
+    if (customerMatch) {
+      videoId = customerMatch[1];
+    } else if (videoDeliveryMatch) {
+      videoId = videoDeliveryMatch[1];
+    } else if (fallbackMatch) {
+      videoId = fallbackMatch[1];
     }
     
-    const isHLS = videoUrl.includes('.m3u8') || isCloudflareStream;
+    // If we have a video ID, construct the manifest URL
+    if (videoId && !videoUrl.includes('.m3u8')) {
+      videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+    }
+    
+    const isHLS = videoUrl.includes('.m3u8');
     
     // Cleanup previous HLS instance
     if (modalHlsRef.current) {
@@ -784,14 +684,9 @@ export default function ArtworkPage() {
       const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
       
       if (canPlayHLS) {
-        console.log('✅ Modal: Using native HLS support (Safari)');
         video.src = videoUrl;
         video.load();
-        video.addEventListener('loadeddata', () => {
-          console.log('✅ Modal video loaded successfully');
-        }, { once: true });
       } else if (Hls.isSupported()) {
-        console.log('✅ Modal: Using HLS.js for video playback');
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: false,
@@ -807,24 +702,17 @@ export default function ArtworkPage() {
         
         hls.on(Hls.Events.ERROR, (event, data) => {
           if (data.fatal) {
-            console.error('❌ Modal HLS fatal error:', data);
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              console.log('🔄 Modal: Attempting to recover from network error...');
               hls.startLoad();
             } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-              console.log('🔄 Modal: Attempting to recover from media error...');
               hls.recoverMediaError();
             }
           }
         });
       }
     } else {
-      console.log('✅ Modal: Using direct video (MP4)');
       video.src = videoUrl;
       video.load();
-      video.addEventListener('loadeddata', () => {
-        console.log('✅ Modal direct video loaded successfully');
-      }, { once: true });
     }
 
     return () => {
