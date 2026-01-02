@@ -143,10 +143,10 @@ export function ProfileHeader({
                   {!user.hideFlags && (user.countryOfOrigin || user.countryOfResidence) && (
                     <div className="flex items-center gap-1 ml-2">
                       {user.countryOfOrigin && (
-                        <CountryFlag countryName={user.countryOfOrigin} size="sm" />
+                        <CountryFlag country={user.countryOfOrigin} size="sm" />
                       )}
                       {user.countryOfResidence && user.countryOfResidence !== user.countryOfOrigin && (
-                        <CountryFlag countryName={user.countryOfResidence} size="sm" />
+                        <CountryFlag country={user.countryOfResidence} size="sm" />
                       )}
                     </div>
                   )}
