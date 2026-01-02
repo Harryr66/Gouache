@@ -1333,6 +1333,13 @@ function DiscoverPageContent() {
             // Skip events
             if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
             
+            // Skip items with invalid/corrupted imageUrls (data URLs from old uploads)
+            if (artworkData.imageUrl && artworkData.imageUrl.startsWith('data:image')) continue;
+            
+            // Skip items with no valid media at all
+            const hasValidMedia = artworkData.imageUrl || artworkData.videoUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0];
+            if (!hasValidMedia) continue;
+            
             // Apply discover settings filters for AI content
             if (discoverSettings.hideAiAssistedArt && (artworkData.aiAssistance === 'assisted' || artworkData.aiAssistance === 'generated' || artworkData.isAI)) {
               continue;
