@@ -1225,26 +1225,40 @@ function DiscoverPageContent() {
           );
           
           const artistsSnapshot = await getDocs(artistsQuery);
-        log(`👥 Discover: Found ${artistsSnapshot.docs.length} ACTIVE artists`);
-        
-        // Extract portfolio items from each ACTIVE artist
-        for (const artistDoc of artistsSnapshot.docs) {
-          const artistData = artistDoc.data();
           
-          // Double-check: Only process ACTIVE users (backup check)
-          if (artistData.isActive === false) {
-            log(`⚠️ Discover: Skipping inactive artist ${artistDoc.id}`);
-            continue;
-          }
+          // Filter for ACTIVE artists first, then log
+          const activeArtists = artistsSnapshot.docs.filter(doc => {
+            const data = doc.data();
+            return data.isActive !== false; // Include if true or undefined (backwards compatibility)
+          });
           
-          const portfolio = artistData.portfolio || [];
+          log(`👥 Discover: Found ${activeArtists.length} ACTIVE artists out of ${artistsSnapshot.docs.length} total`);
           
-          if (portfolio.length === 0) {
-            log(`📋 Discover: Artist ${artistDoc.id} has no portfolio items`);
-            continue;
-          }
+          // Extract portfolio items from each ACTIVE artist
+          let totalPortfolioItemsProcessed = 0;
+          let totalArtworksAdded = 0;
           
-          log(`📋 Discover: Processing ${portfolio.length} portfolio items from artist ${artistDoc.id}`);
+          for (const artistDoc of activeArtists) {
+            const artistData = artistDoc.data();
+            
+            // Ensure portfolio is an array - handle different data structures
+            let portfolio = artistData.portfolio;
+            if (!Array.isArray(portfolio)) {
+              if (portfolio && typeof portfolio === 'object') {
+                // Try to convert object to array
+                portfolio = Object.values(portfolio);
+              } else {
+                portfolio = [];
+              }
+            }
+            
+            if (portfolio.length === 0) {
+              log(`📋 Discover: Artist ${artistDoc.id} has no portfolio items (portfolio type: ${typeof artistData.portfolio})`);
+              continue;
+            }
+            
+            log(`📋 Discover: Processing ${portfolio.length} portfolio items from artist ${artistDoc.id}`);
+            totalPortfolioItemsProcessed += portfolio.length;
           
           // CRITICAL: Filter out deleted items, then sort, NO SLICE - get ALL items
           const activePortfolio = portfolio
@@ -1329,10 +1343,11 @@ function DiscoverPageContent() {
               
               fetchedArtworks.push(artwork);
               existingArtworkIds.add(artworkId); // Track to avoid duplicates
+              totalArtworksAdded++;
             }
           }
           
-          log(`📊 Discover: Added ${fetchedArtworks.length} total artworks from userProfiles.portfolio`);
+          log(`📊 Discover: Portfolio processing summary - Processed ${totalPortfolioItemsProcessed} items from ${activeArtists.length} artists, added ${totalArtworksAdded} new artworks (total: ${fetchedArtworks.length})`);
         } catch (userProfilesError) {
           console.error('Error fetching from userProfiles.portfolio:', userProfilesError);
         }

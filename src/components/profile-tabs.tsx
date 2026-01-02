@@ -139,35 +139,40 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     }
     
     const instructor = course.instructor;
-    const userIdStr = String(userId);
+    const userIdStr = String(userId).trim();
     
-    // Try multiple matching strategies
-    const matchesUserId = 
-      instructor.userId === userId || 
-      String(instructor.userId) === userIdStr ||
-      instructor.userId?.toString() === userIdStr;
+    // Strategy 1: Direct userId match (most common)
+    const instructorUserIdStr = instructor.userId ? String(instructor.userId).trim() : '';
+    const matchesUserId = instructorUserIdStr === userIdStr || instructor.userId === userId;
     
-    const matchesInstructorId = 
-      instructor.id === userId || 
-      String(instructor.id) === userIdStr ||
-      instructor.id?.toString() === userIdStr;
+    // Strategy 2: Direct instructor.id match
+    const instructorIdStr = instructor.id ? String(instructor.id).trim() : '';
+    const matchesInstructorId = instructorIdStr === userIdStr || instructor.id === userId;
     
-    // Also check if instructor.id contains the userId (e.g., "instructor-{userId}")
-    const instructorIdContainsUserId = 
-      instructor.id && String(instructor.id).includes(userIdStr);
+    // Strategy 3: instructor.id contains userId (e.g., "instructor-{userId}")
+    const instructorIdContainsUserId = instructorIdStr && instructorIdStr.includes(userIdStr);
     
-    const matches = matchesUserId || matchesInstructorId || instructorIdContainsUserId;
+    // Strategy 4: Extract userId from instructor.id pattern (e.g., "instructor-abc123" -> "abc123")
+    const extractedUserId = instructorIdStr.match(/instructor[_-]?(.+)$/)?.[1];
+    const matchesExtracted = extractedUserId === userIdStr;
+    
+    const matches = matchesUserId || matchesInstructorId || instructorIdContainsUserId || matchesExtracted;
     
     if (!matches) {
       console.log('🔍 ProfileTabs: Course does NOT match userId:', {
         courseId: course.id,
         courseTitle: course.title,
         lookingFor: userId,
+        lookingForStr: userIdStr,
         instructorUserId: instructor.userId,
+        instructorUserIdStr,
         instructorId: instructor.id,
+        instructorIdStr,
+        extractedUserId,
         matchesUserId,
         matchesInstructorId,
-        instructorIdContainsUserId
+        instructorIdContainsUserId,
+        matchesExtracted
       });
     }
     
