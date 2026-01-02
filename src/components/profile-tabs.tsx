@@ -156,7 +156,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               </div>
               <CardContent className="p-4">
                 <CardTitle className="text-lg mb-2 line-clamp-2">{course.title}</CardTitle>
-                <CardDescription className="line-clamp-2 mb-4 text-sm">
+                <CardDescription className="hidden md:block line-clamp-2 mb-4 text-sm">
                   {course.description}
                 </CardDescription>
                 <div className="flex items-center justify-between gap-2">
@@ -562,10 +562,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             </div>
           )}
         </div>
-        <CardContent className="p-4">
-          <h4 className="font-semibold text-sm mb-1 line-clamp-1">{item.title || item.caption || 'Untitled'}</h4>
+        <CardContent className="p-2">
+          <h4 className="font-semibold text-xs mb-1 line-clamp-1">{item.title || item.caption || 'Untitled'}</h4>
           {item.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+            <p className="hidden md:block text-xs text-muted-foreground line-clamp-2">{item.description}</p>
           )}
         </CardContent>
       </Card>
