@@ -26,6 +26,7 @@ interface CourseContextType {
   courseEnrollments: CourseEnrollment[];
   courseSubmissions: CourseSubmission[];
   isLoading: boolean;
+  refreshCourses: () => Promise<void>;
   
   // Course operations
   getCourse: (courseId: string) => Promise<Course | null>;
@@ -113,9 +114,11 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     const unsubPublished = onSnapshot(
       publishedQuery,
       (snapshot) => {
+        console.log('📚 CourseProvider: Published courses snapshot updated, fetched', snapshot.docs.length, 'courses');
         const publishedCourses = snapshot.docs
           .map(mapCourseData)
           .filter((course: any) => !course.status || course.status === 'approved') as Course[];
+        console.log('📚 After filtering:', publishedCourses.length, 'approved/published courses');
 
         // Query 2: User's own draft/unpublished courses (if logged in)
         if (user) {
@@ -126,6 +129,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           );
 
           const unsubDrafts = onSnapshot(draftQuery, (draftSnapshot) => {
+            console.log('📝 CourseProvider: Draft courses snapshot updated, fetched', draftSnapshot.docs.length, 'draft courses');
             const draftCourses = draftSnapshot.docs.map(mapCourseData) as Course[];
             
             // Combine published + user's drafts, remove duplicates by ID
@@ -134,6 +138,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
               new Map(allCourses.map(c => [c.id, c])).values()
             );
             
+            console.log('✅ CourseProvider: Updated courses state with', uniqueCourses.length, 'total courses');
             setCourses(uniqueCourses);
             setIsLoading(false);
           });
@@ -604,19 +609,83 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const refreshCourses = async (): Promise<void> => {
+    try {
+      console.log('🔄 Force refreshing courses...');
+      const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(coursesQuery);
+      
+      const mapCourseData = (doc: any) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          publishedAt: data.publishedAt?.toDate(),
+          instructor: {
+            ...data.instructor,
+            createdAt: data.instructor?.createdAt?.toDate() || new Date(),
+            updatedAt: data.instructor?.updatedAt?.toDate() || new Date(),
+          },
+          reviews: data.reviews?.map((review: any) => ({
+            ...review,
+            createdAt: review.createdAt?.toDate() || new Date(),
+          })) || [],
+          discussions: data.discussions?.map((discussion: any) => ({
+            ...discussion,
+            createdAt: discussion.createdAt?.toDate() || new Date(),
+            updatedAt: discussion.updatedAt?.toDate() || new Date(),
+            replies: discussion.replies?.map((reply: any) => ({
+              ...reply,
+              createdAt: reply.createdAt?.toDate() || new Date(),
+            })) || [],
+          })) || [],
+          curriculum: data.curriculum?.map((week: any) => ({
+            ...week,
+            lessons: week.lessons?.map((lesson: any) => ({
+              ...lesson,
+              isCompleted: false,
+            })) || [],
+          })) || [],
+        };
+      };
+      
+      const allCourses = snapshot.docs.map(mapCourseData) as Course[];
+      
+      // Filter: published courses + user's draft courses
+      const filteredCourses = allCourses.filter((course: any) => {
+        const isPublished = course.isPublished === true && (!course.status || course.status === 'approved');
+        const isUserDraft = user && course.instructor.userId === user.id;
+        return isPublished || isUserDraft;
+      });
+      
+      setCourses(filteredCourses);
+      console.log('✅ Courses refreshed:', filteredCourses.length, 'courses loaded');
+    } catch (error) {
+      console.error('❌ Error refreshing courses:', error);
+    }
+  };
+
   const updateCourse = async (courseId: string, updates: Partial<Course>): Promise<void> => {
     try {
+      console.log('🔄 Updating course:', courseId, 'with updates:', updates);
       await updateDoc(doc(db, 'courses', courseId), {
         ...updates,
         updatedAt: new Date(),
       });
+
+      console.log('✅ Course updated successfully in Firestore:', courseId);
+      
+      // Force a refresh to ensure UI updates immediately
+      await refreshCourses();
 
       toast({
         title: "Course Updated",
         description: "Course has been updated successfully.",
       });
     } catch (error) {
-      console.error('Error updating course:', error);
+      console.error('❌ Error updating course:', error);
       toast({
         title: "Update Failed",
         description: "Failed to update course.",
@@ -747,6 +816,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     courseEnrollments,
     courseSubmissions,
     isLoading,
+    refreshCourses,
     getCourse,
     enrollInCourse,
     unenrollFromCourse,
