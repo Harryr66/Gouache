@@ -67,6 +67,13 @@ export default function ArtworkPage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [isPrint, setIsPrint] = useState(false);
   
+  // DEBUG: Video URL state for mobile testing
+  const [videoDebugInfo, setVideoDebugInfo] = useState<{
+    originalUrl: string;
+    convertedUrl: string;
+    videoId: string | null;
+  } | null>(null);
+  
   // CRITICAL: Payment safety states
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
   const [isVerifying, setIsVerifying] = useState(false); // Shows verification overlay
@@ -536,6 +543,8 @@ export default function ArtworkPage() {
     const isCloudflareStream = videoUrl?.includes('cloudflarestream.com') || 
                                videoUrl?.includes('videodelivery.net');
     
+    let extractedVideoId: string | null = null;
+    
     if (isCloudflareStream && videoUrl) {
       // Extract video ID first (needed for fallback)
       let videoId: string | null = null;
@@ -561,6 +570,9 @@ export default function ArtworkPage() {
         }
       }
       
+      extractedVideoId = videoId;
+      const originalUrl = videoUrl;
+      
       // If URL already has .m3u8, use it as-is but store videoId for fallback
       if (videoUrl.includes('.m3u8')) {
         console.log('✅ Video URL already has .m3u8, using as-is:', videoUrl);
@@ -578,6 +590,13 @@ export default function ArtworkPage() {
       } else {
         console.error('❌ Could not extract video ID from Cloudflare Stream URL:', videoUrl);
       }
+      
+      // Set debug info for display
+      setVideoDebugInfo({
+        originalUrl,
+        convertedUrl: videoUrl,
+        videoId: extractedVideoId
+      });
     }
     
     const isHLS = videoUrl.includes('.m3u8') || isCloudflareStream;
@@ -831,6 +850,16 @@ export default function ArtworkPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Artwork image + actions */}
             <div className="space-y-4">
+              {/* DEBUG INFO - TEMPORARY for mobile video testing */}
+              {videoDebugInfo && (
+                <div className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded text-xs space-y-1 font-mono">
+                  <div className="font-bold">VIDEO DEBUG INFO:</div>
+                  <div><strong>Original:</strong> {videoDebugInfo.originalUrl.substring(0, 80)}...</div>
+                  <div><strong>Converted:</strong> {videoDebugInfo.convertedUrl.substring(0, 80)}...</div>
+                  <div><strong>Video ID:</strong> {videoDebugInfo.videoId || 'NOT FOUND'}</div>
+                </div>
+              )}
+              
               <div
                 className="relative w-full max-h-[60vh] min-h-[300px] lg:min-h-[400px] rounded-lg overflow-hidden bg-background"
                 onClick={() => {
