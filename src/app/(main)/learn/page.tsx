@@ -123,39 +123,21 @@ export default function LearnMarketplacePage() {
     }
 
     // CRITICAL: Separate real courses from placeholders
-    // Placeholders have id starting with "placeholder-" or mock data
+    // Only filter out obvious placeholders (by ID prefix)
+    // Don't filter based on instructor structure - courses from provider are already real
     const realCourses = filtered.filter(course => {
-      const isPlaceholderId = course.id.startsWith('placeholder-') || course.id.startsWith('mock-');
-      const hasInstructor = course.instructor && (course.instructor.userId || course.instructor.id);
-      const isValidInstructor = hasInstructor && 
-        !course.instructor.userId?.startsWith('placeholder-') && 
-        !course.instructor.id?.startsWith('placeholder-');
+      const isPlaceholder = course.id.startsWith('placeholder-') || course.id.startsWith('mock-');
       
-      const isReal = !isPlaceholderId && hasInstructor && isValidInstructor;
-      
-      if (!isReal) {
-        console.log('📚 Learn Marketplace: Filtered out course (not real):', {
-          id: course.id,
-          title: course.title,
-          isPlaceholderId,
-          hasInstructor,
-          isValidInstructor,
-          instructor: course.instructor
-        });
+      if (isPlaceholder) {
+        console.log('📚 Learn Marketplace: Filtered out placeholder:', course.id);
       }
       
-      return isReal;
+      return !isPlaceholder;
     });
     
-    const placeholders = filtered.filter(course => {
-      const isPlaceholderId = course.id.startsWith('placeholder-') || course.id.startsWith('mock-');
-      const hasInstructor = course.instructor && (course.instructor.userId || course.instructor.id);
-      const isValidInstructor = hasInstructor && 
-        !course.instructor.userId?.startsWith('placeholder-') && 
-        !course.instructor.id?.startsWith('placeholder-');
-      
-      return isPlaceholderId || !hasInstructor || !isValidInstructor;
-    });
+    const placeholders = filtered.filter(course => 
+      course.id.startsWith('placeholder-') || course.id.startsWith('mock-')
+    );
     
     console.log('📚 Learn Marketplace: Real courses after filtering:', realCourses.length);
     console.log('📚 Learn Marketplace: Placeholders after filtering:', placeholders.length);
