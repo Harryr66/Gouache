@@ -86,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           suggestionsEnabled: false,   // Suggestions hidden by default
           hideShop: true,   // Shop hidden by default
           hideLearn: true,   // Learn hidden by default
+          hideSocialIcons: false,  // Social icons visible by default
           socialLinks: {},
           showcaseLocations: [],
           preferences: {
@@ -194,6 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             hideShop: userData.hideShop ?? true,
             hideLearn: userData.hideLearn ?? true,
             hideShowcaseLocations: userData.hideShowcaseLocations || false,
+            hideSocialIcons: userData.hideSocialIcons || false,
             newsletterLink: userData.newsletterLink || '',
             socialLinks: userData.socialLinks || {},
             showcaseLocations: userData.showcaseLocations || [],

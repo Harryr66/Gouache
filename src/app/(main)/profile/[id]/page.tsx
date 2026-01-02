@@ -141,6 +141,8 @@ export default function ArtistProfilePage() {
             showcaseLocations: data.showcaseLocations || [],
             newsletterLink: data.newsletterLink || undefined,
             newsletterProvider: data.newsletterProvider || undefined,
+            socialLinks: data.socialLinks || undefined,
+            hideSocialIcons: data.hideSocialIcons || false,
             portfolio: portfolio, // Include portfolio for ProfileTabs
           };
           
