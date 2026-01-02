@@ -217,10 +217,8 @@ export function ProfileHeader({
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 md:gap-2"
                         >
-                          <Mail className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                          <span className="hidden sm:inline">Newsletter</span>
-                          <span className="sm:hidden">News</span>
-                          <ExternalLink className="h-3 w-3" />
+                          <Mail className="h-3 w-3 md:h-4 md:w-4" />
+                          <span>Newsletter</span>
                         </a>
                       </Button>
                     )}
