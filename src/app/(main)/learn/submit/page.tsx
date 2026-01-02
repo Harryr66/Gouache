@@ -68,6 +68,9 @@ function CourseSubmissionPageContent() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Kajabi-style multi-step wizard
   const steps = [
@@ -423,7 +426,114 @@ function CourseSubmissionPageContent() {
       console.log('📝 Updated formData state:', { ...updated });
       return updated;
     });
+    setHasUnsavedChanges(true); // Mark as unsaved when user makes changes
   };
+
+  // Auto-save function with debounce
+  const autoSaveDraft = useMemo(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    return async () => {
+      // Clear existing timeout
+      if (timeoutId) clearTimeout(timeoutId);
+      
+      // Only auto-save if there are unsaved changes and we have a title
+      if (!hasUnsavedChanges || !formData.title || !user) return;
+      
+      // Debounce: wait 3 seconds after last change
+      timeoutId = setTimeout(async () => {
+        setIsAutoSaving(true);
+        console.log('💾 Auto-saving draft...');
+        
+        try {
+          // Create or update draft course
+          const courseId = editingCourseId || `draft-${Date.now()}`;
+          const courseRef = doc(db, 'courses', courseId);
+          
+          const instructorData = {
+            id: `instructor-${user.id}`,
+            userId: user.id,
+            name: user.displayName || 'Unknown Instructor',
+            avatar: user.avatarUrl || '',
+            avatarUrl: user.avatarUrl || '',
+            bio: formData.instructorBio || '',
+            rating: 5.0,
+            students: 0,
+            courses: 1,
+            verified: false,
+            credentials: '',
+            specialties: [],
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          
+          const draftData: any = {
+            title: formData.title,
+            description: formData.description || '',
+            category: formData.category || '',
+            subcategory: formData.subcategory || '',
+            difficulty: formData.difficulty || '',
+            duration: formData.duration || '',
+            price: parseFloat(formData.price) || 0,
+            currency: formData.currency || 'USD',
+            tags: formData.tags || [],
+            instructor: instructorData,
+            thumbnail: thumbnailPreview || '',
+            previewVideoUrl: trailerPreviewUrl || '',
+            curriculum: formData.curriculum || [],
+            courseType: formData.courseType || 'affiliate',
+            externalUrl: formData.externalUrl || '',
+            hostingPlatform: formData.hostingPlatform || '',
+            supplyList: formData.supplyList || [],
+            isPublished: false,
+            status: 'approved',
+            updatedAt: new Date(),
+            lastAutoSave: new Date(),
+          };
+          
+          // Add createdAt only for new drafts
+          if (!editingCourseId) {
+            draftData.createdAt = new Date();
+            setEditingCourseId(courseId);
+            setIsEditing(true);
+          }
+          
+          await setDoc(courseRef, draftData, { merge: true });
+          
+          setLastSaved(new Date());
+          setHasUnsavedChanges(false);
+          console.log('✅ Auto-save complete');
+        } catch (error) {
+          console.error('❌ Auto-save failed:', error);
+          // Don't show error toast - auto-save failures shouldn't interrupt user
+        } finally {
+          setIsAutoSaving(false);
+        }
+      }, 3000); // 3 second debounce
+    };
+  }, [formData, hasUnsavedChanges, user, editingCourseId, thumbnailPreview, trailerPreviewUrl]);
+
+  // Trigger auto-save when form data changes
+  useEffect(() => {
+    if (hasUnsavedChanges && formData.title) {
+      autoSaveDraft();
+    }
+  }, [formData, hasUnsavedChanges, autoSaveDraft]);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const handleThumbnailUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -431,6 +541,7 @@ function CourseSubmissionPageContent() {
       setThumbnailFile(file);
       const previewUrl = URL.createObjectURL(file);
       setThumbnailPreview(previewUrl);
+      setHasUnsavedChanges(true);
     }
   };
 
@@ -915,6 +1026,10 @@ function CourseSubmissionPageContent() {
         
         console.log('✅ UPDATE COMPLETED - Course saved to Firestore');
 
+        // Reset unsaved changes tracking
+        setHasUnsavedChanges(false);
+        setLastSaved(new Date());
+
         toast({
           title: shouldRedirectAfterSave ? "Course Updated" : "Changes Saved",
           description: shouldRedirectAfterSave 
@@ -951,6 +1066,10 @@ function CourseSubmissionPageContent() {
         };
 
         await createCourse(newCourseData);
+
+        // Reset unsaved changes tracking
+        setHasUnsavedChanges(false);
+        setLastSaved(new Date());
 
         toast({
           title: "Course Published",
@@ -1085,7 +1204,24 @@ function CourseSubmissionPageContent() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{isEditing ? 'Edit Course' : 'Create Course'}</CardTitle>
-              <CardDescription>Step {steps.findIndex(s=>s.id===activeStep)+1} of {steps.length}</CardDescription>
+              <CardDescription className="flex items-center justify-between">
+                <span>Step {steps.findIndex(s=>s.id===activeStep)+1} of {steps.length}</span>
+                {/* Auto-save indicator */}
+                {isAutoSaving ? (
+                  <span className="text-xs flex items-center gap-1 text-muted-foreground">
+                    <Clock className="h-3 w-3 animate-spin" />
+                    Saving...
+                  </span>
+                ) : lastSaved ? (
+                  <span className="text-xs text-muted-foreground">
+                    Saved {new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                ) : hasUnsavedChanges && formData.title ? (
+                  <span className="text-xs text-amber-500">
+                    Unsaved changes
+                  </span>
+                ) : null}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {steps.map((s) => (
