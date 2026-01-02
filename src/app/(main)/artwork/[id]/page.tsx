@@ -67,13 +67,6 @@ export default function ArtworkPage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [isPrint, setIsPrint] = useState(false);
   
-  // DEBUG: Video URL state for mobile testing
-  const [videoDebugInfo, setVideoDebugInfo] = useState<{
-    originalUrl: string;
-    convertedUrl: string;
-    videoId: string | null;
-  } | null>(null);
-  
   // CRITICAL: Payment safety states
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
   const [isVerifying, setIsVerifying] = useState(false); // Shows verification overlay
@@ -535,36 +528,18 @@ export default function ArtworkPage() {
     const video = videoRef.current;
     if (!artwork || !artwork.videoUrl || artwork.mediaType !== 'video' || !video) return;
 
-    // Extract video ID and construct manifest URL directly
-    let videoUrl = artwork.videoUrl;
-    let videoId: string | null = null;
-    
-    // Extract video ID from any Cloudflare URL format
-    const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
-    const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
-    const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
-    
-    if (customerMatch) {
-      videoId = customerMatch[1];
-    } else if (videoDeliveryMatch) {
-      videoId = videoDeliveryMatch[1];
-    } else if (fallbackMatch) {
-      videoId = fallbackMatch[1];
+    // Extract 32-character hex video ID from any Cloudflare URL
+    const videoIdMatch = artwork.videoUrl.match(/([a-f0-9]{32})/);
+    if (!videoIdMatch) {
+      console.error('Could not extract video ID from:', artwork.videoUrl);
+      return;
     }
     
-    // If we have a video ID, construct the manifest URL
-    if (videoId && !videoUrl.includes('.m3u8')) {
-      videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-    }
+    const videoId = videoIdMatch[1];
+    const manifestUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
     
-    // Set debug info
-    setVideoDebugInfo({
-      originalUrl: artwork.videoUrl,
-      convertedUrl: videoUrl,
-      videoId: videoId
-    });
-    
-    const isHLS = videoUrl.includes('.m3u8');
+    console.log('Video ID:', videoId);
+    console.log('Manifest URL:', manifestUrl);
     
     // Cleanup previous HLS instance
     if (hlsRef.current) {
@@ -572,44 +547,42 @@ export default function ArtworkPage() {
       hlsRef.current = null;
     }
 
-    if (isHLS) {
-      const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
-      
-      if (canPlayHLS) {
-        // Native HLS support (Safari)
-        video.src = videoUrl;
-        video.load();
-      } else if (Hls.isSupported()) {
-        // Use hls.js
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: false,
-          startLevel: -1,
-          debug: false,
-        });
-        
-        hls.loadSource(videoUrl);
-        hls.attachMedia(video);
-        hlsRef.current = hls;
-        
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log('✅ HLS manifest parsed, video ready');
-        });
-        
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            console.error('❌ HLS fatal error:', data);
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              hls.startLoad();
-            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-              hls.recoverMediaError();
-            }
-          }
-        });
-      }
-    } else {
-      video.src = videoUrl;
+    // Check if browser natively supports HLS (Safari/iOS)
+    const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
+    
+    if (canPlayHLS) {
+      // Native HLS support
+      console.log('Using native HLS');
+      video.src = manifestUrl;
       video.load();
+    } else if (Hls.isSupported()) {
+      // Use hls.js for other browsers
+      console.log('Using HLS.js');
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+      });
+      
+      hls.loadSource(manifestUrl);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log('HLS manifest loaded');
+      });
+      
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          console.error('HLS error:', data);
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+          }
+        }
+      });
+    } else {
+      console.error('HLS not supported');
     }
 
     return () => {
@@ -650,29 +623,15 @@ export default function ArtworkPage() {
     const video = modalVideoRef.current;
     if (!showImageModal || !artwork || !artwork.videoUrl || artwork.mediaType !== 'video' || !video) return;
 
-    // Extract video ID and construct manifest URL directly
-    let videoUrl = artwork.videoUrl;
-    let videoId: string | null = null;
-    
-    // Extract video ID from any Cloudflare URL format
-    const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
-    const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
-    const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
-    
-    if (customerMatch) {
-      videoId = customerMatch[1];
-    } else if (videoDeliveryMatch) {
-      videoId = videoDeliveryMatch[1];
-    } else if (fallbackMatch) {
-      videoId = fallbackMatch[1];
+    // Extract 32-character hex video ID from any Cloudflare URL
+    const videoIdMatch = artwork.videoUrl.match(/([a-f0-9]{32})/);
+    if (!videoIdMatch) {
+      console.error('Modal: Could not extract video ID from:', artwork.videoUrl);
+      return;
     }
     
-    // If we have a video ID, construct the manifest URL
-    if (videoId && !videoUrl.includes('.m3u8')) {
-      videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-    }
-    
-    const isHLS = videoUrl.includes('.m3u8');
+    const videoId = videoIdMatch[1];
+    const manifestUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
     
     // Cleanup previous HLS instance
     if (modalHlsRef.current) {
@@ -680,39 +639,31 @@ export default function ArtworkPage() {
       modalHlsRef.current = null;
     }
 
-    if (isHLS) {
-      const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
-      
-      if (canPlayHLS) {
-        video.src = videoUrl;
-        video.load();
-      } else if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: false,
-        });
-        
-        hls.loadSource(videoUrl);
-        hls.attachMedia(video);
-        modalHlsRef.current = hls;
-        
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log('✅ Modal HLS manifest parsed, video ready');
-        });
-        
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              hls.startLoad();
-            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-              hls.recoverMediaError();
-            }
-          }
-        });
-      }
-    } else {
-      video.src = videoUrl;
+    // Check if browser natively supports HLS (Safari/iOS)
+    const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
+    
+    if (canPlayHLS) {
+      video.src = manifestUrl;
       video.load();
+    } else if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+      });
+      
+      hls.loadSource(manifestUrl);
+      hls.attachMedia(video);
+      modalHlsRef.current = hls;
+      
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+          }
+        }
+      });
     }
 
     return () => {
@@ -776,7 +727,6 @@ export default function ArtworkPage() {
                     loop={false}
                     poster={artwork.imageUrl || undefined}
                     preload="metadata"
-                    src={`https://videodelivery.net/${artwork.videoUrl.match(/([a-f0-9]{32})/)?.[1]}/manifest/video.m3u8`}
                   />
                 ) : (
                   <div className="cursor-zoom-in">
