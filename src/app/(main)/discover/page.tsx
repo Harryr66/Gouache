@@ -1211,10 +1211,12 @@ function DiscoverPageContent() {
         
         // CRITICAL: ALWAYS fetch from userProfiles.portfolio for active artists
         // This is the PRIMARY source - fetch ALL content from ALL active artists
+        // ALWAYS run this, not just as fallback
         const existingArtworkIds = new Set(fetchedArtworks.map(a => a.id));
         
+        // ALWAYS fetch from userProfiles - this should be the main source
         try {
-          log('📋 Discover: Fetching ALL content from ACTIVE artist profiles (userProfiles.portfolio)...');
+          log('📋 Discover: Fetching ALL content from ACTIVE artist profiles (userProfiles.portfolio) - ALWAYS RUNNING...');
           
           // Query all userProfiles - we'll filter for active client-side
           // Firestore doesn't support != operator, so we query all and filter
