@@ -491,6 +491,18 @@ const VideoPlayer = ({
         // Native HLS support (Safari)
         video.src = manifestUrl;
         console.log('✅ Using native HLS support for:', manifestUrl);
+        
+        // For Safari, wait for loadedmetadata then play
+        video.addEventListener('loadedmetadata', () => {
+          console.log('✅ Video metadata loaded');
+          video.muted = true;
+          setIsVideoReady(true);
+          video.play()
+            .then(() => console.log('✅ Video playing'))
+            .catch(err => console.log('⚠️ Autoplay prevented:', err));
+        }, { once: true });
+        
+        video.load();
       } else if (Hls.isSupported()) {
         // Use hls.js for browsers that don't support HLS natively
         const hls = new Hls({
@@ -683,7 +695,6 @@ const VideoPlayer = ({
                 playsInline
                 muted
                 loop
-                autoPlay
                 controls={false}
                 style={{ opacity: isVideoReady ? 1 : 0 }}
               />
