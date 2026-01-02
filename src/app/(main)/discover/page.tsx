@@ -1210,48 +1210,69 @@ function DiscoverPageContent() {
           log(`📊 Discover: Summary - Portfolio items: ${portfolioItems.length}, Added: ${fetchedArtworks.length}, Skipped (no image): ${skippedNoImage}, Skipped (no artist): ${skippedNoArtist}`);
         }
         
-        // BACKWARD COMPATIBILITY: Always check userProfiles.portfolio as fallback
-        // This ensures content from userProfiles.portfolio is included (old data structure)
-        // Deduplicate by artwork ID to avoid showing same item twice
+        // CRITICAL: ALWAYS fetch from userProfiles.portfolio for active artists
+        // This is the PRIMARY source - fetch ALL content from ALL active artists
         const existingArtworkIds = new Set(fetchedArtworks.map(a => a.id));
         
-        // Always run fallback to ensure we get ALL content from userProfiles.portfolio
-        if (useFallback || fetchedArtworks.length < 50) {
-          log('📋 Discover: Checking userProfiles.portfolio for additional content (backward compatibility)...');
+        log('📋 Discover: Fetching ALL content from ACTIVE artist profiles (userProfiles.portfolio)...');
+        
+        // Query all userProfiles - we'll filter for active client-side
+        // Firestore doesn't support != operator, so we query all and filter
+        const artistsQuery = query(
+          collection(db, 'userProfiles'),
+          limit(100) // Get up to 100 profiles
+        );
+        
+        const artistsSnapshot = await getDocs(artistsQuery);
+        log(`👥 Discover: Found ${artistsSnapshot.docs.length} ACTIVE artists`);
+        
+        // Extract portfolio items from each ACTIVE artist
+        for (const artistDoc of artistsSnapshot.docs) {
+          const artistData = artistDoc.data();
           
-          // Fetch artists with portfolios - old method
-          const artistsQuery = query(
-            collection(db, 'userProfiles'),
-            limit(30) // Reduced for faster initial load
-          );
+          // Double-check: Only process ACTIVE users (backup check)
+          if (artistData.isActive === false) {
+            log(`⚠️ Discover: Skipping inactive artist ${artistDoc.id}`);
+            continue;
+          }
           
-          const artistsSnapshot = await getDocs(artistsQuery);
-          log(`👥 Discover: Found ${artistsSnapshot.docs.length} artists (fallback method)`);
+          const portfolio = artistData.portfolio || [];
           
-          // Extract portfolio items from each artist (old method)
-          for (const artistDoc of artistsSnapshot.docs) {
-            const artistData = artistDoc.data();
+          if (portfolio.length === 0) {
+            log(`📋 Discover: Artist ${artistDoc.id} has no portfolio items`);
+            continue;
+          }
+          
+          log(`📋 Discover: Processing ${portfolio.length} portfolio items from artist ${artistDoc.id}`);
+          
+          // CRITICAL: Filter out deleted items, then sort, NO SLICE - get ALL items
+          const activePortfolio = portfolio
+            .filter((item: any) => {
+              // STRICT deleted check
+              const isDeleted = item.deleted === true || item.deleted === 'true' || item.deleted === 1;
+              const isHidden = item.showInPortfolio === false;
+              
+              if (isDeleted) {
+                log(`⚠️ Discover: Filtering out deleted item ${item.id} from artist ${artistDoc.id}`);
+                return false;
+              }
+              
+              if (isHidden) {
+                return false;
+              }
+              
+              return true;
+            })
+            .sort((a: any, b: any) => {
+              const dateA = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
+              const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
+              return dateB - dateA; // Newest first
+            });
+          // NO SLICE - get ALL active items
             
-            // CRITICAL: Only show content from ACTIVE users
-            if (artistData.isActive === false) {
-              log(`⚠️ Discover: Skipping inactive artist ${artistDoc.id}`);
-              continue;
-            }
-            
-            const portfolio = artistData.portfolio || [];
-            
-            if (portfolio.length === 0) continue;
-            
-            const recentPortfolio = portfolio
-              .filter((item: any) => !item.deleted && item.showInPortfolio !== false)
-              .sort((a: any, b: any) => {
-                const dateA = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
-                const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
-                return dateB - dateA;
-              })
-              .slice(0, 20);
-            
-            for (const [index, item] of recentPortfolio.entries()) {
+          log(`📋 Discover: Processing ${activePortfolio.length} ACTIVE portfolio items from artist ${artistDoc.id}`);
+          
+          for (const [index, item] of activePortfolio.entries()) {
               if (discoverSettings.hideAiAssistedArt && (item.aiAssistance === 'assisted' || item.aiAssistance === 'generated' || item.isAI)) {
                 continue;
               }
