@@ -1496,67 +1496,14 @@ function DiscoverPageContent() {
           console.error('Error fetching non-portfolio artworks:', error);
         }
         
-        // ENGAGEMENT-BASED RANKING SYSTEM
-        // Fetch engagement scores for all artworks
-        const artworkIds = fetchedArtworks.map(a => a.id);
-        let engagementMap = new Map<string, number>();
-        
-        try {
-          const engagementData = await engagementTracker.getArtworkEngagements(artworkIds);
-          engagementData.forEach((engagement, artworkId) => {
-            engagementMap.set(artworkId, engagement.engagementScore || 0);
-          });
-          log(`📊 Discover: Loaded engagement scores for ${engagementMap.size} artworks`);
-        } catch (error) {
-          console.warn('⚠️ Failed to load engagement scores, falling back to date sort');
-        }
-        
-        // CRITICAL: Separate real content from placeholders
-        const realArtworks = fetchedArtworks.filter(a => 
-          !a.id.startsWith('placeholder-') && 
-          a.artist?.id &&
-          !a.artist.id.startsWith('placeholder-')
-        );
-        
-        const placeholders = fetchedArtworks.filter(a => 
-          a.id.startsWith('placeholder-') ||
-          !a.artist?.id ||
-          a.artist.id.startsWith('placeholder-')
-        );
-        
-        // Sort REAL content by engagement score (view time priority)
-        realArtworks.sort((a, b) => {
-          // PRIMARY: Engagement score (includes view time, likes, clicks)
-          const aEngagement = engagementMap.get(a.id) || 0;
-          const bEngagement = engagementMap.get(b.id) || 0;
-          
-          // If engagement scores differ significantly, prioritize higher engagement
-          if (Math.abs(aEngagement - bEngagement) > 5) {
-            return bEngagement - aEngagement;
-          }
-          
-          // SECONDARY: Recency for new/similar content
+        // Sort by date (newest first) - SIMPLE AND RELIABLE
+        fetchedArtworks.sort((a, b) => {
           const dateA = a.createdAt.getTime();
           const dateB = b.createdAt.getTime();
-          
-          // Boost very recent content (last 7 days) by 20%
-          const now = Date.now();
-          const sevenDays = 7 * 24 * 60 * 60 * 1000;
-          const aBoost = (now - dateA) < sevenDays ? aEngagement * 1.2 : aEngagement;
-          const bBoost = (now - dateB) < sevenDays ? bEngagement * 1.2 : bEngagement;
-          
-          if (Math.abs(aBoost - bBoost) > 3) {
-            return bBoost - aBoost;
-          }
-          
-          // TERTIARY: Date as tiebreaker
           return dateB - dateA;
         });
         
-        // Reassemble: Real content FIRST, then placeholders
-        fetchedArtworks = [...realArtworks, ...placeholders];
-        
-        log(`✅ Discover: Ranked ${realArtworks.length} real artworks by engagement + ${placeholders.length} placeholders`);
+        log(`✅ Discover: Sorted ${fetchedArtworks.length} artworks by date (newest first)`);
         
         // No fallback: only show current portfolio items with images, skip deleted/hidden
         
