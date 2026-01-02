@@ -429,6 +429,96 @@ function CourseSubmissionPageContent() {
     setHasUnsavedChanges(true); // Mark as unsaved when user makes changes
   };
 
+  // Manual save function (immediate, no debounce)
+  const saveDraftNow = async () => {
+    if (!formData.title || !user) {
+      toast({
+        title: "Cannot save",
+        description: "Please add a course title before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsAutoSaving(true);
+    console.log('💾 Manually saving draft...');
+    
+    try {
+      // Create or update draft course
+      const courseId = editingCourseId || `draft-${Date.now()}`;
+      const courseRef = doc(db, 'courses', courseId);
+      
+      const instructorData = {
+        id: `instructor-${user.id}`,
+        userId: user.id,
+        name: user.displayName || 'Unknown Instructor',
+        avatar: user.avatarUrl || '',
+        avatarUrl: user.avatarUrl || '',
+        bio: formData.instructorBio || '',
+        rating: 5.0,
+        students: 0,
+        courses: 1,
+        verified: false,
+        credentials: '',
+        specialties: [],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      const draftData: any = {
+        title: formData.title,
+        description: formData.description || '',
+        category: formData.category || '',
+        subcategory: formData.subcategory || '',
+        difficulty: formData.difficulty || '',
+        duration: formData.duration || '',
+        price: parseFloat(formData.price) || 0,
+        currency: formData.currency || 'USD',
+        tags: formData.tags || [],
+        instructor: instructorData,
+        thumbnail: thumbnailPreview || '',
+        previewVideoUrl: trailerPreviewUrl || '',
+        curriculum: formData.curriculum || [],
+        courseType: formData.courseType || 'affiliate',
+        externalUrl: formData.externalUrl || '',
+        hostingPlatform: formData.hostingPlatform || '',
+        supplyList: formData.supplyList || [],
+        isPublished: false,
+        status: 'approved',
+        updatedAt: new Date(),
+        lastManualSave: new Date(),
+      };
+      
+      // Add createdAt only for new drafts
+      if (!editingCourseId) {
+        draftData.createdAt = new Date();
+        setEditingCourseId(courseId);
+        setIsEditing(true);
+      }
+      
+      await setDoc(courseRef, draftData, { merge: true });
+      
+      setLastSaved(new Date());
+      setHasUnsavedChanges(false);
+      console.log('✅ Manual save complete');
+      
+      toast({
+        title: "Draft saved",
+        description: "Your course draft has been saved successfully.",
+      });
+    } catch (error) {
+      console.error('❌ Manual save failed:', error);
+      toast({
+        title: "Save failed",
+        description: "Failed to save draft. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAutoSaving(false);
+    }
+  };
+
   // Auto-save function with debounce
   const autoSaveDraft = useMemo(() => {
     let timeoutId: NodeJS.Timeout;
@@ -1236,8 +1326,24 @@ function CourseSubmissionPageContent() {
                 </button>
               ))}
               <div className="pt-2">
-                <Button type="button" variant="outline" className="w-full" onClick={() => toast({ title: 'Draft saved' })}>
-                  <Save className="h-4 w-4 mr-2" /> Save Draft
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={saveDraftNow}
+                  disabled={isAutoSaving || !formData.title}
+                >
+                  {isAutoSaving ? (
+                    <>
+                      <Clock className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Draft
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
