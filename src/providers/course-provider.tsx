@@ -115,10 +115,15 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       publishedQuery,
       (snapshot) => {
         console.log('📚 CourseProvider: Published courses snapshot updated, fetched', snapshot.docs.length, 'courses');
-        const publishedCourses = snapshot.docs
-          .map(mapCourseData)
-          .filter((course: any) => !course.status || course.status === 'approved') as Course[];
-        console.log('📚 After filtering:', publishedCourses.length, 'approved/published courses');
+        
+        // For public: only show approved courses
+        // For course owners: show ALL their published courses (regardless of approval status)
+        const allPublishedCourses = snapshot.docs.map(mapCourseData) as Course[];
+        const publicCourses = allPublishedCourses.filter((course: any) => 
+          !course.status || course.status === 'approved'
+        );
+        
+        console.log('📚 After filtering:', publicCourses.length, 'approved/published courses (public view)');
 
         // Query 2: User's own draft/unpublished courses (if logged in)
         if (user) {
@@ -132,8 +137,15 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
             console.log('📝 CourseProvider: Draft courses snapshot updated, fetched', draftSnapshot.docs.length, 'draft courses');
             const draftCourses = draftSnapshot.docs.map(mapCourseData) as Course[];
             
-            // Combine published + user's drafts, remove duplicates by ID
-            const allCourses = [...publishedCourses, ...draftCourses];
+            // Add user's own published courses (even if pending approval)
+            const userPublishedCourses = allPublishedCourses.filter((course: any) => 
+              course.instructor.userId === user.id
+            );
+            
+            console.log('👤 User\'s published courses (all statuses):', userPublishedCourses.length);
+            
+            // Combine: public approved courses + user's ALL published courses + user's drafts
+            const allCourses = [...publicCourses, ...userPublishedCourses, ...draftCourses];
             const uniqueCourses = Array.from(
               new Map(allCourses.map(c => [c.id, c])).values()
             );
@@ -145,8 +157,8 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
           unsubscribes.push(unsubDrafts);
         } else {
-          // No user logged in - just show published courses
-          setCourses(publishedCourses);
+          // No user logged in - just show approved published courses
+          setCourses(publicCourses);
           setIsLoading(false);
         }
       },
@@ -653,11 +665,14 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       
       const allCourses = snapshot.docs.map(mapCourseData) as Course[];
       
-      // Filter: published courses + user's draft courses
+      // Filter: For public, show only approved published courses
+      // For course owners, show ALL their courses (published at any status + drafts)
       const filteredCourses = allCourses.filter((course: any) => {
-        const isPublished = course.isPublished === true && (!course.status || course.status === 'approved');
-        const isUserDraft = user && course.instructor.userId === user.id;
-        return isPublished || isUserDraft;
+        const isUserCourse = user && course.instructor.userId === user.id;
+        const isPublicApproved = course.isPublished === true && (!course.status || course.status === 'approved');
+        
+        // Show if: user's own course OR publicly approved
+        return isUserCourse || isPublicApproved;
       });
       
       setCourses(filteredCourses);
