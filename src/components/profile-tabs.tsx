@@ -130,54 +130,68 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     `)}`;
   };
   
-  // Get courses by this instructor
-  // CRITICAL: Check multiple ways to match instructor to userId
-  const instructorCourses = courses.filter(course => {
-    if (!course.instructor) {
-      console.warn('⚠️ ProfileTabs: Course missing instructor:', course.id, course.title);
-      return false;
-    }
+  // Fetch courses directly from Firestore for this user to ensure we get all published courses
+  const [directInstructorCourses, setDirectInstructorCourses] = useState<Course[]>([]);
+  const [directCoursesLoading, setDirectCoursesLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchInstructorCourses = async () => {
+      setDirectCoursesLoading(true);
+      try {
+        // Query courses where instructor.userId matches this userId and is published
+        const coursesQuery = query(
+          collection(db, 'courses'),
+          where('isPublished', '==', true),
+          where('deleted', '==', false),
+          orderBy('createdAt', 'desc')
+        );
+        
+        const snapshot = await getDocs(coursesQuery);
+        const allCourses = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+            publishedAt: data.publishedAt?.toDate(),
+          } as Course;
+        });
+        
+        // Filter courses by instructor.userId (check multiple matching strategies)
+        const userIdStr = String(userId).trim();
+        const matchedCourses = allCourses.filter(course => {
+          if (!course.instructor) return false;
+          
+          const instructor = course.instructor;
+          const instructorUserIdStr = instructor.userId ? String(instructor.userId).trim() : '';
+          const instructorIdStr = instructor.id ? String(instructor.id).trim() : '';
+          
+          // Multiple matching strategies
+          const matchesUserId = instructorUserIdStr === userIdStr || instructor.userId === userId;
+          const matchesInstructorId = instructorIdStr === userIdStr || instructor.id === userId;
+          const instructorIdContainsUserId = instructorIdStr && instructorIdStr.includes(userIdStr);
+          const extractedUserId = instructorIdStr.match(/instructor[_-]?(.+)$/)?.[1];
+          const matchesExtracted = extractedUserId === userIdStr;
+          
+          return matchesUserId || matchesInstructorId || instructorIdContainsUserId || matchesExtracted;
+        });
+        
+        console.log('🎓 ProfileTabs: Fetched', allCourses.length, 'published courses, matched', matchedCourses.length, 'for userId', userId);
+        setDirectInstructorCourses(matchedCourses);
+      } catch (error) {
+        console.error('Error fetching instructor courses:', error);
+        setDirectInstructorCourses([]);
+      } finally {
+        setDirectCoursesLoading(false);
+      }
+    };
     
-    const instructor = course.instructor;
-    const userIdStr = String(userId).trim();
-    
-    // Strategy 1: Direct userId match (most common)
-    const instructorUserIdStr = instructor.userId ? String(instructor.userId).trim() : '';
-    const matchesUserId = instructorUserIdStr === userIdStr || instructor.userId === userId;
-    
-    // Strategy 2: Direct instructor.id match
-    const instructorIdStr = instructor.id ? String(instructor.id).trim() : '';
-    const matchesInstructorId = instructorIdStr === userIdStr || instructor.id === userId;
-    
-    // Strategy 3: instructor.id contains userId (e.g., "instructor-{userId}")
-    const instructorIdContainsUserId = instructorIdStr && instructorIdStr.includes(userIdStr);
-    
-    // Strategy 4: Extract userId from instructor.id pattern (e.g., "instructor-abc123" -> "abc123")
-    const extractedUserId = instructorIdStr.match(/instructor[_-]?(.+)$/)?.[1];
-    const matchesExtracted = extractedUserId === userIdStr;
-    
-    const matches = matchesUserId || matchesInstructorId || instructorIdContainsUserId || matchesExtracted;
-    
-    if (!matches) {
-      console.log('🔍 ProfileTabs: Course does NOT match userId:', {
-        courseId: course.id,
-        courseTitle: course.title,
-        lookingFor: userId,
-        lookingForStr: userIdStr,
-        instructorUserId: instructor.userId,
-        instructorUserIdStr,
-        instructorId: instructor.id,
-        instructorIdStr,
-        extractedUserId,
-        matchesUserId,
-        matchesInstructorId,
-        instructorIdContainsUserId,
-        matchesExtracted
-      });
-    }
-    
-    return matches;
-  });
+    fetchInstructorCourses();
+  }, [userId]);
+  
+  // Use direct courses instead of filtered provider courses
+  const instructorCourses = directInstructorCourses;
   
   // Debug logging for course display
   console.log('🎓 ProfileTabs: All courses count:', courses.length);
@@ -240,7 +254,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     console.log('🎓 ProfileTabs: Available courses after filtering:', availableCourses.length);
     console.log('🎓 ProfileTabs: Available courses:', availableCourses.map(c => ({ id: c.id, title: c.title })));
 
-    if (coursesLoading) {
+    if (coursesLoading || directCoursesLoading) {
       return (
         <div className="flex justify-center py-8">
           <ThemeLoading text="" size="sm" />
