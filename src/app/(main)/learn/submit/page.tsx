@@ -627,15 +627,11 @@ function CourseSubmissionPageContent() {
       return;
     }
 
-    // CRITICAL: Determine if we're publishing based on current step
-    const isPublishing = activeStep === 'publish';
-    
-    // CRITICAL: Determine if this is just a save (not a publish)
-    // When "Save Changes" button is clicked, shouldRedirectAfterSave is set to false
-    const isJustSaving = !shouldRedirectAfterSave && isEditing;
-
-    // ONLY validate if NOT just saving edits (skip validation for intermediate saves)
-    if (!isJustSaving) {
+    // CRITICAL: Skip ALL validation when editing existing courses
+    // Editing should always allow updates without annoying validation
+    if (!isEditing) {
+      // ONLY validate for NEW courses, never for editing
+      
       // Check Stripe connection before allowing course submission
       if (!stripeStatus?.isComplete) {
         toast({
@@ -656,7 +652,7 @@ function CourseSubmissionPageContent() {
         return;
       }
 
-      // Validate required fields (only for publishing, not for saving edits)
+      // Validate required fields (only for NEW courses)
       const requiredFields = ['title', 'description', 'category', 'subcategory', 'difficulty', 'duration', 'price', 'instructorBio', 'originalityDisclaimer'];
       
       // For hosted courses, validate curriculum
@@ -691,8 +687,8 @@ function CourseSubmissionPageContent() {
         return;
       }
 
-      // For editing, thumbnail is optional if preview exists
-      if (!isEditing && !thumbnailFile) {
+      // For new courses, thumbnail is required
+      if (!thumbnailFile) {
         toast({
           title: "Thumbnail Required",
           description: "Please upload a course thumbnail image.",
