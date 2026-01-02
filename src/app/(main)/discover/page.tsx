@@ -2445,7 +2445,7 @@ function DiscoverPageContent() {
                     variant="ghost"
                     onClick={() => startTransition(() => setShowFilters(!showFilters))}
                     className={cn(
-                      "h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0 border-border w-full",
+                      "h-10 px-4 md:px-6 rounded-l-md border-2 border-border w-full",
                       showFilters && "bg-muted"
                     )}
                     style={{ width: '100%' }}
@@ -2460,7 +2460,7 @@ function DiscoverPageContent() {
                     variant="ghost"
                     onClick={() => startTransition(() => setShowEventFilters(!showEventFilters))}
                     className={cn(
-                      "h-10 px-4 md:px-6 rounded-l-md rounded-r-none border-2 border-r-0 border-border",
+                      "h-10 px-4 md:px-6 rounded-l-md border-2 border-border",
                       showEventFilters && "bg-muted"
                     )}
                     style={{ width: '100%' }}
@@ -2486,7 +2486,7 @@ function DiscoverPageContent() {
                       variant="ghost"
                       onClick={() => startTransition(() => setShowFilters(!showFilters))}
                       className={cn(
-                        "h-10 px-4 rounded-l-md rounded-r-none border-2 border-r-0 border-border w-full",
+                        "h-10 px-4 rounded-l-md border-2 border-border w-full",
                         showFilters && "bg-muted"
                       )}
                       style={{ width: '100%' }}
@@ -2899,7 +2899,7 @@ function DiscoverPageContent() {
                       variant="ghost"
                       onClick={() => setShowEventFilters(!showEventFilters)}
                       className={cn(
-                        "h-10 px-4 rounded-l-md rounded-r-none border-2 border-r-0 border-border w-full",
+                        "h-10 px-4 rounded-l-md border-2 border-border w-full",
                         showEventFilters && "bg-muted"
                       )}
                       style={{ width: '100%' }}
