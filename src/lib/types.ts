@@ -790,6 +790,7 @@ export interface User {
   avatarUrl?: string;
   bannerImageUrl?: string;
   bio?: string;
+  aboutInstructor?: string;
   website?: string;
   location?: string;
   countryOfOrigin?: string;
@@ -812,6 +813,8 @@ export interface User {
   hideCard?: boolean;
   hideShowcaseLocations?: boolean;
   hideUpcomingEvents?: boolean;
+  hideSocialIcons?: boolean;
+  hideAboutArtist?: boolean;
   hideShop?: boolean;
   hideLearn?: boolean;
   eventCity?: string;
