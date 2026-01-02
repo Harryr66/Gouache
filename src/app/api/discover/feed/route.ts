@@ -24,9 +24,10 @@ export async function GET(request: NextRequest) {
     const startAfter = searchParams.get('startAfter'); // For pagination
     
     // Fetch from Firestore (will be cached by Next.js ISR)
+    // REMOVED ALL FILTERS - show ALL content
     const result = await PortfolioService.getDiscoverPortfolioItems({
-      showInPortfolio: true,
-      deleted: false,
+      // REMOVED: showInPortfolio: true - show ALL content
+      // REMOVED: deleted: false - show ALL content including deleted
       hideAI: hideAI,
       limit: limit,
       startAfter: startAfter ? JSON.parse(startAfter) : undefined,
