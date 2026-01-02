@@ -1025,9 +1025,9 @@ function DiscoverPageContent() {
         let portfolioItems: any[] = [];
         let useFallback = false;
         
-        // Fetch enough items to fill viewport + 2 rows for all screen sizes
-        // 30 items covers: mobile (2 cols × 5 rows), tablet (3 cols × 4 rows), desktop (6 cols × 3 rows)
-        const INITIAL_FETCH_LIMIT = 30;
+        // Fetch MORE items to ensure we have enough content after filtering inactive artists
+        // Fetch 150 items, expect ~100+ after filtering inactive/deleted
+        const INITIAL_FETCH_LIMIT = 150;
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -1133,48 +1133,45 @@ function DiscoverPageContent() {
           const artistIds = new Set<string>(portfolioItems.map(item => item.userId));
           const artistDataMap = new Map<string, any>();
           
-          // Start fetching artist profiles but don't await - process items immediately
-          log(`👥 Discover: Fetching ${artistIds.size} artist profiles in background (non-blocking)...`);
+          // CRITICAL: AWAIT artist profile fetch BEFORE processing items
+          // ONLY show content from ACTIVE artists
+          log(`👥 Discover: Fetching ${artistIds.size} artist profiles to verify ACTIVE status...`);
           const artistPromises = Array.from(artistIds).map(async (artistId) => {
             try {
               const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
               if (artistDoc.exists()) {
-                artistDataMap.set(artistId, artistDoc.data());
+                const artistData = artistDoc.data();
+                // ONLY include ACTIVE artists
+                if (artistData.isActive !== false) {
+                  return { id: artistId, data: artistData };
+                } else {
+                  log(`⚠️ Discover: Skipping inactive artist ${artistId}`);
+                }
               }
             } catch (error) {
               console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
             }
+            return null;
           });
           
-          // Don't await - let it load in background, use fallback for now
-          Promise.all(artistPromises).then(() => {
-            log('✅ Artist profiles loaded in background');
+          const artistResults = await Promise.all(artistPromises);
+          artistResults.forEach(result => {
+            if (result) {
+              artistDataMap.set(result.id, result.data);
+            }
           });
           
-          // Process portfolio items immediately with fallback artist data
+          log(`✅ Discover: Loaded ${artistDataMap.size} ACTIVE artist profiles from portfolioItems`);
+          
+          // Process portfolio items - ONLY from ACTIVE artists
           for (const [index, item] of portfolioItems.entries()) {
-            // Get artist data (use fallback if not loaded yet)
-            let artistData = artistDataMap.get(item.userId);
-            
-            // CRITICAL: Skip if artist data is loaded and user is inactive
-            if (artistData && artistData.isActive === false) {
-              log(`⚠️ Discover: Skipping portfolio item ${item.id} - artist is inactive`);
+            // CRITICAL: Skip if artist is not in our active artists map
+            if (!artistDataMap.has(item.userId)) {
+              log(`⚠️ Discover: Skipping portfolio item ${item.id} - artist ${item.userId} not active or not found`);
               continue;
             }
             
-            // If not loaded yet, use minimal fallback (don't skip - show content immediately)
-            if (!artistData) {
-              artistData = {
-                displayName: item.artistName || item.userId || 'Artist',
-                username: item.artistHandle || item.userId || 'artist',
-                avatarUrl: item.artistAvatarUrl || null,
-                isVerified: false,
-                isActive: true, // Assume active if not loaded yet
-                followerCount: 0,
-                followingCount: 0,
-                createdAt: new Date(),
-              };
-            }
+            const artistData = artistDataMap.get(item.userId);
             
             // Get media URL (support video or image)
             let videoUrl = item.videoUrl || null;
@@ -1322,30 +1319,31 @@ function DiscoverPageContent() {
           log(`📊 Discover: Fallback method - Added ${fetchedArtworks.length} artworks from userProfiles.portfolio`);
         }
         
-        // Also fetch Discover content from artworks collection (non-portfolio content)
-        // This includes content uploaded via Discover portal with showInPortfolio = false
-        log('🔍 Discover: Fetching non-portfolio content from artworks collection...');
+        // PRIMARY SOURCE: Fetch artworks from artworks collection
+        // CRITICAL: ONLY show content from ACTIVE artist accounts
+        log('🔍 Discover: Fetching artworks from artworks collection (ACTIVE ARTISTS ONLY)...');
         try {
-          // Filter in JavaScript instead of query level to avoid index requirement
           const artworksQuery = query(
             collection(db, 'artworks'),
             orderBy('createdAt', 'desc'),
-            limit(50) // Initial load: fetch fewer artworks for faster page load, infinite scroll handles the rest
+            limit(INITIAL_FETCH_LIMIT) // Fetch many items, filter down to active artists
           );
           const artworksSnapshot = await getDocs(artworksQuery);
+          log(`📦 Discover: Fetched ${artworksSnapshot.docs.length} artworks from collection`);
           
-          // Batch fetch artist data to avoid N+1 queries
+          // Collect all artist IDs first
           const artistIds = new Set<string>();
           const artworkItems: any[] = [];
           
           for (const artworkDoc of artworksSnapshot.docs) {
             const artworkData = artworkDoc.data();
             
-            // Skip deleted items (check for any truthy deleted value)
-            if (artworkData.deleted) continue;
+            // CRITICAL: Skip deleted items (strict check)
+            if (artworkData.deleted === true || artworkData.deleted === 'true') continue;
             
-            // Skip items without required fields
-            if (!artworkData.artist && !artworkData.artistId && !artworkData.userId) continue;
+            // Skip items without required artist fields
+            const artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId || artworkData.userId;
+            if (!artistId) continue;
             
             // Skip events
             if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
@@ -1353,7 +1351,7 @@ function DiscoverPageContent() {
             // Skip items with invalid/corrupted imageUrls (data URLs from old uploads)
             if (artworkData.imageUrl && artworkData.imageUrl.startsWith('data:image')) continue;
             
-            // Skip items with no valid media at all
+            // Skip items with no valid media
             const hasValidMedia = artworkData.imageUrl || artworkData.videoUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0];
             if (!hasValidMedia) continue;
             
@@ -1363,23 +1361,17 @@ function DiscoverPageContent() {
             }
             
             // Get media URL (support video or image)
-            // Check for video: first check videoUrl, then check mediaUrls array for video type
             let videoUrl = artworkData.videoUrl || null;
             if (!videoUrl && artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video') {
               videoUrl = artworkData.mediaUrls[0];
             }
-            // For image, prefer imageUrl, then supportingImages, then mediaUrls (but only if not video)
             const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
             const mediaType = artworkData.mediaType || (videoUrl ? 'video' : 'image');
             
             // Skip items without media
             if (!imageUrl && !videoUrl) continue;
             
-            const artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId;
-            if (artistId) {
-              artistIds.add(artistId);
-            }
-            
+            artistIds.add(artistId);
             artworkItems.push({
               artworkDoc,
               artworkData,
@@ -1390,14 +1382,23 @@ function DiscoverPageContent() {
             });
           }
           
-          // Batch fetch all artist data in parallel
+          log(`👥 Discover: Found ${artistIds.size} unique artists, fetching profiles to verify ACTIVE status...`);
+          
+          // CRITICAL: AWAIT artist profile fetch BEFORE processing artworks
+          // Only show content from ACTIVE artists
           const artistDataMap = new Map<string, any>();
           if (artistIds.size > 0) {
             const artistPromises = Array.from(artistIds).map(async (artistId) => {
               try {
                 const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
                 if (artistDoc.exists()) {
-                  return { id: artistId, data: artistDoc.data() };
+                  const artistData = artistDoc.data();
+                  // ONLY include ACTIVE artists
+                  if (artistData.isActive !== false) {
+                    return { id: artistId, data: artistData };
+                  } else {
+                    log(`⚠️ Discover: Skipping inactive artist ${artistId}`);
+                  }
                 }
               } catch (err) {
                 log(`⚠️ Discover: Could not fetch artist data for ${artistId}`);
@@ -1413,21 +1414,18 @@ function DiscoverPageContent() {
             });
           }
           
-          // Now build artwork objects with cached artist data
+          log(`✅ Discover: Loaded ${artistDataMap.size} ACTIVE artist profiles`);
+          
+          // Now build artwork objects - ONLY from ACTIVE artists
+          let lastValidDoc: any = null;
           for (const { artworkDoc, artworkData, imageUrl, videoUrl, mediaType, artistId } of artworkItems) {
             // CRITICAL: Skip if artist doesn't exist or is not active
             if (!artistId || !artistDataMap.has(artistId)) {
-              log(`⚠️ Discover: Skipping artwork ${artworkDoc.id} - artist not found`);
+              log(`⚠️ Discover: Skipping artwork ${artworkDoc.id} - artist ${artistId} not active or not found`);
               continue;
             }
             
             const artistData = artistDataMap.get(artistId);
-            
-            // CRITICAL: Only show content from ACTIVE users
-            if (artistData.isActive === false) {
-              log(`⚠️ Discover: Skipping artwork ${artworkDoc.id} - artist is inactive`);
-              continue;
-            }
             
             // Get artist info from cached data
             let artistName = artistData.displayName || artistData.name || artistData.username || 'Unknown Artist';
@@ -1483,15 +1481,19 @@ function DiscoverPageContent() {
             };
             
             fetchedArtworks.push(artwork);
-            log(`✅ Discover: Added non-portfolio artwork "${artwork.title}" from ${artwork.artist.name}`);
+            lastValidDoc = artworkDoc; // Track last valid document for pagination
+            log(`✅ Discover: Added artwork "${artwork.title}" from ACTIVE artist ${artwork.artist.name}`);
           }
           
-          // CRITICAL FIX: Set lastDocument for pagination from artworks collection
-          if (artworksSnapshot.docs.length > 0) {
-            const lastArtworkDoc = artworksSnapshot.docs[artworksSnapshot.docs.length - 1];
-            setLastDocument(lastArtworkDoc);
-            log(`📄 Discover: Set lastDocument for artworks collection pagination`);
+          // CRITICAL: Set lastDocument for pagination (use last valid document, not last from snapshot)
+          if (lastValidDoc) {
+            setLastDocument(lastValidDoc);
+            log(`📄 Discover: Set lastDocument for pagination (last valid artwork after filtering)`);
+          } else if (artworksSnapshot.docs.length > 0) {
+            // Fallback: use last document from snapshot if no valid artworks
+            setLastDocument(artworksSnapshot.docs[artworksSnapshot.docs.length - 1]);
           }
+          setHasMore(fetchedArtworks.length >= INITIAL_FETCH_LIMIT);
         } catch (error) {
           console.error('Error fetching non-portfolio artworks:', error);
         }
@@ -1727,9 +1729,9 @@ function DiscoverPageContent() {
 
     try {
       const { startAfter } = await import('firebase/firestore');
-      const LOAD_MORE_LIMIT = 25;
+      const LOAD_MORE_LIMIT = 100; // Fetch more to account for filtering
       
-      // Load more from artworks collection directly (simpler, more reliable)
+      // Load more from artworks collection - ONLY ACTIVE ARTISTS
       const moreArtworksQuery = query(
         collection(db, 'artworks'),
         orderBy('createdAt', 'desc'),
@@ -1739,7 +1741,7 @@ function DiscoverPageContent() {
       
       const moreArtworksSnapshot = await getDocs(moreArtworksQuery);
       
-      log(`📦 Discover: Fetched ${moreArtworksSnapshot.docs.length} more artworks from artworks collection`);
+      log(`📦 Discover: Fetched ${moreArtworksSnapshot.docs.length} more artworks from collection`);
       
       if (moreArtworksSnapshot.docs.length === 0) {
         setHasMore(false);
@@ -1755,17 +1757,18 @@ function DiscoverPageContent() {
       for (const artworkDoc of moreArtworksSnapshot.docs) {
         const artworkData = artworkDoc.data();
         
-        // Skip deleted items
-        if (artworkData.deleted) continue;
+        // CRITICAL: Skip deleted items (strict check)
+        if (artworkData.deleted === true || artworkData.deleted === 'true') continue;
         
         // Skip events
         if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
         
-        // Skip items with invalid imageUrls
+        // Skip items with invalid imageUrls (data URLs)
         if (artworkData.imageUrl && artworkData.imageUrl.startsWith('data:image')) continue;
         
         // Skip items without required artist field
-        if (!artworkData.artist && !artworkData.artistId && !artworkData.userId) continue;
+        const artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId || artworkData.userId;
+        if (!artistId) continue;
         
         // Skip items with no valid media
         const hasValidMedia = artworkData.imageUrl || artworkData.videoUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0];
@@ -1776,10 +1779,7 @@ function DiscoverPageContent() {
           continue;
         }
         
-        const artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId;
-        if (artistId) {
-          artistIds.add(artistId);
-        }
+        artistIds.add(artistId);
         
         let videoUrl = artworkData.videoUrl || null;
         if (!videoUrl && artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video') {
@@ -1800,7 +1800,7 @@ function DiscoverPageContent() {
         });
       }
       
-      // Batch fetch all artist data
+      // CRITICAL: AWAIT artist profile fetch - ONLY ACTIVE artists
       const artistDataMap = new Map<string, any>();
       if (artistIds.size > 0) {
         const artistPromises = Array.from(artistIds).map(async (artistId) => {
@@ -1808,7 +1808,7 @@ function DiscoverPageContent() {
             const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
             if (artistDoc.exists()) {
               const data = artistDoc.data();
-              // Only include active users
+              // ONLY include ACTIVE users
               if (data.isActive !== false) {
                 return { id: artistId, data };
               }
@@ -1827,11 +1827,12 @@ function DiscoverPageContent() {
         });
       }
 
-      // Build artwork objects
+      // Build artwork objects - ONLY from ACTIVE artists
       const newArtworks: Artwork[] = [];
+      let lastValidDoc: any = null;
       for (const { artworkDoc, artworkData, imageUrl, videoUrl, mediaType, artistId } of artworkItems) {
         if (!artistId || !artistDataMap.has(artistId)) {
-          log(`⏭️ Discover: Skipping artwork ${artworkDoc.id} - artist not found or inactive`);
+          log(`⏭️ Discover: Skipping artwork ${artworkDoc.id} - artist ${artistId} not active or not found`);
           continue;
         }
         
@@ -1873,23 +1874,25 @@ function DiscoverPageContent() {
         };
         
         newArtworks.push(artwork);
+        lastValidDoc = artworkDoc; // Track last valid document
       }
 
-      log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
+      log(`✅ Discover: Loaded ${newArtworks.length} more artworks from ACTIVE artists`);
 
       // Append new artworks to existing ones
       setArtworks(prev => [...prev, ...newArtworks]);
       
-      // Update pagination state - set last document from the snapshot
-      if (moreArtworksSnapshot.docs.length > 0) {
-        const lastDoc = moreArtworksSnapshot.docs[moreArtworksSnapshot.docs.length - 1];
-        setLastDocument(lastDoc);
+      // CRITICAL: Update pagination - use last valid document after filtering
+      if (lastValidDoc) {
+        setLastDocument(lastValidDoc);
+        setHasMore(moreArtworksSnapshot.docs.length === LOAD_MORE_LIMIT && newArtworks.length > 0);
+      } else if (moreArtworksSnapshot.docs.length > 0) {
+        // Fallback: use last document from snapshot
+        setLastDocument(moreArtworksSnapshot.docs[moreArtworksSnapshot.docs.length - 1]);
         setHasMore(moreArtworksSnapshot.docs.length === LOAD_MORE_LIMIT);
       } else {
         setHasMore(false);
       }
-
-      log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
     } catch (error: any) {
       console.error('Error loading more artworks:', error);
       setHasMore(false);
