@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Send, AlertCircle, EyeOff } from 'lucide-react';
+import { X, Send, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { db } from '@/lib/firebase';
@@ -31,11 +31,6 @@ export function HueChatbot() {
   
   // All hooks must be called before any conditional returns
   const [isExpanded, setIsExpanded] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [errorReport, setErrorReport] = useState<ErrorReport | null>(null);
-  const [userContext, setUserContext] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -73,16 +68,7 @@ export function HueChatbot() {
     setDisplayedAnswer('');
     setPlaceholderText('');
     setIsAsking(false);
-    setIsSubmitted(false);
     setShowGreeting(true);
-  };
-
-  // Reset all Hue state including errors
-  const resetAllState = () => {
-    resetConversation();
-    setHasError(false);
-    setErrorReport(null);
-    setUserContext('');
   };
 
   // Load user preference for Hue visibility
@@ -298,8 +284,8 @@ export function HueChatbot() {
     return parts.join('|');
   };
 
-  // Global error handler function - catches ALL errors
-  const handleErrorReport = (error: Error | any, context?: string, errorType?: string, errorCode?: string) => {
+  // Global error handler function - catches ALL errors and auto-sends to email
+  const handleErrorReport = async (error: Error | any, context?: string, errorType?: string, errorCode?: string) => {
     const route = pathname || window.location.pathname;
     const timestamp = new Date().toISOString();
     const userAgent = navigator.userAgent;
@@ -309,7 +295,7 @@ export function HueChatbot() {
     
     // Check if this error has already been reported
     if (reportedErrorsRef.current.has(errorId)) {
-      console.log('Hue: Error already reported, skipping duplicate notification:', errorId);
+      console.log('Hue: Error already reported, skipping duplicate:', errorId);
       return;
     }
 
@@ -337,13 +323,25 @@ export function HueChatbot() {
     // Mark this error as reported
     reportedErrorsRef.current.add(errorId);
 
-    setErrorReport(report);
-    setHasError(true);
-    setIsExpanded(true);
-    // Clear any previous user context to ensure fresh input
-    setUserContext('');
-    // Force show Hue when error detected
-    setHueEnabled(true);
+    // 🚀 AUTO-SEND ERROR REPORT TO EMAIL WITHOUT USER INTERACTION
+    try {
+      await fetch('/api/hue/report-error', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...report,
+          userContext: 'Auto-reported by Hue error monitoring system',
+        }),
+      });
+      console.log('✅ Error auto-reported to email inbox');
+    } catch (emailError) {
+      console.error('❌ Failed to auto-send error report:', emailError);
+    }
+
+    // NO POPUP - errors are silently sent to email
+    // Users can still manually report issues via Hue chat
   };
 
   // Clear reported errors when route changes (allows same error on different pages to be reported)
@@ -601,52 +599,6 @@ export function HueChatbot() {
     };
   }, [isDragging, dragStart, isExpanded, isMobile, touchStart]);
 
-  const handleSend = async () => {
-    if (!errorReport || isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetch('/api/hue/report-error', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...errorReport,
-          userContext: userContext.trim() ? userContext.trim().substring(0, 500) : undefined, // Optional context, cap at 500 chars
-        }),
-      });
-
-      if (response.ok) {
-        setIsSubmitted(true);
-        toast({
-          title: 'Report sent',
-          description: 'Thank you for reporting this error. We\'ll look into it.',
-        });
-        setTimeout(() => {
-          setIsExpanded(false);
-          resetAllState(); // Reset all state after error report is submitted
-        }, 3000);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to submit error report:', response.status, errorData);
-        toast({
-          title: 'Failed to send report',
-          description: errorData.error || 'Please try again later.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error: any) {
-      console.error('Error submitting report:', error);
-      toast({
-        title: 'Failed to send report',
-        description: error.message || 'Network error. Please check your connection and try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleAskQuestion = async () => {
     if (!question.trim() || isAsking) return;
@@ -710,7 +662,7 @@ export function HueChatbot() {
         localStorage.setItem('hue-enabled', 'false');
         setHueEnabled(false);
         setIsExpanded(false);
-        resetAllState(); // Reset all state when hiding
+        resetConversation(); // Reset conversation when hiding
         
         // Dispatch event to notify other components (though not needed here, for consistency)
         if (typeof window !== 'undefined') {
@@ -757,7 +709,7 @@ export function HueChatbot() {
       // Update local state immediately for better UX
       setHueEnabled(false);
       setIsExpanded(false);
-      resetAllState(); // Reset all state when hiding
+      resetConversation(); // Reset conversation when hiding
       
       toast({
         title: 'Hue hidden',
@@ -812,21 +764,21 @@ export function HueChatbot() {
   const maxWords = 100;
   const isOverLimit = wordCount > maxWords;
 
-  // Reset all state when Hue is closed (only when transitioning from expanded to collapsed)
+  // Reset conversation when Hue is closed (only when transitioning from expanded to collapsed)
   useEffect(() => {
     if (wasExpandedRef.current && !isExpanded) {
-      // Reset all state when transitioning from expanded to collapsed
+      // Reset conversation when transitioning from expanded to collapsed
       // This ensures a fresh start when Hue is reopened
-      resetAllState();
+      resetConversation();
     }
     wasExpandedRef.current = isExpanded;
   }, [isExpanded]);
 
   // Typewriter effect for placeholder text
   useEffect(() => {
-    if (!isExpanded || hasError) return;
+    if (!isExpanded) return;
     
-    const fullPlaceholder = "Have an issue? Here's a tissue... I'm here to assist with any questions or queries";
+    const fullPlaceholder = "Have an issue? Here's a tissue... I'm here to assist with any questions or queries. To report a problem, just ask!";
     setPlaceholderText('');
     setShowGreeting(false); // No separate greeting, it's in the placeholder
     
@@ -841,7 +793,7 @@ export function HueChatbot() {
     }, 30); // 30ms per character for smooth typing
 
     return () => clearInterval(typeInterval);
-  }, [isExpanded, hasError]);
+  }, [isExpanded]);
 
   // Typewriter effect for answer
   useEffect(() => {
@@ -869,8 +821,8 @@ export function HueChatbot() {
   // This prevents Hue from appearing before sign-in/auth is completed
   const isHomepage = !pathname || pathname === '/' || pathname === '';
   
-  // Don't render if disabled (unless error detected) or on homepage or loading
-  if ((!hueEnabled && !hasError) || isHomepage || loading) {
+  // Don't render if disabled or on homepage or loading
+  if (!hueEnabled || isHomepage || loading) {
     return null;
   }
 
@@ -880,19 +832,10 @@ export function HueChatbot() {
       className="fixed z-[9999] pointer-events-none"
       style={{
         ...(isExpanded ? {
-          // For error reports: position in bottom-right corner, smaller and subtle
-          // For normal chat: center on screen
-          ...(hasError ? {
-            right: '1rem',
-            bottom: '1rem',
-            left: 'auto',
-            top: 'auto',
-            transform: 'none',
-          } : {
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-          })
+          // Center chat on screen
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
         } : {
           left: `${position.x}px`,
           top: `${position.y}px`,
@@ -907,8 +850,7 @@ export function HueChatbot() {
         ref={orbRef}
         className={cn(
           "relative pointer-events-auto cursor-grab active:cursor-grabbing",
-          isExpanded ? "w-0 h-0 opacity-0" : "w-12 h-12", // Fixed smaller size for both mobile and desktop
-          hasError && !isExpanded && "animate-pulse"
+          isExpanded ? "w-0 h-0 opacity-0" : "w-12 h-12" // Fixed smaller size for both mobile and desktop
         )}
         style={{
           // Prevent pinch zoom when dragging Hue
@@ -933,174 +875,91 @@ export function HueChatbot() {
           }
         }}
       >
-        <div className={cn(
-          "w-full h-full rounded-full flex items-center justify-center story-gradient-border",
-          hasError ? "animate-pulse" : "hue-orb-idle"
-        )}>
+        <div className="w-full h-full rounded-full flex items-center justify-center story-gradient-border hue-orb-idle">
           <div className="w-full h-full rounded-full bg-background" />
         </div>
       </div>
 
-      {/* Expanded Error Report Card */}
+      {/* Expanded Chat Card */}
       {isExpanded && (
-        <Card className={cn(
-          "pointer-events-auto shadow-2xl border-2 transition-all duration-300",
-          hasError 
-            ? "border-red-500/30 w-[320px] max-w-[calc(100vw-2rem)]" // Smaller, subtle for errors
-            : "border-primary/50 w-[90vw] max-w-md" // Normal size for chat
-        )}>
-          <CardHeader className={cn("relative", hasError && "pb-2")}>
+        <Card className="pointer-events-auto shadow-2xl border-2 border-primary/50 w-[90vw] max-w-md transition-all duration-300">
+          <CardHeader className="relative">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className={cn("flex items-center gap-2 flex-1 min-w-0", hasError && "text-sm")}>
-                <div className={cn(
-                  "rounded-full story-gradient-border flex items-center justify-center flex-shrink-0",
-                  hasError ? "w-6 h-6" : "w-8 h-8"
-                )}>
+              <CardTitle className="flex items-center gap-2 flex-1 min-w-0 text-base">
+                <div className="rounded-full story-gradient-border flex items-center justify-center flex-shrink-0 w-8 h-8">
                   <div className="w-full h-full rounded-full bg-background" />
                 </div>
-                <span className={cn("whitespace-nowrap", hasError ? "text-sm" : "text-base")}>
-                  {hasError ? "Error Report" : "Hey, I'm Hue"}
-                </span>
+                <span className="whitespace-nowrap">Hey, I'm Hue</span>
               </CardTitle>
               <div className="flex items-center gap-1 flex-shrink-0">
-                {!hasError && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleHideHue}
-                    className="h-6 w-6"
-                    title="Hide Hue"
-                  >
-                    <EyeOff className="h-4 w-4" />
-                  </Button>
-                )}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={hasError ? "h-5 w-5" : "h-6 w-6"}
+                  onClick={handleHideHue}
+                  className="h-6 w-6"
+                  title="Hide Hue"
+                >
+                  <EyeOff className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
                   onClick={() => {
                     setIsExpanded(false);
-                    // Always reset all state when closing, including error states
-                    resetAllState();
+                    resetConversation();
                   }}
                 >
-                  <X className={hasError ? "h-3.5 w-3.5" : "h-4 w-4"} />
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent className={cn("space-y-4", hasError && "space-y-2 p-4 pt-2")}>
-            {isSubmitted ? (
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground">
-                  Thanks! I've sent this to the dev team. They'll fix it soon.
-                </p>
-              </div>
-            ) : hasError && errorReport ? (
-              <>
-                <div className="p-2 bg-destructive/10 border border-destructive/20 rounded-md">
-                  <p className="text-xs font-medium mb-1 flex items-center gap-1.5">
-                    <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-                    <span>Something went wrong</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {errorReport.message}
+          <CardContent className="space-y-4">
+            <div className="space-y-4">
+              {/* Answer Display */}
+              {displayedAnswer ? (
+                <div className="p-3 bg-muted/50 border border-border rounded-lg min-h-[60px]">
+                  <p className="text-sm whitespace-pre-wrap">
+                    {displayedAnswer}
+                    {displayedAnswer.length < answer.length && (
+                      <span className="animate-pulse">|</span>
+                    )}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs mb-1.5">
-                    What were you doing? <span className="text-muted-foreground">(Optional)</span>
-                  </p>
-                  <Textarea
-                    value={userContext}
-                    onChange={(e) => {
-                      const text = e.target.value;
-                      // Limit to approximately 100 words (roughly 500 characters)
-                      const words = text.trim().split(/\s+/).filter(Boolean);
-                      if (words.length <= maxWords) {
-                        setUserContext(text);
-                      } else {
-                        // Truncate to last valid word
-                        const truncated = words.slice(0, maxWords).join(' ');
-                        setUserContext(truncated);
-                      }
-                    }}
-                    placeholder="I was trying to..."
-                    className={cn(
-                      "min-h-[60px] text-xs resize-none",
-                      isOverLimit && "border-destructive"
-                    )}
-                  />
-                  <div className="flex items-center justify-between mt-1">
-                    <p className={cn(
-                      "text-xs",
-                      isOverLimit ? "text-destructive" : "text-muted-foreground"
-                    )}>
-                      {wordCount} / {maxWords} words
-                    </p>
-                    {isOverLimit && (
-                      <p className="text-xs text-destructive font-medium">
-                        Max {maxWords} words
-                      </p>
-                    )}
-                  </div>
-                </div>
+              ) : null}
+              
+              {/* Question Input */}
+              <div className="space-y-2">
+                <Textarea
+                  value={question}
+                  onChange={(e) => {
+                    setQuestion(e.target.value);
+                    // Clear answer when typing a new question
+                    if (answer) {
+                      setAnswer('');
+                      setDisplayedAnswer('');
+                    }
+                  }}
+                  placeholder={placeholderText || "Have an issue? Here's a tissue... I'm here to assist with any questions or queries. To report a problem, just ask!"}
+                  className="min-h-[80px] resize-none text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && question.trim()) {
+                      e.preventDefault();
+                      handleAskQuestion();
+                    }
+                  }}
+                />
                 <Button
-                  onClick={handleSend}
-                  disabled={isOverLimit || isSubmitting}
-                  className="w-full gradient-button text-xs h-8"
-                  size="sm"
+                  onClick={handleAskQuestion}
+                  disabled={!question.trim() || isAsking}
+                  className="w-full gradient-button"
                 >
-                  <Send className="h-3 w-3 mr-1.5" />
-                  {isSubmitting ? 'Sending...' : 'Report Error'}
+                  <Send className="h-4 w-4 mr-2" />
+                  {isAsking ? 'Thinking...' : 'Ask Question'}
                 </Button>
-              </>
-            ) : (
-              <div className="space-y-4">
-                {/* Answer Display */}
-                {displayedAnswer ? (
-                  <div className="p-3 bg-muted/50 border border-border rounded-lg min-h-[60px]">
-                    <p className="text-sm whitespace-pre-wrap">
-                      {displayedAnswer}
-                      {displayedAnswer.length < answer.length && (
-                        <span className="animate-pulse">|</span>
-                      )}
-                    </p>
-                  </div>
-                ) : null}
-                
-                {/* Question Input */}
-                <div className="space-y-2">
-                  <Textarea
-                    value={question}
-                    onChange={(e) => {
-                      setQuestion(e.target.value);
-                      // Clear answer when typing a new question
-                      if (answer) {
-                        setAnswer('');
-                        setDisplayedAnswer('');
-                      }
-                    }}
-                    placeholder={placeholderText || "Have an issue? Here's a tissue... I'm here to assist with any questions or queries"}
-                    className="min-h-[80px] resize-none text-sm"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && question.trim()) {
-                        e.preventDefault();
-                        handleAskQuestion();
-                      }
-                    }}
-                  />
-                  <Button
-                    onClick={handleAskQuestion}
-                    disabled={!question.trim() || isAsking}
-                    className="w-full gradient-button"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {isAsking ? 'Thinking...' : 'Ask Question'}
-                  </Button>
-                </div>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       )}

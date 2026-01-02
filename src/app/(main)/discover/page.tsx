@@ -1121,7 +1121,7 @@ function DiscoverPageContent() {
           }
         }
         
-        const fetchedArtworks: Artwork[] = [];
+        let fetchedArtworks: Artwork[] = [];
         let skippedNoImage = 0;
         let skippedAI = 0;
         let skippedNoArtist = 0;
