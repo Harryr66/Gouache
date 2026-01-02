@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic';
 import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition, useCallback } from 'react';
 import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
-import { toast } from '@/hooks/use-toast';
 import { useToast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
 import { Artwork, MarketplaceProduct, Event as EventType } from '@/lib/types';
@@ -2596,6 +2595,25 @@ function DiscoverPageContent() {
                       hideBanner={isMobile && (artworkView as string) === 'list'}
                       isInitialViewport={isInitial && hasVideo}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
+                      showDeleteButton={true}
+                      onDelete={async (artworkId: string) => {
+                        if (confirm('Delete this content permanently from Cloudflare and Firebase?')) {
+                          try {
+                            const response = await fetch(`/api/discover/delete-item?itemId=${encodeURIComponent(artworkId)}&type=portfolioItem`, {
+                              method: 'DELETE',
+                            });
+                            if (response.ok) {
+                              setArtworks(prev => prev.filter(a => a.id !== artworkId));
+                              showToast({ title: 'Content deleted', description: 'Content has been permanently removed.' });
+                            } else {
+                              throw new Error('Delete failed');
+                            }
+                          } catch (error) {
+                            console.error('Error deleting item:', error);
+                            showToast({ variant: 'destructive', title: 'Delete failed', description: 'Could not delete content.' });
+                          }
+                        }
+                      }}
                     />
                   );
                 }}
