@@ -1156,6 +1156,12 @@ function DiscoverPageContent() {
             // Get artist data (use fallback if not loaded yet)
             let artistData = artistDataMap.get(item.userId);
             
+            // CRITICAL: Skip if artist data is loaded and user is inactive
+            if (artistData && artistData.isActive === false) {
+              log(`⚠️ Discover: Skipping portfolio item ${item.id} - artist is inactive`);
+              continue;
+            }
+            
             // If not loaded yet, use minimal fallback (don't skip - show content immediately)
             if (!artistData) {
               artistData = {
@@ -1163,6 +1169,7 @@ function DiscoverPageContent() {
                 username: item.artistHandle || item.userId || 'artist',
                 avatarUrl: item.artistAvatarUrl || null,
                 isVerified: false,
+                isActive: true, // Assume active if not loaded yet
                 followerCount: 0,
                 followingCount: 0,
                 createdAt: new Date(),
@@ -1241,6 +1248,13 @@ function DiscoverPageContent() {
           // Extract portfolio items from each artist (old method)
           for (const artistDoc of artistsSnapshot.docs) {
             const artistData = artistDoc.data();
+            
+            // CRITICAL: Only show content from ACTIVE users
+            if (artistData.isActive === false) {
+              log(`⚠️ Discover: Skipping inactive artist ${artistDoc.id}`);
+              continue;
+            }
+            
             const portfolio = artistData.portfolio || [];
             
             if (portfolio.length === 0) continue;
@@ -1398,17 +1412,24 @@ function DiscoverPageContent() {
           
           // Now build artwork objects with cached artist data
           for (const { artworkDoc, artworkData, imageUrl, videoUrl, mediaType, artistId } of artworkItems) {
-            // Get artist info from cached data
-            let artistName = 'Unknown Artist';
-            let artistHandle = '';
-            let artistAvatarUrl = null;
-            
-            if (artistId && artistDataMap.has(artistId)) {
-              const artistData = artistDataMap.get(artistId);
-              artistName = artistData.displayName || artistData.name || artistData.username || 'Unknown Artist';
-              artistHandle = artistData.username || artistData.handle || '';
-              artistAvatarUrl = artistData.avatarUrl || null;
+            // CRITICAL: Skip if artist doesn't exist or is not active
+            if (!artistId || !artistDataMap.has(artistId)) {
+              log(`⚠️ Discover: Skipping artwork ${artworkDoc.id} - artist not found`);
+              continue;
             }
+            
+            const artistData = artistDataMap.get(artistId);
+            
+            // CRITICAL: Only show content from ACTIVE users
+            if (artistData.isActive === false) {
+              log(`⚠️ Discover: Skipping artwork ${artworkDoc.id} - artist is inactive`);
+              continue;
+            }
+            
+            // Get artist info from cached data
+            let artistName = artistData.displayName || artistData.name || artistData.username || 'Unknown Artist';
+            let artistHandle = artistData.username || artistData.handle || '';
+            let artistAvatarUrl = artistData.avatarUrl || null;
             
             // Convert to Artwork object
             // For videos without imageUrl, construct thumbnail URL from video URL
