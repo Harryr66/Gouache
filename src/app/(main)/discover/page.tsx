@@ -1316,7 +1316,7 @@ function DiscoverPageContent() {
           const artworksQuery = query(
             collection(db, 'artworks'),
             orderBy('createdAt', 'desc'),
-            limit(500) // High limit to ensure enough content after filtering for showInPortfolio === false
+            limit(200) // Get recent artworks - now showing ALL artworks (portfolio, sale, and discover-only)
           );
           const artworksSnapshot = await getDocs(artworksQuery);
           
@@ -1326,10 +1326,6 @@ function DiscoverPageContent() {
           
           for (const artworkDoc of artworksSnapshot.docs) {
             const artworkData = artworkDoc.data();
-            
-            // Only include items that are NOT in portfolio (showInPortfolio === false)
-            // Filter at JavaScript level to avoid index requirement
-            if (artworkData.showInPortfolio !== false) continue;
             
             // Skip deleted items
             if (artworkData.deleted === true) continue;
