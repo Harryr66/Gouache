@@ -551,9 +551,21 @@ export default function ArtworkPage() {
     const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
     
     if (canPlayHLS) {
-      // Native HLS support
+      // Native HLS support - Safari/iOS
       console.log('Using native HLS');
       video.src = manifestUrl;
+      
+      // Wait for video to be ready
+      video.addEventListener('loadedmetadata', () => {
+        console.log('Video metadata loaded, ready to play');
+        video.muted = true; // Ensure muted for autoplay
+        video.play().catch(err => console.log('Autoplay prevented:', err));
+      }, { once: true });
+      
+      video.addEventListener('error', (e) => {
+        console.error('Video error:', video.error);
+      });
+      
       video.load();
     } else if (Hls.isSupported()) {
       // Use hls.js for other browsers
@@ -561,6 +573,7 @@ export default function ArtworkPage() {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
+        maxBufferLength: 30,
       });
       
       hls.loadSource(manifestUrl);
@@ -568,21 +581,27 @@ export default function ArtworkPage() {
       hlsRef.current = hls;
       
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        console.log('HLS manifest loaded');
+        console.log('HLS manifest loaded, ready to play');
+        video.muted = true; // Ensure muted for autoplay
+        video.play().catch(err => console.log('Autoplay prevented:', err));
       });
       
       hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error('HLS error:', data);
         if (data.fatal) {
-          console.error('HLS error:', data);
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            console.log('Retrying after network error...');
             hls.startLoad();
           } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            console.log('Recovering from media error...');
             hls.recoverMediaError();
+          } else {
+            console.error('Fatal error, cannot recover');
           }
         }
       });
     } else {
-      console.error('HLS not supported');
+      console.error('HLS not supported in this browser');
     }
 
     return () => {
@@ -644,6 +663,12 @@ export default function ArtworkPage() {
     
     if (canPlayHLS) {
       video.src = manifestUrl;
+      
+      video.addEventListener('loadedmetadata', () => {
+        video.muted = true;
+        video.play().catch(err => console.log('Modal autoplay prevented:', err));
+      }, { once: true });
+      
       video.load();
     } else if (Hls.isSupported()) {
       const hls = new Hls({
@@ -654,6 +679,11 @@ export default function ArtworkPage() {
       hls.loadSource(manifestUrl);
       hls.attachMedia(video);
       modalHlsRef.current = hls;
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.muted = true;
+        video.play().catch(err => console.log('Modal autoplay prevented:', err));
+      });
       
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
