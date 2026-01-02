@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ArrowLeft, Upload, Plus, Trash2, BookOpen, ListChecks, Image as ImageIcon, DollarSign, Search, Rocket, Video, Save, Clock, AlertCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
@@ -47,7 +48,7 @@ function CourseSubmissionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const { createCourse, createInstructor, updateCourse, getCourse } = useCourses();
+  const { createCourse, createInstructor, updateCourse, getCourse, deleteCourse } = useCourses();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
@@ -64,6 +65,9 @@ function CourseSubmissionPageContent() {
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [shouldRedirectAfterSave, setShouldRedirectAfterSave] = useState(true);
   const [hasLoadedCourse, setHasLoadedCourse] = useState(false); // Track if we've already loaded the course data
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Kajabi-style multi-step wizard
   const steps = [
@@ -301,10 +305,13 @@ function CourseSubmissionPageContent() {
           where('isPublished', '==', false)
         );
         const snapshot = await getDocs(draftsQuery);
-        const drafts = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        // Filter out deleted courses client-side
+        const drafts = snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .filter((draft: any) => draft.deleted !== true);
         setMyDrafts(drafts);
       } catch (error) {
         console.error('Error loading drafts:', error);
@@ -629,6 +636,24 @@ function CourseSubmissionPageContent() {
 
   const removeSupplyItem = (supplyId: string) => {
     setFormData(prev => ({ ...prev, supplyList: prev.supplyList.filter(s => s.id !== supplyId) }));
+  };
+
+  const handleDeleteCourse = async () => {
+    if (!courseToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteCourse(courseToDelete);
+      setShowDeleteDialog(false);
+      setCourseToDelete(null);
+      
+      // Remove from drafts list immediately for instant feedback
+      setMyDrafts(prev => prev.filter(draft => draft.id !== courseToDelete));
+    } catch (error) {
+      console.error('Error deleting course:', error);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -999,38 +1024,55 @@ function CourseSubmissionPageContent() {
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {myDrafts.map((draft) => (
-                <button
+                <div
                   key={draft.id}
-                  onClick={() => router.push(`/learn/submit?edit=${draft.id}`)}
-                  className="group relative overflow-hidden rounded-lg border hover:border-primary transition-colors text-left"
+                  className="group relative overflow-hidden rounded-lg border hover:border-primary transition-colors"
                 >
-                  <div className="aspect-video bg-muted relative">
-                    {draft.thumbnail ? (
-                      <img 
-                        src={draft.thumbnail} 
-                        alt={draft.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <BookOpen className="h-12 w-12 text-muted-foreground" />
+                  <button
+                    onClick={() => router.push(`/learn/submit?edit=${draft.id}`)}
+                    className="w-full text-left"
+                  >
+                    <div className="aspect-video bg-muted relative">
+                      {draft.thumbnail ? (
+                        <img 
+                          src={draft.thumbnail} 
+                          alt={draft.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <BookOpen className="h-12 w-12 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="secondary" className="text-xs">
+                          Draft
+                        </Badge>
                       </div>
-                    )}
-                    <div className="absolute top-2 right-2">
-                      <Badge variant="secondary" className="text-xs">
-                        Draft
-                      </Badge>
                     </div>
-                  </div>
-                  <div className="p-3">
-                    <h3 className="font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors">
-                      {draft.title || 'Untitled Course'}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Last updated {new Date(draft.updatedAt?.toDate?.() || draft.updatedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </button>
+                    <div className="p-3">
+                      <h3 className="font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                        {draft.title || 'Untitled Course'}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Last updated {new Date(draft.updatedAt?.toDate?.() || draft.updatedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </button>
+                  
+                  {/* Delete Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCourseToDelete(draft.id);
+                      setShowDeleteDialog(true);
+                    }}
+                    className="absolute bottom-2 right-2 p-2 rounded-md bg-background/90 backdrop-blur-sm border border-destructive/20 hover:bg-destructive hover:text-destructive-foreground transition-colors opacity-0 group-hover:opacity-100"
+                    title="Delete draft"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               ))}
             </div>
           </CardContent>
@@ -1887,6 +1929,29 @@ function CourseSubmissionPageContent() {
           </Card>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Course Draft?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the course to trash. You can recover it within 30 days, after which it will be permanently deleted.
+              This action cannot be undone after 30 days.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCourse}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

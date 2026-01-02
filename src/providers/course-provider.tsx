@@ -44,6 +44,7 @@ interface CourseContextType {
   createCourse: (courseData: Omit<Course, 'id'>) => Promise<void>;
   updateCourse: (courseId: string, updates: Partial<Course>) => Promise<void>;
   deleteCourse: (courseId: string) => Promise<void>;
+  restoreCourse: (courseId: string) => Promise<void>;
   publishCourse: (courseId: string) => Promise<void>;
   unpublishCourse: (courseId: string) => Promise<void>;
   
@@ -117,10 +118,13 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
         console.log('📚 CourseProvider: Published courses snapshot updated, fetched', snapshot.docs.length, 'courses');
         
         // All published courses are auto-approved (no admin review needed)
-        const allPublishedCourses = snapshot.docs.map(mapCourseData) as Course[];
+        // Filter out deleted courses
+        const allPublishedCourses = snapshot.docs
+          .map(mapCourseData)
+          .filter((course: any) => course.deleted !== true) as Course[];
         const publicCourses = allPublishedCourses; // No filtering needed - all courses are approved
         
-        console.log('📚 Total published courses:', publicCourses.length);
+        console.log('📚 Total published courses (excluding deleted):', publicCourses.length);
 
         // Query 2: User's own draft/unpublished courses (if logged in)
         if (user) {
@@ -132,7 +136,10 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
           const unsubDrafts = onSnapshot(draftQuery, (draftSnapshot) => {
             console.log('📝 CourseProvider: Draft courses snapshot updated, fetched', draftSnapshot.docs.length, 'draft courses');
-            const draftCourses = draftSnapshot.docs.map(mapCourseData) as Course[];
+            // Filter out deleted courses from drafts
+            const draftCourses = draftSnapshot.docs
+              .map(mapCourseData)
+              .filter((course: any) => course.deleted !== true) as Course[];
             
             // Add user's own published courses
             const userPublishedCourses = allPublishedCourses.filter((course: any) => 
@@ -710,11 +717,17 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteCourse = async (courseId: string): Promise<void> => {
     try {
-      await deleteDoc(doc(db, 'courses', courseId));
+      // Soft delete: Mark as deleted instead of permanently removing
+      await updateDoc(doc(db, 'courses', courseId), {
+        deleted: true,
+        deletedAt: new Date(),
+        isPublished: false, // Unpublish when deleting
+        updatedAt: new Date(),
+      });
 
       toast({
         title: "Course Deleted",
-        description: "Course has been deleted successfully.",
+        description: "Course has been moved to trash. It will be permanently deleted after 30 days.",
       });
     } catch (error) {
       console.error('Error deleting course:', error);
@@ -766,6 +779,29 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       toast({
         title: "Unpublish Failed",
         description: "Failed to unpublish course.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const restoreCourse = async (courseId: string): Promise<void> => {
+    try {
+      await updateDoc(doc(db, 'courses', courseId), {
+        deleted: false,
+        deletedAt: null,
+        updatedAt: new Date(),
+      });
+
+      toast({
+        title: "Course Restored",
+        description: "Course has been restored successfully.",
+      });
+    } catch (error) {
+      console.error('Error restoring course:', error);
+      toast({
+        title: "Restore Failed",
+        description: "Failed to restore course.",
         variant: "destructive",
       });
       throw error;
@@ -841,6 +877,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     createCourse,
     updateCourse,
     deleteCourse,
+    restoreCourse,
     publishCourse,
     unpublishCourse,
     submitCourseRequest,
