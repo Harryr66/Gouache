@@ -34,6 +34,68 @@ interface ProfileTabsProps {
   onTabChange?: (tab: string) => void;
 }
 
+// Unpublish Button Component with Confirmation
+function UnpublishButton({ courseId, courseName }: { courseId: string; courseName: string }) {
+  const [showDialog, setShowDialog] = useState(false);
+  const [isUnpublishing, setIsUnpublishing] = useState(false);
+  const { unpublishCourse } = useCourses();
+  
+  const handleUnpublish = async () => {
+    setIsUnpublishing(true);
+    try {
+      await unpublishCourse(courseId);
+      setShowDialog(false);
+    } catch (error) {
+      console.error('Error unpublishing course:', error);
+    } finally {
+      setIsUnpublishing(false);
+    }
+  };
+  
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="destructive"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowDialog(true);
+        }}
+        title="Unpublish course"
+      >
+        <Eye className="h-3 w-3" />
+      </Button>
+      
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unpublish Course?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to unpublish "{courseName}"? It will be removed from public view and won't be visible to students in the marketplace. You can republish it later.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDialog(false)}
+              disabled={isUnpublishing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleUnpublish}
+              disabled={isUnpublishing}
+            >
+              {isUnpublishing ? 'Unpublishing...' : 'Unpublish Course'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = true, hideLearn = true, onTabChange }: ProfileTabsProps) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -139,7 +201,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
                 {isCourseOwner && (
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                     <Button
                       size="sm"
                       variant="secondary"
@@ -151,6 +213,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
+                    <UnpublishButton courseId={course.id} courseName={course.title} />
                   </div>
                 )}
               </div>
