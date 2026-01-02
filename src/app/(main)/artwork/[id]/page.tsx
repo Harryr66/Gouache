@@ -782,16 +782,28 @@ export default function ArtworkPage() {
                 }}
               >
                 {artwork.videoUrl && artwork.mediaType === 'video' ? (
-                  <video
-                    ref={videoRef}
-                    controls
-                    className="w-full h-full object-contain bg-black"
-                    playsInline
-                    muted
-                    loop={false}
-                    poster={artwork.imageUrl || undefined}
-                    preload="metadata"
-                  />
+                  (() => {
+                    const videoIdMatch = artwork.videoUrl.match(/([a-f0-9]{32})/);
+                    const videoId = videoIdMatch?.[1];
+                    
+                    return videoId ? (
+                      <iframe
+                        src={`https://customer-0decd87b85b00bfc12b56df1e88a7528.cloudflarestream.com/${videoId}/iframe?preload=true&autoplay=true&muted=true`}
+                        style={{ border: 'none', width: '100%', height: '100%', minHeight: '300px' }}
+                        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        ref={videoRef}
+                        controls
+                        className="w-full h-full object-contain bg-black"
+                        playsInline
+                        muted
+                        poster={artwork.imageUrl || undefined}
+                      />
+                    );
+                  })()
                 ) : (
                   <div className="cursor-zoom-in">
                     {(() => {
@@ -864,7 +876,7 @@ export default function ArtworkPage() {
                       <Heart
                         className={`h-5 w-5 ${
                           artwork?.id && isLiked(artwork.id) 
-                            ? 'fill-current text-red-500 dark:text-white' 
+                            ? 'fill-current text-blue-500 dark:text-white' 
                             : 'fill-none'
                         }`}
                       />
