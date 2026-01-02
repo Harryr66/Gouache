@@ -131,12 +131,47 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
   };
   
   // Get courses by this instructor
-  // CRITICAL: Check both instructor.userId and instructor.id to handle different data structures
+  // CRITICAL: Check multiple ways to match instructor to userId
   const instructorCourses = courses.filter(course => {
+    if (!course.instructor) {
+      console.warn('⚠️ ProfileTabs: Course missing instructor:', course.id, course.title);
+      return false;
+    }
+    
     const instructor = course.instructor;
-    const matchesUserId = instructor?.userId === userId || String(instructor?.userId) === String(userId);
-    const matchesInstructorId = instructor?.id === userId || String(instructor?.id) === String(userId);
-    return matchesUserId || matchesInstructorId;
+    const userIdStr = String(userId);
+    
+    // Try multiple matching strategies
+    const matchesUserId = 
+      instructor.userId === userId || 
+      String(instructor.userId) === userIdStr ||
+      instructor.userId?.toString() === userIdStr;
+    
+    const matchesInstructorId = 
+      instructor.id === userId || 
+      String(instructor.id) === userIdStr ||
+      instructor.id?.toString() === userIdStr;
+    
+    // Also check if instructor.id contains the userId (e.g., "instructor-{userId}")
+    const instructorIdContainsUserId = 
+      instructor.id && String(instructor.id).includes(userIdStr);
+    
+    const matches = matchesUserId || matchesInstructorId || instructorIdContainsUserId;
+    
+    if (!matches) {
+      console.log('🔍 ProfileTabs: Course does NOT match userId:', {
+        courseId: course.id,
+        courseTitle: course.title,
+        lookingFor: userId,
+        instructorUserId: instructor.userId,
+        instructorId: instructor.id,
+        matchesUserId,
+        matchesInstructorId,
+        instructorIdContainsUserId
+      });
+    }
+    
+    return matches;
   });
   
   // Debug logging for course display
@@ -147,11 +182,19 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     title: c.title, 
     instructorUserId: c.instructor?.userId, 
     instructorId: c.instructor?.id,
+    instructorName: c.instructor?.name,
     isPublished: c.isPublished, 
     deleted: c.deleted 
   })));
   console.log('🎓 ProfileTabs: Instructor courses for userId', userId, ':', instructorCourses.length);
-  console.log('🎓 ProfileTabs: Instructor courses:', instructorCourses.map(c => ({ id: c.id, title: c.title, isPublished: c.isPublished, deleted: c.deleted })));
+  console.log('🎓 ProfileTabs: Instructor courses:', instructorCourses.map(c => ({ 
+    id: c.id, 
+    title: c.title, 
+    isPublished: c.isPublished, 
+    deleted: c.deleted,
+    instructorUserId: c.instructor?.userId,
+    instructorId: c.instructor?.id
+  })));
 
   // Component to display courses (Learn tab)
   function LearnDisplay({ userId, isOwnProfile }: { userId: string; isOwnProfile: boolean }) {
@@ -161,12 +204,36 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     
     // CRITICAL: Show published courses (isPublished === true) and exclude deleted
     const availableCourses = instructorCourses.filter(course => {
-      const isPublished = course.isPublished === true; // Explicitly check for true
-      const notDeleted = course.deleted !== true;
+      // Explicitly check for true - don't allow undefined/null
+      const isPublished = course.isPublished === true;
+      const notDeleted = course.deleted !== true && course.deleted !== 'true';
       const shouldShow = isPublished && notDeleted;
-      console.log('🎓 ProfileTabs: Course', course.title, '- isPublished:', course.isPublished, 'deleted:', course.deleted, 'shouldShow:', shouldShow);
+      
+      console.log('🎓 ProfileTabs: Course filter check:', {
+        courseId: course.id,
+        title: course.title,
+        isPublished: course.isPublished,
+        isPublishedCheck: isPublished,
+        deleted: course.deleted,
+        notDeleted,
+        shouldShow
+      });
+      
+      if (!shouldShow) {
+        console.warn('⚠️ ProfileTabs: Course filtered out:', {
+          courseId: course.id,
+          title: course.title,
+          reason: !isPublished ? 'not published' : 'deleted',
+          isPublished: course.isPublished,
+          deleted: course.deleted
+        });
+      }
+      
       return shouldShow;
     });
+    
+    console.log('🎓 ProfileTabs: Available courses after filtering:', availableCourses.length);
+    console.log('🎓 ProfileTabs: Available courses:', availableCourses.map(c => ({ id: c.id, title: c.title })));
 
     if (coursesLoading) {
       return (
