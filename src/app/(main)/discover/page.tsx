@@ -769,6 +769,16 @@ function DiscoverPageContent() {
   const MAX_LOADING_TIME = 15000; // 15 seconds maximum (fallback timeout)
   const loadingStartTimeRef = useRef<number>(Date.now());
   
+  // Track if this is the first visit to Discover in this session (for joke animation)
+  const isFirstVisitRef = useRef<boolean>(typeof sessionStorage !== 'undefined' ? !sessionStorage.getItem('discover_visited') : true);
+  
+  useEffect(() => {
+    // Mark as visited for this session
+    if (typeof sessionStorage !== 'undefined' && isFirstVisitRef.current) {
+      sessionStorage.setItem('discover_visited', 'true');
+    }
+  }, []);
+  
   // Track items per row with state to handle window resize (needed for itemsToWaitFor calculation)
   const [itemsPerRow, setItemsPerRow] = useState(6);
   // Track column count for masonry layout (CSS columns) - needed for itemsToWaitFor calculation
@@ -868,10 +878,11 @@ function DiscoverPageContent() {
         }
       }
       
-      // Check joke timing (ABSOLUTE REQUIREMENT: joke must complete + 2s)
-      const jokeComplete = !!jokeCompleteTimeRef.current;
-      const timeSinceJoke = jokeComplete && jokeCompleteTimeRef.current ? Date.now() - jokeCompleteTimeRef.current : Infinity;
-      const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
+      // Check joke timing (ABSOLUTE REQUIREMENT on first visit: joke must complete + 2s)
+      // On subsequent visits: skip joke requirement, just wait for media
+      const jokeComplete = !isFirstVisitRef.current || !!jokeCompleteTimeRef.current;
+      const timeSinceJoke = jokeCompleteTimeRef.current ? Date.now() - jokeCompleteTimeRef.current : 0;
+      const jokeTimeMet = !isFirstVisitRef.current || (jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME);
       
       // Check if we only have placeholders (no real content)
       const hasOnlyPlaceholders = artworks.every((a: any) => {
@@ -2319,7 +2330,10 @@ function DiscoverPageContent() {
             }}
           >
             <ThemeLoading size="lg" />
-            <TypewriterJoke key="loading-joke" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
+            {/* Only show joke on first visit to Discover in this session */}
+            {isFirstVisitRef.current && (
+              <TypewriterJoke key="loading-joke" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
+            )}
           </div>
         </div>
       ) : null}

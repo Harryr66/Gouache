@@ -247,6 +247,20 @@ export default function ArtworkPage() {
                 email: artistEmail,
               },
             });
+            
+            // DEBUG: Log the raw data from Firebase to see what videoUrl format we have
+            console.log('🔍 ARTWORK DEBUG - Raw Firebase data:', {
+              documentId: artworkDocumentId,
+              title: data.title,
+              hasVideoUrl: !!data.videoUrl,
+              videoUrl: data.videoUrl,
+              hasMediaUrls: !!data.mediaUrls,
+              mediaUrls: data.mediaUrls,
+              mediaType: data.mediaType,
+              hasVideoVariants: !!(data as any).videoVariants,
+              videoVariants: (data as any).videoVariants
+            });
+            
             setLoading(false);
             return;
           }
