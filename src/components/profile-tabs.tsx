@@ -536,7 +536,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
         )}
         <div className="relative aspect-square">
           {/* Always show thumbnail/poster image for videos - video plays on click/navigation */}
-          {imageUrl.includes('cloudflarestream.com') ? (
+          {(imageUrl.includes('cloudflarestream.com') || imageUrl.includes('videodelivery.net') || imageUrl.includes('imagedelivery.net')) ? (
             <img
               src={imageUrl}
               alt={item.title || item.caption || 'Content'}
