@@ -206,7 +206,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     const availableCourses = instructorCourses.filter(course => {
       // Explicitly check for true - don't allow undefined/null
       const isPublished = course.isPublished === true;
-      const notDeleted = course.deleted !== true && course.deleted !== 'true';
+      const notDeleted = course.deleted !== true; // deleted is boolean | undefined
       const shouldShow = isPublished && notDeleted;
       
       console.log('🎓 ProfileTabs: Course filter check:', {
