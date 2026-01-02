@@ -1297,7 +1297,7 @@ function CourseSubmissionPageContent() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{isEditing ? 'Edit Course' : 'Create Course'}</CardTitle>
               <CardDescription className="flex items-center justify-between">
-                <span>Step {steps.findIndex(s=>s.id===activeStep)+1} of {steps.length}</span>
+                <span className="font-semibold">Step {steps.findIndex(s=>s.id===activeStep)+1} of {steps.length}</span>
                 {/* Auto-save indicator */}
                 {isAutoSaving ? (
                   <span className="text-xs flex items-center gap-1 text-muted-foreground">
@@ -1314,6 +1314,21 @@ function CourseSubmissionPageContent() {
                   </span>
                 ) : null}
               </CardDescription>
+              
+              {/* Visual Progress Bar */}
+              <div className="mt-3 space-y-1">
+                <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-primary h-full transition-all duration-300 ease-out rounded-full"
+                    style={{ 
+                      width: `${((steps.findIndex(s=>s.id===activeStep)+1) / steps.length) * 100}%` 
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  {Math.round(((steps.findIndex(s=>s.id===activeStep)+1) / steps.length) * 100)}% Complete
+                </p>
+              </div>
             </CardHeader>
             <CardContent className="space-y-2">
               {steps.map((s) => (
