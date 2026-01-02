@@ -114,7 +114,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     }
 
     return (
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
         {availableCourses.map((course) => {
           const isEnrolled = enrolledCourseIds.includes(course.id);
           const isCourseOwner = isOwnProfile && course.instructor.userId === user?.id;
@@ -1292,7 +1292,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
             {followedArtists.map((artist) => (
               <Card key={artist.id} className="group hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/profile/${artist.id}`)}>
                 <CardContent className="p-6">
@@ -1395,8 +1395,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               ))}
             </div>
           ) : (
-            // Desktop: Grid view
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            // Desktop: Grid view - 3 cols mobile, 4 cols desktop
+            <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
               {purchasedCourses.map((course) => (
                 <Card 
                   key={course.id} 

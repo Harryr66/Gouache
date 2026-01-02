@@ -416,8 +416,8 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
       {/* Artworks Tab */}
       <TabsContent value="artworks" className="space-y-4">
         {artworks.length > 0 ? (
-          // Always show grid view - 3 columns on all devices
-          <div className="grid grid-cols-3 gap-1">
+          // 3 columns on mobile, 4 columns on desktop
+          <div className="grid grid-cols-3 lg:grid-cols-4 gap-1">
             {artworks.map((item) => (
               <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
                 <div className="relative aspect-square">
@@ -510,8 +510,8 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
       {/* Products Tab */}
       <TabsContent value="products" className="space-y-4">
         {products.length > 0 ? (
-          // Always show grid view - 3 columns on all devices
-          <div className="grid grid-cols-3 gap-1">
+          // 3 columns on mobile, 4 columns on desktop
+          <div className="grid grid-cols-3 lg:grid-cols-4 gap-1">
             {products.map((item) => (
               <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
                 <div className="relative aspect-[4/5]">
