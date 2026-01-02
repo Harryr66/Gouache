@@ -544,6 +544,7 @@ export default function ArtworkPage() {
                                videoUrl?.includes('videodelivery.net');
     
     let extractedVideoId: string | null = null;
+    const originalUrl = videoUrl;
     
     if (isCloudflareStream && videoUrl) {
       // Extract video ID first (needed for fallback)
@@ -571,24 +572,16 @@ export default function ArtworkPage() {
       }
       
       extractedVideoId = videoId;
-      const originalUrl = videoUrl;
       
-      // If URL already has .m3u8, use it as-is but store videoId for fallback
+      // Check if URL already has .m3u8 manifest path
       if (videoUrl.includes('.m3u8')) {
         console.log('✅ Video URL already has .m3u8, using as-is:', videoUrl);
-        // Store videoId for potential fallback if this URL fails
-        if (!videoId) {
-          // Extract from .m3u8 URL
-          const m3u8Match = videoUrl.match(/\/([^/]+)\/manifest\/video\.m3u8/);
-          if (m3u8Match) videoId = m3u8Match[1];
-        }
       } else if (videoId) {
-        // Construct HLS manifest URL - USE VIDEODELIVERY.NET as primary (works universally)
-        // This is more reliable than customer subdomain which requires account ID
+        // ALWAYS construct HLS manifest URL using videodelivery.net
         videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
         console.log('✅ Constructed HLS manifest URL (videodelivery.net):', videoUrl);
       } else {
-        console.error('❌ Could not extract video ID from Cloudflare Stream URL:', videoUrl);
+        console.error('❌ Could not extract video ID from Cloudflare Stream URL:', originalUrl);
       }
       
       // Set debug info for display
@@ -741,11 +734,11 @@ export default function ArtworkPage() {
         }
       }
       
-      // If URL already has .m3u8, use it as-is
+      // Check if URL already has .m3u8 manifest path
       if (videoUrl.includes('.m3u8')) {
         console.log('✅ Modal video URL already has .m3u8, using as-is:', videoUrl);
       } else if (videoId) {
-        // Construct HLS manifest URL - USE VIDEODELIVERY.NET as primary (works universally)
+        // ALWAYS construct HLS manifest URL using videodelivery.net
         videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
         console.log('✅ Constructed HLS manifest URL for modal (videodelivery.net):', videoUrl);
       } else {
