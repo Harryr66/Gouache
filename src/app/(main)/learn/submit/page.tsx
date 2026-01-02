@@ -113,6 +113,82 @@ function CourseSubmissionPageContent() {
     // Originality disclaimer
     originalityDisclaimer: false,
   });
+  
+  // Field-level validation errors
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  // Inline validation function
+  const validateField = (field: string, value: any): string => {
+    switch (field) {
+      case 'title':
+        if (!value || value.trim().length === 0) return 'Course title is required';
+        if (value.trim().length < 10) return 'Title must be at least 10 characters';
+        if (value.trim().length > 100) return 'Title must not exceed 100 characters';
+        return '';
+        
+      case 'description':
+        if (!value || value.trim().length === 0) return 'Description is required';
+        if (value.trim().length < 50) return 'Description must be at least 50 characters';
+        if (value.trim().length > 2000) return 'Description must not exceed 2000 characters';
+        return '';
+        
+      case 'category':
+        if (!value) return 'Please select a category';
+        return '';
+        
+      case 'difficulty':
+        if (!value) return 'Please select a difficulty level';
+        return '';
+        
+      case 'price':
+        if (!value) return 'Price is required';
+        const priceNum = parseFloat(value);
+        if (isNaN(priceNum)) return 'Please enter a valid number';
+        if (priceNum < 0) return 'Price cannot be negative';
+        if (priceNum > 10000) return 'Price seems too high (max $10,000)';
+        return '';
+        
+      case 'externalUrl':
+        if (formData.courseType === 'affiliate') {
+          if (!value || value.trim().length === 0) return 'External course URL is required';
+          try {
+            new URL(value);
+          } catch {
+            return 'Please enter a valid URL';
+          }
+        }
+        return '';
+        
+      case 'hostingPlatform':
+        if (formData.courseType === 'affiliate' && !value) {
+          return 'Please select a hosting platform';
+        }
+        return '';
+        
+      default:
+        return '';
+    }
+  };
+  
+  // Handle field blur (when user leaves field)
+  const handleFieldBlur = (field: string, value: any) => {
+    const error = validateField(field, value);
+    setFieldErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
+  };
+  
+  // Clear error when user starts typing again
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
 
   const [newTag, setNewTag] = useState('');
   // Curriculum builder state - simplified to single lesson form
@@ -1392,10 +1468,24 @@ function CourseSubmissionPageContent() {
                 <Input
                   id="title"
                   value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  onChange={(e) => {
+                    handleInputChange('title', e.target.value);
+                    clearFieldError('title');
+                  }}
+                  onBlur={(e) => handleFieldBlur('title', e.target.value)}
                   placeholder="Enter course title"
+                  className={fieldErrors.title ? 'border-destructive' : ''}
                   required
                 />
+                {fieldErrors.title && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {fieldErrors.title}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {formData.title.length}/100 characters
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -1403,11 +1493,25 @@ function CourseSubmissionPageContent() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={(e) => {
+                    handleInputChange('description', e.target.value);
+                    clearFieldError('description');
+                  }}
+                  onBlur={(e) => handleFieldBlur('description', e.target.value)}
                   placeholder="Describe what students will learn in this course"
                   rows={6}
+                  className={fieldErrors.description ? 'border-destructive' : ''}
                   required
                 />
+                {fieldErrors.description && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {fieldErrors.description}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {formData.description.length}/2000 characters (minimum 50)
+                </p>
               </div>
 
               {/* Course Type Selection */}
@@ -1475,9 +1579,15 @@ function CourseSubmissionPageContent() {
                       <Label htmlFor="hostingPlatform">Course Platform *</Label>
                       <Select 
                         value={formData.hostingPlatform} 
-                        onValueChange={(value) => handleInputChange('hostingPlatform', value)}
+                        onValueChange={(value) => {
+                          handleInputChange('hostingPlatform', value);
+                          clearFieldError('hostingPlatform');
+                        }}
+                        onOpenChange={(open) => {
+                          if (!open) handleFieldBlur('hostingPlatform', formData.hostingPlatform);
+                        }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className={fieldErrors.hostingPlatform ? 'border-destructive' : ''}>
                           <SelectValue placeholder="Select platform" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1492,6 +1602,12 @@ function CourseSubmissionPageContent() {
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
+                      {fieldErrors.hostingPlatform && (
+                        <p className="text-sm text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {fieldErrors.hostingPlatform}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         Select the platform where your course is hosted. This helps us provide better guidance.
                       </p>
@@ -1503,7 +1619,11 @@ function CourseSubmissionPageContent() {
                         id="externalUrl"
                         type="url"
                         value={formData.externalUrl}
-                        onChange={(e) => handleInputChange('externalUrl', e.target.value)}
+                        onChange={(e) => {
+                          handleInputChange('externalUrl', e.target.value);
+                          clearFieldError('externalUrl');
+                        }}
+                        onBlur={(e) => handleFieldBlur('externalUrl', e.target.value)}
                         placeholder={
                           formData.hostingPlatform === 'teachable' 
                             ? "https://your-school.teachable.com/p/course-name"
@@ -1513,8 +1633,15 @@ function CourseSubmissionPageContent() {
                             ? "https://youtube.com/playlist?list=..."
                             : "https://your-course-platform.com/course-name"
                         }
+                        className={fieldErrors.externalUrl ? 'border-destructive' : ''}
                         required
                       />
+                      {fieldErrors.externalUrl && (
+                        <p className="text-sm text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {fieldErrors.externalUrl}
+                        </p>
+                      )}
                       <div className="text-xs text-muted-foreground space-y-1">
                         {formData.hostingPlatform === 'teachable' && (
                           <p>💡 <strong>Tip:</strong> Use your Teachable enrollment link (found in course settings → Enrollment Links) for automatic enrollment.</p>
@@ -1918,10 +2045,24 @@ function CourseSubmissionPageContent() {
                           step="0.01" 
                           min="0"
                           value={formData.price} 
-                          onChange={(e)=>handleInputChange('price', e.target.value)} 
-                          placeholder="0.00" 
+                          onChange={(e) => {
+                            handleInputChange('price', e.target.value);
+                            clearFieldError('price');
+                          }}
+                          onBlur={(e) => handleFieldBlur('price', e.target.value)}
+                          placeholder="0.00"
+                          className={fieldErrors.price ? 'border-destructive' : ''}
                           required 
                         />
+                        {fieldErrors.price && (
+                          <p className="text-sm text-destructive flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {fieldErrors.price}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Set your course price (0 for free courses)
+                        </p>
                       </div>
                     </div>
                   </div>
