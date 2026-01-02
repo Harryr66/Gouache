@@ -1548,8 +1548,8 @@ function DiscoverPageContent() {
     try {
       const { PortfolioService } = await import('@/lib/database');
       const result = await PortfolioService.getDiscoverPortfolioItems({
-        showInPortfolio: true,
-        deleted: false,
+        // REMOVED: showInPortfolio: true - show ALL content
+        // REMOVED: deleted: false - show ALL content
         hideAI: discoverSettings.hideAiAssistedArt,
         limit: 20,
         startAfter: lastDocument,
