@@ -929,7 +929,9 @@ export default function ProfileEditPage() {
           ...(formData.socialLinks.instagram.trim() ? { instagram: formData.socialLinks.instagram.trim() } : {}),
           ...(formData.socialLinks.x.trim() ? { x: formData.socialLinks.x.trim() } : {}),
           ...(formData.socialLinks.tiktok.trim() ? { tiktok: formData.socialLinks.tiktok.trim() } : {})
-        }
+        },
+        newsletterLink: formData.newsletterLink || null, // Save for ALL users
+        hideSocialIcons: formData.hideSocialIcons
       };
 
         if (allowArtistFields) {
@@ -937,10 +939,8 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = formData.tipJarEnabled;
           updateData.hideCard = formData.hideCard;
           updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
-          updateData.hideSocialIcons = formData.hideSocialIcons;
           updateData.hideAboutArtist = formData.hideAboutArtist;
           updateData.aboutInstructor = formData.aboutInstructor || null;
-          updateData.newsletterLink = formData.newsletterLink || null;
           updateData.eventCity = formData.eventCity || null;
           updateData.eventCountry = formData.eventCountry || null;
           updateData.eventDate = formData.eventDate || null;
@@ -1149,7 +1149,9 @@ export default function ProfileEditPage() {
           ...(formData.socialLinks.instagram.trim() ? { instagram: formData.socialLinks.instagram.trim() } : {}),
           ...(formData.socialLinks.x.trim() ? { x: formData.socialLinks.x.trim() } : {}),
           ...(formData.socialLinks.tiktok.trim() ? { tiktok: formData.socialLinks.tiktok.trim() } : {})
-        }
+        },
+        newsletterLink: formData.newsletterLink || null, // Save for ALL users
+        hideSocialIcons: formData.hideSocialIcons
       };
 
       // Update email in Firebase Auth if it has changed
@@ -1222,10 +1224,8 @@ export default function ProfileEditPage() {
         updateData.tipJarEnabled = formData.tipJarEnabled;
         updateData.hideCard = formData.hideCard;
         updateData.hideShowcaseLocations = formData.hideShowcaseLocations;
-        updateData.hideSocialIcons = formData.hideSocialIcons;
         updateData.hideAboutArtist = formData.hideAboutArtist;
         updateData.aboutInstructor = formData.aboutInstructor || null;
-        updateData.newsletterLink = formData.newsletterLink || null;
         updateData.eventCity = formData.eventCity || null;
         updateData.eventCountry = formData.eventCountry || null;
         updateData.eventDate = formData.eventDate || null;
@@ -1237,11 +1237,9 @@ export default function ProfileEditPage() {
         updateData.tipJarEnabled = false;
         updateData.hideCard = false;
         updateData.hideShowcaseLocations = false;
-        updateData.hideSocialIcons = false;
         updateData.hideAboutArtist = false;
         updateData.aboutInstructor = null;
-        // Note: hideShop and hideLearn are saved above for all users
-        updateData.newsletterLink = null;
+        // Note: hideShop, hideLearn, newsletterLink, hideSocialIcons, and socialLinks are saved above for all users
         updateData.eventCity = null;
         updateData.eventCountry = null;
         updateData.eventDate = null;
