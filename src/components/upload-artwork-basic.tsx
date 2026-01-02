@@ -1345,15 +1345,15 @@ export function UploadArtworkBasic() {
                             htmlFor="bulkUploadSeparately"
                             className="text-sm font-semibold cursor-pointer block"
                           >
-                            Upload each file as separate artwork
+                            Upload each file as separate post
                           </Label>
                           {bulkUploadSeparately ? (
                             <p className="text-xs text-muted-foreground">
-                              ✓ Each file will be uploaded as a separate artwork with the same title, description, and tags.
+                              ✓ Each file will be uploaded as a separate post with the same title, description, and tags.
                             </p>
                           ) : (
                             <p className="text-xs text-muted-foreground">
-                              All files will be combined into one artwork. First file is the main display, others will appear in carousel.
+                              All files will be combined into one post. First file is the main display, others will appear in carousel.
                             </p>
                           )}
                         </div>
@@ -1842,7 +1842,7 @@ export function UploadArtworkBasic() {
               disabled={uploading || !files.length || !agreedToTerms} 
               className="w-full"
             >
-              {uploading ? 'Uploading...' : 'Upload Artwork'}
+              {uploading ? 'Uploading...' : 'Upload Post'}
             </Button>
           </div>
         </form>
