@@ -758,6 +758,7 @@ function DiscoverPageContent() {
   const { getFollowedArtists, isFollowing } = useFollow();
   const { getConnectionSpeed } = useVideoControl();
   const { settings: discoverSettings } = useDiscoverSettings();
+  const { toast: showToast } = useToast();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
