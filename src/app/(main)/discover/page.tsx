@@ -1261,16 +1261,8 @@ function DiscoverPageContent() {
             log(`📋 Discover: Processing ${portfolio.length} portfolio items from artist ${artistDoc.id}`);
             totalPortfolioItemsProcessed += portfolio.length;
             
-            // STEP 2: Show ALL content - NO deleted filtering
+            // STEP 2: Show ALL content - NO filtering (no deleted, no hidden)
             const activePortfolio = portfolio
-              .filter((item: any) => {
-                // Only filter hidden items, NOT deleted
-                const isHidden = item.showInPortfolio === false;
-                if (isHidden) {
-                  return false;
-                }
-                return true;
-              })
               .sort((a: any, b: any) => {
                 const dateA = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
                 const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
