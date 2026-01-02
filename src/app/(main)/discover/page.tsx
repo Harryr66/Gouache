@@ -2108,51 +2108,68 @@ function DiscoverPageContent() {
     log(`🚀 Preloaded ${preloadCount} critical images for instant display`);
   }, [filteredAndSortedArtworks, columnCount]);
 
-  // Separate videos and images for split feed
-  const { videoArtworks, imageArtworks } = useMemo(() => {
-    const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
+  // Video feed: Pull ONLY from discover tab content (showInPortfolio: false, videos only)
+  const videoArtworks = useMemo(() => {
+    const videos = filteredAndSortedArtworks.filter((item) => {
+      if ('type' in item && item.type === 'ad') return false;
+      
+      const artwork = item as Artwork;
+      
+      // Must be discover content (showInPortfolio: false)
+      const isDiscoverContent = (artwork as any).showInPortfolio === false;
+      
+      // Must be a video
+      const hasVideo = (artwork as any).videoUrl || 
+                       (artwork as any).mediaType === 'video' ||
+                       ((artwork as any).mediaUrls && Array.isArray((artwork as any).mediaTypes) && (artwork as any).mediaTypes.includes('video'));
+      
+      return isDiscoverContent && hasVideo;
+    });
     
-    if (totalItems === 0) {
-      return { videoArtworks: [], imageArtworks: [] };
-    }
-    
-    const artworksSlice = Array.isArray(filteredAndSortedArtworks)
-      ? filteredAndSortedArtworks
-      : [];
-    
-    // Mix ads into artworks
-    const result = mixAdsIntoContent(artworksSlice, ads, 2);
-    
-    // Separate videos and images
-    const videos: Artwork[] = [];
+    log('🎬 Video feed (discover tab videos only):', videos.length);
+    return videos;
+  }, [filteredAndSortedArtworks]);
+  
+  // Image grid: Pull from portfolio (showInPortfolio: true), shop (isForSale: true), and discover images (showInPortfolio: false, images only)
+  const imageArtworks = useMemo(() => {
     const images: Artwork[] = [];
     
-    result.forEach((item) => {
-      // Keep ads with images
+    filteredAndSortedArtworks.forEach((item) => {
+      // Keep ads
       if ('type' in item && item.type === 'ad') {
         images.push(item as any);
         return;
       }
       
       const artwork = item as Artwork;
+      
+      // Exclude videos from image grid
       const hasVideo = (artwork as any).videoUrl || 
                        (artwork as any).mediaType === 'video' ||
-                       ((artwork as any).mediaUrls && (artwork as any).mediaTypes?.includes('video'));
+                       ((artwork as any).mediaUrls && Array.isArray((artwork as any).mediaTypes) && (artwork as any).mediaTypes.includes('video'));
       
-      if (hasVideo) {
-        videos.push(artwork);
-      } else {
+      if (hasVideo) return; // Skip videos in image grid
+      
+      // Include images from three sources:
+      // 1. Portfolio artworks (showInPortfolio: true - explicitly true)
+      const isPortfolio = (artwork as any).showInPortfolio === true;
+      
+      // 2. Shop artworks (isForSale: true)
+      const isShop = artwork.isForSale === true;
+      
+      // 3. Discover images (showInPortfolio: false, but must be images not videos)
+      const isDiscoverImage = (artwork as any).showInPortfolio === false;
+      
+      if (isPortfolio || isShop || isDiscoverImage) {
         images.push(artwork);
       }
     });
     
-    log('🔍 Split feed:', {
-      total: result.length,
-      videos: videos.length,
-      images: images.length
-    });
+    // Mix ads into images
+    const resultWithAds = mixAdsIntoContent(images, ads, 2);
     
-    return { videoArtworks: videos, imageArtworks: images };
+    log('🖼️ Image grid (portfolio + shop + discover images):', images.length);
+    return resultWithAds;
   }, [filteredAndSortedArtworks, ads]);
   
   // Paginated image artworks for infinite scroll
@@ -2608,13 +2625,10 @@ function DiscoverPageContent() {
                 )}
               </div>
             ) : !showLoadingScreen ? (
-              <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6">
-                {/* Video Feed - Left Side */}
-                <div className={cn(
-                  "w-full",
-                  artworkView === 'list' ? 'block' : 'hidden lg:block'
-                )}>
-                  <div className="sticky top-4 space-y-4">
+              <>
+                {/* Video Feed - Full Width when list view is selected */}
+                {artworkView === 'list' ? (
+                  <div className="w-full">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-lg font-semibold flex items-center gap-2">
                         <Play className="h-5 w-5" />
@@ -2627,7 +2641,7 @@ function DiscoverPageContent() {
                         <p>No videos available</p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-4 max-w-md mx-auto">
                         {videoArtworks.map((artwork) => {
                           const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                           let videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
@@ -2700,20 +2714,18 @@ function DiscoverPageContent() {
                         })}
                       </div>
                     )}
+                    {/* Sentinel element for infinite scroll in video feed */}
+                    <div ref={loadMoreRef} className="h-20 w-full" />
                   </div>
-                </div>
-                
-                {/* Image Grid - Right Side (Mosaic) */}
-                <div className={cn(
-                  "w-full",
-                  artworkView === 'grid' ? 'block' : 'hidden lg:block'
-                )}>
-                  <div className="mb-4">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                      <LayoutGrid className="h-5 w-5" />
-                      Discover
-                    </h2>
-                  </div>
+                ) : (
+                  /* Image Grid - Full Width when grid view is selected */
+                  <div className="w-full">
+                    <div className="mb-4">
+                      <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <LayoutGrid className="h-5 w-5" />
+                        Discover
+                      </h2>
+                    </div>
                   {imageArtworks.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <LayoutGrid className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -2782,8 +2794,9 @@ function DiscoverPageContent() {
                       )}
                     </>
                   )}
-                </div>
-              </div>
+                  </div>
+                )}
+              </>
             ) : null}
             </div>
             </TabsContent>
