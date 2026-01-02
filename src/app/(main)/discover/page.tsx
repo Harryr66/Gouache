@@ -1301,6 +1301,8 @@ function DiscoverPageContent() {
                 imageAiHint: item.description || '',
                 ...(videoUrl && { videoUrl: videoUrl as any }),
                 ...(mediaType && { mediaType: mediaType as any }),
+                ...(item.mediaUrls && Array.isArray(item.mediaUrls) && { mediaUrls: item.mediaUrls }),
+                ...(item.mediaTypes && Array.isArray(item.mediaTypes) && { mediaTypes: item.mediaTypes }),
                 artist: {
                   id: artistDoc.id,
                   name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
