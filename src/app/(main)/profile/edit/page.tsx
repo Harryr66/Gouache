@@ -1455,7 +1455,7 @@ export default function ProfileEditPage() {
         </Card>
 
         {/* Simple Newsletter Link Section - Quick Option */}
-        {isArtistAccount && !formData.newsletterProvider && (
+        {!formData.newsletterProvider && (
         <Card id="newsletter-link">
           <CardHeader>
             <CardTitle>Newsletter Link (Simple)</CardTitle>
@@ -1681,12 +1681,11 @@ export default function ProfileEditPage() {
               </div>
 
               {/* Social Media Links */}
-              {isArtistAccount && (
-                <div className="space-y-4 pt-4 border-t">
-                  <h3 className="text-lg font-semibold">Social Media Links</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Add your social media links. These will appear in the "About the Instructor" section on course pages unless you hide them below.
-                  </p>
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-lg font-semibold">Social Media Links</h3>
+                <p className="text-sm text-muted-foreground">
+                  Add your social media links. These will appear on your profile.
+                </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="social-website">Website (optional)</Label>
@@ -1729,8 +1728,7 @@ export default function ProfileEditPage() {
                       />
                     </div>
                   </div>
-                </div>
-              )}
+              </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -1748,22 +1746,20 @@ export default function ProfileEditPage() {
           </CardContent>
         </Card>
 
-        {/* Newsletter Integration - Only for professional artists */}
-        {isArtistAccount && (
-          <Card id="newsletter-integration">
-            <CardHeader>
-              <CardTitle>Newsletter Integration</CardTitle>
-              <CardDescription>
-                Connect your newsletter provider to allow visitors to subscribe directly from your profile.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Suspense fallback={<div className="p-4 text-center text-muted-foreground">Loading newsletter setup...</div>}>
-                <NewsletterIntegrationWizard />
-              </Suspense>
-            </CardContent>
-          </Card>
-        )}
+        {/* Newsletter Integration */}
+        <Card id="newsletter-integration">
+          <CardHeader>
+            <CardTitle>Newsletter Integration</CardTitle>
+            <CardDescription>
+              Connect your newsletter provider to allow visitors to subscribe directly from your profile.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={<div className="p-4 text-center text-muted-foreground">Loading newsletter setup...</div>}>
+              <NewsletterIntegrationWizard />
+            </Suspense>
+          </CardContent>
+        </Card>
 
         {/* Stripe Payment Setup - Only for professional artists */}
         {isArtistAccount && (
