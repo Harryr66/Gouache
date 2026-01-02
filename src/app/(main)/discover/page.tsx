@@ -2414,7 +2414,7 @@ function DiscoverPageContent() {
             </TabsTrigger>
           </TabsList>
           {/* Bottom row - Filter and View Selector aligned with top row split */}
-          <div className="hidden md:flex items-center gap-0 w-full overflow-visible mb-0 mt-0">
+          <div className="hidden md:flex items-center w-full overflow-visible mb-0 mt-0" style={{ gap: '2px' }}>
             <div className="flex-1 filter-view-grid">
               {activeTab === 'artwork' ? (
                 <>
