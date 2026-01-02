@@ -1070,40 +1070,21 @@ function DiscoverPageContent() {
             // This ensures videos uploaded via Discover portal appear in the feed
             const { PortfolioService } = await import('@/lib/database');
             
-            // Query portfolio items
+            // CRITICAL: ONLY query portfolio items (showInPortfolio: true)
+            // This is the source of truth - portfolioItems collection properly filters deleted: false
             const portfolioResult = await PortfolioService.getDiscoverPortfolioItems({
               showInPortfolio: true,
-              deleted: false,
+              deleted: false, // Query-level filter - only non-deleted items
               hideAI: discoverSettings.hideAiAssistedArt,
-              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for portfolio items
+              limit: INITIAL_FETCH_LIMIT,
             });
             
-            // Query discover content (videos uploaded via Discover portal)
-            const discoverResult = await PortfolioService.getDiscoverPortfolioItems({
-              showInPortfolio: false,
-              deleted: false,
-              hideAI: discoverSettings.hideAiAssistedArt,
-              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for discover content
-            });
+            portfolioItems = portfolioResult.items;
+            log(`📦 Discover: Found ${portfolioItems.length} portfolio items from direct Firestore (ACTIVE CONTENT ONLY)`);
             
-            // Combine results, portfolio items first, then discover content
-            portfolioItems = [...portfolioResult.items, ...discoverResult.items];
-            
-            // Sort combined results by createdAt (newest first)
-            portfolioItems.sort((a, b) => {
-              const aTime = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
-              const bTime = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
-              return bTime - aTime;
-            });
-            
-            // Limit to INITIAL_FETCH_LIMIT after combining
-            portfolioItems = portfolioItems.slice(0, INITIAL_FETCH_LIMIT);
-            log(`📦 Discover: Found ${portfolioItems.length} portfolio items from direct Firestore (fallback)`);
-            
-            // Store last document for pagination
-            if (portfolioItems.length > 0) {
-              const lastDoc = portfolioItems[portfolioItems.length - 1];
-              setLastDocument(lastDoc as any);
+            // Store last document for pagination (from PortfolioService result)
+            if (portfolioResult.lastDoc) {
+              setLastDocument(portfolioResult.lastDoc);
               setHasMore(portfolioItems.length === INITIAL_FETCH_LIMIT);
             } else {
               setHasMore(false);
@@ -1319,184 +1300,9 @@ function DiscoverPageContent() {
           log(`📊 Discover: Fallback method - Added ${fetchedArtworks.length} artworks from userProfiles.portfolio`);
         }
         
-        // PRIMARY SOURCE: Fetch artworks from artworks collection
-        // CRITICAL: ONLY show content from ACTIVE artist accounts
-        log('🔍 Discover: Fetching artworks from artworks collection (ACTIVE ARTISTS ONLY)...');
-        try {
-          const artworksQuery = query(
-            collection(db, 'artworks'),
-            orderBy('createdAt', 'desc'),
-            limit(INITIAL_FETCH_LIMIT) // Fetch many items, filter down to active artists
-          );
-          const artworksSnapshot = await getDocs(artworksQuery);
-          log(`📦 Discover: Fetched ${artworksSnapshot.docs.length} artworks from collection`);
-          
-          // Collect all artist IDs first
-          const artistIds = new Set<string>();
-          const artworkItems: any[] = [];
-          
-          for (const artworkDoc of artworksSnapshot.docs) {
-            const artworkData = artworkDoc.data();
-            
-            // CRITICAL: Skip deleted items (strict check)
-            if (artworkData.deleted === true || artworkData.deleted === 'true') continue;
-            
-            // Skip items without required artist fields
-            const artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId || artworkData.userId;
-            if (!artistId) continue;
-            
-            // Skip events
-            if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
-            
-            // Skip items with invalid/corrupted imageUrls (data URLs from old uploads)
-            if (artworkData.imageUrl && artworkData.imageUrl.startsWith('data:image')) continue;
-            
-            // Skip items with no valid media
-            const hasValidMedia = artworkData.imageUrl || artworkData.videoUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0];
-            if (!hasValidMedia) continue;
-            
-            // Apply discover settings filters for AI content
-            if (discoverSettings.hideAiAssistedArt && (artworkData.aiAssistance === 'assisted' || artworkData.aiAssistance === 'generated' || artworkData.isAI)) {
-              continue;
-            }
-            
-            // Get media URL (support video or image)
-            let videoUrl = artworkData.videoUrl || null;
-            if (!videoUrl && artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video') {
-              videoUrl = artworkData.mediaUrls[0];
-            }
-            const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
-            const mediaType = artworkData.mediaType || (videoUrl ? 'video' : 'image');
-            
-            // Skip items without media
-            if (!imageUrl && !videoUrl) continue;
-            
-            artistIds.add(artistId);
-            artworkItems.push({
-              artworkDoc,
-              artworkData,
-              imageUrl,
-              videoUrl,
-              mediaType,
-              artistId
-            });
-          }
-          
-          log(`👥 Discover: Found ${artistIds.size} unique artists, fetching profiles to verify ACTIVE status...`);
-          
-          // CRITICAL: AWAIT artist profile fetch BEFORE processing artworks
-          // Only show content from ACTIVE artists
-          const artistDataMap = new Map<string, any>();
-          if (artistIds.size > 0) {
-            const artistPromises = Array.from(artistIds).map(async (artistId) => {
-              try {
-                const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
-                if (artistDoc.exists()) {
-                  const artistData = artistDoc.data();
-                  // ONLY include ACTIVE artists
-                  if (artistData.isActive !== false) {
-                    return { id: artistId, data: artistData };
-                  } else {
-                    log(`⚠️ Discover: Skipping inactive artist ${artistId}`);
-                  }
-                }
-              } catch (err) {
-                log(`⚠️ Discover: Could not fetch artist data for ${artistId}`);
-              }
-              return null;
-            });
-            
-            const artistResults = await Promise.all(artistPromises);
-            artistResults.forEach(result => {
-              if (result) {
-                artistDataMap.set(result.id, result.data);
-              }
-            });
-          }
-          
-          log(`✅ Discover: Loaded ${artistDataMap.size} ACTIVE artist profiles`);
-          
-          // Now build artwork objects - ONLY from ACTIVE artists
-          let lastValidDoc: any = null;
-          for (const { artworkDoc, artworkData, imageUrl, videoUrl, mediaType, artistId } of artworkItems) {
-            // CRITICAL: Skip if artist doesn't exist or is not active
-            if (!artistId || !artistDataMap.has(artistId)) {
-              log(`⚠️ Discover: Skipping artwork ${artworkDoc.id} - artist ${artistId} not active or not found`);
-              continue;
-            }
-            
-            const artistData = artistDataMap.get(artistId);
-            
-            // Get artist info from cached data
-            let artistName = artistData.displayName || artistData.name || artistData.username || 'Unknown Artist';
-            let artistHandle = artistData.username || artistData.handle || '';
-            let artistAvatarUrl = artistData.avatarUrl || null;
-            
-            // Convert to Artwork object
-            // For videos without imageUrl, construct thumbnail URL from video URL
-            let finalImageUrl = imageUrl || '';
-            if (!finalImageUrl && videoUrl && videoUrl.includes('cloudflarestream.com')) {
-              // Construct thumbnail URL from video URL
-              finalImageUrl = videoUrl.replace(/\/manifest\/video\.m3u8$/, '/thumbnails/thumbnail.jpg');
-            }
-            
-            // CRITICAL: Use 'any' type to ensure videoUrl and mediaType are always included
-            const artwork: any = {
-              id: artworkDoc.id,
-              title: artworkData.title || 'Untitled',
-              description: artworkData.description || '',
-              imageUrl: finalImageUrl,
-              imageAiHint: artworkData.description || '',
-              // Always include videoUrl and mediaType if they exist (don't use conditional spread)
-              videoUrl: videoUrl || undefined,
-              mediaType: mediaType || undefined,
-              // Also preserve mediaUrls and mediaTypes arrays for video detection
-              mediaUrls: artworkData.mediaUrls || (videoUrl ? [videoUrl] : undefined),
-              mediaTypes: artworkData.mediaTypes || (videoUrl ? ['video'] : undefined),
-              artist: {
-                id: artistId || '',
-                name: artistName,
-                handle: artistHandle,
-                avatarUrl: artistAvatarUrl,
-                isVerified: false,
-                isProfessional: true,
-                followerCount: 0,
-                followingCount: 0,
-                createdAt: new Date(),
-              },
-              likes: artworkData.likes || 0,
-              commentsCount: artworkData.commentsCount || 0,
-              createdAt: artworkData.createdAt?.toDate?.() || (artworkData.createdAt instanceof Date ? artworkData.createdAt : new Date()),
-              updatedAt: artworkData.updatedAt?.toDate?.() || (artworkData.updatedAt instanceof Date ? artworkData.updatedAt : new Date()),
-              category: artworkData.category || '',
-              medium: artworkData.medium || '',
-              tags: artworkData.tags || [],
-              aiAssistance: artworkData.aiAssistance || 'none',
-              isAI: artworkData.isAI || false,
-              isForSale: artworkData.isForSale || false,
-              sold: artworkData.sold || false,
-              price: artworkData.price ? (artworkData.price > 1000 ? artworkData.price / 100 : artworkData.price) : undefined,
-              priceType: artworkData.priceType as 'fixed' | 'contact' | undefined,
-              contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
-            };
-            
-            fetchedArtworks.push(artwork);
-            lastValidDoc = artworkDoc; // Track last valid document for pagination
-            log(`✅ Discover: Added artwork "${artwork.title}" from ACTIVE artist ${artwork.artist.name}`);
-          }
-          
-          // CRITICAL: Set lastDocument for pagination (use last valid document, not last from snapshot)
-          if (lastValidDoc) {
-            setLastDocument(lastValidDoc);
-            log(`📄 Discover: Set lastDocument for pagination (last valid artwork after filtering)`);
-          } else if (artworksSnapshot.docs.length > 0) {
-            // Fallback: use last document from snapshot if no valid artworks
-            setLastDocument(artworksSnapshot.docs[artworksSnapshot.docs.length - 1]);
-          }
-          setHasMore(fetchedArtworks.length >= INITIAL_FETCH_LIMIT);
-        } catch (error) {
-          console.error('Error fetching non-portfolio artworks:', error);
-        }
+        // CRITICAL: ONLY use portfolioItems collection - it's the source of truth
+        // portfolioItems properly filters deleted: false at query level
+        // artworks collection contains orphaned/deleted content - DO NOT USE IT
         
         // Sort by date (newest first) - SIMPLE AND RELIABLE
         fetchedArtworks.sort((a, b) => {
@@ -1717,7 +1523,7 @@ function DiscoverPageContent() {
   }, [hasMore, lastDocument, discoverSettings.hideAiAssistedArt, isLoadingMore]);
 
   // Load more artworks when scrolling to bottom (pagination)
-  // Note: Pagination uses direct Firestore (not cached API) for fresh data
+  // CRITICAL: ONLY use portfolioItems collection - it's the source of truth
   const loadMoreArtworks = useCallback(async () => {
     if (isLoadingMore || !hasMore || !lastDocument) {
       log(`⏸️ Discover: Cannot load more - isLoadingMore: ${isLoadingMore}, hasMore: ${hasMore}, hasLastDoc: ${!!lastDocument}`);
@@ -1725,156 +1531,118 @@ function DiscoverPageContent() {
     }
 
     setIsLoadingMore(true);
-    log('📥 Discover: Loading more artworks from both portfolioItems and artworks collections...');
+    log('📥 Discover: Loading more artworks from portfolioItems collection (ACTIVE ARTISTS ONLY)...');
 
     try {
-      const { startAfter } = await import('firebase/firestore');
-      const LOAD_MORE_LIMIT = 100; // Fetch more to account for filtering
+      const { PortfolioService } = await import('@/lib/database');
+      const LOAD_MORE_LIMIT = 100;
       
-      // Load more from artworks collection - ONLY ACTIVE ARTISTS
-      const moreArtworksQuery = query(
-        collection(db, 'artworks'),
-        orderBy('createdAt', 'desc'),
-        startAfter(lastDocument),
-        limit(LOAD_MORE_LIMIT)
-      );
+      // CRITICAL: ONLY use portfolioItems - it filters deleted: false at query level
+      const portfolioResult = await PortfolioService.getDiscoverPortfolioItems({
+        showInPortfolio: true,
+        deleted: false, // Query-level filter - only non-deleted items
+        hideAI: discoverSettings.hideAiAssistedArt,
+        limit: LOAD_MORE_LIMIT,
+        startAfter: lastDocument,
+      });
       
-      const moreArtworksSnapshot = await getDocs(moreArtworksQuery);
+      const portfolioItems = portfolioResult.items;
       
-      log(`📦 Discover: Fetched ${moreArtworksSnapshot.docs.length} more artworks from collection`);
+      log(`📦 Discover: Fetched ${portfolioItems.length} more portfolio items`);
       
-      if (moreArtworksSnapshot.docs.length === 0) {
+      if (portfolioItems.length === 0) {
         setHasMore(false);
         setIsLoadingMore(false);
         log('🏁 Discover: No more artworks to load');
         return;
       }
 
-      // Batch fetch artist data for new items
-      const artistIds = new Set<string>();
-      const artworkItems: any[] = [];
-      
-      for (const artworkDoc of moreArtworksSnapshot.docs) {
-        const artworkData = artworkDoc.data();
-        
-        // CRITICAL: Skip deleted items (strict check)
-        if (artworkData.deleted === true || artworkData.deleted === 'true') continue;
-        
-        // Skip events
-        if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
-        
-        // Skip items with invalid imageUrls (data URLs)
-        if (artworkData.imageUrl && artworkData.imageUrl.startsWith('data:image')) continue;
-        
-        // Skip items without required artist field
-        const artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId || artworkData.userId;
-        if (!artistId) continue;
-        
-        // Skip items with no valid media
-        const hasValidMedia = artworkData.imageUrl || artworkData.videoUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0];
-        if (!hasValidMedia) continue;
-        
-        // Apply AI filter
-        if (discoverSettings.hideAiAssistedArt && (artworkData.aiAssistance === 'assisted' || artworkData.aiAssistance === 'generated' || artworkData.isAI)) {
-          continue;
-        }
-        
-        artistIds.add(artistId);
-        
-        let videoUrl = artworkData.videoUrl || null;
-        if (!videoUrl && artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video') {
-          videoUrl = artworkData.mediaUrls[0];
-        }
-        const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
-        const mediaType = artworkData.mediaType || (videoUrl ? 'video' : 'image');
-        
-        if (!imageUrl && !videoUrl) continue;
-        
-        artworkItems.push({
-          artworkDoc,
-          artworkData,
-          imageUrl,
-          videoUrl,
-          mediaType,
-          artistId
-        });
-      }
+      // Collect artist IDs and verify they're ACTIVE
+      const artistIds = new Set<string>(portfolioItems.map(item => item.userId));
+      const artistDataMap = new Map<string, any>();
       
       // CRITICAL: AWAIT artist profile fetch - ONLY ACTIVE artists
-      const artistDataMap = new Map<string, any>();
-      if (artistIds.size > 0) {
-        const artistPromises = Array.from(artistIds).map(async (artistId) => {
-          try {
-            const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
-            if (artistDoc.exists()) {
-              const data = artistDoc.data();
-              // ONLY include ACTIVE users
-              if (data.isActive !== false) {
-                return { id: artistId, data };
-              }
+      const artistPromises = Array.from(artistIds).map(async (artistId) => {
+        try {
+          const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
+          if (artistDoc.exists()) {
+            const data = artistDoc.data();
+            // ONLY include ACTIVE users
+            if (data.isActive !== false) {
+              return { id: artistId, data };
             }
-          } catch (err) {
-            log(`⚠️ Discover: Could not fetch artist data for ${artistId}`);
           }
-          return null;
-        });
-        
-        const artistResults = await Promise.all(artistPromises);
-        artistResults.forEach(result => {
-          if (result) {
-            artistDataMap.set(result.id, result.data);
-          }
-        });
-      }
+        } catch (err) {
+          log(`⚠️ Discover: Could not fetch artist data for ${artistId}`);
+        }
+        return null;
+      });
+      
+      const artistResults = await Promise.all(artistPromises);
+      artistResults.forEach(result => {
+        if (result) {
+          artistDataMap.set(result.id, result.data);
+        }
+      });
+
+      log(`✅ Discover: Loaded ${artistDataMap.size} ACTIVE artist profiles for pagination`);
 
       // Build artwork objects - ONLY from ACTIVE artists
       const newArtworks: Artwork[] = [];
-      let lastValidDoc: any = null;
-      for (const { artworkDoc, artworkData, imageUrl, videoUrl, mediaType, artistId } of artworkItems) {
-        if (!artistId || !artistDataMap.has(artistId)) {
-          log(`⏭️ Discover: Skipping artwork ${artworkDoc.id} - artist ${artistId} not active or not found`);
+      for (const item of portfolioItems) {
+        // CRITICAL: Skip if artist is not active
+        if (!artistDataMap.has(item.userId)) {
+          log(`⏭️ Discover: Skipping portfolio item ${item.id} - artist ${item.userId} not active`);
           continue;
         }
         
-        const artistData = artistDataMap.get(artistId);
+        const artistData = artistDataMap.get(item.userId);
+        
+        let videoUrl = item.videoUrl || null;
+        if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
+          videoUrl = item.mediaUrls[0];
+        }
+        const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
+        const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
+        
+        if (!imageUrl && !videoUrl) continue;
 
         const artwork: Artwork = {
-          id: artworkDoc.id,
-          title: artworkData.title || 'Untitled',
-          description: artworkData.description || '',
+          id: item.id,
+          title: item.title || 'Untitled',
+          description: item.description || '',
           imageUrl: imageUrl,
-          imageAiHint: artworkData.description || '',
+          imageAiHint: item.description || '',
           ...(videoUrl && { videoUrl: videoUrl as any }),
           ...(mediaType && { mediaType: mediaType as any }),
           artist: {
-            id: artistId,
+            id: item.userId,
             name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
             handle: artistData.username || artistData.handle || '',
-            avatarUrl: artistData.avatarUrl || artistData.avatar || null,
+            avatarUrl: artistData.avatarUrl || null,
             isVerified: artistData.isVerified || false,
             isProfessional: true,
             followerCount: artistData.followerCount || 0,
             followingCount: artistData.followingCount || 0,
             createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
           },
-          likes: artworkData.likes || 0,
-          commentsCount: artworkData.commentsCount || 0,
-          createdAt: artworkData.createdAt?.toDate?.() || (artworkData.createdAt instanceof Date ? artworkData.createdAt : new Date()),
-          updatedAt: artworkData.updatedAt?.toDate?.() || (artworkData.updatedAt instanceof Date ? artworkData.updatedAt : new Date()),
-          category: artworkData.category || '',
-          medium: artworkData.medium || '',
-          tags: artworkData.tags || [],
-          aiAssistance: artworkData.aiAssistance || 'none',
-          isAI: artworkData.isAI || false,
-          isForSale: artworkData.isForSale || false,
-          sold: artworkData.sold || false,
-          price: artworkData.price ? (artworkData.price > 1000 ? artworkData.price / 100 : artworkData.price) : undefined,
-          priceType: artworkData.priceType as 'fixed' | 'contact' | undefined,
-          contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
+          likes: item.likes || 0,
+          commentsCount: item.commentsCount || 0,
+          createdAt: item.createdAt instanceof Date ? item.createdAt : (item.createdAt as any)?.toDate?.() || new Date(),
+          updatedAt: item.updatedAt instanceof Date ? item.updatedAt : (item.updatedAt as any)?.toDate?.() || new Date(),
+          category: item.category || '',
+          medium: item.medium || '',
+          tags: item.tags || [],
+          aiAssistance: item.aiAssistance || 'none',
+          isAI: item.isAI || false,
+          isForSale: item.isForSale || false,
+          sold: item.sold || false,
+          price: item.price ? (item.price > 1000 ? item.price / 100 : item.price) : undefined,
+          priceType: item.priceType as 'fixed' | 'contact' | undefined,
+          contactForPrice: item.contactForPrice || item.priceType === 'contact',
         };
         
         newArtworks.push(artwork);
-        lastValidDoc = artworkDoc; // Track last valid document
       }
 
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks from ACTIVE artists`);
@@ -1882,14 +1650,10 @@ function DiscoverPageContent() {
       // Append new artworks to existing ones
       setArtworks(prev => [...prev, ...newArtworks]);
       
-      // CRITICAL: Update pagination - use last valid document after filtering
-      if (lastValidDoc) {
-        setLastDocument(lastValidDoc);
-        setHasMore(moreArtworksSnapshot.docs.length === LOAD_MORE_LIMIT && newArtworks.length > 0);
-      } else if (moreArtworksSnapshot.docs.length > 0) {
-        // Fallback: use last document from snapshot
-        setLastDocument(moreArtworksSnapshot.docs[moreArtworksSnapshot.docs.length - 1]);
-        setHasMore(moreArtworksSnapshot.docs.length === LOAD_MORE_LIMIT);
+      // Update pagination state
+      if (portfolioResult.lastDoc) {
+        setLastDocument(portfolioResult.lastDoc);
+        setHasMore(portfolioItems.length === LOAD_MORE_LIMIT && newArtworks.length > 0);
       } else {
         setHasMore(false);
       }
