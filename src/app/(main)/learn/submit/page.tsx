@@ -1173,6 +1173,11 @@ function CourseSubmissionPageContent() {
 
       if (isEditing && editingCourseId && existingCourse) {
         // Update existing course - preserve existing fields
+        
+        // CRITICAL: Explicitly preserve isPublished status - DO NOT change it during edit
+        console.log('🔍 BEFORE UPDATE - Existing course isPublished status:', existingCourse.isPublished);
+        console.log('🔍 BEFORE UPDATE - Existing course deleted status:', existingCourse.deleted);
+        
         const updateData: any = {
           ...courseData,
           // Preserve existing stats and metadata
@@ -1183,13 +1188,22 @@ function CourseSubmissionPageContent() {
           isNew: existingCourse.isNew || false,
           isFeatured: existingCourse.isFeatured || false,
           status: existingCourse.status || 'approved', // Auto-approved - no admin review needed
-          isPublished: existingCourse.isPublished || false,
+          // CRITICAL FIX: Preserve exact isPublished value - don't let it change to false
+          isPublished: existingCourse.isPublished === true ? true : existingCourse.isPublished === false ? false : false,
           reviews: existingCourse.reviews || [],
           discussions: existingCourse.discussions || [],
           enrollmentCount: existingCourse.enrollmentCount || 0,
           completionRate: existingCourse.completionRate || 0,
           createdAt: existingCourse.createdAt || new Date(),
         };
+        
+        // CRITICAL: Ensure deleted flag is explicitly preserved or set to false
+        // Never accidentally set deleted: true during edit
+        if (existingCourse.deleted !== undefined) {
+          updateData.deleted = existingCourse.deleted;
+        } else {
+          updateData.deleted = false;
+        }
         
         // Only include publishedAt if it exists (Firestore doesn't allow undefined)
         if (existingCourse.publishedAt !== undefined) {
@@ -1205,6 +1219,8 @@ function CourseSubmissionPageContent() {
           subcategory: updateData.subcategory,
           difficulty: updateData.difficulty,
           duration: updateData.duration,
+          isPublished: updateData.isPublished,
+          deleted: updateData.deleted,
           fullUpdateData: updateData
         });
 

@@ -70,9 +70,11 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribes: (() => void)[] = [];
 
     // Query 1: Published and approved courses (public)
+    // CRITICAL: Also filter by deleted=false at query level for performance
     const publishedQuery = query(
       collection(db, 'courses'),
       where('isPublished', '==', true),
+      where('deleted', '==', false),
       orderBy('createdAt', 'desc')
     );
 
@@ -116,12 +118,19 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       publishedQuery,
       (snapshot) => {
         console.log('📚 CourseProvider: Published courses snapshot updated, fetched', snapshot.docs.length, 'courses');
+        console.log('📚 Course IDs received:', snapshot.docs.map(d => ({ id: d.id, title: d.data().title, isPublished: d.data().isPublished, deleted: d.data().deleted })));
         
         // All published courses are auto-approved (no admin review needed)
-        // Filter out deleted courses
+        // Filter out deleted courses (backup filter, query should already exclude them)
         const allPublishedCourses = snapshot.docs
           .map(mapCourseData)
-          .filter((course: any) => course.deleted !== true) as Course[];
+          .filter((course: any) => {
+            if (course.deleted === true) {
+              console.warn('⚠️ CourseProvider: Filtering out deleted course:', course.id, course.title);
+              return false;
+            }
+            return true;
+          }) as Course[];
         const publicCourses = allPublishedCourses; // No filtering needed - all courses are approved
         
         console.log('📚 Total published courses (excluding deleted):', publicCourses.length);
@@ -131,15 +140,23 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           const draftQuery = query(
             collection(db, 'courses'),
             where('instructor.userId', '==', user.id),
-            where('isPublished', '==', false)
+            where('isPublished', '==', false),
+            where('deleted', '==', false)
           );
 
           const unsubDrafts = onSnapshot(draftQuery, (draftSnapshot) => {
             console.log('📝 CourseProvider: Draft courses snapshot updated, fetched', draftSnapshot.docs.length, 'draft courses');
-            // Filter out deleted courses from drafts
+            console.log('📝 Draft Course IDs received:', draftSnapshot.docs.map(d => ({ id: d.id, title: d.data().title, isPublished: d.data().isPublished, deleted: d.data().deleted })));
+            // Filter out deleted courses from drafts (backup filter)
             const draftCourses = draftSnapshot.docs
               .map(mapCourseData)
-              .filter((course: any) => course.deleted !== true) as Course[];
+              .filter((course: any) => {
+                if (course.deleted === true) {
+                  console.warn('⚠️ CourseProvider: Filtering out deleted draft:', course.id, course.title);
+                  return false;
+                }
+                return true;
+              }) as Course[];
             
             // Add user's own published courses
             const userPublishedCourses = allPublishedCourses.filter((course: any) => 

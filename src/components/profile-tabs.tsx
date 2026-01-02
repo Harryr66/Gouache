@@ -132,6 +132,11 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
   
   // Get courses by this instructor
   const instructorCourses = courses.filter(course => course.instructor.userId === userId);
+  
+  // Debug logging for course display
+  console.log('🎓 ProfileTabs: All courses count:', courses.length);
+  console.log('🎓 ProfileTabs: Instructor courses for userId', userId, ':', instructorCourses.length);
+  console.log('🎓 ProfileTabs: Instructor courses:', instructorCourses.map(c => ({ id: c.id, title: c.title, isPublished: c.isPublished, deleted: c.deleted })));
 
   // Component to display courses (Learn tab)
   function LearnDisplay({ userId, isOwnProfile }: { userId: string; isOwnProfile: boolean }) {
@@ -139,7 +144,11 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       .filter(e => e.userId === user?.id)
       .map(e => e.courseId);
     
-    const availableCourses = instructorCourses.filter(course => course.isPublished !== false);
+    const availableCourses = instructorCourses.filter(course => {
+      const shouldShow = course.isPublished !== false && course.deleted !== true;
+      console.log('🎓 ProfileTabs: Course', course.title, '- isPublished:', course.isPublished, 'deleted:', course.deleted, 'shouldShow:', shouldShow);
+      return shouldShow;
+    });
 
     if (coursesLoading) {
       return (
