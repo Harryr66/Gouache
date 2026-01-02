@@ -514,8 +514,59 @@ export default function ArtworkPage() {
     const video = videoRef.current;
     if (!artwork || !artwork.videoUrl || artwork.mediaType !== 'video' || !video) return;
 
-    const videoUrl = (artwork as any).videoVariants?.full || artwork.videoUrl;
-    const isHLS = videoUrl.includes('.m3u8') || videoUrl.includes('cloudflarestream.com');
+    let videoUrl = (artwork as any).videoVariants?.full || artwork.videoUrl;
+    
+    // Handle Cloudflare Stream URLs - need to use HLS manifest
+    const isCloudflareStream = videoUrl?.includes('cloudflarestream.com') || 
+                               videoUrl?.includes('videodelivery.net');
+    
+    if (isCloudflareStream && videoUrl) {
+      // Extract video ID first (needed for fallback)
+      let videoId: string | null = null;
+      const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
+      
+      // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
+      const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
+      if (customerMatch) {
+        videoId = customerMatch[1];
+      } else {
+        // Try videodelivery.net format: videodelivery.net/{videoId}
+        const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
+        if (videoDeliveryMatch) {
+          videoId = videoDeliveryMatch[1];
+        } else {
+          // Fallback: try to extract from any cloudflarestream.com URL
+          const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
+          if (fallbackMatch) {
+            videoId = fallbackMatch[1];
+          }
+        }
+      }
+      
+      // If URL already has .m3u8, use it as-is but store videoId for fallback
+      if (videoUrl.includes('.m3u8')) {
+        console.log('✅ Video URL already has .m3u8, using as-is:', videoUrl);
+        // Store videoId for potential fallback if this URL fails
+        if (!videoId) {
+          // Extract from .m3u8 URL
+          const m3u8Match = videoUrl.match(/\/([^/]+)\/manifest\/video\.m3u8/);
+          if (m3u8Match) videoId = m3u8Match[1];
+        }
+      } else if (videoId) {
+        // Construct HLS manifest URL - try customer subdomain first, then videodelivery.net
+        if (accountId) {
+          videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
+          console.log('✅ Constructed HLS manifest URL (customer subdomain):', videoUrl);
+        } else {
+          videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+          console.log('⚠️ Using videodelivery.net (no account ID):', videoUrl);
+        }
+      } else {
+        console.error('❌ Could not extract video ID from Cloudflare Stream URL:', videoUrl);
+      }
+    }
+    
+    const isHLS = videoUrl.includes('.m3u8') || isCloudflareStream;
     
     // Cleanup previous HLS instance
     if (hlsRef.current) {
@@ -631,8 +682,53 @@ export default function ArtworkPage() {
     const video = modalVideoRef.current;
     if (!showImageModal || !artwork || !artwork.videoUrl || artwork.mediaType !== 'video' || !video) return;
 
-    const videoUrl = (artwork as any).videoVariants?.full || artwork.videoUrl;
-    const isHLS = videoUrl.includes('.m3u8') || videoUrl.includes('cloudflarestream.com');
+    let videoUrl = (artwork as any).videoVariants?.full || artwork.videoUrl;
+    
+    // Handle Cloudflare Stream URLs - need to use HLS manifest
+    const isCloudflareStream = videoUrl?.includes('cloudflarestream.com') || 
+                               videoUrl?.includes('videodelivery.net');
+    
+    if (isCloudflareStream && videoUrl) {
+      // Extract video ID first (needed for fallback)
+      let videoId: string | null = null;
+      const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
+      
+      // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
+      const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
+      if (customerMatch) {
+        videoId = customerMatch[1];
+      } else {
+        // Try videodelivery.net format: videodelivery.net/{videoId}
+        const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
+        if (videoDeliveryMatch) {
+          videoId = videoDeliveryMatch[1];
+        } else {
+          // Fallback: try to extract from any cloudflarestream.com URL
+          const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
+          if (fallbackMatch) {
+            videoId = fallbackMatch[1];
+          }
+        }
+      }
+      
+      // If URL already has .m3u8, use it as-is
+      if (videoUrl.includes('.m3u8')) {
+        console.log('✅ Modal video URL already has .m3u8, using as-is:', videoUrl);
+      } else if (videoId) {
+        // Construct HLS manifest URL
+        if (accountId) {
+          videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
+          console.log('✅ Constructed HLS manifest URL for modal (customer subdomain):', videoUrl);
+        } else {
+          videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+          console.log('⚠️ Using videodelivery.net for modal (no account ID):', videoUrl);
+        }
+      } else {
+        console.error('❌ Could not extract video ID from Cloudflare Stream URL (modal):', videoUrl);
+      }
+    }
+    
+    const isHLS = videoUrl.includes('.m3u8') || isCloudflareStream;
     
     // Cleanup previous HLS instance
     if (modalHlsRef.current) {
@@ -645,6 +741,12 @@ export default function ArtworkPage() {
       
       if (canPlayHLS) {
         video.src = videoUrl;
+        video.load();
+        video.addEventListener('loadeddata', () => {
+          video.play().catch((error) => {
+            console.log('Modal video autoplay prevented (native HLS):', error);
+          });
+        }, { once: true });
       } else if (Hls.isSupported()) {
         const hls = new Hls({
           enableWorker: true,
@@ -656,8 +758,9 @@ export default function ArtworkPage() {
         modalHlsRef.current = hls;
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.load();
           video.play().catch((error) => {
-            console.log('Modal video autoplay prevented:', error);
+            console.log('Modal video autoplay prevented (HLS.js):', error);
           });
         });
         
@@ -673,6 +776,12 @@ export default function ArtworkPage() {
       }
     } else {
       video.src = videoUrl;
+      video.load();
+      video.addEventListener('loadeddata', () => {
+        video.play().catch((error) => {
+          console.log('Modal video autoplay prevented (direct):', error);
+        });
+      }, { once: true });
     }
 
     return () => {
