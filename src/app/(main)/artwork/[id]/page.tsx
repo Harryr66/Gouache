@@ -526,27 +526,18 @@ export default function ArtworkPage() {
   // Setup HLS video player when artwork loads
   useEffect(() => {
     const video = videoRef.current;
-    if (!artwork || !artwork.videoUrl || artwork.mediaType !== 'video' || !video) {
-      alert(`VIDEO CHECK: artwork=${!!artwork}, videoUrl=${!!artwork?.videoUrl}, mediaType=${artwork?.mediaType}, video=${!!video}`);
-      return;
-    }
-
-    alert(`Starting video setup for: ${artwork.videoUrl.substring(0, 50)}...`);
+    if (!artwork || !artwork.videoUrl || artwork.mediaType !== 'video' || !video) return;
 
     // Extract 32-character hex video ID from any Cloudflare URL
     const videoIdMatch = artwork.videoUrl.match(/([a-f0-9]{32})/);
     if (!videoIdMatch) {
-      alert('ERROR: Could not extract video ID');
       console.error('Could not extract video ID from:', artwork.videoUrl);
       return;
     }
     
     const videoId = videoIdMatch[1];
-    alert(`Video ID extracted: ${videoId}`);
-    
     // Construct manifest URL - use videodelivery.net (universal)
     const manifestUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-    alert(`Manifest URL: ${manifestUrl}`);
     
     console.log('Video ID:', videoId);
     console.log('Manifest URL:', manifestUrl);
@@ -559,7 +550,6 @@ export default function ArtworkPage() {
 
     // Check if browser natively supports HLS (Safari/iOS)
     const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
-    alert(`Native HLS supported: ${canPlayHLS}`);
     
     if (canPlayHLS) {
       // Native HLS support - Safari/iOS
@@ -568,22 +558,14 @@ export default function ArtworkPage() {
       
       // Wait for video to be ready
       video.addEventListener('loadedmetadata', () => {
-        alert('Video metadata loaded!');
         console.log('✅ Video metadata loaded');
         video.muted = true;
         video.play()
-          .then(() => {
-            alert('Video playing!');
-            console.log('✅ Video playing');
-          })
-          .catch(err => {
-            alert(`Play failed: ${err.message}`);
-            console.log('⚠️ Autoplay prevented:', err);
-          });
+          .then(() => console.log('✅ Video playing'))
+          .catch(err => console.log('⚠️ Autoplay prevented:', err));
       }, { once: true });
       
       video.addEventListener('error', (e) => {
-        alert(`Video error code: ${video.error?.code}`);
         console.error('❌ Video element error:', {
           error: video.error,
           code: video.error?.code,
@@ -594,10 +576,45 @@ export default function ArtworkPage() {
       });
       
       video.load();
-      alert('video.load() called');
       console.log('Video load() called');
+    } else if (Hls.isSupported()) {
+      // Use hls.js for other browsers
+      console.log('Using HLS.js');
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        maxBufferLength: 30,
+        debug: true,
+      });
+      
+      hls.loadSource(manifestUrl);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log('✅ HLS manifest parsed');
+        video.muted = true;
+        video.play()
+          .then(() => console.log('✅ Video playing'))
+          .catch(err => console.log('⚠️ Autoplay prevented:', err));
+      });
+      
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error('❌ HLS error:', data);
+        if (data.fatal) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            console.log('🔄 Retrying after network error...');
+            hls.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            console.log('🔄 Recovering from media error...');
+            hls.recoverMediaError();
+          } else {
+            console.error('💀 Fatal error, cannot recover');
+          }
+        }
+      });
     } else {
-      alert('HLS not supported - need HLS.js (but this is Safari...)');
+      console.error('❌ HLS not supported in this browser');
     }
 
     return () => {

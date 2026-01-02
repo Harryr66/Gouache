@@ -469,8 +469,19 @@ const VideoPlayer = ({
     setHasError(false);
     retryCountRef.current = 0;
 
-    const isHLS = videoUrl.includes('.m3u8');
-    const isCloudflareStream = videoUrl.includes('cloudflarestream.com') || videoUrl.includes('videodelivery.net');
+    // CRITICAL: Convert Cloudflare Stream URLs to HLS manifest format
+    let manifestUrl = videoUrl;
+    if (!videoUrl.includes('.m3u8')) {
+      const videoIdMatch = videoUrl.match(/([a-f0-9]{32})/);
+      if (videoIdMatch) {
+        const videoId = videoIdMatch[1];
+        manifestUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+        console.log('🔄 Converted to HLS manifest:', manifestUrl);
+      }
+    }
+
+    const isHLS = manifestUrl.includes('.m3u8');
+    const isCloudflareStream = manifestUrl.includes('cloudflarestream.com') || manifestUrl.includes('videodelivery.net');
 
     // Check if browser natively supports HLS (Safari on iOS/macOS)
     const canPlayHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
@@ -478,8 +489,8 @@ const VideoPlayer = ({
     if (isHLS || isCloudflareStream) {
       if (canPlayHLS) {
         // Native HLS support (Safari)
-        video.src = videoUrl;
-        console.log('✅ Using native HLS support for:', videoUrl);
+        video.src = manifestUrl;
+        console.log('✅ Using native HLS support for:', manifestUrl);
       } else if (Hls.isSupported()) {
         // Use hls.js for browsers that don't support HLS natively
         const hls = new Hls({
@@ -488,11 +499,11 @@ const VideoPlayer = ({
           backBufferLength: 90,
         });
         
-        hls.loadSource(videoUrl);
+        hls.loadSource(manifestUrl);
         hls.attachMedia(video);
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log('✅ HLS manifest parsed, video ready:', videoUrl);
+          console.log('✅ HLS manifest parsed, video ready:', manifestUrl);
           setIsVideoReady(true);
           video.play().catch((error) => {
             console.log('Autoplay prevented:', error);
@@ -542,7 +553,7 @@ const VideoPlayer = ({
                       lowLatencyMode: false,
                       backBufferLength: 90,
                     });
-                    newHls.loadSource(videoUrl);
+                    newHls.loadSource(manifestUrl);
                     newHls.attachMedia(video);
                     hlsRef.current = newHls;
                   }, 1000 * retryCountRef.current);
@@ -558,21 +569,21 @@ const VideoPlayer = ({
         hlsRef.current = hls;
       } else {
         // Fallback: try direct URL (might work for some formats)
-        console.warn('⚠️ HLS not supported, trying direct URL:', videoUrl);
-        video.src = videoUrl;
+        console.warn('⚠️ HLS not supported, trying direct URL:', manifestUrl);
+        video.src = manifestUrl;
       }
     } else {
       // Not HLS, use direct URL
-      video.src = videoUrl;
+      video.src = manifestUrl;
     }
 
     video.addEventListener('canplay', () => {
-      console.log('✅ Video can play:', videoUrl);
+      console.log('✅ Video can play:', manifestUrl);
       setIsVideoReady(true);
     });
 
     video.addEventListener('loadedmetadata', () => {
-      console.log('✅ Video metadata loaded:', videoUrl);
+      console.log('✅ Video metadata loaded:', manifestUrl);
       setIsVideoReady(true);
     });
 
@@ -582,9 +593,9 @@ const VideoPlayer = ({
       const is404 = video.networkState === 3 || error?.code === 4;
       
       // For 404 errors, try videodelivery.net fallback if using customer subdomain
-      if (is404 && videoUrl.includes('customer-') && videoUrl.includes('.cloudflarestream.com')) {
+      if (is404 && manifestUrl.includes('customer-') && manifestUrl.includes('.cloudflarestream.com')) {
         // Extract video ID and try videodelivery.net format
-        const videoIdMatch = videoUrl.match(/\/([^/]+)\/manifest\/video\.m3u8/);
+        const videoIdMatch = manifestUrl.match(/\/([^/]+)\/manifest\/video\.m3u8/);
         if (videoIdMatch && videoIdMatch[1] && retryCountRef.current === 0) {
           const videoId = videoIdMatch[1];
           const fallbackUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
@@ -618,7 +629,7 @@ const VideoPlayer = ({
       
       // If 404 and no fallback available, or fallback also failed, hide the video
       if (is404) {
-        console.debug('❌ Video not found (404), hiding:', videoUrl);
+        console.debug('❌ Video not found (404), hiding:', manifestUrl);
         setHasError(true);
         if (hlsRef.current) {
           hlsRef.current.destroy();
@@ -633,7 +644,7 @@ const VideoPlayer = ({
         console.debug(`⚠️ Video error (non-404), retrying (${retryCountRef.current}/3) in ${retryDelay}ms...`);
         
         setTimeout(() => {
-          if (video && videoUrl && !hasError) {
+          if (video && manifestUrl && !hasError) {
             video.load();
           }
         }, retryDelay);
