@@ -114,7 +114,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2">
         {availableCourses.map((course) => {
           const isEnrolled = enrolledCourseIds.includes(course.id);
           const isCourseOwner = isOwnProfile && course.instructor.userId === user?.id;

@@ -413,143 +413,68 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
       {/* Artworks Tab */}
       <TabsContent value="artworks" className="space-y-4">
         {artworks.length > 0 ? (
-          isMobile ? (
-            // Mobile: List view (like discover events)
-            <div className="space-y-4">
-              {artworks.map((item) => (
-                <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
-                  <div className="flex flex-col md:flex-row gap-4 p-4">
-                    <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
-                      {item.imageUrl ? (
-                        item.imageUrl.includes('cloudflarestream.com') ? (
-                          <img
-                            src={item.imageUrl}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Image
-                            src={item.imageUrl}
-                            alt={item.title}
-                            fill
-                            className="object-cover"
-                          />
-                        )
-                      ) : (
-                        <div className="w-full h-full bg-muted flex items-center justify-center">
-                          <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                        </div>
-                      )}
-                      {!item.isAvailable && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <Badge variant="destructive">Sold</Badge>
-                        </div>
-                      )}
-                      {/* Edit button overlay - only for owner */}
-                      {isOwnProfile && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background/90 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/profile?editArtwork=${item.id}`);
-                          }}
-                          title="Edit artwork"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      )}
+          // Always show grid view - 3 columns on all devices
+          <div className="grid grid-cols-3 gap-1">
+            {artworks.map((item) => (
+              <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
+                <div className="relative aspect-square">
+                  {item.imageUrl ? (
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <ImageIcon className="h-12 w-12 text-muted-foreground" />
                     </div>
-                    <div className="flex-1 flex flex-col">
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                          <span className="font-bold text-lg block mb-3">
-                            {item.priceType === 'contact' || item.contactForPrice ? (
-                              <span className="text-muted-foreground text-sm">Contact for pricing</span>
-                            ) : (
-                              <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => router.push(`/artwork/${item.id}`)}
-                        disabled={!item.isAvailable}
-                      >
-                        View Details
-                      </Button>
+                  )}
+                  {!item.isAvailable && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Badge variant="destructive" className="text-xs">Sold</Badge>
                     </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            // Desktop: Grid view
-            <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
-              {artworks.map((item) => (
-                <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative aspect-square">
-                    {item.imageUrl ? (
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                      </div>
-                    )}
-                    {!item.isAvailable && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Badge variant="destructive">Sold</Badge>
-                      </div>
-                    )}
-                    {/* Edit button overlay - only for owner */}
-                    {isOwnProfile && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background/90 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/profile?editArtwork=${item.id}`);
-                        }}
-                        title="Edit artwork"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <CardContent className="p-2">
-                    <h4 className="font-semibold text-xs mb-1 line-clamp-1">{item.title}</h4>
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="font-bold text-xs">
-                        {item.priceType === 'contact' || item.contactForPrice ? (
-                          <span className="text-muted-foreground text-xs">Contact</span>
-                        ) : (
-                          <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
-                        )}
-                      </span>
-                    </div>
+                  )}
+                  {/* Edit button overlay - only for owner */}
+                  {isOwnProfile && (
                     <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full text-xs py-1.5 h-8"
-                      onClick={() => router.push(`/artwork/${item.id}`)}
-                      disabled={!item.isAvailable}
+                      size="icon"
+                      variant="ghost"
+                      className="absolute top-1 right-1 h-7 w-7 bg-background/80 backdrop-blur-sm hover:bg-background/90 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/profile?editArtwork=${item.id}`);
+                      }}
+                      title="Edit artwork"
                     >
-                      View Details
+                      <Edit className="h-3 w-3" />
                     </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                  )}
+                </div>
+                <CardContent className="p-2">
+                  <h4 className="font-semibold text-xs mb-1 line-clamp-1">{item.title}</h4>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="font-bold text-xs">
+                      {item.priceType === 'contact' || item.contactForPrice ? (
+                        <span className="text-muted-foreground text-xs">Contact</span>
+                      ) : (
+                        <>{item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}</>
+                      )}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full text-xs py-1 h-7"
+                    onClick={() => router.push(`/artwork/${item.id}`)}
+                    disabled={!item.isAvailable}
+                  >
+                    View
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
           )
         ) : (
           <Card className="p-8 text-center">
@@ -569,94 +494,76 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
       {/* Products Tab */}
       <TabsContent value="products" className="space-y-4">
         {products.length > 0 ? (
-          isMobile ? (
-            // Mobile: List view (like discover events)
-            <div className="space-y-4">
-              {products.map((item) => (
-                <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
-                  <div className="flex flex-col md:flex-row gap-4 p-4">
-                    <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden">
-                      {item.imageUrl ? (
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.title}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-muted flex items-center justify-center">
-                          <Book className="h-12 w-12 text-muted-foreground" />
-                        </div>
-                      )}
-                      {!item.isAvailable && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <Badge variant="destructive">Sold</Badge>
-                        </div>
-                      )}
-                      {/* Edit button overlay - only for owner */}
-                      {isOwnProfile && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background/90 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/marketplace/${item.id}?edit=true`);
-                          }}
-                          title="Edit product"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      )}
+          // Always show grid view - 3 columns on all devices
+          <div className="grid grid-cols-3 gap-1">
+            {products.map((item) => (
+              <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
+                <div className="relative aspect-[4/5]">
+                  {item.imageUrl ? (
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <Book className="h-12 w-12 text-muted-foreground" />
                     </div>
-                    <div className="flex-1 flex flex-col">
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                          <span className="font-bold text-lg block mb-3">
-                            {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
+                  )}
+                  {!item.isAvailable && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Badge variant="destructive" className="text-xs">Sold</Badge>
+                    </div>
+                  )}
+                  {/* Edit and Delete buttons overlay - only for owner */}
+                  {isOwnProfile && (
+                    <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => router.push(`/marketplace/${item.id}`)}
-                        disabled={!item.isAvailable}
+                        size="icon"
+                        variant="secondary"
+                        className="h-7 w-7"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/marketplace/${item.id}?edit=true`);
+                        }}
+                        title="Edit product"
                       >
-                        View Details
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="h-7 w-7"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDeleteConfirm(item.id);
+                        }}
+                        title="Delete product"
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            // Desktop: Grid view
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-              {products.map((item) => (
-                <Card key={item.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative aspect-[4/5]">
-                    {item.imageUrl ? (
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <Book className="h-12 w-12 text-muted-foreground" />
-                      </div>
-                    )}
-                    {!item.isAvailable && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Badge variant="destructive">Sold</Badge>
-                      </div>
-                    )}
-                    {/* Edit and Delete buttons overlay - only for owner */}
-                    {isOwnProfile && (
-                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  )}
+                </div>
+                <CardContent className="p-2">
+                  <h4 className="font-semibold text-xs mb-1 line-clamp-1">{item.title}</h4>
+                  <p className="text-xs font-bold mb-1">
+                    {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full text-xs py-1 h-7"
+                    onClick={() => router.push(`/marketplace/${item.id}`)}
+                    disabled={!item.isAvailable}
+                  >
+                    View
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
                         <Button
                           size="sm"
                           variant="ghost"
