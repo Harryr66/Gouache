@@ -131,10 +131,25 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
   };
   
   // Get courses by this instructor
-  const instructorCourses = courses.filter(course => course.instructor.userId === userId);
+  // CRITICAL: Check both instructor.userId and instructor.id to handle different data structures
+  const instructorCourses = courses.filter(course => {
+    const instructor = course.instructor;
+    const matchesUserId = instructor?.userId === userId || String(instructor?.userId) === String(userId);
+    const matchesInstructorId = instructor?.id === userId || String(instructor?.id) === String(userId);
+    return matchesUserId || matchesInstructorId;
+  });
   
   // Debug logging for course display
   console.log('🎓 ProfileTabs: All courses count:', courses.length);
+  console.log('🎓 ProfileTabs: Looking for courses by userId:', userId);
+  console.log('🎓 ProfileTabs: All courses instructor data:', courses.map(c => ({ 
+    id: c.id, 
+    title: c.title, 
+    instructorUserId: c.instructor?.userId, 
+    instructorId: c.instructor?.id,
+    isPublished: c.isPublished, 
+    deleted: c.deleted 
+  })));
   console.log('🎓 ProfileTabs: Instructor courses for userId', userId, ':', instructorCourses.length);
   console.log('🎓 ProfileTabs: Instructor courses:', instructorCourses.map(c => ({ id: c.id, title: c.title, isPublished: c.isPublished, deleted: c.deleted })));
 
@@ -144,8 +159,11 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       .filter(e => e.userId === user?.id)
       .map(e => e.courseId);
     
+    // CRITICAL: Show published courses (isPublished === true) and exclude deleted
     const availableCourses = instructorCourses.filter(course => {
-      const shouldShow = course.isPublished !== false && course.deleted !== true;
+      const isPublished = course.isPublished === true; // Explicitly check for true
+      const notDeleted = course.deleted !== true;
+      const shouldShow = isPublished && notDeleted;
       console.log('🎓 ProfileTabs: Course', course.title, '- isPublished:', course.isPublished, 'deleted:', course.deleted, 'shouldShow:', shouldShow);
       return shouldShow;
     });
