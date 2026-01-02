@@ -748,8 +748,8 @@ const generateArtistContent = (artist: Artist) => ({
                       alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
                       fill
                       className={`object-cover transition-opacity duration-500 absolute inset-0 z-10 pointer-events-none ${isVideoLoaded && !isVideoPaused && isInViewport ? 'opacity-0' : 'opacity-100'}`}
-                      loading="eager"
-                      priority={true}
+                      loading={isInitialViewport ? "eager" : "lazy"}
+                      priority={isInitialViewport}
                       onLoad={() => {
                         setIsImageLoaded(true);
                         // Call onImageReady if this is in initial viewport (for preloading)
@@ -1086,7 +1086,7 @@ const generateArtistContent = (artist: Artist) => ({
                       width={finalWidth}
                       height={finalHeight}
                       className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${imageError ? 'opacity-0' : 'opacity-100'}`}
-                      loading="eager"
+                      loading={isInitialViewport ? "eager" : "lazy"}
                       fetchPriority="high"
                       decoding="async"
                       key={`${cloudflareUrl}-${retryCount}`}
@@ -1211,7 +1211,7 @@ const generateArtistContent = (artist: Artist) => ({
                       width={finalWidth}
                       height={finalHeight}
                       className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${imageError ? 'opacity-0' : 'opacity-100'}`}
-                      loading="eager"
+                      loading={isInitialViewport ? "eager" : "lazy"}
                       fetchPriority="high"
                       decoding="async"
                       key={`${cloudflareUrl}-${retryCount}`}
@@ -1309,7 +1309,7 @@ const generateArtistContent = (artist: Artist) => ({
                       width={finalWidth}
                       height={finalHeight}
                       className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
-                      loading="eager"
+                      loading={isInitialViewport ? "eager" : "lazy"}
                       fetchPriority="high"
                       decoding="async"
                       key={`${imageSrc}-${retryCount}`}
@@ -1377,7 +1377,7 @@ const generateArtistContent = (artist: Artist) => ({
                       width={finalWidth}
                       height={finalHeight}
                       className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${imageError ? 'opacity-0' : 'opacity-100'}`}
-                      loading="eager"
+                      loading={isInitialViewport ? "eager" : "lazy"}
                       fetchPriority="high"
                       decoding="async"
                       key={`${imageSrc}-${retryCount}`}
@@ -1416,7 +1416,7 @@ const generateArtistContent = (artist: Artist) => ({
                       width={finalWidth}
                       height={finalHeight}
                       className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${imageError ? 'opacity-0' : 'opacity-100'}`}
-                      loading="eager"
+                      loading={isInitialViewport ? "eager" : "lazy"}
                       fetchPriority="high"
                       decoding="async"
                       key={`${imageSrc}-${retryCount}`}
@@ -1450,8 +1450,8 @@ const generateArtistContent = (artist: Artist) => ({
                     alt={artwork.imageAiHint || artwork.title || 'Artwork'}
                     fill
                     className={`object-cover group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none ${!isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
-                    loading="eager"
-                    priority={true}
+                    loading={isInitialViewport ? "eager" : "lazy"}
+                    priority={isInitialViewport}
                     sizes={firebaseSizes} // CRITICAL: Forces Next.js to generate 240px images for grid
                     quality={isInitialViewport ? 75 : 85} // Lower quality for thumbnails (faster load)
                     key={retryCount}

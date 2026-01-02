@@ -1232,7 +1232,7 @@ function DiscoverPageContent() {
           // Fetch artists with portfolios - old method
           const artistsQuery = query(
             collection(db, 'userProfiles'),
-            limit(100)
+            limit(30) // Reduced for faster initial load
           );
           
           const artistsSnapshot = await getDocs(artistsQuery);
@@ -1316,7 +1316,7 @@ function DiscoverPageContent() {
           const artworksQuery = query(
             collection(db, 'artworks'),
             orderBy('createdAt', 'desc'),
-            limit(200) // Get recent artworks - now showing ALL artworks (portfolio, sale, and discover-only)
+            limit(50) // Initial load: fetch fewer artworks for faster page load, infinite scroll handles the rest
           );
           const artworksSnapshot = await getDocs(artworksQuery);
           
