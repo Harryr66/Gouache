@@ -629,70 +629,77 @@ function CourseSubmissionPageContent() {
 
     // CRITICAL: Determine if we're publishing based on current step
     const isPublishing = activeStep === 'publish';
-
-    // Check Stripe connection before allowing course submission
-    if (!stripeStatus?.isComplete) {
-      toast({
-        title: "Stripe connection required",
-        description: "Please connect your Stripe account in Settings → Business before submitting a course. This is required to receive payments for course sales.",
-        variant: "destructive",
-        duration: 10000,
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push('/settings?tab=business')}
-          >
-            Go to Settings
-          </Button>
-        )
-      });
-      return;
-    }
-
-    // Validate required fields (based on step)
-    const requiredFields = ['title', 'description', 'category', 'subcategory', 'difficulty', 'duration', 'price', 'instructorBio', 'originalityDisclaimer'];
     
-    // For hosted courses, validate curriculum
-    if (formData.courseType === 'hosted') {
-      if (formData.curriculum.length === 0) {
+    // CRITICAL: Determine if this is just a save (not a publish)
+    // When "Save Changes" button is clicked, shouldRedirectAfterSave is set to false
+    const isJustSaving = !shouldRedirectAfterSave && isEditing;
+
+    // ONLY validate if NOT just saving edits (skip validation for intermediate saves)
+    if (!isJustSaving) {
+      // Check Stripe connection before allowing course submission
+      if (!stripeStatus?.isComplete) {
         toast({
-          title: "Lessons required",
-          description: "Please add at least one lesson for hosted courses.",
+          title: "Stripe connection required",
+          description: "Please connect your Stripe account in Settings → Business before submitting a course. This is required to receive payments for course sales.",
+          variant: "destructive",
+          duration: 10000,
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/settings?tab=business')}
+            >
+              Go to Settings
+            </Button>
+          )
+        });
+        return;
+      }
+
+      // Validate required fields (only for publishing, not for saving edits)
+      const requiredFields = ['title', 'description', 'category', 'subcategory', 'difficulty', 'duration', 'price', 'instructorBio', 'originalityDisclaimer'];
+      
+      // For hosted courses, validate curriculum
+      if (formData.courseType === 'hosted') {
+        if (formData.curriculum.length === 0) {
+          toast({
+            title: "Lessons required",
+            description: "Please add at least one lesson for hosted courses.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+      
+      if (missingFields.length > 0) {
+        toast({
+          title: "Missing Information",
+          description: "Please fill in all required fields.",
           variant: "destructive",
         });
         return;
       }
-    }
-    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
-    
-    if (missingFields.length > 0) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    // Validate originality disclaimer
-    if (!formData.originalityDisclaimer) {
-      toast({
-        title: "Originality Confirmation Required",
-        description: "Please confirm that this is your own original work and that AI has not been used.",
-        variant: "destructive",
-      });
-      return;
-    }
+      // Validate originality disclaimer
+      if (!formData.originalityDisclaimer) {
+        toast({
+          title: "Originality Confirmation Required",
+          description: "Please confirm that this is your own original work and that AI has not been used.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    // For editing, thumbnail is optional if preview exists
-    if (!isEditing && !thumbnailFile) {
-      toast({
-        title: "Thumbnail Required",
-        description: "Please upload a course thumbnail image.",
-        variant: "destructive",
-      });
-      return;
+      // For editing, thumbnail is optional if preview exists
+      if (!isEditing && !thumbnailFile) {
+        toast({
+          title: "Thumbnail Required",
+          description: "Please upload a course thumbnail image.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -843,13 +850,18 @@ function CourseSubmissionPageContent() {
         await updateCourse(editingCourseId, updateData);
 
         toast({
-          title: "Course Updated",
-          description: "Your course has been updated successfully.",
+          title: isJustSaving ? "Changes Saved" : "Course Updated",
+          description: isJustSaving 
+            ? "Your changes have been saved successfully." 
+            : "Your course has been updated successfully.",
         });
 
         // Only redirect if shouldRedirectAfterSave is true (final submit, not intermediate save)
         if (shouldRedirectAfterSave) {
           router.push(`/learn/${editingCourseId}`);
+        } else {
+          // Reset the flag for next save
+          setShouldRedirectAfterSave(true);
         }
       } else {
         // Create new course

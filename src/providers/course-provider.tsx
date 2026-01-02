@@ -691,11 +691,8 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       
       // Force a refresh to ensure UI updates immediately
       await refreshCourses();
-
-      toast({
-        title: "Course Updated",
-        description: "Course has been updated successfully.",
-      });
+      
+      // Don't show toast here - let the calling component handle it to avoid duplicates
     } catch (error) {
       console.error('❌ Error updating course:', error);
       toast({
