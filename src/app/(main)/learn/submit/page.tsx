@@ -63,6 +63,7 @@ function CourseSubmissionPageContent() {
   const [myDrafts, setMyDrafts] = useState<any[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [shouldRedirectAfterSave, setShouldRedirectAfterSave] = useState(true);
+  const [hasLoadedCourse, setHasLoadedCourse] = useState(false); // Track if we've already loaded the course data
 
   // Kajabi-style multi-step wizard
   const steps = [
@@ -161,10 +162,18 @@ function CourseSubmissionPageContent() {
     const loadCourseForEdit = async () => {
       const editId = searchParams?.get('edit');
       
+      // CRITICAL: Only load course data ONCE per edit session
+      // If we've already loaded this course, don't reload (prevents overwriting user changes)
+      if (editId && hasLoadedCourse && editId === editingCourseId) {
+        console.log('⏭️ Skipping course reload - already loaded');
+        return;
+      }
+      
       // CRITICAL: Reset form when creating NEW course (no edit parameter)
       if (!editId) {
         setIsEditing(false);
         setEditingCourseId(null);
+        setHasLoadedCourse(false);
         setFormData({
           title: '',
           description: '',
@@ -258,6 +267,8 @@ function CourseSubmissionPageContent() {
             }
 
             setSlug(courseData.slug || '');
+            setHasLoadedCourse(true); // Mark as loaded to prevent re-loading
+            console.log('✅ Course data loaded successfully - will not reload until navigating away');
           }
         } catch (error) {
           console.error('Error loading course:', error);
@@ -275,7 +286,7 @@ function CourseSubmissionPageContent() {
     if (user) {
       loadCourseForEdit();
     }
-  }, [searchParams, user, getCourse, router]);
+  }, [searchParams, user, getCourse, router, hasLoadedCourse, editingCourseId]);
 
   // Load user's draft courses (unpublished)
   useEffect(() => {
@@ -399,7 +410,12 @@ function CourseSubmissionPageContent() {
   }, [slug, isEditing, editingCourseId]);
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    console.log(`📝 Form field changed: ${field} = ${value}`);
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      console.log('📝 Updated formData state:', { ...updated });
+      return updated;
+    });
   };
 
   const handleThumbnailUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -782,6 +798,18 @@ function CourseSubmissionPageContent() {
       }
 
       // Create course data
+      console.log('🔍 CREATING courseData - Current formData state:', {
+        title: formData.title,
+        description: formData.description?.substring(0, 100),
+        category: formData.category,
+        subcategory: formData.subcategory,
+        difficulty: formData.difficulty,
+        duration: formData.duration,
+        price: formData.price,
+        isEditing: isEditing,
+        editingCourseId: editingCourseId
+      });
+      
       const courseData: any = {
         title: formData.title,
         description: formData.description,
