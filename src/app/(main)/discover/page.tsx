@@ -1259,35 +1259,35 @@ function DiscoverPageContent() {
             
             log(`📋 Discover: Processing ${portfolio.length} portfolio items from artist ${artistDoc.id}`);
             totalPortfolioItemsProcessed += portfolio.length;
-          
-          // CRITICAL: Filter out deleted items, then sort, NO SLICE - get ALL items
-          const activePortfolio = portfolio
-            .filter((item: any) => {
-              // STRICT deleted check
-              const isDeleted = item.deleted === true || item.deleted === 'true' || item.deleted === 1;
-              const isHidden = item.showInPortfolio === false;
-              
-              if (isDeleted) {
-                log(`⚠️ Discover: Filtering out deleted item ${item.id} from artist ${artistDoc.id}`);
-                return false;
-              }
-              
-              if (isHidden) {
-                return false;
-              }
-              
-              return true;
-            })
-            .sort((a: any, b: any) => {
-              const dateA = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
-              const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
-              return dateB - dateA; // Newest first
-            });
-          // NO SLICE - get ALL active items
             
-          log(`📋 Discover: Processing ${activePortfolio.length} ACTIVE portfolio items from artist ${artistDoc.id}`);
-          
-          for (const [index, item] of activePortfolio.entries()) {
+            // CRITICAL: Filter out deleted items, then sort, NO SLICE - get ALL items
+            const activePortfolio = portfolio
+              .filter((item: any) => {
+                // STRICT deleted check
+                const isDeleted = item.deleted === true || item.deleted === 'true' || item.deleted === 1;
+                const isHidden = item.showInPortfolio === false;
+                
+                if (isDeleted) {
+                  log(`⚠️ Discover: Filtering out deleted item ${item.id} from artist ${artistDoc.id}`);
+                  return false;
+                }
+                
+                if (isHidden) {
+                  return false;
+                }
+                
+                return true;
+              })
+              .sort((a: any, b: any) => {
+                const dateA = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
+                const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
+                return dateB - dateA; // Newest first
+              });
+            // NO SLICE - get ALL active items
+              
+            log(`📋 Discover: Processing ${activePortfolio.length} ACTIVE portfolio items from artist ${artistDoc.id}`);
+            
+            for (const [index, item] of activePortfolio.entries()) {
               if (discoverSettings.hideAiAssistedArt && (item.aiAssistance === 'assisted' || item.aiAssistance === 'generated' || item.isAI)) {
                 continue;
               }
