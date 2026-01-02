@@ -198,6 +198,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const { getCourse, enrollInCourse, courseEnrollments, verifyEnrollment } = useCourses();
   const { user } = useAuth();
   
+  // Preview mode detection
+  const isPreviewMode = searchParams.get('preview') === 'true';
+  
   const [course, setCourse] = useState<any>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -532,6 +535,27 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Preview Mode Banner */}
+      {isPreviewMode && (
+        <div className="bg-blue-500 text-white px-4 py-3 text-center">
+          <div className="container mx-auto flex items-center justify-center gap-2">
+            <Search className="h-5 w-5" />
+            <span className="font-medium">Preview Mode</span>
+            <span className="hidden sm:inline text-sm opacity-90">
+              - This is how your course will appear to students
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.close()}
+              className="ml-4 bg-white text-blue-500 hover:bg-blue-50 border-0"
+            >
+              Close Preview
+            </Button>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="bg-background border-b border-border pt-4">
         <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5">

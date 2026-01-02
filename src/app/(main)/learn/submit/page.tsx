@@ -1438,7 +1438,7 @@ function CourseSubmissionPageContent() {
                   <span className="text-sm font-medium">{s.label}</span>
                 </button>
               ))}
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -1458,6 +1458,25 @@ function CourseSubmissionPageContent() {
                     </>
                   )}
                 </Button>
+                
+                {/* Preview Course Button */}
+                {(editingCourseId || isEditing) && formData.title && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => {
+                      const courseId = editingCourseId;
+                      if (courseId) {
+                        window.open(`/learn/${courseId}?preview=true`, '_blank');
+                      }
+                    }}
+                    title="Preview how your course will look to students"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Preview Course
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
