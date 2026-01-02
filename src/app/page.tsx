@@ -34,10 +34,11 @@ export default function RootPage() {
   }, []);
 
   // Redirect logged-in users (but not anonymous) to discover page
+  // Only redirect from root page, not from other pages like /support
   useEffect(() => {
     if (!loading && user && !isAnonymousUser) {
-      // Only redirect if user has an email (not anonymous)
-      if (user.email && user.email !== '') {
+      // Only redirect if user has an email (not anonymous) AND we're on the root page
+      if (user.email && user.email !== '' && window.location.pathname === '/') {
         router.replace('/discover');
       }
     }
