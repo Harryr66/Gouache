@@ -627,6 +627,9 @@ function CourseSubmissionPageContent() {
       return;
     }
 
+    // CRITICAL: Determine if we're publishing based on current step
+    const isPublishing = activeStep === 'publish';
+    
     // CRITICAL: Skip ALL validation when editing existing courses
     // Editing should always allow updates without annoying validation
     if (!isEditing) {
@@ -843,13 +846,27 @@ function CourseSubmissionPageContent() {
           updateData.publishedAt = existingCourse.publishedAt;
         }
 
+        console.log('📝 SUBMITTING COURSE UPDATE:', {
+          courseId: editingCourseId,
+          title: updateData.title,
+          description: updateData.description?.substring(0, 50) + '...',
+          price: updateData.price,
+          category: updateData.category,
+          subcategory: updateData.subcategory,
+          difficulty: updateData.difficulty,
+          duration: updateData.duration,
+          fullUpdateData: updateData
+        });
+
         await updateCourse(editingCourseId, updateData);
+        
+        console.log('✅ UPDATE COMPLETED - Course saved to Firestore');
 
         toast({
-          title: isJustSaving ? "Changes Saved" : "Course Updated",
-          description: isJustSaving 
-            ? "Your changes have been saved successfully." 
-            : "Your course has been updated successfully.",
+          title: shouldRedirectAfterSave ? "Course Updated" : "Changes Saved",
+          description: shouldRedirectAfterSave 
+            ? "Your course has been updated successfully." 
+            : "Your changes have been saved successfully.",
         });
 
         // Only redirect if shouldRedirectAfterSave is true (final submit, not intermediate save)

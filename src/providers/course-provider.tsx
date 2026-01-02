@@ -682,6 +682,9 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
   const updateCourse = async (courseId: string, updates: Partial<Course>): Promise<void> => {
     try {
       console.log('🔄 Updating course:', courseId, 'with updates:', updates);
+      console.log('📝 Title being saved:', updates.title);
+      console.log('📝 Description being saved:', updates.description?.substring(0, 100));
+      
       await updateDoc(doc(db, 'courses', courseId), {
         ...updates,
         updatedAt: new Date(),
@@ -689,12 +692,13 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
       console.log('✅ Course updated successfully in Firestore:', courseId);
       
-      // Force a refresh to ensure UI updates immediately
-      await refreshCourses();
+      // Real-time listeners (onSnapshot) will automatically update the UI
+      // No need to manually refresh - Firestore handles it
       
       // Don't show toast here - let the calling component handle it to avoid duplicates
     } catch (error) {
       console.error('❌ Error updating course:', error);
+      console.error('❌ Full error:', error);
       toast({
         title: "Update Failed",
         description: "Failed to update course.",
