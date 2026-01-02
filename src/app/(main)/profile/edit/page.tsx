@@ -950,11 +950,9 @@ export default function ProfileEditPage() {
           updateData.tipJarEnabled = false;
           updateData.hideCard = false;
           updateData.hideShowcaseLocations = false;
-          updateData.hideSocialIcons = false;
           updateData.hideAboutArtist = false;
           updateData.aboutInstructor = null;
-          // Note: hideShop and hideLearn are saved above for all users
-          updateData.newsletterLink = null;
+          // Note: hideShop, hideLearn, newsletterLink, hideSocialIcons, and socialLinks are saved above for all users
           updateData.eventCity = null;
           updateData.eventCountry = null;
           updateData.eventDate = null;
