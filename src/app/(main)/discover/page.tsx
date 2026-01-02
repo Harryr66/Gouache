@@ -1341,8 +1341,11 @@ function DiscoverPageContent() {
           for (const artworkDoc of artworksSnapshot.docs) {
             const artworkData = artworkDoc.data();
             
-            // Skip deleted items
-            if (artworkData.deleted === true) continue;
+            // Skip deleted items (check for any truthy deleted value)
+            if (artworkData.deleted) continue;
+            
+            // Skip items without required fields
+            if (!artworkData.artist && !artworkData.artistId && !artworkData.userId) continue;
             
             // Skip events
             if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
@@ -1481,6 +1484,13 @@ function DiscoverPageContent() {
             
             fetchedArtworks.push(artwork);
             log(`✅ Discover: Added non-portfolio artwork "${artwork.title}" from ${artwork.artist.name}`);
+          }
+          
+          // CRITICAL FIX: Set lastDocument for pagination from artworks collection
+          if (artworksSnapshot.docs.length > 0) {
+            const lastArtworkDoc = artworksSnapshot.docs[artworksSnapshot.docs.length - 1];
+            setLastDocument(lastArtworkDoc);
+            log(`📄 Discover: Set lastDocument for artworks collection pagination`);
           }
         } catch (error) {
           console.error('Error fetching non-portfolio artworks:', error);
@@ -1705,114 +1715,173 @@ function DiscoverPageContent() {
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
   const loadMoreArtworks = useCallback(async () => {
     if (isLoadingMore || !hasMore || !lastDocument) {
+      log(`⏸️ Discover: Cannot load more - isLoadingMore: ${isLoadingMore}, hasMore: ${hasMore}, hasLastDoc: ${!!lastDocument}`);
       return;
     }
 
     setIsLoadingMore(true);
-    log('📥 Discover: Loading more artworks...');
+    log('📥 Discover: Loading more artworks from both portfolioItems and artworks collections...');
 
     try {
-      const { PortfolioService } = await import('@/lib/database');
-      const LOAD_MORE_LIMIT = 20; // Reduced from 25 for faster pagination
+      const { startAfter } = await import('firebase/firestore');
+      const LOAD_MORE_LIMIT = 25;
       
-      const result = await PortfolioService.getDiscoverPortfolioItems({
-        showInPortfolio: true,
-        deleted: false,
-        hideAI: discoverSettings.hideAiAssistedArt,
-        limit: LOAD_MORE_LIMIT,
-        startAfter: lastDocument,
-      });
-
-      if (result.items.length === 0) {
+      // Load more from artworks collection directly (simpler, more reliable)
+      const moreArtworksQuery = query(
+        collection(db, 'artworks'),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastDocument),
+        limit(LOAD_MORE_LIMIT)
+      );
+      
+      const moreArtworksSnapshot = await getDocs(moreArtworksQuery);
+      
+      log(`📦 Discover: Fetched ${moreArtworksSnapshot.docs.length} more artworks from artworks collection`);
+      
+      if (moreArtworksSnapshot.docs.length === 0) {
         setHasMore(false);
         setIsLoadingMore(false);
+        log('🏁 Discover: No more artworks to load');
         return;
       }
 
-      // Batch fetch artist data for new items - use Promise.all for parallel fetching
-      const artistIds = new Set<string>(result.items.map(item => item.userId));
-      const artistDataMap = new Map<string, any>();
+      // Batch fetch artist data for new items
+      const artistIds = new Set<string>();
+      const artworkItems: any[] = [];
       
-      const artistPromises = Array.from(artistIds).map(async (artistId) => {
-        try {
-          const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
-          if (artistDoc.exists()) {
-            artistDataMap.set(artistId, artistDoc.data());
-          }
-        } catch (error) {
-          console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
-        }
-      });
-      
-      await Promise.all(artistPromises);
-
-      // Process new portfolio items
-      const newArtworks: Artwork[] = [];
-      for (const item of result.items) {
-        const artistData = artistDataMap.get(item.userId);
-        if (!artistData) continue;
-
-        let videoUrl = item.videoUrl || null;
-        if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
-          videoUrl = item.mediaUrls[0];
-        }
-        const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
-        // For videos, prioritize explicit poster images, but ensure we have something to display
-        const imageUrl = item.imageUrl || 
-                        item.supportingImages?.[0] || 
-                        item.images?.[0] || 
-                        (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || 
-                        '';
+      for (const artworkDoc of moreArtworksSnapshot.docs) {
+        const artworkData = artworkDoc.data();
         
-        // For videos, if no explicit poster image, we'll use the video element to extract a frame
-        // But we still need at least a videoUrl to continue
+        // Skip deleted items
+        if (artworkData.deleted) continue;
+        
+        // Skip events
+        if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
+        
+        // Skip items with invalid imageUrls
+        if (artworkData.imageUrl && artworkData.imageUrl.startsWith('data:image')) continue;
+        
+        // Skip items without required artist field
+        if (!artworkData.artist && !artworkData.artistId && !artworkData.userId) continue;
+        
+        // Skip items with no valid media
+        const hasValidMedia = artworkData.imageUrl || artworkData.videoUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0];
+        if (!hasValidMedia) continue;
+        
+        // Apply AI filter
+        if (discoverSettings.hideAiAssistedArt && (artworkData.aiAssistance === 'assisted' || artworkData.aiAssistance === 'generated' || artworkData.isAI)) {
+          continue;
+        }
+        
+        const artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId;
+        if (artistId) {
+          artistIds.add(artistId);
+        }
+        
+        let videoUrl = artworkData.videoUrl || null;
+        if (!videoUrl && artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video') {
+          videoUrl = artworkData.mediaUrls[0];
+        }
+        const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
+        const mediaType = artworkData.mediaType || (videoUrl ? 'video' : 'image');
+        
         if (!imageUrl && !videoUrl) continue;
+        
+        artworkItems.push({
+          artworkDoc,
+          artworkData,
+          imageUrl,
+          videoUrl,
+          mediaType,
+          artistId
+        });
+      }
+      
+      // Batch fetch all artist data
+      const artistDataMap = new Map<string, any>();
+      if (artistIds.size > 0) {
+        const artistPromises = Array.from(artistIds).map(async (artistId) => {
+          try {
+            const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
+            if (artistDoc.exists()) {
+              const data = artistDoc.data();
+              // Only include active users
+              if (data.isActive !== false) {
+                return { id: artistId, data };
+              }
+            }
+          } catch (err) {
+            log(`⚠️ Discover: Could not fetch artist data for ${artistId}`);
+          }
+          return null;
+        });
+        
+        const artistResults = await Promise.all(artistPromises);
+        artistResults.forEach(result => {
+          if (result) {
+            artistDataMap.set(result.id, result.data);
+          }
+        });
+      }
+
+      // Build artwork objects
+      const newArtworks: Artwork[] = [];
+      for (const { artworkDoc, artworkData, imageUrl, videoUrl, mediaType, artistId } of artworkItems) {
+        if (!artistId || !artistDataMap.has(artistId)) {
+          log(`⏭️ Discover: Skipping artwork ${artworkDoc.id} - artist not found or inactive`);
+          continue;
+        }
+        
+        const artistData = artistDataMap.get(artistId);
 
         const artwork: Artwork = {
-          id: item.id,
-          title: item.title || 'Untitled',
-          description: item.description || '',
+          id: artworkDoc.id,
+          title: artworkData.title || 'Untitled',
+          description: artworkData.description || '',
           imageUrl: imageUrl,
-          imageAiHint: item.description || '',
+          imageAiHint: artworkData.description || '',
           ...(videoUrl && { videoUrl: videoUrl as any }),
           ...(mediaType && { mediaType: mediaType as any }),
           artist: {
-            id: item.userId,
+            id: artistId,
             name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
             handle: artistData.username || artistData.handle || '',
-            avatarUrl: artistData.avatarUrl || null,
+            avatarUrl: artistData.avatarUrl || artistData.avatar || null,
             isVerified: artistData.isVerified || false,
             isProfessional: true,
             followerCount: artistData.followerCount || 0,
             followingCount: artistData.followingCount || 0,
             createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
           },
-          likes: item.likes || 0,
-          commentsCount: item.commentsCount || 0,
-          createdAt: item.createdAt instanceof Date ? item.createdAt : (item.createdAt as any)?.toDate?.() || new Date(),
-          updatedAt: item.updatedAt instanceof Date ? item.updatedAt : (item.updatedAt as any)?.toDate?.() || new Date(),
-          category: item.category || '',
-          medium: item.medium || '',
-          tags: item.tags || [],
-          aiAssistance: item.aiAssistance || 'none',
-          isAI: item.isAI || false,
-          isForSale: item.isForSale || false,
-          sold: item.sold || false,
-          price: item.price ? (item.price > 1000 ? item.price / 100 : item.price) : undefined,
-          priceType: item.priceType as 'fixed' | 'contact' | undefined,
-          contactForPrice: item.contactForPrice || item.priceType === 'contact',
+          likes: artworkData.likes || 0,
+          commentsCount: artworkData.commentsCount || 0,
+          createdAt: artworkData.createdAt?.toDate?.() || (artworkData.createdAt instanceof Date ? artworkData.createdAt : new Date()),
+          updatedAt: artworkData.updatedAt?.toDate?.() || (artworkData.updatedAt instanceof Date ? artworkData.updatedAt : new Date()),
+          category: artworkData.category || '',
+          medium: artworkData.medium || '',
+          tags: artworkData.tags || [],
+          aiAssistance: artworkData.aiAssistance || 'none',
+          isAI: artworkData.isAI || false,
+          isForSale: artworkData.isForSale || false,
+          sold: artworkData.sold || false,
+          price: artworkData.price ? (artworkData.price > 1000 ? artworkData.price / 100 : artworkData.price) : undefined,
+          priceType: artworkData.priceType as 'fixed' | 'contact' | undefined,
+          contactForPrice: artworkData.contactForPrice || artworkData.priceType === 'contact',
         };
         
         newArtworks.push(artwork);
       }
 
+      log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
+
       // Append new artworks to existing ones
       setArtworks(prev => [...prev, ...newArtworks]);
       
-      // Update pagination state
-      if (result.lastDoc) {
-        setLastDocument(result.lastDoc);
-        setHasMore(result.items.length === LOAD_MORE_LIMIT);
+      // Update pagination state - set last document from the snapshot
+      if (moreArtworksSnapshot.docs.length > 0) {
+        const lastDoc = moreArtworksSnapshot.docs[moreArtworksSnapshot.docs.length - 1];
+        setLastDocument(lastDoc);
+        setHasMore(moreArtworksSnapshot.docs.length === LOAD_MORE_LIMIT);
       } else {
         setHasMore(false);
       }
