@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition, useCallback } from 'react';
-import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp } from 'lucide-react';
+import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp, Play, LayoutGrid } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { useToast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
@@ -698,6 +698,12 @@ const VideoPlayer = ({
                 controls={false}
                 style={{ opacity: isVideoReady ? 1 : 0 }}
               />
+            {/* Play button icon overlay */}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+              <div className="h-16 w-16 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <Play className="h-8 w-8 text-foreground ml-1" fill="currentColor" />
+              </div>
+            </div>
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-background/80 backdrop-blur-sm p-3 flex items-center gap-2">
             <Avatar className="h-9 w-9 flex-shrink-0">
@@ -969,7 +975,8 @@ function DiscoverPageContent() {
   const [visibleCount, setVisibleCount] = useState(24);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  // Default views: Artwork grid, Market list, Events grid on mobile
+  // Video feed is always visible on left, image grid on right
+  // View selector only controls which side is active/visible (for mobile)
   const [artworkView, setArtworkView] = useState<'grid' | 'list'>('grid');
   const [marketView, setMarketView] = useState<'grid' | 'list'>('list');
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
@@ -2000,6 +2007,10 @@ function DiscoverPageContent() {
     return Array.isArray(sorted) ? sorted : [];
   }, [marketplaceProducts, marketSearchQuery, selectedMarketCategory, marketSortBy]);
 
+  // Image grid pagination - 30 images per page
+  const [imagePage, setImagePage] = useState(1);
+  const IMAGES_PER_PAGE = 30;
+  
   // Calculate items per row based on screen size
   const getItemsPerRow = useMemo(() => {
     return () => {
@@ -2039,41 +2050,8 @@ function DiscoverPageContent() {
     return () => window.removeEventListener('resize', updateItemsPerRow);
   }, [getItemsPerRow]);
 
-  // Infinite scroll observer for list view - progressively show more items
-  // Also triggers loadMoreArtworks when we're near the end of visible items
-  useEffect(() => {
-    const sentinel = loadMoreRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          // If we're showing most of the available items, load more from server
-          if (visibleCount >= filteredAndSortedArtworks.length * 0.8 && hasMore && !isLoadingMore) {
-            loadMoreArtworks();
-          }
-          
-          // Also progressively show more items from already loaded data
-          startTransition(() => {
-            setVisibleCount((prev) => {
-              // Load additional rows progressively from top to bottom
-              // Add itemsPerRow * 2 to load enough content for smooth scrolling
-              const newCount = prev + (itemsPerRow * 2);
-              const maxCount = filteredAndSortedArtworks.length || newCount;
-              // Ensure we never exceed available items, maintaining complete rows
-              return Math.min(newCount, maxCount);
-            });
-          });
-        }
-      });
-    }, {
-      rootMargin: '400px',
-      threshold: 0.1,
-    });
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [filteredAndSortedArtworks, itemsPerRow, visibleCount, hasMore, isLoadingMore, loadMoreArtworks]);
+  // Infinite scroll observer for image grid - load more images when scrolling
+  const imageLoadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // Critical image preloading - preload first 6-12 images for instant display
   useEffect(() => {
@@ -2129,6 +2107,90 @@ function DiscoverPageContent() {
     
     log(`🚀 Preloaded ${preloadCount} critical images for instant display`);
   }, [filteredAndSortedArtworks, columnCount]);
+
+  // Separate videos and images for split feed
+  const { videoArtworks, imageArtworks } = useMemo(() => {
+    const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
+    
+    if (totalItems === 0) {
+      return { videoArtworks: [], imageArtworks: [] };
+    }
+    
+    const artworksSlice = Array.isArray(filteredAndSortedArtworks)
+      ? filteredAndSortedArtworks
+      : [];
+    
+    // Mix ads into artworks
+    const result = mixAdsIntoContent(artworksSlice, ads, 2);
+    
+    // Separate videos and images
+    const videos: Artwork[] = [];
+    const images: Artwork[] = [];
+    
+    result.forEach((item) => {
+      // Keep ads with images
+      if ('type' in item && item.type === 'ad') {
+        images.push(item as any);
+        return;
+      }
+      
+      const artwork = item as Artwork;
+      const hasVideo = (artwork as any).videoUrl || 
+                       (artwork as any).mediaType === 'video' ||
+                       ((artwork as any).mediaUrls && (artwork as any).mediaTypes?.includes('video'));
+      
+      if (hasVideo) {
+        videos.push(artwork);
+      } else {
+        images.push(artwork);
+      }
+    });
+    
+    log('🔍 Split feed:', {
+      total: result.length,
+      videos: videos.length,
+      images: images.length
+    });
+    
+    return { videoArtworks: videos, imageArtworks: images };
+  }, [filteredAndSortedArtworks, ads]);
+  
+  // Paginated image artworks for infinite scroll
+  const visibleImageArtworks = useMemo(() => {
+    const endIndex = imagePage * IMAGES_PER_PAGE;
+    return imageArtworks.slice(0, endIndex);
+  }, [imageArtworks, imagePage]);
+  
+  // Check if there are more images to load
+  const hasMoreImages = visibleImageArtworks.length < imageArtworks.length;
+  
+  // Infinite scroll observer for image grid - load more images when scrolling
+  useEffect(() => {
+    const sentinel = imageLoadMoreRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && hasMoreImages && !isLoadingMore) {
+          // Load next page of images
+          startTransition(() => {
+            setImagePage((prev) => prev + 1);
+          });
+          
+          // If we're near the end, load more from server
+          if (visibleImageArtworks.length >= imageArtworks.length * 0.8 && hasMore) {
+            loadMoreArtworks();
+          }
+        }
+      });
+    }, {
+      rootMargin: '400px',
+      threshold: 0.1,
+    });
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreImages, isLoadingMore, visibleImageArtworks.length, imageArtworks.length, hasMore, loadMoreArtworks]);
 
   const visibleFilteredArtworks = useMemo(() => {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
@@ -2518,10 +2580,10 @@ function DiscoverPageContent() {
               )}
             </div>
             
-            {/* Artworks Grid - Padding from filter bar above */}
+            {/* Split Feed: Video Feed (Left) + Image Grid (Right) */}
             {/* Show content when loading screen is dismissed */}
             <div className="mt-4 md:mt-0">
-            {!showLoadingScreen && filteredAndSortedArtworks.length === 0 ? (
+            {!showLoadingScreen && videoArtworks.length === 0 && imageArtworks.length === 0 ? (
               <div className="text-center py-16">
                 <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">No artworks found</h2>
@@ -2545,280 +2607,186 @@ function DiscoverPageContent() {
                   </Button>
                 )}
               </div>
-            ) : !showLoadingScreen && artworkView === 'grid' ? (
-              <MasonryGrid
-                items={(() => {
-                  // Grid view shows ONLY images (no videos)
-                  // Videos will only appear in video feed (list view)
-                  const imageOnlyArtworks = visibleFilteredArtworks.filter((item) => {
-                    // Keep ads
-                    if ('type' in item && item.type === 'ad') return true;
-                    // Filter out videos - only show images in grid view
-                    const artwork = item as Artwork;
-                    const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                    return !hasVideo; // Only include items without videos
-                  });
-                  console.log('🖼️ Grid view (images only):', {
-                    artworkView,
-                    totalArtworks: visibleFilteredArtworks.length,
-                    imageArtworksCount: imageOnlyArtworks.length,
-                    filteredOut: visibleFilteredArtworks.length - imageOnlyArtworks.length
-                  });
-                  return imageOnlyArtworks;
-                })()}
-                columnCount={columnCount}
-                gap={4}
-                renderItem={(item) => {
-                  // Check if this is an ad
-                  const isAd = 'type' in item && item.type === 'ad';
-                  if (isAd) {
-                    return (
-                      <AdTile
-                        campaign={item.campaign}
-                        placement="discover"
-                        userId={user?.id}
-                        isMobile={isMobile}
-                      />
-                    );
-                  }
-                  
-                  const artwork = item as Artwork;
-                  
-                  // Grid view only shows images (videos filtered out above)
-                  const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                  
-                  // Check if this is in initial viewport (first 12 tiles)
-                  const isInitial = visibleFilteredArtworks.indexOf(artwork) < 12;
-                  
-                  return (
-                    <ArtworkTile 
-                      artwork={artwork} 
-                      hideBanner={isMobile && (artworkView as string) === 'list'}
-                      isInitialViewport={isInitial && hasVideo}
-                      onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
-                      showDeleteButton={true}
-                      onDelete={async (artworkId: string) => {
-                        if (confirm('Delete this content permanently from Cloudflare and Firebase?')) {
-                          try {
-                            const response = await fetch(`/api/discover/delete-item?itemId=${encodeURIComponent(artworkId)}&type=portfolioItem`, {
-                              method: 'DELETE',
-                            });
-                            if (response.ok) {
-                              setArtworks(prev => prev.filter(a => a.id !== artworkId));
-                              showToast({ title: 'Content deleted', description: 'Content has been permanently removed.' });
-                            } else {
-                              throw new Error('Delete failed');
-                            }
-                          } catch (error) {
-                            console.error('Error deleting item:', error);
-                            showToast({ variant: 'destructive', title: 'Delete failed', description: 'Could not delete content.' });
-                          }
-                        }
-                      }}
-                    />
-                  );
-                }}
-                loadMoreRef={loadMoreRef}
-              />
-            ) : !showLoadingScreen && artworkView === 'list' ? (
-              <>
-                {/* Video feed - Only videos, 1 per row, 1 column, full width */}
-                {(() => {
-                  // CRITICAL: Log all artworks first to see what we're working with
-                  console.log('🎬 VIDEO FEED DEBUG - All visibleFilteredArtworks:', {
-                    total: visibleFilteredArtworks.length,
-                    sample: visibleFilteredArtworks.slice(0, 5).map((item: any) => ({
-                      id: item.id,
-                      title: item.title,
-                      videoUrl: item.videoUrl,
-                      mediaType: item.mediaType,
-                      mediaUrls: item.mediaUrls,
-                      mediaTypes: item.mediaTypes,
-                      imageUrl: item.imageUrl,
-                      allKeys: Object.keys(item)
-                    }))
-                  });
-                  
-                  // Filter to only videos for video feed (list view)
-                  const videoArtworks = visibleFilteredArtworks.filter((item) => {
-                    if ('type' in item && item.type === 'ad') return false; // Exclude ads
-                    
-                    // Access videoUrl directly from item (not through artwork cast)
-                    const videoUrl = (item as any).videoUrl || '';
-                    const mediaType = (item as any).mediaType || '';
-                    const mediaUrls = (item as any).mediaUrls || [];
-                    const mediaTypes = (item as any).mediaTypes || [];
-                    const imageUrl = (item as any).imageUrl || '';
-                    
-                    // Check for video in multiple ways:
-                    // 1. Direct videoUrl field (most reliable)
-                    const hasVideoUrl = !!videoUrl && videoUrl.length > 0;
-                    // 2. mediaType field
-                    const hasVideoMediaType = mediaType === 'video';
-                    // 3. mediaUrls array with video type
-                    const hasVideoInMediaUrls = Array.isArray(mediaUrls) && mediaUrls.length > 0 && 
-                                               Array.isArray(mediaTypes) && mediaTypes.includes('video');
-                    // 4. Check if imageUrl is actually a Cloudflare Stream thumbnail (indicates video)
-                    const isCloudflareThumbnail = imageUrl.includes('cloudflarestream.com') && 
-                                                  (imageUrl.includes('/thumbnails/') || imageUrl.includes('thumbnail'));
-                    // 5. Check if videoUrl contains Cloudflare Stream indicators
-                    const isCloudflareVideo = videoUrl.includes('cloudflarestream.com') || 
-                                             videoUrl.includes('videodelivery.net') ||
-                                             videoUrl.includes('.m3u8');
-                    
-                    const hasVideo = hasVideoUrl || hasVideoMediaType || hasVideoInMediaUrls || isCloudflareThumbnail || isCloudflareVideo;
-                    
-                    // Debug logging for each item
-                    console.log('🔍 Checking item for video:', {
-                      id: (item as any).id,
-                      title: (item as any).title,
-                      hasVideoUrl,
-                      hasVideoMediaType,
-                      hasVideoInMediaUrls,
-                      isCloudflareThumbnail,
-                      isCloudflareVideo,
-                      videoUrl,
-                      imageUrl,
-                      mediaType,
-                      mediaUrls,
-                      mediaTypes,
-                      isVideo: hasVideo,
-                      itemKeys: Object.keys(item)
-                    });
-                    
-                    return hasVideo;
-                  });
-                  
-                  console.log('🎬 Video feed (list view - videos only):', {
-                    artworkView,
-                    totalArtworks: visibleFilteredArtworks.length,
-                    videoArtworksCount: videoArtworks.length,
-                    filteredOut: visibleFilteredArtworks.length - videoArtworks.length,
-                    allArtworkIds: visibleFilteredArtworks.slice(0, 10).map((a: any) => a.id),
-                    videoArtworkIds: videoArtworks.slice(0, 10).map((a: any) => a.id),
-                    videoArtworks: videoArtworks.map((a: any) => ({
-                      id: a.id,
-                      title: a.title,
-                      videoUrl: (a as any).videoUrl,
-                      mediaType: (a as any).mediaType,
-                      mediaUrls: (a as any).mediaUrls,
-                      mediaTypes: (a as any).mediaTypes
-                    }))
-                  });
-                  
-                  if (videoArtworks.length === 0) {
-                    console.warn('⚠️ No videos found in video feed. Total artworks:', visibleFilteredArtworks.length);
-                    console.warn('⚠️ Sample artworks:', visibleFilteredArtworks.slice(0, 5).map((a: any) => ({
-                      id: a.id,
-                      title: a.title,
-                      hasVideoUrl: !!(a as any).videoUrl,
-                      mediaType: (a as any).mediaType,
-                      mediaUrls: (a as any).mediaUrls,
-                      mediaTypes: (a as any).mediaTypes
-                    })));
-                  }
-                  
-                  return (
-                    <div className="w-full space-y-0 flex flex-col items-center mt-0">
-                      {videoArtworks.length === 0 ? (
-                        <div className="w-full py-12 text-center text-muted-foreground">
-                          <p>No videos available</p>
-                          <p className="text-sm mt-2">Switch to grid view to see images</p>
-                        </div>
-                      ) : (
-                        videoArtworks.map((item) => {
-                        const artwork = item as Artwork;
-                        const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                        let videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
-                        
-                        // Handle Cloudflare Stream URLs - need to use HLS manifest
-                        const isCloudflareStream = videoUrl?.includes('cloudflarestream.com') || 
-                                                   videoUrl?.includes('videodelivery.net');
-                        
-                        if (isCloudflareStream && videoUrl) {
-                          // Extract video ID first (needed for fallback)
-                          let videoId: string | null = null;
-                          const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
+            ) : !showLoadingScreen ? (
+              <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6">
+                {/* Video Feed - Left Side */}
+                <div className={cn(
+                  "w-full",
+                  artworkView === 'list' ? 'block' : 'hidden lg:block'
+                )}>
+                  <div className="sticky top-4 space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <Play className="h-5 w-5" />
+                        Videos
+                      </h2>
+                    </div>
+                    {videoArtworks.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Play className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>No videos available</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {videoArtworks.map((artwork) => {
+                          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                          let videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
                           
-                          // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
-                          const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
-                          if (customerMatch) {
-                            videoId = customerMatch[1];
-                          } else {
-                            // Try videodelivery.net format: videodelivery.net/{videoId}
-                            const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
-                            if (videoDeliveryMatch) {
-                              videoId = videoDeliveryMatch[1];
+                          // Handle Cloudflare Stream URLs - need to use HLS manifest
+                          const isCloudflareStream = videoUrl?.includes('cloudflarestream.com') || 
+                                                     videoUrl?.includes('videodelivery.net');
+                          
+                          if (isCloudflareStream && videoUrl) {
+                            // Extract video ID first (needed for fallback)
+                            let videoId: string | null = null;
+                            const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
+                            
+                            // Try customer subdomain format: customer-{accountId}.cloudflarestream.com/{videoId}
+                            const customerMatch = videoUrl.match(/customer-[^/]+\.cloudflarestream\.com\/([^/?]+)/);
+                            if (customerMatch) {
+                              videoId = customerMatch[1];
                             } else {
-                              // Fallback: try to extract from any cloudflarestream.com URL
-                              const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
-                              if (fallbackMatch) {
-                                videoId = fallbackMatch[1];
+                              // Try videodelivery.net format: videodelivery.net/{videoId}
+                              const videoDeliveryMatch = videoUrl.match(/videodelivery\.net\/([^/?]+)/);
+                              if (videoDeliveryMatch) {
+                                videoId = videoDeliveryMatch[1];
+                              } else {
+                                // Fallback: try to extract from any cloudflarestream.com URL
+                                const fallbackMatch = videoUrl.match(/cloudflarestream\.com\/([^/?]+)/);
+                                if (fallbackMatch) {
+                                  videoId = fallbackMatch[1];
+                                }
                               }
                             }
+                            
+                            // If URL already has .m3u8, use it as-is but store videoId for fallback
+                            if (videoUrl.includes('.m3u8')) {
+                              // Store videoId for potential fallback if this URL fails
+                              if (!videoId) {
+                                // Extract from .m3u8 URL
+                                const m3u8Match = videoUrl.match(/\/([^/]+)\/manifest\/video\.m3u8/);
+                                if (m3u8Match) videoId = m3u8Match[1];
+                              }
+                            } else if (videoId) {
+                              // Construct HLS manifest URL - try customer subdomain first, then videodelivery.net
+                              if (accountId) {
+                                videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
+                              } else {
+                                videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+                              }
+                            } else {
+                              console.error('❌ Could not extract video ID from Cloudflare Stream URL:', videoUrl);
+                            }
                           }
                           
-                          // If URL already has .m3u8, use it as-is but store videoId for fallback
-                          if (videoUrl.includes('.m3u8')) {
-                            console.log('✅ Video URL already has .m3u8, using as-is:', videoUrl);
-                            // Store videoId for potential fallback if this URL fails
-                            if (!videoId) {
-                              // Extract from .m3u8 URL
-                              const m3u8Match = videoUrl.match(/\/([^/]+)\/manifest\/video\.m3u8/);
-                              if (m3u8Match) videoId = m3u8Match[1];
-                            }
-                          } else if (videoId) {
-                            // Construct HLS manifest URL - try customer subdomain first, then videodelivery.net
-                            if (accountId) {
-                              videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
-                              console.log('✅ Constructed HLS manifest URL (customer subdomain):', videoUrl);
-                            } else {
-                              videoUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-                              console.log('⚠️ Using videodelivery.net (no account ID):', videoUrl);
-                            }
-                          } else {
-                            console.error('❌ Could not extract video ID from Cloudflare Stream URL:', videoUrl);
-                            console.error('❌ Original artwork data:', artwork);
-                          }
-                        } else {
-                          console.log('⚠️ Video URL is not Cloudflare Stream:', videoUrl);
-                        }
-                        
-                        // Ensure videoUrl is valid before proceeding
-                        if (!videoUrl) {
-                          console.error('❌ No valid video URL found for artwork:', artwork.id);
-                          return null;
-                        }
-                        
-                        const avatarPlaceholder = theme === 'dark'
-                          ? '/assets/placeholder-dark.png'
-                          : '/assets/placeholder-light.png';
-                        
-                        const liked = isLiked(artwork.id);
-                        
-                        // Only render if it has a video
-                        if (!hasVideo || !videoUrl) return null;
-                        
-                        return (
-                          <VideoPlayer
-                            key={artwork.id}
-                            videoUrl={videoUrl}
-                            artwork={artwork}
-                            avatarPlaceholder={avatarPlaceholder}
-                            liked={liked}
-                            toggleLike={toggleLike}
-                          />
-                        );
-                      }))}
+                          if (!videoUrl || !hasVideo) return null;
+                          
+                          const avatarPlaceholder = theme === 'dark'
+                            ? '/assets/placeholder-dark.png'
+                            : '/assets/placeholder-light.png';
+                          
+                          const liked = isLiked(artwork.id);
+                          
+                          return (
+                            <VideoPlayer
+                              key={artwork.id}
+                              videoUrl={videoUrl}
+                              artwork={artwork}
+                              avatarPlaceholder={avatarPlaceholder}
+                              liked={liked}
+                              toggleLike={toggleLike}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Image Grid - Right Side (Mosaic) */}
+                <div className={cn(
+                  "w-full",
+                  artworkView === 'grid' ? 'block' : 'hidden lg:block'
+                )}>
+                  <div className="mb-4">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <LayoutGrid className="h-5 w-5" />
+                      Discover
+                    </h2>
+                  </div>
+                  {imageArtworks.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <LayoutGrid className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No images available</p>
                     </div>
-                  );
-                })()}
-                {/* Sentinel element for infinite scroll in video feed */}
-                <div ref={loadMoreRef} className="h-20 w-full" />
-              </>
+                  ) : (
+                    <>
+                      <MasonryGrid
+                        items={visibleImageArtworks}
+                        columnCount={columnCount}
+                        gap={4}
+                        renderItem={(item) => {
+                          // Check if this is an ad
+                          const isAd = 'type' in item && item.type === 'ad';
+                          if (isAd) {
+                            return (
+                              <AdTile
+                                campaign={item.campaign}
+                                placement="discover"
+                                userId={user?.id}
+                                isMobile={isMobile}
+                              />
+                            );
+                          }
+                          
+                          const artwork = item as Artwork;
+                          
+                          // Check if this is in initial viewport (first 12 tiles)
+                          const isInitial = visibleImageArtworks.indexOf(artwork) < 12;
+                          
+                          return (
+                            <ArtworkTile 
+                              artwork={artwork} 
+                              hideBanner={isMobile && (artworkView as string) === 'list'}
+                              isInitialViewport={isInitial}
+                              onImageReady={isInitial ? (isVideoPoster) => handleImageReady(artwork.id, isVideoPoster) : undefined}
+                              showDeleteButton={true}
+                              onDelete={async (artworkId: string) => {
+                                if (confirm('Delete this content permanently from Cloudflare and Firebase?')) {
+                                  try {
+                                    const response = await fetch(`/api/discover/delete-item?itemId=${encodeURIComponent(artworkId)}&type=portfolioItem`, {
+                                      method: 'DELETE',
+                                    });
+                                    if (response.ok) {
+                                      setArtworks(prev => prev.filter(a => a.id !== artworkId));
+                                      showToast({ title: 'Content deleted', description: 'Content has been permanently removed.' });
+                                    } else {
+                                      throw new Error('Delete failed');
+                                    }
+                                  } catch (error) {
+                                    console.error('Error deleting item:', error);
+                                    showToast({ variant: 'destructive', title: 'Delete failed', description: 'Could not delete content.' });
+                                  }
+                                }
+                              }}
+                            />
+                          );
+                        }}
+                        loadMoreRef={imageLoadMoreRef}
+                      />
+                      {/* Loading indicator for infinite scroll */}
+                      {hasMoreImages && (
+                        <div className="text-center py-8">
+                          <ThemeLoading text="" size="sm" />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
             ) : null}
             </div>
-          </TabsContent>
+            </TabsContent>
 
           {/* Events Tab */}
           <TabsContent value="events" className="!pt-0">
