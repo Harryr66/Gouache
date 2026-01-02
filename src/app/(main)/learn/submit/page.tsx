@@ -62,6 +62,7 @@ function CourseSubmissionPageContent() {
   const [trailerPreviewUrl, setTrailerPreviewUrl] = useState<string | null>(null);
   const [myDrafts, setMyDrafts] = useState<any[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
+  const [shouldRedirectAfterSave, setShouldRedirectAfterSave] = useState(true);
 
   // Kajabi-style multi-step wizard
   const steps = [
@@ -846,7 +847,10 @@ function CourseSubmissionPageContent() {
           description: "Your course has been updated successfully.",
         });
 
-        router.push(`/learn/${editingCourseId}`);
+        // Only redirect if shouldRedirectAfterSave is true (final submit, not intermediate save)
+        if (shouldRedirectAfterSave) {
+          router.push(`/learn/${editingCourseId}`);
+        }
       } else {
         // Create new course
         const newCourseData = {
@@ -898,6 +902,8 @@ function CourseSubmissionPageContent() {
       });
     } finally {
       setIsSubmitting(false);
+      // Reset redirect flag for next save
+      setShouldRedirectAfterSave(true);
     }
   };
 
@@ -1734,6 +1740,27 @@ function CourseSubmissionPageContent() {
                 )}
               </div>
               <div className="flex gap-2">
+                {/* Save Changes button - only show when editing */}
+                {isEditing && activeStep !== 'publish' && (
+                  <Button 
+                    type="button"
+                    onClick={(e) => {
+                      setShouldRedirectAfterSave(false);
+                      // Trigger form submit
+                      const form = e.currentTarget.closest('form');
+                      if (form) {
+                        form.requestSubmit();
+                      }
+                    }}
+                    disabled={isSubmitting}
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    size="lg"
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                )}
+                
                 {activeStep !== 'publish' ? (
                   <Button 
                     type="button" 
@@ -1791,7 +1818,8 @@ function CourseSubmissionPageContent() {
                   </Button>
                 ) : (
                   <Button 
-                    type="submit" 
+                    type="submit"
+                    onClick={() => setShouldRedirectAfterSave(true)}
                     disabled={isSubmitting} 
                     className="gradient-button w-full sm:w-auto" 
                     size="lg"
