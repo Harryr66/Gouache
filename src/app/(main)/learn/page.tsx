@@ -61,7 +61,19 @@ export default function LearnMarketplacePage() {
 
   // Get only published courses
   const publishedCourses = useMemo(() => {
-    return courses.filter(course => course.isPublished === true);
+    console.log('📚 Learn Marketplace: All courses from provider:', courses.length);
+    console.log('📚 Learn Marketplace: Courses data:', courses.map(c => ({ 
+      id: c.id, 
+      title: c.title, 
+      isPublished: c.isPublished, 
+      deleted: c.deleted,
+      instructorUserId: c.instructor?.userId,
+      instructorId: c.instructor?.id
+    })));
+    const published = courses.filter(course => course.isPublished === true);
+    console.log('📚 Learn Marketplace: Published courses after filter:', published.length);
+    console.log('📚 Learn Marketplace: Published courses:', published.map(c => ({ id: c.id, title: c.title })));
+    return published;
   }, [courses]);
 
   // Apply filters and sorting
@@ -112,19 +124,41 @@ export default function LearnMarketplacePage() {
 
     // CRITICAL: Separate real courses from placeholders
     // Placeholders have id starting with "placeholder-" or mock data
-    const realCourses = filtered.filter(course => 
-      !course.id.startsWith('placeholder-') && 
-      !course.id.startsWith('mock-') &&
-      course.instructor?.userId && // Must have real instructor
-      !course.instructor.userId.startsWith('placeholder-')
-    );
+    const realCourses = filtered.filter(course => {
+      const isPlaceholderId = course.id.startsWith('placeholder-') || course.id.startsWith('mock-');
+      const hasInstructor = course.instructor && (course.instructor.userId || course.instructor.id);
+      const isValidInstructor = hasInstructor && 
+        !course.instructor.userId?.startsWith('placeholder-') && 
+        !course.instructor.id?.startsWith('placeholder-');
+      
+      const isReal = !isPlaceholderId && hasInstructor && isValidInstructor;
+      
+      if (!isReal) {
+        console.log('📚 Learn Marketplace: Filtered out course (not real):', {
+          id: course.id,
+          title: course.title,
+          isPlaceholderId,
+          hasInstructor,
+          isValidInstructor,
+          instructor: course.instructor
+        });
+      }
+      
+      return isReal;
+    });
     
-    const placeholders = filtered.filter(course => 
-      course.id.startsWith('placeholder-') || 
-      course.id.startsWith('mock-') ||
-      !course.instructor?.userId ||
-      course.instructor.userId.startsWith('placeholder-')
-    );
+    const placeholders = filtered.filter(course => {
+      const isPlaceholderId = course.id.startsWith('placeholder-') || course.id.startsWith('mock-');
+      const hasInstructor = course.instructor && (course.instructor.userId || course.instructor.id);
+      const isValidInstructor = hasInstructor && 
+        !course.instructor.userId?.startsWith('placeholder-') && 
+        !course.instructor.id?.startsWith('placeholder-');
+      
+      return isPlaceholderId || !hasInstructor || !isValidInstructor;
+    });
+    
+    console.log('📚 Learn Marketplace: Real courses after filtering:', realCourses.length);
+    console.log('📚 Learn Marketplace: Placeholders after filtering:', placeholders.length);
 
     // Sort real courses
     realCourses.sort((a, b) => {
