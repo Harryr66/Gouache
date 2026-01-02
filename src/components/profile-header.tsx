@@ -176,57 +176,60 @@ export function ProfileHeader({
               </div>
             </div>
 
-            {/* Newsletter Link - Under Followers/Following */}
-            {(user.newsletterProvider || user.newsletterLink) && (
+            {/* Newsletter Link & Social Icons - Single Row */}
+            {((user.newsletterProvider || user.newsletterLink) || (!user.hideSocialIcons && user.socialLinks)) && (
               <div className="flex items-center gap-2">
-                {user.newsletterProvider && user.newsletterProvider !== 'custom' ? (
-                  // API-based provider: Show modal
+                {/* Newsletter Button */}
+                {(user.newsletterProvider || user.newsletterLink) && (
                   <>
-                    <Button 
-                      onClick={() => setShowNewsletterModal(true)}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs md:text-sm"
-                    >
-                      <Mail className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                      <span className="hidden sm:inline">Newsletter</span>
-                      <span className="sm:hidden">News</span>
-                    </Button>
-                    <NewsletterSubscribeModal
-                      open={showNewsletterModal}
-                      onOpenChange={setShowNewsletterModal}
-                      artistId={user.id}
-                      artistName={user.displayName}
-                      provider={user.newsletterProvider}
-                    />
+                    {user.newsletterProvider && user.newsletterProvider !== 'custom' ? (
+                      // API-based provider: Show modal
+                      <>
+                        <Button 
+                          onClick={() => setShowNewsletterModal(true)}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs md:text-sm"
+                        >
+                          <Mail className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                          <span className="hidden sm:inline">Newsletter</span>
+                          <span className="sm:hidden">News</span>
+                        </Button>
+                        <NewsletterSubscribeModal
+                          open={showNewsletterModal}
+                          onOpenChange={setShowNewsletterModal}
+                          artistId={user.id}
+                          artistName={user.displayName}
+                          provider={user.newsletterProvider}
+                        />
+                      </>
+                    ) : (
+                      // Custom provider or legacy newsletterLink: Show redirect link
+                      <Button 
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="text-xs md:text-sm"
+                      >
+                        <a 
+                          href={user.newsletterLink || '#'} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 md:gap-2"
+                        >
+                          <Mail className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                          <span className="hidden sm:inline">Newsletter</span>
+                          <span className="sm:hidden">News</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </Button>
+                    )}
                   </>
-                ) : (
-                  // Custom provider or legacy newsletterLink: Show redirect link
-                  <Button 
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="text-xs md:text-sm"
-                  >
-                    <a 
-                      href={user.newsletterLink || '#'} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 md:gap-2"
-                    >
-                      <Mail className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                      <span className="hidden sm:inline">Newsletter</span>
-                      <span className="sm:hidden">News</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </Button>
                 )}
-              </div>
-            )}
 
-            {/* Social Links - After Newsletter */}
-            {!user.hideSocialIcons && user.socialLinks && (
-              <div className="flex items-center gap-2">
+                {/* Social Icons */}
+                {!user.hideSocialIcons && user.socialLinks && (
+                  <>
                 {user.socialLinks.website && (
                   <Button 
                     asChild
@@ -296,6 +299,8 @@ export function ProfileHeader({
                       </svg>
                     </a>
                   </Button>
+                )}
+                  </>
                 )}
               </div>
             )}
