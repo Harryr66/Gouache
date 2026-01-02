@@ -63,61 +63,87 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Load courses - only published and approved courses
+  // Load courses - published courses + user's own draft courses
   useEffect(() => {
-    const coursesQuery = query(
+    const unsubscribes: (() => void)[] = [];
+
+    // Query 1: Published and approved courses (public)
+    const publishedQuery = query(
       collection(db, 'courses'),
       where('isPublished', '==', true),
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(
-      coursesQuery, 
-      (snapshot) => {
-        const coursesData = snapshot.docs
-          .map(doc => {
-            const data = doc.data();
-            
-            return {
-              id: doc.id,
-              ...data,
-              createdAt: data.createdAt?.toDate() || new Date(),
-              updatedAt: data.updatedAt?.toDate() || new Date(),
-              publishedAt: data.publishedAt?.toDate(),
-              instructor: {
-                ...data.instructor,
-                createdAt: data.instructor?.createdAt?.toDate() || new Date(),
-                updatedAt: data.instructor?.updatedAt?.toDate() || new Date(),
-              },
-              reviews: data.reviews?.map((review: any) => ({
-                ...review,
-                createdAt: review.createdAt?.toDate() || new Date(),
-              })) || [],
-              discussions: data.discussions?.map((discussion: any) => ({
-                ...discussion,
-                createdAt: discussion.createdAt?.toDate() || new Date(),
-                updatedAt: discussion.updatedAt?.toDate() || new Date(),
-                replies: discussion.replies?.map((reply: any) => ({
-                  ...reply,
-                  createdAt: reply.createdAt?.toDate() || new Date(),
-                })) || [],
-              })) || [],
-              curriculum: data.curriculum?.map((week: any) => ({
-                ...week,
-                lessons: week.lessons?.map((lesson: any) => ({
-                  ...lesson,
-                  isCompleted: false, // Will be updated based on user enrollment
-                })) || [],
-              })) || [],
-            };
-          })
-          // Filter to only show approved courses (or courses with no status, which are legacy approved)
-          .filter((course: any) => 
-            !course.status || course.status === 'approved'
-          ) as Course[];
+    const mapCourseData = (doc: any) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+        publishedAt: data.publishedAt?.toDate(),
+        instructor: {
+          ...data.instructor,
+          createdAt: data.instructor?.createdAt?.toDate() || new Date(),
+          updatedAt: data.instructor?.updatedAt?.toDate() || new Date(),
+        },
+        reviews: data.reviews?.map((review: any) => ({
+          ...review,
+          createdAt: review.createdAt?.toDate() || new Date(),
+        })) || [],
+        discussions: data.discussions?.map((discussion: any) => ({
+          ...discussion,
+          createdAt: discussion.createdAt?.toDate() || new Date(),
+          updatedAt: discussion.updatedAt?.toDate() || new Date(),
+          replies: discussion.replies?.map((reply: any) => ({
+            ...reply,
+            createdAt: reply.createdAt?.toDate() || new Date(),
+          })) || [],
+        })) || [],
+        curriculum: data.curriculum?.map((week: any) => ({
+          ...week,
+          lessons: week.lessons?.map((lesson: any) => ({
+            ...lesson,
+            isCompleted: false, // Will be updated based on user enrollment
+          })) || [],
+        })) || [],
+      };
+    };
 
-        setCourses(coursesData);
-        setIsLoading(false);
+    const unsubPublished = onSnapshot(
+      publishedQuery,
+      (snapshot) => {
+        const publishedCourses = snapshot.docs
+          .map(mapCourseData)
+          .filter((course: any) => !course.status || course.status === 'approved') as Course[];
+
+        // Query 2: User's own draft/unpublished courses (if logged in)
+        if (user) {
+          const draftQuery = query(
+            collection(db, 'courses'),
+            where('instructor.userId', '==', user.id),
+            where('isPublished', '==', false)
+          );
+
+          const unsubDrafts = onSnapshot(draftQuery, (draftSnapshot) => {
+            const draftCourses = draftSnapshot.docs.map(mapCourseData) as Course[];
+            
+            // Combine published + user's drafts, remove duplicates by ID
+            const allCourses = [...publishedCourses, ...draftCourses];
+            const uniqueCourses = Array.from(
+              new Map(allCourses.map(c => [c.id, c])).values()
+            );
+            
+            setCourses(uniqueCourses);
+            setIsLoading(false);
+          });
+
+          unsubscribes.push(unsubDrafts);
+        } else {
+          // No user logged in - just show published courses
+          setCourses(publishedCourses);
+          setIsLoading(false);
+        }
       },
       (error) => {
         console.error('CourseProvider: Error loading courses:', error);
@@ -125,8 +151,9 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    return () => unsubscribe();
-  }, []);
+    unsubscribes.push(unsubPublished);
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, [user]);
 
   // Load instructors
   useEffect(() => {
