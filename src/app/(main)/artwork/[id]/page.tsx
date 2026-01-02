@@ -598,12 +598,9 @@ export default function ArtworkPage() {
         video.src = videoUrl;
         video.load(); // Ensure video is loaded
         
-        // Attempt autoplay after load
+        // Don't force autoplay - let user click play with controls
         video.addEventListener('loadeddata', () => {
-          console.log('✅ Video loaded, attempting autoplay');
-          video.play().catch((error) => {
-            console.log('ℹ️ Autoplay prevented (native HLS):', error.message);
-          });
+          console.log('✅ Video loaded successfully');
         }, { once: true });
       } else if (Hls.isSupported()) {
         // Use hls.js for browsers that don't support HLS natively
@@ -621,12 +618,7 @@ export default function ArtworkPage() {
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           console.log('✅ HLS manifest parsed, video ready');
-          // Force video to load
-          video.load();
-          // Attempt autoplay
-          video.play().catch((error) => {
-            console.log('ℹ️ Autoplay prevented (HLS.js):', error.message);
-          });
+          // Don't force autoplay - let user click play with controls
         });
         
         hls.on(Hls.Events.ERROR, (event, data) => {
@@ -653,12 +645,9 @@ export default function ArtworkPage() {
       video.src = videoUrl;
       video.load();
       
-      // Attempt autoplay for non-HLS videos
+      // Don't force autoplay - let user click play with controls
       video.addEventListener('loadeddata', () => {
-        console.log('✅ Direct video loaded, attempting autoplay');
-        video.play().catch((error) => {
-          console.log('ℹ️ Autoplay prevented (direct video):', error.message);
-        });
+        console.log('✅ Direct video loaded successfully');
       }, { once: true });
     }
 
@@ -761,10 +750,7 @@ export default function ArtworkPage() {
         video.src = videoUrl;
         video.load();
         video.addEventListener('loadeddata', () => {
-          console.log('✅ Modal video loaded, attempting autoplay');
-          video.play().catch((error) => {
-            console.log('ℹ️ Modal autoplay prevented (native HLS):', error.message);
-          });
+          console.log('✅ Modal video loaded successfully');
         }, { once: true });
       } else if (Hls.isSupported()) {
         console.log('✅ Modal: Using HLS.js for video playback');
@@ -779,10 +765,6 @@ export default function ArtworkPage() {
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           console.log('✅ Modal HLS manifest parsed, video ready');
-          video.load();
-          video.play().catch((error) => {
-            console.log('ℹ️ Modal autoplay prevented (HLS.js):', error.message);
-          });
         });
         
         hls.on(Hls.Events.ERROR, (event, data) => {
@@ -803,10 +785,7 @@ export default function ArtworkPage() {
       video.src = videoUrl;
       video.load();
       video.addEventListener('loadeddata', () => {
-        console.log('✅ Modal direct video loaded, attempting autoplay');
-        video.play().catch((error) => {
-          console.log('ℹ️ Modal autoplay prevented (direct):', error.message);
-        });
+        console.log('✅ Modal direct video loaded successfully');
       }, { once: true });
     }
 
@@ -867,8 +846,7 @@ export default function ArtworkPage() {
                     controls
                     className="w-full h-full object-contain bg-black"
                     playsInline
-                    autoPlay
-                    muted={false}
+                    muted
                     loop={false}
                     poster={artwork.imageUrl || undefined}
                     preload="auto"
