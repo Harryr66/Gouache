@@ -925,7 +925,9 @@ export default function ArtworkPage() {
                     >
                       <Heart
                         className={`h-5 w-5 ${
-                          artwork?.id && isLiked(artwork.id) ? 'fill-current' : 'fill-none'
+                          artwork?.id && isLiked(artwork.id) 
+                            ? 'fill-current text-red-500 dark:text-white' 
+                            : 'fill-none'
                         }`}
                       />
                       <span className="hidden sm:inline">
