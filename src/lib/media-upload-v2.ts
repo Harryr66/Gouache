@@ -335,9 +335,11 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
       throw new Error(`Could not verify video exists in Cloudflare Stream after ${maxVerificationAttempts} attempts. The video may not have been uploaded successfully.`);
     }
     
-    // Construct Cloudflare Stream URLs (video exists, so these URLs will work)
-    const playbackUrl = details.playbackUrl || `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
-    const thumbnailUrl = details.thumbnailUrl || `https://customer-${accountId}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`;
+    // Construct Cloudflare Stream URLs using videodelivery.net (universal - works on all devices)
+    // CRITICAL: customer-{accountId}.cloudflarestream.com URLs often fail on Safari/iOS
+    // Use videodelivery.net instead - Cloudflare's universal delivery network
+    const playbackUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+    const thumbnailUrl = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
     
     console.log('✅ Video verified and ready to store:', {
       videoId,
