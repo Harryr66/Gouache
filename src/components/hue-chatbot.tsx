@@ -759,11 +759,6 @@ export function HueChatbot() {
     }
   };
 
-  // Count words (split by whitespace and filter empty strings)
-  const wordCount = userContext.trim() ? userContext.trim().split(/\s+/).filter(Boolean).length : 0;
-  const maxWords = 100;
-  const isOverLimit = wordCount > maxWords;
-
   // Reset conversation when Hue is closed (only when transitioning from expanded to collapsed)
   useEffect(() => {
     if (wasExpandedRef.current && !isExpanded) {
