@@ -757,16 +757,6 @@ export default function ArtworkPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Artwork image + actions */}
             <div className="space-y-4">
-              {/* DEBUG INFO - TEMPORARY for mobile video testing */}
-              {videoDebugInfo && (
-                <div className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded text-xs space-y-1 font-mono">
-                  <div className="font-bold">VIDEO DEBUG INFO:</div>
-                  <div><strong>Original:</strong> {videoDebugInfo.originalUrl.substring(0, 80)}...</div>
-                  <div><strong>Converted:</strong> {videoDebugInfo.convertedUrl.substring(0, 80)}...</div>
-                  <div><strong>Video ID:</strong> {videoDebugInfo.videoId || 'NOT FOUND'}</div>
-                </div>
-              )}
-              
               <div
                 className="relative w-full max-h-[60vh] min-h-[300px] lg:min-h-[400px] rounded-lg overflow-hidden bg-background"
                 onClick={() => {
@@ -785,10 +775,8 @@ export default function ArtworkPage() {
                     muted
                     loop={false}
                     poster={artwork.imageUrl || undefined}
-                    preload="auto"
-                    onLoadStart={() => console.log('Video load started')}
-                    onCanPlay={() => console.log('Video can play')}
-                    onError={(e) => console.error('Video error:', e)}
+                    preload="metadata"
+                    src={`https://videodelivery.net/${artwork.videoUrl.match(/([a-f0-9]{32})/)?.[1]}/manifest/video.m3u8`}
                   />
                 ) : (
                   <div className="cursor-zoom-in">
