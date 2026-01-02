@@ -45,7 +45,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
   const [isStripeIntegrated, setIsStripeIntegrated] = useState(false);
   const [checkingStripe, setCheckingStripe] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{id: string; type: 'artwork' | 'product'} | null>(null);
   const [deleting, setDeleting] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
@@ -211,6 +211,9 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                 data.artistId === userId || 
                 data.artist?.id === userId ||
                 (typeof data.artist === 'string' && data.artist === userId);
+              
+              // Skip deleted items
+              if (data.deleted === true) return;
               
               if (belongsToUser && data.isForSale === true) {
                 let itemType = data.type || (data.category === 'print' ? 'print' : 'original');
@@ -435,20 +438,34 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                       <Badge variant="destructive" className="text-xs">Sold</Badge>
                     </div>
                   )}
-                  {/* Edit button overlay - only for owner */}
+                  {/* Edit and Delete buttons overlay - only for owner */}
                   {isOwnProfile && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="absolute top-1 right-1 h-7 w-7 bg-background/80 backdrop-blur-sm hover:bg-background/90 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/profile?editArtwork=${item.id}`);
-                      }}
-                      title="Edit artwork"
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
+                    <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="h-7 w-7 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/profile?editArtwork=${item.id}`);
+                        }}
+                        title="Edit artwork"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="h-7 w-7"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDeleteConfirm({ id: item.id, type: 'artwork' });
+                        }}
+                        title="Delete artwork"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   )}
                 </div>
                 <CardContent className="p-2">
@@ -536,7 +553,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                         className="h-7 w-7"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setShowDeleteConfirm(item.id);
+                          setShowDeleteConfirm({ id: item.id, type: 'product' });
                         }}
                         title="Delete product"
                       >
@@ -583,10 +600,10 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
     <AlertDialog open={showDeleteConfirm !== null} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Product?</AlertDialogTitle>
+          <AlertDialogTitle>Delete {showDeleteConfirm?.type === 'artwork' ? 'Artwork' : 'Product'}?</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this product? This action cannot be undone. 
-            The product will be permanently removed from your shop.
+            Are you sure you want to delete this {showDeleteConfirm?.type === 'artwork' ? 'artwork' : 'product'}? This action cannot be undone. 
+            The {showDeleteConfirm?.type === 'artwork' ? 'artwork' : 'product'} will be permanently removed from your shop.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -596,22 +613,35 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               if (!showDeleteConfirm || !user) return;
               setDeleting(true);
               try {
-                await updateDoc(doc(db, 'marketplaceProducts', showDeleteConfirm), {
-                  isActive: false,
-                  deleted: true,
-                  updatedAt: new Date(),
-                });
-                setItems(prev => prev.filter(item => item.id !== showDeleteConfirm));
+                if (showDeleteConfirm.type === 'artwork') {
+                  // Delete artwork - mark as deleted
+                  await updateDoc(doc(db, 'artworks', showDeleteConfirm.id), {
+                    deleted: true,
+                    isForSale: false,
+                    updatedAt: new Date(),
+                  });
+                } else {
+                  // Delete product
+                  await updateDoc(doc(db, 'marketplaceProducts', showDeleteConfirm.id), {
+                    isActive: false,
+                    deleted: true,
+                    updatedAt: new Date(),
+                  });
+                }
+                
+                // Remove from local state
+                setItems(prev => prev.filter(item => item.id !== showDeleteConfirm.id));
+                
                 toast({
-                  title: 'Product deleted',
-                  description: 'Your product has been deleted successfully.',
+                  title: showDeleteConfirm.type === 'artwork' ? 'Artwork deleted' : 'Product deleted',
+                  description: `Your ${showDeleteConfirm.type} has been deleted successfully.`,
                 });
                 setShowDeleteConfirm(null);
               } catch (error) {
-                console.error('Error deleting product:', error);
+                console.error(`Error deleting ${showDeleteConfirm.type}:`, error);
                 toast({
                   title: 'Delete failed',
-                  description: 'Failed to delete product. Please try again.',
+                  description: `Failed to delete ${showDeleteConfirm.type}. Please try again.`,
                   variant: 'destructive',
                 });
               } finally {
@@ -621,7 +651,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
             disabled={deleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {deleting ? 'Deleting...' : 'Delete Product'}
+            {deleting ? 'Deleting...' : 'Delete'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
