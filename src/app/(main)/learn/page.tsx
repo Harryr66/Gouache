@@ -318,10 +318,10 @@ function CourseCard({ course }: { course: Course }) {
       <CardContent className="pt-0">
         {/* Instructor */}
         <div className="flex items-center gap-2 mb-3">
-          {course.instructor?.avatarUrl ? (
+          {course.instructor?.avatar ? (
             <div className="relative h-6 w-6 rounded-full overflow-hidden">
               <Image
-                src={course.instructor.avatarUrl}
+                src={course.instructor.avatar}
                 alt={course.instructor.name}
                 fill
                 className="object-cover"
