@@ -475,7 +475,6 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               </Card>
             ))}
           </div>
-          )
         ) : (
           <Card className="p-8 text-center">
             <CardContent>
@@ -564,54 +563,6 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
               </Card>
             ))}
           </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/marketplace/${item.id}?edit=true`);
-                          }}
-                          title="Edit product"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="bg-background/80 backdrop-blur-sm hover:bg-destructive/90 hover:text-destructive-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowDeleteConfirm(item.id);
-                          }}
-                          title="Delete product"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  <CardContent className="p-3">
-                    <h4 className="font-semibold text-xs mb-1.5 line-clamp-1">{item.title}</h4>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="font-bold text-base">
-                        {item.currency === 'USD' ? '$' : item.currency} {item.price.toFixed(2)}
-                      </span>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full text-xs py-1.5 h-8"
-                      onClick={() => router.push(`/marketplace/${item.id}`)}
-                      disabled={!item.isAvailable}
-                    >
-                      View Details
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )
         ) : (
           <Card className="p-8 text-center">
             <CardContent>
