@@ -68,6 +68,12 @@ function CourseSubmissionPageContent() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Upload progress states
+  const [uploadStatus, setUploadStatus] = useState<{
+    thumbnail?: 'uploading' | 'complete' | 'error';
+    trailer?: 'uploading' | 'complete' | 'error';
+  }>({});
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -1035,9 +1041,16 @@ function CourseSubmissionPageContent() {
       // Upload thumbnail (only if new file provided) - Use Cloudflare Images (NO Firebase Storage)
       let thumbnailUrl: string | undefined;
       if (thumbnailFile) {
-        const { uploadMedia } = await import('@/lib/media-upload-v2');
-        const thumbnailResult = await uploadMedia(thumbnailFile, 'image', user.id);
-        thumbnailUrl = thumbnailResult.url;
+        setUploadStatus(prev => ({ ...prev, thumbnail: 'uploading' }));
+        try {
+          const { uploadMedia } = await import('@/lib/media-upload-v2');
+          const thumbnailResult = await uploadMedia(thumbnailFile, 'image', user.id);
+          thumbnailUrl = thumbnailResult.url;
+          setUploadStatus(prev => ({ ...prev, thumbnail: 'complete' }));
+        } catch (error) {
+          setUploadStatus(prev => ({ ...prev, thumbnail: 'error' }));
+          throw error; // Re-throw to be caught by outer try/catch
+        }
       } else if (isEditing && thumbnailPreview) {
         // Keep existing thumbnail if no new one uploaded
         thumbnailUrl = thumbnailPreview;
@@ -1047,9 +1060,16 @@ function CourseSubmissionPageContent() {
       let trailerUrl: string | undefined;
       if (trailerFile) {
         // New file uploaded - upload it to Cloudflare Stream
-        const { uploadMedia } = await import('@/lib/media-upload-v2');
-        const trailerResult = await uploadMedia(trailerFile, 'video', user.id);
-        trailerUrl = trailerResult.url;
+        setUploadStatus(prev => ({ ...prev, trailer: 'uploading' }));
+        try {
+          const { uploadMedia } = await import('@/lib/media-upload-v2');
+          const trailerResult = await uploadMedia(trailerFile, 'video', user.id);
+          trailerUrl = trailerResult.url;
+          setUploadStatus(prev => ({ ...prev, trailer: 'complete' }));
+        } catch (error) {
+          setUploadStatus(prev => ({ ...prev, trailer: 'error' }));
+          throw error; // Re-throw to be caught by outer try/catch
+        }
       } else if (isEditing && existingCourse?.previewVideoUrl && trailerPreviewUrl) {
         // Editing mode: keep existing trailer if:
         // 1. Course had a previewVideoUrl originally
@@ -1696,6 +1716,27 @@ function CourseSubmissionPageContent() {
                     )}
                   </label>
                 </div>
+                {/* Upload Status Indicator */}
+                {uploadStatus.thumbnail === 'uploading' && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-blue-500">
+                    <Clock className="h-4 w-4 animate-spin" />
+                    <span>Uploading thumbnail...</span>
+                  </div>
+                )}
+                {uploadStatus.thumbnail === 'complete' && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-green-500">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Thumbnail uploaded!</span>
+                  </div>
+                )}
+                {uploadStatus.thumbnail === 'error' && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Upload failed</span>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2013,6 +2054,27 @@ function CourseSubmissionPageContent() {
                           </label>
                         )}
                       </div>
+                      {/* Upload Status Indicator */}
+                      {uploadStatus.trailer === 'uploading' && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-blue-500">
+                          <Clock className="h-4 w-4 animate-spin" />
+                          <span>Uploading trailer video (this may take a few minutes)...</span>
+                        </div>
+                      )}
+                      {uploadStatus.trailer === 'complete' && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-green-500">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Trailer uploaded successfully!</span>
+                        </div>
+                      )}
+                      {uploadStatus.trailer === 'error' && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <span>Upload failed - please try again</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
