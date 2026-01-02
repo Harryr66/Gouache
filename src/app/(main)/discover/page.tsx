@@ -1316,7 +1316,7 @@ function DiscoverPageContent() {
           const artworksQuery = query(
             collection(db, 'artworks'),
             orderBy('createdAt', 'desc'),
-            limit(100) // Increased limit, will filter in JavaScript
+            limit(500) // High limit to ensure enough content after filtering for showInPortfolio === false
           );
           const artworksSnapshot = await getDocs(artworksQuery);
           
