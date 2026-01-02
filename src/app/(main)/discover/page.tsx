@@ -1337,9 +1337,7 @@ function DiscoverPageContent() {
                 price: item.price ? (item.price > 1000 ? item.price / 100 : item.price) : undefined,
                 priceType: item.priceType as 'fixed' | 'contact' | undefined,
                 contactForPrice: item.contactForPrice || item.priceType === 'contact',
-                // CRITICAL: Preserve showInPortfolio flag from portfolio item
-                showInPortfolio: item.showInPortfolio,
-              } as any;
+              };
               
               fetchedArtworks.push(artwork);
               existingArtworkIds.add(artworkId); // Track to avoid duplicates
@@ -1699,9 +1697,7 @@ function DiscoverPageContent() {
           price: item.price ? (item.price > 1000 ? item.price / 100 : item.price) : undefined,
           priceType: item.priceType as 'fixed' | 'contact' | undefined,
           contactForPrice: item.contactForPrice || item.priceType === 'contact',
-          // CRITICAL: Preserve showInPortfolio flag for feed separation
-          showInPortfolio: item.showInPortfolio,
-        } as any;
+        };
         
         newArtworks.push(artwork);
       }
