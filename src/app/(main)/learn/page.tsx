@@ -110,8 +110,34 @@ export default function LearnMarketplacePage() {
       });
     }
 
-    // Sorting
-    filtered.sort((a, b) => {
+    // CRITICAL: Separate real courses from placeholders
+    // Placeholders have id starting with "placeholder-" or mock data
+    const realCourses = filtered.filter(course => 
+      !course.id.startsWith('placeholder-') && 
+      !course.id.startsWith('mock-') &&
+      course.instructor?.userId && // Must have real instructor
+      !course.instructor.userId.startsWith('placeholder-')
+    );
+    
+    const placeholders = filtered.filter(course => 
+      course.id.startsWith('placeholder-') || 
+      course.id.startsWith('mock-') ||
+      !course.instructor?.userId ||
+      course.instructor.userId.startsWith('placeholder-')
+    );
+
+    // Sort real courses
+    realCourses.sort((a, b) => {
+      // PRIMARY: Engagement metrics (students, rating) for popular courses
+      const aEngagement = (a.students || 0) * 10 + (a.rating || 0) * 5;
+      const bEngagement = (b.students || 0) * 10 + (b.rating || 0) * 5;
+      
+      // If one has significantly more engagement, prioritize it
+      if (Math.abs(aEngagement - bEngagement) > 20) {
+        return bEngagement - aEngagement;
+      }
+      
+      // SECONDARY: User-selected sort
       switch (sortBy) {
         case 'newest':
           return (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
@@ -124,11 +150,12 @@ export default function LearnMarketplacePage() {
         case 'rating':
           return (b.rating || 0) - (a.rating || 0);
         default:
-          return 0;
+          return (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
       }
     });
 
-    return filtered;
+    // RESULT: Real courses ALWAYS rank higher than placeholders
+    return [...realCourses, ...placeholders];
   }, [publishedCourses, searchQuery, selectedCategory, selectedDifficulty, selectedPriceRange, sortBy]);
 
   if (isLoading) {
