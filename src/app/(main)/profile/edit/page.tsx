@@ -1454,18 +1454,17 @@ export default function ProfileEditPage() {
           </CardContent>
         </Card>
 
-        {/* Simple Newsletter Link Section - Quick Option */}
-        {!formData.newsletterProvider && (
+        {/* Simple Newsletter Link Section */}
         <Card id="newsletter-link">
           <CardHeader>
-            <CardTitle>Newsletter Link (Simple)</CardTitle>
+            <CardTitle>Newsletter Link</CardTitle>
             <CardDescription>
-              Quickly add a link to your newsletter signup page or landing page. This appears under your follower count on your profile.
+              Add a link to your newsletter signup page or landing page. This appears under your follower count on your profile.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newsletterLink">Newsletter or Landing Page URL</Label>
+              <Label htmlFor="newsletterLink">Newsletter or Landing Page URL (optional)</Label>
               <Input
                 id="newsletterLink"
                 type="url"
@@ -1474,12 +1473,11 @@ export default function ProfileEditPage() {
                 placeholder="https://example.com/newsletter or https://example.com/signup"
               />
               <p className="text-xs text-muted-foreground">
-                Add any URL to your newsletter signup page, landing page, or website. For advanced integrations, use the Newsletter Integration section below.
+                Add any URL to your newsletter signup page, landing page, or website.
               </p>
             </div>
           </CardContent>
         </Card>
-        )}
 
 
         {/* Basic Information */}
@@ -1746,7 +1744,8 @@ export default function ProfileEditPage() {
           </CardContent>
         </Card>
 
-        {/* Newsletter Integration */}
+        {/* Newsletter Integration - HIDDEN FOR NOW */}
+        {false && (
         <Card id="newsletter-integration">
           <CardHeader>
             <CardTitle>Newsletter Integration</CardTitle>
@@ -1760,6 +1759,7 @@ export default function ProfileEditPage() {
             </Suspense>
           </CardContent>
         </Card>
+        )}
 
         {/* Stripe Payment Setup - Only for professional artists */}
         {isArtistAccount && (
