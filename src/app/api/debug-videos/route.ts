@@ -7,11 +7,11 @@ export async function GET(request: NextRequest) {
   try {
     const adminDb = getAdminDb();
     
-    // Fetch latest 20 artworks
+    // Fetch latest 50 artworks to find videos
     const artworksSnapshot = await adminDb
       .collection('artworks')
       .orderBy('createdAt', 'desc')
-      .limit(20)
+      .limit(50)
       .get();
     
     const artworks = artworksSnapshot.docs.map(doc => {
@@ -25,11 +25,20 @@ export async function GET(request: NextRequest) {
         imageUrl: data.imageUrl?.substring(0, 100),
         hasVideoUrl: !!data.videoUrl,
         hasImageUrl: !!data.imageUrl,
+        artistId: data.artist?.id || data.artistId,
         createdAt: data.createdAt?.toDate?.() || data.createdAt,
       };
     });
     
-    return NextResponse.json({ artworks });
+    // Filter to show only videos
+    const videos = artworks.filter(a => a.hasVideoUrl);
+    
+    return NextResponse.json({ 
+      totalArtworks: artworks.length,
+      totalVideos: videos.length,
+      allArtworks: artworks,
+      videosOnly: videos 
+    });
   } catch (error: any) {
     console.error('Debug videos error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
