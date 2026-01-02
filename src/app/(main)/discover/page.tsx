@@ -1214,16 +1214,17 @@ function DiscoverPageContent() {
         // This is the PRIMARY source - fetch ALL content from ALL active artists
         const existingArtworkIds = new Set(fetchedArtworks.map(a => a.id));
         
-        log('📋 Discover: Fetching ALL content from ACTIVE artist profiles (userProfiles.portfolio)...');
-        
-        // Query all userProfiles - we'll filter for active client-side
-        // Firestore doesn't support != operator, so we query all and filter
-        const artistsQuery = query(
-          collection(db, 'userProfiles'),
-          limit(100) // Get up to 100 profiles
-        );
-        
-        const artistsSnapshot = await getDocs(artistsQuery);
+        try {
+          log('📋 Discover: Fetching ALL content from ACTIVE artist profiles (userProfiles.portfolio)...');
+          
+          // Query all userProfiles - we'll filter for active client-side
+          // Firestore doesn't support != operator, so we query all and filter
+          const artistsQuery = query(
+            collection(db, 'userProfiles'),
+            limit(100) // Get up to 100 profiles
+          );
+          
+          const artistsSnapshot = await getDocs(artistsQuery);
         log(`👥 Discover: Found ${artistsSnapshot.docs.length} ACTIVE artists`);
         
         // Extract portfolio items from each ACTIVE artist
@@ -1331,10 +1332,12 @@ function DiscoverPageContent() {
             }
           }
           
-          log(`📊 Discover: Fallback method - Added ${fetchedArtworks.length} artworks from userProfiles.portfolio`);
+          log(`📊 Discover: Added ${fetchedArtworks.length} total artworks from userProfiles.portfolio`);
+        } catch (userProfilesError) {
+          console.error('Error fetching from userProfiles.portfolio:', userProfilesError);
         }
         
-        // CRITICAL: ONLY use portfolioItems collection - it's the source of truth
+        // Sort by date (newest first) - SIMPLE AND RELIABLE
         // portfolioItems properly filters deleted: false at query level
         // artworks collection contains orphaned/deleted content - DO NOT USE IT
         
