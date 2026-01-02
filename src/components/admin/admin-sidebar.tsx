@@ -190,27 +190,6 @@ export function AdminSidebar(props: AdminSidebarProps) {
         </CardContent>
       </Card>
 
-      {/* Learn - Course Management */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            Learn
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <button
-            onClick={() => props.setSelectedView('marketplace-shop')}
-            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-              props.selectedView === 'marketplace-shop' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-            }`}
-          >
-            <span className="text-sm">Courses</span>
-            <Badge variant={props.selectedView === 'marketplace-shop' ? 'secondary' : 'outline'}>({props.shopProducts?.filter((p: any) => p.type === 'course').length || 0})</Badge>
-          </button>
-        </CardContent>
-      </Card>
-
       {/* Advertising */}
       <Card>
         <CardHeader className="pb-3">
