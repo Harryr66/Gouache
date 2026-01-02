@@ -1201,23 +1201,25 @@ function CourseSubmissionPageContent() {
         <span className="hidden sm:inline">Back</span>
       </Button>
 
-      {/* Stripe Connection Warning */}
-      {stripeStatus && !stripeStatus.isComplete && (
+      {/* Stripe Connection Warning - Shown immediately on page load */}
+      {stripeStatus && !stripeStatus.isComplete && !isEditing && (
         <Alert className="mb-6 border-amber-500 bg-amber-500/10">
           <AlertCircle className="h-4 w-4 text-amber-500" />
-          <AlertTitle className="text-amber-500">Stripe Connection Required</AlertTitle>
-          <AlertDescription className="space-y-2">
-            <p>
-              You must connect your Stripe account before you can submit a course. 
-              This is required to receive payments for course sales.
+          <AlertTitle className="text-amber-500">⚠️ Stripe Connection Required</AlertTitle>
+          <AlertDescription className="space-y-3">
+            <p className="font-medium">
+              You must connect your Stripe account before you can publish a course.
+            </p>
+            <p className="text-sm">
+              You can still create and save course drafts, but publishing requires Stripe to be set up so you can receive payments from students.
             </p>
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={() => router.push('/settings?tab=business')}
-              className="mt-2"
+              className="mt-2 bg-amber-500 hover:bg-amber-600 text-white"
             >
-              Connect Stripe Account
+              Connect Stripe Now →
             </Button>
           </AlertDescription>
         </Alert>
