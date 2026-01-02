@@ -530,12 +530,22 @@ export default function ArtworkPage() {
       if (canPlayHLS) {
         // Native HLS support (Safari)
         video.src = videoUrl;
+        video.load(); // Ensure video is loaded
         console.log('✅ Using native HLS support for:', videoUrl);
+        
+        // Attempt autoplay after load
+        video.addEventListener('loadeddata', () => {
+          video.play().catch((error) => {
+            console.log('Autoplay prevented (native HLS):', error);
+          });
+        }, { once: true });
       } else if (Hls.isSupported()) {
         // Use hls.js for browsers that don't support HLS natively
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: false,
+          startLevel: -1, // Auto quality selection
+          debug: false,
         });
         
         hls.loadSource(videoUrl);
@@ -544,8 +554,11 @@ export default function ArtworkPage() {
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           console.log('✅ HLS manifest parsed, video ready');
+          // Force video to load
+          video.load();
+          // Attempt autoplay
           video.play().catch((error) => {
-            console.log('Autoplay prevented:', error);
+            console.log('Autoplay prevented (HLS.js):', error);
           });
         });
         
@@ -553,9 +566,14 @@ export default function ArtworkPage() {
           if (data.fatal) {
             console.error('❌ HLS fatal error:', data);
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+              console.log('Attempting to recover from network error...');
               hls.startLoad();
             } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+              console.log('Attempting to recover from media error...');
               hls.recoverMediaError();
+            } else {
+              console.error('Unrecoverable HLS error, destroying player');
+              hls.destroy();
             }
           }
         });
@@ -565,6 +583,14 @@ export default function ArtworkPage() {
     } else {
       // Non-HLS video (MP4, etc.)
       video.src = videoUrl;
+      video.load();
+      
+      // Attempt autoplay for non-HLS videos
+      video.addEventListener('loadeddata', () => {
+        video.play().catch((error) => {
+          console.log('Autoplay prevented (direct video):', error);
+        });
+      }, { once: true });
     }
 
     return () => {
@@ -704,12 +730,16 @@ export default function ArtworkPage() {
                   <video
                     ref={videoRef}
                     controls
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain bg-black"
                     playsInline
                     autoPlay
                     muted={false}
                     loop={false}
                     poster={artwork.imageUrl || undefined}
+                    preload="auto"
+                    onLoadStart={() => console.log('Video load started')}
+                    onCanPlay={() => console.log('Video can play')}
+                    onError={(e) => console.error('Video error:', e)}
                   />
                 ) : (
                   <div className="cursor-zoom-in">
@@ -756,15 +786,45 @@ export default function ArtworkPage() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-2xl">{artwork.title}</CardTitle>
-                  {artwork.artist?.id && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>by</span>
-                      <Link href={`/profile/${artwork.artist.id}`} className="font-medium hover:underline">
-                        {artwork.artist.name || artwork.artist.handle || 'View artist'}
-                      </Link>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-2xl">{artwork.title}</CardTitle>
+                      {artwork.artist?.id && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                          <span>by</span>
+                          <Link href={`/profile/${artwork.artist.id}`} className="font-medium hover:underline">
+                            {artwork.artist.name || artwork.artist.handle || 'View artist'}
+                          </Link>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    {/* Like Button - moved next to title for better layout */}
+                    <Button
+                      variant={artwork?.id && isLiked(artwork.id) ? 'gradient' : 'outline'}
+                      size="default"
+                      onClick={() => {
+                        if (artwork?.id) {
+                          toggleLike(artwork.id);
+                        }
+                      }}
+                      disabled={likesLoading}
+                      className="flex items-center gap-2 flex-shrink-0"
+                    >
+                      <Heart
+                        className={`h-5 w-5 ${
+                          artwork?.id && isLiked(artwork.id) ? 'fill-current' : 'fill-none'
+                        }`}
+                      />
+                      <span className="hidden sm:inline">
+                        {artwork?.id && isLiked(artwork.id) ? 'Liked' : 'Like'}
+                      </span>
+                      {artwork?.likes !== undefined && artwork.likes > 0 && (
+                        <span className="text-sm text-muted-foreground">
+                          ({artwork.likes})
+                        </span>
+                      )}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {artwork.description && (
@@ -790,33 +850,6 @@ export default function ArtworkPage() {
                   )}
 
                   <div className="flex items-center gap-3 flex-wrap">
-                    {/* Like Button */}
-                    <Button
-                      variant={artwork?.id && isLiked(artwork.id) ? 'gradient' : 'outline'}
-                      size="default"
-                      onClick={() => {
-                        if (artwork?.id) {
-                          toggleLike(artwork.id);
-                        }
-                      }}
-                      disabled={likesLoading}
-                      className="flex items-center gap-2"
-                    >
-                      <Heart
-                        className={`h-5 w-5 ${
-                          artwork?.id && isLiked(artwork.id) ? 'fill-current' : 'fill-none'
-                        }`}
-                      />
-                      <span>
-                        {artwork?.id && isLiked(artwork.id) ? 'Liked' : 'Like'}
-                      </span>
-                      {artwork?.likes !== undefined && artwork.likes > 0 && (
-                        <span className="text-sm text-muted-foreground">
-                          ({artwork.likes})
-                        </span>
-                      )}
-                    </Button>
-
                     {artwork.isForSale && (
                       <Badge className="bg-blue-600 hover:bg-blue-700">
                         For sale
