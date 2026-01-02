@@ -1072,7 +1072,7 @@ function DiscoverPageContent() {
             
             // STEP 2: Show ALL content - no deleted filtering
             const portfolioResult = await PortfolioService.getDiscoverPortfolioItems({
-              showInPortfolio: true,
+              // REMOVED: showInPortfolio: true - show ALL content
               // REMOVED: deleted: false - show ALL content including deleted
               hideAI: discoverSettings.hideAiAssistedArt,
               limit: INITIAL_FETCH_LIMIT,
