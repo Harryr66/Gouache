@@ -2425,7 +2425,7 @@ function DiscoverPageContent() {
           }}
           className="mb-6"
         >
-          <TabsList className="w-full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px', padding: 0, background: 'transparent' }}>
+          <TabsList className="w-full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px', padding: 0, background: 'transparent' }}>
             <TabsTrigger value="artwork" className="flex items-center justify-center gap-2 px-4 md:px-6 h-10 rounded-l-md border-2" style={{ width: '100%', boxSizing: 'border-box' }}>
               <Palette className="h-4 w-4" />
               <span className="hidden sm:inline">Discover</span>
@@ -2437,7 +2437,7 @@ function DiscoverPageContent() {
             </TabsTrigger>
           </TabsList>
           {/* Bottom row - Filter and View Selector aligned with top row split */}
-          <div className="hidden md:flex items-center w-full overflow-visible mb-0 mt-0" style={{ gap: '3px' }}>
+          <div className="hidden md:flex items-center w-full overflow-visible mb-0 mt-0" style={{ gap: '2px' }}>
             <div className="flex-1 filter-view-grid">
               {activeTab === 'artwork' ? (
                 <>
