@@ -1210,9 +1210,14 @@ function DiscoverPageContent() {
           log(`📊 Discover: Summary - Portfolio items: ${portfolioItems.length}, Added: ${fetchedArtworks.length}, Skipped (no image): ${skippedNoImage}, Skipped (no artist): ${skippedNoArtist}`);
         }
         
-        // BACKWARD COMPATIBILITY: If no portfolioItems found or using fallback, use old method (userProfiles.portfolio arrays)
-        if (useFallback || (portfolioItems.length === 0 && fetchedArtworks.length === 0)) {
-          log('📋 Discover: No portfolioItems found, falling back to userProfiles.portfolio method (backward compatibility)...');
+        // BACKWARD COMPATIBILITY: Always check userProfiles.portfolio as fallback
+        // This ensures content from userProfiles.portfolio is included (old data structure)
+        // Deduplicate by artwork ID to avoid showing same item twice
+        const existingArtworkIds = new Set(fetchedArtworks.map(a => a.id));
+        
+        // Always run fallback to ensure we get ALL content from userProfiles.portfolio
+        if (useFallback || fetchedArtworks.length < 50) {
+          log('📋 Discover: Checking userProfiles.portfolio for additional content (backward compatibility)...');
           
           // Fetch artists with portfolios - old method
           const artistsQuery = query(
@@ -1259,8 +1264,15 @@ function DiscoverPageContent() {
               
               if (!imageUrl && !videoUrl) continue;
               
+              const artworkId = item.id || `${artistDoc.id}-${Date.now()}-${index}`;
+              
+              // Skip if already added from portfolioItems (deduplicate)
+              if (existingArtworkIds.has(artworkId)) {
+                continue;
+              }
+              
               const artwork: Artwork = {
-                id: item.id || `${artistDoc.id}-${Date.now()}-${index}`,
+                id: artworkId,
                 title: item.title || 'Untitled',
                 description: item.description || '',
                 imageUrl: imageUrl,
@@ -1294,6 +1306,7 @@ function DiscoverPageContent() {
               };
               
               fetchedArtworks.push(artwork);
+              existingArtworkIds.add(artworkId); // Track to avoid duplicates
             }
           }
           
