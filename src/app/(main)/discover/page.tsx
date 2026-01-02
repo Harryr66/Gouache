@@ -1282,6 +1282,7 @@ function DiscoverPageContent() {
                 videoUrl = item.mediaUrls[0];
               }
               const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
+              const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
               
               if (!imageUrl && !videoUrl) continue;
               
@@ -1299,6 +1300,7 @@ function DiscoverPageContent() {
                 imageUrl: imageUrl,
                 imageAiHint: item.description || '',
                 ...(videoUrl && { videoUrl: videoUrl as any }),
+                ...(mediaType && { mediaType: mediaType as any }),
                 artist: {
                   id: artistDoc.id,
                   name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
