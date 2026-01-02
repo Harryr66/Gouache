@@ -50,10 +50,12 @@ interface ArtworkTileProps {
   onVideoReady?: () => void; // Callback when video is ready (for preloading)
   onImageReady?: (isVideoPoster?: boolean) => void; // Callback when image is ready (for preloading), with flag for video posters
   isInitialViewport?: boolean; // Flag to indicate this is in initial viewport
+  onDelete?: (artworkId: string) => void; // STEP 3: Delete button handler
+  showDeleteButton?: boolean; // STEP 3: Show temporary delete button
 }
 
 // Memoize to prevent unnecessary re-renders (performance optimization)
-export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, isInitialViewport: propIsInitialViewport }: ArtworkTileProps) {
+export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, isInitialViewport: propIsInitialViewport, onDelete, showDeleteButton = false }: ArtworkTileProps) {
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
@@ -963,10 +965,28 @@ const generateArtistContent = (artist: Artist) => ({
                 />
               )}
               
+              {/* STEP 3: Delete button - temporary X button */}
+              {showDeleteButton && onDelete && (
+                <button
+                  className="absolute top-2 right-2 z-40 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg pointer-events-auto flex items-center justify-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (onDelete) {
+                      onDelete(artwork.id);
+                    }
+                  }}
+                  title="Delete content"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              
               {/* Play button overlay - show when video is paused */}
               {hasVideo && isVideoLoaded && isVideoPaused && isInViewport && (
                 <div 
                   className="absolute top-2 right-2 z-30 pointer-events-auto"
+                  style={showDeleteButton ? { top: '3.5rem' } : {}}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (videoRef.current && videoRef.current.paused) {

@@ -6,6 +6,7 @@ import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTra
 import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
 import { Artwork, MarketplaceProduct, Event as EventType } from '@/lib/types';
 import { db } from '@/lib/firebase';
@@ -1025,9 +1026,8 @@ function DiscoverPageContent() {
         let portfolioItems: any[] = [];
         let useFallback = false;
         
-        // Fetch MORE items to ensure we have enough content after filtering inactive artists
-        // Fetch 150 items, expect ~100+ after filtering inactive/deleted
-        const INITIAL_FETCH_LIMIT = 150;
+        // STEP 5: Minimum 30 images per page
+        const INITIAL_FETCH_LIMIT = 30;
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -1070,11 +1070,10 @@ function DiscoverPageContent() {
             // This ensures videos uploaded via Discover portal appear in the feed
             const { PortfolioService } = await import('@/lib/database');
             
-            // CRITICAL: ONLY query portfolio items (showInPortfolio: true)
-            // This is the source of truth - portfolioItems collection properly filters deleted: false
+            // STEP 2: Show ALL content - no deleted filtering
             const portfolioResult = await PortfolioService.getDiscoverPortfolioItems({
               showInPortfolio: true,
-              deleted: false, // Query-level filter - only non-deleted items
+              // REMOVED: deleted: false - show ALL content including deleted
               hideAI: discoverSettings.hideAiAssistedArt,
               limit: INITIAL_FETCH_LIMIT,
             });
@@ -1260,22 +1259,14 @@ function DiscoverPageContent() {
             log(`📋 Discover: Processing ${portfolio.length} portfolio items from artist ${artistDoc.id}`);
             totalPortfolioItemsProcessed += portfolio.length;
             
-            // CRITICAL: Filter out deleted items, then sort, NO SLICE - get ALL items
+            // STEP 2: Show ALL content - NO deleted filtering
             const activePortfolio = portfolio
               .filter((item: any) => {
-                // STRICT deleted check
-                const isDeleted = item.deleted === true || item.deleted === 'true' || item.deleted === 1;
+                // Only filter hidden items, NOT deleted
                 const isHidden = item.showInPortfolio === false;
-                
-                if (isDeleted) {
-                  log(`⚠️ Discover: Filtering out deleted item ${item.id} from artist ${artistDoc.id}`);
-                  return false;
-                }
-                
                 if (isHidden) {
                   return false;
                 }
-                
                 return true;
               })
               .sort((a: any, b: any) => {
@@ -1352,18 +1343,24 @@ function DiscoverPageContent() {
           console.error('Error fetching from userProfiles.portfolio:', userProfilesError);
         }
         
-        // Sort by date (newest first) - SIMPLE AND RELIABLE
-        // portfolioItems properly filters deleted: false at query level
-        // artworks collection contains orphaned/deleted content - DO NOT USE IT
-        
-        // Sort by date (newest first) - SIMPLE AND RELIABLE
-        fetchedArtworks.sort((a, b) => {
-          const dateA = a.createdAt.getTime();
-          const dateB = b.createdAt.getTime();
-          return dateB - dateA;
-        });
-        
-        log(`✅ Discover: Sorted ${fetchedArtworks.length} artworks by date (newest first)`);
+        // STEP 4: Sort by engagement metrics (View time priority, then likes/upvotes)
+        // Use engagement-based ranking if available
+        if (artworkEngagements.size > 0) {
+          const followedArtists = getFollowedArtists();
+          const followedArtistIds = new Set(followedArtists.map(a => a.id));
+          const scoredArtworks = engagementScorer.scoreArtworks(fetchedArtworks, artworkEngagements, followedArtistIds);
+          const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
+          fetchedArtworks = engagementScorer.sortByScore(withDiversity);
+          log(`✅ Discover: Sorted ${fetchedArtworks.length} artworks by engagement score`);
+        } else {
+          // Fallback to date if no engagement data
+          fetchedArtworks.sort((a, b) => {
+            const dateA = a.createdAt.getTime();
+            const dateB = b.createdAt.getTime();
+            return dateB - dateA;
+          });
+          log(`✅ Discover: Sorted ${fetchedArtworks.length} artworks by date (engagement data not available)`);
+        }
         
         // No fallback: only show current portfolio items with images, skip deleted/hidden
         
@@ -1587,12 +1584,13 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      const LOAD_MORE_LIMIT = 100;
+      // STEP 5: Minimum 30 images per page
+      const LOAD_MORE_LIMIT = 30;
       
-      // CRITICAL: ONLY use portfolioItems - it filters deleted: false at query level
+      // STEP 2: Show ALL content - no deleted filtering
       const portfolioResult = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
-        deleted: false, // Query-level filter - only non-deleted items
+        // REMOVED: deleted: false - show ALL content including deleted
         hideAI: discoverSettings.hideAiAssistedArt,
         limit: LOAD_MORE_LIMIT,
         startAfter: lastDocument,
@@ -1722,9 +1720,10 @@ function DiscoverPageContent() {
     if (!hasMore || isLoadingMore || !lastDocument) return;
     
     const handleScroll = () => {
+      // STEP 6: Load more at 75% scroll
       const scrollPercentage = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
-      if (scrollPercentage > 0.8 && !fetchingRef.current) {
-        prefetchNextPage();
+      if (scrollPercentage > 0.75 && !fetchingRef.current && hasMore && !isLoadingMore) {
+        loadMoreArtworks();
       }
     };
     
