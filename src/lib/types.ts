@@ -359,6 +359,9 @@ export interface Course {
   isNew: boolean;
   isFeatured: boolean;
   isPublished: boolean;
+  // Soft delete flag
+  deleted?: boolean;
+  deletedAt?: Date;
   // Admin approval workflow
   status?: 'pending' | 'approved' | 'rejected';
   tags: string[];
