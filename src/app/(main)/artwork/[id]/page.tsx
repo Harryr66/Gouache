@@ -536,7 +536,21 @@ export default function ArtworkPage() {
     }
     
     const videoId = videoIdMatch[1];
-    const manifestUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+    // Try to use the original customer subdomain URL if it has one, otherwise use videodelivery.net
+    let manifestUrl = artwork.videoUrl;
+    if (!manifestUrl.includes('.m3u8')) {
+      // Check if original URL is customer subdomain
+      if (manifestUrl.includes('customer-')) {
+        const accountMatch = manifestUrl.match(/customer-([^.]+)/);
+        if (accountMatch) {
+          manifestUrl = `https://customer-${accountMatch[1]}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
+        } else {
+          manifestUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+        }
+      } else {
+        manifestUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+      }
+    }
     
     console.log('Video ID:', videoId);
     console.log('Manifest URL:', manifestUrl);
@@ -552,21 +566,38 @@ export default function ArtworkPage() {
     
     if (canPlayHLS) {
       // Native HLS support - Safari/iOS
-      console.log('Using native HLS');
+      console.log('Using native HLS (Safari)');
       video.src = manifestUrl;
       
       // Wait for video to be ready
       video.addEventListener('loadedmetadata', () => {
-        console.log('Video metadata loaded, ready to play');
-        video.muted = true; // Ensure muted for autoplay
-        video.play().catch(err => console.log('Autoplay prevented:', err));
+        console.log('✅ Video metadata loaded');
+        video.muted = true;
+        video.play()
+          .then(() => console.log('✅ Video playing'))
+          .catch(err => console.log('⚠️ Autoplay prevented:', err));
       }, { once: true });
       
       video.addEventListener('error', (e) => {
-        console.error('Video error:', video.error);
+        console.error('❌ Video element error:', {
+          error: video.error,
+          code: video.error?.code,
+          message: video.error?.message,
+          networkState: video.networkState,
+          readyState: video.readyState
+        });
+      });
+      
+      video.addEventListener('stalled', () => {
+        console.warn('⚠️ Video stalled');
+      });
+      
+      video.addEventListener('waiting', () => {
+        console.log('⏳ Video waiting for data...');
       });
       
       video.load();
+      console.log('Video load() called');
     } else if (Hls.isSupported()) {
       // Use hls.js for other browsers
       console.log('Using HLS.js');
@@ -574,6 +605,7 @@ export default function ArtworkPage() {
         enableWorker: true,
         lowLatencyMode: false,
         maxBufferLength: 30,
+        debug: true,
       });
       
       hls.loadSource(manifestUrl);
@@ -581,27 +613,29 @@ export default function ArtworkPage() {
       hlsRef.current = hls;
       
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        console.log('HLS manifest loaded, ready to play');
-        video.muted = true; // Ensure muted for autoplay
-        video.play().catch(err => console.log('Autoplay prevented:', err));
+        console.log('✅ HLS manifest parsed');
+        video.muted = true;
+        video.play()
+          .then(() => console.log('✅ Video playing'))
+          .catch(err => console.log('⚠️ Autoplay prevented:', err));
       });
       
       hls.on(Hls.Events.ERROR, (event, data) => {
-        console.error('HLS error:', data);
+        console.error('❌ HLS error:', data);
         if (data.fatal) {
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-            console.log('Retrying after network error...');
+            console.log('🔄 Retrying after network error...');
             hls.startLoad();
           } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-            console.log('Recovering from media error...');
+            console.log('🔄 Recovering from media error...');
             hls.recoverMediaError();
           } else {
-            console.error('Fatal error, cannot recover');
+            console.error('💀 Fatal error, cannot recover');
           }
         }
       });
     } else {
-      console.error('HLS not supported in this browser');
+      console.error('❌ HLS not supported in this browser');
     }
 
     return () => {
