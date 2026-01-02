@@ -826,7 +826,7 @@ function CourseSubmissionPageContent() {
           isOnSale: existingCourse.isOnSale || false,
           isNew: existingCourse.isNew || false,
           isFeatured: existingCourse.isFeatured || false,
-          status: existingCourse.status || 'pending',
+          status: existingCourse.status || 'approved', // Auto-approved - no admin review needed
           isPublished: existingCourse.isPublished || false,
           reviews: existingCourse.reviews || [],
           discussions: existingCourse.discussions || [],
@@ -862,7 +862,7 @@ function CourseSubmissionPageContent() {
           isOnSale: false,
           isNew: true,
           isFeatured: false,
-          status: 'pending' as const,
+          status: 'approved' as const, // Auto-approved - no admin review needed
           isPublished: isPublishing, // CRITICAL: Publish if submitted from publish step
           ...(isPublishing ? { publishedAt: new Date() } : {}), // Add publishedAt when published
           reviews: [],
@@ -875,8 +875,8 @@ function CourseSubmissionPageContent() {
         await createCourse(newCourseData);
 
         toast({
-          title: "Course Submitted",
-          description: "Your course has been submitted for admin review. It will not be available until approved by an administrator.",
+          title: "Course Published",
+          description: "Your course is now live and available to students!",
         });
       }
 

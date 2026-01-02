@@ -116,14 +116,11 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       (snapshot) => {
         console.log('📚 CourseProvider: Published courses snapshot updated, fetched', snapshot.docs.length, 'courses');
         
-        // For public: only show approved courses
-        // For course owners: show ALL their published courses (regardless of approval status)
+        // All published courses are auto-approved (no admin review needed)
         const allPublishedCourses = snapshot.docs.map(mapCourseData) as Course[];
-        const publicCourses = allPublishedCourses.filter((course: any) => 
-          !course.status || course.status === 'approved'
-        );
+        const publicCourses = allPublishedCourses; // No filtering needed - all courses are approved
         
-        console.log('📚 After filtering:', publicCourses.length, 'approved/published courses (public view)');
+        console.log('📚 Total published courses:', publicCourses.length);
 
         // Query 2: User's own draft/unpublished courses (if logged in)
         if (user) {
@@ -137,7 +134,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
             console.log('📝 CourseProvider: Draft courses snapshot updated, fetched', draftSnapshot.docs.length, 'draft courses');
             const draftCourses = draftSnapshot.docs.map(mapCourseData) as Course[];
             
-            // Add user's own published courses (even if pending approval)
+            // Add user's own published courses
             const userPublishedCourses = allPublishedCourses.filter((course: any) => 
               course.instructor.userId === user.id
             );
@@ -665,14 +662,14 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       
       const allCourses = snapshot.docs.map(mapCourseData) as Course[];
       
-      // Filter: For public, show only approved published courses
-      // For course owners, show ALL their courses (published at any status + drafts)
+      // Filter: Show published courses + user's draft courses
+      // All published courses are auto-approved (no admin review)
       const filteredCourses = allCourses.filter((course: any) => {
-        const isUserCourse = user && course.instructor.userId === user.id;
-        const isPublicApproved = course.isPublished === true && (!course.status || course.status === 'approved');
+        const isUserDraft = user && course.instructor.userId === user.id && !course.isPublished;
+        const isPublished = course.isPublished === true;
         
-        // Show if: user's own course OR publicly approved
-        return isUserCourse || isPublicApproved;
+        // Show if: published OR user's draft
+        return isPublished || isUserDraft;
       });
       
       setCourses(filteredCourses);
