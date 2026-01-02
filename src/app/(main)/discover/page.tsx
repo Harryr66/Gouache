@@ -1581,9 +1581,9 @@ function DiscoverPageContent() {
       // STEP 5: Minimum 30 images per page
       const LOAD_MORE_LIMIT = 30;
       
-      // STEP 2: Show ALL content - no deleted filtering
+      // STEP 2: Show ALL content - no filtering
       const portfolioResult = await PortfolioService.getDiscoverPortfolioItems({
-        showInPortfolio: true,
+        // REMOVED: showInPortfolio: true - show ALL content
         // REMOVED: deleted: false - show ALL content including deleted
         hideAI: discoverSettings.hideAiAssistedArt,
         limit: LOAD_MORE_LIMIT,
