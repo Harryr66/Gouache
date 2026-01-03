@@ -730,7 +730,7 @@ export default function ArtworkPage() {
 
   if (error || !artwork) {
   return (
-      <div className="max-w-3xl mx-auto p-6 space-y-4 text-center w-full max-w-full overflow-x-hidden px-4">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 text-center w-full max-w-full overflow-x-hidden">
         <p className="text-lg font-semibold">Unable to load artwork.</p>
         <p className="text-muted-foreground">{error || 'Please try again later.'}</p>
         <Button variant="outline" onClick={() => router.back()}>
@@ -742,7 +742,7 @@ export default function ArtworkPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 w-full max-w-full overflow-x-hidden">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 w-full max-w-full overflow-x-hidden">
         <div className="max-w-7xl mx-auto space-y-6 w-full">
           <Button variant="ghost" onClick={() => router.back()} className="mb-2">
             <span className="mr-2">←</span> Back

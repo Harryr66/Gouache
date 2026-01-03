@@ -42,8 +42,9 @@ async function uploadVideoDirectCreatorUpload(file: File): Promise<MediaUploadRe
 
   try {
     // Step 1: Get upload URL from our API (this is a small request, no file)
+    // Cloudflare Stream supports videos up to 4 hours (14400 seconds) on most plans
     const requestBody = {
-      maxDurationSeconds: 3600,
+      maxDurationSeconds: 14400, // 4 hours maximum (Cloudflare Stream limit)
       allowedOrigins: ['*'],
     };
     
@@ -450,6 +451,11 @@ export async function uploadMedia(
           console.warn(`⚠️ Rate limited (403), will retry... (attempt ${attempt + 1}/${maxRetries})`);
           lastError = new Error(`Rate limited: ${errorText}`);
           continue; // Retry
+        } else if (response.status === 413) {
+          // 413 Payload Too Large - file is too big, don't retry
+          const error = await response.json().catch(() => ({ error: 'File too large' }));
+          lastError = new Error(`Image file is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 20MB. Please compress the image or use a smaller file. ${error.error || ''}`);
+          break; // Don't retry - file is too large
         } else {
           // Other error or final attempt failed
           const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));

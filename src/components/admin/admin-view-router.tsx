@@ -1469,36 +1469,64 @@ export function AdminViewRouter(props: any) {
           </div>
         )}
 
-        {/* AI Content Reports */}
-        {props.selectedView === 'ai-content-reports' && (
+        {/* Content Reports */}
+        {props.selectedView === 'content-reports' && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold">AI Content Reports</h2>
-              <p className="text-muted-foreground mt-1">
-                Reports of suspected AI-generated artwork. Review and take action on violations.
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Content Reports</h2>
+                <p className="text-muted-foreground mt-1">
+                  User-reported content for moderation. Review reports of inappropriate content, non-art, AI-generated content, etc.
+                </p>
+              </div>
+              <Select
+                defaultValue="all"
+                onValueChange={(value) => {
+                  // Filter state will be handled in the render
+                }}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Reports</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="dismissed">Dismissed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {!props.contentReports || props.contentReports.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No AI content reports</h3>
+                  <h3 className="text-lg font-semibold mb-2">No content reports</h3>
                   <p className="text-muted-foreground">
-                    No reports of suspected AI-generated content have been submitted yet.
+                    No content reports have been submitted yet.
                   </p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
                 {props.contentReports
-                  .filter((report: Report) => report.isAIContentReport)
+                  .sort((a: Report, b: Report) => {
+                    // Sort pending reports first, then by timestamp
+                    if (a.status === 'pending' && b.status !== 'pending') return -1;
+                    if (a.status !== 'pending' && b.status === 'pending') return 1;
+                    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+                  })
                   .map((report: Report) => (
                     <Card key={report.id}>
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <Badge variant="destructive">AI Content Report</Badge>
+                            {report.isAIContentReport && (
+                              <Badge variant="destructive">AI Content</Badge>
+                            )}
+                            {(report.reason === 'Not art content' || report.reason === 'Inappropriate content') && (
+                              <Badge variant="destructive">{report.reason}</Badge>
+                            )}
                             <Badge
                               variant={
                                 report.status === 'pending'
@@ -1549,10 +1577,25 @@ export function AdminViewRouter(props: any) {
                         </div>
 
                         <div className="border-t pt-4">
-                          <Label className="text-sm font-medium mb-2 block">Content</Label>
+                          <Label className="text-sm font-medium mb-2 block">Content Preview</Label>
                           <div className="p-3 bg-muted/50 rounded-lg">
                             <p className="text-sm">{report.content}</p>
                           </div>
+                          {report.contentType === 'Artwork' && (
+                            <div className="mt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  // Navigate to the artwork
+                                  window.open(`/discover?item=${report.contentId}`, '_blank');
+                                }}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Content
+                              </Button>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2 pt-4 border-t">
@@ -1570,7 +1613,7 @@ export function AdminViewRouter(props: any) {
                                     });
                                     toast({
                                       title: 'Report resolved',
-                                      description: 'AI content report has been marked as resolved.',
+                                      description: 'Content report has been marked as resolved.',
                                     });
                                   } catch (error) {
                                     console.error('Error updating report:', error);
@@ -1596,7 +1639,7 @@ export function AdminViewRouter(props: any) {
                                     });
                                     toast({
                                       title: 'Report dismissed',
-                                      description: 'AI content report has been dismissed.',
+                                      description: 'Content report has been dismissed.',
                                     });
                                   } catch (error) {
                                     console.error('Error updating report:', error);
@@ -1625,7 +1668,7 @@ export function AdminViewRouter(props: any) {
                                   });
                                   toast({
                                     title: 'Report reopened',
-                                    description: 'AI content report has been reopened.',
+                                    description: 'Content report has been reopened.',
                                   });
                                 } catch (error) {
                                   console.error('Error updating report:', error);
@@ -2242,55 +2285,41 @@ export function AdminViewRouter(props: any) {
                           </div>
                         </div>
                         <div className="flex gap-2 items-center">
-                          {product.status === 'pending' && (
-                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
-                              Pending Approval
-                          </Badge>
-                          )}
-                          {product.status === 'approved' && product.isPublished && (
-                            <Badge variant="default" className="bg-green-50 text-green-700 border-green-300">
-                              Published
-                            </Badge>
-                          )}
-                          {product.status === 'approved' && !product.isPublished && (
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                              Approved (Unpublished)
-                            </Badge>
+                          {/* For courses: Show only published/draft status (no approval needed) */}
+                          {product.type === 'course' ? (
+                            <>
+                              {product.isPublished ? (
+                                <Badge variant="default" className="bg-green-50 text-green-700 border-green-300">
+                                  Published
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-300">
+                                  Draft
+                                </Badge>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {/* For other products: Keep existing approval status badges */}
+                              {product.status === 'pending' && (
+                                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                                  Pending Approval
+                                </Badge>
+                              )}
+                              {product.status === 'approved' && product.isPublished && (
+                                <Badge variant="default" className="bg-green-50 text-green-700 border-green-300">
+                                  Published
+                                </Badge>
+                              )}
+                              {product.status === 'approved' && !product.isPublished && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                                  Approved (Unpublished)
+                                </Badge>
+                              )}
+                            </>
                           )}
                           {product.type === 'course' && (
                             <div className="flex gap-1">
-                              {product.status === 'pending' && (
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={async () => {
-                                    try {
-                                      await updateDoc(doc(db, 'courses', product.id), {
-                                        status: 'approved',
-                                        isPublished: true,
-                                        publishedAt: new Date(),
-                                        updatedAt: new Date(),
-                                      });
-                                      toast({
-                                        title: "Course Approved",
-                                        description: "The course has been approved and published.",
-                                      });
-                                      window.location.reload();
-                                    } catch (error) {
-                                      console.error('Error approving course:', error);
-                                      toast({
-                                        title: "Approval Failed",
-                                        description: "Failed to approve course. Please try again.",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }}
-                                  className="bg-green-600 hover:bg-green-700"
-                                >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Approve
-                                </Button>
-                              )}
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">

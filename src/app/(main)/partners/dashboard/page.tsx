@@ -156,7 +156,7 @@ export default function PartnerDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="container py-12">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-12">
         <ThemeLoading text="Loading dashboard..." />
       </div>
     );
@@ -181,7 +181,7 @@ export default function PartnerDashboardPage() {
   };
 
   return (
-    <div className="container py-8">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Partner Dashboard</h1>
         <p className="text-muted-foreground">

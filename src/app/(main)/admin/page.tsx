@@ -282,6 +282,7 @@ export default function AdminPanel() {
         console.log('🔄 Admin Panel: Fetching all data...');
         
         // Fetch professional artists for verified status management
+        // CRITICAL: Filter out deleted accounts - they should not appear in admin panel
         setLoadingArtists(true);
         try {
           const artistsQuery = query(
@@ -289,20 +290,36 @@ export default function AdminPanel() {
             where('isProfessional', '==', true)
           );
           const artistsSnapshot = await getDocs(artistsQuery);
-          const artistsData = artistsSnapshot.docs.map((doc: any) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              name: data.name || data.displayName || data.username || 'Unknown',
-              email: data.email || '',
-              username: data.username || data.handle,
-              avatarUrl: data.avatarUrl,
-              isVerified: data.isVerified !== false, // All approved artists are verified by default
-              isProfessional: data.isProfessional || false
-            };
-          });
+          const artistsData = artistsSnapshot.docs
+            .filter((doc: any) => {
+              const data = doc.data();
+              // Filter out deleted accounts - check for deleted flag or inactive status
+              // Accounts marked as deleted should never appear
+              if (data.deleted === true) {
+                console.log(`⚠️ Filtered out deleted account: ${data.email || doc.id}`);
+                return false;
+              }
+              // Also filter out inactive accounts if the field exists and is false
+              if (data.isActive === false) {
+                console.log(`⚠️ Filtered out inactive account: ${data.email || doc.id}`);
+                return false;
+              }
+              return true;
+            })
+            .map((doc: any) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                name: data.name || data.displayName || data.username || 'Unknown',
+                email: data.email || '',
+                username: data.username || data.handle,
+                avatarUrl: data.avatarUrl,
+                isVerified: data.isVerified !== false, // All approved artists are verified by default
+                isProfessional: data.isProfessional || false
+              };
+            });
           setProfessionalArtists(artistsData);
-          console.log(`✅ Loaded ${artistsData.length} professional artists`);
+          console.log(`✅ Loaded ${artistsData.length} professional artists (deleted accounts filtered out)`);
         } catch (error) {
           console.error('Error loading professional artists:', error);
         } finally {
@@ -344,12 +361,39 @@ export default function AdminPanel() {
           getDocs(contentReportsQuery)
         ]);
 
-        const requests = artistSnapshot.docs.map((doc: any) => ({
-        id: doc.id,
-        ...doc.data()
+        const requests = artistSnapshot.docs.map((docSnapshot: any) => ({
+        id: docSnapshot.id,
+        ...docSnapshot.data()
       })) as ArtistRequest[];
-      setArtistRequests(requests);
-        console.log(`✅ Loaded ${requests.length} artist requests:`, requests);
+      
+      // CRITICAL: Filter out artist requests for deleted accounts
+      // Verify that the user profile still exists and is not deleted
+      const validRequests = await Promise.all(
+        requests.map(async (req: any) => {
+          if (!req.userId) return null;
+          try {
+            const userProfileRef = doc(db, 'userProfiles', req.userId);
+            const userProfileDoc = await getDoc(userProfileRef);
+            if (!userProfileDoc.exists()) {
+              console.log(`⚠️ Filtered out artist request - user profile deleted: ${req.userId}`);
+              return null; // User profile doesn't exist (deleted)
+            }
+            const userData = userProfileDoc.data();
+            if (userData?.deleted === true || userData?.isActive === false) {
+              console.log(`⚠️ Filtered out artist request - account marked as deleted/inactive: ${req.userId}`);
+              return null; // Account is deleted or inactive
+            }
+            return req; // Valid request
+          } catch (error) {
+            console.error(`Error checking user profile for request ${req.id}:`, error);
+            return null; // On error, exclude to be safe
+          }
+        })
+      );
+      
+      const filteredRequests = validRequests.filter((req: any) => req !== null) as ArtistRequest[];
+      setArtistRequests(filteredRequests);
+        console.log(`✅ Loaded ${filteredRequests.length} artist requests (${requests.length - filteredRequests.length} deleted accounts filtered out):`, filteredRequests);
 
         const applications = advertisingSnapshot.docs.map((doc: any) => ({
         id: doc.id,
@@ -2471,10 +2515,31 @@ export default function AdminPanel() {
     }
   };
 
-  const pendingRequests = artistRequests.filter((req: any) => req.status === 'pending');
-  const approvedRequests = artistRequests.filter((req: any) => req.status === 'approved');
-  const rejectedRequests = artistRequests.filter((req: any) => req.status === 'rejected');
-  const suspendedRequests = artistRequests.filter((req: any) => req.status === 'suspended');
+  // Helper function to check if an artist request should be excluded (deleted accounts)
+  const isAccountDeleted = (req: any) => {
+    // Check if user object exists and has deleted flag
+    if (req.user?.deleted === true) {
+      return true;
+    }
+    // Check if user object exists and is inactive
+    if (req.user?.isActive === false) {
+      return true;
+    }
+    return false;
+  };
+
+  const pendingRequests = artistRequests.filter((req: any) => 
+    req.status === 'pending' && !isAccountDeleted(req)
+  );
+  const approvedRequests = artistRequests.filter((req: any) => 
+    req.status === 'approved' && !isAccountDeleted(req)
+  );
+  const rejectedRequests = artistRequests.filter((req: any) => 
+    req.status === 'rejected' && !isAccountDeleted(req)
+  );
+  const suspendedRequests = artistRequests.filter((req: any) => 
+    req.status === 'suspended' && !isAccountDeleted(req)
+  );
   const activeNewsArticles = newsArticles.filter((article: any) => !article.archived);
   const archivedNewsArticles = newsArticles.filter((article: any) => article.archived);
   const publishedArticles = newsArticles.filter((article: any) => !article.archived && (article.status === 'published' || (!article.status && article.publishedAt)));
@@ -2504,7 +2569,7 @@ export default function AdminPanel() {
 
   if (authLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -2532,7 +2597,7 @@ export default function AdminPanel() {
 
   if (!user.isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4 sm:px-6">
         <Card className="w-full max-w-lg text-center">
           <CardHeader>
             <CardTitle className="text-2xl font-bold">Admin access required</CardTitle>
@@ -2552,7 +2617,7 @@ export default function AdminPanel() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>

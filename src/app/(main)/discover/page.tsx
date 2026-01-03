@@ -753,12 +753,19 @@ function DiscoverPageContent() {
   const log = (...args: any[]) => { console.log(...args); };
   const warn = (...args: any[]) => { console.warn(...args); };
   const error = (...args: any[]) => { console.error(...args); };
+  
+  // Helper: Check if image URL is from Cloudflare (all active artists should use Cloudflare)
+  const isCloudflareImage = (url: string | null | undefined): boolean => {
+    if (!url || typeof url !== 'string') return false;
+    return url.includes('imagedelivery.net') || url.includes('cloudflare.com');
+  };
   const { toggleLike, isLiked } = useLikes();
   const { user } = useAuth();
   const { getFollowedArtists, isFollowing } = useFollow();
   const { getConnectionSpeed } = useVideoControl();
   const { settings: discoverSettings } = useDiscoverSettings();
   const { theme } = useTheme();
+  
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams?.get?.('tab');
@@ -963,9 +970,12 @@ function DiscoverPageContent() {
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
-  // Initialize with enough items to fill viewport + 2 rows for smooth scrolling
-  // 24 items covers: mobile (2 cols × 4 rows), tablet (3 cols × 3 rows), desktop (6 cols × 2 rows)
-  const [visibleCount, setVisibleCount] = useState(24);
+  // Initialize with enough items to fill viewport + 5+ MORE ROWS for immediate scrolling
+  // Desktop (6 cols): 7 viewport rows + 5 extra rows = 72 items minimum
+  // Mobile (2 cols): 10 viewport rows + 5 extra rows = 30 items minimum  
+  // Tablet (3 cols): 8 viewport rows + 5 extra rows = 39 items minimum
+  // Using 90 items ensures we cover all screen sizes with 5+ additional rows on initial load
+  const [visibleCount, setVisibleCount] = useState(90);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market list, Events grid on mobile
@@ -1025,9 +1035,10 @@ function DiscoverPageContent() {
         let portfolioItems: any[] = [];
         let useFallback = false;
         
-        // Fetch enough items to fill viewport + 2 rows for all screen sizes
-        // 30 items covers: mobile (2 cols × 5 rows), tablet (3 cols × 4 rows), desktop (6 cols × 3 rows)
-        const INITIAL_FETCH_LIMIT = 30;
+        // Fetch enough items to fill viewport + 5+ MORE ROWS for all screen sizes
+        // 120 items ensures: mobile (2 cols × 20 rows), tablet (3 cols × 13 rows), desktop (6 cols × 10 rows)
+        // This provides immediate content with 5+ additional rows of scrollable content
+        const INITIAL_FETCH_LIMIT = 120;
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -1075,7 +1086,7 @@ function DiscoverPageContent() {
               showInPortfolio: true,
               deleted: false,
               hideAI: discoverSettings.hideAiAssistedArt,
-              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for portfolio items
+              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for portfolio items (60 items)
             });
             
             // Query discover content (videos uploaded via Discover portal)
@@ -1083,7 +1094,7 @@ function DiscoverPageContent() {
               showInPortfolio: false,
               deleted: false,
               hideAI: discoverSettings.hideAiAssistedArt,
-              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for discover content
+              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for discover content (60 items) (60 items)
             });
             
             // Combine results, portfolio items first, then discover content
@@ -1096,7 +1107,7 @@ function DiscoverPageContent() {
               return bTime - aTime;
             });
             
-            // Limit to INITIAL_FETCH_LIMIT after combining
+            // Limit to INITIAL_FETCH_LIMIT after combining (120 items for 5+ additional rows)
             portfolioItems = portfolioItems.slice(0, INITIAL_FETCH_LIMIT);
             log(`📦 Discover: Found ${portfolioItems.length} portfolio items from direct Firestore (fallback)`);
             
@@ -1153,6 +1164,12 @@ function DiscoverPageContent() {
           
           // Process portfolio items immediately with fallback artist data
           for (const [index, item] of portfolioItems.entries()) {
+            // SKIP DELETED ITEMS IMMEDIATELY - don't even process them
+            if (item.deleted === true) {
+              skippedNoImage++; // Track as skipped
+              continue;
+            }
+            
             // Get artist data (use fallback if not loaded yet)
             let artistData = artistDataMap.get(item.userId);
             
@@ -1176,6 +1193,13 @@ function DiscoverPageContent() {
             }
             const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
             const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
+            
+            // CRITICAL: Only fetch images from Cloudflare (all active artists should use Cloudflare)
+            // Skip images that are NOT from Cloudflare
+            if (!videoUrl && imageUrl && !isCloudflareImage(imageUrl)) {
+              skippedNoImage++;
+              continue; // Skip non-Cloudflare images
+            }
             
             // Skip items without media
             if (!imageUrl && !videoUrl) {
@@ -1232,7 +1256,7 @@ function DiscoverPageContent() {
           // Fetch artists with portfolios - old method
           const artistsQuery = query(
             collection(db, 'userProfiles'),
-            limit(30) // Reduced for faster initial load
+            limit(90) // Increased to fill desktop viewport + 5+ more rows for immediate scrolling
           );
           
           const artistsSnapshot = await getDocs(artistsQuery);
@@ -1246,7 +1270,19 @@ function DiscoverPageContent() {
             if (portfolio.length === 0) continue;
             
             const recentPortfolio = portfolio
-              .filter((item: any) => !item.deleted && item.showInPortfolio !== false)
+              .filter((item: any) => {
+                // AGGRESSIVE FILTERING: Skip deleted items, invalid items, and items without media
+                if (item.deleted === true) return false;
+                if (item.showInPortfolio === false && !item.videoUrl) return false; // Skip discover-only items without video
+                
+                // Skip items without any valid media
+                const hasVideo = item.videoUrl || (item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video');
+                const hasImage = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || 
+                                (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video');
+                if (!hasVideo && !hasImage) return false;
+                
+                return true;
+              })
               .sort((a: any, b: any) => {
                 const dateA = a.createdAt?.toDate?.()?.getTime() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0) || 0;
                 const dateB = b.createdAt?.toDate?.()?.getTime() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0) || 0;
@@ -1271,7 +1307,7 @@ function DiscoverPageContent() {
                 id: item.id || `${artistDoc.id}-${Date.now()}-${index}`,
                 title: item.title || 'Untitled',
                 description: item.description || '',
-                imageUrl: imageUrl,
+                imageUrl: imageUrl, // Already validated as Cloudflare image above
                 imageAiHint: item.description || '',
                 ...(videoUrl && { videoUrl: videoUrl as any }),
                 artist: {
@@ -1316,7 +1352,7 @@ function DiscoverPageContent() {
           const artworksQuery = query(
             collection(db, 'artworks'),
             orderBy('createdAt', 'desc'),
-            limit(50) // Initial load: fetch fewer artworks for faster page load, infinite scroll handles the rest
+            limit(120) // Initial load: fetch enough to fill viewport + 5+ MORE ROWS for immediate scrolling
           );
           const artworksSnapshot = await getDocs(artworksQuery);
           
@@ -1336,8 +1372,18 @@ function DiscoverPageContent() {
             // Skip items with invalid/corrupted imageUrls (data URLs from old uploads)
             if (artworkData.imageUrl && artworkData.imageUrl.startsWith('data:image')) continue;
             
+            // CRITICAL: Only fetch images from Cloudflare (all active artists should use Cloudflare)
+            // Skip images that are NOT from Cloudflare
+            const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
+            const hasVideo = artworkData.videoUrl || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video');
+            
+            // If it's an image (not video), it MUST be from Cloudflare
+            if (!hasVideo && imageUrl && !isCloudflareImage(imageUrl)) {
+              continue; // Skip non-Cloudflare images
+            }
+            
             // Skip items with no valid media at all
-            const hasValidMedia = artworkData.imageUrl || artworkData.videoUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0];
+            const hasValidMedia = imageUrl || artworkData.videoUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0];
             if (!hasValidMedia) continue;
             
             // Apply discover settings filters for AI content
@@ -1352,7 +1398,7 @@ function DiscoverPageContent() {
               videoUrl = artworkData.mediaUrls[0];
             }
             // For image, prefer imageUrl, then supportingImages, then mediaUrls (but only if not video)
-            const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
+            // NOTE: imageUrl already filtered above to only include Cloudflare images
             const mediaType = artworkData.mediaType || (videoUrl ? 'video' : 'image');
             
             // Skip items without media
@@ -1501,6 +1547,11 @@ function DiscoverPageContent() {
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
         setArtworksLoaded(true); // Mark artworks as loaded
+        
+        // AUTO-LOAD MORE: If we don't have enough content to fill viewport, immediately load more
+        // Desktop typically needs 30-40 items (6 cols × 5-7 rows), so trigger if we have less
+        const MIN_ITEMS_FOR_DESKTOP = 30;
+        // Note: loadMoreArtworks will be called via useEffect after artworks are set
         
         // If we only have placeholders, mark images as "ready" immediately (they don't need to load)
         if (safeArtworks.length === 0 && placeholderArtworks.length > 0) {
@@ -1692,7 +1743,7 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      const LOAD_MORE_LIMIT = 20; // Reduced from 25 for faster pagination
+      const LOAD_MORE_LIMIT = 50; // Increased for continuous scroll - load enough to keep scrolling smooth
       
       const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
@@ -1805,13 +1856,32 @@ function DiscoverPageContent() {
     }
   }, [hasMore, lastDocument, isLoadingMore, discoverSettings]);
 
-  // OPTIMIZED: Prefetch when user scrolls 80% through content
+  // AUTO-LOAD MORE: If initial load doesn't fill viewport, immediately load more
+  useEffect(() => {
+    if (!artworksLoaded || isLoadingMore || !hasMore || artworks.length >= 42) return;
+    
+    // Desktop needs ~42 items to fill viewport + 5 more rows (6 cols × 7 rows)
+    // If we have less, automatically load more to enable continuous scroll
+    const MIN_ITEMS_FOR_DESKTOP = 42;
+    if (artworks.length < MIN_ITEMS_FOR_DESKTOP && hasMore && !isLoadingMore) {
+      log(`📥 Auto-loading more content: Only ${artworks.length} items, loading more to fill viewport`);
+      const timeoutId = setTimeout(() => {
+        if (hasMore && !isLoadingMore) {
+          loadMoreArtworks();
+        }
+      }, 300); // Small delay to allow initial render
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [artworksLoaded, artworks.length, hasMore, isLoadingMore, loadMoreArtworks, log]);
+
+  // OPTIMIZED: Prefetch when user scrolls 75% through content (load more at 75% scroll)
   useEffect(() => {
     if (!hasMore || isLoadingMore || !lastDocument) return;
     
     const handleScroll = () => {
       const scrollPercentage = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
-      if (scrollPercentage > 0.8 && !fetchingRef.current) {
+      if (scrollPercentage > 0.75 && !fetchingRef.current) {
         prefetchNextPage();
       }
     };
@@ -1835,7 +1905,7 @@ function DiscoverPageContent() {
         });
       },
       {
-        rootMargin: '400px', // Start loading 400px before reaching bottom for smoother continuous scroll (Pinterest-style)
+        rootMargin: '800px', // Start loading 800px before reaching bottom for instant continuous scroll (Pinterest-style)
         threshold: 0.1, // Trigger when 10% of sentinel is visible
       }
     );
@@ -1853,6 +1923,22 @@ function DiscoverPageContent() {
     log('🔍 filteredAndSortedArtworks - Input:', {
       totalArtworks: filtered.length,
       artworkIds: filtered.slice(0, 10).map((a: any) => a.id)
+    });
+
+    // FIRST: Filter out deleted items (like we did for courses - check deleted flag immediately)
+    filtered = filtered.filter((artwork: any) => artwork.deleted !== true);
+    
+    // SECOND: For image grid, only include Cloudflare images (all active artists should use Cloudflare)
+    // This ensures we don't show old Firebase Storage images or other sources
+    filtered = filtered.filter((artwork: any) => {
+      const hasVideo = artwork.videoUrl || artwork.mediaType === 'video';
+      // Videos are allowed (they can be from any source)
+      if (hasVideo) return true;
+      
+      // For images, they MUST be from Cloudflare
+      const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
+      if (!imageUrl) return false; // Skip items with no image
+      return isCloudflareImage(imageUrl); // Only Cloudflare images
     });
 
     // Helper function to identify placeholders by hidden tag
@@ -2146,8 +2232,8 @@ function DiscoverPageContent() {
           startTransition(() => {
             setVisibleCount((prev) => {
               // Load additional rows progressively from top to bottom
-              // Add itemsPerRow * 2 to load enough content for smooth scrolling
-              const newCount = prev + (itemsPerRow * 2);
+              // Add itemsPerRow * 3 to load enough content for smooth continuous scrolling
+              const newCount = prev + (itemsPerRow * 3);
               const maxCount = filteredAndSortedArtworks.length || newCount;
               // Ensure we never exceed available items, maintaining complete rows
               return Math.min(newCount, maxCount);
@@ -2156,7 +2242,7 @@ function DiscoverPageContent() {
         }
       });
     }, {
-      rootMargin: '400px',
+      rootMargin: '800px',
       threshold: 0.1,
     });
 
@@ -2637,7 +2723,7 @@ function DiscoverPageContent() {
             ) : !showLoadingScreen && artworkView === 'grid' ? (
               <MasonryGrid
                 items={(() => {
-                  // Grid view shows ONLY images (no videos)
+                  // Grid view shows ONLY images (no videos) from Cloudflare
                   // Videos will only appear in video feed (list view)
                   const imageOnlyArtworks = visibleFilteredArtworks.filter((item) => {
                     // Keep ads
@@ -2645,7 +2731,14 @@ function DiscoverPageContent() {
                     // Filter out videos - only show images in grid view
                     const artwork = item as Artwork;
                     const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                    return !hasVideo; // Only include items without videos
+                    if (hasVideo) return false; // Filter out videos
+                    
+                    // CRITICAL: Only show images from Cloudflare (all active artists should use Cloudflare)
+                    const imageUrl = artwork.imageUrl || (artwork as any).supportingImages?.[0] || (artwork as any).images?.[0] || '';
+                    if (!imageUrl) return false; // Skip items with no image
+                    if (!isCloudflareImage(imageUrl)) return false; // Only Cloudflare images
+                    
+                    return true;
                   });
                   console.log('🖼️ Grid view (images only):', {
                     artworkView,

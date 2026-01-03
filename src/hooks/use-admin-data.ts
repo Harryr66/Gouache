@@ -33,20 +33,35 @@ export function useAdminData() {
             where('isProfessional', '==', true)
           );
           const artistsSnapshot = await getDocs(artistsQuery);
-          const artistsData = artistsSnapshot.docs.map((doc: any) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              name: data.name || data.displayName || data.username || 'Unknown',
-              email: data.email || '',
-              username: data.username || data.handle,
-              avatarUrl: data.avatarUrl,
-              isVerified: data.isVerified !== false,
-              isProfessional: data.isProfessional || false
-            };
-          });
+          const artistsData = artistsSnapshot.docs
+            .filter((docSnapshot: any) => {
+              const data = docSnapshot.data();
+              // CRITICAL: Filter out deleted accounts - they should not appear anywhere
+              if (data.deleted === true) {
+                console.log(`⚠️ Filtered out deleted account: ${data.email || docSnapshot.id}`);
+                return false;
+              }
+              // Also filter out inactive accounts if the field exists and is false
+              if (data.isActive === false) {
+                console.log(`⚠️ Filtered out inactive account: ${data.email || docSnapshot.id}`);
+                return false;
+              }
+              return true;
+            })
+            .map((docSnapshot: any) => {
+              const data = docSnapshot.data();
+              return {
+                id: docSnapshot.id,
+                name: data.name || data.displayName || data.username || 'Unknown',
+                email: data.email || '',
+                username: data.username || data.handle,
+                avatarUrl: data.avatarUrl,
+                isVerified: data.isVerified !== false,
+                isProfessional: data.isProfessional || false
+              };
+            });
           setProfessionalArtists(artistsData);
-          console.log(`✅ Loaded ${artistsData.length} professional artists`);
+          console.log(`✅ Loaded ${artistsData.length} professional artists (deleted accounts filtered out)`);
         } catch (error) {
           console.error('Error loading professional artists:', error);
         } finally {

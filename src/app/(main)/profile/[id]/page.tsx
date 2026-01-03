@@ -248,7 +248,7 @@ export default function ArtistProfilePage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-24"></div>
           <div className="h-32 bg-muted rounded"></div>
@@ -271,7 +271,7 @@ export default function ArtistProfilePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-6xl">
       <Button variant="outline" onClick={() => router.back()} className="mb-6">
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back

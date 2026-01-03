@@ -113,9 +113,9 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     const unsubPublished = onSnapshot(
       publishedQuery,
       (snapshot) => {
+        // No admin approval needed - all published courses are immediately available
         const publishedCourses = snapshot.docs
-          .map(mapCourseData)
-          .filter((course: any) => !course.status || course.status === 'approved') as Course[];
+          .map(mapCourseData) as Course[];
 
         // Query 2: User's own draft/unpublished courses (if logged in)
         if (user) {

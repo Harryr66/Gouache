@@ -108,6 +108,12 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'videodelivery.net',
+        port: '',
+        pathname: '/**',
+      },
     ],
     // OPTIMIZED: Enable WebP/AVIF formats and better compression
     formats: ['image/avif', 'image/webp'],

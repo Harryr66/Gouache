@@ -656,7 +656,7 @@ function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="max-w-4xl mx-auto text-center">
           <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h1 className="text-2xl font-bold mb-2">Product Not Found</h1>
@@ -898,7 +898,7 @@ function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="max-w-6xl mx-auto">
           {/* Back Button and Edit Mode Indicator */}
           <div className="flex items-center justify-between mb-6">

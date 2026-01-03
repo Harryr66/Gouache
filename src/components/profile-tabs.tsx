@@ -13,7 +13,7 @@ import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from './theme-loading';
 import { useLikes } from '@/providers/likes-provider';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, writeBatch, serverTimestamp, limit } from 'firebase/firestore';
 import { Artwork, Course } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -68,18 +68,137 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     `)}`;
   };
   
-  // Get courses by this instructor
-  const instructorCourses = courses.filter(course => course.instructor.userId === userId);
-
   // Component to display courses (Learn tab)
   function LearnDisplay({ userId, isOwnProfile }: { userId: string; isOwnProfile: boolean }) {
+    const [profileCourses, setProfileCourses] = useState<Course[]>([]);
+    const [profileCoursesLoading, setProfileCoursesLoading] = useState(true);
+    
     const enrolledCourseIds = courseEnrollments
       .filter(e => e.userId === user?.id)
       .map(e => e.courseId);
     
-    const availableCourses = instructorCourses.filter(course => course.isPublished !== false);
+    // Query courses directly from Firestore for this specific instructor
+    useEffect(() => {
+      const fetchProfileCourses = async () => {
+        setProfileCoursesLoading(true);
+        try {
+          const mapCourseData = (doc: any) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              instructor: data.instructor || {},
+              createdAt: data.createdAt?.toDate?.() || data.createdAt || new Date(),
+              updatedAt: data.updatedAt?.toDate?.() || data.updatedAt || new Date(),
+            } as Course;
+          };
+          
+          let fetchedCourses: Course[] = [];
+          
+          try {
+            // Try optimized query with index (if available)
+            const publishedQuery = query(
+              collection(db, 'courses'),
+              where('instructor.userId', '==', userId),
+              where('isPublished', '==', true),
+              orderBy('createdAt', 'desc')
+            );
+            
+            const publishedSnapshot = await getDocs(publishedQuery);
+            fetchedCourses = publishedSnapshot.docs
+              .map(mapCourseData)
+              .filter(course => course.deleted !== true);
+            
+            console.log(`✅ Profile courses: Found ${fetchedCourses.length} published courses for instructor ${userId}`);
+          } catch (indexError: any) {
+            // Fallback: Query all published courses and filter client-side
+            console.warn('⚠️ Index not found, using fallback query:', indexError?.message);
+            
+            const fallbackQuery = query(
+              collection(db, 'courses'),
+              where('isPublished', '==', true),
+              orderBy('createdAt', 'desc'),
+              limit(200) // Increased limit to get more courses
+            );
+            
+            const fallbackSnapshot = await getDocs(fallbackQuery);
+            
+            // Debug: Log all courses to see what we're getting
+            const allCoursesFromQuery = fallbackSnapshot.docs.map(mapCourseData);
+            console.log(`🔍 Fallback query: Found ${allCoursesFromQuery.length} total published courses in database`);
+            
+            fetchedCourses = allCoursesFromQuery.filter(course => {
+              const instructorUserId = course.instructor?.userId || '';
+              const instructorId = course.instructor?.id || '';
+              const matchesUserId = instructorUserId === userId || instructorId === userId;
+              
+              // Also check if deleted field exists and is true
+              const isDeleted = course.deleted === true;
+              
+              if (matchesUserId && !isDeleted) {
+                console.log(`✅ Matched course: ${course.title} (instructor.userId: ${instructorUserId}, instructor.id: ${instructorId})`);
+              }
+              
+              return matchesUserId && !isDeleted;
+            });
+            
+            console.log(`✅ Profile courses (fallback): Found ${fetchedCourses.length} published courses for instructor ${userId}`);
+          }
+          
+          // If viewing own profile, also include draft courses
+          if (isOwnProfile && user?.id === userId) {
+            try {
+              const draftQuery = query(
+                collection(db, 'courses'),
+                where('instructor.userId', '==', userId),
+                where('isPublished', '==', false)
+              );
+              
+              const draftSnapshot = await getDocs(draftQuery);
+              const draftCourses = draftSnapshot.docs
+                .map(mapCourseData)
+                .filter(course => course.deleted !== true);
+              
+              // Combine and deduplicate
+              const allCourses = [...fetchedCourses, ...draftCourses];
+              const uniqueCourses = Array.from(
+                new Map(allCourses.map(c => [c.id, c])).values()
+              );
+              setProfileCourses(uniqueCourses);
+              console.log(`✅ Profile courses: Total ${uniqueCourses.length} courses (${fetchedCourses.length} published + ${draftCourses.length} drafts)`);
+            } catch (draftError) {
+              console.error('Error fetching draft courses:', draftError);
+              setProfileCourses(fetchedCourses);
+            }
+          } else {
+            setProfileCourses(fetchedCourses);
+          }
+        } catch (error: any) {
+          console.error('❌ Error fetching profile courses:', error);
+          console.error('Error details:', {
+            message: error?.message,
+            code: error?.code,
+            userId: userId
+          });
+          setProfileCourses([]);
+        } finally {
+          setProfileCoursesLoading(false);
+        }
+      };
+      
+      if (userId) {
+        fetchProfileCourses();
+      }
+    }, [userId, isOwnProfile, user?.id]);
+    
+    // Filter courses - show published courses or draft courses if viewing own profile
+    const availableCourses = profileCourses.filter(course => {
+      const isPublished = course.isPublished === true || course.isPublished !== false; // More lenient check
+      const isNotDeleted = course.deleted !== true;
+      return isNotDeleted && (isPublished || (isOwnProfile && course.isPublished === false));
+    });
 
-    if (coursesLoading) {
+    if (profileCoursesLoading) {
       return (
         <div className="flex justify-center py-8">
           <ThemeLoading text="" size="sm" />
@@ -138,14 +257,24 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-                {isCourseOwner && (
+                {/* CRITICAL: Only show edit button if user owns the course - double-check ownership */}
+                {isCourseOwner && isOwnProfile && user && course.instructor.userId === user.id && (
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
                       size="sm"
                       variant="secondary"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/learn/submit?edit=${course.id}`);
+                        // Triple-check ownership before navigation
+                        if (isOwnProfile && user && course.instructor.userId === user.id) {
+                          router.push(`/learn/submit?edit=${course.id}`);
+                        } else {
+                          toast({
+                            title: "Access Denied",
+                            description: "You can only edit your own courses.",
+                            variant: "destructive",
+                          });
+                        }
                       }}
                       title="Edit course"
                     >
@@ -578,8 +707,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     const [discoverContent, setDiscoverContent] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [itemToDelete, setItemToDelete] = useState<{ id: string; type: string } | null>(null);
-    const [isDeletingAll, setIsDeletingAll] = useState(false);
-    const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -860,136 +987,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       }
     };
 
-    const handleDeleteAll = async () => {
-      if (discoverContent.length === 0) return;
-      
-      setIsDeletingAll(true);
-      setShowDeleteAllConfirm(false);
-
-      try {
-        let deletedCount = 0;
-        let errorCount = 0;
-        const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
-
-        // Process items in batches (Firestore batch limit is 500)
-        const batchSize = 500;
-        for (let i = 0; i < discoverContent.length; i += batchSize) {
-          const batch = writeBatch(db);
-          const batchItems = discoverContent.slice(i, i + batchSize);
-          
-          for (const item of batchItems) {
-            try {
-              // First, delete media files from Cloudflare or Firebase Storage
-              if (item.type === 'artwork') {
-                try {
-                  const artworkDoc = await getDoc(doc(db, 'artworks', item.id));
-                  if (artworkDoc.exists()) {
-                    const itemData = artworkDoc.data();
-                    const urlsToDelete: string[] = [];
-                    
-                    // Collect all media URLs
-                    if (itemData.imageUrl) urlsToDelete.push(itemData.imageUrl);
-                    if (itemData.videoUrl) urlsToDelete.push(itemData.videoUrl);
-                    if (itemData.supportingImages && Array.isArray(itemData.supportingImages)) {
-                      urlsToDelete.push(...itemData.supportingImages);
-                    }
-                    if (itemData.supportingMedia && Array.isArray(itemData.supportingMedia)) {
-                      urlsToDelete.push(...itemData.supportingMedia);
-                    }
-                    if (itemData.mediaUrls && Array.isArray(itemData.mediaUrls)) {
-                      urlsToDelete.push(...itemData.mediaUrls);
-                    }
-                    
-                    // Delete each URL from Cloudflare or Firebase
-                    for (const url of urlsToDelete) {
-                      if (!url || typeof url !== 'string') continue;
-                      try {
-                        const isCloudflare = url.includes('cloudflarestream.com') || url.includes('imagedelivery.net');
-                        if (isCloudflare) {
-                          await deleteCloudflareMediaByUrl(url);
-                        } else if (url.includes('firebasestorage.googleapis.com')) {
-                          const urlParts = url.split('/o/');
-                          if (urlParts.length > 1) {
-                            const pathParts = urlParts[1].split('?');
-                            const storagePath = decodeURIComponent(pathParts[0]);
-                            const fileRef = ref(storage, storagePath);
-                            await deleteObject(fileRef);
-                          }
-                        }
-                      } catch (mediaError) {
-                        console.error('Error deleting media:', url, mediaError);
-                        // Continue with other files
-                      }
-                    }
-                  }
-                } catch (mediaError) {
-                  console.error('Error fetching artwork for media deletion:', item.id, mediaError);
-                  // Continue with Firestore deletion even if media deletion fails
-                }
-              }
-              
-              // Mark as deleted in Firestore
-              if (item.type === 'artwork') {
-          const artworkRef = doc(db, 'artworks', item.id);
-          batch.update(artworkRef, { deleted: true, updatedAt: serverTimestamp() });
-
-                // Also mark related posts as deleted
-                try {
-                  const postsQuery = query(
-                    collection(db, 'posts'),
-                    where('artworkId', '==', item.id)
-                  );
-                  const postsSnapshot = await getDocs(postsQuery);
-                  postsSnapshot.forEach((postDoc) => {
-                    batch.update(postDoc.ref, { deleted: true, updatedAt: serverTimestamp() });
-                  });
-                } catch (error) {
-                  console.error('Error finding related post:', error);
-                }
-              } else if (item.type === 'post') {
-                const postRef = doc(db, 'posts', item.id);
-                batch.update(postRef, { deleted: true, updatedAt: serverTimestamp() });
-
-                // Also mark related artwork as deleted if it exists
-                if (item.artworkId) {
-                  try {
-                    const artworkRef = doc(db, 'artworks', item.artworkId);
-                    batch.update(artworkRef, { deleted: true, updatedAt: serverTimestamp() });
-                  } catch (error) {
-                    console.error('Error updating related artwork:', error);
-                  }
-                }
-              }
-              
-              deletedCount++;
-            } catch (error) {
-              console.error(`Error preparing deletion for item ${item.id}:`, error);
-              errorCount++;
-            }
-          }
-
-          // Commit this batch
-          await batch.commit();
-        }
-
-        // Clear local state
-        setDiscoverContent([]);
-
-        toast({
-          title: "All content deleted",
-          description: `Successfully deleted ${deletedCount} item${deletedCount !== 1 ? 's' : ''}${errorCount > 0 ? `. ${errorCount} error${errorCount !== 1 ? 's' : ''} occurred.` : '.'}`,
-        });
-      } catch (error) {
-        console.error('Error deleting all discover content:', error);
-        toast({
-          title: "Delete failed",
-          description: "Failed to delete all content. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsDeletingAll(false);
-      }
-    };
 
     if (loading) {
       return (
@@ -1017,21 +1014,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
 
     return (
       <div className="space-y-4">
-        {/* Delete All Button - Only show for own profile and when there's content */}
-        {isOwnProfile && discoverContent.length > 0 && (
-          <div className="flex justify-end">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowDeleteAllConfirm(true)}
-              disabled={isDeletingAll}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              {isDeletingAll ? 'Deleting...' : 'Delete All'}
-            </Button>
-          </div>
-        )}
 
         <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
           {discoverContent.map((item) => {
@@ -1112,25 +1094,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           </DialogContent>
         </Dialog>
 
-        {/* Delete All confirmation dialog */}
-        <Dialog open={showDeleteAllConfirm} onOpenChange={(open) => !open && setShowDeleteAllConfirm(false)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete All Content</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete all {discoverContent.length} item{discoverContent.length !== 1 ? 's' : ''} from your discover tab? This action cannot be undone and will permanently delete all content from Firestore.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteAllConfirm(false)} disabled={isDeletingAll}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteAll} disabled={isDeletingAll}>
-                {isDeletingAll ? 'Deleting...' : 'Delete All'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     );
   }

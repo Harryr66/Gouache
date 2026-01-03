@@ -39,7 +39,8 @@ import {
   Play,
   Heart as HeartIcon,
   X,
-  Flag
+  Flag,
+  Trash2
 } from 'lucide-react';
 
 interface ArtworkTileProps {
@@ -50,14 +51,22 @@ interface ArtworkTileProps {
   onVideoReady?: () => void; // Callback when video is ready (for preloading)
   onImageReady?: (isVideoPoster?: boolean) => void; // Callback when image is ready (for preloading), with flag for video posters
   isInitialViewport?: boolean; // Flag to indicate this is in initial viewport
+  showDeleteButton?: boolean; // Show temporary delete button (for cleanup)
+  onDelete?: (itemId: string) => void; // Callback when delete button is clicked
 }
 
 // Memoize to prevent unnecessary re-renders (performance optimization)
-export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, isInitialViewport: propIsInitialViewport }: ArtworkTileProps) {
+export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, isInitialViewport: propIsInitialViewport, showDeleteButton = false, onDelete }: ArtworkTileProps) {
+  const [mounted, setMounted] = useState(false);
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const { theme, resolvedTheme } = useTheme();
   const router = useRouter();
+  
+  // Ensure delete button only renders on client to avoid hydration errors
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const { registerVideo, requestPlay, isPlaying, getConnectionSpeed, registerVisibleVideo, unregisterVisibleVideo, canAutoplay, handleVideoEnded } = useVideoControl();
   const [showArtistPreview, setShowArtistPreview] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
@@ -717,6 +726,22 @@ const generateArtistContent = (artist: Artist) => ({
           paddingBottom: `${(1 / aspectRatio) * 100}%`,
         }}
       >
+        {/* Temporary Delete Button - Top Right Corner - Only render on client to avoid hydration errors */}
+        {mounted && showDeleteButton && onDelete && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="absolute top-2 right-2 z-50 opacity-90 hover:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm('Permanently delete this item from all databases?')) {
+                onDelete(artwork.id);
+              }
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
         <div className="absolute inset-0 bg-muted pointer-events-none">
           {/* Loading skeleton - only show if poster not loaded yet */}
           {((hasVideo && !isImageLoaded) || (!hasVideo && !isImageLoaded)) && (

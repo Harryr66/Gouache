@@ -177,14 +177,14 @@ export function AdminSidebar(props: AdminSidebarProps) {
             </Badge>
           </button>
           <button
-            onClick={() => props.setSelectedView('ai-content-reports')}
+            onClick={() => props.setSelectedView('content-reports')}
             className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-              props.selectedView === 'ai-content-reports' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              props.selectedView === 'content-reports' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
             }`}
           >
-            <span className="text-sm">AI Content Reports</span>
-            <Badge variant={props.selectedView === 'ai-content-reports' ? 'secondary' : 'outline'}>
-              ({props.contentReports?.filter(r => r.isAIContentReport && r.status === 'pending').length || 0})
+            <span className="text-sm">Content Reports</span>
+            <Badge variant={props.selectedView === 'content-reports' ? 'secondary' : 'outline'}>
+              ({props.contentReports?.filter((r: any) => r.status === 'pending').length || 0})
             </Badge>
           </button>
         </CardContent>

@@ -24,9 +24,10 @@ interface ReportDialogProps {
 }
 
 const reportReasons = [
-  'Suspected AI-generated content',
-  'Spam',
+  'Not art content',
+  'AI-generated content',
   'Inappropriate content',
+  'Spam',
   'Harassment',
   'Hate speech',
   'Violence',
@@ -57,7 +58,7 @@ export function ReportDialog({
     
     const reporterHandle = user.username || user.email?.split('@')[0] || 'anonymous';
 
-    const isAIContentReport = reason === 'Suspected AI-generated content';
+    const isAIContentReport = reason === 'AI-generated content';
 
     const newReport: Report = {
       id: `report-${Date.now()}`,

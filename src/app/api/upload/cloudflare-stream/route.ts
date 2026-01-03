@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
         // Request body contains metadata for the upload
         const requestUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream?direct_user=true`;
         const requestBody = {
-          maxDurationSeconds: 3600,
+          maxDurationSeconds: 14400, // 4 hours maximum (Cloudflare Stream limit)
           allowedOrigins: ['*'],
           requireSignedURLs: false,
         };

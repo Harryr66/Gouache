@@ -50,7 +50,7 @@ export async function uploadVideoToCloudflare(
           'Authorization': `Bearer ${apiToken}`,
         },
         body: JSON.stringify({
-          maxDurationSeconds: 3600, // 1 hour max
+          maxDurationSeconds: 14400, // 4 hours maximum (Cloudflare Stream limit)
           allowedOrigins: ['*'], // Allow from any origin (adjust for production)
         }),
       }

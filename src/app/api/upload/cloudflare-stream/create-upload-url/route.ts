@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       body = {};
     }
     
-    const { maxDurationSeconds = 3600, allowedOrigins = ['*'] } = body;
+    const { maxDurationSeconds = 14400, allowedOrigins = ['*'] } = body; // Default to 4 hours (Cloudflare Stream limit)
 
     const accountId = process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID;
     const apiToken = process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_API_TOKEN;

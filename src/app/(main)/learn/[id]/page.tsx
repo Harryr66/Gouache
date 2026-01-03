@@ -281,10 +281,10 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         if (courseData) {
           setCourse(courseData);
           
-          // Check if user is the course owner
-          if (user && courseData.instructor?.userId === user.id) {
-            setIsOwner(true);
-          }
+          // CRITICAL: Always check ownership - reset to false first, then set to true only if user is the owner
+          // This prevents edit buttons from showing on other users' courses
+          const userIsOwner = !!(user && courseData.instructor?.userId === user.id);
+          setIsOwner(userIsOwner);
           
           // Check enrollment status - for paid courses, only consider enrollments with paymentIntentId
           if (user) {
@@ -323,8 +323,11 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
     if (courseId) {
       loadCourse();
+    } else {
+      // Reset ownership if courseId is missing
+      setIsOwner(false);
     }
-  }, [courseId, user, courseEnrollments, getCourse]);
+  }, [courseId, user?.id, courseEnrollments, getCourse]); // Use user?.id to trigger when user changes
 
   const handleEnroll = async () => {
     // ============================================
@@ -544,13 +547,25 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   <span className="sm:hidden">Back</span>
                 </Button>
               </Link>
-              {isOwner && (
+              {/* CRITICAL: Only show edit/delete buttons if user is the actual owner - triple-check ownership before rendering */}
+              {isOwner && user && course && course.instructor?.userId === user.id && (
                 <>
                   <Button 
                     variant="outline" 
                     size="sm" 
                     className="shrink-0"
-                    onClick={() => router.push(`/learn/submit?edit=${courseId}`)}
+                    onClick={() => {
+                      // Triple-check ownership before navigation
+                      if (user && course && course.instructor?.userId === user.id) {
+                        router.push(`/learn/submit?edit=${courseId}`);
+                      } else {
+                        toast({
+                          title: "Access Denied",
+                          description: "You can only edit your own courses.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     <span className="hidden sm:inline">Edit Course</span>
@@ -560,7 +575,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     variant="destructive" 
                     size="sm" 
                     className="shrink-0"
-                    onClick={() => setShowDeleteConfirm(true)}
+                    onClick={() => {
+                      // Triple-check ownership before showing delete dialog
+                      if (user && course && course.instructor?.userId === user.id) {
+                        setShowDeleteConfirm(true);
+                      } else {
+                        toast({
+                          title: "Access Denied",
+                          description: "You can only delete your own courses.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     <span className="hidden sm:inline">Delete</span>

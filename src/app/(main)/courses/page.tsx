@@ -51,19 +51,227 @@ export default function CoursesPage() {
   }, []);
 
   // Courses are already filtered by CourseProvider to only include published and approved courses
-  const publishedCourses = courses;
+  // Rank courses: Higher rating + more students + more reviews = higher rank
+  const rankedCourses = useMemo(() => {
+    if (!courses || courses.length === 0) return [];
+    
+    // SIMPLE: Only filter courses missing critical data. Everything else goes through.
+    // Placeholder detection happens in sorting, not filtering.
+    const validCourses = courses.filter((course: any) => {
+      const hasTitle = course.title && (course.title.trim().length > 0);
+      const hasPrice = course.price !== undefined && course.price !== null;
+      const isNotDeleted = course.deleted !== true;
+      return hasTitle && hasPrice && isNotDeleted;
+    });
+    
+    // Helper to detect placeholders - sample courses from setup script have IDs like "course-1", "course-2", etc.
+    // Real courses created by users have Firebase auto-generated IDs (long alphanumeric strings)
+    const isPlaceholder = (course: any): boolean => {
+      const id = course.id || '';
+      
+      // Sample courses from setup-course-database.js have IDs matching pattern "course-[number]"
+      // Examples: "course-1", "course-2", "course-5"
+      if (/^course-\d+$/.test(id)) {
+        return true;
+      }
+      
+      // Also check for explicit placeholder keywords as backup
+      const idLower = id.toLowerCase();
+      const title = ((course.title || '').trim()).toLowerCase();
+      
+      if (idLower.includes('placeholder') || 
+          idLower.includes('dummy') || 
+          idLower.includes('sample') ||
+          title.includes('placeholder') ||
+          title.includes('dummy course') ||
+          title.includes('sample course')) {
+        return true;
+      }
+      
+      return false;
+    };
+    
+    // Create a copy to avoid mutating original array
+    const sortedCourses = [...validCourses].sort((a, b) => {
+      // ABSOLUTE PRIORITY 1: Real courses ALWAYS rank above placeholders
+      const aIsPlaceholder = isPlaceholder(a);
+      const bIsPlaceholder = isPlaceholder(b);
+      if (!aIsPlaceholder && bIsPlaceholder) return -1; // Real course wins
+      if (aIsPlaceholder && !bIsPlaceholder) return 1;  // Real course wins
+      
+      // PRIORITY 2: Courses with engagement ALWAYS rank above courses without engagement
+      const aStudents = a.students || 0;
+      const bStudents = b.students || 0;
+      const aReviews = a.reviewCount || 0;
+      const bReviews = b.reviewCount || 0;
+      const aHasEngagement = aStudents > 0 || aReviews > 0;
+      const bHasEngagement = bStudents > 0 || bReviews > 0;
+      
+      // If one has engagement and the other doesn't, engagement wins immediately
+      if (aHasEngagement && !bHasEngagement) return -1; // a ranks higher
+      if (!aHasEngagement && bHasEngagement) return 1;  // b ranks higher
+      
+      // Both have engagement or both don't - calculate detailed scores
+      // 1. Rating score (0-5 stars, weighted heavily) - ONLY if has reviews
+      const aRating = aHasEngagement && aReviews > 0 ? (a.rating || 0) : 0;
+      const bRating = bHasEngagement && bReviews > 0 ? (b.rating || 0) : 0;
+      const aRatingScore = aRating * 40; // Max 200 points
+      const bRatingScore = bRating * 40;
+      
+      // 2. Review count score (more reviews = more credibility)
+      // Log scale: 1 review = 10, 10 reviews = 20, 100 reviews = 30, 1000 reviews = 40
+      const aReviewScore = aReviews > 0 ? Math.log10(aReviews + 1) * 20 : -50; // Heavy penalty for no reviews
+      const bReviewScore = bReviews > 0 ? Math.log10(bReviews + 1) * 20 : -50;
+      
+      // 3. Student count score (popularity indicator) - heavily weighted
+      // Log scale: 1 student = 10, 10 students = 20, 100 students = 30, 1000 students = 40
+      const aStudentScore = aStudents > 0 ? Math.log10(aStudents + 1) * 20 : -50; // Heavy penalty for no students
+      const bStudentScore = bStudents > 0 ? Math.log10(bStudents + 1) * 20 : -50;
+      
+      // 4. Engagement multiplier: Courses with BOTH students AND reviews get bonus
+      const aHasBothEngagement = aStudents > 0 && aReviews > 0;
+      const bHasBothEngagement = bStudents > 0 && bReviews > 0;
+      const aEngagementBonus = aHasBothEngagement ? 30 : 0; // Bonus for having both
+      const bEngagementBonus = bHasBothEngagement ? 30 : 0;
+      
+      // 5. Recency boost (newer courses get small boost, but ONLY if they have engagement)
+      const aCreatedAt = a.createdAt?.getTime?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+      const bCreatedAt = b.createdAt?.getTime?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+      const daysSinceA = (Date.now() - aCreatedAt) / (1000 * 60 * 60 * 24);
+      const daysSinceB = (Date.now() - bCreatedAt) / (1000 * 60 * 60 * 24);
+      const aRecencyScore = aHasEngagement ? Math.max(0, 5 * (1 - daysSinceA / 7)) : 0;
+      const bRecencyScore = bHasEngagement ? Math.max(0, 5 * (1 - daysSinceB / 7)) : 0;
+      
+      // 6. Featured boost (featured courses get 25 points)
+      const aFeaturedScore = a.isFeatured ? 25 : 0;
+      const bFeaturedScore = b.isFeatured ? 25 : 0;
+      
+      // Calculate total scores
+      const aTotalScore = aRatingScore + aReviewScore + aStudentScore + aEngagementBonus + aRecencyScore + aFeaturedScore;
+      const bTotalScore = bRatingScore + bReviewScore + bStudentScore + bEngagementBonus + bRecencyScore + bFeaturedScore;
+      
+      // Sort by total score (descending - highest score first)
+      if (Math.abs(bTotalScore - aTotalScore) > 0.01) {
+        return bTotalScore - aTotalScore;
+      }
+      
+      // Final tiebreaker: Use most recent if scores are equal
+      return bCreatedAt - aCreatedAt;
+    });
+    
+    // Debug logging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      const top5Details = sortedCourses.slice(0, 5).map((c: any) => {
+        const rating = c.rating || 0;
+        const students = c.students || 0;
+        const reviews = c.reviewCount || 0;
+        const hasReviews = reviews > 0;
+        const ratingScore = hasReviews ? rating * 30 : 0;
+        const reviewScore = reviews > 0 ? Math.log10(reviews + 1) * 15 : -20;
+        const studentScore = students > 0 ? Math.log10(students + 1) * 15 : -30;
+        const featuredScore = c.isFeatured ? 20 : 0;
+        const totalScore = ratingScore + reviewScore + studentScore + featuredScore;
+        
+        return {
+          id: c.id,
+          title: c.title || 'NO TITLE',
+          rating,
+          students,
+          reviews,
+          featured: c.isFeatured || false,
+          score: Math.round(totalScore * 100) / 100
+        };
+      });
+      
+      console.group('📊 Course Ranking Analysis');
+      console.log('Total courses from provider:', courses.length);
+      console.log('Valid courses (after basic filtering):', validCourses.length);
+      const placeholderCount = sortedCourses.filter(isPlaceholder).length;
+      const realCount = sortedCourses.length - placeholderCount;
+      console.log('Real courses in sorted:', realCount);
+      console.log('Placeholder courses in sorted:', placeholderCount);
+      console.log('Sorted courses count:', sortedCourses.length);
+      console.log('Top 5 courses:', top5Details);
+      
+      // Show placeholder vs real breakdown
+      const placeholderCourses = sortedCourses.filter(isPlaceholder);
+      const realCoursesInSorted = sortedCourses.filter(c => !isPlaceholder(c));
+      console.log('Real courses (non-placeholder):', realCoursesInSorted.length);
+      console.log('Placeholder courses:', placeholderCourses.length);
+      
+      if (placeholderCourses.length > 0) {
+        console.warn('⚠️ Placeholder courses found:', placeholderCourses.map((c: any) => ({
+          id: c.id,
+          title: c.title || 'NO TITLE'
+        })));
+      }
+      
+      // Also log the bottom courses to see what's ranking low
+      if (sortedCourses.length > 5) {
+        const bottom5Details = sortedCourses.slice(-5).map((c: any) => ({
+          id: c.id,
+          title: c.title || 'NO TITLE',
+          rating: c.rating || 0,
+          students: c.students || 0,
+          reviews: c.reviewCount || 0,
+          missing: {
+            title: !c.title,
+            description: !c.description,
+            thumbnail: !c.thumbnail,
+            price: c.price === undefined || c.price === null
+          }
+        }));
+        console.log('📉 Bottom 5 courses:', bottom5Details);
+      }
+      console.groupEnd();
+    }
+    
+    // Final debug: Log what we're actually returning
+    if (process.env.NODE_ENV === 'development' && sortedCourses.length === 0 && courses.length > 0) {
+      console.warn('⚠️ WARNING: All courses were filtered out!');
+      console.log('Original courses:', courses.map((c: any) => ({
+        id: c.id,
+        title: c.title || 'NO TITLE',
+        price: c.price,
+        deleted: c.deleted,
+        isPublished: c.isPublished
+      })));
+    }
+    
+    // Remove placeholder flag before returning (don't expose internal flag)
+    const cleanedCourses = sortedCourses.map((course: any) => {
+      const { _isPlaceholder, ...cleanCourse } = course;
+      return cleanCourse;
+    });
+    
+    return cleanedCourses;
+  }, [courses]);
 
-  // Mix ads into courses - MUST be called before early return to maintain hook order
+  // Mix ads into ranked courses
   const coursesWithAds = useMemo(() => {
-    return mixAdsIntoContent(publishedCourses, ads, 2);
-  }, [publishedCourses, ads]);
+    const mixed = mixAdsIntoContent(rankedCourses, ads, 2);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 Final rendering:');
+      console.log('  - rankedCoursesCount:', rankedCourses.length);
+      console.log('  - adsCount:', ads.length);
+      console.log('  - coursesWithAdsCount:', mixed.length);
+      console.log('  - willShowEmptyState:', rankedCourses.length === 0);
+      if (rankedCourses.length > 0) {
+        console.log('  - firstCourse:', { id: rankedCourses[0].id, title: rankedCourses[0].title });
+      }
+      if (rankedCourses.length > 0 && mixed.length === 0) {
+        console.error('❌ ERROR: rankedCourses exist but mixed array is empty!');
+      }
+    }
+    return mixed;
+  }, [rankedCourses, ads]);
 
   // Mark courses as loaded when they're available
   useEffect(() => {
-    if (!isLoading && publishedCourses.length >= 0) {
+    if (!isLoading && rankedCourses.length >= 0) {
       setCoursesLoaded(true);
     }
-  }, [isLoading, publishedCourses.length]);
+  }, [isLoading, rankedCourses.length]);
 
   // Dismiss loading screen when both joke is complete + 2s AND courses are loaded
   useEffect(() => {
@@ -140,17 +348,27 @@ export default function CoursesPage() {
           </p>
         </div>
 
-        {publishedCourses.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Brain className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-lg">No courses available yet</p>
-              <p className="text-sm text-muted-foreground mt-2">Check back soon for new courses!</p>
-            </CardContent>
-          </Card>
+        {rankedCourses.length === 0 || rankedCourses.every((c: any) => {
+          const id = c.id || '';
+          const title = (c.title || '').trim().toLowerCase();
+          return id.includes('placeholder') || id.includes('dummy') || id.includes('sample') || 
+                 title.includes('placeholder') || title.includes('dummy');
+        }) ? (
+          <>
+            {process.env.NODE_ENV === 'development' && console.log('🚫 Rendering empty state - rankedCourses.length:', rankedCourses.length)}
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Brain className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-lg">No courses available yet</p>
+                <p className="text-sm text-muted-foreground mt-2">Check back soon for new courses!</p>
+              </CardContent>
+            </Card>
+          </>
         ) : (
-          <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
-            {coursesWithAds.map((item) => {
+          <>
+            {process.env.NODE_ENV === 'development' && console.log('✅ Rendering courses grid - coursesWithAds.length:', coursesWithAds.length, 'rankedCourses.length:', rankedCourses.length)}
+            <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
+              {coursesWithAds.map((item) => {
               // Check if this is an ad
               const isAd = 'type' in item && item.type === 'ad';
               if (isAd) {
@@ -216,7 +434,8 @@ export default function CoursesPage() {
               </Link>
               );
             })}
-          </div>
+            </div>
+          </>
         )}
         </div>
       </div>

@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from 'next/server';
  * Server-side API route for uploading images to Cloudflare Images
  * This keeps API tokens secure and avoids CORS issues
  */
+
+// App Router: Increase max duration for large file uploads
+export const maxDuration = 60; // 60 seconds timeout
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -13,6 +17,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
+      );
+    }
+
+    // Validate file size BEFORE processing (Cloudflare Images limit: 20MB)
+    // This prevents wasting resources on files that will be rejected
+    const MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20MB in bytes
+    if (file.size > MAX_IMAGE_SIZE) {
+      return NextResponse.json(
+        { 
+          error: `The image exceeded the size limit of ${MAX_IMAGE_SIZE} bytes (20MB). File size: ${file.size} bytes (${(file.size / 1024 / 1024).toFixed(1)}MB). Please compress the image or use a smaller file.`,
+          fileSize: file.size,
+          maxSize: MAX_IMAGE_SIZE
+        },
+        { status: 413 }
       );
     }
 

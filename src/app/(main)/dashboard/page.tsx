@@ -88,7 +88,7 @@ export default function DashboardPage() {
   const [selectedTab, setSelectedTab] = useState('overview');
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
       <div className="flex flex-col space-y-6">
         {/* Header */}
         <div>

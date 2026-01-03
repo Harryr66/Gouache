@@ -545,7 +545,7 @@ function SettingsPageContent() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-4 sm:py-6 max-w-6xl w-full max-w-full overflow-x-hidden">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 max-w-6xl w-full max-w-full overflow-x-hidden">
       <div className="flex flex-col space-y-4 sm:space-y-6">
         {/* Header */}
         <div>
@@ -955,7 +955,7 @@ function SettingsPageContent() {
 export default function SettingsPage() {
   return (
     <Suspense fallback={
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-6xl">
         <div className="flex items-center justify-center min-h-[400px]">
           <ThemeLoading size="lg" text="" />
         </div>
