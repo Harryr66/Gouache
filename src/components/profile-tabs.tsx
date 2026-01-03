@@ -46,7 +46,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  const { courses, courseEnrollments, isLoading: coursesLoading } = useCourses();
+  const { courses, courseEnrollments, isLoading: coursesLoading, unpublishCourse } = useCourses();
   const { likedArtworkIds, loading: likesLoading } = useLikes();
   const [likedArtworks, setLikedArtworks] = useState<Artwork[]>([]);
   const [likedFetchLoading, setLikedFetchLoading] = useState(false);

@@ -723,18 +723,19 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     try {
       await updateDoc(doc(db, 'courses', courseId), {
         isPublished: false,
+        publishedAt: null, // Clear publishedAt to fully archive back to draft
         updatedAt: new Date(),
       });
 
       toast({
-        title: "Course Unpublished",
-        description: "Course has been unpublished successfully.",
+        title: "Course Archived",
+        description: "Course has been archived back to drafts successfully.",
       });
     } catch (error) {
-      console.error('Error unpublishing course:', error);
+      console.error('Error archiving course:', error);
       toast({
-        title: "Unpublish Failed",
-        description: "Failed to unpublish course.",
+        title: "Archive Failed",
+        description: "Failed to archive course back to drafts.",
         variant: "destructive",
       });
       throw error;
