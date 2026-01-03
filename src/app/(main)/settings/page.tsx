@@ -67,6 +67,10 @@ function SettingsPageContent() {
     if (!user && (tab === 'general' || tab === 'business')) {
       return 'hue';
     }
+    // Redirect non-artists away from business tab
+    if (tab === 'business' && user && !user.isProfessional && !hasApprovedArtistRequest) {
+      return 'general';
+    }
     return tab;
   };
   
@@ -84,6 +88,10 @@ function SettingsPageContent() {
     // Redirect guests away from sign-in required tabs
     if (!user && (tab === 'general' || tab === 'business')) {
       router.replace('/settings?tab=hue', { scroll: false });
+    }
+    // Redirect non-artists away from business tab
+    if (tab === 'business' && user && !user.isProfessional && !hasApprovedArtistRequest) {
+      router.replace('/settings?tab=general', { scroll: false });
     }
   }, [searchParams, router, user]);
   
@@ -170,6 +178,15 @@ function SettingsPageContent() {
       toast({
         title: "Sign in required",
         description: "Please sign in to access this section.",
+        variant: "destructive"
+      });
+      return;
+    }
+    // Prevent non-artists from accessing business tab
+    if (value === 'business' && user && !user.isProfessional && !hasApprovedArtistRequest) {
+      toast({
+        title: "Access restricted",
+        description: "Business settings are only available for professional artist accounts.",
         variant: "destructive"
       });
       return;
