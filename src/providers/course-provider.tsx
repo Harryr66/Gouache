@@ -114,8 +114,18 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
       publishedQuery,
       (snapshot) => {
         // No admin approval needed - all published courses are immediately available
+        // CRITICAL: Filter out deleted courses - they should not appear for anyone (guests or logged-in users)
         const publishedCourses = snapshot.docs
-          .map(mapCourseData) as Course[];
+          .map(mapCourseData)
+          .filter((course: any) => {
+            // Exclude deleted courses
+            if (course.deleted === true) {
+              return false;
+            }
+            return true;
+          }) as Course[];
+
+        console.log(`📚 CourseProvider: Loaded ${publishedCourses.length} published courses (deleted filtered out)`);
 
         // Query 2: User's own draft/unpublished courses (if logged in)
         if (user) {
@@ -126,7 +136,9 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           );
 
           const unsubDrafts = onSnapshot(draftQuery, (draftSnapshot) => {
-            const draftCourses = draftSnapshot.docs.map(mapCourseData) as Course[];
+            const draftCourses = draftSnapshot.docs
+              .map(mapCourseData)
+              .filter((course: any) => course.deleted !== true) as Course[];
             
             // Combine published + user's drafts, remove duplicates by ID
             const allCourses = [...publishedCourses, ...draftCourses];
@@ -140,14 +152,53 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
           unsubscribes.push(unsubDrafts);
         } else {
-          // No user logged in - just show published courses
+          // No user logged in (guest) - just show published courses (already filtered for deleted)
           setCourses(publishedCourses);
           setIsLoading(false);
+          console.log(`📚 CourseProvider (guest): Set ${publishedCourses.length} courses`);
         }
       },
-      (error) => {
+      (error: any) => {
         console.error('CourseProvider: Error loading courses:', error);
-        setIsLoading(false);
+        
+        // If index is missing, try a simpler query without orderBy as fallback
+        if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
+          console.warn('⚠️ Firestore index missing, trying fallback query without orderBy');
+          const fallbackQuery = query(
+            collection(db, 'courses'),
+            where('isPublished', '==', true)
+          );
+          
+          const unsubFallback = onSnapshot(
+            fallbackQuery,
+            (snapshot) => {
+              const publishedCourses = snapshot.docs
+                .map(mapCourseData)
+                .filter((course: any) => course.deleted !== true) as Course[];
+              
+              // Sort client-side by createdAt desc
+              publishedCourses.sort((a: any, b: any) => {
+                const aTime = a.createdAt?.getTime?.() || (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+                const bTime = b.createdAt?.getTime?.() || (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+                return bTime - aTime;
+              });
+              
+              setCourses(publishedCourses);
+              setIsLoading(false);
+              console.log(`📚 CourseProvider (fallback): Set ${publishedCourses.length} courses`);
+            },
+            (fallbackError) => {
+              console.error('CourseProvider: Fallback query also failed:', fallbackError);
+              setCourses([]);
+              setIsLoading(false);
+            }
+          );
+          
+          unsubscribes.push(unsubFallback);
+        } else {
+          setCourses([]);
+          setIsLoading(false);
+        }
       }
     );
 
