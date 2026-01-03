@@ -587,16 +587,15 @@ function SettingsPageContent() {
                 General
               </TabsTrigger>
               <TabsTrigger value="hue" className="shrink-0 whitespace-nowrap">Hue</TabsTrigger>
-              <TabsTrigger 
-                value="business" 
-                className={cn(
-                  "shrink-0 whitespace-nowrap",
-                  !user && "opacity-50 cursor-not-allowed"
-                )}
-                disabled={!user}
-              >
-                Business
-              </TabsTrigger>
+              {/* Only show Business tab for professional artists */}
+              {(user?.isProfessional || hasApprovedArtistRequest) && (
+                <TabsTrigger 
+                  value="business" 
+                  className="shrink-0 whitespace-nowrap"
+                >
+                  Business
+                </TabsTrigger>
+              )}
               <TabsTrigger value="support" className="shrink-0 whitespace-nowrap text-xs sm:text-sm">Report bug</TabsTrigger>
             </TabsList>
           </div>
