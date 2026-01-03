@@ -972,10 +972,11 @@ function DiscoverPageContent() {
   const [showEventFilters, setShowEventFilters] = useState(false);
   // Initialize with enough items to fill viewport + 5+ MORE ROWS for immediate scrolling
   // Desktop (6 cols): 7 viewport rows + 5 extra rows = 72 items minimum
-  // Mobile (2 cols): 10 viewport rows + 5 extra rows = 30 items minimum  
-  // Tablet (3 cols): 8 viewport rows + 5 extra rows = 39 items minimum
-  // Using 90 items ensures we cover all screen sizes with 5+ additional rows on initial load
-  const [visibleCount, setVisibleCount] = useState(90);
+  // Mobile (2 cols): 10 viewport rows + 15 extra rows = 50 items minimum  
+  // Tablet (3 cols): 8 viewport rows + 15 extra rows = 69 items minimum
+  // Desktop (6 cols): 6 viewport rows + 15 extra rows = 126 items minimum
+  // Using 200 items ensures we cover all screen sizes with 15+ additional rows on initial load
+  const [visibleCount, setVisibleCount] = useState(200);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market list, Events grid on mobile
@@ -1037,8 +1038,9 @@ function DiscoverPageContent() {
         
         // Fetch enough items to fill viewport + 5+ MORE ROWS for all screen sizes
         // 120 items ensures: mobile (2 cols × 20 rows), tablet (3 cols × 13 rows), desktop (6 cols × 10 rows)
-        // This provides immediate content with 5+ additional rows of scrollable content
-        const INITIAL_FETCH_LIMIT = 120;
+        // This provides immediate content with 15+ additional rows of scrollable content
+        // Increased significantly to ensure desktop screens are filled with multiple scroll pages
+        const INITIAL_FETCH_LIMIT = 300;
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -1086,7 +1088,7 @@ function DiscoverPageContent() {
               showInPortfolio: true,
               deleted: false,
               hideAI: discoverSettings.hideAiAssistedArt,
-              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for portfolio items (60 items)
+              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for portfolio items (150 items)
             });
             
             // Query discover content (videos uploaded via Discover portal)
@@ -1094,7 +1096,7 @@ function DiscoverPageContent() {
               showInPortfolio: false,
               deleted: false,
               hideAI: discoverSettings.hideAiAssistedArt,
-              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for discover content (60 items) (60 items)
+              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for discover content (150 items)
             });
             
             // Combine results, portfolio items first, then discover content
@@ -1107,7 +1109,7 @@ function DiscoverPageContent() {
               return bTime - aTime;
             });
             
-            // Limit to INITIAL_FETCH_LIMIT after combining (120 items for 5+ additional rows)
+            // Limit to INITIAL_FETCH_LIMIT after combining (300 items for 15+ additional rows)
             portfolioItems = portfolioItems.slice(0, INITIAL_FETCH_LIMIT);
             log(`📦 Discover: Found ${portfolioItems.length} portfolio items from direct Firestore (fallback)`);
             
@@ -1512,11 +1514,11 @@ function DiscoverPageContent() {
         }
         
         // Sort by createdAt descending (newest first)
-        fetchedArtworks.sort((a, b) => {
-          const dateA = a.createdAt.getTime();
-          const dateB = b.createdAt.getTime();
-          return dateB - dateA;
-        });
+          fetchedArtworks.sort((a, b) => {
+            const dateA = a.createdAt.getTime();
+            const dateB = b.createdAt.getTime();
+            return dateB - dateA;
+          });
         
         // No fallback: only show current portfolio items with images, skip deleted/hidden
         
@@ -1549,8 +1551,8 @@ function DiscoverPageContent() {
         setArtworksLoaded(true); // Mark artworks as loaded
         
         // AUTO-LOAD MORE: If we don't have enough content to fill viewport, immediately load more
-        // Desktop typically needs 30-40 items (6 cols × 5-7 rows), so trigger if we have less
-        const MIN_ITEMS_FOR_DESKTOP = 30;
+        // Desktop typically needs 60-80 items (6 cols × 10-15 rows), so trigger if we have less
+        const MIN_ITEMS_FOR_DESKTOP = 80;
         // Note: loadMoreArtworks will be called via useEffect after artworks are set
         
         // If we only have placeholders, mark images as "ready" immediately (they don't need to load)
@@ -1743,7 +1745,7 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      const LOAD_MORE_LIMIT = 50; // Increased for continuous scroll - load enough to keep scrolling smooth
+      const LOAD_MORE_LIMIT = 100; // Increased significantly for continuous scroll - load enough to keep scrolling smooth
       
       const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
@@ -1752,7 +1754,7 @@ function DiscoverPageContent() {
         limit: LOAD_MORE_LIMIT,
         startAfter: lastDocument,
       });
-
+      
       if (result.items.length === 0) {
         setHasMore(false);
         setIsLoadingMore(false);
@@ -1781,7 +1783,7 @@ function DiscoverPageContent() {
       for (const item of result.items) {
         const artistData = artistDataMap.get(item.userId);
         if (!artistData) continue;
-
+        
         let videoUrl = item.videoUrl || null;
         if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
           videoUrl = item.mediaUrls[0];
@@ -1862,7 +1864,7 @@ function DiscoverPageContent() {
     
     // Desktop needs ~42 items to fill viewport + 5 more rows (6 cols × 7 rows)
     // If we have less, automatically load more to enable continuous scroll
-    const MIN_ITEMS_FOR_DESKTOP = 42;
+    const MIN_ITEMS_FOR_DESKTOP = 80;
     if (artworks.length < MIN_ITEMS_FOR_DESKTOP && hasMore && !isLoadingMore) {
       log(`📥 Auto-loading more content: Only ${artworks.length} items, loading more to fill viewport`);
       const timeoutId = setTimeout(() => {
@@ -2224,7 +2226,8 @@ function DiscoverPageContent() {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           // If we're showing most of the available items, load more from server
-          if (visibleCount >= filteredAndSortedArtworks.length * 0.8 && hasMore && !isLoadingMore) {
+          // Lowered threshold to 0.6 (60%) for more aggressive loading
+          if (visibleCount >= filteredAndSortedArtworks.length * 0.6 && hasMore && !isLoadingMore) {
             loadMoreArtworks();
           }
           
@@ -2232,8 +2235,8 @@ function DiscoverPageContent() {
           startTransition(() => {
             setVisibleCount((prev) => {
               // Load additional rows progressively from top to bottom
-              // Add itemsPerRow * 3 to load enough content for smooth continuous scrolling
-              const newCount = prev + (itemsPerRow * 3);
+              // Add itemsPerRow * 6 to load enough content for smooth continuous scrolling (doubled for more aggressive loading)
+              const newCount = prev + (itemsPerRow * 6);
               const maxCount = filteredAndSortedArtworks.length || newCount;
               // Ensure we never exceed available items, maintaining complete rows
               return Math.min(newCount, maxCount);
