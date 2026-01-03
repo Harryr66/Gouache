@@ -384,6 +384,7 @@ export interface Course {
   createdAt: Date;
   updatedAt: Date;
   publishedAt?: Date;
+  deleted?: boolean; // Soft delete flag - courses marked as deleted should be filtered out
 }
 
 export interface SupplyItem {
