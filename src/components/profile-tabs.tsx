@@ -257,9 +257,39 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-                {/* CRITICAL: Only show edit button if user owns the course - double-check ownership */}
+                {/* CRITICAL: Only show edit and archive buttons if user owns the course - double-check ownership */}
                 {isCourseOwner && isOwnProfile && user && course.instructor.userId === user.id && (
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                    {course.isPublished && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          // Triple-check ownership before archiving
+                          if (isOwnProfile && user && course.instructor.userId === user.id) {
+                            try {
+                              await unpublishCourse(course.id);
+                              toast({
+                                title: "Course Archived",
+                                description: "Course has been archived back to drafts.",
+                              });
+                            } catch (error) {
+                              console.error('Error archiving course:', error);
+                            }
+                          } else {
+                            toast({
+                              title: "Access Denied",
+                              description: "You can only archive your own courses.",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        title="Archive to draft"
+                      >
+                        <Archive className="h-3 w-3" />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="secondary"
