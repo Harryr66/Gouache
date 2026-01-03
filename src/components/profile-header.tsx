@@ -26,6 +26,7 @@ import {
   ChevronUp,
   Package,
   Pin,
+  ExternalLink,
 } from 'lucide-react';
 import { Instagram, Twitter } from 'lucide-react';
 import { cn } from '@/lib/utils';
