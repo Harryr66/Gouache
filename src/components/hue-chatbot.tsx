@@ -299,7 +299,8 @@ export function HueChatbot() {
   };
 
   // Global error handler function - catches ALL errors
-  const handleErrorReport = (error: Error | any, context?: string, errorType?: string, errorCode?: string) => {
+  // UPDATED: Silently send error reports in background without showing popups or expanding Hue
+  const handleErrorReport = async (error: Error | any, context?: string, errorType?: string, errorCode?: string) => {
     const route = pathname || window.location.pathname;
     const timestamp = new Date().toISOString();
     const userAgent = navigator.userAgent;
@@ -309,7 +310,7 @@ export function HueChatbot() {
     
     // Check if this error has already been reported
     if (reportedErrorsRef.current.has(errorId)) {
-      console.log('Hue: Error already reported, skipping duplicate notification:', errorId);
+      console.log('Hue: Error already reported, skipping duplicate:', errorId);
       return;
     }
 
@@ -332,18 +333,30 @@ export function HueChatbot() {
       errorCode: errorCode || error?.code,
     };
 
-    console.error('Hue detected error:', report);
+    console.error('Hue detected error (silent report):', report);
 
     // Mark this error as reported
     reportedErrorsRef.current.add(errorId);
 
-    setErrorReport(report);
-    setHasError(true);
-    setIsExpanded(true);
-    // Clear any previous user context to ensure fresh input
-    setUserContext('');
-    // Force show Hue when error detected
-    setHueEnabled(true);
+    // Silently send error report in background without showing UI or popups
+    try {
+      await fetch('/api/hue/report-error', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...report,
+          userContext: undefined, // No user context for silent reports
+        }),
+      });
+      console.log('Hue: Error report sent silently in background');
+    } catch (reportError) {
+      console.error('Hue: Failed to send silent error report:', reportError);
+      // Don't show any UI or popups - just log to console
+    }
+
+    // DO NOT set error state, expand Hue, or show any UI - just send report silently
   };
 
   // Clear reported errors when route changes (allows same error on different pages to be reported)
