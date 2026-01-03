@@ -647,25 +647,19 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   alt={course.title}
                   className="w-full h-64 object-cover"
                 />
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <Button 
-                    size="lg" 
-                    className="bg-background hover:bg-background/90 text-foreground border-2 border-foreground/20 shadow-lg"
-                    onClick={() => {
-                      if (course.previewVideoUrl) {
-                        setShowPreviewModal(true);
-                      } else {
-                        toast({
-                          title: "No preview available",
-                          description: "This course doesn't have a preview video yet.",
-                        });
-                      }
-                    }}
-                  >
-                    <Play className="h-5 w-5 mr-2" />
-                    Preview Course
-                  </Button>
-                </div>
+                {/* Only show preview button overlay if course has a preview video */}
+                {course.previewVideoUrl && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Button 
+                      size="lg" 
+                      className="bg-background hover:bg-background/90 text-foreground border-2 border-foreground/20 shadow-lg"
+                      onClick={() => setShowPreviewModal(true)}
+                    >
+                      <Play className="h-5 w-5 mr-2" />
+                      Preview Course
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
