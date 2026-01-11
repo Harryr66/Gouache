@@ -436,8 +436,15 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       })}
       <div 
         ref={loadMoreRef} 
-        className="h-10 w-full" 
-        style={{ position: 'absolute', top: containerHeight, left: 0, right: 0 }} 
+        className="h-20 w-full" 
+        style={{ 
+          position: 'absolute', 
+          top: containerHeight > 0 ? containerHeight : '100%', 
+          left: 0, 
+          right: 0,
+          minHeight: '80px', // Ensure minimum height for better intersection detection on mobile
+          pointerEvents: 'none', // Don't interfere with clicks
+        }} 
       />
     </div>
   );
@@ -1736,6 +1743,43 @@ function DiscoverPageContent() {
     }
   }, [hasMore, lastDocument, discoverSettings.hideAiAssistedArt, isLoadingMore]);
 
+  // Smart shuffle function that prevents consecutive duplicates
+  const shuffleArtworks = useCallback((artworks: Artwork[]): Artwork[] => {
+    if (artworks.length <= 1) return artworks;
+    
+    const shuffled = [...artworks];
+    const maxAttempts = 100; // Prevent infinite loops
+    
+    // Try to shuffle while avoiding consecutive duplicates
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // Fisher-Yates shuffle
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      
+      // Check if we have consecutive duplicates
+      let hasConsecutiveDuplicates = false;
+      for (let i = 0; i < shuffled.length - 1; i++) {
+        if (shuffled[i].id === shuffled[i + 1].id) {
+          hasConsecutiveDuplicates = true;
+          break;
+        }
+      }
+      
+      // If no consecutive duplicates, we're good
+      if (!hasConsecutiveDuplicates) {
+        log(`✅ Discover: Successfully shuffled ${shuffled.length} artworks (attempt ${attempt + 1})`);
+        return shuffled;
+      }
+    }
+    
+    // If we couldn't avoid all duplicates after max attempts, return shuffled anyway
+    // (this handles edge cases where we have very few unique items)
+    log(`⚠️ Discover: Shuffled ${shuffled.length} artworks but some duplicates may remain`);
+    return shuffled;
+  }, []);
+
   // Load more artworks when scrolling to bottom (pagination)
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
   const loadMoreArtworks = useCallback(async () => {
@@ -1745,13 +1789,25 @@ function DiscoverPageContent() {
     
     setIsLoadingMore(true);
     
+    // Check if we're recycling (resetting to beginning)
+    const isRecycling = !hasMore || !lastDocument;
+    
     // If we've reached the end, reset to beginning for continuous scroll
     let currentLastDoc = lastDocument;
-    if (!hasMore || !lastDocument) {
+    if (isRecycling) {
       log('🔄 Discover: Resetting pagination for continuous scroll...');
       setLastDocument(null);
       setHasMore(true);
       currentLastDoc = null; // Start from beginning
+      
+      // Shuffle existing artworks to prevent consecutive duplicates when recycling
+      setArtworks(prev => {
+        if (prev.length > 0) {
+          log(`🔄 Discover: Shuffling ${prev.length} existing artworks before recycling...`);
+          return shuffleArtworks(prev);
+        }
+        return prev;
+      });
     }
 
     log('📥 Discover: Loading more artworks...');
@@ -1773,6 +1829,16 @@ function DiscoverPageContent() {
         log('🔄 Discover: Reached end, recycling content from beginning...');
         setLastDocument(null);
         setHasMore(true);
+        
+        // Shuffle existing artworks to prevent consecutive duplicates
+        setArtworks(prev => {
+          if (prev.length > 0) {
+            log(`🔄 Discover: Shuffling ${prev.length} existing artworks before recycling...`);
+            return shuffleArtworks(prev);
+          }
+          return prev;
+        });
+        
         setIsLoadingMore(false);
         // Trigger load from beginning
         setTimeout(() => {
@@ -1861,7 +1927,15 @@ function DiscoverPageContent() {
       }
 
       // Append new artworks to existing ones
-      setArtworks(prev => [...prev, ...newArtworks]);
+      // If we're recycling, shuffle the combined array to prevent consecutive duplicates
+      setArtworks(prev => {
+        const combined = [...prev, ...newArtworks];
+        if (isRecycling && combined.length > 1) {
+          log(`🔄 Discover: Shuffling ${combined.length} artworks (${prev.length} existing + ${newArtworks.length} new) to prevent duplicates...`);
+          return shuffleArtworks(combined);
+        }
+        return combined;
+      });
       
       // Update pagination state
       if (result.lastDoc) {
@@ -1881,10 +1955,19 @@ function DiscoverPageContent() {
       log('🔄 Discover: Error occurred, recycling content from beginning...');
       setLastDocument(null);
       setHasMore(true);
+      
+      // Shuffle existing artworks on error to prevent consecutive duplicates
+      setArtworks(prev => {
+        if (prev.length > 0) {
+          log(`🔄 Discover: Shuffling ${prev.length} existing artworks after error...`);
+          return shuffleArtworks(prev);
+        }
+        return prev;
+      });
     } finally {
       setIsLoadingMore(false);
     }
-  }, [hasMore, lastDocument, isLoadingMore, discoverSettings]);
+  }, [hasMore, lastDocument, isLoadingMore, discoverSettings, shuffleArtworks]);
 
   // AUTO-LOAD MORE: If initial load doesn't fill viewport, immediately load more
   useEffect(() => {
@@ -1924,7 +2007,7 @@ function DiscoverPageContent() {
   // Always active to support continuous recycling of content
   useEffect(() => {
     const sentinel = loadMoreRef.current;
-    if (!sentinel || isLoadingMore) return;
+    if (!sentinel) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -1937,8 +2020,8 @@ function DiscoverPageContent() {
         });
       },
       {
-        rootMargin: '800px', // Start loading 800px before reaching bottom for instant continuous scroll (Pinterest-style)
-        threshold: 0.1, // Trigger when 10% of sentinel is visible
+        rootMargin: '400px', // Reduced for mobile - start loading 400px before reaching bottom
+        threshold: 0.01, // Lower threshold for better mobile detection (1% visible)
       }
     );
 
@@ -1946,6 +2029,45 @@ function DiscoverPageContent() {
 
     return () => {
       observer.disconnect();
+    };
+  }, [isLoadingMore, loadMoreArtworks]);
+
+  // Fallback scroll listener for mobile (more reliable than IntersectionObserver on some mobile browsers)
+  useEffect(() => {
+    if (isLoadingMore) return;
+
+    const handleScroll = () => {
+      // Check if we're near the bottom of the page
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // Trigger when within 500px of bottom (mobile-friendly)
+      const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
+      
+      if (distanceFromBottom < 500 && !isLoadingMore) {
+        loadMoreArtworks();
+      }
+    };
+
+    // Throttle scroll events for performance
+    let ticking = false;
+    const throttledHandleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledHandleScroll, { passive: true });
+    // Also check on initial load in case content doesn't fill viewport
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', throttledHandleScroll);
     };
   }, [isLoadingMore, loadMoreArtworks]);
 
