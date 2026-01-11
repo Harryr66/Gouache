@@ -1807,8 +1807,12 @@ function DiscoverPageContent() {
     // Show loading indicator and add pause for smoother experience
     setShowBottomLoader(true);
     
-    // Add a pause (1.5-2 seconds) before loading for cleaner experience
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Add a pause (1.5 seconds) before loading for cleaner experience
+    await new Promise<void>(resolve => {
+      setTimeout(() => {
+        resolve();
+      }, 1500);
+    });
     
     setIsLoadingMore(true);
     
@@ -1863,6 +1867,7 @@ function DiscoverPageContent() {
           return prev;
         });
         
+        setShowBottomLoader(false);
         setIsLoadingMore(false);
         // Trigger load from beginning
         setTimeout(() => {
