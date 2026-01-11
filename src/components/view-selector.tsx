@@ -9,9 +9,10 @@ interface ViewSelectorProps {
   onViewChange: (view: 'grid' | 'list') => void;
   className?: string;
   style?: React.CSSProperties;
+  disabled?: boolean; // When true, video feed button is disabled (e.g., when viewing Events tab)
 }
 
-export function ViewSelector({ view, onViewChange, className, style }: ViewSelectorProps) {
+export function ViewSelector({ view, onViewChange, className, style, disabled = false }: ViewSelectorProps) {
   const hasExplicitWidth = className?.includes('w-[') || className?.includes('w-1/') || className?.includes('!w-') || className?.includes('flex-[') || style?.flex;
   return (
     <div 
@@ -35,12 +36,26 @@ export function ViewSelector({ view, onViewChange, className, style }: ViewSelec
       
       {/* Video feed option - LEFT */}
       <button
-        onClick={() => onViewChange('list')}
-        className="flex-1 flex items-center justify-center h-full relative z-10"
+        onClick={() => !disabled && onViewChange('list')}
+        disabled={disabled}
+        className={cn(
+          "flex-1 flex items-center justify-center h-full relative z-10",
+          disabled && "cursor-not-allowed opacity-50"
+        )}
       >
         <div className="relative w-4 h-4 rounded-sm border-2 border-current flex items-center justify-center" style={{ borderRadius: '4px' }}>
           <Play className="h-2 w-2" fill="currentColor" style={{ marginLeft: '1px' }} />
         </div>
+        {/* Tinted overlay when disabled - matches theme colors */}
+        {disabled && (
+          <div 
+            className="absolute inset-0 bg-muted/70 dark:bg-muted/80 rounded-l-[4px] pointer-events-none border-r border-border/50"
+            style={{ 
+              backdropFilter: 'blur(0.5px)',
+              WebkitBackdropFilter: 'blur(0.5px)'
+            }}
+          />
+        )}
       </button>
       
       {/* Grid option - RIGHT */}

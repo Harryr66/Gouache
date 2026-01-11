@@ -38,6 +38,7 @@ import { CountryFlag } from './country-flag';
 import { ShowcaseLocation } from '@/lib/types';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { NewsletterSubscribeModal } from './newsletter-subscribe-modal';
+import { FollowersFollowingDialog } from './followers-following-dialog';
 
 interface ProfileHeaderProps {
   user: {
@@ -95,6 +96,8 @@ export function ProfileHeader({
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [isEventsExpanded, setIsEventsExpanded] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
+  const [showFollowersDialog, setShowFollowersDialog] = useState(false);
+  const [followersDialogType, setFollowersDialogType] = useState<'followers' | 'following'>('followers');
 
   // Early return if user is not properly loaded
   if (!user) {
@@ -163,17 +166,29 @@ export function ProfileHeader({
             {/* Stats */}
             <div className="flex gap-4 md:gap-6 text-xs md:text-sm">
               {user.isProfessional && (
-                <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    setFollowersDialogType('followers');
+                    setShowFollowersDialog(true);
+                  }}
+                  className="flex items-center gap-1 hover:opacity-70 transition-opacity cursor-pointer"
+                >
                   <Users className="h-3 w-3 md:h-4 md:w-4" />
                   <span className="font-medium">{user.followerCount}</span>
                   <span className="text-muted-foreground">followers</span>
-                </div>
+                </button>
               )}
-              <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setFollowersDialogType('following');
+                  setShowFollowersDialog(true);
+                }}
+                className="flex items-center gap-1 hover:opacity-70 transition-opacity cursor-pointer"
+              >
                 <UserPlus className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="font-medium">{user.followingCount}</span>
                 <span className="text-muted-foreground">following</span>
-              </div>
+              </button>
             </div>
 
             {/* Newsletter Link & Social Icons - Single Row */}
@@ -589,6 +604,15 @@ export function ProfileHeader({
         artistId={user.id}
       />
 
+      {/* Followers/Following Dialog */}
+      <FollowersFollowingDialog
+        open={showFollowersDialog}
+        onOpenChange={setShowFollowersDialog}
+        userId={user.id}
+        type={followersDialogType}
+        followerCount={user.followerCount}
+        followingCount={user.followingCount}
+      />
 
     </>
   );

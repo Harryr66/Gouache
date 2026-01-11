@@ -27,6 +27,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import { engagementTracker } from '@/lib/engagement-tracker';
@@ -967,6 +969,7 @@ function DiscoverPageContent() {
   const [selectedArtworkType, setSelectedArtworkType] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
+  const [showFollowedOnly, setShowFollowedOnly] = useState(false);
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
@@ -1736,11 +1739,21 @@ function DiscoverPageContent() {
   // Load more artworks when scrolling to bottom (pagination)
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
   const loadMoreArtworks = useCallback(async () => {
-    if (isLoadingMore || !hasMore || !lastDocument) {
+    if (isLoadingMore) {
       return;
     }
-
+    
     setIsLoadingMore(true);
+    
+    // If we've reached the end, reset to beginning for continuous scroll
+    let currentLastDoc = lastDocument;
+    if (!hasMore || !lastDocument) {
+      log('🔄 Discover: Resetting pagination for continuous scroll...');
+      setLastDocument(null);
+      setHasMore(true);
+      currentLastDoc = null; // Start from beginning
+    }
+
     log('📥 Discover: Loading more artworks...');
 
     try {
@@ -1752,12 +1765,21 @@ function DiscoverPageContent() {
         deleted: false,
         hideAI: discoverSettings.hideAiAssistedArt,
         limit: LOAD_MORE_LIMIT,
-        startAfter: lastDocument,
+        startAfter: currentLastDoc || undefined, // Use undefined if null to start from beginning
       });
       
       if (result.items.length === 0) {
-        setHasMore(false);
+        // Recycle content: reset to beginning for continuous scroll
+        log('🔄 Discover: Reached end, recycling content from beginning...');
+        setLastDocument(null);
+        setHasMore(true);
         setIsLoadingMore(false);
+        // Trigger load from beginning
+        setTimeout(() => {
+          if (!isLoadingMore) {
+            loadMoreArtworks();
+          }
+        }, 100);
         return;
       }
 
@@ -1846,13 +1868,19 @@ function DiscoverPageContent() {
         setLastDocument(result.lastDoc);
         setHasMore(result.items.length === LOAD_MORE_LIMIT);
       } else {
-        setHasMore(false);
+        // Recycle content: reset to beginning for continuous scroll
+        log('🔄 Discover: Reached end, recycling content from beginning...');
+        setLastDocument(null);
+        setHasMore(true);
       }
 
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
     } catch (error: any) {
       console.error('Error loading more artworks:', error);
-      setHasMore(false);
+      // On error, try recycling content instead of stopping
+      log('🔄 Discover: Error occurred, recycling content from beginning...');
+      setLastDocument(null);
+      setHasMore(true);
     } finally {
       setIsLoadingMore(false);
     }
@@ -1893,15 +1921,17 @@ function DiscoverPageContent() {
   }, [hasMore, isLoadingMore, lastDocument, prefetchNextPage]);
 
   // IntersectionObserver for infinite scroll pagination (Pinterest-style continuous scrolling)
+  // Always active to support continuous recycling of content
   useEffect(() => {
     const sentinel = loadMoreRef.current;
-    if (!sentinel || !hasMore || isLoadingMore) return;
+    if (!sentinel || isLoadingMore) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && hasMore && !isLoadingMore) {
+          if (entry.isIntersecting && !isLoadingMore) {
             // Load more content when sentinel comes into view
+            // Always try to load - will recycle if hasMore is false
             loadMoreArtworks();
           }
         });
@@ -1917,7 +1947,7 @@ function DiscoverPageContent() {
     return () => {
       observer.disconnect();
     };
-  }, [hasMore, isLoadingMore, loadMoreArtworks]);
+  }, [isLoadingMore, loadMoreArtworks]);
 
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = Array.isArray(artworks) ? artworks : [];
@@ -2013,6 +2043,13 @@ function DiscoverPageContent() {
       realArtworks = realArtworks.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
     }
 
+    // Followed Artists Only filter - works for both image and video feeds
+    if (showFollowedOnly) {
+      const followedArtists = getFollowedArtists();
+      const followedArtistIds = new Set(followedArtists.map(a => a.id));
+      realArtworks = realArtworks.filter(artwork => followedArtistIds.has(artwork.artist.id));
+    }
+
     // Sort using engagement-based algorithm when 'popular' is selected
     let sorted = Array.isArray(realArtworks) ? [...realArtworks] : [];
     
@@ -2104,7 +2141,7 @@ function DiscoverPageContent() {
     const result = [...sorted, ...allPlaceholderArtworks];
     log('✅ Discover: Returning', sorted.length, 'real artworks +', allPlaceholderArtworks.length, 'placeholders =', result.length, 'total');
     return result;
-  }, [artworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
+  }, [artworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements, showFollowedOnly, getFollowedArtists]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
@@ -2227,7 +2264,8 @@ function DiscoverPageContent() {
         if (entry.isIntersecting) {
           // If we're showing most of the available items, load more from server
           // Lowered threshold to 0.6 (60%) for more aggressive loading
-          if (visibleCount >= filteredAndSortedArtworks.length * 0.6 && hasMore && !isLoadingMore) {
+          // Always try to load - will recycle if hasMore is false
+          if (visibleCount >= filteredAndSortedArtworks.length * 0.6 && !isLoadingMore) {
             loadMoreArtworks();
           }
           
@@ -2559,7 +2597,7 @@ function DiscoverPageContent() {
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
-                  <ViewSelector view={eventsView} onViewChange={setEventsView} className="w-full" />
+                  <ViewSelector view={eventsView} onViewChange={setEventsView} className="w-full" disabled={true} />
                 </>
               )}
             </div>
@@ -2650,6 +2688,23 @@ function DiscoverPageContent() {
                       </Select>
                     </div>
                   </div>
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="followed-only" className="text-sm font-medium">
+                          Followed Artists Only
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Show only content from artists you follow
+                        </p>
+                      </div>
+                      <Switch
+                        id="followed-only"
+                        checked={showFollowedOnly}
+                        onCheckedChange={(checked) => startTransition(() => setShowFollowedOnly(checked))}
+                      />
+                    </div>
+                  </div>
                   <div className="mt-2 flex gap-2">
                     <Button
                       variant="outline"
@@ -2660,6 +2715,7 @@ function DiscoverPageContent() {
                           setSelectedArtworkType('All');
                           setSortBy('newest');
                           setSearchQuery('');
+                          setShowFollowedOnly(false);
                         });
                       }}
                     >
@@ -2671,7 +2727,7 @@ function DiscoverPageContent() {
               )}
 
               {/* Active Filters Display */}
-              {(selectedMedium !== 'All' || selectedArtworkType !== 'All' || searchQuery) && (
+              {(selectedMedium !== 'All' || selectedArtworkType !== 'All' || searchQuery || showFollowedOnly) && (
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-sm text-muted-foreground">Active filters:</span>
                   {searchQuery && (
@@ -2692,7 +2748,13 @@ function DiscoverPageContent() {
                       <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setSelectedArtworkType('All'))} />
                     </Badge>
                   )}
-                        </div>
+                  {showFollowedOnly && (
+                    <Badge variant="secondary" className="gap-1">
+                      Followed Artists Only
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setShowFollowedOnly(false))} />
+                    </Badge>
+                  )}
+                </div>
               )}
             </div>
             
@@ -2704,11 +2766,11 @@ function DiscoverPageContent() {
                 <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">No artworks found</h2>
                 <p className="text-muted-foreground mb-4">
-                  {(searchQuery || selectedMedium !== 'All' || selectedArtworkType !== 'All')
+                  {(searchQuery || selectedMedium !== 'All' || selectedArtworkType !== 'All' || showFollowedOnly)
                     ? 'Try adjusting your filters to see more results.'
                     : 'Check back later for new content.'}
                 </p>
-                {(searchQuery || selectedMedium !== 'All' || selectedArtworkType !== 'All') && (
+                {(searchQuery || selectedMedium !== 'All' || selectedArtworkType !== 'All' || showFollowedOnly) && (
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -2716,6 +2778,7 @@ function DiscoverPageContent() {
                         setSelectedMedium('All');
                         setSelectedArtworkType('All');
                         setSearchQuery('');
+                        setShowFollowedOnly(false);
                       });
                     }}
                   >

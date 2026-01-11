@@ -1707,20 +1707,23 @@ export default function ProfileEditPage() {
               </div>
 
               {/* Tip Jar Setting - Only for professional artists */}
-              {isArtistAccount && (
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label>Enable Tip Jar</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Allow fans to send you tips to support your work
-                    </p>
-                  </div>
-                  <Switch
-                    checked={formData.tipJarEnabled}
-                    onCheckedChange={(checked) => handleInputChange('tipJarEnabled', checked)}
-                  />
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Enable Tip Jar</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Allow fans to send you tips to support your work
+                  </p>
                 </div>
-              )}
+                <Switch
+                  checked={formData.tipJarEnabled || false}
+                  disabled={!isArtistAccount}
+                  onCheckedChange={(checked) => {
+                    if (isArtistAccount) {
+                      handleInputChange('tipJarEnabled', checked);
+                    }
+                  }}
+                />
+              </div>
 
               {/* Social Media Links */}
               <div className="space-y-4 pt-4 border-t">
