@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition, useCallback } from 'react';
-import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp } from 'lucide-react';
+import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp, Loader2 } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
@@ -788,6 +788,7 @@ function DiscoverPageContent() {
   const [hasMore, setHasMore] = useState(true);
   const [lastDocument, setLastDocument] = useState<any>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [showBottomLoader, setShowBottomLoader] = useState(false);
   const [artworkEngagements, setArtworkEngagements] = useState<Map<string, any>>(new Map());
   const [initialVideosReady, setInitialVideosReady] = useState(0);
   const [initialVideosTotal, setInitialVideosTotal] = useState(0);
@@ -1780,12 +1781,34 @@ function DiscoverPageContent() {
     return shuffled;
   }, []);
 
+  // Calculate how many items to load per batch (enough to fill viewport + 2 rows)
+  const getBatchSize = useCallback(() => {
+    // Calculate rows needed: viewport height / estimated row height
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const estimatedRowHeight = 400; // Approximate height per row
+    const rowsInViewport = Math.ceil(viewportHeight / estimatedRowHeight);
+    const extraRows = 2; // Load 2 extra rows for smooth scrolling
+    const totalRows = rowsInViewport + extraRows;
+    
+    // Batch size = columns × rows
+    const batchSize = columnCount * totalRows;
+    
+    // Ensure minimum batch size
+    return Math.max(batchSize, columnCount * 3); // At least 3 rows
+  }, [columnCount]);
+
   // Load more artworks when scrolling to bottom (pagination)
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
   const loadMoreArtworks = useCallback(async () => {
-    if (isLoadingMore) {
+    if (isLoadingMore || showBottomLoader) {
       return;
     }
+    
+    // Show loading indicator and add pause for smoother experience
+    setShowBottomLoader(true);
+    
+    // Add a pause (1.5-2 seconds) before loading for cleaner experience
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
     setIsLoadingMore(true);
     
@@ -1814,7 +1837,8 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      const LOAD_MORE_LIMIT = 100; // Increased significantly for continuous scroll - load enough to keep scrolling smooth
+      // Calculate batch size based on grid dimensions for seamless loading
+      const LOAD_MORE_LIMIT = getBatchSize(); // Load enough to fill viewport + 2 rows
       
       const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
@@ -1949,6 +1973,9 @@ function DiscoverPageContent() {
       }
 
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
+      
+      // Hide loading indicator after content is loaded
+      setShowBottomLoader(false);
     } catch (error: any) {
       console.error('Error loading more artworks:', error);
       // On error, try recycling content instead of stopping
@@ -1964,10 +1991,13 @@ function DiscoverPageContent() {
         }
         return prev;
       });
+      
+      // Hide loading indicator on error
+      setShowBottomLoader(false);
     } finally {
       setIsLoadingMore(false);
     }
-  }, [hasMore, lastDocument, isLoadingMore, discoverSettings, shuffleArtworks]);
+  }, [hasMore, lastDocument, isLoadingMore, discoverSettings, shuffleArtworks, getBatchSize, showBottomLoader]);
 
   // AUTO-LOAD MORE: If initial load doesn't fill viewport, immediately load more
   useEffect(() => {
@@ -2012,7 +2042,7 @@ function DiscoverPageContent() {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && !isLoadingMore) {
+          if (entry.isIntersecting && !isLoadingMore && !showBottomLoader) {
             // Load more content when sentinel comes into view
             // Always try to load - will recycle if hasMore is false
             loadMoreArtworks();
@@ -2020,7 +2050,7 @@ function DiscoverPageContent() {
         });
       },
       {
-        rootMargin: '400px', // Reduced for mobile - start loading 400px before reaching bottom
+        rootMargin: '200px', // Reduced further - trigger closer to bottom for pause effect
         threshold: 0.01, // Lower threshold for better mobile detection (1% visible)
       }
     );
@@ -2030,7 +2060,7 @@ function DiscoverPageContent() {
     return () => {
       observer.disconnect();
     };
-  }, [isLoadingMore, loadMoreArtworks]);
+  }, [isLoadingMore, loadMoreArtworks, showBottomLoader]);
 
   // Fallback scroll listener for mobile (more reliable than IntersectionObserver on some mobile browsers)
   useEffect(() => {
@@ -2042,10 +2072,10 @@ function DiscoverPageContent() {
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       
-      // Trigger when within 500px of bottom (mobile-friendly)
+      // Trigger when within 300px of bottom (closer to bottom for pause effect)
       const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
       
-      if (distanceFromBottom < 500 && !isLoadingMore) {
+      if (distanceFromBottom < 300 && !isLoadingMore && !showBottomLoader) {
         loadMoreArtworks();
       }
     };
@@ -2069,7 +2099,7 @@ function DiscoverPageContent() {
     return () => {
       window.removeEventListener('scroll', throttledHandleScroll);
     };
-  }, [isLoadingMore, loadMoreArtworks]);
+  }, [isLoadingMore, loadMoreArtworks, showBottomLoader]);
 
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = Array.isArray(artworks) ? artworks : [];
@@ -2971,6 +3001,15 @@ function DiscoverPageContent() {
                 }}
                 loadMoreRef={loadMoreRef}
               />
+              {/* Loading indicator at bottom for seamless experience */}
+              {showBottomLoader && (
+                <div className="flex items-center justify-center py-8 w-full">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">Loading more artworks...</p>
+                  </div>
+                </div>
+              )}
             ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
                 {/* Video feed - Only videos, 1 per row, 1 column, full width */}
@@ -3166,6 +3205,15 @@ function DiscoverPageContent() {
                 })()}
                 {/* Sentinel element for infinite scroll in video feed */}
                 <div ref={loadMoreRef} className="h-20 w-full" />
+                {/* Loading indicator at bottom for seamless experience */}
+                {showBottomLoader && (
+                  <div className="flex items-center justify-center py-8 w-full">
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <p className="text-sm text-muted-foreground">Loading more videos...</p>
+                    </div>
+                  </div>
+                )}
               </>
             ) : null}
             </div>
