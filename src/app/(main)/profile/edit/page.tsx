@@ -21,7 +21,6 @@ import { db, storage, auth } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { ArtistRequest, ShowcaseLocation } from '@/lib/types';
 import { ThemeLoading } from '@/components/theme-loading';
-import { StripeIntegrationWizard } from '@/components/stripe-integration-wizard';
 import { NewsletterIntegrationWizard } from '@/components/newsletter-integration-wizard';
 import { Suspense } from 'react';
 
@@ -1786,24 +1785,6 @@ export default function ProfileEditPage() {
             </Suspense>
           </CardContent>
         </Card>
-        )}
-
-        {/* Stripe Payment Setup - Only for professional artists */}
-        {isArtistAccount && (
-          <Card id="stripe-integration">
-            <CardHeader>
-              <CardTitle>Payment Setup</CardTitle>
-              <CardDescription>
-                Connect your Stripe account to accept payments for your artwork, prints, books, and courses. 
-                You'll receive 100% of sales directly to your Stripe account.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Suspense fallback={<div className="p-4 text-center text-muted-foreground">Loading payment setup...</div>}>
-                <StripeIntegrationWizard />
-              </Suspense>
-            </CardContent>
-          </Card>
         )}
 
         {isArtistAccount && (
