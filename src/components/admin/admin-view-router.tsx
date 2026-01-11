@@ -384,26 +384,6 @@ export function AdminViewRouter(props: any) {
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => props.handleApprove(request)}
-                          disabled={props.isProcessing}
-                        >
-                          <Check className="h-4 w-4 mr-1" />
-                          Approve
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            props.setSelectedRequest(request);
-                            props.setRejectionReason('');
-                          }}
-                          disabled={props.isProcessing}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Reject
-                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -2465,24 +2445,11 @@ export function AdminViewRouter(props: any) {
 
                 <div className="flex gap-2 pt-4 border-t">
                   <Button
-                    onClick={() => props.handleApprove(props.selectedRequest)}
-                    disabled={props.isProcessing}
+                    variant="outline"
+                    onClick={() => props.setSelectedRequest(null)}
                     className="flex-1"
                   >
-                    <Check className="h-4 w-4 mr-2" />
-                    Approve
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      props.setRejectionReason('');
-                      props.setSelectedRequest(null);
-                    }}
-                    disabled={props.isProcessing}
-                    className="flex-1"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Reject
+                    Close
                   </Button>
                 </div>
               </div>

@@ -611,58 +611,6 @@ export default function AdminPanel() {
     }
   };
 
-  const handleApprove = async (request: ArtistRequest) => {
-    setIsProcessing(true);
-    try {
-      // Update the artist request status
-      await updateDoc(doc(db, 'artistRequests', request.id), {
-        status: 'approved',
-        reviewedAt: serverTimestamp(),
-        reviewedBy: 'admin', // In a real app, this would be the admin user ID
-        notes: adminNotes
-      });
-
-      // Convert portfolio image URLs to portfolio items format
-      // Use serverTimestamp() for createdAt to ensure consistency with Firestore
-      const portfolioItems = request.portfolioImages.map((imageUrl, index) => ({
-        id: `portfolio-${Date.now()}-${index}`,
-        imageUrl,
-        title: 'Untitled Artwork',
-        description: '',
-        medium: '',
-        dimensions: '',
-        year: '',
-        tags: [],
-        createdAt: new Date() // Use Date() instead of serverTimestamp() for array items
-      }));
-
-      // Update the user's profile to make them a verified professional artist
-      // Transfer portfolio images from the request to the user profile
-      await updateDoc(doc(db, 'userProfiles', request.userId), {
-        isProfessional: true,
-        isVerified: true,
-        portfolio: portfolioItems,
-        updatedAt: serverTimestamp()
-      });
-
-      toast({
-        title: "Verification approved",
-        description: `${request.user.displayName} is now a verified professional artist. Portfolio images have been transferred.`,
-      });
-
-      setSelectedRequest(null);
-      setAdminNotes('');
-    } catch (error) {
-      console.error('Error approving request:', error);
-      toast({
-        title: "Error",
-        description: "Failed to approve request. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleTransferPortfolio = async (request: ArtistRequest) => {
     setIsProcessing(true);
@@ -713,45 +661,6 @@ export default function AdminPanel() {
     }
   };
 
-  const handleReject = async (request: ArtistRequest) => {
-    if (!rejectionReason.trim()) {
-      toast({
-        title: "Rejection reason required",
-        description: "Please provide a reason for rejection.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      await updateDoc(doc(db, 'artistRequests', request.id), {
-        status: 'rejected',
-        reviewedAt: serverTimestamp(),
-        reviewedBy: 'admin',
-        rejectionReason: rejectionReason.trim(),
-        notes: adminNotes
-      });
-
-      toast({
-        title: "Verification rejected",
-        description: `Professional verification request from ${request.user.displayName} has been rejected.`,
-      });
-
-      setSelectedRequest(null);
-      setRejectionReason('');
-      setAdminNotes('');
-    } catch (error) {
-      console.error('Error rejecting request:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reject request. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -2676,8 +2585,6 @@ export default function AdminPanel() {
       setSelectedAffiliateRequest={setSelectedAffiliateRequest}
       selectedAdvertisement={selectedAdvertisement}
       setSelectedAdvertisement={setSelectedAdvertisement}
-      handleApprove={handleApprove}
-      handleReject={handleReject}
       handleRemoveArtist={handleRemoveArtist}
       handleTransferPortfolio={handleTransferPortfolio}
       handleSuspendArtist={handleSuspendArtist}

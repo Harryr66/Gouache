@@ -789,13 +789,41 @@ export default function ProfileEditPage() {
         socialLinks.tiktok = artistRequestData.socialLinks.tiktok.trim();
       }
 
+      // Convert portfolio image URLs to portfolio items format
+      const portfolioItems = portfolioImages.map((imageUrl, index) => ({
+        id: `portfolio-${Date.now()}-${index}`,
+        imageUrl,
+        title: 'Untitled Artwork',
+        description: '',
+        medium: '',
+        dimensions: '',
+        year: '',
+        tags: [],
+        createdAt: new Date()
+      }));
+
+      // Automatically convert the account to professional artist (no admin approval needed)
+      await updateDoc(doc(db, 'userProfiles', user.id), {
+        isProfessional: true,
+        isVerified: true,
+        portfolio: portfolioItems,
+        experience: artistRequestData.experience,
+        ...(artistRequestData.artistStatement?.trim() && { artistStatement: artistRequestData.artistStatement.trim() }),
+        ...(Object.keys(socialLinks).length > 0 && { socialLinks }),
+        ...(formData.aboutInstructor?.trim() && { aboutInstructor: formData.aboutInstructor.trim() }),
+        updatedAt: serverTimestamp()
+      });
+
+      // Also save the request for record keeping (marked as approved)
       const artistRequest: any = {
         userId: user.id,
         user: cleanUser,
         portfolioImages,
         experience: artistRequestData.experience,
-        status: 'pending',
-        submittedAt: serverTimestamp()
+        status: 'approved',
+        submittedAt: serverTimestamp(),
+        reviewedAt: serverTimestamp(),
+        reviewedBy: 'auto-approved'
       };
 
       // Only include optional fields if they have values (Firestore doesn't allow undefined)
@@ -806,16 +834,19 @@ export default function ProfileEditPage() {
         artistRequest.socialLinks = socialLinks;
       }
 
-      const docRef = await addDoc(collection(db, 'artistRequests'), artistRequest);
-      console.log('✅ Artist request submitted successfully:', docRef.id, artistRequest);
+      await addDoc(collection(db, 'artistRequests'), artistRequest);
+      console.log('✅ Artist account converted successfully');
+
+      // Refresh user data to reflect the changes
+      await refreshUser();
 
       toast({
-        title: "Verification request submitted",
-        description: "Your professional artist verification request has been submitted for review.",
+        title: "Account converted successfully",
+        description: "Your account has been converted to a professional artist account.",
       });
 
-      // Redirect to profile with pending indicator
-      router.push('/profile?artistRequest=pending');
+      // Redirect to profile
+      router.push('/profile');
 
       setShowArtistRequest(false);
       setPortfolioImages([]);
@@ -2206,46 +2237,46 @@ export default function ProfileEditPage() {
                     />
                   </div>
 
+                  {/* About the Instructor */}
+                  <div className="space-y-2">
+                    <Label htmlFor="aboutInstructor">About the Instructor (optional, max 2 sentences)</Label>
+                    <Textarea
+                      id="aboutInstructor"
+                      value={formData.aboutInstructor}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const sentences = value.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                        if (sentences.length <= 2) {
+                          handleInputChange('aboutInstructor', value);
+                        }
+                      }}
+                      placeholder="Write a brief description about yourself as an instructor..."
+                      rows={3}
+                      maxLength={300}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.aboutInstructor.split(/[.!?]+/).filter(s => s.trim().length > 0).length}/2 sentences
+                    </p>
+                  </div>
+
                   {/* Social Links */}
                   <div className="space-y-4">
                     <Label>Social Media Links</Label>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="aboutInstructor">About the Instructor (optional, max 2 sentences)</Label>
-                        <Textarea
-                          id="aboutInstructor"
-                          value={formData.aboutInstructor}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const sentences = value.split(/[.!?]+/).filter(s => s.trim().length > 0);
-                            if (sentences.length <= 2) {
-                              handleInputChange('aboutInstructor', value);
-                            }
-                          }}
-                          placeholder="Write a brief description about yourself as an instructor..."
-                          rows={3}
-                          maxLength={300}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {formData.aboutInstructor.split(/[.!?]+/).filter(s => s.trim().length > 0).length}/2 sentences
-                        </p>
-                      </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                          <Label htmlFor="website">Website (optional)</Label>
-                          <Input
-                            id="website"
-                            value={artistRequestData.socialLinks.website}
-                            onChange={(e) => setArtistRequestData(prev => ({ 
-                              ...prev, 
-                              socialLinks: { ...prev.socialLinks, website: e.target.value }
-                            }))}
-                            placeholder="https://yourwebsite.com"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="instagram">Instagram (optional)</Label>
+                        <Label htmlFor="website">Website (optional)</Label>
+                        <Input
+                          id="website"
+                          value={artistRequestData.socialLinks.website}
+                          onChange={(e) => setArtistRequestData(prev => ({ 
+                            ...prev, 
+                            socialLinks: { ...prev.socialLinks, website: e.target.value }
+                          }))}
+                          placeholder="https://yourwebsite.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="instagram">Instagram (optional)</Label>
                         <Input
                           id="instagram"
                           value={artistRequestData.socialLinks.instagram}
@@ -2257,7 +2288,7 @@ export default function ProfileEditPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="x">X / Twitter (optional)</Label>
+                        <Label htmlFor="x">X / Twitter (optional)</Label>
                         <Input
                           id="x"
                           value={artistRequestData.socialLinks.x}
@@ -2269,7 +2300,7 @@ export default function ProfileEditPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="tiktok">TikTok (optional)</Label>
+                        <Label htmlFor="tiktok">TikTok (optional)</Label>
                         <Input
                           id="tiktok"
                           value={artistRequestData.socialLinks.tiktok}
@@ -2279,7 +2310,6 @@ export default function ProfileEditPage() {
                           }))}
                           placeholder="@username or URL"
                         />
-                        </div>
                       </div>
                     </div>
                   </div>
