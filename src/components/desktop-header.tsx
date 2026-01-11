@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Eye, Fingerprint, Globe, Brain } from 'lucide-react';
 
 const navigation = [
-  { name: 'News', href: '/news', icon: Globe },
+  // { name: 'News', href: '/news', icon: Globe }, // Hidden from navigation
   { name: 'Discover', href: '/discover', icon: Eye },
   { name: 'Learn', href: '/courses', icon: Brain },
   { name: 'Profile', href: '/profile', icon: Fingerprint },
