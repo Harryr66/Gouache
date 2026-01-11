@@ -897,7 +897,7 @@ export default function ProfileEditPage() {
         formData.location !== initialFormDataRef.current.location ||
         formData.countryOfOrigin !== initialFormDataRef.current.countryOfOrigin ||
         formData.countryOfResidence !== initialFormDataRef.current.countryOfResidence ||
-        formData.isProfessional !== initialFormDataRef.current.isProfessional ||
+        // isProfessional is permanent for artist accounts, so we don't check for changes
         formData.tipJarEnabled !== initialFormDataRef.current.tipJarEnabled ||
         formData.hideLocation !== initialFormDataRef.current.hideLocation ||
         formData.hideFlags !== initialFormDataRef.current.hideFlags ||
@@ -953,7 +953,8 @@ export default function ProfileEditPage() {
         hideShop: formData.hideShop,
         hideLearn: formData.hideLearn,
         updatedAt: new Date(),
-        isProfessional: allowArtistFields, // Save the toggle value
+        // isProfessional is permanent for artist accounts - always keep it true if user is already an artist
+        isProfessional: user.isProfessional ? true : allowArtistFields,
         socialLinks: {
           ...(formData.socialLinks.website.trim() ? { website: formData.socialLinks.website.trim() } : {}),
           ...(formData.socialLinks.instagram.trim() ? { instagram: formData.socialLinks.instagram.trim() } : {}),
@@ -1049,7 +1050,7 @@ export default function ProfileEditPage() {
   }, [
     formData.name,
     formData.email,
-    formData.isProfessional,
+    // formData.isProfessional removed - it's permanent for artist accounts
     formData.tipJarEnabled,
     formData.hideLocation,
     formData.hideFlags,
@@ -1135,8 +1136,8 @@ export default function ProfileEditPage() {
 
       // Update user profile - filter out undefined values
       const userRef = doc(db, 'userProfiles', user.id);
-      // Use formData.isProfessional (the toggle value) instead of user.isProfessional
-      const allowArtistFields = Boolean(formData.isProfessional);
+      // For artist accounts, isProfessional is permanent and cannot be changed
+      const allowArtistFields = Boolean(user.isProfessional);
       
       // CRITICAL: Email sync - Only update Firestore email if it matches Firebase Auth email
       // Firebase Auth email is the source of truth for password reset and authentication
@@ -1171,7 +1172,8 @@ export default function ProfileEditPage() {
         hideShop: formData.hideShop,
         hideLearn: formData.hideLearn,
         updatedAt: new Date(),
-        isProfessional: allowArtistFields, // Save the toggle value
+        // isProfessional is permanent for artist accounts - always keep it true if user is already an artist
+        isProfessional: user.isProfessional ? true : allowArtistFields,
         socialLinks: {
           ...(formData.socialLinks.website.trim() ? { website: formData.socialLinks.website.trim() } : {}),
           ...(formData.socialLinks.instagram.trim() ? { instagram: formData.socialLinks.instagram.trim() } : {}),
@@ -2054,17 +2056,18 @@ export default function ProfileEditPage() {
             <CardTitle>Account Settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
+            {/* Artist Account Status - Read-only */}
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="space-y-1">
                 <Label>Artist Account</Label>
                 <p className="text-sm text-muted-foreground">
-                  Enable artist features like portfolio uploads and discoverability
+                  Your account is permanently set as a professional artist account. This cannot be changed.
                 </p>
               </div>
-              <Switch
-                checked={formData.isProfessional}
-                onCheckedChange={(checked) => handleInputChange('isProfessional', checked)}
-              />
+              <Badge variant="default" className="bg-green-600">
+                <Check className="h-3 w-3 mr-1" />
+                Active
+              </Badge>
             </div>
 
             {/* Tip Jar Setting - Only for professional artists */}
