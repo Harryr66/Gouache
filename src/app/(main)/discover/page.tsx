@@ -323,7 +323,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           return;
         }
 
-        const img = new Image();
+        const img = new window.Image();
         img.onload = () => {
           const aspectRatio = img.naturalHeight / img.naturalWidth;
           const height = itemWidth * aspectRatio;
