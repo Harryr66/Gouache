@@ -1808,9 +1808,9 @@ function DiscoverPageContent() {
     setShowBottomLoader(true);
     
     // Add a pause (1.5 seconds) before loading for cleaner experience
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       setTimeout(() => {
-        resolve(undefined);
+        resolve();
       }, 1500);
     });
     
@@ -3121,7 +3121,8 @@ function DiscoverPageContent() {
                           <p className="text-sm mt-2">Switch to grid view to see images</p>
                         </div>
                       ) : (
-                        videoArtworks.map((item) => {
+                        <>
+                          {videoArtworks.map((item) => {
                         const artwork = item as Artwork;
                         const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                         let videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
@@ -3204,7 +3205,9 @@ function DiscoverPageContent() {
                             toggleLike={toggleLike}
                           />
                         );
-                      }))}
+                      })}
+                        </>
+                      )}
                     </div>
                   );
                 })()}
@@ -3220,7 +3223,6 @@ function DiscoverPageContent() {
                   </div>
                 )}
               </>
-            ) : null}
             </div>
           </TabsContent>
 
