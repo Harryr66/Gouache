@@ -2605,8 +2605,7 @@ function DiscoverPageContent() {
 
   // Render initial tiles invisibly during loading so poster images can preload
   // Videos will load in background and autoplay when ready (onCanPlay)
-  
-  // Explicit return statement
+
   return (
     <>
       {/* Fixed Loading Screen Overlay - Independent of content area */}
@@ -3224,6 +3223,7 @@ function DiscoverPageContent() {
                   </div>
                 )}
               </>
+            ) : null}
             </div>
           </TabsContent>
 
