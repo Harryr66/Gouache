@@ -1808,9 +1808,9 @@ function DiscoverPageContent() {
     setShowBottomLoader(true);
     
     // Add a pause (1.5 seconds) before loading for cleaner experience
-    await new Promise<void>(resolve => {
+    await new Promise((resolve) => {
       setTimeout(() => {
-        resolve();
+        resolve(undefined);
       }, 1500);
     });
     
@@ -2002,7 +2002,7 @@ function DiscoverPageContent() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [hasMore, lastDocument, isLoadingMore, discoverSettings, shuffleArtworks, getBatchSize, showBottomLoader]);
+  }, [hasMore, lastDocument, isLoadingMore, discoverSettings, shuffleArtworks, getBatchSize, showBottomLoader, columnCount]);
 
   // AUTO-LOAD MORE: If initial load doesn't fill viewport, immediately load more
   useEffect(() => {
