@@ -2944,6 +2944,7 @@ function DiscoverPageContent() {
                 )}
               </div>
             ) : !showLoadingScreen && artworkView === 'grid' ? (
+              <>
               <MasonryGrid
                 items={(() => {
                   // Grid view shows ONLY images (no videos) from Cloudflare
@@ -3015,6 +3016,7 @@ function DiscoverPageContent() {
                   </div>
                 </div>
               )}
+              </>
             ) : null}
             {/* Video feed temporarily disabled to debug build error */}
             {false && !showLoadingScreen && artworkView === 'list' && (
