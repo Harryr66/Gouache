@@ -3017,9 +3017,7 @@ function DiscoverPageContent() {
                 </div>
               )}
               </>
-            ) : null}
-            {/* Video feed temporarily disabled to debug build error */}
-            {false && !showLoadingScreen && artworkView === 'list' && (
+            ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
                 {/* Video feed - Only videos, 1 per row, 1 column, full width */}
                 {(() => {
@@ -3227,7 +3225,7 @@ function DiscoverPageContent() {
                   </div>
                 )}
               </>
-            )}
+            ) : null}
             </div>
           </TabsContent>
 
