@@ -2602,6 +2602,7 @@ function DiscoverPageContent() {
     
     fetchEvents();
   }, [mounted, theme]);
+  // Closing brace test - remove if doesn't help
 
   // Render initial tiles invisibly during loading so poster images can preload
   // Videos will load in background and autoplay when ready (onCanPlay)
