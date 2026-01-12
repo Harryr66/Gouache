@@ -263,7 +263,8 @@ const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently Updated' }
 ];
 
-// Masonry grid component that fills columns sequentially from top to bottom
+// Fixed-position masonry grid with pre-calculated positions
+// Images never move once positioned - ensures smooth, lag-free experience
 function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   items: any[];
   columnCount: number;
@@ -272,38 +273,109 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   loadMoreRef: React.RefObject<HTMLDivElement>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [positions, setPositions] = useState<Array<{ top: number; left: number; width: number }>>([]);
+  const [positions, setPositions] = useState<Array<{ top: number; left: number; width: number; height: number }>>([]);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const positionsCalculatedRef = useRef<Set<string>>(new Set());
 
-  // Calculate positions for masonry layout
+  // Pre-load images to get dimensions, then calculate all positions upfront
   useEffect(() => {
     if (!containerRef.current || columnCount === 0 || items.length === 0) {
-      setPositions([]);
+      if (items.length === 0) {
+        setPositions([]);
+        positionsCalculatedRef.current.clear();
+      }
       return;
     }
 
-    const calculatePositions = () => {
-      if (!containerRef.current) return;
-      
-      const containerWidth = containerRef.current.offsetWidth;
-      if (!containerWidth || containerWidth <= 0 || !columnCount || columnCount <= 0) {
-        return; // Safety check: don't calculate if container has no width or invalid column count
-      }
-      
-      // Calculate item width accounting for gaps
-      // Total gap space = gap * (columnCount - 1)
-      // Each column gets: (containerWidth - totalGapSpace) / columnCount
-      const totalGapSpace = gap * (columnCount - 1);
-      const itemWidth = (containerWidth - totalGapSpace) / columnCount;
-      if (itemWidth <= 0 || !isFinite(itemWidth)) {
-        return; // Safety check: prevent invalid width calculations
-      }
-      
-      const columnHeights = new Array(columnCount).fill(0);
-      const newPositions: Array<{ top: number; left: number; width: number }> = [];
+    const containerWidth = containerRef.current.offsetWidth;
+    if (!containerWidth || containerWidth <= 0) return;
 
-      itemRefs.current.forEach((itemEl, index) => {
-        if (!itemEl || index >= items.length) return;
+    // Calculate item width
+    const totalGapSpace = gap * (columnCount - 1);
+    const itemWidth = (containerWidth - totalGapSpace) / columnCount;
+    if (itemWidth <= 0 || !isFinite(itemWidth)) return;
+
+    // Track items by their unique key to preserve positions
+    const itemKeys = items.map((item, index) => {
+      return 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : `item-${index}`);
+    });
+
+    // Check if we need to recalculate (new items added)
+    const hasNewItems = itemKeys.some((key, index) => {
+      return !positionsCalculatedRef.current.has(`${key}-${index}`);
+    });
+
+    if (!hasNewItems && positions.length === items.length) {
+      // All items already positioned, no need to recalculate
+      return;
+    }
+
+    setIsCalculating(true);
+
+    // Pre-load images to get dimensions
+    const loadImageDimensions = (item: any): Promise<number> => {
+      return new Promise((resolve) => {
+        const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
+        
+        if (!imageUrl) {
+          // Default aspect ratio for items without images (ads, etc.)
+          resolve(itemWidth * 1.2);
+          return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+          const aspectRatio = img.naturalHeight / img.naturalWidth;
+          const height = itemWidth * aspectRatio;
+          resolve(height);
+        };
+        img.onerror = () => {
+          // Fallback aspect ratio on error
+          resolve(itemWidth * 1.2);
+        };
+        img.src = imageUrl;
+      });
+    };
+
+    // Load dimensions for items that need calculation
+    const itemsToLoad = items.map((item, index) => {
+      const key = itemKeys[index];
+      const isCalculated = positionsCalculatedRef.current.has(`${key}-${index}`);
+      return { item, index, key, isCalculated };
+    });
+
+    const newItemsToLoad = itemsToLoad.filter(item => !item.isCalculated);
+    const existingPositions = positions.slice(0, Math.min(positions.length, items.length));
+
+    // Calculate column heights from existing positions
+    const columnHeights = new Array(columnCount).fill(0);
+    existingPositions.forEach((pos, idx) => {
+      if (idx < items.length) {
+        const colIndex = Math.round(pos.left / (itemWidth + gap));
+        if (colIndex >= 0 && colIndex < columnCount) {
+          const itemBottom = pos.top + pos.height;
+          if (itemBottom > columnHeights[colIndex]) {
+            columnHeights[colIndex] = itemBottom;
+          }
+        }
+      }
+    });
+
+    // Load dimensions for new items in parallel
+    Promise.all(newItemsToLoad.map(({ item }) => loadImageDimensions(item))).then((heights) => {
+      const newPositions: Array<{ top: number; left: number; width: number; height: number }> = [];
+      let heightIndex = 0;
+
+      // Calculate positions for all items
+      items.forEach((item, index) => {
+        const key = itemKeys[index];
+        const wasCalculated = positionsCalculatedRef.current.has(`${key}-${index}`);
+
+        if (wasCalculated && existingPositions[index]) {
+          // Preserve existing position
+          newPositions.push(existingPositions[index]);
+          return;
+        }
 
         // Find shortest column
         const shortestColumnIndex = columnHeights.reduce(
@@ -312,122 +384,74 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           0
         );
 
-        // Measure ACTUAL rendered height
-        // Use getBoundingClientRect for accurate measurement, Math.ceil to prevent sub-pixel overlap
-        const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) || 0;
-        if (itemHeight <= 0) return; // Skip items with no height
-        
-        // Calculate left position: column_index * (itemWidth + gap)
-        // This ensures uniform gap between columns
+        // Get height for this item
+        const itemHeight = wasCalculated 
+          ? (existingPositions[index]?.height || itemWidth * 1.2)
+          : (heights[heightIndex++] || itemWidth * 1.2);
+
+        // Calculate position
         const left = shortestColumnIndex * (itemWidth + gap);
-        
-        // Calculate top position with ceiling to prevent fractional pixels
-        // This ensures uniform gap between rows
-        const currentColumnHeight = columnHeights[shortestColumnIndex];
-        const top = currentColumnHeight === 0 
+        const top = columnHeights[shortestColumnIndex] === 0 
           ? 0 
-          : Math.ceil(currentColumnHeight) + gap;
-        
-        // Debug log for verification
-        if (index === 0) {
-          console.log('🔧 Masonry overlap fix - Gap:', gap, 'px, Height buffer: +2px');
-        }
+          : Math.ceil(columnHeights[shortestColumnIndex]) + gap;
 
-        // Validate calculated values
-        if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
-          return; // Skip invalid positions
+        if (isFinite(top) && isFinite(left) && isFinite(itemWidth)) {
+          newPositions.push({ top, left, width: itemWidth, height: itemHeight });
+          columnHeights[shortestColumnIndex] = top + itemHeight;
+          
+          // Mark as calculated
+          positionsCalculatedRef.current.add(`${key}-${index}`);
         }
-
-        newPositions.push({ top, left, width: itemWidth });
-        // Update column height: current top position + item height (gap is already in top calculation)
-        columnHeights[shortestColumnIndex] = top + itemHeight;
       });
 
       if (newPositions.length > 0) {
         setPositions(newPositions);
       }
-    };
+      setIsCalculating(false);
+    });
+  }, [items.length, columnCount, gap, items]); // Include items to detect changes
 
-    // Calculate positions after items render (use requestAnimationFrame for better timing)
-    let timeout: NodeJS.Timeout;
-    const scheduleCalculation = () => {
-      timeout = setTimeout(() => {
-        requestAnimationFrame(() => {
-          calculatePositions();
-        });
-      }, 150);
-    };
-    
-    scheduleCalculation();
-    
-    // Recalculate when images/videos load
-    const handleLoad = () => {
-      scheduleCalculation();
-    };
-    
-    // Set up load listeners on next frame to ensure DOM is ready
-    const observerTimeout = setTimeout(() => {
-      itemRefs.current.forEach((itemEl) => {
-        if (itemEl) {
-          const media = itemEl.querySelectorAll('img, video');
-          media.forEach((el) => {
-            const imgEl = el as HTMLImageElement;
-            const videoEl = el as HTMLVideoElement;
-            if ((imgEl.complete !== undefined && imgEl.complete) || (videoEl.readyState !== undefined && videoEl.readyState >= 2)) {
-              // Already loaded, trigger calculation
-              handleLoad();
-            } else {
-              el.addEventListener('load', handleLoad);
-              el.addEventListener('loadeddata', handleLoad);
-            }
-          });
-        }
-      });
-    }, 200);
-
-    return () => {
-      clearTimeout(timeout);
-      clearTimeout(observerTimeout);
-      itemRefs.current.forEach((itemEl) => {
-        if (itemEl) {
-          const media = itemEl.querySelectorAll('img, video');
-          media.forEach((el) => {
-            el.removeEventListener('load', handleLoad);
-            el.removeEventListener('loadeddata', handleLoad);
-          });
-        }
-      });
-    };
-  }, [items.length, columnCount, gap, items]);
-
-  const containerHeight = positions.length > 0 && itemRefs.current.length > 0
-    ? (() => {
-        const heights = positions.map((pos, index) => {
-          const itemEl = itemRefs.current[index];
-          const itemHeight = itemEl?.offsetHeight || 0;
-          const height = pos.top + itemHeight;
-          return isFinite(height) && height > 0 ? height : 0;
-        }).filter(h => h > 0);
-        return heights.length > 0 ? Math.max(...heights) : 0;
-      })()
+  const containerHeight = positions.length > 0
+    ? Math.max(...positions.map(pos => pos.top + pos.height)) + gap
     : 0;
 
   return (
     <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
       {items.map((item, index) => {
         const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
+        const position = positions[index];
+        
+        if (!position) {
+          // Render placeholder while calculating
+          return (
+            <div
+              key={itemKey}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: `${100 / columnCount}%`,
+                opacity: 0,
+                pointerEvents: 'none',
+              }}
+            >
+              {renderItem(item)}
+            </div>
+          );
+        }
+
         return (
           <div
             key={itemKey}
-            ref={(el) => { itemRefs.current[index] = el; }}
             style={{
               position: 'absolute',
-              top: positions[index]?.top ?? 0,
-              left: positions[index]?.left ?? 0,
-              width: positions[index]?.width || `${100 / columnCount}%`,
-              opacity: positions[index] ? 1 : 0, // Hide until positioned
-              margin: 0, // Ensure no margins that could create irregular gaps
-              padding: 0, // Ensure no padding that could create irregular gaps
+              top: position.top,
+              left: position.left,
+              width: position.width,
+              height: position.height,
+              margin: 0,
+              padding: 0,
+              willChange: 'auto', // Prevent repaints
             }}
           >
             {renderItem(item)}
@@ -442,8 +466,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           top: containerHeight > 0 ? containerHeight : '100%', 
           left: 0, 
           right: 0,
-          minHeight: '80px', // Ensure minimum height for better intersection detection on mobile
-          pointerEvents: 'none', // Don't interfere with clicks
+          minHeight: '80px',
+          pointerEvents: 'none',
         }} 
       />
     </div>
@@ -1783,10 +1807,18 @@ function DiscoverPageContent() {
     return shuffled;
   }, []);
 
-  // Calculate how many items to load per batch (at least 9 rows)
+  // Calculate how many items to load per batch (full page worth)
   const getBatchSize = useCallback(() => {
-    // Always load at least 9 rows for the image mosaic
-    const minRows = 9;
+    // Calculate full page worth: viewport height + buffer
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const estimatedRowHeight = 400; // Average row height in masonry
+    const rowsInViewport = Math.ceil(viewportHeight / estimatedRowHeight);
+    
+    // Load full page + 50% buffer for smooth scrolling
+    const totalRows = Math.ceil(rowsInViewport * 1.5);
+    
+    // Ensure minimum of 9 rows
+    const minRows = Math.max(9, totalRows);
     
     // Batch size = columns × rows
     const batchSize = columnCount * minRows;
@@ -1800,7 +1832,7 @@ function DiscoverPageContent() {
     if (isLoadingMore || showBottomLoader) {
       return;
     }
-    
+
     // Show loading indicator and fetch content during the loading time
     setShowBottomLoader(true);
     setIsLoadingMore(true);
@@ -1844,7 +1876,7 @@ function DiscoverPageContent() {
           if (prev.length === 0) {
             // No existing artworks, nothing to recycle
             setShowBottomLoader(false);
-            setIsLoadingMore(false);
+        setIsLoadingMore(false);
             return prev;
           }
           
@@ -2043,15 +2075,16 @@ function DiscoverPageContent() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && !isLoadingMore && !showBottomLoader) {
-            // Load more content when sentinel comes into view
-            // Always try to load - will recycle if hasMore is false
+            // Load more content when sentinel comes into view (75% scroll)
             loadMoreArtworks();
           }
         });
       },
       {
-        rootMargin: '200px', // Reduced further - trigger closer to bottom for pause effect
-        threshold: 0.01, // Lower threshold for better mobile detection (1% visible)
+        // Trigger when 75% of the way through content
+        // rootMargin: positive value means trigger earlier (before reaching sentinel)
+        rootMargin: '25% 0px', // Trigger when 75% scrolled (25% remaining)
+        threshold: 0.01,
       }
     );
 
@@ -2062,20 +2095,20 @@ function DiscoverPageContent() {
     };
   }, [isLoadingMore, loadMoreArtworks, showBottomLoader]);
 
-  // Fallback scroll listener for mobile (more reliable than IntersectionObserver on some mobile browsers)
+  // Fallback scroll listener for mobile - trigger at 75% scroll
   useEffect(() => {
     if (isLoadingMore) return;
 
     const handleScroll = () => {
-      // Check if we're near the bottom of the page
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       
-      // Trigger when within 300px of bottom (closer to bottom for pause effect)
-      const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
+      // Calculate scroll percentage
+      const scrollPercentage = (scrollTop + windowHeight) / documentHeight;
       
-      if (distanceFromBottom < 300 && !isLoadingMore && !showBottomLoader) {
+      // Trigger at 75% scroll
+      if (scrollPercentage >= 0.75 && !isLoadingMore && !showBottomLoader) {
         loadMoreArtworks();
       }
     };
@@ -2093,7 +2126,6 @@ function DiscoverPageContent() {
     };
 
     window.addEventListener('scroll', throttledHandleScroll, { passive: true });
-    // Also check on initial load in case content doesn't fill viewport
     handleScroll();
 
     return () => {
@@ -2906,7 +2938,7 @@ function DiscoverPageContent() {
                       <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setShowFollowedOnly(false))} />
                     </Badge>
                   )}
-                </div>
+                        </div>
               )}
             </div>
             
