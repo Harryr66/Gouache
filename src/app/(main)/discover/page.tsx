@@ -756,7 +756,7 @@ const VideoPlayer = ({
   );
 };
 
-function DiscoverPageContent() {
+function DiscoverPageContent(): JSX.Element {
   const isDev = process.env.NODE_ENV === 'development';
   // Always log critical messages in production for debugging
   const log = (...args: any[]) => { console.log(...args); };
@@ -2601,7 +2601,7 @@ function DiscoverPageContent() {
     };
     
     fetchEvents();
-  }, [mounted, theme, generatePlaceholderEvents]);
+  }, [mounted, theme]);
 
   // Render initial tiles invisibly during loading so poster images can preload
   // Videos will load in background and autoplay when ready (onCanPlay)
