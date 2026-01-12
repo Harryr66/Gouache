@@ -1783,20 +1783,15 @@ function DiscoverPageContent() {
     return shuffled;
   }, []);
 
-  // Calculate how many items to load per batch (enough to fill viewport + 2 rows)
+  // Calculate how many items to load per batch (at least 9 rows)
   const getBatchSize = useCallback(() => {
-    // Calculate rows needed: viewport height / estimated row height
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-    const estimatedRowHeight = 400; // Approximate height per row
-    const rowsInViewport = Math.ceil(viewportHeight / estimatedRowHeight);
-    const extraRows = 2; // Load 2 extra rows for smooth scrolling
-    const totalRows = rowsInViewport + extraRows;
+    // Always load at least 9 rows for the image mosaic
+    const minRows = 9;
     
     // Batch size = columns × rows
-    const batchSize = columnCount * totalRows;
+    const batchSize = columnCount * minRows;
     
-    // Ensure minimum batch size
-    return Math.max(batchSize, columnCount * 3); // At least 3 rows
+    return batchSize;
   }, [columnCount]);
 
   // Load more artworks when scrolling to bottom (pagination)
@@ -1806,16 +1801,8 @@ function DiscoverPageContent() {
       return;
     }
     
-    // Show loading indicator and add pause for smoother experience
+    // Show loading indicator and fetch content during the loading time
     setShowBottomLoader(true);
-    
-    // Add a pause (1.5 seconds) before loading for cleaner experience
-    await new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 1500);
-    });
-    
     setIsLoadingMore(true);
     
     // Only recycle when we've truly reached the end (no more content available)
@@ -1826,16 +1813,27 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      // Calculate batch size based on grid dimensions for seamless loading
-      const LOAD_MORE_LIMIT = getBatchSize(); // Load enough to fill viewport + 2 rows
+      // Calculate batch size - at least 9 rows
+      const LOAD_MORE_LIMIT = getBatchSize();
       
-      const result = await PortfolioService.getDiscoverPortfolioItems({
+      // Start fetching content immediately, using the loading cursor time to load
+      const fetchPromise = PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
         deleted: false,
         hideAI: discoverSettings.hideAiAssistedArt,
         limit: LOAD_MORE_LIMIT,
         startAfter: currentLastDoc || undefined, // Use undefined if null to start from beginning
       });
+      
+      // Add a pause (1.5 seconds) for smoother UX, but fetch during this time
+      const [result] = await Promise.all([
+        fetchPromise,
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            resolve();
+          }, 1500);
+        })
+      ]);
       
       if (result.items.length === 0) {
         // Only recycle when there's NO new content available
