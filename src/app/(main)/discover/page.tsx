@@ -2601,7 +2601,7 @@ function DiscoverPageContent() {
     };
     
     fetchEvents();
-  }, [mounted, theme]);
+  }, [mounted, theme, generatePlaceholderEvents]);
 
   // Render initial tiles invisibly during loading so poster images can preload
   // Videos will load in background and autoplay when ready (onCanPlay)
