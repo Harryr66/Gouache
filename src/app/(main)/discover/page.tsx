@@ -799,6 +799,8 @@ function DiscoverPageContent() {
   const initialVideoReadyRef = useRef<Set<string>>(new Set());
   const initialImageReadyRef = useRef<Set<string>>(new Set());
   const initialVideoPosterRef = useRef<Set<string>>(new Set());
+  // Track last loaded artwork IDs to prevent showing same content twice in a row
+  const lastLoadedArtworkIdsRef = useRef<Set<string>>(new Set());
   
   // CLEAN LOADING SCREEN STATE - Simple and straightforward
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
@@ -1816,26 +1818,9 @@ function DiscoverPageContent() {
     
     setIsLoadingMore(true);
     
-    // Check if we're recycling (resetting to beginning)
-    const isRecycling = !hasMore || !lastDocument;
-    
-    // If we've reached the end, reset to beginning for continuous scroll
+    // Only recycle when we've truly reached the end (no more content available)
+    // Don't recycle if we still have more content to load
     let currentLastDoc = lastDocument;
-    if (isRecycling) {
-      log('🔄 Discover: Resetting pagination for continuous scroll...');
-      setLastDocument(null);
-      setHasMore(true);
-      currentLastDoc = null; // Start from beginning
-      
-      // Shuffle existing artworks to prevent consecutive duplicates when recycling
-      setArtworks(prev => {
-        if (prev.length > 0) {
-          log(`🔄 Discover: Shuffling ${prev.length} existing artworks before recycling...`);
-          return shuffleArtworks(prev);
-        }
-        return prev;
-      });
-    }
 
     log('📥 Discover: Loading more artworks...');
 
@@ -1853,28 +1838,52 @@ function DiscoverPageContent() {
       });
       
       if (result.items.length === 0) {
-        // Recycle content: reset to beginning for continuous scroll
-        log('🔄 Discover: Reached end, recycling content from beginning...');
-        setLastDocument(null);
-        setHasMore(true);
+        // Only recycle when there's NO new content available
+        // Filter out artworks that were shown in the previous load to prevent duplicates
+        log('🔄 Discover: No new content available, recycling with duplicate prevention...');
         
-        // Shuffle existing artworks to prevent consecutive duplicates
         setArtworks(prev => {
-          if (prev.length > 0) {
-            log(`🔄 Discover: Shuffling ${prev.length} existing artworks before recycling...`);
-            return shuffleArtworks(prev);
+          if (prev.length === 0) {
+            // No existing artworks, nothing to recycle
+            setShowBottomLoader(false);
+            setIsLoadingMore(false);
+            return prev;
           }
-          return prev;
+          
+          // Filter out artworks that were in the last load
+          const filtered = prev.filter(artwork => !lastLoadedArtworkIdsRef.current.has(artwork.id));
+          
+          if (filtered.length === 0) {
+            // All artworks were in the last load, clear the tracking and use all artworks
+            log('🔄 Discover: All artworks were in last load, resetting tracking...');
+            lastLoadedArtworkIdsRef.current.clear();
+            const shuffled = shuffleArtworks(prev);
+            // Track the IDs that will be shown
+            shuffled.slice(0, Math.min(prev.length, getBatchSize())).forEach(a => {
+              lastLoadedArtworkIdsRef.current.add(a.id);
+            });
+            setLastDocument(null);
+            setHasMore(true);
+            setShowBottomLoader(false);
+            setIsLoadingMore(false);
+            return shuffled;
+          }
+          
+          // Use filtered artworks (excluding last load)
+          const shuffled = shuffleArtworks(filtered);
+          // Track the IDs that will be shown
+          shuffled.slice(0, Math.min(filtered.length, getBatchSize())).forEach(a => {
+            lastLoadedArtworkIdsRef.current.add(a.id);
+          });
+          
+          log(`🔄 Discover: Recycled ${shuffled.length} artworks (filtered out ${prev.length - filtered.length} from last load)`);
+          setLastDocument(null);
+          setHasMore(true);
+          setShowBottomLoader(false);
+          setIsLoadingMore(false);
+          return shuffled;
         });
         
-        setShowBottomLoader(false);
-        setIsLoadingMore(false);
-        // Trigger load from beginning
-        setTimeout(() => {
-          if (!isLoadingMore) {
-            loadMoreArtworks();
-          }
-        }, 100);
         return;
       }
 
@@ -1956,14 +1965,12 @@ function DiscoverPageContent() {
       }
 
       // Append new artworks to existing ones
-      // If we're recycling, shuffle the combined array to prevent consecutive duplicates
+      // Track ONLY the last batch of artworks shown (not accumulated)
+      // This ensures same content doesn't appear twice in a row, but can appear after one load
+      lastLoadedArtworkIdsRef.current = new Set(newArtworks.map(a => a.id));
+      
       setArtworks(prev => {
-        const combined = [...prev, ...newArtworks];
-        if (isRecycling && combined.length > 1) {
-          log(`🔄 Discover: Shuffling ${combined.length} artworks (${prev.length} existing + ${newArtworks.length} new) to prevent duplicates...`);
-          return shuffleArtworks(combined);
-        }
-        return combined;
+        return [...prev, ...newArtworks];
       });
       
       // Update pagination state
@@ -1971,10 +1978,9 @@ function DiscoverPageContent() {
         setLastDocument(result.lastDoc);
         setHasMore(result.items.length === LOAD_MORE_LIMIT);
       } else {
-        // Recycle content: reset to beginning for continuous scroll
-        log('🔄 Discover: Reached end, recycling content from beginning...');
+        // No more documents available - will recycle on next load if needed
         setLastDocument(null);
-        setHasMore(true);
+        setHasMore(false); // Mark that we've reached the end
       }
 
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
@@ -1983,19 +1989,10 @@ function DiscoverPageContent() {
       setShowBottomLoader(false);
     } catch (error: any) {
       console.error('Error loading more artworks:', error);
-      // On error, try recycling content instead of stopping
-      log('🔄 Discover: Error occurred, recycling content from beginning...');
+      // On error, don't recycle - just stop loading
+      log('⚠️ Discover: Error loading artworks, stopping pagination');
       setLastDocument(null);
-      setHasMore(true);
-      
-      // Shuffle existing artworks on error to prevent consecutive duplicates
-      setArtworks(prev => {
-        if (prev.length > 0) {
-          log(`🔄 Discover: Shuffling ${prev.length} existing artworks after error...`);
-          return shuffleArtworks(prev);
-        }
-        return prev;
-      });
+      setHasMore(false);
       
       // Hide loading indicator on error
       setShowBottomLoader(false);
