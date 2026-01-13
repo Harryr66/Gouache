@@ -1919,7 +1919,7 @@ function DiscoverPageContent() {
       setIsLoadingMore(false);
       console.log('🔄 SCROLL LOAD: ✅ Finished loading (isLoadingMore set to false)');
     }
-  }, [hasMore, lastDocument, isLoadingMore, discoverSettings]);
+  }, [hasMore, lastDocument, isLoadingMore, discoverSettings, columnCount]);
 
   // AUTO-LOAD MORE: If initial load doesn't fill viewport, immediately load more
   useEffect(() => {
