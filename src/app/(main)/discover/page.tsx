@@ -264,7 +264,7 @@ const SORT_OPTIONS = [
 ];
 
 // Masonry grid with variety in tile heights - STATIC positioning (no shifting)
-// Uses refs to preserve positions - once set, positions NEVER change
+// Once a position is set, it NEVER changes. New items connect directly below existing ones.
 function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   items: any[];
   columnCount: number;
@@ -273,9 +273,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   loadMoreRef: React.RefObject<HTMLDivElement>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const layoutRef = useRef<Map<string, { top: number; left: number; width: number; height: number }>>(new Map());
+  const layoutRef = useRef<Map<string, { top: number; left: number; width: number; height: number; col: number }>>(new Map());
+  const itemWidthRef = useRef<number>(0);
   const [layout, setLayout] = useState<Map<string, { top: number; left: number; width: number; height: number }>>(new Map());
-  const [isCalculating, setIsCalculating] = useState(true);
 
   // Get item key for tracking
   const getItemKey = (item: any): string => {
@@ -290,23 +290,17 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         layoutRef.current = new Map();
         setLayout(new Map());
       }
-      setIsCalculating(false);
       return;
     }
 
-    setIsCalculating(true);
     const containerWidth = containerRef.current.offsetWidth;
-    if (!containerWidth || containerWidth <= 0) {
-      // Container not ready yet, retry on next render
-      setIsCalculating(false);
-      return;
-    }
+    if (!containerWidth || containerWidth <= 0) return;
 
     const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
-    if (itemWidth <= 0) {
-      setIsCalculating(false);
-      return;
-    }
+    if (itemWidth <= 0) return;
+
+    // Store itemWidth in ref for consistency
+    itemWidthRef.current = itemWidth;
 
     // Get current layout from ref (always up-to-date)
     const currentLayout = layoutRef.current;
@@ -323,12 +317,23 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       items.forEach(item => {
         const key = getItemKey(item);
         const pos = currentLayout.get(key);
-        if (pos) filteredLayout.set(key, pos);
+        if (pos) {
+          filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
+        }
       });
       setLayout(filteredLayout);
-      setIsCalculating(false);
       return;
     }
+
+    // Calculate column heights from EXISTING items only
+    // Use stored column index for precision (no rounding errors)
+    const columnHeights = new Array(columnCount).fill(0);
+    currentLayout.forEach((pos) => {
+      const col = pos.col;
+      if (col >= 0 && col < columnCount) {
+        columnHeights[col] = Math.max(columnHeights[col], pos.top + pos.height);
+      }
+    });
 
     // Load image dimensions for new items
     const promises = itemsNeedingLayout.map((item) => {
@@ -358,11 +363,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       // Create new layout with existing + new positions
       const newLayout = new Map(currentLayout);
       
-      // Calculate column heights from EXISTING items only (items already in currentLayout)
-      // CRITICAL: Only use items that already have positions, not new items
+      // Recalculate column heights from existing items (in case layout changed)
       const columnHeights = new Array(columnCount).fill(0);
       currentLayout.forEach((pos) => {
-        const col = Math.round(pos.left / (itemWidth + gap));
+        const col = pos.col;
         if (col >= 0 && col < columnCount) {
           columnHeights[col] = Math.max(columnHeights[col], pos.top + pos.height);
         }
@@ -372,29 +376,38 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       itemsNeedingLayout.forEach((item, idx) => {
         const key = getItemKey(item);
         const height = heights[idx];
+        
+        // Find shortest column
         const col = columnHeights.reduce((minIdx, h, i) => h < columnHeights[minIdx] ? i : minIdx, 0);
+        
+        // Calculate position
         const left = col * (itemWidth + gap);
-        const top = columnHeights[col]; // Place directly below existing content (no gap)
+        const top = columnHeights[col]; // Place directly at bottom of column (no gap)
         const itemHeight = Math.ceil(height);
-        columnHeights[col] = top + itemHeight; // Update column height for next item
-        newLayout.set(key, { top, left, width: itemWidth, height: itemHeight });
+        
+        // Update column height for next item
+        columnHeights[col] = top + itemHeight;
+        
+        // Store position with column index for future reference
+        newLayout.set(key, { top, left, width: itemWidth, height: itemHeight, col });
       });
 
       // Update ref and state
       layoutRef.current = newLayout;
       
-      // Filter to only include current items
+      // Filter to only include current items (remove col from output)
       const filteredLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
       items.forEach(item => {
         const key = getItemKey(item);
         const pos = newLayout.get(key);
-        if (pos) filteredLayout.set(key, pos);
+        if (pos) {
+          filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
+        }
       });
       
       setLayout(filteredLayout);
-      setIsCalculating(false);
     }).catch(() => {
-      setIsCalculating(false);
+      // Silent fail
     });
   }, [items, columnCount, gap]);
 
