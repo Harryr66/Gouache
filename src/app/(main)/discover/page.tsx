@@ -1235,7 +1235,7 @@ function DiscoverPageContent() {
             // Convert portfolio item to Artwork object
             const artwork: Artwork = {
               id: item.id,
-              title: item.title || 'Untitled',
+              title: item.title || '',
               description: item.description || '',
               imageUrl: imageUrl,
               imageAiHint: item.description || '',
@@ -1330,7 +1330,7 @@ function DiscoverPageContent() {
               
               const artwork: Artwork = {
                 id: item.id || `${artistDoc.id}-${Date.now()}-${index}`,
-                title: item.title || 'Untitled',
+                title: item.title || '',
                 description: item.description || '',
                 imageUrl: imageUrl, // Already validated as Cloudflare image above
                 imageAiHint: item.description || '',
@@ -1492,7 +1492,7 @@ function DiscoverPageContent() {
             // CRITICAL: Use 'any' type to ensure videoUrl and mediaType are always included
             const artwork: any = {
               id: artworkDoc.id,
-              title: artworkData.title || 'Untitled',
+              title: artworkData.title || '',
               description: artworkData.description || '',
               imageUrl: finalImageUrl,
               imageAiHint: artworkData.description || '',
@@ -1863,7 +1863,7 @@ function DiscoverPageContent() {
 
         const artwork: Artwork = {
           id: item.id,
-          title: item.title || 'Untitled',
+          title: item.title || '',
           description: item.description || '',
           imageUrl: imageUrl,
           imageAiHint: item.description || '',
