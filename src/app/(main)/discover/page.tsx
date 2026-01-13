@@ -441,6 +441,14 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           outline: none !important;
           border-radius: 0 !important;
         }
+        /* Target Card component specifically */
+        .masonry-grid-item > div[class*="rounded"],
+        .masonry-grid-item > div[class*="border"] {
+          border: none !important;
+          border-width: 0 !important;
+          box-shadow: none !important;
+          height: 100% !important;
+        }
         .masonry-grid-item > div > div {
           height: 100% !important;
           width: 100% !important;
@@ -448,12 +456,23 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           padding: 0 !important;
           border: none !important;
         }
-        .masonry-grid-item > div > div > div {
+        /* Override padding-bottom trick - force fixed height */
+        .masonry-grid-item > div > div[style*="paddingBottom"],
+        .masonry-grid-item > div > div[style*="padding-bottom"] {
           padding-bottom: 0 !important;
           height: 100% !important;
           width: 100% !important;
           margin: 0 !important;
           position: relative !important;
+        }
+        .masonry-grid-item > div > div > div {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
         }
         .masonry-grid-item > div > div > div > div {
           position: absolute !important;
