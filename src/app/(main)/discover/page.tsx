@@ -263,7 +263,7 @@ const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently Updated' }
 ];
 
-// Simple masonry grid with variety in tile heights
+// Masonry grid with variety in tile heights - simple and reliable
 function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   items: any[];
   columnCount: number;
@@ -272,114 +272,85 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   loadMoreRef: React.RefObject<HTMLDivElement>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [heights, setHeights] = useState<number[]>([]);
-  const [positions, setPositions] = useState<Array<{ top: number; left: number; width: number }>>([]);
+  const [layout, setLayout] = useState<Array<{ top: number; left: number; width: number; height: number }>>([]);
 
-  // Calculate positions based on actual image heights for variety
   useEffect(() => {
     if (!containerRef.current || columnCount === 0 || items.length === 0) {
-      setPositions([]);
-      setHeights([]);
+      setLayout([]);
       return;
     }
 
     const containerWidth = containerRef.current.offsetWidth;
     if (!containerWidth || containerWidth <= 0) return;
 
-    const totalGapSpace = gap * (columnCount - 1);
-    const itemWidth = (containerWidth - totalGapSpace) / columnCount;
-    if (itemWidth <= 0 || !isFinite(itemWidth)) return;
+    const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
+    if (itemWidth <= 0) return;
 
-    // Load all image dimensions in parallel
-    const loadHeights = items.map((item) => {
+    // Load image dimensions for variety
+    const promises = items.map((item) => {
       return new Promise<number>((resolve) => {
         const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
-        
         if (!imageUrl) {
-          // Random variation for items without images
           resolve(itemWidth * (1.2 + Math.random() * 0.8));
           return;
         }
-
         const img = new window.Image();
-        img.onload = () => {
-          const aspectRatio = img.naturalHeight / img.naturalWidth;
-          resolve(itemWidth * aspectRatio);
-        };
-        img.onerror = () => {
-          resolve(itemWidth * (1.2 + Math.random() * 0.8));
-        };
+        img.onload = () => resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
+        img.onerror = () => resolve(itemWidth * (1.2 + Math.random() * 0.8));
         img.src = imageUrl;
       });
     });
 
-    Promise.all(loadHeights).then((loadedHeights) => {
-      setHeights(loadedHeights.map(h => Math.ceil(h)));
-      
-      // Calculate positions
+    Promise.all(promises).then((heights) => {
       const columnHeights = new Array(columnCount).fill(0);
-      const newPositions = loadedHeights.map((height, index) => {
-        const shortestCol = columnHeights.reduce((minIdx, h, idx) => 
-          h < columnHeights[minIdx] ? idx : minIdx, 0
-        );
-        
-        const left = shortestCol * (itemWidth + gap);
-        const top = columnHeights[shortestCol];
-        columnHeights[shortestCol] = top + Math.ceil(height);
-        
-        return { top, left, width: itemWidth };
+      const newLayout = heights.map((height, index) => {
+        const col = columnHeights.reduce((minIdx, h, idx) => h < columnHeights[minIdx] ? idx : minIdx, 0);
+        const left = col * (itemWidth + gap);
+        const top = columnHeights[col];
+        columnHeights[col] = top + Math.ceil(height);
+        return { top, left, width: itemWidth, height: Math.ceil(height) };
       });
-      
-      setPositions(newPositions);
+      setLayout(newLayout);
     });
   }, [items, columnCount, gap]);
 
-  const containerHeight = positions.length > 0 && heights.length > 0
-    ? Math.max(...positions.map((pos, idx) => pos.top + (heights[idx] || 0)))
+  const containerHeight = layout.length > 0
+    ? Math.max(...layout.map(item => item.top + item.height))
     : 0;
 
   return (
     <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
-        {items.map((item, index) => {
-          const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
-          const position = positions[index];
-          const height = heights[index];
-          
-          if (!position || !height) {
-            return null;
-          }
-
-          return (
-            <div
-              key={itemKey}
-              ref={(el) => { itemRefs.current[index] = el; }}
-              style={{
-                position: 'absolute',
-                top: `${position.top}px`,
-                left: `${position.left}px`,
-                width: `${position.width}px`,
-                height: `${height}px`,
-                margin: 0,
-                padding: 0,
-              }}
-            >
-              {renderItem(item)}
-            </div>
-          );
-        })}
-        <div 
-          ref={loadMoreRef} 
-          className="h-20 w-full" 
-          style={{ 
-            position: 'absolute', 
-            top: containerHeight > 0 ? containerHeight : '100%', 
-            left: 0, 
-            right: 0,
-            minHeight: '80px',
-            pointerEvents: 'none',
-          }} 
-        />
+      {items.map((item, index) => {
+        const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
+        const pos = layout[index];
+        if (!pos) return null;
+        
+        return (
+          <div
+            key={itemKey}
+            style={{
+              position: 'absolute',
+              top: `${pos.top}px`,
+              left: `${pos.left}px`,
+              width: `${pos.width}px`,
+              height: `${pos.height}px`,
+            }}
+          >
+            {renderItem(item)}
+          </div>
+        );
+      })}
+      <div 
+        ref={loadMoreRef} 
+        style={{ 
+          position: 'absolute', 
+          top: containerHeight, 
+          left: 0, 
+          right: 0,
+          height: '80px',
+          pointerEvents: 'none',
+        }} 
+      />
     </div>
   );
 }
