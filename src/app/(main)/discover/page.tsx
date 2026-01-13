@@ -366,13 +366,38 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       });
 
       layoutRef.current = newLayout;
+      
+      // CRITICAL: Include ALL items that have positions, not just current items array
+      // This ensures items don't disappear if they're temporarily filtered
       const filteredLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
+      // First add all items from current items array
       items.forEach(item => {
         const key = getItemKey(item);
         const pos = newLayout.get(key);
         if (pos) filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
       });
+      
+      // Then add any items in layout that aren't in current items (to prevent gaps)
+      newLayout.forEach((pos, key) => {
+        if (!filteredLayout.has(key)) {
+          // Check if this item is still in the items array by checking if any item has this key
+          const itemExists = items.some(item => getItemKey(item) === key);
+          if (itemExists) {
+            filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
+          }
+        }
+      });
+      
       setLayout(filteredLayout);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('MasonryGrid: Layout updated', {
+          totalItems: items.length,
+          itemsNeedingLayout: itemsNeedingLayout.length,
+          layoutSize: filteredLayout.size,
+          columnHeights: columnHeights.map((h, i) => ({ col: i, height: h }))
+        });
+      }
     }).catch((error) => {
       console.error('MasonryGrid error:', error);
     });
