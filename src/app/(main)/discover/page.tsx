@@ -1903,11 +1903,15 @@ function DiscoverPageContent() {
       setArtworks(prev => [...prev, ...newArtworks]);
       
       // Update pagination state
+      // If lastDoc exists, there might be more content (even if we got fewer items than requested)
+      // If lastDoc is null/undefined, we've reached the end
       if (result.lastDoc) {
         setLastDocument(result.lastDoc);
-        setHasMore(result.items.length === LOAD_MORE_LIMIT);
+        setHasMore(true); // There's more content if lastDoc exists
+        console.log(`🔄 SCROLL LOAD: ✅ More content available (lastDoc exists, got ${result.items.length} items, requested ${LOAD_MORE_LIMIT})`);
       } else {
         setHasMore(false);
+        console.log(`🔄 SCROLL LOAD: ⚠️ No more content (no lastDoc, got ${result.items.length} items, requested ${LOAD_MORE_LIMIT})`);
       }
 
       console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks (expected ${LOAD_MORE_LIMIT} for 10 rows, columnCount=${columnCount})`);
