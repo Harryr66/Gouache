@@ -2042,7 +2042,12 @@ function DiscoverPageContent() {
         setHasMore(false); // Mark that we've reached the end
       }
 
-      log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
+      const rowsLoaded = newArtworks.length > 0 ? Math.ceil(newArtworks.length / columnCount) : 0;
+      log(`✅ Discover: Loaded ${newArtworks.length} more artworks (${rowsLoaded} rows, expected ${Math.ceil(LOAD_MORE_LIMIT / columnCount)} rows)`);
+      
+      if (newArtworks.length < LOAD_MORE_LIMIT) {
+        log(`⚠️ Discover: After processing, only ${newArtworks.length} artworks remain (${rowsLoaded} rows) - some items may have been filtered out`);
+      }
       
       // Hide loading indicator after content is loaded
       setShowBottomLoader(false);
