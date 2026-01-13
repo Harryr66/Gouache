@@ -1570,14 +1570,6 @@ function DiscoverPageContent() {
         const MIN_ITEMS_FOR_DESKTOP = 30;
         // Note: loadMoreArtworks will be called via useEffect after artworks are set
         
-        // If we only have placeholders, mark images as "ready" immediately (they don't need to load)
-        if (safeArtworks.length === 0 && placeholderArtworks.length > 0) {
-          // Placeholders don't have real images that need loading, so mark them as ready immediately
-          setInitialImagesReady(placeholderArtworks.length);
-          setInitialImagesTotal(placeholderArtworks.length);
-          console.log(`✅ Placeholders only: Marking ${placeholderArtworks.length} items as ready immediately`);
-        }
-        
         // Count initial viewport media for preloading with connection-aware limits
         // Strategy: Load poster images first (fast), limit videos to 3 per viewport, connection-aware preload count
         const connectionSpeed = getConnectionSpeed();
@@ -1653,54 +1645,6 @@ function DiscoverPageContent() {
         // On error, show empty state - no placeholders
         setArtworks([]);
         setArtworksLoaded(true); // Mark artworks as loaded even on error
-        // Mark placeholders as ready immediately (they don't need to load)
-        setInitialImagesReady(placeholderArtworks.length);
-        setInitialImagesTotal(placeholderArtworks.length);
-        log(`⚠️ Discover: Showing ${placeholderArtworks.length} placeholder artworks due to error (marked as ready immediately)`);
-        
-        // Count initial viewport media for preloading with connection-aware limits
-        const connectionSpeed = getConnectionSpeed();
-        const preloadCount = connectionSpeed === 'fast' ? 3 : connectionSpeed === 'medium' ? 2 : 1;
-        
-        // Limit videos to 3 per viewport
-        const MAX_VIDEOS_PER_VIEWPORT = 3;
-        let videoCount = 0;
-        const initialTiles: Artwork[] = [];
-        
-        for (const artwork of placeholderArtworks) {
-          if (initialTiles.length >= preloadCount) break;
-          
-          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-          
-          if (hasVideo) {
-            if (videoCount < MAX_VIDEOS_PER_VIEWPORT) {
-              initialTiles.push(artwork);
-              videoCount++;
-            }
-          } else {
-            initialTiles.push(artwork);
-          }
-        }
-        
-        // Separate video posters from regular images (same as success case)
-        const initialVideoPosters = initialTiles.filter((artwork: Artwork) => {
-          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-          return hasVideo && artwork.imageUrl;
-        });
-        const initialRegularImages = initialTiles.filter((artwork: Artwork) => {
-          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-          return !hasVideo && artwork.imageUrl;
-        });
-        
-        setInitialVideosTotal(initialVideoPosters.length);
-        setInitialVideoPostersTotal(initialVideoPosters.length);
-        setInitialImagesTotal(initialVideoPosters.length + initialRegularImages.length);
-        initialVideoReadyRef.current.clear();
-        initialImageReadyRef.current.clear();
-        initialVideoPosterRef.current.clear();
-        setInitialVideosReady(0);
-        setInitialImagesReady(0);
-        setInitialVideoPostersReady(0);
         // DO NOT reset joke completion state - it must remain true once set to prevent overlay from reappearing
         // setJokeComplete(false); // REMOVED - causes second loading screen
         // setJokeCompleteTime(null); // REMOVED - causes second loading screen
@@ -2215,25 +2159,13 @@ function DiscoverPageContent() {
       }
     }
 
-    // Always show real artworks first, then append placeholders to fill the grid
-    // Placeholders have score 0 so they'll always rank below real artworks
     log('🔍 filteredAndSortedArtworks:', {
       totalFiltered: filtered.length,
-      allRealArtworks: allRealArtworks.length,
-      allPlaceholderArtworks: allPlaceholderArtworks.length,
       sortedRealArtworks: sorted.length
     });
     
-    if (sorted.length === 0 && allPlaceholderArtworks.length > 0) {
-      // No real artworks match filters, show only placeholders
-      log('📋 Discover: No real artworks match filters, showing placeholders:', allPlaceholderArtworks.length);
-      return allPlaceholderArtworks;
-    }
-    
-    // Return real artworks first, then placeholders to fill remaining space
-    const result = [...sorted, ...allPlaceholderArtworks];
-    log('✅ Discover: Returning', sorted.length, 'real artworks +', allPlaceholderArtworks.length, 'placeholders =', result.length, 'total');
-    return result;
+    log('✅ Discover: Returning', sorted.length, 'real artworks');
+    return sorted;
   }, [artworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
   // Filter and sort marketplace products
