@@ -315,13 +315,15 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     if (!containerRef.current) return;
     
     const resizeObserver = new ResizeObserver(() => {
-      // Trigger layout recalculation when container size changes
+      // CRITICAL: When container resizes, CLEAR all positions and recalculate
       if (containerRef.current && items.length > 0 && columnCount > 0) {
         const width = containerRef.current.offsetWidth;
         if (width > 0) {
-          console.log('📏 MasonryGrid: Container resized, width:', width);
-          // Force recalculation by clearing layout for items that need new positions
-          setLayout(new Map(layoutRef.current));
+          console.log('📏 MasonryGrid: Container resized, width:', width, '- CLEARING layout for recalculation');
+          // Clear layout completely - force full recalculation with new width
+          layoutRef.current = new Map();
+          setLayout(new Map());
+          setIsCalculating(false);
         }
       }
     });
