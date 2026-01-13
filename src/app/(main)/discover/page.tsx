@@ -1727,8 +1727,10 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      // Load exactly 10 rows of content (columnCount * 10 items)
-      const LOAD_MORE_LIMIT = columnCount * 10; // Always load 10 rows worth of content
+      // CRITICAL: Request 5x more items than needed to account for client-side filtering
+      // Many items get filtered out (Cloudflare images only, missing artist data, etc.)
+      // So we request 5x more to ensure we get enough items that pass the filters
+      const LOAD_MORE_LIMIT = Math.max(columnCount * 50, 250); // Request 50 rows worth, minimum 250 items
       
       const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
@@ -1844,8 +1846,17 @@ function DiscoverPageContent() {
         newArtworks.push(artwork);
       }
 
-      // Append new artworks to existing ones
-      setArtworks(prev => [...prev, ...newArtworks]);
+      // Append new artworks to existing ones, deduplicating by ID to prevent recycling
+      setArtworks(prev => {
+        const existingIds = new Set(prev.map(a => a.id));
+        const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
+        const combined = [...prev, ...uniqueNewArtworks];
+        // Deduplicate entire array by ID (in case of any duplicates in prev)
+        const uniqueCombined = Array.from(
+          new Map(combined.map(a => [a.id, a])).values()
+        );
+        return uniqueCombined;
+      });
       
       // Update pagination state
       // If lastDoc exists, there might be more content (even if we got fewer items than requested)
@@ -2032,6 +2043,29 @@ function DiscoverPageContent() {
 
     // FIRST: Filter out deleted items (like we did for courses - check deleted flag immediately)
     filtered = filtered.filter((artwork: any) => artwork.deleted !== true);
+    
+    // Deduplicate by content (imageUrl) to handle duplicate uploads - keep the newest one
+    const seenUrls = new Map<string, any>();
+    filtered = filtered.filter((artwork: any) => {
+      const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
+      const videoUrl = artwork.videoUrl || '';
+      const contentKey = imageUrl || videoUrl;
+      if (!contentKey) return true; // Keep items without URLs (let other filters handle them)
+      
+      if (seenUrls.has(contentKey)) {
+        // Keep the one with the newer createdAt date
+        const existing = seenUrls.get(contentKey)!;
+        const existingDate = existing.createdAt instanceof Date ? existing.createdAt.getTime() : new Date(existing.createdAt).getTime();
+        const currentDate = artwork.createdAt instanceof Date ? artwork.createdAt.getTime() : new Date(artwork.createdAt).getTime();
+        if (currentDate > existingDate) {
+          seenUrls.set(contentKey, artwork);
+          return true; // Replace with newer one
+        }
+        return false; // Skip this duplicate (keep the existing one)
+      }
+      seenUrls.set(contentKey, artwork);
+      return true;
+    });
     
     // SECOND: For image grid, only include Cloudflare images (all active artists should use Cloudflare)
     // This ensures we don't show old Firebase Storage images or other sources
