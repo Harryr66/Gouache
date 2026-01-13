@@ -348,11 +348,14 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     const existingPositions = positions.slice(0, Math.min(positions.length, items.length));
 
     // Calculate column heights from existing positions
+    // Items connect bottom-to-top with no vertical gaps
     const columnHeights = new Array(columnCount).fill(0);
     existingPositions.forEach((pos, idx) => {
       if (idx < items.length) {
+        // Calculate which column this item is in based on left position
         const colIndex = Math.round(pos.left / (itemWidth + gap));
         if (colIndex >= 0 && colIndex < columnCount) {
+          // Item bottom = top + height (no gap added)
           const itemBottom = pos.top + pos.height;
           if (itemBottom > columnHeights[colIndex]) {
             columnHeights[colIndex] = itemBottom;
@@ -377,7 +380,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           return;
         }
 
-        // Find shortest column
+        // Find shortest column (where next item should go)
         const shortestColumnIndex = columnHeights.reduce(
           (minIndex, height, colIndex) => 
             height < columnHeights[minIndex] ? colIndex : minIndex,
@@ -390,13 +393,14 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           : (heights[heightIndex++] || itemWidth * 1.2);
 
         // Calculate position
+        // Horizontal: column index * (item width + gap between columns)
         const left = shortestColumnIndex * (itemWidth + gap);
-        const top = columnHeights[shortestColumnIndex] === 0 
-          ? 0 
-          : Math.ceil(columnHeights[shortestColumnIndex]) + gap;
+        // Vertical: connect directly to previous item (no gap)
+        const top = columnHeights[shortestColumnIndex];
 
-        if (isFinite(top) && isFinite(left) && isFinite(itemWidth)) {
+        if (isFinite(top) && isFinite(left) && isFinite(itemWidth) && isFinite(itemHeight)) {
           newPositions.push({ top, left, width: itemWidth, height: itemHeight });
+          // Update column height: item connects directly (top + height, no gap)
           columnHeights[shortestColumnIndex] = top + itemHeight;
           
           // Mark as calculated
@@ -412,7 +416,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   }, [items.length, columnCount, gap, items]); // Include items to detect changes
 
   const containerHeight = positions.length > 0
-    ? Math.max(...positions.map(pos => pos.top + pos.height)) + gap
+    ? Math.max(...positions.map(pos => pos.top + pos.height))
     : 0;
 
   return (
