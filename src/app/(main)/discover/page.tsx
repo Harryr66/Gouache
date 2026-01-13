@@ -1738,9 +1738,19 @@ function DiscoverPageContent() {
         startAfter: lastDocument,
       });
       
+      // If no items returned, check if there's a lastDoc - if so, there might be more content
+      // (items might be filtered out, but cursor indicates more content exists)
       if (result.items.length === 0) {
-        console.log('🔄 SCROLL LOAD: ⚠️ No items returned from API, setting hasMore to false');
-        setHasMore(false);
+        if (result.lastDoc) {
+          // There's a cursor, so more content might exist (even if filtered out)
+          console.log('🔄 SCROLL LOAD: ⚠️ No items returned, but lastDoc exists - updating cursor and continuing');
+          setLastDocument(result.lastDoc);
+          setHasMore(true);
+        } else {
+          // No cursor and no items - we've reached the end
+          console.log('🔄 SCROLL LOAD: ⚠️ No items returned and no lastDoc - end of content reached');
+          setHasMore(false);
+        }
         setIsLoadingMore(false);
         return;
       }
