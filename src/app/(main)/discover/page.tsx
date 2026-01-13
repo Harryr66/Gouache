@@ -340,77 +340,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     : 0;
 
   return (
-    <>
-      <style>{`
-        .masonry-grid-item {
-          border: none !important;
-          box-shadow: none !important;
-          outline: none !important;
-        }
-        .masonry-grid-item > div {
-          height: 100% !important;
-          width: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border: none !important;
-          box-shadow: none !important;
-          outline: none !important;
-          border-radius: 0 !important;
-        }
-        /* Target Card component specifically */
-        .masonry-grid-item > div[class*="rounded"],
-        .masonry-grid-item > div[class*="border"] {
-          border: none !important;
-          border-width: 0 !important;
-          box-shadow: none !important;
-          height: 100% !important;
-        }
-        .masonry-grid-item > div > div {
-          height: 100% !important;
-          width: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border: none !important;
-        }
-        /* Override padding-bottom trick - force fixed height */
-        .masonry-grid-item > div > div[style*="paddingBottom"],
-        .masonry-grid-item > div > div[style*="padding-bottom"] {
-          padding-bottom: 0 !important;
-          height: 100% !important;
-          width: 100% !important;
-          margin: 0 !important;
-          position: relative !important;
-        }
-        .masonry-grid-item > div > div > div {
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-        }
-        .masonry-grid-item > div > div > div > div {
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-        }
-        .masonry-grid-item * {
-          margin: 0 !important;
-        }
-        .masonry-grid-item img,
-        .masonry-grid-item video {
-          display: block !important;
-          width: 100% !important;
-          height: 100% !important;
-          object-fit: cover !important;
-        }
-      `}</style>
-      <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
+    <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
         {items.map((item, index) => {
           const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
           const position = positions[index];
@@ -450,8 +380,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
             pointerEvents: 'none',
           }} 
         />
-      </div>
-    </>
+    </div>
   );
 }
 
