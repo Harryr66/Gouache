@@ -262,12 +262,13 @@ const SORT_OPTIONS = [
 ];
 
 // Masonry grid component that fills columns sequentially from top to bottom
-function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
+function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadingMore }: {
   items: any[];
   columnCount: number;
   gap: number;
   renderItem: (item: any) => React.ReactNode;
   loadMoreRef: React.RefObject<HTMLDivElement>;
+  isLoadingMore?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -436,7 +437,14 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         ref={loadMoreRef} 
         className="h-20 w-full flex items-center justify-center" 
         style={{ position: 'absolute', top: containerHeight, left: 0, right: 0 }} 
-      />
+      >
+        {isLoadingMore && (
+          <div className="flex flex-col items-center gap-2 py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Loading more artworks...</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
