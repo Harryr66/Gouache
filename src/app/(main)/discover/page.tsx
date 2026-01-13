@@ -511,15 +511,17 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   }, [items, columnCount, gap]);
 
   // Calculate container height from ALL positioned items
+  // Use layoutRef.current for immediate calculation, not async state
   const containerHeight = useMemo(() => {
-    if (layout.size === 0) return 0;
+    const currentLayout = layoutRef.current;
+    if (currentLayout.size === 0) return 0;
     let maxHeight = 0;
-    layout.forEach((pos) => {
+    currentLayout.forEach((pos) => {
       const bottom = pos.top + pos.height;
       if (bottom > maxHeight) maxHeight = bottom;
     });
     return maxHeight;
-  }, [layout]);
+  }, [layout]); // Still depend on layout state to trigger recalculation when it updates
 
   return (
     <>
@@ -583,24 +585,30 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
             No items to display
           </div>
         ) : (() => {
+          // CRITICAL: Use layoutRef.current for rendering, not layout state
+          // State updates are async, but ref is immediate
+          const currentLayout = layoutRef.current;
+          
           // Debug: Count how many items have positions
-          const itemsWithPositions = items.filter(item => layout.has(getItemKey(item))).length;
+          const itemsWithPositions = items.filter(item => currentLayout.has(getItemKey(item))).length;
           const itemsWithoutPositions = items.length - itemsWithPositions;
           if (itemsWithoutPositions > 0 && !isCalculating) {
             console.log('⚠️ MasonryGrid RENDER: Items without positions:', {
               totalItems: items.length,
               withPositions: itemsWithPositions,
               withoutPositions: itemsWithoutPositions,
-              layoutSize: layout.size,
+              layoutRefSize: currentLayout.size,
+              layoutStateSize: layout.size,
               firstFewMissing: items
-                .filter(item => !layout.has(getItemKey(item)))
+                .filter(item => !currentLayout.has(getItemKey(item)))
                 .slice(0, 3)
                 .map(item => getItemKey(item))
             });
           }
           return items.map((item) => {
             const itemKey = getItemKey(item);
-            const pos = layout.get(itemKey);
+            // Use layoutRef.current for immediate rendering, not async state
+            const pos = currentLayout.get(itemKey);
             
             // Only render items that have positions calculated
             if (!pos) {
