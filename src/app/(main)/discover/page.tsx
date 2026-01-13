@@ -457,9 +457,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         }
       `}} />
     <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
-        {!isCalculating && items.map((item) => {
+        {items.map((item) => {
           const itemKey = getItemKey(item);
           const pos = layout.get(itemKey);
+          // Render items as soon as they have positions (don't wait for all calculations)
           if (!pos) return null;
           
         return (
