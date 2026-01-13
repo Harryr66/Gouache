@@ -1126,9 +1126,9 @@ function DiscoverPageContent() {
               const lastDoc = portfolioItems[portfolioItems.length - 1];
               console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Setting lastDocument from Firestore:', { portfolioItemsCount: portfolioItems.length, INITIAL_FETCH_LIMIT, lastDocId: lastDoc.id });
               setLastDocument(lastDoc as any);
-              const hasMoreValue = portfolioItems.length === INITIAL_FETCH_LIMIT;
-              setHasMore(hasMoreValue);
-              console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Set hasMore:', hasMoreValue, 'because', portfolioItems.length, 'items loaded, limit is', INITIAL_FETCH_LIMIT);
+              // ALWAYS set hasMore to true if we got items - let pagination logic determine if there's more
+              setHasMore(true);
+              console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Set hasMore: true (will be corrected by pagination logic)');
             } else {
               console.log('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - No items, setting hasMore to false');
               setHasMore(false);
