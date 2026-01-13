@@ -330,11 +330,17 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     }
 
     // Calculate current column heights from existing layout
+    // CRITICAL: Only use items that are in the current items array to calculate column heights
+    // This ensures new items are placed correctly below existing visible items
     const columnHeights = new Array(columnCount).fill(0);
-    currentLayout.forEach((pos) => {
-      const col = Math.round(pos.left / (itemWidth + gap));
-      if (col >= 0 && col < columnCount) {
-        columnHeights[col] = Math.max(columnHeights[col], pos.top + pos.height);
+    items.forEach(item => {
+      const key = getItemKey(item);
+      const pos = currentLayout.get(key);
+      if (pos) {
+        const col = Math.round(pos.left / (itemWidth + gap));
+        if (col >= 0 && col < columnCount) {
+          columnHeights[col] = Math.max(columnHeights[col], pos.top + pos.height);
+        }
       }
     });
 
