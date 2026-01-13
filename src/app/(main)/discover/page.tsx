@@ -326,6 +326,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         const img = new window.Image();
         img.onload = () => {
           const aspectRatio = img.naturalHeight / img.naturalWidth;
+          // Calculate exact height - this will be the container height
+          // ArtworkTile will use padding-bottom, but we control the container height
           const height = itemWidth * aspectRatio;
           resolve(height);
         };
@@ -449,16 +451,29 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
             key={itemKey}
             style={{
               position: 'absolute',
-              top: position.top,
-              left: position.left,
-              width: position.width,
-              height: position.height,
+              top: `${position.top}px`,
+              left: `${position.left}px`,
+              width: `${position.width}px`,
+              height: `${position.height}px`,
               margin: 0,
               padding: 0,
-              willChange: 'auto', // Prevent repaints
+              willChange: 'auto',
+              overflow: 'hidden',
+              boxSizing: 'border-box',
             }}
+            className="[&_*]:!m-0"
           >
-            {renderItem(item)}
+            <div 
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                margin: 0, 
+                padding: 0,
+                display: 'block',
+              }}
+            >
+              {renderItem(item)}
+            </div>
           </div>
         );
       })}
