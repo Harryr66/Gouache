@@ -355,22 +355,20 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       return;
     }
 
-    // Check container width directly
-    const containerWidth = containerRef.current.offsetWidth;
+    // Check container width - if not available, wait and retry
+    let containerWidth = containerRef.current.offsetWidth;
     if (!containerWidth || containerWidth <= 0) {
-      console.warn('⚠️ MasonryGrid: Container width not available:', containerWidth, '- retrying in 100ms');
-      // Retry after a short delay
-      const timeout = setTimeout(() => {
+      console.warn('⚠️ MasonryGrid: Container width not available:', containerWidth);
+      // Retry on next frame
+      requestAnimationFrame(() => {
         const retryWidth = containerRef.current?.offsetWidth;
         if (retryWidth && retryWidth > 0) {
-          console.log('✅ MasonryGrid: Retry successful, width:', retryWidth);
-          // Force re-run by triggering a state update
-          setLayout(new Map(layoutRef.current));
-        } else {
-          console.error('❌ MasonryGrid: Container width still not available after retry:', retryWidth);
+          console.log('✅ MasonryGrid: Container width available on retry:', retryWidth);
+          // Force useEffect to re-run by updating a dependency
+          setLayout(new Map());
         }
-      }, 100);
-      return () => clearTimeout(timeout);
+      });
+      return;
     }
 
     const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
