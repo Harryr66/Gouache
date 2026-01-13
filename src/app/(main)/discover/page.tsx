@@ -1856,6 +1856,7 @@ function DiscoverPageContent() {
         setHasMore(false);
       }
 
+      console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks`);
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
     } catch (error: any) {
       console.error('Error loading more artworks:', error);
@@ -1906,28 +1907,28 @@ function DiscoverPageContent() {
     
     const sentinel = loadMoreRef.current;
     if (!sentinel) {
-      console.log('⚠️ IntersectionObserver: loadMoreRef.current is null');
+      console.log('🔄 SCROLL LOAD: ⚠️ loadMoreRef.current is null');
       return;
     }
     
     if (!hasMore) {
-      console.log('⚠️ IntersectionObserver: hasMore is false');
+      console.log('🔄 SCROLL LOAD: ⚠️ hasMore is false - no more content to load');
       return;
     }
     
     if (isLoadingMore) {
-      console.log('⚠️ IntersectionObserver: isLoadingMore is true');
+      console.log('🔄 SCROLL LOAD: ⚠️ isLoadingMore is true - already loading');
       return;
     }
 
-    console.log('✅ IntersectionObserver: Setting up observer for grid view');
+    console.log('🔄 SCROLL LOAD: ✅ Setting up observer for grid view');
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          console.log('📥 IntersectionObserver: Entry intersecting:', entry.isIntersecting, 'hasMore:', hasMore, 'isLoadingMore:', isLoadingMore);
+          console.log('🔄 SCROLL LOAD: 📍 Entry intersecting:', entry.isIntersecting, 'hasMore:', hasMore, 'isLoadingMore:', isLoadingMore);
           if (entry.isIntersecting && hasMore && !isLoadingMore) {
-            console.log('📥 IntersectionObserver: Triggering loadMoreArtworks...');
+            console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks NOW!');
             // Load more content when sentinel comes into view
             loadMoreArtworks();
           }
@@ -1940,10 +1941,10 @@ function DiscoverPageContent() {
     );
 
     observer.observe(sentinel);
-    console.log('✅ IntersectionObserver: Observer attached to sentinel');
+    console.log('🔄 SCROLL LOAD: ✅ Observer attached to sentinel');
 
     return () => {
-      console.log('🧹 IntersectionObserver: Cleaning up observer');
+      console.log('🔄 SCROLL LOAD: 🧹 Cleaning up observer');
       observer.disconnect();
     };
   }, [hasMore, isLoadingMore, loadMoreArtworks, artworkView]);
