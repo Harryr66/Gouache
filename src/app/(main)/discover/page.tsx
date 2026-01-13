@@ -1728,36 +1728,19 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      // CRITICAL: Request 10x more items than needed because filtering removes 95%+ of items
-      // Console shows: "got 3 items, requested 100" - only 3% pass filters!
-      // We need to request many more items to get enough that pass Cloudflare image filter
-      const LOAD_MORE_LIMIT = Math.min(columnCount * 100, 200); // Request 100 rows worth, max 200 items to account for heavy filtering
+      // Request more items than needed because client-side filtering removes many items
+      // But keep it reasonable to avoid excessive loading times
+      const LOAD_MORE_LIMIT = Math.min(columnCount * 30, 100); // Request 30 rows worth, max 100 items
       
-      // CRITICAL: If lastDocument is a plain object (from API), convert it to DocumentSnapshot
-      // Firestore startAfter needs a DocumentSnapshot, not a plain object
-      let cursor = lastDocument;
-      if (lastDocument && lastDocument.id && !lastDocument.ref) {
-        // It's a plain object, not a DocumentSnapshot - get the actual document
-        try {
-          const docRef = doc(db, 'portfolioItems', lastDocument.id);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            cursor = docSnap;
-            console.log('🔄 SCROLL LOAD: ✅ Converted plain object to DocumentSnapshot for cursor');
-          } else {
-            console.warn('🔄 SCROLL LOAD: ⚠️ Document not found for cursor, using plain object');
-          }
-        } catch (error) {
-          console.warn('🔄 SCROLL LOAD: ⚠️ Error converting cursor, using plain object:', error);
-        }
-      }
-      
+      // NOTE: lastDocument should already be a DocumentSnapshot from previous loadMoreArtworks calls
+      // Only the initial load from API returns a plain object, but we use direct Firestore for pagination
+      // So lastDocument should always be a DocumentSnapshot here
       const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
         deleted: false,
         hideAI: discoverSettings.hideAiAssistedArt,
         limit: LOAD_MORE_LIMIT,
-        startAfter: cursor,
+        startAfter: lastDocument,
       });
       
       // If no items returned, check if there's a lastDoc - if so, there might be more content
