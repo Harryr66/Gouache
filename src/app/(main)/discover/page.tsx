@@ -1058,7 +1058,7 @@ function DiscoverPageContent() {
               portfolioItems = apiData.items;
               log(`✅ Discover: Found ${portfolioItems.length} items from cached API (instant response)`);
               
-              // Store last document for pagination - use last item from array (like fallback path)
+              // Store last document for pagination - use last item from array for cursor
               if (portfolioItems.length > 0) {
                 const lastItem = portfolioItems[portfolioItems.length - 1];
                 console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Setting lastDocument from last item:', { 
@@ -1067,9 +1067,10 @@ function DiscoverPageContent() {
                   lastItemId: lastItem.id
                 });
                 setLastDocument(lastItem);
-                const hasMoreValue = portfolioItems.length >= INITIAL_FETCH_LIMIT;
-                setHasMore(hasMoreValue);
-                console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Set hasMore:', hasMoreValue, 'because', portfolioItems.length, 'items loaded, limit is', INITIAL_FETCH_LIMIT);
+                // ALWAYS set hasMore to true if we got items - let pagination logic determine if there's more
+                // Don't compare to INITIAL_FETCH_LIMIT because filtering may reduce count, but more content exists
+                setHasMore(true);
+                console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Set hasMore: true (will be corrected by pagination logic)');
               } else {
                 console.log('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - No items, setting hasMore to false');
                 setHasMore(false);
