@@ -1904,6 +1904,31 @@ function DiscoverPageContent() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [hasMore, isLoadingMore, lastDocument, prefetchNextPage]);
 
+  // FALLBACK: Scroll listener for grid view (backup if IntersectionObserver fails)
+  useEffect(() => {
+    if (artworkView !== 'grid' || !hasMore || isLoadingMore || !lastDocument) return;
+    
+    console.log('🔄 SCROLL LOAD: 📜 Setting up fallback scroll listener for grid view');
+    
+    const handleScroll = () => {
+      // Check if we're near the bottom (within 500px)
+      const scrollPosition = window.scrollY + window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const distanceFromBottom = documentHeight - scrollPosition;
+      
+      if (distanceFromBottom < 500 && !isLoadingMore && hasMore) {
+        console.log('🔄 SCROLL LOAD: 📜 Fallback scroll listener triggered - loading more!');
+        loadMoreArtworks();
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      console.log('🔄 SCROLL LOAD: 📜 Cleaning up fallback scroll listener');
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [artworkView, hasMore, isLoadingMore, lastDocument, loadMoreArtworks]);
+
   // IntersectionObserver for infinite scroll pagination (grid view only)
   useEffect(() => {
     console.log('🔄 SCROLL LOAD: 🔍 useEffect triggered, artworkView:', artworkView, 'hasMore:', hasMore, 'isLoadingMore:', isLoadingMore);
