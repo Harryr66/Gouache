@@ -2257,6 +2257,9 @@ function DiscoverPageContent() {
   // Infinite scroll observer for list view - progressively show more items
   // Also triggers loadMoreArtworks when we're near the end of visible items
   useEffect(() => {
+    // Only set up observer for list view (grid view has its own observer)
+    if (artworkView !== 'list') return;
+    
     const sentinel = loadMoreRef.current;
     if (!sentinel) return;
 
