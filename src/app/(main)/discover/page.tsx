@@ -1727,10 +1727,10 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      // CRITICAL: Request 5x more items than needed to account for client-side filtering
+      // Request 2-3x more items than needed to account for client-side filtering
       // Many items get filtered out (Cloudflare images only, missing artist data, etc.)
-      // So we request 5x more to ensure we get enough items that pass the filters
-      const LOAD_MORE_LIMIT = Math.max(columnCount * 50, 250); // Request 50 rows worth, minimum 250 items
+      // But keep batch size reasonable for mobile performance (max 100 items)
+      const LOAD_MORE_LIMIT = Math.min(columnCount * 20, 100); // Request 20 rows worth, max 100 items for mobile performance
       
       const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
