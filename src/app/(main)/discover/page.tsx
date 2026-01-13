@@ -270,13 +270,33 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   items: any[];
   columnCount: number;
   gap: number;
-  renderItem: (item: any) => React.ReactNode;
+  renderItem: (item: any, isVisible?: boolean) => React.ReactNode;
   loadMoreRef: React.RefObject<HTMLDivElement>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const layoutRef = useRef<Map<string, { top: number; left: number; width: number; height: number; col: number }>>(new Map());
   const [layout, setLayout] = useState<Map<string, { top: number; left: number; width: number; height: number }>>(new Map());
   const [isCalculating, setIsCalculating] = useState(false);
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [visibleItems, setVisibleItems] = useState<Set<string>>(new Set());
+  const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
+  
+  const getItemKey = (item: any): string => {
+    if ('id' in item && item.id) return String(item.id);
+    if ('campaign' in item && item.campaign?.id) return String(item.campaign.id);
+    return `item-${item.imageUrl || Math.random()}`;
+  };
+  
+  // Initialize visible items for first 12 items (initial viewport)
+  useEffect(() => {
+    if (items.length > 0) {
+      const initialVisible = new Set<string>();
+      items.slice(0, 12).forEach((item) => {
+        initialVisible.add(getItemKey(item));
+      });
+      setVisibleItems(initialVisible);
+    }
+  }, [items.length > 0 ? items[0]?.id : null]); // Only on initial load
   
   // CRITICAL: Log when component renders
   console.log('🎨 MasonryGrid RENDER:', {
@@ -553,6 +573,56 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     });
   }, [items, columnCount, gap]);
 
+  // IntersectionObserver for lazy loading images below the fold
+  useEffect(() => {
+    if (typeof window === 'undefined' || !containerRef.current) return;
+
+    // Clean up existing observer
+    if (intersectionObserverRef.current) {
+      intersectionObserverRef.current.disconnect();
+    }
+
+    // Create observer with rootMargin to start loading 500px before viewport
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const newVisibleItems = new Set(visibleItems);
+        entries.forEach((entry) => {
+          const itemKey = entry.target.getAttribute('data-item-key');
+          if (!itemKey) return;
+
+          if (entry.isIntersecting) {
+            newVisibleItems.add(itemKey);
+          } else {
+            // Keep items visible once loaded (don't unload)
+            // Only add, never remove from visibleItems
+          }
+        });
+        
+        if (newVisibleItems.size !== visibleItems.size) {
+          setVisibleItems(newVisibleItems);
+        }
+      },
+      {
+        root: null, // Use viewport as root
+        rootMargin: '500px', // Start loading 500px before entering viewport
+        threshold: 0.01 // Trigger when 1% of item is visible
+      }
+    );
+
+    intersectionObserverRef.current = observer;
+
+    // Observe all item elements
+    itemRefs.current.forEach((element) => {
+      observer.observe(element);
+    });
+
+    return () => {
+      if (intersectionObserverRef.current) {
+        intersectionObserverRef.current.disconnect();
+      }
+    };
+  }, [items.length, visibleItems]);
+
   // Calculate container height from ALL positioned items
   // Use layoutRef.current for immediate calculation, not async state
   const containerHeight = useMemo(() => {
@@ -700,9 +770,25 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
               console.log('✅ Rendering item:', itemKey, 'at position:', { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
             }
           
+          // Check if item is visible (or in initial viewport - first 12 items)
+          const isInInitialViewport = items.indexOf(item) < 12;
+          const isVisible = visibleItems.has(itemKey) || isInInitialViewport;
+          
           return (
             <div
               key={itemKey}
+              ref={(el) => {
+                if (el) {
+                  itemRefs.current.set(itemKey, el);
+                  // Observe this element if observer exists
+                  if (intersectionObserverRef.current) {
+                    intersectionObserverRef.current.observe(el);
+                  }
+                } else {
+                  itemRefs.current.delete(itemKey);
+                }
+              }}
+              data-item-key={itemKey}
               className="masonry-item-wrapper"
               style={{
                 position: 'absolute',
@@ -717,7 +803,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
                 zIndex: 1,
               }}
             >
-              {renderItem(item)}
+              {renderItem(item, isVisible)}
             </div>
           );
           });
@@ -3313,7 +3399,7 @@ function DiscoverPageContent() {
                 })()}
                 columnCount={columnCount}
                 gap={4}
-                renderItem={(item) => {
+                renderItem={(item, isVisible = true) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
                   if (isAd) {
@@ -3335,11 +3421,14 @@ function DiscoverPageContent() {
                   // Check if this is in initial viewport (first 12 tiles)
                   const isInitial = visibleFilteredArtworks.indexOf(artwork) < 12;
                   
+                  // Only load images if visible or in initial viewport (lazy loading)
+                  const shouldLoadImage = isVisible || isInitial;
+                  
                   return (
                     <ArtworkTile 
                       artwork={artwork} 
                       hideBanner={true} // Always hide banner in grid view to prevent extra height
-                      isInitialViewport={isInitial && hasVideo}
+                      isInitialViewport={shouldLoadImage && isInitial && hasVideo ? true : undefined}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
                       className="!border-0 !shadow-none !outline-none [&>*]:!h-full [&>*]:!pb-0"
                     />
