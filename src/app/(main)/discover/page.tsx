@@ -281,12 +281,6 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   const [visibleItems, setVisibleItems] = useState<Set<string>>(new Set());
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   
-  const getItemKey = (item: any): string => {
-    if ('id' in item && item.id) return String(item.id);
-    if ('campaign' in item && item.campaign?.id) return String(item.campaign.id);
-    return `item-${item.imageUrl || Math.random()}`;
-  };
-  
   // Initialize visible items for first 12 items (initial viewport)
   useEffect(() => {
     if (items.length > 0) {
@@ -324,16 +318,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     });
   }, [items.length, layout.size, isCalculating]);
 
-  const getItemKey = (item: any): string => {
-    if ('id' in item && item.id) return String(item.id);
-    if ('campaign' in item && item.campaign?.id) return String(item.campaign.id);
-    return `item-${item.imageUrl || Math.random()}`;
-  };
-
   // Use ResizeObserver to detect container size changes
   useEffect(() => {
-    if (!containerRef.current) return;
-    
+      if (!containerRef.current) return;
+      
     const resizeObserver = new ResizeObserver(() => {
       // CRITICAL: When container resizes, CLEAR all positions and recalculate
       if (containerRef.current && items.length > 0 && columnCount > 0) {
@@ -433,7 +421,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
 
     // Calculate column heights from EXISTING items ONLY
     // This is the initial calculation before image loading
-    const columnHeights = new Array(columnCount).fill(0);
+      const columnHeights = new Array(columnCount).fill(0);
     currentLayout.forEach((pos) => {
       if (pos.col >= 0 && pos.col < columnCount) {
         const bottom = pos.top + pos.height;
@@ -592,7 +580,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
 
           if (entry.isIntersecting) {
             newVisibleItems.add(itemKey);
-          } else {
+            } else {
             // Keep items visible once loaded (don't unload)
             // Only add, never remove from visibleItems
           }
@@ -774,9 +762,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           const isInInitialViewport = items.indexOf(item) < 12;
           const isVisible = visibleItems.has(itemKey) || isInInitialViewport;
           
-          return (
-            <div
-              key={itemKey}
+        return (
+          <div
+            key={itemKey}
               ref={(el) => {
                 if (el) {
                   itemRefs.current.set(itemKey, el);
@@ -790,8 +778,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
               }}
               data-item-key={itemKey}
               className="masonry-item-wrapper"
-              style={{
-                position: 'absolute',
+            style={{
+              position: 'absolute',
                 top: `${Math.round(pos.top)}px`,
                 left: `${Math.round(pos.left)}px`,
                 width: `${Math.round(pos.width)}px`,
@@ -804,8 +792,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
               }}
             >
               {renderItem(item, isVisible)}
-            </div>
-          );
+          </div>
+        );
           });
           
           const renderedCount = renderedItems.filter(item => item !== null).length;
