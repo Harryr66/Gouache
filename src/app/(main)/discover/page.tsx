@@ -1899,16 +1899,35 @@ function DiscoverPageContent() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [hasMore, isLoadingMore, lastDocument, prefetchNextPage]);
 
-  // IntersectionObserver for infinite scroll pagination (Pinterest-style continuous scrolling)
+  // IntersectionObserver for infinite scroll pagination (grid view only)
   useEffect(() => {
+    // Only set up observer for grid view
+    if (artworkView !== 'grid') return;
+    
     const sentinel = loadMoreRef.current;
-    if (!sentinel || !hasMore || isLoadingMore) return;
+    if (!sentinel) {
+      console.log('⚠️ IntersectionObserver: loadMoreRef.current is null');
+      return;
+    }
+    
+    if (!hasMore) {
+      console.log('⚠️ IntersectionObserver: hasMore is false');
+      return;
+    }
+    
+    if (isLoadingMore) {
+      console.log('⚠️ IntersectionObserver: isLoadingMore is true');
+      return;
+    }
+
+    console.log('✅ IntersectionObserver: Setting up observer for grid view');
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          console.log('📥 IntersectionObserver: Entry intersecting:', entry.isIntersecting, 'hasMore:', hasMore, 'isLoadingMore:', isLoadingMore);
           if (entry.isIntersecting && hasMore && !isLoadingMore) {
-            console.log('📥 IntersectionObserver: Sentinel is intersecting, loading more artworks...');
+            console.log('📥 IntersectionObserver: Triggering loadMoreArtworks...');
             // Load more content when sentinel comes into view
             loadMoreArtworks();
           }
@@ -1921,11 +1940,13 @@ function DiscoverPageContent() {
     );
 
     observer.observe(sentinel);
+    console.log('✅ IntersectionObserver: Observer attached to sentinel');
 
     return () => {
+      console.log('🧹 IntersectionObserver: Cleaning up observer');
       observer.disconnect();
     };
-  }, [hasMore, isLoadingMore, loadMoreArtworks]);
+  }, [hasMore, isLoadingMore, loadMoreArtworks, artworkView]);
 
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = Array.isArray(artworks) ? artworks : [];
