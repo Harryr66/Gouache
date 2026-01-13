@@ -1520,11 +1520,11 @@ function DiscoverPageContent() {
         }
         
         // Sort by createdAt descending (newest first)
-        fetchedArtworks.sort((a, b) => {
-          const dateA = a.createdAt.getTime();
-          const dateB = b.createdAt.getTime();
-          return dateB - dateA;
-        });
+          fetchedArtworks.sort((a, b) => {
+            const dateA = a.createdAt.getTime();
+            const dateB = b.createdAt.getTime();
+            return dateB - dateA;
+          });
         
         // No fallback: only show current portfolio items with images, skip deleted/hidden
         
@@ -1761,7 +1761,7 @@ function DiscoverPageContent() {
         limit: LOAD_MORE_LIMIT,
         startAfter: lastDocument,
       });
-
+      
       if (result.items.length === 0) {
         setHasMore(false);
         setIsLoadingMore(false);
@@ -1790,7 +1790,7 @@ function DiscoverPageContent() {
       for (const item of result.items) {
         const artistData = artistDataMap.get(item.userId);
         if (!artistData) continue;
-
+        
         let videoUrl = item.videoUrl || null;
         if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
           videoUrl = item.mediaUrls[0];
@@ -2734,7 +2734,9 @@ function DiscoverPageContent() {
                 items={(() => {
                   // Grid view shows ONLY images (no videos) from Cloudflare
                   // Videos will only appear in video feed (list view)
-                  const imageOnlyArtworks = visibleFilteredArtworks.filter((item) => {
+                  // CRITICAL: Use ALL filteredAndSortedArtworks for grid view, not visibleFilteredArtworks
+                  // This ensures all items are displayed and gaps are filled
+                  const imageOnlyArtworks = filteredAndSortedArtworks.filter((item) => {
                     // Keep ads
                     if ('type' in item && item.type === 'ad') return true;
                     // Filter out videos - only show images in grid view
