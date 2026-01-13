@@ -482,16 +482,23 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           }
         }
         
-        // Calculate position - NO GAPS
-        const left = shortestCol * (itemWidth + gap);
-        const top = columnHeights[shortestCol]; // EXACT position - connects directly to previous item
-        const itemHeight = Math.ceil(calculatedHeight);
+        // Calculate position - NO GAPS, ROUNDED to avoid sub-pixel issues
+        const left = Math.round(shortestCol * (itemWidth + gap));
+        const top = Math.round(columnHeights[shortestCol]); // EXACT position - connects directly to previous item
+        // Ensure minimum height for visibility
+        const itemHeight = Math.max(Math.ceil(calculatedHeight), 100);
         
-        // Update column height for next item
+        // Update column height IMMEDIATELY for next item
         columnHeights[shortestCol] = top + itemHeight;
         
-        // Store position with column index
-        newLayout.set(key, { top, left, width: itemWidth, height: itemHeight, col: shortestCol });
+        // Store position with column index - all values rounded
+        newLayout.set(key, { 
+          top: Math.round(top), 
+          left: Math.round(left), 
+          width: Math.round(itemWidth), 
+          height: itemHeight, 
+          col: shortestCol 
+        });
       });
 
       // Update ref IMMEDIATELY
