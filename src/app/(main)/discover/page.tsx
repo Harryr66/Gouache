@@ -319,39 +319,78 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     : 0;
 
   return (
-    <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
-      {items.map((item, index) => {
-        const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
-        const pos = layout[index];
-        if (!pos) return null;
-        
-        return (
-          <div
-            key={itemKey}
-            style={{
-              position: 'absolute',
-              top: `${pos.top}px`,
-              left: `${pos.left}px`,
-              width: `${pos.width}px`,
-              height: `${pos.height}px`,
-            }}
-          >
-            {renderItem(item)}
-          </div>
-        );
-      })}
-      <div 
-        ref={loadMoreRef} 
-        style={{ 
-          position: 'absolute', 
-          top: containerHeight, 
-          left: 0, 
-          right: 0,
-          height: '80px',
-          pointerEvents: 'none',
-        }} 
-      />
-    </div>
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        .masonry-item-wrapper {
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+        .masonry-item-wrapper > * {
+          width: 100% !important;
+          height: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .masonry-item-wrapper [class*="Card"] {
+          width: 100% !important;
+          height: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+        .masonry-item-wrapper > div[style*="padding-bottom"] {
+          padding-bottom: 0 !important;
+          height: 100% !important;
+        }
+        .masonry-item-wrapper img,
+        .masonry-item-wrapper [class*="Image"],
+        .masonry-item-wrapper span[style*="position: absolute"] {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+        }
+      `}} />
+      <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
+        {items.map((item, index) => {
+          const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
+          const pos = layout[index];
+          if (!pos) return null;
+          
+          return (
+            <div
+              key={itemKey}
+              className="masonry-item-wrapper"
+              style={{
+                position: 'absolute',
+                top: `${pos.top}px`,
+                left: `${pos.left}px`,
+                width: `${pos.width}px`,
+                height: `${pos.height}px`,
+                margin: 0,
+                padding: 0,
+                overflow: 'hidden',
+              }}
+            >
+              {renderItem(item)}
+            </div>
+          );
+        })}
+        <div 
+          ref={loadMoreRef} 
+          style={{ 
+            position: 'absolute', 
+            top: containerHeight, 
+            left: 0, 
+            right: 0,
+            height: '80px',
+            pointerEvents: 'none',
+          }} 
+        />
+      </div>
+    </>
   );
 }
 
