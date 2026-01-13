@@ -2045,21 +2045,20 @@ function DiscoverPageContent() {
       // This ensures same content doesn't appear twice in a row, but can appear after one load
       lastLoadedArtworkIdsRef.current = new Set(newArtworks.map(a => a.id));
       
-      // Preserve scroll position before adding new items (prevent jump to bottom)
+      // CRITICAL: Preserve scroll position - user continues scrolling from where they were
+      // New content loads below, scroll position stays the same
       const scrollYBefore = typeof window !== 'undefined' ? window.scrollY : 0;
-      const scrollHeightBefore = typeof window !== 'undefined' ? document.documentElement.scrollHeight : 0;
       
       setArtworks(prev => {
         return [...prev, ...newArtworks];
       });
       
-      // Restore scroll position after layout updates (prevent jump to bottom)
+      // Restore scroll position after DOM updates complete
       if (typeof window !== 'undefined') {
-        // Use multiple requestAnimationFrame to wait for layout calculation
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            // Restore exact scroll position - user should stay where they were
-            window.scrollTo(0, scrollYBefore);
+            // User continues from where they were - no jump to bottom
+            window.scrollTo({ top: scrollYBefore, behavior: 'auto' });
           });
         });
       }
