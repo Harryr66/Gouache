@@ -452,8 +452,20 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
 
     console.log('⏳ MasonryGrid: Waiting for', imagePromises.length, 'image dimensions...');
     
-    Promise.all(imagePromises).then((heights) => {
-      console.log('✅ MasonryGrid: All image dimensions loaded, heights:', heights.length);
+    // CRITICAL: Use Promise.allSettled to ensure layout completes even if some images fail
+    // This prevents hanging on slow/failed images
+    Promise.allSettled(imagePromises).then((results) => {
+      // Extract heights from results (fulfilled or default)
+      const heights = results.map((result) => {
+        if (result.status === 'fulfilled') {
+          return result.value;
+        } else {
+          // If image failed, use default aspect ratio
+          return itemWidth * 1.5;
+        }
+      });
+      
+      console.log('✅ MasonryGrid: All image dimensions processed, heights:', heights.length);
       // Get the LATEST layout from ref (in case it changed during image loading)
       const latestLayout = layoutRef.current;
       const newLayout = new Map(latestLayout);
@@ -489,22 +501,21 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           }
         }
         
-        // Calculate position - EXACT column alignment
-        // left = columnIndex * (itemWidth + gap) - this ensures uniform columns
-        const left = shortestCol * (itemWidth + gap);
-        // top = current column height - NO GAPS
-        const top = columnHeights[shortestCol];
-        // Height must be reasonable - ensure minimum based on width
-        const itemHeight = Math.max(Math.ceil(calculatedHeight), itemWidth * 0.8);
+        // Calculate position - EXACT column alignment for uniform columns
+        // CRITICAL: Round positions to prevent sub-pixel rendering issues
+        const left = Math.round(shortestCol * (itemWidth + gap));
+        const top = Math.round(columnHeights[shortestCol]);
+        // Height based on actual image aspect ratio, with reasonable minimum
+        const itemHeight = Math.max(Math.ceil(calculatedHeight), Math.ceil(itemWidth * 0.8));
         
-        // Update column height IMMEDIATELY for next item
+        // Update column height IMMEDIATELY for next item (use rounded values)
         columnHeights[shortestCol] = top + itemHeight;
         
-        // Store position with column index
+        // Store position with column index - ROUNDED for exact pixel alignment
         newLayout.set(key, { 
           top: top, 
           left: left, 
-          width: itemWidth, 
+          width: Math.round(itemWidth), 
           height: itemHeight, 
           col: shortestCol 
         });
@@ -1649,7 +1660,7 @@ function DiscoverPageContent() {
           const artworksQuery = query(
             collection(db, 'artworks'),
             orderBy('createdAt', 'desc'),
-            limit(120) // Initial load: fetch enough to fill viewport + 5+ MORE ROWS for immediate scrolling
+            limit(Math.max(120, (columnCount || 5) * 10)) // Initial load: MINIMUM 10 rows for immediate display
           );
           const artworksSnapshot = await getDocs(artworksQuery);
           
