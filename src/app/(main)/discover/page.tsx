@@ -470,7 +470,13 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           const itemKey = getItemKey(item);
           const pos = layout.get(itemKey);
           // Render items as soon as they have positions (don't wait for all calculations)
-          if (!pos) return null;
+          if (!pos) {
+            // Log missing positions for debugging
+            if (process.env.NODE_ENV === 'development' && layout.size > 0) {
+              console.warn('MasonryGrid: Item missing position:', itemKey, 'Total items:', items.length, 'Layout size:', layout.size);
+            }
+            return null;
+          }
           
         return (
           <div
@@ -3033,9 +3039,11 @@ function DiscoverPageContent() {
               <>
               <MasonryGrid
                 items={(() => {
+                  // CRITICAL: Use ALL filteredAndSortedArtworks, not just visibleFilteredArtworks
+                  // This ensures all items get positions calculated and can be rendered
                   // Grid view shows ONLY images (no videos) from Cloudflare
                   // Videos will only appear in video feed (list view)
-                  const imageOnlyArtworks = visibleFilteredArtworks.filter((item) => {
+                  const imageOnlyArtworks = filteredAndSortedArtworks.filter((item) => {
                     // Keep ads
                     if ('type' in item && item.type === 'ad') return true;
                     // Filter out videos - only show images in grid view
@@ -3052,9 +3060,9 @@ function DiscoverPageContent() {
                   });
                   console.log('🖼️ Grid view (images only):', {
                     artworkView,
-                    totalArtworks: visibleFilteredArtworks.length,
+                    totalArtworks: filteredAndSortedArtworks.length,
                     imageArtworksCount: imageOnlyArtworks.length,
-                    filteredOut: visibleFilteredArtworks.length - imageOnlyArtworks.length
+                    filteredOut: filteredAndSortedArtworks.length - imageOnlyArtworks.length
                   });
                   return imageOnlyArtworks;
                 })()}
