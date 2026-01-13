@@ -263,7 +263,7 @@ const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently Updated' }
 ];
 
-// Masonry grid with variety in tile heights - simple and reliable
+// Masonry grid with variety in tile heights - STATIC positioning (no shifting)
 function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   items: any[];
   columnCount: number;
@@ -274,65 +274,152 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   const containerRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<Array<{ top: number; left: number; width: number; height: number }>>([]);
   const [isCalculating, setIsCalculating] = useState(true);
+  const previousItemsRef = useRef<any[]>([]);
+  const previousLayoutRef = useRef<Array<{ top: number; left: number; width: number; height: number }>>([]);
 
   useEffect(() => {
     if (!containerRef.current || columnCount === 0 || items.length === 0) {
-      setLayout([]);
+      if (items.length === 0) {
+        setLayout([]);
+        previousItemsRef.current = [];
+        previousLayoutRef.current = [];
+      }
       setIsCalculating(false);
       return;
     }
 
-    setIsCalculating(true);
-    const containerWidth = containerRef.current.offsetWidth;
-    if (!containerWidth || containerWidth <= 0) {
-      setIsCalculating(false);
-      return;
-    }
+    // Check if we're adding new items or if it's a complete reset
+    const previousItems = previousItemsRef.current;
+    const previousLayout = previousLayoutRef.current;
+    const isAddingNewItems = previousItems.length > 0 && 
+                             items.length > previousItems.length &&
+                             items.slice(0, previousItems.length).every((item, idx) => {
+                               const prevItem = previousItems[idx];
+                               return item.id === prevItem.id || 
+                                      (item.campaign?.id === prevItem.campaign?.id);
+                             });
 
-    const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
-    if (itemWidth <= 0) {
-      setIsCalculating(false);
-      return;
-    }
+    if (isAddingNewItems && previousLayout.length > 0) {
+      // PRESERVE existing positions, only calculate for new items
+      setIsCalculating(true);
+      const containerWidth = containerRef.current.offsetWidth;
+      if (!containerWidth || containerWidth <= 0) {
+        setIsCalculating(false);
+        return;
+      }
 
-    // Load image dimensions for variety - with timeout to prevent hanging
-    const promises = items.map((item) => {
-      return new Promise<number>((resolve) => {
-        const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
-        if (!imageUrl) {
-          resolve(itemWidth * (1.2 + Math.random() * 0.8));
-          return;
-        }
-        const img = new window.Image();
-        const timeout = setTimeout(() => {
-          resolve(itemWidth * (1.2 + Math.random() * 0.8));
-        }, 5000);
-        img.onload = () => {
-          clearTimeout(timeout);
-          resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
-        };
-        img.onerror = () => {
-          clearTimeout(timeout);
-          resolve(itemWidth * (1.2 + Math.random() * 0.8));
-        };
-        img.src = imageUrl;
-      });
-    });
+      const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
+      if (itemWidth <= 0) {
+        setIsCalculating(false);
+        return;
+      }
 
-    Promise.all(promises).then((heights) => {
+      // Calculate column heights from existing layout
       const columnHeights = new Array(columnCount).fill(0);
-      const newLayout = heights.map((height, index) => {
-        const col = columnHeights.reduce((minIdx, h, idx) => h < columnHeights[minIdx] ? idx : minIdx, 0);
-        const left = col * (itemWidth + gap);
-        const top = columnHeights[col];
-        columnHeights[col] = top + Math.ceil(height);
-        return { top, left, width: itemWidth, height: Math.ceil(height) };
+      previousLayout.forEach((pos) => {
+        const col = Math.round(pos.left / (itemWidth + gap));
+        if (col >= 0 && col < columnCount) {
+          columnHeights[col] = Math.max(columnHeights[col], pos.top + pos.height);
+        }
       });
-      setLayout(newLayout);
-      setIsCalculating(false);
-    }).catch(() => {
-      setIsCalculating(false);
-    });
+
+      // Only load dimensions for NEW items
+      const newItems = items.slice(previousItems.length);
+      const promises = newItems.map((item) => {
+        return new Promise<number>((resolve) => {
+          const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
+          if (!imageUrl) {
+            resolve(itemWidth * (1.2 + Math.random() * 0.8));
+            return;
+          }
+          const img = new window.Image();
+          const timeout = setTimeout(() => {
+            resolve(itemWidth * (1.2 + Math.random() * 0.8));
+          }, 5000);
+          img.onload = () => {
+            clearTimeout(timeout);
+            resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
+          };
+          img.onerror = () => {
+            clearTimeout(timeout);
+            resolve(itemWidth * (1.2 + Math.random() * 0.8));
+          };
+          img.src = imageUrl;
+        });
+      });
+
+      Promise.all(promises).then((heights) => {
+        const newLayout = [...previousLayout];
+        heights.forEach((height) => {
+          const col = columnHeights.reduce((minIdx, h, idx) => h < columnHeights[minIdx] ? idx : minIdx, 0);
+          const left = col * (itemWidth + gap);
+          const top = columnHeights[col];
+          columnHeights[col] = top + Math.ceil(height);
+          newLayout.push({ top, left, width: itemWidth, height: Math.ceil(height) });
+        });
+        setLayout(newLayout);
+        previousLayoutRef.current = newLayout;
+        previousItemsRef.current = items;
+        setIsCalculating(false);
+      }).catch(() => {
+        setIsCalculating(false);
+      });
+    } else {
+      // Complete recalculation (initial load or items changed)
+      setIsCalculating(true);
+      const containerWidth = containerRef.current.offsetWidth;
+      if (!containerWidth || containerWidth <= 0) {
+        setIsCalculating(false);
+        return;
+      }
+
+      const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
+      if (itemWidth <= 0) {
+        setIsCalculating(false);
+        return;
+      }
+
+      // Load image dimensions for variety - with timeout to prevent hanging
+      const promises = items.map((item) => {
+        return new Promise<number>((resolve) => {
+          const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
+          if (!imageUrl) {
+            resolve(itemWidth * (1.2 + Math.random() * 0.8));
+            return;
+          }
+          const img = new window.Image();
+          const timeout = setTimeout(() => {
+            resolve(itemWidth * (1.2 + Math.random() * 0.8));
+          }, 5000);
+          img.onload = () => {
+            clearTimeout(timeout);
+            resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
+          };
+          img.onerror = () => {
+            clearTimeout(timeout);
+            resolve(itemWidth * (1.2 + Math.random() * 0.8));
+          };
+          img.src = imageUrl;
+        });
+      });
+
+      Promise.all(promises).then((heights) => {
+        const columnHeights = new Array(columnCount).fill(0);
+        const newLayout = heights.map((height, index) => {
+          const col = columnHeights.reduce((minIdx, h, idx) => h < columnHeights[minIdx] ? idx : minIdx, 0);
+          const left = col * (itemWidth + gap);
+          const top = columnHeights[col];
+          columnHeights[col] = top + Math.ceil(height);
+          return { top, left, width: itemWidth, height: Math.ceil(height) };
+        });
+        setLayout(newLayout);
+        previousLayoutRef.current = newLayout;
+        previousItemsRef.current = items;
+        setIsCalculating(false);
+      }).catch(() => {
+        setIsCalculating(false);
+      });
+    }
   }, [items, columnCount, gap]);
 
   const containerHeight = layout.length > 0
@@ -1765,19 +1852,16 @@ function DiscoverPageContent() {
 
   // Calculate how many items to load per batch (full page worth)
   const getBatchSize = useCallback(() => {
-    // Calculate full page worth: viewport height + buffer
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-    const estimatedRowHeight = 400; // Average row height in masonry
-    const rowsInViewport = Math.ceil(viewportHeight / estimatedRowHeight);
+    // ALWAYS load minimum 9 rows per page (user requirement)
+    const minRows = 9;
     
-    // Load full page + 50% buffer for smooth scrolling
-    const totalRows = Math.ceil(rowsInViewport * 1.5);
-    
-    // Ensure minimum of 9 rows
-    const minRows = Math.max(9, totalRows);
-    
-    // Batch size = columns × rows
+    // Batch size = columns × rows (minimum 9 rows)
     const batchSize = columnCount * minRows;
+    
+    // Log for debugging
+    if (typeof window !== 'undefined') {
+      console.log(`📐 Batch size calculation: ${columnCount} columns × ${minRows} rows = ${batchSize} items`);
+    }
     
     return batchSize;
   }, [columnCount]);
@@ -1803,6 +1887,7 @@ function DiscoverPageContent() {
       const { PortfolioService } = await import('@/lib/database');
       // Calculate batch size - at least 9 rows
       const LOAD_MORE_LIMIT = getBatchSize();
+      log(`📊 Discover: Loading batch - Limit: ${LOAD_MORE_LIMIT}, Columns: ${columnCount}, Expected rows: ${Math.ceil(LOAD_MORE_LIMIT / columnCount)}`);
       
       // Start fetching content immediately, using the loading cursor time to load
       const fetchPromise = PortfolioService.getDiscoverPortfolioItems({
@@ -1822,6 +1907,8 @@ function DiscoverPageContent() {
           }, 1500);
         })
       ]);
+      
+      log(`✅ Discover: Loaded ${result.items.length} new items (requested ${LOAD_MORE_LIMIT}, expected ${Math.ceil(LOAD_MORE_LIMIT / columnCount)} rows)`);
       
       if (result.items.length === 0) {
         // Only recycle when there's NO new content available
