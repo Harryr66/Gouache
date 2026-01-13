@@ -263,8 +263,9 @@ const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently Updated' }
 ];
 
-// Masonry grid - SIMPLE, RELIABLE, NO GAPS
-// Positions are PERMANENT - once set, never change
+// Masonry Grid - BULLETPROOF IMPLEMENTATION
+// NO GAPS, NO SPACES, NO MISSING CONTENT
+// Positions are PERMANENT - once calculated, never change
 function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   items: any[];
   columnCount: number;
@@ -275,8 +276,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   const containerRef = useRef<HTMLDivElement>(null);
   const layoutRef = useRef<Map<string, { top: number; left: number; width: number; height: number; col: number }>>(new Map());
   const [layout, setLayout] = useState<Map<string, { top: number; left: number; width: number; height: number }>>(new Map());
+  const [isCalculating, setIsCalculating] = useState(false);
 
-  // Get item key for tracking
   const getItemKey = (item: any): string => {
     if ('id' in item && item.id) return String(item.id);
     if ('campaign' in item && item.campaign?.id) return String(item.campaign.id);
@@ -301,18 +302,23 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     const currentLayout = layoutRef.current;
     const itemsNeedingLayout = items.filter(item => !currentLayout.has(getItemKey(item)));
 
+    // If all items already have positions, just update state
     if (itemsNeedingLayout.length === 0) {
       const filteredLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
       items.forEach(item => {
         const key = getItemKey(item);
         const pos = currentLayout.get(key);
-        if (pos) filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
+        if (pos) {
+          filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
+        }
       });
       setLayout(filteredLayout);
       return;
     }
 
-    // Calculate column heights from EXISTING positioned items
+    setIsCalculating(true);
+
+    // Calculate column heights from EXISTING items ONLY
     const columnHeights = new Array(columnCount).fill(0);
     currentLayout.forEach((pos) => {
       if (pos.col >= 0 && pos.col < columnCount) {
@@ -320,8 +326,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       }
     });
 
-    // Load image dimensions for new items
-    const promises = itemsNeedingLayout.map((item) => {
+    // Load ALL image dimensions in parallel
+    const imagePromises = itemsNeedingLayout.map((item) => {
       return new Promise<number>((resolve) => {
         const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
         if (!imageUrl) {
@@ -329,7 +335,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           return;
         }
         const img = new window.Image();
-        const timeout = setTimeout(() => resolve(itemWidth * (1.2 + Math.random() * 0.8)), 3000);
+        const timeout = setTimeout(() => resolve(itemWidth * (1.2 + Math.random() * 0.8)), 2000);
         img.onload = () => {
           clearTimeout(timeout);
           resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
@@ -342,10 +348,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       });
     });
 
-    Promise.all(promises).then((heights) => {
+    Promise.all(imagePromises).then((heights) => {
       const newLayout = new Map(currentLayout);
       
-      // Recalculate column heights from existing items
+      // CRITICAL: Recalculate column heights from existing items (they might have changed)
       const columnHeights = new Array(columnCount).fill(0);
       currentLayout.forEach((pos) => {
         if (pos.col >= 0 && pos.col < columnCount) {
@@ -353,52 +359,64 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         }
       });
       
-      // Place new items in shortest column - NO GAPS
+      // Place each new item in the SHORTEST column
+      // Each item is placed at EXACTLY columnHeights[col] - NO GAPS
       itemsNeedingLayout.forEach((item, idx) => {
         const key = getItemKey(item);
-        const height = heights[idx];
-        const col = columnHeights.reduce((minIdx, h, i) => h < columnHeights[minIdx] ? i : minIdx, 0);
-        const left = col * (itemWidth + gap);
-        const top = columnHeights[col]; // Directly below previous item - NO GAP
-        const itemHeight = Math.ceil(height);
-        columnHeights[col] = top + itemHeight; // Update for next item
-        newLayout.set(key, { top, left, width: itemWidth, height: itemHeight, col });
+        const calculatedHeight = heights[idx];
+        
+        // Find shortest column
+        let shortestCol = 0;
+        let shortestHeight = columnHeights[0];
+        for (let i = 1; i < columnCount; i++) {
+          if (columnHeights[i] < shortestHeight) {
+            shortestHeight = columnHeights[i];
+            shortestCol = i;
+          }
+        }
+        
+        // Calculate position - NO GAPS
+        const left = shortestCol * (itemWidth + gap);
+        const top = columnHeights[shortestCol]; // EXACT position - connects directly to previous item
+        const itemHeight = Math.ceil(calculatedHeight);
+        
+        // Update column height for next item
+        columnHeights[shortestCol] = top + itemHeight;
+        
+        // Store position with column index
+        newLayout.set(key, { top, left, width: itemWidth, height: itemHeight, col: shortestCol });
       });
 
+      // Update ref
       layoutRef.current = newLayout;
       
-      // Filter layout to only include current items
+      // Create filtered layout for state (remove col from output)
       const filteredLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
       items.forEach(item => {
         const key = getItemKey(item);
         const pos = newLayout.get(key);
-        if (pos) filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
+        if (pos) {
+          filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
+        }
       });
       
       setLayout(filteredLayout);
-      
-      if (process.env.NODE_ENV === 'development') {
-        const missingPositions = items.filter(item => !filteredLayout.has(getItemKey(item)));
-        if (missingPositions.length > 0) {
-          console.warn('MasonryGrid: Items without positions:', missingPositions.length, 'out of', items.length);
-        }
-        console.log('MasonryGrid: Layout updated', {
-          totalItems: items.length,
-          itemsNeedingLayout: itemsNeedingLayout.length,
-          layoutSize: filteredLayout.size,
-          finalColumnHeights: columnHeights.map((h, i) => ({ col: i, height: h }))
-        });
-      }
+      setIsCalculating(false);
     }).catch((error) => {
-      console.error('MasonryGrid error:', error);
+      console.error('MasonryGrid: Failed to calculate layout', error);
+      setIsCalculating(false);
     });
   }, [items, columnCount, gap]);
 
-  // Calculate container height from all positioned items to prevent empty space
+  // Calculate container height from ALL positioned items
   const containerHeight = useMemo(() => {
     if (layout.size === 0) return 0;
-    const heights = Array.from(layout.values()).map(pos => pos.top + pos.height);
-    return Math.max(...heights);
+    let maxHeight = 0;
+    layout.forEach((pos) => {
+      const bottom = pos.top + pos.height;
+      if (bottom > maxHeight) maxHeight = bottom;
+    });
+    return maxHeight;
   }, [layout]);
 
   return (
@@ -457,39 +475,34 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           box-sizing: border-box !important;
         }
       `}} />
-    <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
+    <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto', height: containerHeight || 'auto' }}>
         {items.map((item) => {
           const itemKey = getItemKey(item);
           const pos = layout.get(itemKey);
-          // Render items as soon as they have positions (don't wait for all calculations)
-          if (!pos) {
-            // Log missing positions for debugging
-            if (process.env.NODE_ENV === 'development' && layout.size > 0) {
-              console.warn('MasonryGrid: Item missing position:', itemKey, 'Total items:', items.length, 'Layout size:', layout.size);
-            }
-            return null;
-          }
           
-        return (
-          <div
-            key={itemKey}
-            className="masonry-item-wrapper"
-            style={{
-              position: 'absolute',
-              top: `${pos.top}px`,
-              left: `${pos.left}px`,
-              width: `${pos.width}px`,
-              height: `${pos.height}px`,
-              margin: 0,
-              padding: 0,
-              overflow: 'hidden',
-              boxSizing: 'border-box',
-            }}
-          >
-            {renderItem(item)}
-          </div>
-        );
-      })}
+          // Only render items that have positions calculated
+          if (!pos) return null;
+          
+          return (
+            <div
+              key={itemKey}
+              className="masonry-item-wrapper"
+              style={{
+                position: 'absolute',
+                top: `${pos.top}px`,
+                left: `${pos.left}px`,
+                width: `${pos.width}px`,
+                height: `${pos.height}px`,
+                margin: 0,
+                padding: 0,
+                overflow: 'hidden',
+                boxSizing: 'border-box',
+              }}
+            >
+              {renderItem(item)}
+            </div>
+          );
+        })}
       <div 
         ref={loadMoreRef} 
           style={{ 
@@ -1839,18 +1852,13 @@ function DiscoverPageContent() {
     return shuffled;
   }, []);
 
-  // Calculate how many items to load per batch (full page worth)
+  // Calculate how many items to load per batch - 10 ROWS MINIMUM
   const getBatchSize = useCallback(() => {
-    // ALWAYS load minimum 9 rows per page (user requirement)
-    const minRows = 9;
+    // ALWAYS load minimum 10 rows per page (user requirement)
+    const minRows = 10;
     
-    // Batch size = columns × rows (minimum 9 rows)
+    // Batch size = columns × rows (minimum 10 rows)
     const batchSize = columnCount * minRows;
-    
-    // Log for debugging
-    if (typeof window !== 'undefined') {
-      console.log(`📐 Batch size calculation: ${columnCount} columns × ${minRows} rows = ${batchSize} items`);
-    }
     
     return batchSize;
   }, [columnCount]);
