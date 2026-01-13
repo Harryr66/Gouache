@@ -263,8 +263,7 @@ const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently Updated' }
 ];
 
-// Fixed-position masonry grid with pre-calculated positions
-// Images never move once positioned - ensures smooth, lag-free experience
+// Simple masonry grid with variety in tile heights
 function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   items: any[];
   columnCount: number;
@@ -274,171 +273,70 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [positions, setPositions] = useState<Array<{ top: number; left: number; width: number; height: number }>>([]);
-  const [isCalculating, setIsCalculating] = useState(false);
-  const positionsCalculatedRef = useRef<Set<string>>(new Set());
+  const [heights, setHeights] = useState<number[]>([]);
+  const [positions, setPositions] = useState<Array<{ top: number; left: number; width: number }>>([]);
 
-  // Measure actual rendered heights and calculate positions
+  // Calculate positions based on actual image heights for variety
   useEffect(() => {
     if (!containerRef.current || columnCount === 0 || items.length === 0) {
-      if (items.length === 0) {
-        setPositions([]);
-        positionsCalculatedRef.current.clear();
-      }
+      setPositions([]);
+      setHeights([]);
       return;
     }
 
     const containerWidth = containerRef.current.offsetWidth;
     if (!containerWidth || containerWidth <= 0) return;
 
-    // Calculate item width
     const totalGapSpace = gap * (columnCount - 1);
     const itemWidth = (containerWidth - totalGapSpace) / columnCount;
     if (itemWidth <= 0 || !isFinite(itemWidth)) return;
 
-    // Track items by their unique key to preserve positions
-    const itemKeys = items.map((item, index) => {
-      return 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : `item-${index}`);
-    });
-
-    // Check if we need to recalculate (new items added)
-    const hasNewItems = itemKeys.some((key, index) => {
-      return !positionsCalculatedRef.current.has(`${key}-${index}`);
-    });
-
-    if (!hasNewItems && positions.length === items.length) {
-      // All items already positioned, no need to recalculate
-      return;
-    }
-
-    setIsCalculating(true);
-
-    // Pre-load images to get aspect ratios for variety in tile sizes
-    // This ensures each tile has a different height based on its image's actual aspect ratio
-    const loadImageDimensions = (item: any): Promise<number> => {
-      return new Promise((resolve) => {
+    // Load all image dimensions in parallel
+    const loadHeights = items.map((item) => {
+      return new Promise<number>((resolve) => {
         const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
         
         if (!imageUrl) {
-          // Default aspect ratio for items without images (ads, etc.)
-          // Use slight variation for visual interest
-          const defaultRatio = 1.3 + Math.random() * 0.4; // Between 1.3 and 1.7
-          resolve(itemWidth * defaultRatio);
+          // Random variation for items without images
+          resolve(itemWidth * (1.2 + Math.random() * 0.8));
           return;
         }
 
         const img = new window.Image();
-        let resolved = false;
-        
-        const resolveHeight = (height: number) => {
-          if (!resolved) {
-            resolved = true;
-            resolve(Math.ceil(height));
-          }
-        };
-        
         img.onload = () => {
-          // Calculate height based on actual image aspect ratio for variety
-          // This creates natural variation in tile sizes
           const aspectRatio = img.naturalHeight / img.naturalWidth;
-          const height = itemWidth * aspectRatio;
-          resolveHeight(height);
+          resolve(itemWidth * aspectRatio);
         };
-        
         img.onerror = () => {
-          // Fallback aspect ratio on error - use random variation for variety
-          const randomVariation = 1.2 + Math.random() * 0.8; // Between 1.2 and 2.0 for more variety
-          resolveHeight(itemWidth * randomVariation);
+          resolve(itemWidth * (1.2 + Math.random() * 0.8));
         };
-        
-        // Set timeout to prevent hanging
-        setTimeout(() => {
-          if (!resolved) {
-            const randomVariation = 1.2 + Math.random() * 0.8;
-            resolveHeight(itemWidth * randomVariation);
-          }
-        }, 5000);
-        
         img.src = imageUrl;
       });
-    };
-
-    // Load dimensions for items that need calculation
-    const itemsToLoad = items.map((item, index) => {
-      const key = itemKeys[index];
-      const isCalculated = positionsCalculatedRef.current.has(`${key}-${index}`);
-      return { item, index, key, isCalculated };
     });
 
-    const newItemsToLoad = itemsToLoad.filter(item => !item.isCalculated);
-    const existingPositions = positions.slice(0, Math.min(positions.length, items.length));
-
-    // Calculate column heights from existing positions
-    const columnHeights = new Array(columnCount).fill(0);
-    existingPositions.forEach((pos, idx) => {
-      if (idx < items.length) {
-        const colIndex = Math.round(pos.left / (itemWidth + gap));
-        if (colIndex >= 0 && colIndex < columnCount) {
-          const itemBottom = pos.top + pos.height;
-          if (itemBottom > columnHeights[colIndex]) {
-            columnHeights[colIndex] = itemBottom;
-          }
-        }
-      }
-    });
-
-    // Load dimensions for new items in parallel
-    Promise.all(newItemsToLoad.map(({ item }) => loadImageDimensions(item))).then((heights) => {
-      const newPositions: Array<{ top: number; left: number; width: number; height: number }> = [];
-      let heightIndex = 0;
-
-      // Calculate positions for all items
-      items.forEach((item, index) => {
-        const key = itemKeys[index];
-        const wasCalculated = positionsCalculatedRef.current.has(`${key}-${index}`);
-
-        if (wasCalculated && existingPositions[index]) {
-          // Preserve existing position
-          newPositions.push(existingPositions[index]);
-          return;
-        }
-
-        // Find shortest column (where next item should go)
-        const shortestColumnIndex = columnHeights.reduce(
-          (minIndex, height, colIndex) => 
-            height < columnHeights[minIndex] ? colIndex : minIndex,
-          0
+    Promise.all(loadHeights).then((loadedHeights) => {
+      setHeights(loadedHeights.map(h => Math.ceil(h)));
+      
+      // Calculate positions
+      const columnHeights = new Array(columnCount).fill(0);
+      const newPositions = loadedHeights.map((height, index) => {
+        const shortestCol = columnHeights.reduce((minIdx, h, idx) => 
+          h < columnHeights[minIdx] ? idx : minIdx, 0
         );
-
-        // Get height for this item - use actual image aspect ratio for variety
-        const itemHeight = wasCalculated 
-          ? (existingPositions[index]?.height || itemWidth * 1.5)
-          : (heights[heightIndex++] || itemWidth * 1.5);
-
-        // Calculate position
-        const left = Math.round(shortestColumnIndex * (itemWidth + gap));
-        const top = Math.floor(columnHeights[shortestColumnIndex]);
-
-        if (isFinite(top) && isFinite(left) && isFinite(itemWidth) && isFinite(itemHeight) && itemHeight > 0) {
-          newPositions.push({ top, left, width: itemWidth, height: itemHeight });
-          // Update column height: item connects directly (top + height, no gap)
-          columnHeights[shortestColumnIndex] = top + itemHeight;
-          
-          // Mark as calculated
-          positionsCalculatedRef.current.add(`${key}-${index}`);
-        }
+        
+        const left = shortestCol * (itemWidth + gap);
+        const top = columnHeights[shortestCol];
+        columnHeights[shortestCol] = top + Math.ceil(height);
+        
+        return { top, left, width: itemWidth };
       });
-
-      if (newPositions.length > 0) {
-        setPositions(newPositions);
-      }
-      setIsCalculating(false);
+      
+      setPositions(newPositions);
     });
+  }, [items, columnCount, gap]);
 
-  }, [items.length, columnCount, gap, items]); // Include items to detect changes
-
-  const containerHeight = positions.length > 0
-    ? Math.max(...positions.map(pos => pos.top + pos.height))
+  const containerHeight = positions.length > 0 && heights.length > 0
+    ? Math.max(...positions.map((pos, idx) => pos.top + (heights[idx] || 0)))
     : 0;
 
   return (
