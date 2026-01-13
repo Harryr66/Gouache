@@ -528,12 +528,16 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   // Use layoutRef.current for immediate calculation, not async state
   const containerHeight = useMemo(() => {
     const currentLayout = layoutRef.current;
-    if (currentLayout.size === 0) return 0;
+    if (currentLayout.size === 0) {
+      console.log('📏 containerHeight: Layout is empty, returning 0');
+      return 0;
+    }
     let maxHeight = 0;
     currentLayout.forEach((pos) => {
       const bottom = pos.top + pos.height;
       if (bottom > maxHeight) maxHeight = bottom;
     });
+    console.log('📏 containerHeight calculated:', maxHeight, 'from', currentLayout.size, 'items');
     return maxHeight;
   }, [layout]); // Still depend on layout state to trigger recalculation when it updates
 
@@ -593,7 +597,15 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           box-sizing: border-box !important;
         }
       `}} />
-    <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto', height: containerHeight || 'auto' }}>
+    <div 
+      ref={containerRef} 
+      className="relative w-full" 
+      style={{ 
+        minHeight: containerHeight > 0 ? `${containerHeight}px` : 'auto', 
+        height: containerHeight > 0 ? `${containerHeight}px` : 'auto',
+        position: 'relative'
+      }}
+    >
         {items.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             No items to display
@@ -607,6 +619,13 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           const itemsWithPositions = items.filter(item => currentLayout.has(getItemKey(item))).length;
           const itemsWithoutPositions = items.length - itemsWithPositions;
           
+          // Calculate container height from current layout
+          let calculatedHeight = 0;
+          currentLayout.forEach((pos) => {
+            const bottom = pos.top + pos.height;
+            if (bottom > calculatedHeight) calculatedHeight = bottom;
+          });
+          
           console.log('🎨 MasonryGrid RENDER DEBUG:', {
             totalItems: items.length,
             withPositions: itemsWithPositions,
@@ -614,9 +633,16 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
             layoutRefSize: currentLayout.size,
             layoutStateSize: layout.size,
             isCalculating,
-            containerHeight,
+            containerHeightFromMemo: containerHeight,
+            calculatedHeightFromRef: calculatedHeight,
+            actualContainerHeight: containerRef.current?.offsetHeight,
             firstFewItemKeys: items.slice(0, 3).map(item => getItemKey(item)),
-            firstFewHavePositions: items.slice(0, 3).map(item => currentLayout.has(getItemKey(item)))
+            firstFewHavePositions: items.slice(0, 3).map(item => currentLayout.has(getItemKey(item))),
+            firstFewPositions: items.slice(0, 3).map(item => {
+              const key = getItemKey(item);
+              const pos = currentLayout.get(key);
+              return pos ? { top: pos.top, left: pos.left, width: pos.width, height: pos.height } : null;
+            })
           });
           
           if (itemsWithoutPositions > 0 && !isCalculating) {
@@ -651,7 +677,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
               return null;
             }
             
-            console.log('✅ Rendering item:', itemKey, 'at position:', { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
+            // Only log first 3 items to avoid spam
+            if (items.indexOf(item) < 3) {
+              console.log('✅ Rendering item:', itemKey, 'at position:', { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
+            }
           
           return (
             <div
