@@ -396,14 +396,17 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
 
         // Calculate position
         // Horizontal: column index * (item width + gap between columns)
-        const left = shortestColumnIndex * (itemWidth + gap);
+        const left = Math.round(shortestColumnIndex * (itemWidth + gap));
         // Vertical: connect directly to previous item (no gap)
-        const top = columnHeights[shortestColumnIndex];
+        // Use Math.floor to ensure no sub-pixel gaps
+        const top = Math.floor(columnHeights[shortestColumnIndex]);
 
         if (isFinite(top) && isFinite(left) && isFinite(itemWidth) && isFinite(itemHeight)) {
-          newPositions.push({ top, left, width: itemWidth, height: itemHeight });
+          const roundedHeight = Math.ceil(itemHeight); // Round up to ensure no gaps
+          newPositions.push({ top, left, width: itemWidth, height: roundedHeight });
           // Update column height: item connects directly (top + height, no gap)
-          columnHeights[shortestColumnIndex] = top + itemHeight;
+          // Use exact sum to prevent accumulation of rounding errors
+          columnHeights[shortestColumnIndex] = top + roundedHeight;
           
           // Mark as calculated
           positionsCalculatedRef.current.add(`${key}-${index}`);
