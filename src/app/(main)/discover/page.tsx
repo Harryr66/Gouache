@@ -1728,10 +1728,9 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      // Request 2-3x more items than needed to account for client-side filtering
-      // Many items get filtered out (Cloudflare images only, missing artist data, etc.)
-      // But keep batch size reasonable for mobile performance (max 100 items)
-      const LOAD_MORE_LIMIT = Math.min(columnCount * 20, 100); // Request 20 rows worth, max 100 items for mobile performance
+      // Reduce batch size significantly for mobile performance - request smaller batches
+      // Mobile devices can't handle large batches without crashing
+      const LOAD_MORE_LIMIT = Math.min(columnCount * 10, 50); // Request 10 rows worth, max 50 items for mobile stability
       
       const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
@@ -1752,7 +1751,7 @@ function DiscoverPageContent() {
         } else {
           // No cursor and no items - we've reached the end
           console.log('🔄 SCROLL LOAD: ⚠️ No items returned and no lastDoc - end of content reached');
-          setHasMore(false);
+        setHasMore(false);
         }
         setIsLoadingMore(false);
         return;
