@@ -1573,6 +1573,18 @@ function DiscoverPageContent() {
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
         setArtworksLoaded(true); // Mark artworks as loaded
         
+        // CRITICAL: Set lastDocument from the LAST item in the final artworks array for pagination
+        // Use the last portfolioItem if available, otherwise use the last artwork from artworks collection
+        if (portfolioItems.length > 0) {
+          const lastPortfolioItem = portfolioItems[portfolioItems.length - 1];
+          console.log('🔄 SCROLL LOAD: 📝 FINAL - Setting lastDocument from portfolioItems:', { lastItemId: lastPortfolioItem.id });
+          setLastDocument(lastPortfolioItem);
+          setHasMore(true); // Always set to true initially since we're loading from multiple sources
+        } else if (finalArtworks.length > 0) {
+          // Fallback: Use last artwork (but this won't work for pagination since it's from artworks collection)
+          console.log('🔄 SCROLL LOAD: ⚠️ FINAL - No portfolioItems, cannot set lastDocument properly');
+        }
+        
         // AUTO-LOAD MORE: If we don't have enough content to fill viewport, immediately load more
         // Desktop typically needs 30-40 items (6 cols × 5-7 rows), so trigger if we have less
         const MIN_ITEMS_FOR_DESKTOP = 30;
