@@ -1036,10 +1036,10 @@ function DiscoverPageContent() {
         let portfolioItems: any[] = [];
         let useFallback = false;
         
-        // Fetch enough items to fill viewport + 5+ MORE ROWS for all screen sizes
-        // 120 items ensures: mobile (2 cols × 20 rows), tablet (3 cols × 13 rows), desktop (6 cols × 10 rows)
-        // This provides immediate content with 5+ additional rows of scrollable content
-        const INITIAL_FETCH_LIMIT = 120;
+        // Fetch enough items to fill viewport - reduced for mobile performance
+        // 60 items ensures: mobile (2 cols × 15 rows), tablet (3 cols × 7 rows), desktop (5 cols × 6 rows)
+        // Load more on scroll for continuous feed
+        const INITIAL_FETCH_LIMIT = 60;
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -2043,29 +2043,6 @@ function DiscoverPageContent() {
 
     // FIRST: Filter out deleted items (like we did for courses - check deleted flag immediately)
     filtered = filtered.filter((artwork: any) => artwork.deleted !== true);
-    
-    // Deduplicate by content (imageUrl) to handle duplicate uploads - keep the newest one
-    const seenUrls = new Map<string, any>();
-    filtered = filtered.filter((artwork: any) => {
-      const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
-      const videoUrl = artwork.videoUrl || '';
-      const contentKey = imageUrl || videoUrl;
-      if (!contentKey) return true; // Keep items without URLs (let other filters handle them)
-      
-      if (seenUrls.has(contentKey)) {
-        // Keep the one with the newer createdAt date
-        const existing = seenUrls.get(contentKey)!;
-        const existingDate = existing.createdAt instanceof Date ? existing.createdAt.getTime() : new Date(existing.createdAt).getTime();
-        const currentDate = artwork.createdAt instanceof Date ? artwork.createdAt.getTime() : new Date(artwork.createdAt).getTime();
-        if (currentDate > existingDate) {
-          seenUrls.set(contentKey, artwork);
-          return true; // Replace with newer one
-        }
-        return false; // Skip this duplicate (keep the existing one)
-      }
-      seenUrls.set(contentKey, artwork);
-      return true;
-    });
     
     // SECOND: For image grid, only include Cloudflare images (all active artists should use Cloudflare)
     // This ensures we don't show old Firebase Storage images or other sources
