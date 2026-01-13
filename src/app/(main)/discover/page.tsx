@@ -3346,8 +3346,9 @@ function DiscoverPageContent() {
                 items={(() => {
                   // CRITICAL: Use ALL filteredAndSortedArtworks, not just visibleFilteredArtworks
                   // This ensures all items get positions calculated and can be rendered
-                  // Grid view shows ONLY images (no videos) from Cloudflare
-                  // Videos will only appear in video feed (list view)
+                  // Grid view shows ONLY images (no videos)
+                  // Note: filteredAndSortedArtworks already filters for Cloudflare images and excludes videos for image-only content
+                  // We only need to filter out any remaining videos here
                   const imageOnlyArtworks = filteredAndSortedArtworks.filter((item) => {
                     // Keep ads
                     if ('type' in item && item.type === 'ad') return true;
@@ -3356,10 +3357,9 @@ function DiscoverPageContent() {
                     const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                     if (hasVideo) return false; // Filter out videos
                     
-                    // CRITICAL: Only show images from Cloudflare (all active artists should use Cloudflare)
+                    // Ensure item has an image (filteredAndSortedArtworks should already handle Cloudflare filtering)
                     const imageUrl = artwork.imageUrl || (artwork as any).supportingImages?.[0] || (artwork as any).images?.[0] || '';
                     if (!imageUrl) return false; // Skip items with no image
-                    if (!isCloudflareImage(imageUrl)) return false; // Only Cloudflare images
                     
                     return true;
                   });
