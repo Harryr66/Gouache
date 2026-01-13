@@ -690,16 +690,15 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
               className="masonry-item-wrapper"
               style={{
                 position: 'absolute',
-                top: `${pos.top}px`,
-                left: `${pos.left}px`,
-                width: `${pos.width}px`,
-                height: `${pos.height}px`,
+                top: `${Math.round(pos.top)}px`,
+                left: `${Math.round(pos.left)}px`,
+                width: `${Math.round(pos.width)}px`,
+                height: `${Math.round(pos.height)}px`,
                 margin: 0,
                 padding: 0,
                 overflow: 'hidden',
                 boxSizing: 'border-box',
                 zIndex: 1,
-                visibility: pos.width > 0 && pos.height > 0 ? 'visible' : 'hidden',
               }}
             >
               {renderItem(item)}
