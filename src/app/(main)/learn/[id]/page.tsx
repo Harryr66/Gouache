@@ -649,16 +649,16 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 />
                 {/* Only show preview button overlay if course has a preview video */}
                 {course.previewVideoUrl && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <Button 
-                      size="lg" 
-                      className="bg-background hover:bg-background/90 text-foreground border-2 border-foreground/20 shadow-lg"
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <Button 
+                    size="lg" 
+                    className="bg-background hover:bg-background/90 text-foreground border-2 border-foreground/20 shadow-lg"
                       onClick={() => setShowPreviewModal(true)}
-                    >
-                      <Play className="h-5 w-5 mr-2" />
-                      Preview Course
-                    </Button>
-                  </div>
+                  >
+                    <Play className="h-5 w-5 mr-2" />
+                    Preview Course
+                  </Button>
+                </div>
                 )}
               </div>
             </div>

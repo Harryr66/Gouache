@@ -356,19 +356,19 @@ export default function CoursesPage() {
         }) ? (
           <>
             {process.env.NODE_ENV === 'development' && console.log('🚫 Rendering empty state - rankedCourses.length:', rankedCourses.length)}
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Brain className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-lg">No courses available yet</p>
-                <p className="text-sm text-muted-foreground mt-2">Check back soon for new courses!</p>
-              </CardContent>
-            </Card>
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Brain className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground text-lg">No courses available yet</p>
+              <p className="text-sm text-muted-foreground mt-2">Check back soon for new courses!</p>
+            </CardContent>
+          </Card>
           </>
         ) : (
           <>
             {process.env.NODE_ENV === 'development' && console.log('✅ Rendering courses grid - coursesWithAds.length:', coursesWithAds.length, 'rankedCourses.length:', rankedCourses.length)}
-            <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
-              {coursesWithAds.map((item) => {
+          <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
+            {coursesWithAds.map((item) => {
               // Check if this is an ad
               const isAd = 'type' in item && item.type === 'ad';
               if (isAd) {
@@ -434,7 +434,7 @@ export default function CoursesPage() {
               </Link>
               );
             })}
-            </div>
+          </div>
           </>
         )}
         </div>

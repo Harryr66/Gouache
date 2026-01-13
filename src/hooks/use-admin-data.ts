@@ -50,16 +50,16 @@ export function useAdminData() {
             })
             .map((docSnapshot: any) => {
               const data = docSnapshot.data();
-              return {
+            return {
                 id: docSnapshot.id,
-                name: data.name || data.displayName || data.username || 'Unknown',
-                email: data.email || '',
-                username: data.username || data.handle,
-                avatarUrl: data.avatarUrl,
-                isVerified: data.isVerified !== false,
-                isProfessional: data.isProfessional || false
-              };
-            });
+              name: data.name || data.displayName || data.username || 'Unknown',
+              email: data.email || '',
+              username: data.username || data.handle,
+              avatarUrl: data.avatarUrl,
+              isVerified: data.isVerified !== false,
+              isProfessional: data.isProfessional || false
+            };
+          });
           setProfessionalArtists(artistsData);
           console.log(`✅ Loaded ${artistsData.length} professional artists (deleted accounts filtered out)`);
         } catch (error) {

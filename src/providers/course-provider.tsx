@@ -197,7 +197,7 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
           unsubscribes.push(unsubFallback);
         } else {
           setCourses([]);
-          setIsLoading(false);
+        setIsLoading(false);
         }
       }
     );

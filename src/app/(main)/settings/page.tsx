@@ -589,12 +589,12 @@ function SettingsPageContent() {
               <TabsTrigger value="hue" className="shrink-0 whitespace-nowrap">Hue</TabsTrigger>
               {/* Only show Business tab for professional artists */}
               {(user?.isProfessional || hasApprovedArtistRequest) && (
-                <TabsTrigger 
-                  value="business" 
+              <TabsTrigger 
+                value="business" 
                   className="shrink-0 whitespace-nowrap"
-                >
-                  Business
-                </TabsTrigger>
+              >
+                Business
+              </TabsTrigger>
               )}
               <TabsTrigger value="support" className="shrink-0 whitespace-nowrap text-xs sm:text-sm">Report bug</TabsTrigger>
             </TabsList>

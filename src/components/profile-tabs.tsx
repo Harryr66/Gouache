@@ -103,7 +103,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               where('isPublished', '==', true),
               orderBy('createdAt', 'desc')
             );
-            
+    
             const publishedSnapshot = await getDocs(publishedQuery);
             fetchedCourses = publishedSnapshot.docs
               .map(mapCourseData)
@@ -122,7 +122,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             );
             
             const fallbackSnapshot = await getDocs(fallbackQuery);
-            
+  
             // Debug: Log all courses to see what we're getting
             const allCoursesFromQuery = fallbackSnapshot.docs.map(mapCourseData);
             console.log(`🔍 Fallback query: Found ${allCoursesFromQuery.length} total published courses in database`);
@@ -297,7 +297,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                         e.stopPropagation();
                         // Triple-check ownership before navigation
                         if (isOwnProfile && user && course.instructor.userId === user.id) {
-                          router.push(`/learn/submit?edit=${course.id}`);
+                        router.push(`/learn/submit?edit=${course.id}`);
                         } else {
                           toast({
                             title: "Access Denied",
