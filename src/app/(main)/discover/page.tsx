@@ -1904,8 +1904,12 @@ function DiscoverPageContent() {
 
   // IntersectionObserver for infinite scroll pagination (grid view only)
   useEffect(() => {
+    console.log('🔄 SCROLL LOAD: 🔍 useEffect triggered, artworkView:', artworkView);
     // Only set up observer for grid view
-    if (artworkView !== 'grid') return;
+    if (artworkView !== 'grid') {
+      console.log('🔄 SCROLL LOAD: ⚠️ artworkView is not grid, skipping');
+      return;
+    }
     
     const sentinel = loadMoreRef.current;
     if (!sentinel) {
