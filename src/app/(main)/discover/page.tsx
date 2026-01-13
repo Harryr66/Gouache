@@ -1070,14 +1070,22 @@ function DiscoverPageContent() {
               portfolioItems = apiData.items;
               log(`✅ Discover: Found ${portfolioItems.length} items from cached API (instant response)`);
               
-              // Store last document for pagination
-              if (apiData.lastDoc) {
-                // Reconstruct Firestore document reference for pagination
-                const { doc } = await import('firebase/firestore');
-                const { db } = await import('@/lib/firebase');
-                setLastDocument(doc(db, 'portfolioItems', apiData.lastDoc.id));
+              // Store last document for pagination - use last item from array (like fallback path)
+              if (portfolioItems.length > 0) {
+                const lastItem = portfolioItems[portfolioItems.length - 1];
+                console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Setting lastDocument from last item:', { 
+                  portfolioItemsCount: portfolioItems.length, 
+                  INITIAL_FETCH_LIMIT, 
+                  lastItemId: lastItem.id
+                });
+                setLastDocument(lastItem);
+                const hasMoreValue = portfolioItems.length >= INITIAL_FETCH_LIMIT;
+                setHasMore(hasMoreValue);
+                console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Set hasMore:', hasMoreValue, 'because', portfolioItems.length, 'items loaded, limit is', INITIAL_FETCH_LIMIT);
+              } else {
+                console.log('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - No items, setting hasMore to false');
+                setHasMore(false);
               }
-              setHasMore(portfolioItems.length === INITIAL_FETCH_LIMIT);
             } else {
               throw new Error('API returned invalid data');
             }
