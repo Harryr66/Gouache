@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition, useCallback } from 'react';
-import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp, Loader2 } from 'lucide-react';
+import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
@@ -27,8 +27,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import { engagementTracker } from '@/lib/engagement-tracker';
@@ -263,564 +261,183 @@ const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently Updated' }
 ];
 
-// Masonry Grid - BULLETPROOF IMPLEMENTATION
-// NO GAPS, NO SPACES, NO MISSING CONTENT
-// Positions are PERMANENT - once calculated, never change
+// Masonry grid component that fills columns sequentially from top to bottom
 function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   items: any[];
   columnCount: number;
   gap: number;
-  renderItem: (item: any, isVisible?: boolean) => React.ReactNode;
+  renderItem: (item: any) => React.ReactNode;
   loadMoreRef: React.RefObject<HTMLDivElement>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const layoutRef = useRef<Map<string, { top: number; left: number; width: number; height: number; col: number }>>(new Map());
-  const [layout, setLayout] = useState<Map<string, { top: number; left: number; width: number; height: number }>>(new Map());
-  const [isCalculating, setIsCalculating] = useState(false);
-  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-  const [visibleItems, setVisibleItems] = useState<Set<string>>(new Set());
-  const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
-  
-  // Get item key function - must be defined before use
-  const getItemKey = (item: any): string => {
-    if ('id' in item && item.id) return String(item.id);
-    if ('campaign' in item && item.campaign?.id) return String(item.campaign.id);
-    return `item-${item.imageUrl || Math.random()}`;
-  };
-  
-  // Initialize visible items for first 12 items (initial viewport)
-  useEffect(() => {
-    if (items.length > 0) {
-      const initialVisible = new Set<string>();
-      items.slice(0, 12).forEach((item) => {
-        initialVisible.add(getItemKey(item));
-      });
-      setVisibleItems(initialVisible);
-    }
-  }, [items.length > 0 ? items[0]?.id : null]); // Only on initial load
-  
-  // CRITICAL: Log when component renders
-  console.log('🎨 MasonryGrid RENDER:', {
-    itemsCount: items.length,
-    columnCount,
-    gap,
-    hasContainer: !!containerRef.current,
-    containerWidth: containerRef.current?.offsetWidth,
-    layoutSize: layout.size,
-    isCalculating,
-    firstFewItemIds: items.slice(0, 3).map(item => {
-      if ('id' in item && item.id) return String(item.id);
-      if ('campaign' in item && item.campaign?.id) return String(item.campaign.id);
-      return 'unknown';
-    })
-  });
-  
-  // Debug logging
-  useEffect(() => {
-    console.log('MasonryGrid state:', {
-      itemsCount: items.length,
-      layoutSize: layout.size,
-      isCalculating,
-      missingPositions: items.filter(item => !layout.has(getItemKey(item))).length
-    });
-  }, [items.length, layout.size, isCalculating]);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [positions, setPositions] = useState<Array<{ top: number; left: number; width: number }>>([]);
 
-  // Use ResizeObserver to detect container size changes
+  // Calculate positions for masonry layout
   useEffect(() => {
+    if (!containerRef.current || columnCount === 0 || items.length === 0) {
+      setPositions([]);
+      return;
+    }
+
+    const calculatePositions = () => {
       if (!containerRef.current) return;
       
-    const resizeObserver = new ResizeObserver(() => {
-      // CRITICAL: When container resizes, CLEAR all positions and recalculate
-      if (containerRef.current && items.length > 0 && columnCount > 0) {
-        const width = containerRef.current.offsetWidth;
-        if (width > 0) {
-          console.log('📏 MasonryGrid: Container resized, width:', width, '- CLEARING layout for recalculation');
-          // Clear layout completely - force full recalculation with new width
-          layoutRef.current = new Map();
-          setLayout(new Map());
-          setIsCalculating(false);
-        }
+      const containerWidth = containerRef.current.offsetWidth;
+      if (!containerWidth || containerWidth <= 0 || !columnCount || columnCount <= 0) {
+        return; // Safety check: don't calculate if container has no width or invalid column count
       }
-    });
-    
-    resizeObserver.observe(containerRef.current);
-    return () => resizeObserver.disconnect();
-  }, [items.length, columnCount]);
-
-  useEffect(() => {
-    console.log('🔧 MasonryGrid useEffect triggered:', {
-      hasContainer: !!containerRef.current,
-      columnCount,
-      itemsLength: items.length,
-      containerWidth: containerRef.current?.offsetWidth
-    });
-
-    if (!containerRef.current) {
-      console.warn('⚠️ MasonryGrid: No container ref');
-      return;
-    }
-
-    if (columnCount === 0) {
-      console.warn('⚠️ MasonryGrid: columnCount is 0');
-      return;
-    }
-
-    if (items.length === 0) {
-      console.log('📋 MasonryGrid: No items, clearing layout');
-      layoutRef.current = new Map();
-      setLayout(new Map());
-      return;
-    }
-
-    // Check container width - if not available, wait and retry
-    let containerWidth = containerRef.current.offsetWidth;
-    if (!containerWidth || containerWidth <= 0) {
-      console.warn('⚠️ MasonryGrid: Container width not available:', containerWidth);
-      // Retry on next frame
-      requestAnimationFrame(() => {
-        const retryWidth = containerRef.current?.offsetWidth;
-        if (retryWidth && retryWidth > 0) {
-          console.log('✅ MasonryGrid: Container width available on retry:', retryWidth);
-          // Force useEffect to re-run by updating a dependency
-          setLayout(new Map());
-        }
-      });
-      return;
-    }
-
-    const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
-    console.log('📏 MasonryGrid: Layout calculation starting:', {
-      containerWidth,
-      columnCount,
-      gap,
-      itemWidth,
-      itemsCount: items.length
-    });
-    
-    if (itemWidth <= 0) {
-      console.error('❌ MasonryGrid: itemWidth is <= 0, cannot calculate layout:', itemWidth);
-      return;
-    }
-
-    const currentLayout = layoutRef.current;
-    const itemsNeedingLayout = items.filter(item => !currentLayout.has(getItemKey(item)));
-
-    // If all items already have positions, just update state
-    if (itemsNeedingLayout.length === 0) {
-      console.log('✅ MasonryGrid: All items already have positions, updating state only');
-      const filteredLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
-      items.forEach(item => {
-        const key = getItemKey(item);
-        const pos = currentLayout.get(key);
-        if (pos) {
-          filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
-        } else {
-          console.warn('⚠️ MasonryGrid: Item missing position:', key);
-        }
-      });
-      console.log('📦 MasonryGrid: Updating state with', filteredLayout.size, 'positions for', items.length, 'items');
-      setLayout(filteredLayout);
-      return;
-    }
-
-    setIsCalculating(true);
-    console.log('🔄 MasonryGrid: Starting layout calculation for', itemsNeedingLayout.length, 'new items');
-
-    // Calculate column heights from EXISTING items ONLY
-    // This is the initial calculation before image loading
+      
+      // Calculate item width accounting for gaps
+      // Total gap space = gap * (columnCount - 1)
+      // Each column gets: (containerWidth - totalGapSpace) / columnCount
+      const totalGapSpace = gap * (columnCount - 1);
+      const itemWidth = (containerWidth - totalGapSpace) / columnCount;
+      if (itemWidth <= 0 || !isFinite(itemWidth)) {
+        return; // Safety check: prevent invalid width calculations
+      }
+      
       const columnHeights = new Array(columnCount).fill(0);
-    currentLayout.forEach((pos) => {
-      if (pos.col >= 0 && pos.col < columnCount) {
-        const bottom = pos.top + pos.height;
-        columnHeights[pos.col] = Math.max(columnHeights[pos.col], bottom);
-      }
-    });
+      const newPositions: Array<{ top: number; left: number; width: number }> = [];
 
-    console.log('📐 MasonryGrid: Starting image dimension loading for', itemsNeedingLayout.length, 'items');
-    
-    // Load ALL image dimensions in parallel - FAST timeout to prevent hanging
-    const imagePromises = itemsNeedingLayout.map((item) => {
-      return new Promise<number>((resolve) => {
-        const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
-        if (!imageUrl) {
-          // Default aspect ratio for items without images
-          resolve(itemWidth * 1.5);
-          return;
-        }
-        const img = new window.Image();
-        // FAST timeout - 500ms max, don't wait forever
-        const timeout = setTimeout(() => {
-          resolve(itemWidth * 1.5); // Default aspect ratio
-        }, 500);
-        img.onload = () => {
-          clearTimeout(timeout);
-          const aspectRatio = img.naturalHeight / img.naturalWidth;
-          resolve(itemWidth * aspectRatio);
-        };
-        img.onerror = () => {
-          clearTimeout(timeout);
-          resolve(itemWidth * 1.5); // Default aspect ratio
-        };
-        img.src = imageUrl;
-      });
-    });
+      itemRefs.current.forEach((itemEl, index) => {
+        if (!itemEl || index >= items.length) return;
 
-    console.log('⏳ MasonryGrid: Waiting for', imagePromises.length, 'image dimensions...');
-    
-    // CRITICAL: Use Promise.allSettled to ensure layout completes even if some images fail
-    // This prevents hanging on slow/failed images
-    Promise.allSettled(imagePromises).then((results) => {
-      // Extract heights from results (fulfilled or default)
-      const heights = results.map((result) => {
-        if (result.status === 'fulfilled') {
-          return result.value;
-        } else {
-          // If image failed, use default aspect ratio
-          return itemWidth * 1.5;
-        }
-      });
-      
-      console.log('✅ MasonryGrid: All image dimensions processed, heights:', heights.length);
-      // Get the LATEST layout from ref (in case it changed during image loading)
-      const latestLayout = layoutRef.current;
-      const newLayout = new Map(latestLayout);
-      
-      // CRITICAL: Calculate column heights from ALL existing items in layoutRef
-      // This ensures we get the correct bottom position for each column
-      const columnHeights = new Array(columnCount).fill(0);
-      
-      // Calculate from ALL items in layoutRef, not just current items array
-      // This ensures column heights are accurate even if items array changed
-      latestLayout.forEach((pos, key) => {
-        if (pos.col >= 0 && pos.col < columnCount) {
-          const bottom = pos.top + pos.height;
-          columnHeights[pos.col] = Math.max(columnHeights[pos.col], bottom);
-        }
-      });
-      
-      console.log('📐 MasonryGrid: Column heights before placing new items:', columnHeights);
-      
-      // Place each new item in the SHORTEST column
-      // Each item is placed at EXACTLY columnHeights[col] - NO GAPS
-      itemsNeedingLayout.forEach((item, idx) => {
-        const key = getItemKey(item);
-        const calculatedHeight = heights[idx];
+        // Find shortest column
+        const shortestColumnIndex = columnHeights.reduce(
+          (minIndex, height, colIndex) => 
+            height < columnHeights[minIndex] ? colIndex : minIndex,
+          0
+        );
+
+        // Measure ACTUAL rendered height
+        // Use getBoundingClientRect for accurate measurement, Math.ceil to prevent sub-pixel overlap
+        const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) || 0;
+        if (itemHeight <= 0) return; // Skip items with no height
         
-        // Find shortest column - CRITICAL for uniform columns
-        let shortestCol = 0;
-        let shortestHeight = columnHeights[0];
-        for (let i = 1; i < columnCount; i++) {
-          if (columnHeights[i] < shortestHeight) {
-            shortestHeight = columnHeights[i];
-            shortestCol = i;
-          }
+        // Calculate left position: column_index * (itemWidth + gap)
+        // This ensures uniform gap between columns
+        const left = shortestColumnIndex * (itemWidth + gap);
+        
+        // Calculate top position with ceiling to prevent fractional pixels
+        // This ensures uniform gap between rows
+        const currentColumnHeight = columnHeights[shortestColumnIndex];
+        const top = currentColumnHeight === 0 
+          ? 0 
+          : Math.ceil(currentColumnHeight) + gap;
+        
+        // Debug log for verification
+        if (index === 0) {
+          console.log('🔧 Masonry overlap fix - Gap:', gap, 'px, Height buffer: +2px');
         }
-        
-        // Calculate position - EXACT column alignment for uniform columns
-        // CRITICAL: Round positions to prevent sub-pixel rendering issues
-        const left = Math.round(shortestCol * (itemWidth + gap));
-        const top = Math.round(columnHeights[shortestCol]);
-        // Height based on actual image aspect ratio, with reasonable minimum
-        const itemHeight = Math.max(Math.ceil(calculatedHeight), Math.ceil(itemWidth * 0.8));
-        
-        // Update column height IMMEDIATELY for next item (use rounded values)
-        columnHeights[shortestCol] = top + itemHeight;
-        
-        // Store position with column index - ROUNDED for exact pixel alignment
-        newLayout.set(key, { 
-          top: top, 
-          left: left, 
-          width: Math.round(itemWidth), 
-          height: itemHeight, 
-          col: shortestCol 
-        });
+
+        // Validate calculated values
+        if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
+          return; // Skip invalid positions
+        }
+
+        newPositions.push({ top, left, width: itemWidth });
+        // Update column height: current top position + item height (gap is already in top calculation)
+        columnHeights[shortestColumnIndex] = top + itemHeight;
       });
 
-      // Update ref IMMEDIATELY
-      layoutRef.current = newLayout;
-      
-      console.log('📐 MasonryGrid: Column heights after placing new items:', columnHeights);
-      console.log('✅ MasonryGrid: Placed', itemsNeedingLayout.length, 'new items');
-      
-      // Create filtered layout for state (remove col from output)
-      const filteredLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
-      items.forEach(item => {
-        const key = getItemKey(item);
-        const pos = newLayout.get(key);
-        if (pos) {
-          filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
-        }
-      });
-      
-      console.log('📦 MasonryGrid: Setting layout state:', {
-        newLayoutSize: newLayout.size,
-        filteredLayoutSize: filteredLayout.size,
-        itemsCount: items.length,
-        firstFewKeys: Array.from(filteredLayout.keys()).slice(0, 5)
-      });
-      
-      setLayout(filteredLayout);
-      setIsCalculating(false);
-      console.log('✅ MasonryGrid: Layout calculation COMPLETE, state updated');
-    }).catch((error) => {
-      console.error('❌ MasonryGrid: Failed to calculate layout', error);
-      setIsCalculating(false);
-    });
-  }, [items, columnCount, gap]);
-
-  // IntersectionObserver for lazy loading images below the fold
-  useEffect(() => {
-    if (typeof window === 'undefined' || !containerRef.current) return;
-
-    // Clean up existing observer
-    if (intersectionObserverRef.current) {
-      intersectionObserverRef.current.disconnect();
-    }
-
-    // Create observer with rootMargin to start loading 500px before viewport
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const newVisibleItems = new Set(visibleItems);
-        entries.forEach((entry) => {
-          const itemKey = entry.target.getAttribute('data-item-key');
-          if (!itemKey) return;
-
-          if (entry.isIntersecting) {
-            newVisibleItems.add(itemKey);
-            } else {
-            // Keep items visible once loaded (don't unload)
-            // Only add, never remove from visibleItems
-          }
-        });
-        
-        if (newVisibleItems.size !== visibleItems.size) {
-          setVisibleItems(newVisibleItems);
-        }
-      },
-      {
-        root: null, // Use viewport as root
-        rootMargin: '500px', // Start loading 500px before entering viewport
-        threshold: 0.01 // Trigger when 1% of item is visible
-      }
-    );
-
-    intersectionObserverRef.current = observer;
-
-    // Observe all item elements
-    itemRefs.current.forEach((element) => {
-      observer.observe(element);
-    });
-
-    return () => {
-      if (intersectionObserverRef.current) {
-        intersectionObserverRef.current.disconnect();
+      if (newPositions.length > 0) {
+        setPositions(newPositions);
       }
     };
-  }, [items.length, visibleItems]);
 
-  // Calculate container height from ALL positioned items
-  // Use layoutRef.current for immediate calculation, not async state
-  const containerHeight = useMemo(() => {
-    const currentLayout = layoutRef.current;
-    if (currentLayout.size === 0) return 0;
-    let maxHeight = 0;
-    currentLayout.forEach((pos) => {
-      const bottom = pos.top + pos.height;
-      if (bottom > maxHeight) maxHeight = bottom;
-    });
-    return maxHeight;
-  }, [layout]);
+    // Calculate positions after items render (use requestAnimationFrame for better timing)
+    let timeout: NodeJS.Timeout;
+    const scheduleCalculation = () => {
+      timeout = setTimeout(() => {
+        requestAnimationFrame(() => {
+          calculatePositions();
+        });
+      }, 150);
+    };
+    
+    scheduleCalculation();
+    
+    // Recalculate when images/videos load
+    const handleLoad = () => {
+      scheduleCalculation();
+    };
+    
+    // Set up load listeners on next frame to ensure DOM is ready
+    const observerTimeout = setTimeout(() => {
+      itemRefs.current.forEach((itemEl) => {
+        if (itemEl) {
+          const media = itemEl.querySelectorAll('img, video');
+          media.forEach((el) => {
+            const imgEl = el as HTMLImageElement;
+            const videoEl = el as HTMLVideoElement;
+            if ((imgEl.complete !== undefined && imgEl.complete) || (videoEl.readyState !== undefined && videoEl.readyState >= 2)) {
+              // Already loaded, trigger calculation
+              handleLoad();
+            } else {
+              el.addEventListener('load', handleLoad);
+              el.addEventListener('loadeddata', handleLoad);
+            }
+          });
+        }
+      });
+    }, 200);
+
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(observerTimeout);
+      itemRefs.current.forEach((itemEl) => {
+        if (itemEl) {
+          const media = itemEl.querySelectorAll('img, video');
+          media.forEach((el) => {
+            el.removeEventListener('load', handleLoad);
+            el.removeEventListener('loadeddata', handleLoad);
+          });
+        }
+      });
+    };
+  }, [items.length, columnCount, gap, items]);
+
+  const containerHeight = positions.length > 0 && itemRefs.current.length > 0
+    ? (() => {
+        const heights = positions.map((pos, index) => {
+          const itemEl = itemRefs.current[index];
+          const itemHeight = itemEl?.offsetHeight || 0;
+          const height = pos.top + itemHeight;
+          return isFinite(height) && height > 0 ? height : 0;
+        }).filter(h => h > 0);
+        return heights.length > 0 ? Math.max(...heights) : 0;
+      })()
+    : 0;
 
   return (
-    <>
-      <style dangerouslySetInnerHTML={{__html: `
-        .masonry-item-wrapper {
-          margin: 0 !important;
-          padding: 0 !important;
-          border: none !important;
-          box-shadow: none !important;
-          overflow: hidden !important;
-          box-sizing: border-box !important;
-        }
-        .masonry-item-wrapper > * {
-          width: 100% !important;
-          height: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          display: block !important;
-          box-sizing: border-box !important;
-        }
-        .masonry-item-wrapper [class*="Card"] {
-          width: 100% !important;
-          height: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border: none !important;
-          box-shadow: none !important;
-          display: flex !important;
-          flex-direction: column !important;
-          box-sizing: border-box !important;
-        }
-        .masonry-item-wrapper [class*="Card"] > div {
-          width: 100% !important;
-          height: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          flex: 1 !important;
-          box-sizing: border-box !important;
-        }
-        .masonry-item-wrapper > div[style*="padding-bottom"],
-        .masonry-item-wrapper [class*="Card"] > div[style*="padding-bottom"] {
-          padding-bottom: 0 !important;
-          height: 100% !important;
-          position: relative !important;
-          box-sizing: border-box !important;
-        }
-        .masonry-item-wrapper img,
-        .masonry-item-wrapper [class*="Image"],
-        .masonry-item-wrapper span[style*="position: absolute"],
-        .masonry-item-wrapper [class*="Image"] > span {
-          width: 100% !important;
-          height: 100% !important;
-          object-fit: cover !important;
-          display: block !important;
-          box-sizing: border-box !important;
-        }
-      `}} />
-    <div 
-      ref={containerRef} 
-      className="relative w-full" 
-      style={{ 
-        position: 'relative',
-        width: '100%',
-        minHeight: containerHeight > 0 ? `${containerHeight}px` : 'auto',
-        height: containerHeight > 0 ? `${containerHeight}px` : 'auto',
-      }}
-    >
-        {items.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            No items to display
-          </div>
-        ) : (() => {
-          // CRITICAL: Use layoutRef.current for rendering, not layout state
-          // State updates are async, but ref is immediate
-          const currentLayout = layoutRef.current;
-          
-          // Debug: Count how many items have positions
-          const itemsWithPositions = items.filter(item => currentLayout.has(getItemKey(item))).length;
-          const itemsWithoutPositions = items.length - itemsWithPositions;
-          
-          // Calculate container height from current layout
-          let calculatedHeight = 0;
-          currentLayout.forEach((pos) => {
-            const bottom = pos.top + pos.height;
-            if (bottom > calculatedHeight) calculatedHeight = bottom;
-          });
-          
-          console.log('🎨 MasonryGrid RENDER DEBUG:', {
-            totalItems: items.length,
-            withPositions: itemsWithPositions,
-            withoutPositions: itemsWithoutPositions,
-            layoutRefSize: currentLayout.size,
-            layoutStateSize: layout.size,
-            isCalculating,
-            containerHeightFromMemo: containerHeight,
-            calculatedHeightFromRef: calculatedHeight,
-            actualContainerHeight: containerRef.current?.offsetHeight,
-            firstFewItemKeys: items.slice(0, 3).map(item => getItemKey(item)),
-            firstFewHavePositions: items.slice(0, 3).map(item => currentLayout.has(getItemKey(item))),
-            firstFewPositions: items.slice(0, 3).map(item => {
-              const key = getItemKey(item);
-              const pos = currentLayout.get(key);
-              return pos ? { top: pos.top, left: pos.left, width: pos.width, height: pos.height } : null;
-            })
-          });
-          
-          if (itemsWithoutPositions > 0 && !isCalculating) {
-            console.log('⚠️ MasonryGrid RENDER: Items without positions:', {
-              totalItems: items.length,
-              withPositions: itemsWithPositions,
-              withoutPositions: itemsWithoutPositions,
-              layoutRefSize: currentLayout.size,
-              layoutStateSize: layout.size,
-              firstFewMissing: items
-                .filter(item => !currentLayout.has(getItemKey(item)))
-                .slice(0, 3)
-                .map(item => getItemKey(item))
-            });
-          }
-          
-          const renderedItems = items.map((item) => {
-            const itemKey = getItemKey(item);
-            // Use layoutRef.current for immediate rendering, not async state
-            const pos = currentLayout.get(itemKey);
-            
-            // Only render items that have positions calculated - no placeholders
-            if (!pos) {
-              return null;
-            }
-            
-            // Only log first 3 items to avoid spam
-            if (items.indexOf(item) < 3) {
-              console.log('✅ Rendering item:', itemKey, 'at position:', { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
-            }
-          
-          // Check if item is visible (or in initial viewport - first 12 items)
-          const isInInitialViewport = items.indexOf(item) < 12;
-          const isVisible = visibleItems.has(itemKey) || isInInitialViewport;
-          
+    <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
+      {items.map((item, index) => {
+        const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
         return (
           <div
             key={itemKey}
-              ref={(el) => {
-                if (el) {
-                  itemRefs.current.set(itemKey, el);
-                  // Observe this element if observer exists
-                  if (intersectionObserverRef.current) {
-                    intersectionObserverRef.current.observe(el);
-                  }
-                } else {
-                  itemRefs.current.delete(itemKey);
-                }
-              }}
-              data-item-key={itemKey}
-              className="masonry-item-wrapper"
+            ref={(el) => { itemRefs.current[index] = el; }}
             style={{
               position: 'absolute',
-                top: `${Math.round(pos.top)}px`,
-                left: `${Math.round(pos.left)}px`,
-                width: `${Math.round(pos.width)}px`,
-                height: `${Math.round(pos.height)}px`,
-                margin: 0,
-                padding: 0,
-                overflow: 'hidden',
-                boxSizing: 'border-box',
-                zIndex: 1,
-              }}
-            >
-              {renderItem(item, isVisible)}
+              top: positions[index]?.top ?? 0,
+              left: positions[index]?.left ?? 0,
+              width: positions[index]?.width || `${100 / columnCount}%`,
+              opacity: positions[index] ? 1 : 0, // Hide until positioned
+              margin: 0, // Ensure no margins that could create irregular gaps
+              padding: 0, // Ensure no padding that could create irregular gaps
+            }}
+          >
+            {renderItem(item)}
           </div>
         );
-          });
-          
-          const renderedCount = renderedItems.filter(item => item !== null).length;
-          console.log('📊 MasonryGrid: Rendered', renderedCount, 'items out of', items.length);
-          
-          return renderedItems;
-        })()}
+      })}
       <div 
         ref={loadMoreRef} 
-          style={{ 
-            position: 'absolute', 
-            top: containerHeight, 
-            left: 0, 
-            right: 0,
-            height: '80px',
-            pointerEvents: 'none',
-          }} 
+        className="h-10 w-full" 
+        style={{ position: 'absolute', top: containerHeight, left: 0, right: 0 }} 
       />
     </div>
-    </>
   );
 }
 
@@ -1162,7 +779,6 @@ function DiscoverPageContent() {
   const [hasMore, setHasMore] = useState(true);
   const [lastDocument, setLastDocument] = useState<any>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [showBottomLoader, setShowBottomLoader] = useState(false);
   const [artworkEngagements, setArtworkEngagements] = useState<Map<string, any>>(new Map());
   const [initialVideosReady, setInitialVideosReady] = useState(0);
   const [initialVideosTotal, setInitialVideosTotal] = useState(0);
@@ -1173,8 +789,6 @@ function DiscoverPageContent() {
   const initialVideoReadyRef = useRef<Set<string>>(new Set());
   const initialImageReadyRef = useRef<Set<string>>(new Set());
   const initialVideoPosterRef = useRef<Set<string>>(new Set());
-  // Track last loaded artwork IDs to prevent showing same content twice in a row
-  const lastLoadedArtworkIdsRef = useRef<Set<string>>(new Set());
   
   // CLEAN LOADING SCREEN STATE - Simple and straightforward
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
@@ -1353,17 +967,15 @@ function DiscoverPageContent() {
   const [selectedArtworkType, setSelectedArtworkType] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
-  const [showFollowedOnly, setShowFollowedOnly] = useState(false);
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
   // Initialize with enough items to fill viewport + 5+ MORE ROWS for immediate scrolling
   // Desktop (6 cols): 7 viewport rows + 5 extra rows = 72 items minimum
-  // Mobile (2 cols): 10 viewport rows + 15 extra rows = 50 items minimum  
-  // Tablet (3 cols): 8 viewport rows + 15 extra rows = 69 items minimum
-  // Desktop (6 cols): 6 viewport rows + 15 extra rows = 126 items minimum
-  // Using 200 items ensures we cover all screen sizes with 15+ additional rows on initial load
-  const [visibleCount, setVisibleCount] = useState(200);
+  // Mobile (2 cols): 10 viewport rows + 5 extra rows = 30 items minimum  
+  // Tablet (3 cols): 8 viewport rows + 5 extra rows = 39 items minimum
+  // Using 90 items ensures we cover all screen sizes with 5+ additional rows on initial load
+  const [visibleCount, setVisibleCount] = useState(90);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market list, Events grid on mobile
@@ -1425,9 +1037,8 @@ function DiscoverPageContent() {
         
         // Fetch enough items to fill viewport + 5+ MORE ROWS for all screen sizes
         // 120 items ensures: mobile (2 cols × 20 rows), tablet (3 cols × 13 rows), desktop (6 cols × 10 rows)
-        // This provides immediate content with 15+ additional rows of scrollable content
-        // Increased significantly to ensure desktop screens are filled with multiple scroll pages
-        const INITIAL_FETCH_LIMIT = 300;
+        // This provides immediate content with 5+ additional rows of scrollable content
+        const INITIAL_FETCH_LIMIT = 120;
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -1475,7 +1086,7 @@ function DiscoverPageContent() {
               showInPortfolio: true,
               deleted: false,
               hideAI: discoverSettings.hideAiAssistedArt,
-              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for portfolio items (150 items)
+              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for portfolio items (60 items)
             });
             
             // Query discover content (videos uploaded via Discover portal)
@@ -1483,7 +1094,7 @@ function DiscoverPageContent() {
               showInPortfolio: false,
               deleted: false,
               hideAI: discoverSettings.hideAiAssistedArt,
-              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for discover content (150 items)
+              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for discover content (60 items) (60 items)
             });
             
             // Combine results, portfolio items first, then discover content
@@ -1496,7 +1107,7 @@ function DiscoverPageContent() {
               return bTime - aTime;
             });
             
-            // Limit to INITIAL_FETCH_LIMIT after combining (300 items for 15+ additional rows)
+            // Limit to INITIAL_FETCH_LIMIT after combining (120 items for 5+ additional rows)
             portfolioItems = portfolioItems.slice(0, INITIAL_FETCH_LIMIT);
             log(`📦 Discover: Found ${portfolioItems.length} portfolio items from direct Firestore (fallback)`);
             
@@ -1741,7 +1352,7 @@ function DiscoverPageContent() {
           const artworksQuery = query(
             collection(db, 'artworks'),
             orderBy('createdAt', 'desc'),
-            limit(Math.max(120, (columnCount || 5) * 10)) // Initial load: MINIMUM 10 rows for immediate display
+            limit(120) // Initial load: fetch enough to fill viewport + 5+ MORE ROWS for immediate scrolling
           );
           const artworksSnapshot = await getDocs(artworksQuery);
           
@@ -1901,11 +1512,11 @@ function DiscoverPageContent() {
         }
         
         // Sort by createdAt descending (newest first)
-          fetchedArtworks.sort((a, b) => {
-            const dateA = a.createdAt.getTime();
-            const dateB = b.createdAt.getTime();
-            return dateB - dateA;
-          });
+        fetchedArtworks.sort((a, b) => {
+          const dateA = a.createdAt.getTime();
+          const dateB = b.createdAt.getTime();
+          return dateB - dateA;
+        });
         
         // No fallback: only show current portfolio items with images, skip deleted/hidden
         
@@ -1938,8 +1549,8 @@ function DiscoverPageContent() {
         setArtworksLoaded(true); // Mark artworks as loaded
         
         // AUTO-LOAD MORE: If we don't have enough content to fill viewport, immediately load more
-        // Desktop typically needs 60-80 items (6 cols × 10-15 rows), so trigger if we have less
-        const MIN_ITEMS_FOR_DESKTOP = 80;
+        // Desktop typically needs 30-40 items (6 cols × 5-7 rows), so trigger if we have less
+        const MIN_ITEMS_FOR_DESKTOP = 30;
         // Note: loadMoreArtworks will be called via useEffect after artworks are set
         
         // If we only have placeholders, mark images as "ready" immediately (they don't need to load)
@@ -2120,151 +1731,31 @@ function DiscoverPageContent() {
     }
   }, [hasMore, lastDocument, discoverSettings.hideAiAssistedArt, isLoadingMore]);
 
-  // Smart shuffle function that prevents consecutive duplicates
-  const shuffleArtworks = useCallback((artworks: Artwork[]): Artwork[] => {
-    if (artworks.length <= 1) return artworks;
-    
-    const shuffled = [...artworks];
-    const maxAttempts = 100; // Prevent infinite loops
-    
-    // Try to shuffle while avoiding consecutive duplicates
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      // Fisher-Yates shuffle
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      
-      // Check if we have consecutive duplicates
-      let hasConsecutiveDuplicates = false;
-      for (let i = 0; i < shuffled.length - 1; i++) {
-        if (shuffled[i].id === shuffled[i + 1].id) {
-          hasConsecutiveDuplicates = true;
-          break;
-        }
-      }
-      
-      // If no consecutive duplicates, we're good
-      if (!hasConsecutiveDuplicates) {
-        log(`✅ Discover: Successfully shuffled ${shuffled.length} artworks (attempt ${attempt + 1})`);
-        return shuffled;
-      }
-    }
-    
-    // If we couldn't avoid all duplicates after max attempts, return shuffled anyway
-    // (this handles edge cases where we have very few unique items)
-    log(`⚠️ Discover: Shuffled ${shuffled.length} artworks but some duplicates may remain`);
-    return shuffled;
-  }, []);
-
-  // Calculate how many items to load per batch - 10 ROWS MINIMUM
-  const getBatchSize = useCallback(() => {
-    // ALWAYS load minimum 10 rows per page (user requirement)
-    const minRows = 10;
-    
-    // Batch size = columns × rows (minimum 10 rows)
-    const batchSize = columnCount * minRows;
-    
-    return batchSize;
-  }, [columnCount]);
-
   // Load more artworks when scrolling to bottom (pagination)
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
   const loadMoreArtworks = useCallback(async () => {
-    if (isLoadingMore || showBottomLoader) {
+    if (isLoadingMore || !hasMore || !lastDocument) {
       return;
     }
 
-    // Show loading indicator and fetch content during the loading time
-    setShowBottomLoader(true);
     setIsLoadingMore(true);
-    
-    // Only recycle when we've truly reached the end (no more content available)
-    // Don't recycle if we still have more content to load
-    let currentLastDoc = lastDocument;
-
     log('📥 Discover: Loading more artworks...');
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      // Calculate batch size - at least 9 rows
-      const LOAD_MORE_LIMIT = getBatchSize();
-      log(`📊 Discover: Loading batch - Limit: ${LOAD_MORE_LIMIT}, Columns: ${columnCount}, Expected rows: ${Math.ceil(LOAD_MORE_LIMIT / columnCount)}`);
+      const LOAD_MORE_LIMIT = 50; // Increased for continuous scroll - load enough to keep scrolling smooth
       
-      // Start fetching content immediately, using the loading cursor time to load
-      const fetchPromise = PortfolioService.getDiscoverPortfolioItems({
+      const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
         deleted: false,
         hideAI: discoverSettings.hideAiAssistedArt,
         limit: LOAD_MORE_LIMIT,
-        startAfter: currentLastDoc || undefined, // Use undefined if null to start from beginning
+        startAfter: lastDocument,
       });
-      
-      // Add a pause (1.5 seconds) for smoother UX, but fetch during this time
-      const [result] = await Promise.all([
-        fetchPromise,
-        new Promise<void>((resolve) => {
-          setTimeout(() => {
-            resolve();
-          }, 1500);
-        })
-      ]);
-      
-      const expectedRows = Math.ceil(LOAD_MORE_LIMIT / columnCount);
-      const actualRows = result.items.length > 0 ? Math.ceil(result.items.length / columnCount) : 0;
-      log(`✅ Discover: Loaded ${result.items.length} new items (requested ${LOAD_MORE_LIMIT}, expected ${expectedRows} rows, got ${actualRows} rows)`);
-      
-      if (result.items.length < LOAD_MORE_LIMIT) {
-        log(`⚠️ Discover: Only loaded ${result.items.length} items instead of ${LOAD_MORE_LIMIT} (${actualRows} rows instead of ${expectedRows})`);
-      }
-      
+
       if (result.items.length === 0) {
-        // Only recycle when there's NO new content available
-        // Filter out artworks that were shown in the previous load to prevent duplicates
-        log('🔄 Discover: No new content available, recycling with duplicate prevention...');
-        
-        setArtworks(prev => {
-          if (prev.length === 0) {
-            // No existing artworks, nothing to recycle
-            setShowBottomLoader(false);
+        setHasMore(false);
         setIsLoadingMore(false);
-            return prev;
-          }
-          
-          // Filter out artworks that were in the last load
-          const filtered = prev.filter(artwork => !lastLoadedArtworkIdsRef.current.has(artwork.id));
-          
-          if (filtered.length === 0) {
-            // All artworks were in the last load, clear the tracking and use all artworks
-            log('🔄 Discover: All artworks were in last load, resetting tracking...');
-            lastLoadedArtworkIdsRef.current.clear();
-            const shuffled = shuffleArtworks(prev);
-            // Track the IDs that will be shown
-            shuffled.slice(0, Math.min(prev.length, getBatchSize())).forEach(a => {
-              lastLoadedArtworkIdsRef.current.add(a.id);
-            });
-            setLastDocument(null);
-            setHasMore(true);
-            setShowBottomLoader(false);
-            setIsLoadingMore(false);
-            return shuffled;
-          }
-          
-          // Use filtered artworks (excluding last load)
-          const shuffled = shuffleArtworks(filtered);
-          // Track the IDs that will be shown
-          shuffled.slice(0, Math.min(filtered.length, getBatchSize())).forEach(a => {
-            lastLoadedArtworkIdsRef.current.add(a.id);
-          });
-          
-          log(`🔄 Discover: Recycled ${shuffled.length} artworks (filtered out ${prev.length - filtered.length} from last load)`);
-          setLastDocument(null);
-          setHasMore(true);
-          setShowBottomLoader(false);
-          setIsLoadingMore(false);
-          return shuffled;
-        });
-        
         return;
       }
 
@@ -2290,7 +1781,7 @@ function DiscoverPageContent() {
       for (const item of result.items) {
         const artistData = artistDataMap.get(item.userId);
         if (!artistData) continue;
-        
+
         let videoUrl = item.videoUrl || null;
         if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
           videoUrl = item.mediaUrls[0];
@@ -2346,60 +1837,24 @@ function DiscoverPageContent() {
       }
 
       // Append new artworks to existing ones
-      // Track ONLY the last batch of artworks shown (not accumulated)
-      // This ensures same content doesn't appear twice in a row, but can appear after one load
-      lastLoadedArtworkIdsRef.current = new Set(newArtworks.map(a => a.id));
-      
-      // CRITICAL: Preserve scroll position - user continues scrolling from where they were
-      // New content loads below, scroll position stays the same
-      const scrollYBefore = typeof window !== 'undefined' ? window.scrollY : 0;
-      
-      setArtworks(prev => {
-        return [...prev, ...newArtworks];
-      });
-      
-      // Restore scroll position after DOM updates complete
-      if (typeof window !== 'undefined') {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            // User continues from where they were - no jump to bottom
-            window.scrollTo({ top: scrollYBefore, behavior: 'auto' });
-          });
-        });
-      }
+      setArtworks(prev => [...prev, ...newArtworks]);
       
       // Update pagination state
       if (result.lastDoc) {
         setLastDocument(result.lastDoc);
         setHasMore(result.items.length === LOAD_MORE_LIMIT);
       } else {
-        // No more documents available - will recycle on next load if needed
-        setLastDocument(null);
-        setHasMore(false); // Mark that we've reached the end
+        setHasMore(false);
       }
 
-      const rowsLoaded = newArtworks.length > 0 ? Math.ceil(newArtworks.length / columnCount) : 0;
-      log(`✅ Discover: Loaded ${newArtworks.length} more artworks (${rowsLoaded} rows, expected ${Math.ceil(LOAD_MORE_LIMIT / columnCount)} rows)`);
-      
-      if (newArtworks.length < LOAD_MORE_LIMIT) {
-        log(`⚠️ Discover: After processing, only ${newArtworks.length} artworks remain (${rowsLoaded} rows) - some items may have been filtered out`);
-      }
-      
-      // Hide loading indicator after content is loaded
-      setShowBottomLoader(false);
+      log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
     } catch (error: any) {
       console.error('Error loading more artworks:', error);
-      // On error, don't recycle - just stop loading
-      log('⚠️ Discover: Error loading artworks, stopping pagination');
-      setLastDocument(null);
       setHasMore(false);
-      
-      // Hide loading indicator on error
-      setShowBottomLoader(false);
     } finally {
       setIsLoadingMore(false);
     }
-  }, [hasMore, lastDocument, isLoadingMore, discoverSettings, shuffleArtworks, getBatchSize, showBottomLoader, columnCount]);
+  }, [hasMore, lastDocument, isLoadingMore, discoverSettings]);
 
   // AUTO-LOAD MORE: If initial load doesn't fill viewport, immediately load more
   useEffect(() => {
@@ -2407,7 +1862,7 @@ function DiscoverPageContent() {
     
     // Desktop needs ~42 items to fill viewport + 5 more rows (6 cols × 7 rows)
     // If we have less, automatically load more to enable continuous scroll
-    const MIN_ITEMS_FOR_DESKTOP = 80;
+    const MIN_ITEMS_FOR_DESKTOP = 42;
     if (artworks.length < MIN_ITEMS_FOR_DESKTOP && hasMore && !isLoadingMore) {
       log(`📥 Auto-loading more content: Only ${artworks.length} items, loading more to fill viewport`);
       const timeoutId = setTimeout(() => {
@@ -2436,25 +1891,22 @@ function DiscoverPageContent() {
   }, [hasMore, isLoadingMore, lastDocument, prefetchNextPage]);
 
   // IntersectionObserver for infinite scroll pagination (Pinterest-style continuous scrolling)
-  // Always active to support continuous recycling of content
   useEffect(() => {
     const sentinel = loadMoreRef.current;
-    if (!sentinel) return;
+    if (!sentinel || !hasMore || isLoadingMore) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && !isLoadingMore && !showBottomLoader) {
-            // Load more content when sentinel comes into view (75% scroll)
+          if (entry.isIntersecting && hasMore && !isLoadingMore) {
+            // Load more content when sentinel comes into view
             loadMoreArtworks();
           }
         });
       },
       {
-        // Trigger when 75% of the way through content
-        // rootMargin: positive value means trigger earlier (before reaching sentinel)
-        rootMargin: '25% 0px', // Trigger when 75% scrolled (25% remaining)
-        threshold: 0.01,
+        rootMargin: '800px', // Start loading 800px before reaching bottom for instant continuous scroll (Pinterest-style)
+        threshold: 0.1, // Trigger when 10% of sentinel is visible
       }
     );
 
@@ -2463,45 +1915,7 @@ function DiscoverPageContent() {
     return () => {
       observer.disconnect();
     };
-  }, [isLoadingMore, loadMoreArtworks, showBottomLoader]);
-
-  // Fallback scroll listener for mobile - trigger at 75% scroll
-  useEffect(() => {
-    if (isLoadingMore) return;
-
-    const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      
-      // Calculate scroll percentage
-      const scrollPercentage = (scrollTop + windowHeight) / documentHeight;
-      
-      // Trigger at 75% scroll
-      if (scrollPercentage >= 0.75 && !isLoadingMore && !showBottomLoader) {
-        loadMoreArtworks();
-      }
-    };
-
-    // Throttle scroll events for performance
-    let ticking = false;
-    const throttledHandleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', throttledHandleScroll, { passive: true });
-    handleScroll();
-
-    return () => {
-      window.removeEventListener('scroll', throttledHandleScroll);
-    };
-  }, [isLoadingMore, loadMoreArtworks, showBottomLoader]);
+  }, [hasMore, isLoadingMore, loadMoreArtworks]);
 
   const filteredAndSortedArtworks = useMemo(() => {
     let filtered = Array.isArray(artworks) ? artworks : [];
@@ -2597,13 +2011,6 @@ function DiscoverPageContent() {
       realArtworks = realArtworks.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
     }
 
-    // Followed Artists Only filter - works for both image and video feeds
-    if (showFollowedOnly) {
-      const followedArtists = getFollowedArtists();
-      const followedArtistIds = new Set(followedArtists.map(a => a.id));
-      realArtworks = realArtworks.filter(artwork => followedArtistIds.has(artwork.artist.id));
-    }
-
     // Sort using engagement-based algorithm when 'popular' is selected
     let sorted = Array.isArray(realArtworks) ? [...realArtworks] : [];
     
@@ -2695,7 +2102,7 @@ function DiscoverPageContent() {
     const result = [...sorted, ...allPlaceholderArtworks];
     log('✅ Discover: Returning', sorted.length, 'real artworks +', allPlaceholderArtworks.length, 'placeholders =', result.length, 'total');
     return result;
-  }, [artworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements, showFollowedOnly, getFollowedArtists]);
+  }, [artworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
@@ -2817,9 +2224,7 @@ function DiscoverPageContent() {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           // If we're showing most of the available items, load more from server
-          // Lowered threshold to 0.6 (60%) for more aggressive loading
-          // Always try to load - will recycle if hasMore is false
-          if (visibleCount >= filteredAndSortedArtworks.length * 0.6 && !isLoadingMore) {
+          if (visibleCount >= filteredAndSortedArtworks.length * 0.8 && hasMore && !isLoadingMore) {
             loadMoreArtworks();
           }
           
@@ -2827,8 +2232,8 @@ function DiscoverPageContent() {
           startTransition(() => {
             setVisibleCount((prev) => {
               // Load additional rows progressively from top to bottom
-              // Add itemsPerRow * 6 to load enough content for smooth continuous scrolling (doubled for more aggressive loading)
-              const newCount = prev + (itemsPerRow * 6);
+              // Add itemsPerRow * 3 to load enough content for smooth continuous scrolling
+              const newCount = prev + (itemsPerRow * 3);
               const maxCount = filteredAndSortedArtworks.length || newCount;
               // Ensure we never exceed available items, maintaining complete rows
               return Math.min(newCount, maxCount);
@@ -3151,7 +2556,7 @@ function DiscoverPageContent() {
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
-                  <ViewSelector view={eventsView} onViewChange={setEventsView} className="w-full" disabled={true} />
+                  <ViewSelector view={eventsView} onViewChange={setEventsView} className="w-full" />
                 </>
               )}
             </div>
@@ -3242,23 +2647,6 @@ function DiscoverPageContent() {
                       </Select>
                     </div>
                   </div>
-                  <div className="pt-2 border-t">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="followed-only" className="text-sm font-medium">
-                          Followed Artists Only
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Show only content from artists you follow
-                        </p>
-                      </div>
-                      <Switch
-                        id="followed-only"
-                        checked={showFollowedOnly}
-                        onCheckedChange={(checked) => startTransition(() => setShowFollowedOnly(checked))}
-                      />
-                    </div>
-                  </div>
                   <div className="mt-2 flex gap-2">
                     <Button
                       variant="outline"
@@ -3269,7 +2657,6 @@ function DiscoverPageContent() {
                           setSelectedArtworkType('All');
                           setSortBy('newest');
                           setSearchQuery('');
-                          setShowFollowedOnly(false);
                         });
                       }}
                     >
@@ -3281,7 +2668,7 @@ function DiscoverPageContent() {
               )}
 
               {/* Active Filters Display */}
-              {(selectedMedium !== 'All' || selectedArtworkType !== 'All' || searchQuery || showFollowedOnly) && (
+              {(selectedMedium !== 'All' || selectedArtworkType !== 'All' || searchQuery) && (
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-sm text-muted-foreground">Active filters:</span>
                   {searchQuery && (
@@ -3302,12 +2689,6 @@ function DiscoverPageContent() {
                       <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setSelectedArtworkType('All'))} />
                     </Badge>
                   )}
-                  {showFollowedOnly && (
-                    <Badge variant="secondary" className="gap-1">
-                      Followed Artists Only
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setShowFollowedOnly(false))} />
-                    </Badge>
-                  )}
                         </div>
               )}
             </div>
@@ -3320,11 +2701,11 @@ function DiscoverPageContent() {
                 <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">No artworks found</h2>
                 <p className="text-muted-foreground mb-4">
-                  {(searchQuery || selectedMedium !== 'All' || selectedArtworkType !== 'All' || showFollowedOnly)
+                  {(searchQuery || selectedMedium !== 'All' || selectedArtworkType !== 'All')
                     ? 'Try adjusting your filters to see more results.'
                     : 'Check back later for new content.'}
                 </p>
-                {(searchQuery || selectedMedium !== 'All' || selectedArtworkType !== 'All' || showFollowedOnly) && (
+                {(searchQuery || selectedMedium !== 'All' || selectedArtworkType !== 'All') && (
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -3332,7 +2713,6 @@ function DiscoverPageContent() {
                         setSelectedMedium('All');
                         setSelectedArtworkType('All');
                         setSearchQuery('');
-                        setShowFollowedOnly(false);
                       });
                     }}
                   >
@@ -3341,15 +2721,11 @@ function DiscoverPageContent() {
                 )}
               </div>
             ) : !showLoadingScreen && artworkView === 'grid' ? (
-              <>
               <MasonryGrid
                 items={(() => {
-                  // CRITICAL: Use ALL filteredAndSortedArtworks, not just visibleFilteredArtworks
-                  // This ensures all items get positions calculated and can be rendered
-                  // Grid view shows ONLY images (no videos)
-                  // Note: filteredAndSortedArtworks already filters for Cloudflare images and excludes videos for image-only content
-                  // We only need to filter out any remaining videos here
-                  const imageOnlyArtworks = filteredAndSortedArtworks.filter((item) => {
+                  // Grid view shows ONLY images (no videos) from Cloudflare
+                  // Videos will only appear in video feed (list view)
+                  const imageOnlyArtworks = visibleFilteredArtworks.filter((item) => {
                     // Keep ads
                     if ('type' in item && item.type === 'ad') return true;
                     // Filter out videos - only show images in grid view
@@ -3357,44 +2733,24 @@ function DiscoverPageContent() {
                     const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                     if (hasVideo) return false; // Filter out videos
                     
-                    // Ensure item has an image (filteredAndSortedArtworks should already handle Cloudflare filtering)
+                    // CRITICAL: Only show images from Cloudflare (all active artists should use Cloudflare)
                     const imageUrl = artwork.imageUrl || (artwork as any).supportingImages?.[0] || (artwork as any).images?.[0] || '';
                     if (!imageUrl) return false; // Skip items with no image
+                    if (!isCloudflareImage(imageUrl)) return false; // Only Cloudflare images
                     
                     return true;
                   });
-                  const filteredOut = filteredAndSortedArtworks.length - imageOnlyArtworks.length;
                   console.log('🖼️ Grid view (images only):', {
                     artworkView,
-                    showLoadingScreen,
-                    totalArtworks: filteredAndSortedArtworks.length,
+                    totalArtworks: visibleFilteredArtworks.length,
                     imageArtworksCount: imageOnlyArtworks.length,
-                    filteredOut: filteredOut,
-                    firstFewItems: imageOnlyArtworks.slice(0, 3).map((item: any) => ({
-                      id: item.id,
-                      hasImage: !!(item.imageUrl || item.supportingImages?.[0]),
-                      imageUrl: item.imageUrl || item.supportingImages?.[0] || 'none',
-                      isCloudflare: item.imageUrl ? isCloudflareImage(item.imageUrl) : false
-                    }))
+                    filteredOut: visibleFilteredArtworks.length - imageOnlyArtworks.length
                   });
-                  if (imageOnlyArtworks.length === 0 && filteredAndSortedArtworks.length > 0) {
-                    console.error('❌ CRITICAL: All artworks filtered out!', {
-                      total: filteredAndSortedArtworks.length,
-                      filteredOut: filteredOut,
-                      sampleItems: filteredAndSortedArtworks.slice(0, 3).map((item: any) => ({
-                        id: item.id,
-                        hasVideo: !!(item.videoUrl || item.mediaType === 'video'),
-                        imageUrl: item.imageUrl || item.supportingImages?.[0] || 'none',
-                        isCloudflare: item.imageUrl ? isCloudflareImage(item.imageUrl) : false
-                      }))
-                    });
-                  }
-                  console.log('✅ MasonryGrid will receive', imageOnlyArtworks.length, 'items');
                   return imageOnlyArtworks;
                 })()}
                 columnCount={columnCount}
                 gap={4}
-                renderItem={(item, isVisible = true) => {
+                renderItem={(item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
                   if (isAd) {
@@ -3416,31 +2772,17 @@ function DiscoverPageContent() {
                   // Check if this is in initial viewport (first 12 tiles)
                   const isInitial = visibleFilteredArtworks.indexOf(artwork) < 12;
                   
-                  // Only load images if visible or in initial viewport (lazy loading)
-                  const shouldLoadImage = isVisible || isInitial;
-                  
                   return (
                     <ArtworkTile 
                       artwork={artwork} 
-                      hideBanner={true} // Always hide banner in grid view to prevent extra height
-                      isInitialViewport={shouldLoadImage && isInitial && hasVideo ? true : undefined}
+                      hideBanner={isMobile && (artworkView as string) === 'list'}
+                      isInitialViewport={isInitial && hasVideo}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
-                      className="!border-0 !shadow-none !outline-none [&>*]:!h-full [&>*]:!pb-0"
                     />
                   );
                 }}
                 loadMoreRef={loadMoreRef}
               />
-              {/* Loading indicator at bottom for seamless experience */}
-              {showBottomLoader && (
-                <div className="flex items-center justify-center py-8 w-full">
-                  <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">Loading more artworks...</p>
-                  </div>
-                </div>
-              )}
-              </>
             ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
                 {/* Video feed - Only videos, 1 per row, 1 column, full width */}
@@ -3547,8 +2889,7 @@ function DiscoverPageContent() {
                           <p className="text-sm mt-2">Switch to grid view to see images</p>
                         </div>
                       ) : (
-                        <>
-                          {videoArtworks.map((item) => {
+                        videoArtworks.map((item) => {
                         const artwork = item as Artwork;
                         const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                         let videoUrl = (artwork as any).videoVariants?.full || (artwork as any).videoUrl;
@@ -3631,23 +2972,12 @@ function DiscoverPageContent() {
                             toggleLike={toggleLike}
                           />
                         );
-                      })}
-                        </>
-                      )}
+                      }))}
                     </div>
                   );
                 })()}
                 {/* Sentinel element for infinite scroll in video feed */}
                 <div ref={loadMoreRef} className="h-20 w-full" />
-                {/* Loading indicator at bottom for seamless experience */}
-                {showBottomLoader && (
-                  <div className="flex items-center justify-center py-8 w-full">
-                    <div className="flex flex-col items-center gap-3">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <p className="text-sm text-muted-foreground">Loading more videos...</p>
-                    </div>
-                  </div>
-                )}
               </>
             ) : null}
             </div>
