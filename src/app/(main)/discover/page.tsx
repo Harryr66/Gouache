@@ -495,6 +495,13 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         }
       });
       
+      console.log('📦 MasonryGrid: Setting layout state:', {
+        newLayoutSize: newLayout.size,
+        filteredLayoutSize: filteredLayout.size,
+        itemsCount: items.length,
+        firstFewKeys: Array.from(filteredLayout.keys()).slice(0, 5)
+      });
+      
       setLayout(filteredLayout);
       setIsCalculating(false);
     }).catch((error) => {
@@ -575,22 +582,38 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           <div className="text-center py-16 text-muted-foreground">
             No items to display
           </div>
-        ) : items.map((item) => {
-          const itemKey = getItemKey(item);
-          const pos = layout.get(itemKey);
-          
-          // Only render items that have positions calculated
-          if (!pos) {
-            // During calculation, show placeholder to indicate content is loading
-            if (isCalculating) {
-              return (
-                <div key={itemKey} className="text-center py-4 text-muted-foreground text-sm">
-                  Calculating layout...
-                </div>
-              );
-            }
-            return null;
+        ) : (() => {
+          // Debug: Count how many items have positions
+          const itemsWithPositions = items.filter(item => layout.has(getItemKey(item))).length;
+          const itemsWithoutPositions = items.length - itemsWithPositions;
+          if (itemsWithoutPositions > 0 && !isCalculating) {
+            console.log('⚠️ MasonryGrid RENDER: Items without positions:', {
+              totalItems: items.length,
+              withPositions: itemsWithPositions,
+              withoutPositions: itemsWithoutPositions,
+              layoutSize: layout.size,
+              firstFewMissing: items
+                .filter(item => !layout.has(getItemKey(item)))
+                .slice(0, 3)
+                .map(item => getItemKey(item))
+            });
           }
+          return items.map((item) => {
+            const itemKey = getItemKey(item);
+            const pos = layout.get(itemKey);
+            
+            // Only render items that have positions calculated
+            if (!pos) {
+              // During calculation, show placeholder to indicate content is loading
+              if (isCalculating) {
+                return (
+                  <div key={itemKey} className="text-center py-4 text-muted-foreground text-sm">
+                    Calculating layout...
+                  </div>
+                );
+              }
+              return null;
+            }
           
           return (
             <div
@@ -611,7 +634,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
               {renderItem(item)}
             </div>
           );
-        })}
+        });
+        })()}
       <div 
         ref={loadMoreRef} 
           style={{ 
