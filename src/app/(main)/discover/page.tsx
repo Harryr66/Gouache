@@ -355,29 +355,23 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       return;
     }
 
-    const calculateLayout = () => {
-      const containerWidth = containerRef.current?.offsetWidth;
-      if (!containerWidth || containerWidth <= 0) {
-        console.warn('⚠️ MasonryGrid: Container width not available:', containerWidth);
-        return false;
-      }
-      return true;
-    };
-
-    // Try immediately
-    if (!calculateLayout()) {
+    // Check container width directly
+    const containerWidth = containerRef.current.offsetWidth;
+    if (!containerWidth || containerWidth <= 0) {
+      console.warn('⚠️ MasonryGrid: Container width not available:', containerWidth, '- retrying in 100ms');
       // Retry after a short delay
       const timeout = setTimeout(() => {
-        if (calculateLayout() && containerRef.current) {
-          console.log('✅ MasonryGrid: Retry successful, width:', containerRef.current.offsetWidth);
+        const retryWidth = containerRef.current?.offsetWidth;
+        if (retryWidth && retryWidth > 0) {
+          console.log('✅ MasonryGrid: Retry successful, width:', retryWidth);
           // Force re-run by triggering a state update
           setLayout(new Map(layoutRef.current));
+        } else {
+          console.error('❌ MasonryGrid: Container width still not available after retry:', retryWidth);
         }
       }, 100);
       return () => clearTimeout(timeout);
     }
-
-    const containerWidth = containerRef.current.offsetWidth;
 
     const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
     console.log('📏 MasonryGrid: Layout calculation starting:', {
@@ -398,14 +392,18 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
 
     // If all items already have positions, just update state
     if (itemsNeedingLayout.length === 0) {
+      console.log('✅ MasonryGrid: All items already have positions, updating state only');
       const filteredLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
       items.forEach(item => {
         const key = getItemKey(item);
         const pos = currentLayout.get(key);
         if (pos) {
           filteredLayout.set(key, { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
+        } else {
+          console.warn('⚠️ MasonryGrid: Item missing position:', key);
         }
       });
+      console.log('📦 MasonryGrid: Updating state with', filteredLayout.size, 'positions for', items.length, 'items');
       setLayout(filteredLayout);
       return;
     }
@@ -610,6 +608,19 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           // Debug: Count how many items have positions
           const itemsWithPositions = items.filter(item => currentLayout.has(getItemKey(item))).length;
           const itemsWithoutPositions = items.length - itemsWithPositions;
+          
+          console.log('🎨 MasonryGrid RENDER DEBUG:', {
+            totalItems: items.length,
+            withPositions: itemsWithPositions,
+            withoutPositions: itemsWithoutPositions,
+            layoutRefSize: currentLayout.size,
+            layoutStateSize: layout.size,
+            isCalculating,
+            containerHeight,
+            firstFewItemKeys: items.slice(0, 3).map(item => getItemKey(item)),
+            firstFewHavePositions: items.slice(0, 3).map(item => currentLayout.has(getItemKey(item)))
+          });
+          
           if (itemsWithoutPositions > 0 && !isCalculating) {
             console.log('⚠️ MasonryGrid RENDER: Items without positions:', {
               totalItems: items.length,
@@ -623,7 +634,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
                 .map(item => getItemKey(item))
             });
           }
-          return items.map((item) => {
+          
+          const renderedItems = items.map((item) => {
             const itemKey = getItemKey(item);
             // Use layoutRef.current for immediate rendering, not async state
             const pos = currentLayout.get(itemKey);
@@ -640,6 +652,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
               }
               return null;
             }
+            
+            console.log('✅ Rendering item:', itemKey, 'at position:', { top: pos.top, left: pos.left, width: pos.width, height: pos.height });
           
           return (
             <div
@@ -660,7 +674,12 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
               {renderItem(item)}
             </div>
           );
-        });
+          });
+          
+          const renderedCount = renderedItems.filter(item => item !== null).length;
+          console.log('📊 MasonryGrid: Rendered', renderedCount, 'items out of', items.length);
+          
+          return renderedItems;
         })()}
       <div 
         ref={loadMoreRef} 
