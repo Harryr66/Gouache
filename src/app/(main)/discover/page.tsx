@@ -1728,9 +1728,10 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      // Reduce batch size significantly for mobile performance - request smaller batches
-      // Mobile devices can't handle large batches without crashing
-      const LOAD_MORE_LIMIT = Math.min(columnCount * 10, 50); // Request 10 rows worth, max 50 items for mobile stability
+      // CRITICAL: Request 10x more items than needed because filtering removes 95%+ of items
+      // Console shows: "got 3 items, requested 100" - only 3% pass filters!
+      // We need to request many more items to get enough that pass Cloudflare image filter
+      const LOAD_MORE_LIMIT = Math.min(columnCount * 100, 200); // Request 100 rows worth, max 200 items to account for heavy filtering
       
       const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
@@ -1749,9 +1750,10 @@ function DiscoverPageContent() {
           setLastDocument(result.lastDoc);
           setHasMore(true);
         } else {
-          // No cursor and no items - we've reached the end
-          console.log('🔄 SCROLL LOAD: ⚠️ No items returned and no lastDoc - end of content reached');
-        setHasMore(false);
+          // No cursor and no items - but don't immediately give up
+          // Items might be filtered out, so keep trying a few more times
+          console.log('🔄 SCROLL LOAD: ⚠️ No items returned and no lastDoc - might be filtered out, keeping hasMore=true to retry');
+          setHasMore(true); // Keep trying - items might be filtered out but more exist
         }
         setIsLoadingMore(false);
         return;
