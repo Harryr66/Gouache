@@ -2291,7 +2291,7 @@ function DiscoverPageContent() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [filteredAndSortedArtworks, itemsPerRow, visibleCount, hasMore, isLoadingMore, loadMoreArtworks]);
+  }, [filteredAndSortedArtworks, itemsPerRow, visibleCount, hasMore, isLoadingMore, loadMoreArtworks, artworkView]);
 
   // Critical image preloading - preload first 6-12 images for instant display
   useEffect(() => {
