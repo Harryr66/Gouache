@@ -787,6 +787,11 @@ function DiscoverPageContent() {
   const [hasMore, setHasMore] = useState(true);
   const [lastDocument, setLastDocument] = useState<any>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
+  // Comprehensive logging for state changes
+  useEffect(() => {
+    console.log('🔄 SCROLL LOAD: 📊 STATE UPDATE - hasMore:', hasMore, 'lastDocument:', !!lastDocument, 'isLoadingMore:', isLoadingMore);
+  }, [hasMore, lastDocument, isLoadingMore]);
   const [artworkEngagements, setArtworkEngagements] = useState<Map<string, any>>(new Map());
   const [initialVideosReady, setInitialVideosReady] = useState(0);
   const [initialVideosTotal, setInitialVideosTotal] = useState(0);
@@ -1122,9 +1127,13 @@ function DiscoverPageContent() {
             // Store last document for pagination
             if (portfolioItems.length > 0) {
               const lastDoc = portfolioItems[portfolioItems.length - 1];
+              console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Setting lastDocument from Firestore:', { portfolioItemsCount: portfolioItems.length, INITIAL_FETCH_LIMIT, lastDocId: lastDoc.id });
               setLastDocument(lastDoc as any);
-              setHasMore(portfolioItems.length === INITIAL_FETCH_LIMIT);
+              const hasMoreValue = portfolioItems.length === INITIAL_FETCH_LIMIT;
+              setHasMore(hasMoreValue);
+              console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Set hasMore:', hasMoreValue, 'because', portfolioItems.length, 'items loaded, limit is', INITIAL_FETCH_LIMIT);
             } else {
+              console.log('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - No items, setting hasMore to false');
               setHasMore(false);
             }
             
@@ -1742,24 +1751,35 @@ function DiscoverPageContent() {
   // Load more artworks when scrolling to bottom (pagination)
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
   const loadMoreArtworks = useCallback(async () => {
-    console.log('🔄 SCROLL LOAD: 🔍 loadMoreArtworks callback invoked');
-    console.log('🔄 SCROLL LOAD: 🔍 Conditions check:', {
+    console.log('🔄 SCROLL LOAD: ========================================');
+    console.log('🔄 SCROLL LOAD: 🚀 loadMoreArtworks CALLBACK INVOKED');
+    console.log('🔄 SCROLL LOAD: 🔍 CURRENT STATE:', {
       isLoadingMore: isLoadingMore,
       hasMore: hasMore,
       hasLastDocument: !!lastDocument,
-      lastDocument: lastDocument
+      lastDocumentType: lastDocument ? typeof lastDocument : 'null',
+      lastDocumentId: lastDocument?.id || 'N/A'
     });
-    if (isLoadingMore || !hasMore || !lastDocument) {
-      console.log('🔄 SCROLL LOAD: ⚠️ loadMoreArtworks BLOCKED - reasons:', {
-        isLoadingMore: isLoadingMore ? 'YES (already loading)' : 'NO',
-        hasMore: hasMore ? 'YES' : 'NO (no more content)',
-        lastDocument: lastDocument ? 'YES' : 'NO (no pagination cursor)'
-      });
+    
+    if (isLoadingMore) {
+      console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: isLoadingMore is TRUE (already loading)');
+      return;
+    }
+    
+    if (!hasMore) {
+      console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: hasMore is FALSE (no more content)');
+      return;
+    }
+    
+    if (!lastDocument) {
+      console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: lastDocument is NULL/UNDEFINED (no pagination cursor)');
+      console.log('🔄 SCROLL LOAD: 💡 This means initial load did not set lastDocument properly!');
       return;
     }
 
+    console.log('🔄 SCROLL LOAD: ✅ ALL CONDITIONS MET - PROCEEDING WITH LOAD');
     setIsLoadingMore(true);
-    console.log('🔄 SCROLL LOAD: 📥 loadMoreArtworks() called - starting to fetch more artworks...');
+    console.log('🔄 SCROLL LOAD: 📥 Starting to fetch more artworks...');
     log('📥 Discover: Loading more artworks...');
 
     try {
@@ -1776,6 +1796,7 @@ function DiscoverPageContent() {
       });
       
       if (result.items.length === 0) {
+        console.log('🔄 SCROLL LOAD: ⚠️ No items returned from API, setting hasMore to false');
         setHasMore(false);
         setIsLoadingMore(false);
         return;
