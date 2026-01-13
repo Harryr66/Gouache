@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition, useCallback } from 'react';
-import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp } from 'lucide-react';
+import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp, Loader2 } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
@@ -434,7 +434,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       })}
       <div 
         ref={loadMoreRef} 
-        className="h-10 w-full" 
+        className="h-20 w-full flex items-center justify-center" 
         style={{ position: 'absolute', top: containerHeight, left: 0, right: 0 }} 
       />
     </div>
@@ -1743,7 +1743,8 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      const LOAD_MORE_LIMIT = 50; // Increased for continuous scroll - load enough to keep scrolling smooth
+      // Load approximately 10 rows of content (columnCount * 10 items)
+      const LOAD_MORE_LIMIT = Math.max(columnCount * 10, 30); // Minimum 30 items, or 10 rows worth
       
       const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
@@ -2782,6 +2783,7 @@ function DiscoverPageContent() {
                   );
                 }}
                 loadMoreRef={loadMoreRef}
+                isLoadingMore={isLoadingMore}
               />
             ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
