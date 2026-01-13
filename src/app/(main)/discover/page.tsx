@@ -424,6 +424,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           border: none !important;
           box-shadow: none !important;
           overflow: hidden !important;
+          box-sizing: border-box !important;
         }
         .masonry-item-wrapper > * {
           width: 100% !important;
@@ -431,6 +432,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           margin: 0 !important;
           padding: 0 !important;
           display: block !important;
+          box-sizing: border-box !important;
         }
         .masonry-item-wrapper [class*="Card"] {
           width: 100% !important;
@@ -441,6 +443,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           box-shadow: none !important;
           display: flex !important;
           flex-direction: column !important;
+          box-sizing: border-box !important;
         }
         .masonry-item-wrapper [class*="Card"] > div {
           width: 100% !important;
@@ -448,12 +451,14 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           margin: 0 !important;
           padding: 0 !important;
           flex: 1 !important;
+          box-sizing: border-box !important;
         }
         .masonry-item-wrapper > div[style*="padding-bottom"],
         .masonry-item-wrapper [class*="Card"] > div[style*="padding-bottom"] {
           padding-bottom: 0 !important;
           height: 100% !important;
           position: relative !important;
+          box-sizing: border-box !important;
         }
         .masonry-item-wrapper img,
         .masonry-item-wrapper [class*="Image"],
@@ -463,6 +468,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           height: 100% !important;
           object-fit: cover !important;
           display: block !important;
+          box-sizing: border-box !important;
         }
       `}} />
     <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
@@ -481,16 +487,17 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         return (
           <div
             key={itemKey}
-              className="masonry-item-wrapper"
+            className="masonry-item-wrapper"
             style={{
               position: 'absolute',
-                top: `${pos.top}px`,
-                left: `${pos.left}px`,
-                width: `${pos.width}px`,
-                height: `${pos.height}px`,
-                margin: 0,
-                padding: 0,
-                overflow: 'hidden',
+              top: `${pos.top}px`,
+              left: `${pos.left}px`,
+              width: `${pos.width}px`,
+              height: `${pos.height}px`,
+              margin: 0,
+              padding: 0,
+              overflow: 'hidden',
+              boxSizing: 'border-box',
             }}
           >
             {renderItem(item)}
