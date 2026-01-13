@@ -1906,55 +1906,64 @@ function DiscoverPageContent() {
 
   // IntersectionObserver for infinite scroll pagination (grid view only)
   useEffect(() => {
-    console.log('🔄 SCROLL LOAD: 🔍 useEffect triggered, artworkView:', artworkView);
+    console.log('🔄 SCROLL LOAD: 🔍 useEffect triggered, artworkView:', artworkView, 'hasMore:', hasMore, 'isLoadingMore:', isLoadingMore);
     // Only set up observer for grid view
     if (artworkView !== 'grid') {
       console.log('🔄 SCROLL LOAD: ⚠️ artworkView is not grid, skipping');
       return;
     }
     
-    const sentinel = loadMoreRef.current;
-    if (!sentinel) {
-      console.log('🔄 SCROLL LOAD: ⚠️ loadMoreRef.current is null');
-      return;
-    }
-    
-    if (!hasMore) {
-      console.log('🔄 SCROLL LOAD: ⚠️ hasMore is false - no more content to load');
-      return;
-    }
-    
-    if (isLoadingMore) {
-      console.log('🔄 SCROLL LOAD: ⚠️ isLoadingMore is true - already loading');
-      return;
-    }
-
-    console.log('🔄 SCROLL LOAD: ✅ Setting up observer for grid view');
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          console.log('🔄 SCROLL LOAD: 📍 Entry intersecting:', entry.isIntersecting, 'hasMore:', hasMore, 'isLoadingMore:', isLoadingMore);
-          if (entry.isIntersecting && hasMore && !isLoadingMore) {
-            console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks NOW!');
-            // Load more content when sentinel comes into view
-            loadMoreArtworks();
-          }
-        });
-      },
-      {
-        rootMargin: '200px', // Start loading 200px before reaching bottom
-        threshold: 0.1, // Trigger when 10% of sentinel is visible
+    // Wait for sentinel element to be available (it's rendered inside MasonryGrid)
+    const setupObserver = () => {
+      const sentinel = loadMoreRef.current;
+      if (!sentinel) {
+        console.log('🔄 SCROLL LOAD: ⚠️ loadMoreRef.current is null, will retry...');
+        // Retry after a short delay
+        setTimeout(setupObserver, 100);
+        return;
       }
-    );
+      
+      if (!hasMore) {
+        console.log('🔄 SCROLL LOAD: ⚠️ hasMore is false - no more content to load');
+        return;
+      }
+      
+      if (isLoadingMore) {
+        console.log('🔄 SCROLL LOAD: ⚠️ isLoadingMore is true - already loading');
+        return;
+      }
 
-    observer.observe(sentinel);
-    console.log('🔄 SCROLL LOAD: ✅ Observer attached to sentinel');
+      console.log('🔄 SCROLL LOAD: ✅ Setting up observer for grid view, sentinel found!');
 
-    return () => {
-      console.log('🔄 SCROLL LOAD: 🧹 Cleaning up observer');
-      observer.disconnect();
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            console.log('🔄 SCROLL LOAD: 📍 Entry intersecting:', entry.isIntersecting, 'hasMore:', hasMore, 'isLoadingMore:', isLoadingMore);
+            if (entry.isIntersecting && hasMore && !isLoadingMore) {
+              console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks NOW!');
+              // Load more content when sentinel comes into view
+              loadMoreArtworks();
+            }
+          });
+        },
+        {
+          rootMargin: '200px', // Start loading 200px before reaching bottom
+          threshold: 0.1, // Trigger when 10% of sentinel is visible
+        }
+      );
+
+      observer.observe(sentinel);
+      console.log('🔄 SCROLL LOAD: ✅ Observer attached to sentinel');
+
+      return () => {
+        console.log('🔄 SCROLL LOAD: 🧹 Cleaning up observer');
+        observer.disconnect();
+      };
     };
+
+    // Try to set up observer immediately, then retry if needed
+    const cleanup = setupObserver();
+    return cleanup;
   }, [hasMore, isLoadingMore, loadMoreArtworks, artworkView]);
 
   const filteredAndSortedArtworks = useMemo(() => {
