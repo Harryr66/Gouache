@@ -295,8 +295,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     }
 
     setIsCalculating(true);
-      const containerWidth = containerRef.current.offsetWidth;
+    const containerWidth = containerRef.current.offsetWidth;
     if (!containerWidth || containerWidth <= 0) {
+      // Container not ready yet, retry on next render
       setIsCalculating(false);
       return;
     }
