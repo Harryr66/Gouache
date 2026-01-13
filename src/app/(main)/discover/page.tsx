@@ -1742,9 +1742,19 @@ function DiscoverPageContent() {
   // Load more artworks when scrolling to bottom (pagination)
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
   const loadMoreArtworks = useCallback(async () => {
-    console.log('🔄 SCROLL LOAD: 🔍 loadMoreArtworks callback invoked, checking conditions...', { isLoadingMore, hasMore, lastDocument: !!lastDocument });
+    console.log('🔄 SCROLL LOAD: 🔍 loadMoreArtworks callback invoked');
+    console.log('🔄 SCROLL LOAD: 🔍 Conditions check:', {
+      isLoadingMore: isLoadingMore,
+      hasMore: hasMore,
+      hasLastDocument: !!lastDocument,
+      lastDocument: lastDocument
+    });
     if (isLoadingMore || !hasMore || !lastDocument) {
-      console.log('🔄 SCROLL LOAD: ⚠️ loadMoreArtworks blocked:', { isLoadingMore, hasMore, hasLastDocument: !!lastDocument });
+      console.log('🔄 SCROLL LOAD: ⚠️ loadMoreArtworks BLOCKED - reasons:', {
+        isLoadingMore: isLoadingMore ? 'YES (already loading)' : 'NO',
+        hasMore: hasMore ? 'YES' : 'NO (no more content)',
+        lastDocument: lastDocument ? 'YES' : 'NO (no pagination cursor)'
+      });
       return;
     }
 
