@@ -295,7 +295,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     }
 
     setIsCalculating(true);
-    const containerWidth = containerRef.current.offsetWidth;
+      const containerWidth = containerRef.current.offsetWidth;
     if (!containerWidth || containerWidth <= 0) {
       setIsCalculating(false);
       return;
@@ -329,21 +329,6 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       return;
     }
 
-    // Calculate current column heights from existing layout
-    // CRITICAL: Only use items that are in the current items array to calculate column heights
-    // This ensures new items are placed correctly below existing visible items
-    const columnHeights = new Array(columnCount).fill(0);
-    items.forEach(item => {
-      const key = getItemKey(item);
-      const pos = currentLayout.get(key);
-      if (pos) {
-        const col = Math.round(pos.left / (itemWidth + gap));
-        if (col >= 0 && col < columnCount) {
-          columnHeights[col] = Math.max(columnHeights[col], pos.top + pos.height);
-        }
-      }
-    });
-
     // Load image dimensions for new items
     const promises = itemsNeedingLayout.map((item) => {
       return new Promise<number>((resolve) => {
@@ -372,15 +357,30 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       // Create new layout with existing + new positions
       const newLayout = new Map(currentLayout);
       
-      // Add positions for new items
+      // Calculate column heights from existing items in current items array
+      // CRITICAL: Recalculate inside Promise to ensure we have latest layout
+      const columnHeights = new Array(columnCount).fill(0);
+      items.forEach(item => {
+        const key = getItemKey(item);
+        const pos = newLayout.get(key);
+        if (pos) {
+          const col = Math.round(pos.left / (itemWidth + gap));
+          if (col >= 0 && col < columnCount) {
+            columnHeights[col] = Math.max(columnHeights[col], pos.top + pos.height);
+          }
+        }
+      });
+      
+      // Add positions for new items - place each in shortest column
       itemsNeedingLayout.forEach((item, idx) => {
         const key = getItemKey(item);
         const height = heights[idx];
         const col = columnHeights.reduce((minIdx, h, i) => h < columnHeights[minIdx] ? i : minIdx, 0);
         const left = col * (itemWidth + gap);
-        const top = columnHeights[col];
-        columnHeights[col] = top + Math.ceil(height);
-        newLayout.set(key, { top, left, width: itemWidth, height: Math.ceil(height) });
+        const top = columnHeights[col]; // Place directly below existing content (no gap)
+        const itemHeight = Math.ceil(height);
+        columnHeights[col] = top + itemHeight; // Update column height for next item
+        newLayout.set(key, { top, left, width: itemWidth, height: itemHeight });
       });
 
       // Update ref and state
@@ -455,18 +455,18 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           display: block !important;
         }
       `}} />
-      <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
+    <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
         {!isCalculating && items.map((item) => {
           const itemKey = getItemKey(item);
           const pos = layout.get(itemKey);
           if (!pos) return null;
           
-          return (
-            <div
-              key={itemKey}
+        return (
+          <div
+            key={itemKey}
               className="masonry-item-wrapper"
-              style={{
-                position: 'absolute',
+            style={{
+              position: 'absolute',
                 top: `${pos.top}px`,
                 left: `${pos.left}px`,
                 width: `${pos.width}px`,
@@ -474,14 +474,14 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
                 margin: 0,
                 padding: 0,
                 overflow: 'hidden',
-              }}
-            >
-              {renderItem(item)}
-            </div>
-          );
-        })}
-        <div 
-          ref={loadMoreRef} 
+            }}
+          >
+            {renderItem(item)}
+          </div>
+        );
+      })}
+      <div 
+        ref={loadMoreRef} 
           style={{ 
             position: 'absolute', 
             top: containerHeight, 
@@ -490,8 +490,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
             height: '80px',
             pointerEvents: 'none',
           }} 
-        />
-      </div>
+      />
+    </div>
     </>
   );
 }
