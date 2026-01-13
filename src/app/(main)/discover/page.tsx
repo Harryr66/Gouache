@@ -1908,13 +1908,14 @@ function DiscoverPageContent() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && hasMore && !isLoadingMore) {
+            console.log('📥 IntersectionObserver: Sentinel is intersecting, loading more artworks...');
             // Load more content when sentinel comes into view
             loadMoreArtworks();
           }
         });
       },
       {
-        rootMargin: '800px', // Start loading 800px before reaching bottom for instant continuous scroll (Pinterest-style)
+        rootMargin: '200px', // Start loading 200px before reaching bottom
         threshold: 0.1, // Trigger when 10% of sentinel is visible
       }
     );
