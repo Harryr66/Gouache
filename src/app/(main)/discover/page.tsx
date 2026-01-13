@@ -915,18 +915,6 @@ function DiscoverPageContent() {
       const timeSinceJoke = jokeComplete && jokeCompleteTimeRef.current ? Date.now() - jokeCompleteTimeRef.current : Infinity;
       const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
       
-      // Check if we only have placeholders (no real content)
-      const hasOnlyPlaceholders = artworks.every((a: any) => {
-        const tags = Array.isArray(a.tags) ? a.tags : [];
-        return tags.includes('_placeholder') || a.id?.startsWith('placeholder-');
-      });
-      
-      // If only placeholders, dismiss immediately after joke (no need to wait for image loads)
-      if (hasOnlyPlaceholders && jokeTimeMet && artworksLoaded && artworks.length > 0) {
-        console.log(`✅ Only placeholders detected, dismissing immediately after joke + 2s`);
-        setShowLoadingScreen(false);
-        return;
-      }
       
       // PINTEREST-LEVEL: Wait for ALL initial viewport images to fully load (only for real content)
       // This ensures zero loading states after screen dismisses
@@ -1551,23 +1539,15 @@ function DiscoverPageContent() {
         
         log(`🎯 Discover: Real artworks count: ${safeArtworks.length}`);
         
-        // Generate minimal placeholders only if we have very few items
-        const placeholderCount = safeArtworks.length < 6 ? 6 - safeArtworks.length : 0;
-        const placeholderArtworks = placeholderCount > 0 
-          ? generatePlaceholderArtworks(mounted ? theme : undefined, placeholderCount)
-          : [];
+        // Only show real artworks - no placeholders
+        const finalArtworks = safeArtworks;
         
-        // Combine real artworks with minimal placeholders
-        const finalArtworks = safeArtworks.length > 0 
-          ? [...safeArtworks, ...placeholderArtworks]
-          : placeholderArtworks;
-        
-        log(`🎯 Discover: Final artworks count (real + placeholders): ${finalArtworks.length}`);
+        log(`🎯 Discover: Final artworks count: ${finalArtworks.length}`);
         
         if (safeArtworks.length === 0) {
-          warn('⚠️ Discover: No real artworks found, showing only placeholders');
+          warn('⚠️ Discover: No real artworks found');
         } else {
-          log(`✅ Discover: Showing ${safeArtworks.length} real artworks + ${placeholderArtworks.length} placeholder artworks`);
+          log(`✅ Discover: Showing ${safeArtworks.length} real artworks`);
         }
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
@@ -1670,9 +1650,8 @@ function DiscoverPageContent() {
       } catch (err: any) {
         const fetchDuration = Date.now() - fetchStartTime;
         error(`❌ Error fetching artworks from artist profiles (took ${fetchDuration}ms):`, err);
-        // Even on error, show placeholder artworks
-        const placeholderArtworks = generatePlaceholderArtworks(mounted ? theme : undefined, 6);
-        setArtworks(placeholderArtworks);
+        // On error, show empty state - no placeholders
+        setArtworks([]);
         setArtworksLoaded(true); // Mark artworks as loaded even on error
         // Mark placeholders as ready immediately (they don't need to load)
         setInitialImagesReady(placeholderArtworks.length);
@@ -1785,7 +1764,7 @@ function DiscoverPageContent() {
       console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: isLoadingMore is TRUE (already loading)');
       return;
     }
-    
+
     if (!hasMore) {
       console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: hasMore is FALSE (no more content)');
       return;
@@ -2038,7 +2017,7 @@ function DiscoverPageContent() {
     
     // Wait for sentinel element to be available (it's rendered inside MasonryGrid)
     const setupObserver = () => {
-      const sentinel = loadMoreRef.current;
+    const sentinel = loadMoreRef.current;
       if (!sentinel) {
         console.log('🔄 SCROLL LOAD: ⚠️ loadMoreRef.current is null, will retry...');
         // Retry after a short delay
@@ -2058,30 +2037,30 @@ function DiscoverPageContent() {
 
       console.log('🔄 SCROLL LOAD: ✅ Setting up observer for grid view, sentinel found!');
 
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
             console.log('🔄 SCROLL LOAD: 📍 Entry intersecting:', entry.isIntersecting, 'hasMore:', hasMore, 'isLoadingMore:', isLoadingMore);
-            if (entry.isIntersecting && hasMore && !isLoadingMore) {
+          if (entry.isIntersecting && hasMore && !isLoadingMore) {
               console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks NOW!');
-              // Load more content when sentinel comes into view
-              loadMoreArtworks();
-            }
-          });
-        },
-        {
+            // Load more content when sentinel comes into view
+            loadMoreArtworks();
+          }
+        });
+      },
+      {
           rootMargin: '200px', // Start loading 200px before reaching bottom
-          threshold: 0.1, // Trigger when 10% of sentinel is visible
-        }
-      );
+        threshold: 0.1, // Trigger when 10% of sentinel is visible
+      }
+    );
 
-      observer.observe(sentinel);
+    observer.observe(sentinel);
       console.log('🔄 SCROLL LOAD: ✅ Observer attached to sentinel');
 
-      return () => {
+    return () => {
         console.log('🔄 SCROLL LOAD: 🧹 Cleaning up observer');
-        observer.disconnect();
-      };
+      observer.disconnect();
+    };
     };
 
     // Try to set up observer immediately, then retry if needed
@@ -2113,27 +2092,8 @@ function DiscoverPageContent() {
       return isCloudflareImage(imageUrl); // Only Cloudflare images
     });
 
-    // Helper function to identify placeholders by hidden tag
-    const isPlaceholder = (artwork: any): boolean => {
-      const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
-      const hasPlaceholderTag = tags.includes('_placeholder');
-      // Also check by ID pattern as fallback
-      const hasPlaceholderId = artwork.id?.startsWith('placeholder-');
-      return hasPlaceholderTag || hasPlaceholderId;
-    };
-    
-    // Separate real artworks from placeholders BEFORE filtering
-    const allRealArtworks = filtered.filter((artwork: any) => !isPlaceholder(artwork));
-    const allPlaceholderArtworks = filtered.filter((artwork: any) => isPlaceholder(artwork));
-    
-    log('🔍 Separated artworks:', {
-      allRealArtworks: allRealArtworks.length,
-      allPlaceholderArtworks: allPlaceholderArtworks.length,
-      placeholderIds: allPlaceholderArtworks.slice(0, 5).map((a: any) => a.id)
-    });
-
-    // Apply filters only to real artworks
-    let realArtworks = [...allRealArtworks];
+    // Apply filters to artworks (no placeholders to separate)
+    let realArtworks = [...filtered];
 
     // Search filter
     if (deferredSearchQuery) {
@@ -2515,26 +2475,8 @@ function DiscoverPageContent() {
     // Mix ads into artworks
     const result = mixAdsIntoContent(artworksSlice, ads, 2);
     
-    // Separate real artworks from placeholders to preserve ranking
-    const isPlaceholder = (item: any): boolean => {
-      if ('type' in item && item.type === 'ad') return false; // Ads are not placeholders
-      const tags = Array.isArray(item.tags) ? item.tags : [];
-      return tags.includes('_placeholder') || item.id?.startsWith('placeholder-');
-    };
-    
-    const realItems = result.filter(item => !isPlaceholder(item));
-    const placeholderItems = result.filter(item => isPlaceholder(item));
-    
-    // Keep artworks in their ranked order (engagement + view time based)
-    // No shuffling - maintain stable positions based on ranking
-    // Combined: ranked real artworks first, then placeholders
-    // Don't interleave - let CSS Grid handle natural column-by-column flow
-    const final = [...realItems, ...placeholderItems];
-    
-    const resultPlaceholderCount = placeholderItems.length;
-    
-    log('✅ visibleFilteredArtworks: Returning', final.length, 'items', resultPlaceholderCount, 'placeholders');
-    return final;
+    log('✅ visibleFilteredArtworks: Returning', result.length, 'items');
+    return result;
   }, [filteredAndSortedArtworks, visibleCount, ads]);
 
   useEffect(() => {
