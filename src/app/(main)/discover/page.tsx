@@ -281,6 +281,13 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   const [visibleItems, setVisibleItems] = useState<Set<string>>(new Set());
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   
+  // Get item key function - must be defined before use
+  const getItemKey = (item: any): string => {
+    if ('id' in item && item.id) return String(item.id);
+    if ('campaign' in item && item.campaign?.id) return String(item.campaign.id);
+    return `item-${item.imageUrl || Math.random()}`;
+  };
+  
   // Initialize visible items for first 12 items (initial viewport)
   useEffect(() => {
     if (items.length > 0) {
