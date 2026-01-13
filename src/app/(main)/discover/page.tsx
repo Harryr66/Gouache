@@ -1804,8 +1804,8 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      // Load approximately 10 rows of content (columnCount * 10 items)
-      const LOAD_MORE_LIMIT = Math.max(columnCount * 10, 30); // Minimum 30 items, or 10 rows worth
+      // Load exactly 10 rows of content (columnCount * 10 items)
+      const LOAD_MORE_LIMIT = columnCount * 10; // Always load 10 rows worth of content
       
       const result = await PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
