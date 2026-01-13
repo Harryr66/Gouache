@@ -1747,6 +1747,7 @@ function DiscoverPageContent() {
     }
 
     setIsLoadingMore(true);
+    console.log('🔄 SCROLL LOAD: 📥 loadMoreArtworks() called - starting to fetch more artworks...');
     log('📥 Discover: Loading more artworks...');
 
     try {
@@ -1859,10 +1860,11 @@ function DiscoverPageContent() {
       console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks`);
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
     } catch (error: any) {
-      console.error('Error loading more artworks:', error);
+      console.error('🔄 SCROLL LOAD: ❌ Error loading more artworks:', error);
       setHasMore(false);
     } finally {
       setIsLoadingMore(false);
+      console.log('🔄 SCROLL LOAD: ✅ Finished loading (isLoadingMore set to false)');
     }
   }, [hasMore, lastDocument, isLoadingMore, discoverSettings]);
 
