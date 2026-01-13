@@ -273,20 +273,29 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<Array<{ top: number; left: number; width: number; height: number }>>([]);
+  const [isCalculating, setIsCalculating] = useState(true);
 
   useEffect(() => {
     if (!containerRef.current || columnCount === 0 || items.length === 0) {
       setLayout([]);
+      setIsCalculating(false);
       return;
     }
 
+    setIsCalculating(true);
     const containerWidth = containerRef.current.offsetWidth;
-    if (!containerWidth || containerWidth <= 0) return;
+    if (!containerWidth || containerWidth <= 0) {
+      setIsCalculating(false);
+      return;
+    }
 
     const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
-    if (itemWidth <= 0) return;
+    if (itemWidth <= 0) {
+      setIsCalculating(false);
+      return;
+    }
 
-    // Load image dimensions for variety
+    // Load image dimensions for variety - with timeout to prevent hanging
     const promises = items.map((item) => {
       return new Promise<number>((resolve) => {
         const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
@@ -295,8 +304,17 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           return;
         }
         const img = new window.Image();
-        img.onload = () => resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
-        img.onerror = () => resolve(itemWidth * (1.2 + Math.random() * 0.8));
+        const timeout = setTimeout(() => {
+          resolve(itemWidth * (1.2 + Math.random() * 0.8));
+        }, 5000);
+        img.onload = () => {
+          clearTimeout(timeout);
+          resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
+        };
+        img.onerror = () => {
+          clearTimeout(timeout);
+          resolve(itemWidth * (1.2 + Math.random() * 0.8));
+        };
         img.src = imageUrl;
       });
     });
@@ -311,6 +329,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         return { top, left, width: itemWidth, height: Math.ceil(height) };
       });
       setLayout(newLayout);
+      setIsCalculating(false);
+    }).catch(() => {
+      setIsCalculating(false);
     });
   }, [items, columnCount, gap]);
 
@@ -326,12 +347,14 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           padding: 0 !important;
           border: none !important;
           box-shadow: none !important;
+          overflow: hidden !important;
         }
         .masonry-item-wrapper > * {
           width: 100% !important;
           height: 100% !important;
           margin: 0 !important;
           padding: 0 !important;
+          display: block !important;
         }
         .masonry-item-wrapper [class*="Card"] {
           width: 100% !important;
@@ -340,21 +363,34 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           padding: 0 !important;
           border: none !important;
           box-shadow: none !important;
+          display: flex !important;
+          flex-direction: column !important;
         }
-        .masonry-item-wrapper > div[style*="padding-bottom"] {
+        .masonry-item-wrapper [class*="Card"] > div {
+          width: 100% !important;
+          height: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          flex: 1 !important;
+        }
+        .masonry-item-wrapper > div[style*="padding-bottom"],
+        .masonry-item-wrapper [class*="Card"] > div[style*="padding-bottom"] {
           padding-bottom: 0 !important;
           height: 100% !important;
+          position: relative !important;
         }
         .masonry-item-wrapper img,
         .masonry-item-wrapper [class*="Image"],
-        .masonry-item-wrapper span[style*="position: absolute"] {
+        .masonry-item-wrapper span[style*="position: absolute"],
+        .masonry-item-wrapper [class*="Image"] > span {
           width: 100% !important;
           height: 100% !important;
           object-fit: cover !important;
+          display: block !important;
         }
       `}} />
       <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
-        {items.map((item, index) => {
+        {!isCalculating && items.map((item, index) => {
           const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
           const pos = layout[index];
           if (!pos) return null;
