@@ -601,7 +601,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       style={{ 
         position: 'relative',
         width: '100%',
-        minHeight: containerHeight > 0 ? `${containerHeight}px` : '100vh',
+        minHeight: containerHeight > 0 ? `${containerHeight}px` : 'auto',
         height: containerHeight > 0 ? `${containerHeight}px` : 'auto',
       }}
     >
