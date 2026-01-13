@@ -412,10 +412,12 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     console.log('🔄 MasonryGrid: Starting layout calculation for', itemsNeedingLayout.length, 'new items');
 
     // Calculate column heights from EXISTING items ONLY
+    // This is the initial calculation before image loading
     const columnHeights = new Array(columnCount).fill(0);
     currentLayout.forEach((pos) => {
       if (pos.col >= 0 && pos.col < columnCount) {
-        columnHeights[pos.col] = Math.max(columnHeights[pos.col], pos.top + pos.height);
+        const bottom = pos.top + pos.height;
+        columnHeights[pos.col] = Math.max(columnHeights[pos.col], bottom);
       }
     });
 
