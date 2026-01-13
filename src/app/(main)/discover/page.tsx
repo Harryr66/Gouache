@@ -1842,8 +1842,20 @@ function DiscoverPageContent() {
       // Process new portfolio items
       const newArtworks: Artwork[] = [];
       for (const item of result.items) {
-        const artistData = artistDataMap.get(item.userId);
-        if (!artistData) continue;
+        // Use artist data if available, otherwise use fallback (don't skip items)
+        let artistData = artistDataMap.get(item.userId);
+        if (!artistData) {
+          // Use fallback artist data instead of skipping the item
+          artistData = {
+            displayName: item.artistName || item.userId || 'Artist',
+            username: item.artistHandle || item.userId || 'artist',
+            avatarUrl: item.artistAvatarUrl || null,
+            isVerified: false,
+            followerCount: 0,
+            followingCount: 0,
+            createdAt: new Date(),
+          };
+        }
         
         let videoUrl = item.videoUrl || null;
         if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
