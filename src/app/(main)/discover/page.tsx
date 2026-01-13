@@ -474,7 +474,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         const key = getItemKey(item);
         const calculatedHeight = heights[idx];
         
-        // Find shortest column
+        // Find shortest column - CRITICAL for uniform columns
         let shortestCol = 0;
         let shortestHeight = columnHeights[0];
         for (let i = 1; i < columnCount; i++) {
@@ -484,20 +484,22 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           }
         }
         
-        // Calculate position - NO GAPS, ROUNDED to avoid sub-pixel issues
-        const left = Math.round(shortestCol * (itemWidth + gap));
-        const top = Math.round(columnHeights[shortestCol]); // EXACT position - connects directly to previous item
-        // Ensure minimum height for visibility
-        const itemHeight = Math.max(Math.ceil(calculatedHeight), 100);
+        // Calculate position - EXACT column alignment
+        // left = columnIndex * (itemWidth + gap) - this ensures uniform columns
+        const left = shortestCol * (itemWidth + gap);
+        // top = current column height - NO GAPS
+        const top = columnHeights[shortestCol];
+        // Height must be positive
+        const itemHeight = Math.max(Math.ceil(calculatedHeight), 50);
         
         // Update column height IMMEDIATELY for next item
         columnHeights[shortestCol] = top + itemHeight;
         
-        // Store position with column index - all values rounded
+        // Store position with column index
         newLayout.set(key, { 
-          top: Math.round(top), 
-          left: Math.round(left), 
-          width: Math.round(itemWidth), 
+          top: top, 
+          left: left, 
+          width: itemWidth, 
           height: itemHeight, 
           col: shortestCol 
         });
