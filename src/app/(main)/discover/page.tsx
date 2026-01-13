@@ -412,60 +412,32 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       `}</style>
       <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
         {items.map((item, index) => {
-        const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
-        const position = positions[index];
-        
-        if (!position) {
-          // Render item in a hidden location so it can be measured
-          // Calculate item width for hidden rendering
-          const containerWidth = containerRef.current?.offsetWidth || 0;
-          const totalGapSpace = gap * (columnCount - 1);
-          const itemWidth = containerWidth > 0 ? (containerWidth - totalGapSpace) / columnCount : 200;
+          const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
+          const position = positions[index];
+          const height = heights[index];
           
+          if (!position || !height) {
+            return null;
+          }
+
           return (
             <div
               key={itemKey}
               ref={(el) => { itemRefs.current[index] = el; }}
               style={{
                 position: 'absolute',
-                top: -9999, // Hide off-screen
-                left: 0,
-                width: `${itemWidth}px`,
-                opacity: 0,
-                pointerEvents: 'none',
-                visibility: 'hidden',
+                top: `${position.top}px`,
+                left: `${position.left}px`,
+                width: `${position.width}px`,
+                height: `${height}px`,
+                margin: 0,
+                padding: 0,
               }}
             >
               {renderItem(item)}
             </div>
           );
-        }
-
-        return (
-          <div
-            key={itemKey}
-            ref={(el) => { itemRefs.current[index] = el; }}
-            className="masonry-grid-item"
-            style={{
-              position: 'absolute',
-              top: `${position.top}px`,
-              left: `${position.left}px`,
-              width: `${position.width}px`,
-              height: `${position.height}px`,
-              margin: 0,
-              padding: 0,
-              willChange: 'auto',
-              overflow: 'hidden',
-              boxSizing: 'border-box',
-              border: 'none',
-              boxShadow: 'none',
-              outline: 'none',
-            }}
-          >
-            {renderItem(item)}
-          </div>
-        );
-      })}
+        })}
         <div 
           ref={loadMoreRef} 
           className="h-20 w-full" 
