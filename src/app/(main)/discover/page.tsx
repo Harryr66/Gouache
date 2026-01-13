@@ -1888,7 +1888,13 @@ function DiscoverPageContent() {
         })
       ]);
       
-      log(`✅ Discover: Loaded ${result.items.length} new items (requested ${LOAD_MORE_LIMIT}, expected ${Math.ceil(LOAD_MORE_LIMIT / columnCount)} rows)`);
+      const expectedRows = Math.ceil(LOAD_MORE_LIMIT / columnCount);
+      const actualRows = result.items.length > 0 ? Math.ceil(result.items.length / columnCount) : 0;
+      log(`✅ Discover: Loaded ${result.items.length} new items (requested ${LOAD_MORE_LIMIT}, expected ${expectedRows} rows, got ${actualRows} rows)`);
+      
+      if (result.items.length < LOAD_MORE_LIMIT) {
+        log(`⚠️ Discover: Only loaded ${result.items.length} items instead of ${LOAD_MORE_LIMIT} (${actualRows} rows instead of ${expectedRows})`);
+      }
       
       if (result.items.length === 0) {
         // Only recycle when there's NO new content available
