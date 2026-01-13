@@ -264,6 +264,7 @@ const SORT_OPTIONS = [
 ];
 
 // Masonry grid with variety in tile heights - STATIC positioning (no shifting)
+// Uses item IDs to preserve positions even when array order changes
 function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   items: any[];
   columnCount: number;
@@ -272,158 +273,137 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   loadMoreRef: React.RefObject<HTMLDivElement>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [layout, setLayout] = useState<Array<{ top: number; left: number; width: number; height: number }>>([]);
+  const [layout, setLayout] = useState<Map<string, { top: number; left: number; width: number; height: number }>>(new Map());
   const [isCalculating, setIsCalculating] = useState(true);
-  const previousItemsRef = useRef<any[]>([]);
-  const previousLayoutRef = useRef<Array<{ top: number; left: number; width: number; height: number }>>([]);
+  const itemWidthRef = useRef<number>(0);
+
+  // Get item key for tracking
+  const getItemKey = (item: any, index: number): string => {
+    if ('id' in item && item.id) return String(item.id);
+    if ('campaign' in item && item.campaign?.id) return String(item.campaign.id);
+    return `item-${index}`;
+  };
 
   useEffect(() => {
     if (!containerRef.current || columnCount === 0 || items.length === 0) {
       if (items.length === 0) {
-        setLayout([]);
-        previousItemsRef.current = [];
-        previousLayoutRef.current = [];
+        setLayout(new Map());
       }
       setIsCalculating(false);
       return;
     }
 
-    // Check if we're adding new items or if it's a complete reset
-    const previousItems = previousItemsRef.current;
-    const previousLayout = previousLayoutRef.current;
-    const isAddingNewItems = previousItems.length > 0 && 
-                             items.length > previousItems.length &&
-                             items.slice(0, previousItems.length).every((item, idx) => {
-                               const prevItem = previousItems[idx];
-                               return item.id === prevItem.id || 
-                                      (item.campaign?.id === prevItem.campaign?.id);
-                             });
+    setIsCalculating(true);
+    const containerWidth = containerRef.current.offsetWidth;
+    if (!containerWidth || containerWidth <= 0) {
+      setIsCalculating(false);
+      return;
+    }
 
-    if (isAddingNewItems && previousLayout.length > 0) {
-      // PRESERVE existing positions, only calculate for new items
-      setIsCalculating(true);
-      const containerWidth = containerRef.current.offsetWidth;
-      if (!containerWidth || containerWidth <= 0) {
-        setIsCalculating(false);
-        return;
-      }
+    const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
+    if (itemWidth <= 0) {
+      setIsCalculating(false);
+      return;
+    }
 
-      const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
-      if (itemWidth <= 0) {
-        setIsCalculating(false);
-        return;
-      }
+    itemWidthRef.current = itemWidth;
 
-      // Calculate column heights from existing layout
-      const columnHeights = new Array(columnCount).fill(0);
-      previousLayout.forEach((pos) => {
-        const col = Math.round(pos.left / (itemWidth + gap));
+    // Get existing layout map
+    const prevLayout = layout;
+    
+    // Calculate column heights from existing positions
+    const columnHeights = new Array(columnCount).fill(0);
+    
+    // First pass: calculate column heights from existing items that are still present
+    items.forEach((item, index) => {
+      const key = getItemKey(item, index);
+      const existingPos = prevLayout.get(key);
+      if (existingPos) {
+        const col = Math.round(existingPos.left / (itemWidth + gap));
         if (col >= 0 && col < columnCount) {
-          columnHeights[col] = Math.max(columnHeights[col], pos.top + pos.height);
+          columnHeights[col] = Math.max(columnHeights[col], existingPos.top + existingPos.height);
+        }
+      }
+    });
+
+    // Load dimensions for items that don't have positions yet
+    const itemsNeedingLayout = items
+      .map((item, index) => ({ item, index, key: getItemKey(item, index) }))
+      .filter(({ key }) => !prevLayout.has(key));
+
+    if (itemsNeedingLayout.length === 0) {
+      // All items already have positions, just filter to current items
+      const newLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
+      items.forEach((item, index) => {
+        const key = getItemKey(item, index);
+        const existingPos = prevLayout.get(key);
+        if (existingPos) {
+          newLayout.set(key, existingPos);
         }
       });
-
-      // Only load dimensions for NEW items
-      const newItems = items.slice(previousItems.length);
-      const promises = newItems.map((item) => {
-        return new Promise<number>((resolve) => {
-          const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
-          if (!imageUrl) {
-            resolve(itemWidth * (1.2 + Math.random() * 0.8));
-            return;
-          }
-          const img = new window.Image();
-          const timeout = setTimeout(() => {
-            resolve(itemWidth * (1.2 + Math.random() * 0.8));
-          }, 5000);
-          img.onload = () => {
-            clearTimeout(timeout);
-            resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
-          };
-          img.onerror = () => {
-            clearTimeout(timeout);
-            resolve(itemWidth * (1.2 + Math.random() * 0.8));
-          };
-          img.src = imageUrl;
-        });
-      });
-
-      Promise.all(promises).then((heights) => {
-        const newLayout = [...previousLayout];
-        heights.forEach((height) => {
-          const col = columnHeights.reduce((minIdx, h, idx) => h < columnHeights[minIdx] ? idx : minIdx, 0);
-          const left = col * (itemWidth + gap);
-          const top = columnHeights[col];
-          columnHeights[col] = top + Math.ceil(height);
-          newLayout.push({ top, left, width: itemWidth, height: Math.ceil(height) });
-        });
-        setLayout(newLayout);
-        previousLayoutRef.current = newLayout;
-        previousItemsRef.current = items;
-        setIsCalculating(false);
-      }).catch(() => {
-        setIsCalculating(false);
-      });
-    } else {
-      // Complete recalculation (initial load or items changed)
-      setIsCalculating(true);
-      const containerWidth = containerRef.current.offsetWidth;
-      if (!containerWidth || containerWidth <= 0) {
-        setIsCalculating(false);
-        return;
-      }
-
-      const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
-      if (itemWidth <= 0) {
-        setIsCalculating(false);
-        return;
-      }
-
-      // Load image dimensions for variety - with timeout to prevent hanging
-      const promises = items.map((item) => {
-        return new Promise<number>((resolve) => {
-          const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
-          if (!imageUrl) {
-            resolve(itemWidth * (1.2 + Math.random() * 0.8));
-            return;
-          }
-          const img = new window.Image();
-          const timeout = setTimeout(() => {
-            resolve(itemWidth * (1.2 + Math.random() * 0.8));
-          }, 5000);
-          img.onload = () => {
-            clearTimeout(timeout);
-            resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
-          };
-          img.onerror = () => {
-            clearTimeout(timeout);
-            resolve(itemWidth * (1.2 + Math.random() * 0.8));
-          };
-          img.src = imageUrl;
-        });
-      });
-
-      Promise.all(promises).then((heights) => {
-        const columnHeights = new Array(columnCount).fill(0);
-        const newLayout = heights.map((height, index) => {
-          const col = columnHeights.reduce((minIdx, h, idx) => h < columnHeights[minIdx] ? idx : minIdx, 0);
-          const left = col * (itemWidth + gap);
-          const top = columnHeights[col];
-          columnHeights[col] = top + Math.ceil(height);
-          return { top, left, width: itemWidth, height: Math.ceil(height) };
-        });
-        setLayout(newLayout);
-        previousLayoutRef.current = newLayout;
-        previousItemsRef.current = items;
-        setIsCalculating(false);
-      }).catch(() => {
-        setIsCalculating(false);
-      });
+      setLayout(newLayout);
+      setIsCalculating(false);
+      return;
     }
+
+    // Load image dimensions for new items
+    const promises = itemsNeedingLayout.map(({ item }) => {
+      return new Promise<number>((resolve) => {
+        const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
+        if (!imageUrl) {
+          resolve(itemWidth * (1.2 + Math.random() * 0.8));
+          return;
+        }
+        const img = new window.Image();
+        const timeout = setTimeout(() => {
+          resolve(itemWidth * (1.2 + Math.random() * 0.8));
+        }, 5000);
+        img.onload = () => {
+          clearTimeout(timeout);
+          resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
+        };
+        img.onerror = () => {
+          clearTimeout(timeout);
+          resolve(itemWidth * (1.2 + Math.random() * 0.8));
+        };
+        img.src = imageUrl;
+      });
+    });
+
+    Promise.all(promises).then((heights) => {
+      setLayout(prevLayout => {
+        const newLayout = new Map(prevLayout);
+        
+        // Add positions for new items
+        itemsNeedingLayout.forEach(({ key }, idx) => {
+          const height = heights[idx];
+          const col = columnHeights.reduce((minIdx, h, i) => h < columnHeights[minIdx] ? i : minIdx, 0);
+          const left = col * (itemWidth + gap);
+          const top = columnHeights[col];
+          columnHeights[col] = top + Math.ceil(height);
+          newLayout.set(key, { top, left, width: itemWidth, height: Math.ceil(height) });
+        });
+
+        // Filter to only include current items
+        const filteredLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
+        items.forEach((item, index) => {
+          const key = getItemKey(item, index);
+          const pos = newLayout.get(key);
+          if (pos) {
+            filteredLayout.set(key, pos);
+          }
+        });
+
+        return filteredLayout;
+      });
+      setIsCalculating(false);
+    }).catch(() => {
+      setIsCalculating(false);
+    });
   }, [items, columnCount, gap]);
 
-  const containerHeight = layout.length > 0
-    ? Math.max(...layout.map(item => item.top + item.height))
+  const containerHeight = layout.size > 0
+    ? Math.max(...Array.from(layout.values()).map(pos => pos.top + pos.height))
     : 0;
 
   return (
@@ -478,8 +458,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       `}} />
       <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
         {!isCalculating && items.map((item, index) => {
-          const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
-          const pos = layout[index];
+          const itemKey = getItemKey(item, index);
+          const pos = layout.get(itemKey);
           if (!pos) return null;
           
           return (
