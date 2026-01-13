@@ -1910,7 +1910,7 @@ function DiscoverPageContent() {
         setHasMore(false);
       }
 
-      console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks`);
+      console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks (expected ${LOAD_MORE_LIMIT} for 10 rows, columnCount=${columnCount})`);
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
     } catch (error: any) {
       console.error('🔄 SCROLL LOAD: ❌ Error loading more artworks:', error);
