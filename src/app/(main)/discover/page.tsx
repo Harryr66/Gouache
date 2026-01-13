@@ -663,16 +663,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
             // Use layoutRef.current for immediate rendering, not async state
             const pos = currentLayout.get(itemKey);
             
-            // Only render items that have positions calculated
+            // Only render items that have positions calculated - no placeholders
             if (!pos) {
-              // During calculation, show placeholder to indicate content is loading
-              if (isCalculating) {
-                return (
-                  <div key={itemKey} className="text-center py-4 text-muted-foreground text-sm">
-                    Calculating layout...
-                  </div>
-                );
-              }
               return null;
             }
             
