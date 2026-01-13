@@ -277,6 +277,18 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   const layoutRef = useRef<Map<string, { top: number; left: number; width: number; height: number; col: number }>>(new Map());
   const [layout, setLayout] = useState<Map<string, { top: number; left: number; width: number; height: number }>>(new Map());
   const [isCalculating, setIsCalculating] = useState(false);
+  
+  // Debug logging
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('MasonryGrid state:', {
+        itemsCount: items.length,
+        layoutSize: layout.size,
+        isCalculating,
+        missingPositions: items.filter(item => !layout.has(getItemKey(item))).length
+      });
+    }
+  }, [items.length, layout.size, isCalculating]);
 
   const getItemKey = (item: any): string => {
     if ('id' in item && item.id) return String(item.id);
@@ -349,15 +361,26 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     });
 
     Promise.all(imagePromises).then((heights) => {
-      const newLayout = new Map(currentLayout);
+      // Get the LATEST layout from ref (in case it changed during image loading)
+      const latestLayout = layoutRef.current;
+      const newLayout = new Map(latestLayout);
       
-      // CRITICAL: Recalculate column heights from existing items (they might have changed)
+      // CRITICAL: Calculate column heights from ALL existing items in current items array
+      // This ensures we get the correct bottom position for each column
       const columnHeights = new Array(columnCount).fill(0);
-      currentLayout.forEach((pos) => {
-        if (pos.col >= 0 && pos.col < columnCount) {
+      
+      // Calculate from items that are in BOTH the layout AND the current items array
+      items.forEach(item => {
+        const key = getItemKey(item);
+        const pos = latestLayout.get(key);
+        if (pos && pos.col >= 0 && pos.col < columnCount) {
           columnHeights[pos.col] = Math.max(columnHeights[pos.col], pos.top + pos.height);
         }
       });
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('MasonryGrid: Column heights before placing new items:', columnHeights);
+      }
       
       // Place each new item in the SHORTEST column
       // Each item is placed at EXACTLY columnHeights[col] - NO GAPS
@@ -387,8 +410,13 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         newLayout.set(key, { top, left, width: itemWidth, height: itemHeight, col: shortestCol });
       });
 
-      // Update ref
+      // Update ref IMMEDIATELY
       layoutRef.current = newLayout;
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('MasonryGrid: Column heights after placing new items:', columnHeights);
+        console.log('MasonryGrid: Placed', itemsNeedingLayout.length, 'new items');
+      }
       
       // Create filtered layout for state (remove col from output)
       const filteredLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
