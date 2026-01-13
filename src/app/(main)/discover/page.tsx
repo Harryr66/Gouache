@@ -494,8 +494,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         const left = shortestCol * (itemWidth + gap);
         // top = current column height - NO GAPS
         const top = columnHeights[shortestCol];
-        // Height must be positive
-        const itemHeight = Math.max(Math.ceil(calculatedHeight), 50);
+        // Height must be reasonable - ensure minimum based on width
+        const itemHeight = Math.max(Math.ceil(calculatedHeight), itemWidth * 0.8);
         
         // Update column height IMMEDIATELY for next item
         columnHeights[shortestCol] = top + itemHeight;
