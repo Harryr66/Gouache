@@ -2753,9 +2753,9 @@ function DiscoverPageContent() {
                   });
                   console.log('🖼️ Grid view (images only):', {
                     artworkView,
-                    totalArtworks: visibleFilteredArtworks.length,
+                    totalArtworks: filteredAndSortedArtworks.length,
                     imageArtworksCount: imageOnlyArtworks.length,
-                    filteredOut: visibleFilteredArtworks.length - imageOnlyArtworks.length
+                    filteredOut: filteredAndSortedArtworks.length - imageOnlyArtworks.length
                   });
                   return imageOnlyArtworks;
                 })()}
