@@ -3096,6 +3096,7 @@ function DiscoverPageContent() {
                       hideBanner={true} // Always hide banner in grid view to prevent extra height
                       isInitialViewport={isInitial && hasVideo}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
+                      className="!border-0 !shadow-none !outline-none [&>*]:!h-full [&>*]:!pb-0"
                     />
                   );
                 }}
