@@ -425,8 +425,33 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     : 0;
 
   return (
-    <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
-      {items.map((item, index) => {
+    <>
+      <style>{`
+        .masonry-grid-item > div > div > div[style*="paddingBottom"] {
+          padding-bottom: 0 !important;
+          height: 100% !important;
+        }
+        .masonry-grid-item > div > div > div[style*="paddingBottom"] > div {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
+        .masonry-grid-item * {
+          margin: 0 !important;
+        }
+        .masonry-grid-item > div {
+          height: 100% !important;
+        }
+        .masonry-grid-item > div > div {
+          height: 100% !important;
+        }
+      `}</style>
+      <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
+        {items.map((item, index) => {
         const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
         const position = positions[index];
         
@@ -452,6 +477,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         return (
           <div
             key={itemKey}
+            className="masonry-grid-item"
             style={{
               position: 'absolute',
               top: `${position.top}px`,
@@ -464,35 +490,25 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
               overflow: 'hidden',
               boxSizing: 'border-box',
             }}
-            className="[&_*]:!m-0"
           >
-            <div 
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                margin: 0, 
-                padding: 0,
-                display: 'block',
-              }}
-            >
-              {renderItem(item)}
-            </div>
+            {renderItem(item)}
           </div>
         );
       })}
-      <div 
-        ref={loadMoreRef} 
-        className="h-20 w-full" 
-        style={{ 
-          position: 'absolute', 
-          top: containerHeight > 0 ? containerHeight : '100%', 
-          left: 0, 
-          right: 0,
-          minHeight: '80px',
-          pointerEvents: 'none',
-        }} 
-      />
-    </div>
+        <div 
+          ref={loadMoreRef} 
+          className="h-20 w-full" 
+          style={{ 
+            position: 'absolute', 
+            top: containerHeight > 0 ? containerHeight : '100%', 
+            left: 0, 
+            right: 0,
+            minHeight: '80px',
+            pointerEvents: 'none',
+          }} 
+        />
+      </div>
+    </>
   );
 }
 
@@ -3048,7 +3064,7 @@ function DiscoverPageContent() {
                   return (
                     <ArtworkTile 
                       artwork={artwork} 
-                      hideBanner={isMobile && (artworkView as string) === 'list'}
+                      hideBanner={true} // Always hide banner in grid view to prevent extra height
                       isInitialViewport={isInitial && hasVideo}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
                     />
