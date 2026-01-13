@@ -278,16 +278,30 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   const [layout, setLayout] = useState<Map<string, { top: number; left: number; width: number; height: number }>>(new Map());
   const [isCalculating, setIsCalculating] = useState(false);
   
+  // CRITICAL: Log when component renders
+  console.log('🎨 MasonryGrid RENDER:', {
+    itemsCount: items.length,
+    columnCount,
+    gap,
+    hasContainer: !!containerRef.current,
+    containerWidth: containerRef.current?.offsetWidth,
+    layoutSize: layout.size,
+    isCalculating,
+    firstFewItemIds: items.slice(0, 3).map(item => {
+      if ('id' in item && item.id) return String(item.id);
+      if ('campaign' in item && item.campaign?.id) return String(item.campaign.id);
+      return 'unknown';
+    })
+  });
+  
   // Debug logging
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('MasonryGrid state:', {
-        itemsCount: items.length,
-        layoutSize: layout.size,
-        isCalculating,
-        missingPositions: items.filter(item => !layout.has(getItemKey(item))).length
-      });
-    }
+    console.log('MasonryGrid state:', {
+      itemsCount: items.length,
+      layoutSize: layout.size,
+      isCalculating,
+      missingPositions: items.filter(item => !layout.has(getItemKey(item))).length
+    });
   }, [items.length, layout.size, isCalculating]);
 
   const getItemKey = (item: any): string => {
@@ -296,17 +310,74 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     return `item-${item.imageUrl || Math.random()}`;
   };
 
+  // Use ResizeObserver to detect container size changes
   useEffect(() => {
-    if (!containerRef.current || columnCount === 0 || items.length === 0) {
-      if (items.length === 0) {
-        layoutRef.current = new Map();
-        setLayout(new Map());
+    if (!containerRef.current) return;
+    
+    const resizeObserver = new ResizeObserver(() => {
+      // Trigger layout recalculation when container size changes
+      if (containerRef.current && items.length > 0 && columnCount > 0) {
+        const width = containerRef.current.offsetWidth;
+        if (width > 0) {
+          console.log('📏 MasonryGrid: Container resized, width:', width);
+          // Force recalculation by clearing layout for items that need new positions
+          setLayout(new Map(layoutRef.current));
+        }
       }
+    });
+    
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, [items.length, columnCount]);
+
+  useEffect(() => {
+    console.log('🔧 MasonryGrid useEffect triggered:', {
+      hasContainer: !!containerRef.current,
+      columnCount,
+      itemsLength: items.length,
+      containerWidth: containerRef.current?.offsetWidth
+    });
+
+    if (!containerRef.current) {
+      console.warn('⚠️ MasonryGrid: No container ref');
       return;
     }
 
+    if (columnCount === 0) {
+      console.warn('⚠️ MasonryGrid: columnCount is 0');
+      return;
+    }
+
+    if (items.length === 0) {
+      console.log('📋 MasonryGrid: No items, clearing layout');
+      layoutRef.current = new Map();
+      setLayout(new Map());
+      return;
+    }
+
+    const calculateLayout = () => {
+      const containerWidth = containerRef.current?.offsetWidth;
+      if (!containerWidth || containerWidth <= 0) {
+        console.warn('⚠️ MasonryGrid: Container width not available:', containerWidth);
+        return false;
+      }
+      return true;
+    };
+
+    // Try immediately
+    if (!calculateLayout()) {
+      // Retry after a short delay
+      const timeout = setTimeout(() => {
+        if (calculateLayout() && containerRef.current) {
+          console.log('✅ MasonryGrid: Retry successful, width:', containerRef.current.offsetWidth);
+          // Force re-run by triggering a state update
+          setLayout(new Map(layoutRef.current));
+        }
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
+
     const containerWidth = containerRef.current.offsetWidth;
-    if (!containerWidth || containerWidth <= 0) return;
 
     const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
     if (itemWidth <= 0) return;
@@ -378,9 +449,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         }
       });
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('MasonryGrid: Column heights before placing new items:', columnHeights);
-      }
+      console.log('📐 MasonryGrid: Column heights before placing new items:', columnHeights);
       
       // Place each new item in the SHORTEST column
       // Each item is placed at EXACTLY columnHeights[col] - NO GAPS
@@ -413,10 +482,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       // Update ref IMMEDIATELY
       layoutRef.current = newLayout;
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('MasonryGrid: Column heights after placing new items:', columnHeights);
-        console.log('MasonryGrid: Placed', itemsNeedingLayout.length, 'new items');
-      }
+      console.log('📐 MasonryGrid: Column heights after placing new items:', columnHeights);
+      console.log('✅ MasonryGrid: Placed', itemsNeedingLayout.length, 'new items');
       
       // Create filtered layout for state (remove col from output)
       const filteredLayout = new Map<string, { top: number; left: number; width: number; height: number }>();
@@ -504,12 +571,26 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         }
       `}} />
     <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto', height: containerHeight || 'auto' }}>
-        {items.map((item) => {
+        {items.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            No items to display
+          </div>
+        ) : items.map((item) => {
           const itemKey = getItemKey(item);
           const pos = layout.get(itemKey);
           
           // Only render items that have positions calculated
-          if (!pos) return null;
+          if (!pos) {
+            // During calculation, show placeholder to indicate content is loading
+            if (isCalculating) {
+              return (
+                <div key={itemKey} className="text-center py-4 text-muted-foreground text-sm">
+                  Calculating layout...
+                </div>
+              );
+            }
+            return null;
+          }
           
           return (
             <div
@@ -3086,12 +3167,33 @@ function DiscoverPageContent() {
                     
                     return true;
                   });
+                  const filteredOut = filteredAndSortedArtworks.length - imageOnlyArtworks.length;
                   console.log('🖼️ Grid view (images only):', {
                     artworkView,
+                    showLoadingScreen,
                     totalArtworks: filteredAndSortedArtworks.length,
                     imageArtworksCount: imageOnlyArtworks.length,
-                    filteredOut: filteredAndSortedArtworks.length - imageOnlyArtworks.length
+                    filteredOut: filteredOut,
+                    firstFewItems: imageOnlyArtworks.slice(0, 3).map((item: any) => ({
+                      id: item.id,
+                      hasImage: !!(item.imageUrl || item.supportingImages?.[0]),
+                      imageUrl: item.imageUrl || item.supportingImages?.[0] || 'none',
+                      isCloudflare: item.imageUrl ? isCloudflareImage(item.imageUrl) : false
+                    }))
                   });
+                  if (imageOnlyArtworks.length === 0 && filteredAndSortedArtworks.length > 0) {
+                    console.error('❌ CRITICAL: All artworks filtered out!', {
+                      total: filteredAndSortedArtworks.length,
+                      filteredOut: filteredOut,
+                      sampleItems: filteredAndSortedArtworks.slice(0, 3).map((item: any) => ({
+                        id: item.id,
+                        hasVideo: !!(item.videoUrl || item.mediaType === 'video'),
+                        imageUrl: item.imageUrl || item.supportingImages?.[0] || 'none',
+                        isCloudflare: item.imageUrl ? isCloudflareImage(item.imageUrl) : false
+                      }))
+                    });
+                  }
+                  console.log('✅ MasonryGrid will receive', imageOnlyArtworks.length, 'items');
                   return imageOnlyArtworks;
                 })()}
                 columnCount={columnCount}
