@@ -418,7 +418,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             const artwork: Artwork = {
               id: snapshot.id,
               artist: data.artist,
-              title: data.title || 'Untitled',
+              title: data.title || '',
               description: data.description,
               imageUrl: data.imageUrl,
               imageAiHint: data.imageAiHint || data.title || 'Artwork',
@@ -597,7 +597,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               )}
             </div>
             <CardContent className="p-2">
-              <h4 className="font-semibold text-xs mb-1 line-clamp-1">{item.title || 'Untitled Artwork'}</h4>
+              {item.title && <h4 className="font-semibold text-xs mb-1 line-clamp-1">{item.title}</h4>}
               {item.medium && (
                 <p className="text-xs text-muted-foreground line-clamp-1">{item.medium}</p>
               )}
@@ -722,7 +722,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           )}
         </div>
         <CardContent className="p-4">
-          <h4 className="font-semibold text-sm mb-1 line-clamp-1">{item.title || item.caption || 'Untitled'}</h4>
+          {(item.title || item.caption) && <h4 className="font-semibold text-sm mb-1 line-clamp-1">{item.title || item.caption}</h4>}
           {item.description && (
             <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
           )}

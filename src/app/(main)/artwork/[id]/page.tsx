@@ -818,7 +818,7 @@ export default function ArtworkPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-2xl">{artwork.title}</CardTitle>
+                      {artwork.title && <CardTitle className="text-2xl">{artwork.title}</CardTitle>}
                       {artwork.artist?.id && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                           <span>by</span>

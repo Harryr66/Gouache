@@ -72,18 +72,20 @@ export function ArtworkCard({
       </div>
 
       {/* Mobile: Only show title, Desktop: Show full info */}
-      <div className="md:hidden">
-        <CardHeader className="pb-2 p-3">
-          <CardTitle className="text-sm line-clamp-1">{artwork.title}</CardTitle>
-        </CardHeader>
-      </div>
+      {artwork.title && (
+        <div className="md:hidden">
+          <CardHeader className="pb-2 p-3">
+            <CardTitle className="text-sm line-clamp-1">{artwork.title}</CardTitle>
+          </CardHeader>
+        </div>
+      )}
 
       {/* Desktop: Full card info */}
       <div className="hidden md:block">
         <CardHeader className="pb-2 p-2 md:p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-sm md:text-lg line-clamp-1">{artwork.title}</CardTitle>
+              {artwork.title && <CardTitle className="text-sm md:text-lg line-clamp-1">{artwork.title}</CardTitle>}
               <CardDescription className="flex items-center space-x-2 mt-1">
                 <span className="text-xs md:text-sm">by {artwork.artist.name}</span>
               </CardDescription>
