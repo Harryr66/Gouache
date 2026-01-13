@@ -495,17 +495,24 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         const position = positions[index];
         
         if (!position) {
-          // Render placeholder while calculating
+          // Render item in a hidden location so it can be measured
+          // Calculate item width for hidden rendering
+          const containerWidth = containerRef.current?.offsetWidth || 0;
+          const totalGapSpace = gap * (columnCount - 1);
+          const itemWidth = containerWidth > 0 ? (containerWidth - totalGapSpace) / columnCount : 200;
+          
           return (
             <div
               key={itemKey}
+              ref={(el) => { itemRefs.current[index] = el; }}
               style={{
                 position: 'absolute',
-                top: 0,
+                top: -9999, // Hide off-screen
                 left: 0,
-                width: `${100 / columnCount}%`,
+                width: `${itemWidth}px`,
                 opacity: 0,
                 pointerEvents: 'none',
+                visibility: 'hidden',
               }}
             >
               {renderItem(item)}
