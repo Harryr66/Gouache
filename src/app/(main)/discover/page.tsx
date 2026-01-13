@@ -273,6 +273,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   loadMoreRef: React.RefObject<HTMLDivElement>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [positions, setPositions] = useState<Array<{ top: number; left: number; width: number; height: number }>>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const positionsCalculatedRef = useRef<Set<string>>(new Set());
@@ -313,27 +314,28 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     setIsCalculating(true);
 
     // Pre-load images to get dimensions
+    // Calculate height based on image aspect ratio - this matches ArtworkTile's padding-bottom calculation
     const loadImageDimensions = (item: any): Promise<number> => {
       return new Promise((resolve) => {
         const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
         
         if (!imageUrl) {
           // Default aspect ratio for items without images (ads, etc.)
-          resolve(itemWidth * 1.2);
+          resolve(itemWidth * 1.5); // 2:3 aspect ratio
           return;
         }
 
         const img = new window.Image();
         img.onload = () => {
+          // Calculate height: width * (height/width) = height
+          // This matches what ArtworkTile's padding-bottom will create
           const aspectRatio = img.naturalHeight / img.naturalWidth;
-          // Calculate exact height - this will be the container height
-          // ArtworkTile will use padding-bottom, but we control the container height
           const height = itemWidth * aspectRatio;
-          resolve(height);
+          resolve(Math.ceil(height)); // Round up to prevent gaps
         };
         img.onerror = () => {
           // Fallback aspect ratio on error
-          resolve(itemWidth * 1.2);
+          resolve(itemWidth * 1.5);
         };
         img.src = imageUrl;
       });
@@ -389,24 +391,21 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
           0
         );
 
-        // Get height for this item
+        // Get height for this item (already rounded up in loadImageDimensions)
         const itemHeight = wasCalculated 
-          ? (existingPositions[index]?.height || itemWidth * 1.2)
-          : (heights[heightIndex++] || itemWidth * 1.2);
+          ? (existingPositions[index]?.height || itemWidth * 1.5)
+          : (heights[heightIndex++] || itemWidth * 1.5);
 
         // Calculate position
         // Horizontal: column index * (item width + gap between columns)
         const left = Math.round(shortestColumnIndex * (itemWidth + gap));
         // Vertical: connect directly to previous item (no gap)
-        // Use Math.floor to ensure no sub-pixel gaps
         const top = Math.floor(columnHeights[shortestColumnIndex]);
 
-        if (isFinite(top) && isFinite(left) && isFinite(itemWidth) && isFinite(itemHeight)) {
-          const roundedHeight = Math.ceil(itemHeight); // Round up to ensure no gaps
-          newPositions.push({ top, left, width: itemWidth, height: roundedHeight });
+        if (isFinite(top) && isFinite(left) && isFinite(itemWidth) && isFinite(itemHeight) && itemHeight > 0) {
+          newPositions.push({ top, left, width: itemWidth, height: itemHeight });
           // Update column height: item connects directly (top + height, no gap)
-          // Use exact sum to prevent accumulation of rounding errors
-          columnHeights[shortestColumnIndex] = top + roundedHeight;
+          columnHeights[shortestColumnIndex] = top + itemHeight;
           
           // Mark as calculated
           positionsCalculatedRef.current.add(`${key}-${index}`);
@@ -503,6 +502,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         return (
           <div
             key={itemKey}
+            ref={(el) => { itemRefs.current[index] = el; }}
             className="masonry-grid-item"
             style={{
               position: 'absolute',
