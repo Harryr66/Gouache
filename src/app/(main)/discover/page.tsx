@@ -313,72 +313,95 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
 
     setIsCalculating(true);
 
-    // Wait for items to render, then measure their actual heights
-    const measureAndPosition = () => {
-      const newPositions: Array<{ top: number; left: number; width: number; height: number }> = [];
-      const columnHeights = new Array(columnCount).fill(0);
-      
-      // First, preserve existing positions and calculate column heights
-      const existingPositions = positions.slice(0, Math.min(positions.length, items.length));
-      existingPositions.forEach((pos, idx) => {
-        if (idx < items.length) {
-          const colIndex = Math.round(pos.left / (itemWidth + gap));
-          if (colIndex >= 0 && colIndex < columnCount) {
-            const itemBottom = pos.top + pos.height;
-            if (itemBottom > columnHeights[colIndex]) {
-              columnHeights[colIndex] = itemBottom;
-            }
+    // Pre-load images to get aspect ratios for variety in tile sizes
+    const loadImageDimensions = (item: any): Promise<number> => {
+      return new Promise((resolve) => {
+        const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
+        
+        if (!imageUrl) {
+          // Default aspect ratio for items without images (ads, etc.)
+          resolve(itemWidth * 1.5); // 2:3 aspect ratio
+          return;
+        }
+
+        const img = new window.Image();
+        img.onload = () => {
+          // Calculate height based on actual image aspect ratio for variety
+          const aspectRatio = img.naturalHeight / img.naturalWidth;
+          const height = itemWidth * aspectRatio;
+          resolve(Math.ceil(height)); // Round up to prevent gaps
+        };
+        img.onerror = () => {
+          // Fallback aspect ratio on error - use random variation for variety
+          const randomVariation = 1.2 + Math.random() * 0.6; // Between 1.2 and 1.8
+          resolve(itemWidth * randomVariation);
+        };
+        img.src = imageUrl;
+      });
+    };
+
+    // Load dimensions for items that need calculation
+    const itemsToLoad = items.map((item, index) => {
+      const key = itemKeys[index];
+      const isCalculated = positionsCalculatedRef.current.has(`${key}-${index}`);
+      return { item, index, key, isCalculated };
+    });
+
+    const newItemsToLoad = itemsToLoad.filter(item => !item.isCalculated);
+    const existingPositions = positions.slice(0, Math.min(positions.length, items.length));
+
+    // Calculate column heights from existing positions
+    const columnHeights = new Array(columnCount).fill(0);
+    existingPositions.forEach((pos, idx) => {
+      if (idx < items.length) {
+        const colIndex = Math.round(pos.left / (itemWidth + gap));
+        if (colIndex >= 0 && colIndex < columnCount) {
+          const itemBottom = pos.top + pos.height;
+          if (itemBottom > columnHeights[colIndex]) {
+            columnHeights[colIndex] = itemBottom;
           }
         }
-      });
+      }
+    });
 
-      // Measure actual rendered heights for all items
+    // Load dimensions for new items in parallel
+    Promise.all(newItemsToLoad.map(({ item }) => loadImageDimensions(item))).then((heights) => {
+      const newPositions: Array<{ top: number; left: number; width: number; height: number }> = [];
+      let heightIndex = 0;
+
+      // Calculate positions for all items
       items.forEach((item, index) => {
         const key = itemKeys[index];
         const wasCalculated = positionsCalculatedRef.current.has(`${key}-${index}`);
-        
+
         if (wasCalculated && existingPositions[index]) {
           // Preserve existing position
           newPositions.push(existingPositions[index]);
           return;
         }
 
-        // Find shortest column
+        // Find shortest column (where next item should go)
         const shortestColumnIndex = columnHeights.reduce(
           (minIndex, height, colIndex) => 
             height < columnHeights[minIndex] ? colIndex : minIndex,
           0
         );
 
-        // Measure actual rendered height
-        const itemEl = itemRefs.current[index];
-        let itemHeight = itemWidth * 1.5; // Fallback
-        
-        if (itemEl) {
-          // Find the Card component and measure its actual height
-          const card = itemEl.querySelector('div[class*="rounded"], div[class*="border"]') as HTMLElement;
-          if (card) {
-            const measuredHeight = card.getBoundingClientRect().height;
-            if (measuredHeight > 0) {
-              itemHeight = measuredHeight;
-            }
-          } else {
-            // Fallback: measure the wrapper itself
-            const measuredHeight = itemEl.getBoundingClientRect().height;
-            if (measuredHeight > 0) {
-              itemHeight = measuredHeight;
-            }
-          }
-        }
+        // Get height for this item - use actual image aspect ratio for variety
+        const itemHeight = wasCalculated 
+          ? (existingPositions[index]?.height || itemWidth * 1.5)
+          : (heights[heightIndex++] || itemWidth * 1.5);
 
         // Calculate position
         const left = Math.round(shortestColumnIndex * (itemWidth + gap));
         const top = Math.floor(columnHeights[shortestColumnIndex]);
 
         if (isFinite(top) && isFinite(left) && isFinite(itemWidth) && isFinite(itemHeight) && itemHeight > 0) {
-          const roundedHeight = Math.ceil(itemHeight);
-          newPositions.push({ top, left, width: itemWidth, height: roundedHeight });
-          columnHeights[shortestColumnIndex] = top + roundedHeight;
+          newPositions.push({ top, left, width: itemWidth, height: itemHeight });
+          // Update column height: item connects directly (top + height, no gap)
+          columnHeights[shortestColumnIndex] = top + itemHeight;
+          
+          // Mark as calculated
           positionsCalculatedRef.current.add(`${key}-${index}`);
         }
       });
@@ -387,11 +410,6 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
         setPositions(newPositions);
       }
       setIsCalculating(false);
-    };
-
-    // Wait for DOM to be ready, then measure
-    requestAnimationFrame(() => {
-      setTimeout(measureAndPosition, 50); // Small delay to ensure rendering
     });
 
   }, [items.length, columnCount, gap, items]); // Include items to detect changes
