@@ -527,8 +527,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   }, [items, columnCount, gap]);
 
   // Calculate container height from ALL positioned items
-  // CRITICAL: Force recalculation on every render to ensure height is always correct
-  const [forceHeightUpdate, setForceHeightUpdate] = useState(0);
+  // Use layoutRef.current for immediate calculation, not async state
   const containerHeight = useMemo(() => {
     const currentLayout = layoutRef.current;
     if (currentLayout.size === 0) return 0;
@@ -538,14 +537,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       if (bottom > maxHeight) maxHeight = bottom;
     });
     return maxHeight;
-  }, [layout, forceHeightUpdate]);
-  
-  // Force height recalculation when layout changes
-  useEffect(() => {
-    if (layout.size > 0) {
-      setForceHeightUpdate(prev => prev + 1);
-    }
-  }, [layout.size]);
+  }, [layout]);
 
   return (
     <>
