@@ -423,23 +423,28 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
 
     console.log('📐 MasonryGrid: Starting image dimension loading for', itemsNeedingLayout.length, 'items');
     
-    // Load ALL image dimensions in parallel
+    // Load ALL image dimensions in parallel - FAST timeout to prevent hanging
     const imagePromises = itemsNeedingLayout.map((item) => {
       return new Promise<number>((resolve) => {
         const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
         if (!imageUrl) {
-          resolve(itemWidth * (1.2 + Math.random() * 0.8));
+          // Default aspect ratio for items without images
+          resolve(itemWidth * 1.5);
           return;
         }
         const img = new window.Image();
-        const timeout = setTimeout(() => resolve(itemWidth * (1.2 + Math.random() * 0.8)), 2000);
+        // FAST timeout - 500ms max, don't wait forever
+        const timeout = setTimeout(() => {
+          resolve(itemWidth * 1.5); // Default aspect ratio
+        }, 500);
         img.onload = () => {
           clearTimeout(timeout);
-          resolve(itemWidth * (img.naturalHeight / img.naturalWidth));
+          const aspectRatio = img.naturalHeight / img.naturalWidth;
+          resolve(itemWidth * aspectRatio);
         };
         img.onerror = () => {
           clearTimeout(timeout);
-          resolve(itemWidth * (1.2 + Math.random() * 0.8));
+          resolve(itemWidth * 1.5); // Default aspect ratio
         };
         img.src = imageUrl;
       });
