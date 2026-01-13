@@ -1906,24 +1906,55 @@ function DiscoverPageContent() {
 
   // FALLBACK: Scroll listener for grid view (backup if IntersectionObserver fails)
   useEffect(() => {
-    if (artworkView !== 'grid' || !hasMore || isLoadingMore || !lastDocument) return;
+    console.log('🔄 SCROLL LOAD: 📜 Fallback scroll listener useEffect triggered', { artworkView, hasMore, isLoadingMore, hasLastDocument: !!lastDocument });
+    
+    if (artworkView !== 'grid') {
+      console.log('🔄 SCROLL LOAD: 📜 Not grid view, skipping fallback');
+      return;
+    }
+    
+    if (!hasMore) {
+      console.log('🔄 SCROLL LOAD: 📜 No more content (hasMore=false), skipping fallback');
+      return;
+    }
+    
+    if (!lastDocument) {
+      console.log('🔄 SCROLL LOAD: 📜 No lastDocument for pagination, skipping fallback');
+      return;
+    }
     
     console.log('🔄 SCROLL LOAD: 📜 Setting up fallback scroll listener for grid view');
     
+    let scrollTimeout: NodeJS.Timeout | null = null;
+    
     const handleScroll = () => {
-      // Check if we're near the bottom (within 500px)
-      const scrollPosition = window.scrollY + window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      const distanceFromBottom = documentHeight - scrollPosition;
+      // Debounce scroll events
+      if (scrollTimeout) clearTimeout(scrollTimeout);
       
-      if (distanceFromBottom < 500 && !isLoadingMore && hasMore) {
-        console.log('🔄 SCROLL LOAD: 📜 Fallback scroll listener triggered - loading more!');
-        loadMoreArtworks();
-      }
+      scrollTimeout = setTimeout(() => {
+        // Check if we're near the bottom (within 500px)
+        const scrollPosition = window.scrollY + window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        const distanceFromBottom = documentHeight - scrollPosition;
+        
+        console.log('🔄 SCROLL LOAD: 📜 Scroll event', { 
+          scrollPosition, 
+          documentHeight, 
+          distanceFromBottom, 
+          isLoadingMore, 
+          hasMore 
+        });
+        
+        if (distanceFromBottom < 500 && !isLoadingMore && hasMore && lastDocument) {
+          console.log('🔄 SCROLL LOAD: 📜 Fallback scroll listener triggered - loading more!', { distanceFromBottom });
+          loadMoreArtworks();
+        }
+      }, 100); // Debounce by 100ms
     };
     
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
+      if (scrollTimeout) clearTimeout(scrollTimeout);
       console.log('🔄 SCROLL LOAD: 📜 Cleaning up fallback scroll listener');
       window.removeEventListener('scroll', handleScroll);
     };
