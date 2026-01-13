@@ -380,7 +380,18 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     const containerWidth = containerRef.current.offsetWidth;
 
     const itemWidth = (containerWidth - gap * (columnCount - 1)) / columnCount;
-    if (itemWidth <= 0) return;
+    console.log('📏 MasonryGrid: Layout calculation starting:', {
+      containerWidth,
+      columnCount,
+      gap,
+      itemWidth,
+      itemsCount: items.length
+    });
+    
+    if (itemWidth <= 0) {
+      console.error('❌ MasonryGrid: itemWidth is <= 0, cannot calculate layout:', itemWidth);
+      return;
+    }
 
     const currentLayout = layoutRef.current;
     const itemsNeedingLayout = items.filter(item => !currentLayout.has(getItemKey(item)));
@@ -400,6 +411,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     }
 
     setIsCalculating(true);
+    console.log('🔄 MasonryGrid: Starting layout calculation for', itemsNeedingLayout.length, 'new items');
 
     // Calculate column heights from EXISTING items ONLY
     const columnHeights = new Array(columnCount).fill(0);
@@ -409,6 +421,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       }
     });
 
+    console.log('📐 MasonryGrid: Starting image dimension loading for', itemsNeedingLayout.length, 'items');
+    
     // Load ALL image dimensions in parallel
     const imagePromises = itemsNeedingLayout.map((item) => {
       return new Promise<number>((resolve) => {
@@ -431,7 +445,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       });
     });
 
+    console.log('⏳ MasonryGrid: Waiting for', imagePromises.length, 'image dimensions...');
+    
     Promise.all(imagePromises).then((heights) => {
+      console.log('✅ MasonryGrid: All image dimensions loaded, heights:', heights.length);
       // Get the LATEST layout from ref (in case it changed during image loading)
       const latestLayout = layoutRef.current;
       const newLayout = new Map(latestLayout);
@@ -504,8 +521,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       
       setLayout(filteredLayout);
       setIsCalculating(false);
+      console.log('✅ MasonryGrid: Layout calculation COMPLETE, state updated');
     }).catch((error) => {
-      console.error('MasonryGrid: Failed to calculate layout', error);
+      console.error('❌ MasonryGrid: Failed to calculate layout', error);
       setIsCalculating(false);
     });
   }, [items, columnCount, gap]);
