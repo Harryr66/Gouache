@@ -525,21 +525,25 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
   }, [items, columnCount, gap]);
 
   // Calculate container height from ALL positioned items
-  // Use layoutRef.current for immediate calculation, not async state
+  // CRITICAL: Force recalculation on every render to ensure height is always correct
+  const [forceHeightUpdate, setForceHeightUpdate] = useState(0);
   const containerHeight = useMemo(() => {
     const currentLayout = layoutRef.current;
-    if (currentLayout.size === 0) {
-      console.log('📏 containerHeight: Layout is empty, returning 0');
-      return 0;
-    }
+    if (currentLayout.size === 0) return 0;
     let maxHeight = 0;
     currentLayout.forEach((pos) => {
       const bottom = pos.top + pos.height;
       if (bottom > maxHeight) maxHeight = bottom;
     });
-    console.log('📏 containerHeight calculated:', maxHeight, 'from', currentLayout.size, 'items');
     return maxHeight;
-  }, [layout]); // Still depend on layout state to trigger recalculation when it updates
+  }, [layout, forceHeightUpdate]);
+  
+  // Force height recalculation when layout changes
+  useEffect(() => {
+    if (layout.size > 0) {
+      setForceHeightUpdate(prev => prev + 1);
+    }
+  }, [layout.size]);
 
   return (
     <>
@@ -601,9 +605,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
       ref={containerRef} 
       className="relative w-full" 
       style={{ 
-        minHeight: containerHeight > 0 ? `${containerHeight}px` : 'auto', 
+        position: 'relative',
+        width: '100%',
+        minHeight: containerHeight > 0 ? `${containerHeight}px` : '100vh',
         height: containerHeight > 0 ? `${containerHeight}px` : 'auto',
-        position: 'relative'
       }}
     >
         {items.length === 0 ? (
@@ -696,6 +701,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
                 padding: 0,
                 overflow: 'hidden',
                 boxSizing: 'border-box',
+                zIndex: 1,
+                visibility: pos.width > 0 && pos.height > 0 ? 'visible' : 'hidden',
               }}
             >
               {renderItem(item)}
