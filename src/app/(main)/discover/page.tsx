@@ -314,28 +314,51 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef }: {
     setIsCalculating(true);
 
     // Pre-load images to get aspect ratios for variety in tile sizes
+    // This ensures each tile has a different height based on its image's actual aspect ratio
     const loadImageDimensions = (item: any): Promise<number> => {
       return new Promise((resolve) => {
         const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || '';
         
         if (!imageUrl) {
           // Default aspect ratio for items without images (ads, etc.)
-          resolve(itemWidth * 1.5); // 2:3 aspect ratio
+          // Use slight variation for visual interest
+          const defaultRatio = 1.3 + Math.random() * 0.4; // Between 1.3 and 1.7
+          resolve(itemWidth * defaultRatio);
           return;
         }
 
         const img = new window.Image();
+        let resolved = false;
+        
+        const resolveHeight = (height: number) => {
+          if (!resolved) {
+            resolved = true;
+            resolve(Math.ceil(height));
+          }
+        };
+        
         img.onload = () => {
           // Calculate height based on actual image aspect ratio for variety
+          // This creates natural variation in tile sizes
           const aspectRatio = img.naturalHeight / img.naturalWidth;
           const height = itemWidth * aspectRatio;
-          resolve(Math.ceil(height)); // Round up to prevent gaps
+          resolveHeight(height);
         };
+        
         img.onerror = () => {
           // Fallback aspect ratio on error - use random variation for variety
-          const randomVariation = 1.2 + Math.random() * 0.6; // Between 1.2 and 1.8
-          resolve(itemWidth * randomVariation);
+          const randomVariation = 1.2 + Math.random() * 0.8; // Between 1.2 and 2.0 for more variety
+          resolveHeight(itemWidth * randomVariation);
         };
+        
+        // Set timeout to prevent hanging
+        setTimeout(() => {
+          if (!resolved) {
+            const randomVariation = 1.2 + Math.random() * 0.8;
+            resolveHeight(itemWidth * randomVariation);
+          }
+        }, 5000);
+        
         img.src = imageUrl;
       });
     };
