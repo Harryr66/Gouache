@@ -3106,26 +3106,6 @@ function DiscoverPageContent() {
                         </div>
               )}
               
-              {/* Image/Video Count Indicator */}
-{Math.min(visibleFilteredArtworks.filter((item: any) => {
-                          if ('type' in item && item.type === 'ad') return false;
-                          const videoUrl = (item as any).videoUrl || '';
-                          const mediaType = (item as any).mediaType || '';
-                          const mediaUrls = (item as any).mediaUrls || [];
-                          const mediaTypes = (item as any).mediaTypes || [];
-                          const hasVideoUrl = !!videoUrl && videoUrl.length > 0 && isCloudflareVideo(videoUrl);
-                          const hasVideoMediaType = mediaType === 'video' && isCloudflareVideo(videoUrl);
-                          const hasVideoInMediaUrls = Array.isArray(mediaUrls) && mediaUrls.length > 0 && 
-                                                     Array.isArray(mediaTypes) && mediaTypes.includes('video') &&
-                                                     mediaUrls.some((url: string) => isCloudflareVideo(url));
-                          return hasVideoUrl || hasVideoMediaType || hasVideoInMediaUrls;
-                        }).length, maxRendered)} videos
-                        {isLoadingMore && ' • Loading more...'}
-                      </>
-                    )}
-                  </div>
-                );
-              })()}
             </div>
             
             {/* Artworks Grid - Padding from filter bar above */}
@@ -3323,10 +3303,23 @@ function DiscoverPageContent() {
                   return (
                     <div className="w-full space-y-0 flex flex-col items-center mt-0">
                       {videoArtworks.length === 0 ? (
-                        <div className="w-full py-12 text-center text-muted-foreground">
-                          <p>No videos available</p>
-                          <p className="text-sm mt-2">Switch to grid view to see images</p>
-                        </div>
+                        // Show loading animation instead of "No videos available" to prevent users from clicking away
+                        // Videos may still be loading, so show spinner until content is fully loaded
+                        (!artworksLoaded || isLoadingMore || artworks.length === 0) ? (
+                          <div className="w-full py-12 flex flex-col items-center justify-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                              <div className="w-3 h-3 rounded-full bg-primary animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                              <div className="w-3 h-3 rounded-full bg-primary animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                            </div>
+                            <p className="text-sm text-muted-foreground">Loading videos...</p>
+                          </div>
+                        ) : (
+                          <div className="w-full py-12 text-center text-muted-foreground">
+                            <p>No videos available</p>
+                            <p className="text-sm mt-2">Switch to grid view to see images</p>
+                          </div>
+                        )
                       ) : (
                         videoArtworks.map((item) => {
                         const artwork = item as Artwork;
