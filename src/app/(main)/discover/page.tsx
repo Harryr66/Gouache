@@ -767,6 +767,26 @@ function DiscoverPageContent() {
     if (!url || typeof url !== 'string') return false;
     return url.includes('imagedelivery.net') || url.includes('cloudflare.com');
   };
+  
+  // Helper: Check if video URL is from Cloudflare Stream (ONLY Cloudflare videos allowed)
+  const isCloudflareVideo = (videoUrl: string | null | undefined): boolean => {
+    if (!videoUrl || typeof videoUrl !== 'string') return false;
+    
+    // Cloudflare Stream URL patterns:
+    // - cloudflarestream.com (any subdomain)
+    // - videodelivery.net
+    // - Contains .m3u8 (HLS manifest)
+    const isCloudflare = 
+      videoUrl.includes('cloudflarestream.com') ||
+      videoUrl.includes('videodelivery.net') ||
+      videoUrl.includes('.m3u8');
+    
+    // Explicitly exclude Firebase Storage and other sources
+    const isFirebaseStorage = videoUrl.includes('firebasestorage.googleapis.com');
+    
+    return isCloudflare && !isFirebaseStorage;
+  };
+  
   const { toggleLike, isLiked } = useLikes();
   const { user } = useAuth();
   const { getFollowedArtists, isFollowing } = useFollow();
@@ -1450,6 +1470,14 @@ function DiscoverPageContent() {
             // Skip images that are NOT from Cloudflare
             const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
             const hasVideo = artworkData.videoUrl || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video');
+            
+            // CRITICAL: For videos, ONLY accept Cloudflare Stream - filter out Firebase Storage and other sources
+            if (hasVideo) {
+              const videoUrl = artworkData.videoUrl || artworkData.mediaUrls?.[0] || '';
+              if (!isCloudflareVideo(videoUrl)) {
+                continue; // Skip non-Cloudflare videos
+              }
+            }
             
             // If it's an image (not video), it MUST be from Cloudflare
             if (!hasVideo && imageUrl && !isCloudflareImage(imageUrl)) {
@@ -3031,23 +3059,22 @@ function DiscoverPageContent() {
                     const mediaTypes = (item as any).mediaTypes || [];
                     const imageUrl = (item as any).imageUrl || '';
                     
-                    // Check for video in multiple ways:
-                    // 1. Direct videoUrl field (most reliable)
-                    const hasVideoUrl = !!videoUrl && videoUrl.length > 0;
-                    // 2. mediaType field
-                    const hasVideoMediaType = mediaType === 'video';
-                    // 3. mediaUrls array with video type
+                    // CRITICAL: Only accept Cloudflare Stream videos - filter out Firebase Storage and other sources
+                    // Check for video in multiple ways, but ALL must be Cloudflare:
+                    // 1. Direct videoUrl field (most reliable) - MUST be Cloudflare
+                    const hasVideoUrl = !!videoUrl && videoUrl.length > 0 && isCloudflareVideo(videoUrl);
+                    // 2. mediaType field - but still need Cloudflare URL
+                    const hasVideoMediaType = mediaType === 'video' && isCloudflareVideo(videoUrl);
+                    // 3. mediaUrls array with video type - check if any URL is Cloudflare
                     const hasVideoInMediaUrls = Array.isArray(mediaUrls) && mediaUrls.length > 0 && 
-                                               Array.isArray(mediaTypes) && mediaTypes.includes('video');
+                                               Array.isArray(mediaTypes) && mediaTypes.includes('video') &&
+                                               mediaUrls.some((url: string) => isCloudflareVideo(url));
                     // 4. Check if imageUrl is actually a Cloudflare Stream thumbnail (indicates video)
                     const isCloudflareThumbnail = imageUrl.includes('cloudflarestream.com') && 
                                                   (imageUrl.includes('/thumbnails/') || imageUrl.includes('thumbnail'));
-                    // 5. Check if videoUrl contains Cloudflare Stream indicators
-                    const isCloudflareVideo = videoUrl.includes('cloudflarestream.com') || 
-                                             videoUrl.includes('videodelivery.net') ||
-                                             videoUrl.includes('.m3u8');
                     
-                    const hasVideo = hasVideoUrl || hasVideoMediaType || hasVideoInMediaUrls || isCloudflareThumbnail || isCloudflareVideo;
+                    // Only show videos from Cloudflare Stream
+                    const hasVideo = hasVideoUrl || hasVideoMediaType || hasVideoInMediaUrls || isCloudflareThumbnail;
                     
                     // Debug logging for each item
                     console.log('🔍 Checking item for video:', {

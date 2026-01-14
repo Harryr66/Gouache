@@ -767,15 +767,35 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               const isEvent = data.type === 'event' || data.type === 'Event' || data.eventType;
               if (isEvent) return;
               
-              // Filter out deleted items
-              if (data.deleted === true) return;
+              // NOTE: We don't filter by deleted - if truly deleted, item should be removed from DB entirely
+              // The deleted flag is mislabeled in some cases, so we show all content
               
               // Only include items that are NOT in portfolio (showInPortfolio must be explicitly false)
               // These are generic content like process videos, art tips, etc. uploaded via Discover portal
               const notInPortfolio = data.showInPortfolio === false;
               
               // Must have media (image or video) to be valid Discover content
-              const hasMedia = data.imageUrl || data.videoUrl || data.mediaUrls?.length > 0;
+              // CRITICAL: For videos, ONLY accept Cloudflare Stream - filter out Firebase Storage
+              const isVideo = !!(data.videoUrl || data.mediaType === 'video');
+              const isCloudflareVideo = isVideo && (
+                (data.videoUrl && (
+                  data.videoUrl.includes('cloudflarestream.com') ||
+                  data.videoUrl.includes('videodelivery.net') ||
+                  data.videoUrl.includes('.m3u8')
+                )) ||
+                (data.mediaUrls && Array.isArray(data.mediaUrls) && data.mediaUrls.some((url: string) =>
+                  url.includes('cloudflarestream.com') ||
+                  url.includes('videodelivery.net') ||
+                  url.includes('.m3u8')
+                ))
+              );
+              
+              // If it's a video but NOT Cloudflare, skip it
+              if (isVideo && !isCloudflareVideo) {
+                return; // Skip non-Cloudflare videos
+              }
+              
+              const hasMedia = data.imageUrl || (isVideo && isCloudflareVideo) || (data.mediaUrls?.length > 0 && !isVideo);
               
               if (belongsToUser && notInPortfolio && hasMedia) {
                 // Use document ID as the primary ID (this is what Firestore uses)
@@ -816,14 +836,34 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               const isEvent = data.type === 'event' || data.type === 'Event' || data.eventType;
               if (isEvent) return;
               
-              // Filter out deleted items
-              if (data.deleted === true) return;
+              // NOTE: We don't filter by deleted - if truly deleted, item should be removed from DB entirely
+              // The deleted flag is mislabeled in some cases, so we show all content
               
               // Only include posts where showInPortfolio is explicitly false (Discover content, not portfolio)
               const notInPortfolio = data.showInPortfolio === false;
               
               // Must have media (including videos)
-              const hasMedia = data.imageUrl || data.videoUrl || data.mediaUrls?.length > 0;
+              // CRITICAL: For videos, ONLY accept Cloudflare Stream - filter out Firebase Storage
+              const isVideo = !!(data.videoUrl || data.mediaType === 'video');
+              const isCloudflareVideo = isVideo && (
+                (data.videoUrl && (
+                  data.videoUrl.includes('cloudflarestream.com') ||
+                  data.videoUrl.includes('videodelivery.net') ||
+                  data.videoUrl.includes('.m3u8')
+                )) ||
+                (data.mediaUrls && Array.isArray(data.mediaUrls) && data.mediaUrls.some((url: string) =>
+                  url.includes('cloudflarestream.com') ||
+                  url.includes('videodelivery.net') ||
+                  url.includes('.m3u8')
+                ))
+              );
+              
+              // If it's a video but NOT Cloudflare, skip it
+              if (isVideo && !isCloudflareVideo) {
+                return; // Skip non-Cloudflare videos
+              }
+              
+              const hasMedia = data.imageUrl || (isVideo && isCloudflareVideo) || (data.mediaUrls?.length > 0 && !isVideo);
               
               if (belongsToUser && notInPortfolio && hasMedia) {
                 // Spread data first, then override with document ID to ensure it's correct

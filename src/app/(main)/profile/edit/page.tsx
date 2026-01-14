@@ -1106,31 +1106,33 @@ export default function ProfileEditPage() {
     try {
       let avatarUrl = user.avatarUrl;
 
-      // Upload new image if preview exists
+      // Upload new image if preview exists - USE CLOUDFLARE ONLY (NO Firebase Storage)
       if (previewImage) {
         const fileInput = document.getElementById('avatar-upload') as HTMLInputElement;
         const file = fileInput?.files?.[0];
         
         if (file) {
           const compressedFile = await compressImage(file);
-          const imageRef = ref(storage, `avatars/${user.id}`);
-          await uploadBytes(imageRef, compressedFile);
-          avatarUrl = await getDownloadURL(imageRef);
+          // Upload to Cloudflare Images (NOT Firebase Storage)
+          const { uploadMedia } = await import('@/lib/media-upload-v2');
+          const uploadResult = await uploadMedia(compressedFile, 'image', user.id);
+          avatarUrl = uploadResult.url; // Cloudflare Images URL
         }
       }
 
       let bannerImageUrl = user.bannerImageUrl;
 
-      // Upload new banner image if preview exists
+      // Upload new banner image if preview exists - USE CLOUDFLARE ONLY (NO Firebase Storage)
       if (bannerPreviewImage) {
         const fileInput = document.getElementById('banner-upload') as HTMLInputElement;
         const file = fileInput?.files?.[0];
         
         if (file) {
           const compressedFile = await compressBannerImage(file);
-          const imageRef = ref(storage, `banners/${user.id}`);
-          await uploadBytes(imageRef, compressedFile);
-          bannerImageUrl = await getDownloadURL(imageRef);
+          // Upload to Cloudflare Images (NOT Firebase Storage)
+          const { uploadMedia } = await import('@/lib/media-upload-v2');
+          const uploadResult = await uploadMedia(compressedFile, 'image', user.id);
+          bannerImageUrl = uploadResult.url; // Cloudflare Images URL
         }
       }
 
