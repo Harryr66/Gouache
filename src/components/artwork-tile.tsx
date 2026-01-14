@@ -1271,8 +1271,14 @@ const generateArtistContent = (artist: Artist) => ({
                           });
                         }
                         
-                        // Fallback: Try alternative variant if current one fails
-                        if (retryCount < 2 && !fallbackImageUrl) {
+                        // CRITICAL: If image fails to load, immediately show placeholder to prevent React error #300
+                        // Don't retry invalid URLs - they'll just fail again
+                        setImageError(true);
+                        setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                        setIsImageLoaded(true); // Show placeholder immediately to prevent crash
+                        
+                        // Only retry if we haven't already failed this URL
+                        if (retryCount < 1 && !failedUrlsRef.current.has(cloudflareUrl)) {
                           const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
                           if (cloudflareMatch) {
                             const [, accountHash, imageId] = cloudflareMatch;
@@ -1284,32 +1290,13 @@ const generateArtistContent = (artist: Artist) => ({
                               setTimeout(() => {
                                 setRetryCount(prev => prev + 1);
                                 setIsImageLoaded(false);
+                                setImageError(false);
                                 (e.target as HTMLImageElement).src = fallbackUrl;
                               }, 500);
                               return;
                             }
                           }
                         }
-                        
-                        // Final fallback: use original URL or placeholder
-                        if (retryCount >= 2) {
-                          console.warn('❌ All variants failed, using original URL:', imageSrc);
-                          // Try original URL as last resort
-                          if (imageSrc !== cloudflareUrl && !failedUrlsRef.current.has(imageSrc)) {
-                            setTimeout(() => {
-                              setRetryCount(prev => prev + 1);
-                              setIsImageLoaded(false);
-                              (e.target as HTMLImageElement).src = imageSrc;
-                            }, 500);
-                            return;
-                          }
-                        }
-                        
-                        // Ultimate fallback: show placeholder but mark as loaded so it's visible
-                        console.error('❌ Image failed to load after all retries:', cloudflareUrl);
-                        setImageError(true);
-                        setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                        setIsImageLoaded(true); // Show placeholder
                       }}
                     />
                   );

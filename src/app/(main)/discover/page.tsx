@@ -768,6 +768,35 @@ function DiscoverPageContent() {
     return url.includes('imagedelivery.net') || url.includes('cloudflare.com');
   };
   
+  // Helper: Validate Cloudflare Images URL format to prevent 404s
+  // Valid format: https://imagedelivery.net/{accountHash}/{imageId}/{variant}
+  const isValidCloudflareImageUrl = (url: string | null | undefined): boolean => {
+    if (!url || typeof url !== 'string') return false;
+    if (!isCloudflareImage(url)) return false;
+    
+    // Must be imagedelivery.net format
+    if (!url.includes('imagedelivery.net')) return false;
+    
+    // Extract components
+    const match = url.match(/imagedelivery\.net\/([^/]+)\/([^/]+)(?:\/([^/]+))?/);
+    if (!match) return false;
+    
+    const [, accountHash, imageId] = match;
+    
+    // Validate components exist and are not empty
+    if (!accountHash || !imageId || accountHash.length === 0 || imageId.length === 0) {
+      return false;
+    }
+    
+    // Account hash should be alphanumeric (Cloudflare format)
+    if (!/^[a-zA-Z0-9_-]+$/.test(accountHash)) return false;
+    
+    // Image ID should be alphanumeric or UUID format
+    if (!/^[a-zA-Z0-9_-]+$/.test(imageId)) return false;
+    
+    return true;
+  };
+  
   // Helper: Check if video URL is from Cloudflare Stream (ONLY Cloudflare videos allowed)
   const isCloudflareVideo = (videoUrl: string | null | undefined): boolean => {
     if (!videoUrl || typeof videoUrl !== 'string') return false;
@@ -1428,10 +1457,10 @@ function DiscoverPageContent() {
         // ALWAYS fetch content from artworks collection (runs regardless of portfolioItems)
         // This includes the 100+ items in the artworks collection
         // Load ALL content upfront - pagination is broken, so just load everything
-        const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
+        // Use existing isMobile state - already detected in useEffect
         const artworksLimit = 200; // Load all content upfront (no pagination needed)
         
-        log(`🔍 Discover: Fetching content from artworks collection (limit: ${artworksLimit}, mobile: ${isMobileDevice})...`);
+        log(`🔍 Discover: Fetching content from artworks collection (limit: ${artworksLimit}, mobile: ${isMobile})...`);
         try {
           // Filter in JavaScript instead of query level to avoid index requirement
           const artworksQuery = query(
@@ -1986,9 +2015,13 @@ function DiscoverPageContent() {
                         (itemAny.mediaUrls?.[0] && itemAny.mediaTypes?.[0] !== 'video' ? itemAny.mediaUrls[0] : '') || 
                         '';
         
-        // Filter: Only Cloudflare images/videos
+        // Filter: Only Cloudflare images/videos with valid URLs
         if (videoUrl && !isCloudflareVideo(videoUrl)) continue;
-        if (!videoUrl && imageUrl && !isCloudflareImage(imageUrl)) continue;
+        if (!videoUrl && imageUrl) {
+          if (!isCloudflareImage(imageUrl)) continue;
+          // CRITICAL: Validate URL format to prevent 404s and crashes
+          if (!isValidCloudflareImageUrl(imageUrl)) continue;
+        }
         if (!imageUrl && !videoUrl) continue;
         
         // Apply AI filter
@@ -2058,15 +2091,32 @@ function DiscoverPageContent() {
       });
       
       // Update pagination state
-      // If lastDoc exists, there might be more content (even if we got fewer items than requested)
-      // If lastDoc is null/undefined, we've reached the end
+      // CRITICAL: Only set hasMore to false if we got NO items AND no lastDoc
+      // If we got items but no lastDoc, we might have reached the end, but check if we got fewer than requested
+      // If we got items equal to requested, there's definitely more content
       if (result.lastDoc) {
         setLastDocument(result.lastDoc);
         setHasMore(true); // There's more content if lastDoc exists
         console.log(`🔄 SCROLL LOAD: ✅ More content available (lastDoc exists, got ${result.items.length} items, requested ${LOAD_MORE_LIMIT})`);
-      } else {
+      } else if (newArtworks.length === 0) {
+        // No items and no cursor - we've reached the end
         setHasMore(false);
-        console.log(`🔄 SCROLL LOAD: ⚠️ No more content (no lastDoc, got ${result.items.length} items, requested ${LOAD_MORE_LIMIT})`);
+        console.log(`🔄 SCROLL LOAD: ⚠️ No more content (no items, no lastDoc)`);
+      } else if (newArtworks.length < LOAD_MORE_LIMIT) {
+        // Got some items but fewer than requested - might be the end, but be conservative
+        // Only set hasMore to false if we got significantly fewer (less than 50% of requested)
+        if (newArtworks.length < LOAD_MORE_LIMIT * 0.5) {
+          setHasMore(false);
+          console.log(`🔄 SCROLL LOAD: ⚠️ Likely no more content (got ${newArtworks.length} items, requested ${LOAD_MORE_LIMIT}, less than 50%)`);
+        } else {
+          // Got a reasonable amount - might be more, keep hasMore true
+          setHasMore(true);
+          console.log(`🔄 SCROLL LOAD: ⚠️ Got ${newArtworks.length} items (requested ${LOAD_MORE_LIMIT}), keeping hasMore=true to allow one more try`);
+        }
+      } else {
+        // Got full amount - definitely more content
+        setHasMore(true);
+        console.log(`🔄 SCROLL LOAD: ✅ Got full amount (${newArtworks.length} items), more content available`);
       }
 
       console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks (expected ${LOAD_MORE_LIMIT} for 10 rows, columnCount=${columnCount})`);
@@ -2289,10 +2339,13 @@ function DiscoverPageContent() {
         return true; // Keep Cloudflare videos
       }
       
-      // For images, they MUST be from Cloudflare Images
+      // For images, they MUST be from Cloudflare Images AND have valid URL format
       const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
       if (!imageUrl) return false; // Skip items with no image
-      return isCloudflareImage(imageUrl); // Only Cloudflare images
+      if (!isCloudflareImage(imageUrl)) return false; // Only Cloudflare images
+      // CRITICAL: Validate URL format to prevent 404s and crashes
+      if (!isValidCloudflareImageUrl(imageUrl)) return false; // Skip invalid URLs
+      return true;
     });
 
     // Apply filters to artworks (no placeholders to separate)
@@ -3093,10 +3146,12 @@ function DiscoverPageContent() {
                     const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                     if (hasVideo) return false; // Filter out videos
                     
-                    // CRITICAL: Only show images from Cloudflare (all active artists should use Cloudflare)
+                    // CRITICAL: Only show images from Cloudflare with valid URLs
                     const imageUrl = artwork.imageUrl || (artwork as any).supportingImages?.[0] || (artwork as any).images?.[0] || '';
                     if (!imageUrl) return false; // Skip items with no image
                     if (!isCloudflareImage(imageUrl)) return false; // Only Cloudflare images
+                    // CRITICAL: Validate URL format to prevent 404s and crashes
+                    if (!isValidCloudflareImageUrl(imageUrl)) return false; // Skip invalid URLs
                     
                     return true;
                   });
