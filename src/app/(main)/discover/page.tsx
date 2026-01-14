@@ -1843,8 +1843,8 @@ function DiscoverPageContent() {
       const { PortfolioService } = await import('@/lib/database');
       // CRITICAL: Reduce load limit to prevent crashes with 200+ images
       // Mobile has less memory - use even smaller batches
-      const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
-      const LOAD_MORE_LIMIT = isMobileDevice 
+      // Use existing isMobile state instead of creating new variable
+      const LOAD_MORE_LIMIT = isMobile 
         ? Math.min(columnCount * 5, 25)  // Mobile: 5 rows, max 25 items
         : Math.min(columnCount * 10, 50); // Desktop: 10 rows, max 50 items
       
@@ -2039,8 +2039,8 @@ function DiscoverPageContent() {
       // Append new artworks to existing ones, deduplicating by ID to prevent recycling
       // CRITICAL: Limit total artworks to prevent crashes with 200+ images
       // Mobile has less memory - use stricter limits
-      const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
-      const MAX_TOTAL_ARTWORKS = isMobileDevice ? 100 : 200; // Mobile: 100 items, Desktop: 200 items
+      // Use existing isMobile state instead of creating new variable
+      const MAX_TOTAL_ARTWORKS = isMobile ? 100 : 200; // Mobile: 100 items, Desktop: 200 items
       setArtworks(prev => {
         const existingIds = new Set(prev.map(a => a.id));
         const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
@@ -2636,8 +2636,8 @@ function DiscoverPageContent() {
     
     // CRITICAL: Limit total items to prevent crashes with 200+ images
     // Mobile has less memory - use stricter limits
-    const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
-    const MAX_RENDERED_ITEMS = isMobileDevice ? 75 : 150; // Mobile: 75 items, Desktop: 150 items
+    // Use existing isMobile state instead of creating new variable
+    const MAX_RENDERED_ITEMS = isMobile ? 75 : 150; // Mobile: 75 items, Desktop: 150 items
     const safeTotalItems = Math.min(totalItems, MAX_RENDERED_ITEMS);
     
     // Check how many placeholders are in the array
@@ -3010,8 +3010,8 @@ function DiscoverPageContent() {
               
               {/* Image/Video Count Indicator */}
               {!showLoadingScreen && (() => {
-                const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
-                const maxRendered = isMobileDevice ? 75 : 150;
+                // Use existing isMobile state instead of creating new variable
+                const maxRendered = isMobile ? 75 : 150;
                 return (
                   <div className="text-sm text-muted-foreground mt-2">
                     {artworkView === 'grid' ? (
