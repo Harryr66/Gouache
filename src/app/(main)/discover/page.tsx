@@ -1286,25 +1286,27 @@ function DiscoverPageContent() {
             }
 
             // Convert portfolio item to Artwork object
-            const artwork: Artwork = {
-              id: item.id,
-              title: item.title || '',
-              description: item.description || '',
-              imageUrl: imageUrl,
-              imageAiHint: item.description || '',
-              ...(videoUrl && { videoUrl: videoUrl as any }),
-              ...(mediaType && { mediaType: mediaType as any }),
-              artist: {
-                id: item.userId,
-                name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
-                handle: artistData.username || artistData.handle || '',
-                avatarUrl: artistData.avatarUrl || null,
-                isVerified: artistData.isVerified || false,
-                isProfessional: true,
-                followerCount: artistData.followerCount || 0,
-                followingCount: artistData.followingCount || 0,
-                createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
-              },
+        const artwork: Artwork = {
+          id: item.id,
+          title: item.title || '',
+          description: item.description || '',
+          imageUrl: imageUrl,
+          imageAiHint: item.description || '',
+          ...(videoUrl && { videoUrl: videoUrl as any }),
+          ...(mediaType && { mediaType: mediaType as any }),
+          ...(item.mediaUrls && { mediaUrls: item.mediaUrls }),
+          ...(item.mediaTypes && { mediaTypes: item.mediaTypes }),
+          artist: {
+            id: artistId || '',
+            name: artistData?.displayName || artistData?.name || artistData?.username || 'Unknown Artist',
+            handle: artistData?.username || artistData?.handle || '',
+            avatarUrl: artistData?.avatarUrl || null,
+            isVerified: artistData?.isVerified || false,
+            isProfessional: true,
+            followerCount: artistData?.followerCount || 0,
+            followingCount: artistData?.followingCount || 0,
+            createdAt: artistData?.createdAt?.toDate?.() || (artistData?.createdAt instanceof Date ? artistData.createdAt : new Date()),
+          },
               likes: item.likes || 0,
               commentsCount: item.commentsCount || 0,
               createdAt: item.createdAt instanceof Date ? item.createdAt : (item.createdAt as any)?.toDate?.() || new Date(),
@@ -1884,12 +1886,12 @@ function DiscoverPageContent() {
       ]);
       
       // Combine results
-      const result = {
+      const combinedResult = {
         items: [...portfolioResult.items, ...artworksResult.items],
         lastDoc: artworksResult.lastDoc || portfolioResult.lastDoc,
       };
       
-      const loadPromise = Promise.resolve(result);
+      const loadPromise = Promise.resolve(combinedResult);
       
       console.log('🔄 SCROLL LOAD: ⏱️ Waiting for result with 15s timeout...');
       console.log('🔄 SCROLL LOAD: 📋 Query params:', {
