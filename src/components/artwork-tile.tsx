@@ -841,21 +841,48 @@ const generateArtistContent = (artist: Artist) => ({
                           onImageReady(true);
                         }
                       }}
-                      onError={() => {
-                        // Retry up to 3 times with exponential backoff
-                        if (retryCount < 3 && !fallbackImageUrl) {
-                          const retryDelay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+                      onError={(e) => {
+                        try {
+                          // CRITICAL: Prevent React error #300 by immediately hiding failed image
+                          const videoElement = e.target as HTMLVideoElement;
+                          if (videoElement) {
+                            videoElement.style.display = 'none';
+                            videoElement.style.opacity = '0';
+                          }
+                          
+                          // Retry up to 3 times with exponential backoff
+                          if (retryCount < 3 && !fallbackImageUrl) {
+                            const retryDelay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+                            setTimeout(() => {
+                              try {
+                                setRetryCount(prev => prev + 1);
+                                setIsImageLoaded(false); // Force retry
+                                if (videoElement) {
+                                  videoElement.style.display = '';
+                                  videoElement.style.opacity = '';
+                                }
+                              } catch (retryError) {
+                                console.error('Error retrying:', retryError);
+                              }
+                            }, retryDelay);
+                            return; // Don't set error yet, will retry
+                          }
+                          
+                          // After all retries failed, use placeholder - DO NOT call onImageReady
+                          // Defer state updates to prevent React crash
                           setTimeout(() => {
-                            setRetryCount(prev => prev + 1);
-                            setIsImageLoaded(false); // Force retry
-                          }, retryDelay);
-                          return; // Don't set error yet, will retry
+                            try {
+                              setImageError(true);
+                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              setIsImageLoaded(true);
+                              // DO NOT call onImageReady on error - loading screen must wait for successful loads
+                            } catch (stateError) {
+                              console.error('Error updating state:', stateError);
+                            }
+                          }, 0);
+                        } catch (error) {
+                          console.error('Error in video error handler:', error);
                         }
-                        // After all retries failed, use placeholder - DO NOT call onImageReady
-                        setImageError(true);
-                        setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                        setIsImageLoaded(true);
-                        // DO NOT call onImageReady on error - loading screen must wait for successful loads
                       }}
                     />
                   )}
@@ -1199,58 +1226,64 @@ const generateArtistContent = (artist: Artist) => ({
                 
                 // PRIORITY 2: Cloudflare Images (new uploads)
                 if (isCloudflareImage) {
+                  // CRITICAL: Validate URL format BEFORE constructing variant URL
+                  // This prevents React error #300 by catching invalid URLs early
+                  const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)(?:\/([^/]+))?/);
+                  if (!cloudflareMatch) {
+                    // Invalid URL format - show placeholder immediately without rendering image
+                    console.warn('⚠️ Invalid Cloudflare Images URL format, showing placeholder:', imageSrc);
+                    return (
+                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
+                        <div className="text-muted-foreground text-xs text-center px-2">Invalid image URL</div>
+                      </div>
+                    );
+                  }
+                  
+                  const [, accountHash, imageId, existingVariant] = cloudflareMatch;
+                  
+                  // Validate components exist and are not empty
+                  if (!accountHash || !imageId || accountHash.length === 0 || imageId.length === 0) {
+                    console.warn('⚠️ Invalid Cloudflare Images URL components, showing placeholder:', { accountHash, imageId, url: imageSrc });
+                    return (
+                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
+                        <div className="text-muted-foreground text-xs text-center px-2">Invalid image URL</div>
+                      </div>
+                    );
+                  }
+                  
+                  // Validate format (alphanumeric)
+                  if (!/^[a-zA-Z0-9_-]+$/.test(accountHash) || !/^[a-zA-Z0-9_-]+$/.test(imageId)) {
+                    console.warn('⚠️ Invalid Cloudflare Images URL format (non-alphanumeric), showing placeholder:', { accountHash, imageId, url: imageSrc });
+                    return (
+                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
+                        <div className="text-muted-foreground text-xs text-center px-2">Invalid image URL</div>
+                      </div>
+                    );
+                  }
+                  
                   let cloudflareUrl = imageSrc;
                   
-                  // Extract Cloudflare image ID and account hash to construct proper variant URL
-                  // URL format: https://imagedelivery.net/{accountHash}/{imageId}/{variant}
-                  // The regex needs to extract accountHash and imageId, ignoring the variant at the end
-                  const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)(?:\/([^/]+))?/);
-                  if (cloudflareMatch) {
-                    const [, accountHash, imageId, existingVariant] = cloudflareMatch;
-                    
-                    // CRITICAL: Use /Thumbnail ONLY for video posters (placeholders before autoplay)
-                    // Use /1080px for regular image artworks to match Instagram/Pinterest quality
-                    if (hasVideo) {
-                      // Video poster: Use /Thumbnail variant (240px, ~30KB - fast placeholder)
-                      cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`;
-                    } else {
-                      // Regular image artwork: Use /1080px variant - Instagram/Pinterest standard
-                      // This matches Instagram's 1080px feed resolution for best quality
-                      cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/1080px`;
-                    }
-                    
-                    // Debug logging
-                    if (process.env.NODE_ENV === 'development') {
-                      console.log('🖼️ Cloudflare URL construction:', {
-                        original: imageSrc,
-                        accountHash,
-                        imageId,
-                        existingVariant,
-                        constructed: cloudflareUrl,
-                        hasVideo
-                      });
-                    }
+                  // CRITICAL: Use /Thumbnail ONLY for video posters (placeholders before autoplay)
+                  // Use /1080px for regular image artworks to match Instagram/Pinterest quality
+                  if (hasVideo) {
+                    // Video poster: Use /Thumbnail variant (240px, ~30KB - fast placeholder)
+                    cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`;
                   } else {
-                    // Fallback: Determine variant based on whether it's a video
-                    if (hasVideo) {
-                      // Video poster: Use /Thumbnail
-                      if (!imageSrc.includes('/Thumbnail') && !imageSrc.includes('/thumbnail')) {
-                        cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/Thumbnail');
-                      }
-                    } else {
-                      // Regular image: Use /1080px (Instagram/Pinterest standard)
-                      if (!imageSrc.includes('/1080px') && !imageSrc.includes('/public')) {
-                        cloudflareUrl = imageSrc.replace(/\/[^/]+$/, '/1080px');
-                      }
-                    }
-                    
-                    // Debug logging for fallback
-                    if (process.env.NODE_ENV === 'development') {
-                      console.warn('⚠️ Cloudflare URL regex failed, using fallback:', {
-                        original: imageSrc,
-                        fallback: cloudflareUrl
-                      });
-                    }
+                    // Regular image artwork: Use /1080px variant - Instagram/Pinterest standard
+                    // This matches Instagram's 1080px feed resolution for best quality
+                    cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/1080px`;
+                  }
+                  
+                  // Debug logging
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('🖼️ Cloudflare URL construction:', {
+                      original: imageSrc,
+                      accountHash,
+                      imageId,
+                      existingVariant,
+                      constructed: cloudflareUrl,
+                      hasVideo
+                    });
                   }
                   
                   // Calculate dimensions from aspect ratio to prevent layout shift
