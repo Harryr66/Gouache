@@ -40,11 +40,13 @@ export class ImageErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      // Render fallback UI
+      // Render fallback UI - use taped banana placeholder if no custom fallback provided
       return this.props.fallback || (
-        <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
-          <div className="text-muted-foreground text-xs text-center px-2">Image failed to load</div>
-        </div>
+        <img
+          src="https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200"
+          alt="Loading..."
+          className="absolute inset-0 w-full h-full object-cover z-10"
+        />
       );
     }
 
