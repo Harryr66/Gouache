@@ -783,22 +783,48 @@ const generateArtistContent = (artist: Artist) => ({
                           onImageReady(true); // true = this is a video poster
                         }
                       }}
-                        onError={() => {
-                          // Retry up to 3 times with exponential backoff
-                          if (retryCount < 3 && !fallbackImageUrl) {
-                            const retryDelay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+                        onError={(e) => {
+                          try {
+                            // CRITICAL: Prevent React error #300 by immediately hiding failed image
+                            const imgElement = e.target as HTMLImageElement;
+                            if (imgElement) {
+                              imgElement.style.display = 'none';
+                              imgElement.style.opacity = '0';
+                            }
+                            
+                            // Retry up to 3 times with exponential backoff
+                            if (retryCount < 3 && !fallbackImageUrl) {
+                              const retryDelay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+                              setTimeout(() => {
+                                try {
+                                  setRetryCount(prev => prev + 1);
+                                  setIsImageLoaded(false); // Force retry
+                                  if (imgElement) {
+                                    imgElement.style.display = '';
+                                    imgElement.style.opacity = '';
+                                  }
+                                } catch (retryError) {
+                                  console.error('Error retrying:', retryError);
+                                }
+                              }, retryDelay);
+                              return; // Don't set error yet, will retry
+                            }
+                            
+                            // After all retries failed, use placeholder - DO NOT call onImageReady
+                            // Defer state updates to prevent React crash
                             setTimeout(() => {
-                              setRetryCount(prev => prev + 1);
-                              setIsImageLoaded(false); // Force retry
-                            }, retryDelay);
-                            return; // Don't set error yet, will retry
+                              try {
+                                setImageError(true);
+                                setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                                setIsImageLoaded(true);
+                                // DO NOT call onImageReady on error - loading screen must wait for successful loads
+                              } catch (stateError) {
+                                console.error('Error updating state:', stateError);
+                              }
+                            }, 0);
+                          } catch (error) {
+                            console.error('Error in image error handler:', error);
                           }
-                          // After all retries failed, use placeholder - DO NOT call onImageReady
-                          // This ensures failed images don't count as "ready" and loading screen waits for successful loads
-                          setImageError(true);
-                          setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                          setIsImageLoaded(true);
-                          // DO NOT call onImageReady on error - loading screen must wait for successful loads
                         }}
                     />
                   ) : (
@@ -1134,18 +1160,38 @@ const generateArtistContent = (artist: Artist) => ({
                         }
                       }}
                       onError={(e) => {
-                        // Log error for debugging (but only once per URL)
-                        if (!failedUrlsRef.current.has(cloudflareUrl)) {
-                          failedUrlsRef.current.add(cloudflareUrl);
-                          console.warn('⚠️ Cloudflare Stream thumbnail load error:', {
-                            url: cloudflareUrl,
-                            artworkId: artwork.id,
-                            retryCount,
-                            originalUrl: imageSrc
-                          });
+                        try {
+                          // CRITICAL: Prevent React error #300 by immediately hiding failed image
+                          const imgElement = e.target as HTMLImageElement;
+                          if (imgElement) {
+                            imgElement.style.display = 'none';
+                            imgElement.style.opacity = '0';
+                          }
+                          
+                          // Log error for debugging (but only once per URL)
+                          if (!failedUrlsRef.current.has(cloudflareUrl)) {
+                            failedUrlsRef.current.add(cloudflareUrl);
+                            console.warn('⚠️ Cloudflare Stream thumbnail load error:', {
+                              url: cloudflareUrl,
+                              artworkId: artwork.id,
+                              retryCount,
+                              originalUrl: imageSrc
+                            });
+                          }
+                          
+                          // Defer state updates to prevent React crash
+                          setTimeout(() => {
+                            try {
+                              setImageError(true);
+                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              setIsImageLoaded(true);
+                            } catch (stateError) {
+                              console.error('Error updating state:', stateError);
+                            }
+                          }, 0);
+                        } catch (error) {
+                          console.error('Error in image error handler:', error);
                         }
-                        setImageError(true);
-                        setIsImageLoaded(false);
                       }}
                     />
                   );
@@ -1259,42 +1305,77 @@ const generateArtistContent = (artist: Artist) => ({
                         }
                       }}
                       onError={(e) => {
-                        // Log error for debugging (but only once per URL)
-                        if (!failedUrlsRef.current.has(cloudflareUrl)) {
-                          failedUrlsRef.current.add(cloudflareUrl);
-                          console.warn('⚠️ Cloudflare image load error:', {
-                            url: cloudflareUrl,
-                            artworkId: artwork.id,
-                            variant: hasVideo ? 'Thumbnail' : '1080px',
-                            retryCount,
-                            originalUrl: imageSrc
-                          });
-                        }
-                        
-                        // CRITICAL: If image fails to load, immediately show placeholder to prevent React error #300
-                        // Don't retry invalid URLs - they'll just fail again
-                        setImageError(true);
-                        setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                        setIsImageLoaded(true); // Show placeholder immediately to prevent crash
-                        
-                        // Only retry if we haven't already failed this URL
-                        if (retryCount < 1 && !failedUrlsRef.current.has(cloudflareUrl)) {
-                          const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
-                          if (cloudflareMatch) {
-                            const [, accountHash, imageId] = cloudflareMatch;
-                            // Try /public variant as fallback (most compatible)
-                            const fallbackUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
-                            
-                            if (fallbackUrl !== cloudflareUrl && !failedUrlsRef.current.has(fallbackUrl)) {
-                              console.log('🔄 Retrying with /public variant:', fallbackUrl);
-                              setTimeout(() => {
-                                setRetryCount(prev => prev + 1);
-                                setIsImageLoaded(false);
-                                setImageError(false);
-                                (e.target as HTMLImageElement).src = fallbackUrl;
-                              }, 500);
-                              return;
+                        try {
+                          // CRITICAL: Prevent React error #300 by immediately hiding failed image
+                          // Use try-catch to prevent any errors in error handler from crashing React
+                          const imgElement = e.target as HTMLImageElement;
+                          if (imgElement) {
+                            imgElement.style.display = 'none';
+                            imgElement.style.opacity = '0';
+                          }
+                          
+                          // Log error for debugging (but only once per URL)
+                          if (!failedUrlsRef.current.has(cloudflareUrl)) {
+                            failedUrlsRef.current.add(cloudflareUrl);
+                            console.warn('⚠️ Cloudflare image load error:', {
+                              url: cloudflareUrl,
+                              artworkId: artwork.id,
+                              variant: hasVideo ? 'Thumbnail' : '1080px',
+                              retryCount,
+                              originalUrl: imageSrc
+                            });
+                          }
+                          
+                          // CRITICAL: If image fails to load, immediately show placeholder to prevent React error #300
+                          // Use setTimeout to defer state updates and prevent React from crashing
+                          setTimeout(() => {
+                            try {
+                              setImageError(true);
+                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              setIsImageLoaded(true); // Show placeholder immediately to prevent crash
+                            } catch (stateError) {
+                              console.error('Error updating state after image failure:', stateError);
                             }
+                          }, 0);
+                          
+                          // Only retry if we haven't already failed this URL
+                          if (retryCount < 1 && !failedUrlsRef.current.has(cloudflareUrl)) {
+                            const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
+                            if (cloudflareMatch) {
+                              const [, accountHash, imageId] = cloudflareMatch;
+                              // Try /public variant as fallback (most compatible)
+                              const fallbackUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
+                              
+                              if (fallbackUrl !== cloudflareUrl && !failedUrlsRef.current.has(fallbackUrl)) {
+                                console.log('🔄 Retrying with /public variant:', fallbackUrl);
+                                setTimeout(() => {
+                                  try {
+                                    setRetryCount(prev => prev + 1);
+                                    setIsImageLoaded(false);
+                                    setImageError(false);
+                                    if (imgElement) {
+                                      imgElement.src = fallbackUrl;
+                                      imgElement.style.display = '';
+                                      imgElement.style.opacity = '';
+                                    }
+                                  } catch (retryError) {
+                                    console.error('Error retrying image:', retryError);
+                                  }
+                                }, 500);
+                                return;
+                              }
+                            }
+                          }
+                        } catch (error) {
+                          // CRITICAL: Catch any errors in error handler to prevent React crash
+                          console.error('Error in image error handler:', error);
+                          // Still try to show placeholder
+                          try {
+                            setImageError(true);
+                            setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                            setIsImageLoaded(true);
+                          } catch (fallbackError) {
+                            console.error('Error showing fallback:', fallbackError);
                           }
                         }
                       }}
@@ -1334,38 +1415,79 @@ const generateArtistContent = (artist: Artist) => ({
                         }
                       }}
                       onError={(e) => {
-                        console.error('❌ Firebase image load error:', {
-                          url: imageSrc,
-                          artworkId: artwork.id,
-                          title: artwork.title,
-                          error: e,
-                          retryCount,
-                          hasFallback: !!fallbackImageUrl,
-                          imageUrl: imageUrl,
-                          fullArtwork: artwork
-                        });
-                        
-                        // Check if URL is actually valid
-                        if (!imageSrc || imageSrc === '' || !imageSrc.startsWith('http')) {
-                          console.error('❌ Invalid image URL:', imageSrc);
-                          setImageError(true);
-                          setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                          setIsImageLoaded(true);
-                          return;
-                        }
-                        
-                        if (retryCount < 1 && !fallbackImageUrl) {
-                          // Retry once with original URL
-                          console.log('🔄 Retrying image load:', imageSrc);
+                        try {
+                          // CRITICAL: Prevent React error #300 by immediately hiding failed image
+                          const imgElement = e.target as HTMLImageElement;
+                          if (imgElement) {
+                            imgElement.style.display = 'none';
+                            imgElement.style.opacity = '0';
+                          }
+                          
+                          console.error('❌ Firebase image load error:', {
+                            url: imageSrc,
+                            artworkId: artwork.id,
+                            title: artwork.title,
+                            error: e,
+                            retryCount,
+                            hasFallback: !!fallbackImageUrl,
+                            imageUrl: imageUrl,
+                            fullArtwork: artwork
+                          });
+                          
+                          // Check if URL is actually valid
+                          if (!imageSrc || imageSrc === '' || !imageSrc.startsWith('http')) {
+                            console.error('❌ Invalid image URL:', imageSrc);
+                            setTimeout(() => {
+                              try {
+                                setImageError(true);
+                                setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                                setIsImageLoaded(true);
+                              } catch (stateError) {
+                                console.error('Error updating state:', stateError);
+                              }
+                            }, 0);
+                            return;
+                          }
+                          
+                          if (retryCount < 1 && !fallbackImageUrl) {
+                            // Retry once with original URL
+                            console.log('🔄 Retrying image load:', imageSrc);
+                            setTimeout(() => {
+                              try {
+                                setRetryCount(prev => prev + 1);
+                                setIsImageLoaded(false);
+                                if (imgElement) {
+                                  imgElement.style.display = '';
+                                  imgElement.style.opacity = '';
+                                }
+                              } catch (retryError) {
+                                console.error('Error retrying:', retryError);
+                              }
+                            }, 1000);
+                            return;
+                          }
+                          
+                          // Defer state updates to prevent React crash
                           setTimeout(() => {
-                            setRetryCount(prev => prev + 1);
-                            setIsImageLoaded(false);
-                          }, 1000);
-                          return;
+                            try {
+                              setImageError(true);
+                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              setIsImageLoaded(true);
+                            } catch (stateError) {
+                              console.error('Error updating state:', stateError);
+                            }
+                          }, 0);
+                        } catch (error) {
+                          console.error('Error in image error handler:', error);
+                          // Still try to show placeholder
+                          try {
+                            setImageError(true);
+                            setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                            setIsImageLoaded(true);
+                          } catch (fallbackError) {
+                            console.error('Error showing fallback:', fallbackError);
+                          }
                         }
-                        setImageError(true);
-                        setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                        setIsImageLoaded(true);
                       }}
                     />
                   );
@@ -1401,10 +1523,27 @@ const generateArtistContent = (artist: Artist) => ({
                           onImageReady(false);
                         }
                       }}
-                      onError={() => {
-                        setImageError(true);
-                        setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                        setIsImageLoaded(true);
+                      onError={(e) => {
+                        try {
+                          // CRITICAL: Prevent React error #300 by immediately hiding failed image
+                          const imgElement = e.target as HTMLImageElement;
+                          if (imgElement) {
+                            imgElement.style.display = 'none';
+                            imgElement.style.opacity = '0';
+                          }
+                          // Defer state updates to prevent React crash
+                          setTimeout(() => {
+                            try {
+                              setImageError(true);
+                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              setIsImageLoaded(true);
+                            } catch (stateError) {
+                              console.error('Error updating state:', stateError);
+                            }
+                          }, 0);
+                        } catch (error) {
+                          console.error('Error in image error handler:', error);
+                        }
                       }}
                     />
                   );
@@ -1440,10 +1579,27 @@ const generateArtistContent = (artist: Artist) => ({
                           onImageReady(false);
                         }
                       }}
-                      onError={() => {
-                        setImageError(true);
-                        setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                        setIsImageLoaded(true);
+                      onError={(e) => {
+                        try {
+                          // CRITICAL: Prevent React error #300 by immediately hiding failed image
+                          const imgElement = e.target as HTMLImageElement;
+                          if (imgElement) {
+                            imgElement.style.display = 'none';
+                            imgElement.style.opacity = '0';
+                          }
+                          // Defer state updates to prevent React crash
+                          setTimeout(() => {
+                            try {
+                              setImageError(true);
+                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              setIsImageLoaded(true);
+                            } catch (stateError) {
+                              console.error('Error updating state:', stateError);
+                            }
+                          }, 0);
+                        } catch (error) {
+                          console.error('Error in image error handler:', error);
+                        }
                       }}
                     />
                   );
@@ -1475,18 +1631,45 @@ const generateArtistContent = (artist: Artist) => ({
                         onImageReady(false);
                       }
                     }}
-                    onError={() => {
-                      if (retryCount < 3 && !fallbackImageUrl) {
-                        const retryDelay = Math.pow(2, retryCount) * 1000;
+                    onError={(e) => {
+                      try {
+                        // CRITICAL: Prevent React error #300 by immediately hiding failed image
+                        const imgElement = e.target as HTMLImageElement;
+                        if (imgElement) {
+                          imgElement.style.display = 'none';
+                          imgElement.style.opacity = '0';
+                        }
+                        
+                        if (retryCount < 3 && !fallbackImageUrl) {
+                          const retryDelay = Math.pow(2, retryCount) * 1000;
+                          setTimeout(() => {
+                            try {
+                              setRetryCount(prev => prev + 1);
+                              setIsImageLoaded(false);
+                              if (imgElement) {
+                                imgElement.style.display = '';
+                                imgElement.style.opacity = '';
+                              }
+                            } catch (retryError) {
+                              console.error('Error retrying:', retryError);
+                            }
+                          }, retryDelay);
+                          return;
+                        }
+                        
+                        // Defer state updates to prevent React crash
                         setTimeout(() => {
-                          setRetryCount(prev => prev + 1);
-                          setIsImageLoaded(false);
-                        }, retryDelay);
-                        return;
+                          try {
+                            setImageError(true);
+                            setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                            setIsImageLoaded(true);
+                          } catch (stateError) {
+                            console.error('Error updating state:', stateError);
+                          }
+                        }, 0);
+                      } catch (error) {
+                        console.error('Error in image error handler:', error);
                       }
-                      setImageError(true);
-                      setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                      setIsImageLoaded(true);
                     }}
                   />
                 );
