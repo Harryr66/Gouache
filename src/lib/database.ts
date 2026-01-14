@@ -697,8 +697,12 @@ export class PortfolioService {
         q = query(q, where('deleted', '==', options.deleted));
       }
 
-      // Order by createdAt (part of composite index)
-      q = query(q, orderBy('createdAt', 'desc'));
+      // Order by createdAt - but skip if querying showInPortfolio=false to avoid index requirement
+      // (showInPortfolio=false has very few items, so we can sort in JavaScript)
+      const needsOrderBy = options?.showInPortfolio !== false;
+      if (needsOrderBy) {
+        q = query(q, orderBy('createdAt', 'desc'));
+      }
 
       // Cursor pagination (faster than offset)
       // Handle both DocumentSnapshot and plain object cursors
@@ -773,6 +777,16 @@ export class PortfolioService {
         if (filteredCount > 0) {
           console.log(`🔍 PortfolioService: Filtered out ${filteredCount} AI items (${itemsBeforeFilter} -> ${items.length})`);
         }
+      }
+
+      // Sort in JavaScript if we skipped orderBy to avoid index requirement
+      if (!needsOrderBy && items.length > 0) {
+        items.sort((a, b) => {
+          const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+          const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+          return bTime - aTime; // Newest first
+        });
+        console.log(`🔍 PortfolioService: Sorted ${items.length} items in JavaScript (no orderBy used to avoid index)`);
       }
 
       // Get last document for pagination
