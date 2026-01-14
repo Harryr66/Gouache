@@ -1842,8 +1842,11 @@ function DiscoverPageContent() {
     try {
       const { PortfolioService } = await import('@/lib/database');
       // CRITICAL: Reduce load limit to prevent crashes with 200+ images
-      // Load smaller batches to prevent memory issues and React crashes
-      const LOAD_MORE_LIMIT = Math.min(columnCount * 10, 50); // Request 10 rows worth, max 50 items (reduced from 100)
+      // Mobile has less memory - use even smaller batches
+      const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
+      const LOAD_MORE_LIMIT = isMobileDevice 
+        ? Math.min(columnCount * 5, 25)  // Mobile: 5 rows, max 25 items
+        : Math.min(columnCount * 10, 50); // Desktop: 10 rows, max 50 items
       
       // NOTE: lastDocument should already be a DocumentSnapshot from previous loadMoreArtworks calls
       // Only the initial load from API returns a plain object, but we use direct Firestore for pagination
@@ -2035,7 +2038,9 @@ function DiscoverPageContent() {
 
       // Append new artworks to existing ones, deduplicating by ID to prevent recycling
       // CRITICAL: Limit total artworks to prevent crashes with 200+ images
-      const MAX_TOTAL_ARTWORKS = 200; // Maximum total items in state to prevent memory issues
+      // Mobile has less memory - use stricter limits
+      const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
+      const MAX_TOTAL_ARTWORKS = isMobileDevice ? 100 : 200; // Mobile: 100 items, Desktop: 200 items
       setArtworks(prev => {
         const existingIds = new Set(prev.map(a => a.id));
         const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
@@ -2630,8 +2635,9 @@ function DiscoverPageContent() {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
     
     // CRITICAL: Limit total items to prevent crashes with 200+ images
-    // Maximum 150 items rendered at once to prevent memory issues and React crashes
-    const MAX_RENDERED_ITEMS = 150;
+    // Mobile has less memory - use stricter limits
+    const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
+    const MAX_RENDERED_ITEMS = isMobileDevice ? 75 : 150; // Mobile: 75 items, Desktop: 150 items
     const safeTotalItems = Math.min(totalItems, MAX_RENDERED_ITEMS);
     
     // Check how many placeholders are in the array
@@ -3003,37 +3009,46 @@ function DiscoverPageContent() {
               )}
               
               {/* Image/Video Count Indicator */}
-              {!showLoadingScreen && (
-                <div className="text-sm text-muted-foreground mt-2">
-                  {artworkView === 'grid' ? (
-                    <>
-                      Showing {filteredAndSortedArtworks.filter((item: any) => {
-                        if ('type' in item && item.type === 'ad') return false;
-                        const hasVideo = (item as any).videoUrl || (item as any).mediaType === 'video';
-                        return !hasVideo;
-                      }).length} images
-                      {isLoadingMore && ' • Loading more...'}
-                    </>
-                  ) : (
-                    <>
-                      Showing {visibleFilteredArtworks.filter((item: any) => {
-                        if ('type' in item && item.type === 'ad') return false;
-                        const videoUrl = (item as any).videoUrl || '';
-                        const mediaType = (item as any).mediaType || '';
-                        const mediaUrls = (item as any).mediaUrls || [];
-                        const mediaTypes = (item as any).mediaTypes || [];
-                        const hasVideoUrl = !!videoUrl && videoUrl.length > 0 && isCloudflareVideo(videoUrl);
-                        const hasVideoMediaType = mediaType === 'video' && isCloudflareVideo(videoUrl);
-                        const hasVideoInMediaUrls = Array.isArray(mediaUrls) && mediaUrls.length > 0 && 
-                                                   Array.isArray(mediaTypes) && mediaTypes.includes('video') &&
-                                                   mediaUrls.some((url: string) => isCloudflareVideo(url));
-                        return hasVideoUrl || hasVideoMediaType || hasVideoInMediaUrls;
-                      }).length} videos
-                      {isLoadingMore && ' • Loading more...'}
-                    </>
-                  )}
-                </div>
-              )}
+              {!showLoadingScreen && (() => {
+                const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
+                const maxRendered = isMobileDevice ? 75 : 150;
+                return (
+                  <div className="text-sm text-muted-foreground mt-2">
+                    {artworkView === 'grid' ? (
+                      <>
+                        Showing {Math.min(filteredAndSortedArtworks.filter((item: any) => {
+                          if ('type' in item && item.type === 'ad') return false;
+                          const hasVideo = (item as any).videoUrl || (item as any).mediaType === 'video';
+                          return !hasVideo;
+                        }).length, maxRendered)} images
+                        {filteredAndSortedArtworks.length > maxRendered && ` (of ${filteredAndSortedArtworks.filter((item: any) => {
+                          if ('type' in item && item.type === 'ad') return false;
+                          const hasVideo = (item as any).videoUrl || (item as any).mediaType === 'video';
+                          return !hasVideo;
+                        }).length} total)`}
+                        {isLoadingMore && ' • Loading more...'}
+                      </>
+                    ) : (
+                      <>
+                        Showing {Math.min(visibleFilteredArtworks.filter((item: any) => {
+                          if ('type' in item && item.type === 'ad') return false;
+                          const videoUrl = (item as any).videoUrl || '';
+                          const mediaType = (item as any).mediaType || '';
+                          const mediaUrls = (item as any).mediaUrls || [];
+                          const mediaTypes = (item as any).mediaTypes || [];
+                          const hasVideoUrl = !!videoUrl && videoUrl.length > 0 && isCloudflareVideo(videoUrl);
+                          const hasVideoMediaType = mediaType === 'video' && isCloudflareVideo(videoUrl);
+                          const hasVideoInMediaUrls = Array.isArray(mediaUrls) && mediaUrls.length > 0 && 
+                                                     Array.isArray(mediaTypes) && mediaTypes.includes('video') &&
+                                                     mediaUrls.some((url: string) => isCloudflareVideo(url));
+                          return hasVideoUrl || hasVideoMediaType || hasVideoInMediaUrls;
+                        }).length, maxRendered)} videos
+                        {isLoadingMore && ' • Loading more...'}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             
             {/* Artworks Grid - Padding from filter bar above */}
