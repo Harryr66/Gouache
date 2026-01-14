@@ -803,8 +803,8 @@ function DiscoverPageContent() {
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
-  // Pagination state - DISABLED (broken, loading all content upfront instead)
-  const [hasMore, setHasMore] = useState(false); // Disabled pagination
+  // Pagination state
+  const [hasMore, setHasMore] = useState(true); // Enable pagination - load more content as user scrolls
   const [lastDocument, setLastDocument] = useState<any>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
@@ -1852,19 +1852,47 @@ function DiscoverPageContent() {
         setTimeout(() => reject(new Error('Load more timeout after 15 seconds')), 15000);
       });
       
-      const loadPromise = PortfolioService.getDiscoverPortfolioItems({
-        showInPortfolio: true,
-        deleted: false,
-        hideAI: discoverSettings.hideAiAssistedArt,
-        limit: LOAD_MORE_LIMIT,
-        startAfter: lastDocument,
-      });
+      // Load from BOTH portfolioItems AND artworks collections
+      // The 513 images are in artworks collection, so we need to query both
+      const [portfolioResult, artworksResult] = await Promise.all([
+        PortfolioService.getDiscoverPortfolioItems({
+          showInPortfolio: true,
+          deleted: false,
+          hideAI: discoverSettings.hideAiAssistedArt,
+          limit: Math.floor(LOAD_MORE_LIMIT / 2),
+          startAfter: lastDocument,
+        }),
+        // Also query artworks collection with pagination
+        (async () => {
+          try {
+            const artworksQuery = query(
+              collection(db, 'artworks'),
+              orderBy('createdAt', 'desc'),
+              startAfter(lastDocument),
+              limit(Math.floor(LOAD_MORE_LIMIT / 2))
+            );
+            const snapshot = await getDocs(artworksQuery);
+            return {
+              items: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+              lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
+            };
+          } catch (error) {
+            console.error('Error loading more artworks:', error);
+            return { items: [], lastDoc: null };
+          }
+        })()
+      ]);
+      
+      // Combine results
+      const result = {
+        items: [...portfolioResult.items, ...artworksResult.items],
+        lastDoc: artworksResult.lastDoc || portfolioResult.lastDoc,
+      };
+      
+      const loadPromise = Promise.resolve(result);
       
       console.log('🔄 SCROLL LOAD: ⏱️ Waiting for result with 15s timeout...');
       console.log('🔄 SCROLL LOAD: 📋 Query params:', {
-        showInPortfolio: true,
-        deleted: false,
-        hideAI: discoverSettings.hideAiAssistedArt,
         limit: LOAD_MORE_LIMIT,
         lastDocumentType: typeof lastDocument,
         hasExistsMethod: typeof lastDocument?.exists === 'function',
@@ -1896,10 +1924,18 @@ function DiscoverPageContent() {
         return;
       }
 
-      // Batch fetch artist data for new items - use Promise.all for parallel fetching
-      const artistIds = new Set<string>(result.items.map(item => item.userId));
-      const artistDataMap = new Map<string, any>();
+      // Process items - handle both portfolioItems and artworks structures
+      const newArtworks: Artwork[] = [];
+      const artistIds = new Set<string>();
       
+      // Collect artist IDs from both structures
+      for (const item of result.items) {
+        const artistId = item.userId || item.artist?.id || item.artist?.userId || item.artistId;
+        if (artistId) artistIds.add(artistId);
+      }
+      
+      // Batch fetch artist data
+      const artistDataMap = new Map<string, any>();
       const artistPromises = Array.from(artistIds).map(async (artistId) => {
         try {
           const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
@@ -1910,20 +1946,20 @@ function DiscoverPageContent() {
           console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
         }
       });
-      
       await Promise.all(artistPromises);
 
-      // Process new portfolio items
-      const newArtworks: Artwork[] = [];
+      // Process items - handle both portfolioItems (has userId) and artworks (has artist.id)
       for (const item of result.items) {
-        // Use artist data if available, otherwise use fallback (don't skip items)
-        let artistData = artistDataMap.get(item.userId);
-        if (!artistData) {
-          // Use fallback artist data instead of skipping the item
+        // Get artist ID from either structure
+        const artistId = item.userId || item.artist?.id || item.artist?.userId || item.artistId;
+        let artistData = artistId ? artistDataMap.get(artistId) : null;
+        
+        if (!artistData && artistId) {
+          // Use fallback artist data
           artistData = {
-            displayName: item.artistName || item.userId || 'Artist',
-            username: item.artistHandle || item.userId || 'artist',
-            avatarUrl: item.artistAvatarUrl || null,
+            displayName: item.artistName || item.artist?.name || item.artist?.displayName || 'Artist',
+            username: item.artistHandle || item.artist?.handle || item.artist?.username || 'artist',
+            avatarUrl: item.artistAvatarUrl || item.artist?.avatarUrl || null,
             isVerified: false,
             followerCount: 0,
             followingCount: 0,
@@ -1931,21 +1967,27 @@ function DiscoverPageContent() {
           };
         }
         
+        // Get media URLs - handle both structures
         let videoUrl = item.videoUrl || null;
         if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
           videoUrl = item.mediaUrls[0];
         }
         const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
-        // For videos, prioritize explicit poster images, but ensure we have something to display
         const imageUrl = item.imageUrl || 
                         item.supportingImages?.[0] || 
                         item.images?.[0] || 
                         (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || 
                         '';
         
-        // For videos, if no explicit poster image, we'll use the video element to extract a frame
-        // But we still need at least a videoUrl to continue
+        // Filter: Only Cloudflare images/videos
+        if (videoUrl && !isCloudflareVideo(videoUrl)) continue;
+        if (!videoUrl && imageUrl && !isCloudflareImage(imageUrl)) continue;
         if (!imageUrl && !videoUrl) continue;
+        
+        // Apply AI filter
+        if (discoverSettings.hideAiAssistedArt && (item.aiAssistance === 'assisted' || item.aiAssistance === 'generated' || item.isAI)) {
+          continue;
+        }
 
         const artwork: Artwork = {
           id: item.id,
@@ -1955,16 +1997,18 @@ function DiscoverPageContent() {
           imageAiHint: item.description || '',
           ...(videoUrl && { videoUrl: videoUrl as any }),
           ...(mediaType && { mediaType: mediaType as any }),
+          ...(item.mediaUrls && { mediaUrls: item.mediaUrls }),
+          ...(item.mediaTypes && { mediaTypes: item.mediaTypes }),
           artist: {
-            id: item.userId,
-            name: artistData.displayName || artistData.name || artistData.username || 'Unknown Artist',
-            handle: artistData.username || artistData.handle || '',
-            avatarUrl: artistData.avatarUrl || null,
-            isVerified: artistData.isVerified || false,
+            id: artistId || '',
+            name: artistData?.displayName || artistData?.name || artistData?.username || 'Unknown Artist',
+            handle: artistData?.username || artistData?.handle || '',
+            avatarUrl: artistData?.avatarUrl || null,
+            isVerified: artistData?.isVerified || false,
             isProfessional: true,
-            followerCount: artistData.followerCount || 0,
-            followingCount: artistData.followingCount || 0,
-            createdAt: artistData.createdAt?.toDate?.() || (artistData.createdAt instanceof Date ? artistData.createdAt : new Date()),
+            followerCount: artistData?.followerCount || 0,
+            followingCount: artistData?.followingCount || 0,
+            createdAt: artistData?.createdAt?.toDate?.() || (artistData?.createdAt instanceof Date ? artistData.createdAt : new Date()),
           },
           likes: item.likes || 0,
           commentsCount: item.commentsCount || 0,
