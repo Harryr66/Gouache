@@ -1181,11 +1181,10 @@ function DiscoverPageContent() {
               setHasMore(false);
             }
             
-            // If empty, immediately use fallback
-            if (portfolioItems.length === 0) {
-              log('📋 Discover: portfolioItems collection is empty, using fallback method');
-              useFallback = true;
-            }
+            // CHANGED: Always use fallback to include artworks collection
+            // This ensures we get content from BOTH portfolioItems AND artworks collections
+            log('📋 Discover: Always querying artworks collection to include legacy content');
+            useFallback = true;
           } catch (portfolioError: any) {
             // If portfolioItems query fails (e.g., missing index), fall back to old method
             log('⚠️ Discover: Error querying portfolioItems, falling back to userProfiles method:', portfolioError?.message || portfolioError);
