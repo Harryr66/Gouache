@@ -1816,7 +1816,24 @@ function DiscoverPageContent() {
         startAfter: lastDocument,
       });
       
+      console.log('🔄 SCROLL LOAD: ⏱️ Waiting for result with 15s timeout...');
+      console.log('🔄 SCROLL LOAD: 📋 Query params:', {
+        showInPortfolio: true,
+        deleted: false,
+        hideAI: discoverSettings.hideAiAssistedArt,
+        limit: LOAD_MORE_LIMIT,
+        lastDocumentType: typeof lastDocument,
+        hasExistsMethod: typeof lastDocument?.exists === 'function',
+        lastDocumentId: lastDocument?.id
+      });
+      
       const result = await Promise.race([loadPromise, timeoutPromise]);
+      
+      console.log('🔄 SCROLL LOAD: ✅ Got result:', {
+        itemsCount: result.items.length,
+        hasLastDoc: !!result.lastDoc,
+        lastDocId: result.lastDoc?.id
+      });
       
       // If no items returned, check if there's a lastDoc - if so, there might be more content
       // (items might be filtered out, but cursor indicates more content exists)

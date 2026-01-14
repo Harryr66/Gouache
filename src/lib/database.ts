@@ -704,19 +704,30 @@ export class PortfolioService {
       // Handle both DocumentSnapshot and plain object cursors
       if (options?.startAfter) {
         try {
+          const cursorType = typeof options.startAfter.exists === 'function' ? 'DocumentSnapshot' : 'PlainObject';
+          console.log('🔍 PortfolioService: Processing startAfter cursor:', {
+            cursorType,
+            hasId: !!options.startAfter.id,
+            hasCreatedAt: !!options.startAfter.createdAt,
+            id: options.startAfter.id
+          });
+          
           // Check if it's a DocumentSnapshot (has exists method)
           if (typeof options.startAfter.exists === 'function') {
+            console.log('✅ PortfolioService: Using DocumentSnapshot cursor');
             q = query(q, startAfter(options.startAfter));
           } else if (options.startAfter.createdAt) {
             // Plain object with createdAt field - use field value for cursor
             const createdAtValue = options.startAfter.createdAt?.toDate?.() || 
                                    (options.startAfter.createdAt instanceof Date ? options.startAfter.createdAt : new Date());
+            console.log('✅ PortfolioService: Using plain object cursor with createdAt:', createdAtValue);
             q = query(q, startAfter(createdAtValue));
           } else {
-            console.warn('⚠️ PortfolioService: Invalid startAfter cursor, ignoring pagination');
+            console.warn('⚠️ PortfolioService: Invalid startAfter cursor (no createdAt field), ignoring pagination');
           }
         } catch (cursorError) {
-          console.warn('⚠️ PortfolioService: Error processing startAfter cursor, ignoring pagination:', cursorError);
+          console.error('❌ PortfolioService: Error processing startAfter cursor:', cursorError);
+          console.warn('⚠️ PortfolioService: Ignoring pagination due to cursor error');
         }
       }
       
@@ -728,7 +739,18 @@ export class PortfolioService {
         q = query(q, limit(50));
       }
 
+      console.log('🔍 PortfolioService: Executing query...');
+      const queryStartTime = Date.now();
       const snapshot = await getDocs(q);
+      const queryDuration = Date.now() - queryStartTime;
+      
+      console.log('✅ PortfolioService: Query completed:', {
+        duration: `${queryDuration}ms`,
+        docsReturned: snapshot.docs.length,
+        requestedLimit: options?.limit || 50,
+        hasStartAfter: !!options?.startAfter
+      });
+      
       let items = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -740,16 +762,27 @@ export class PortfolioService {
       });
 
       // Client-side filter for AI content if needed (can't query on nested fields efficiently)
+      const itemsBeforeFilter = items.length;
       if (options?.hideAI) {
         items = items.filter(item => 
           item.aiAssistance !== 'assisted' && 
           item.aiAssistance !== 'generated' && 
           !item.isAI
         );
+        const filteredCount = itemsBeforeFilter - items.length;
+        if (filteredCount > 0) {
+          console.log(`🔍 PortfolioService: Filtered out ${filteredCount} AI items (${itemsBeforeFilter} -> ${items.length})`);
+        }
       }
 
       // Get last document for pagination
       const lastDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+
+      console.log('🔍 PortfolioService: Returning result:', {
+        itemsCount: items.length,
+        hasLastDoc: !!lastDoc,
+        lastDocId: lastDoc?.id
+      });
 
       return { items, lastDoc };
     } catch (error: any) {
