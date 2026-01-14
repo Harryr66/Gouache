@@ -1841,9 +1841,9 @@ function DiscoverPageContent() {
 
     try {
       const { PortfolioService } = await import('@/lib/database');
-      // Request more items than needed because client-side filtering removes many items
-      // But keep it reasonable to avoid excessive loading times
-      const LOAD_MORE_LIMIT = Math.min(columnCount * 30, 100); // Request 30 rows worth, max 100 items
+      // CRITICAL: Reduce load limit to prevent crashes with 200+ images
+      // Load smaller batches to prevent memory issues and React crashes
+      const LOAD_MORE_LIMIT = Math.min(columnCount * 10, 50); // Request 10 rows worth, max 50 items (reduced from 100)
       
       // NOTE: lastDocument should already be a DocumentSnapshot from previous loadMoreArtworks calls
       // Only the initial load from API returns a plain object, but we use direct Firestore for pagination
@@ -2034,6 +2034,8 @@ function DiscoverPageContent() {
       }
 
       // Append new artworks to existing ones, deduplicating by ID to prevent recycling
+      // CRITICAL: Limit total artworks to prevent crashes with 200+ images
+      const MAX_TOTAL_ARTWORKS = 200; // Maximum total items in state to prevent memory issues
       setArtworks(prev => {
         const existingIds = new Set(prev.map(a => a.id));
         const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
@@ -2042,7 +2044,12 @@ function DiscoverPageContent() {
         const uniqueCombined = Array.from(
           new Map(combined.map(a => [a.id, a])).values()
         );
-        return uniqueCombined;
+        // CRITICAL: Cap at MAX_TOTAL_ARTWORKS to prevent memory issues and crashes
+        // Keep most recent items (slice from end)
+        const capped = uniqueCombined.length > MAX_TOTAL_ARTWORKS
+          ? uniqueCombined.slice(-MAX_TOTAL_ARTWORKS)
+          : uniqueCombined;
+        return capped;
       });
       
       // Update pagination state
@@ -2622,6 +2629,11 @@ function DiscoverPageContent() {
   const visibleFilteredArtworks = useMemo(() => {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
     
+    // CRITICAL: Limit total items to prevent crashes with 200+ images
+    // Maximum 150 items rendered at once to prevent memory issues and React crashes
+    const MAX_RENDERED_ITEMS = 150;
+    const safeTotalItems = Math.min(totalItems, MAX_RENDERED_ITEMS);
+    
     // Check how many placeholders are in the array
     const placeholderCount = Array.isArray(filteredAndSortedArtworks) 
       ? filteredAndSortedArtworks.filter((a: any) => {
@@ -2632,20 +2644,22 @@ function DiscoverPageContent() {
     
     log('🔍 visibleFilteredArtworks calculation:', {
       totalItems,
+      safeTotalItems,
       visibleCount,
       placeholderCount,
       filteredAndSortedArtworksLength: filteredAndSortedArtworks?.length,
       firstFewIds: filteredAndSortedArtworks?.slice(0, 5).map((a: any) => a.id)
     });
     
-    if (totalItems === 0) {
+    if (safeTotalItems === 0) {
       log('⚠️ visibleFilteredArtworks: No items to display');
       return [];
     }
     
     // Show items up to visibleCount, but don't require complete rows
     // This ensures items display even if there are fewer than itemsPerRow
-    const finalCount = Math.min(visibleCount, totalItems);
+    // CRITICAL: Cap at MAX_RENDERED_ITEMS to prevent crashes
+    const finalCount = Math.min(visibleCount, safeTotalItems, MAX_RENDERED_ITEMS);
     
     const artworksSlice = Array.isArray(filteredAndSortedArtworks)
       ? filteredAndSortedArtworks.slice(0, finalCount)
