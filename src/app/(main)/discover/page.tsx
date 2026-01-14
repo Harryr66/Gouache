@@ -1297,7 +1297,7 @@ function DiscoverPageContent() {
           ...(item.mediaUrls && { mediaUrls: item.mediaUrls }),
           ...(item.mediaTypes && { mediaTypes: item.mediaTypes }),
           artist: {
-            id: artistId || '',
+            id: item.userId || '',
             name: artistData?.displayName || artistData?.name || artistData?.username || 'Unknown Artist',
             handle: artistData?.username || artistData?.handle || '',
             avatarUrl: artistData?.avatarUrl || null,
