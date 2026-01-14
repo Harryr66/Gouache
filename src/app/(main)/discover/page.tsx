@@ -13,7 +13,7 @@ import { useLikes } from '@/providers/likes-provider';
 import { fetchActiveAds, mixAdsIntoContent } from '@/lib/ad-fetcher';
 import { AdTile } from '@/components/ad-tile';
 import { useAuth } from '@/providers/auth-provider';
-import { collection, query, getDocs, orderBy, limit, where, doc, getDoc } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, limit, where, doc, getDoc, startAfter } from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
