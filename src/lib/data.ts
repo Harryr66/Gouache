@@ -1,11 +1,13 @@
 import { Artist, Artwork, Post, Discussion, StoryItem } from './types';
 
+// ⚠️ DEMO DATA ONLY - NEVER USE IN PRODUCTION
+// NO EXTERNAL IMAGES ALLOWED
 export const artists: Artist[] = [
   {
     id: 'elena',
     name: 'Elena Vance',
     handle: 'elena_vance',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+    avatarUrl: null, // NO EXTERNAL IMAGES
     followerCount: 1250,
     followingCount: 89,
     createdAt: new Date('2023-01-15'),
@@ -22,7 +24,7 @@ export const artists: Artist[] = [
     id: 'marcus',
     name: 'Marcus Chen',
     handle: 'marcus_chen',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    avatarUrl: null, // NO EXTERNAL IMAGES
     followerCount: 2100,
     followingCount: 156,
     createdAt: new Date('2022-11-20'),
@@ -39,7 +41,7 @@ export const artists: Artist[] = [
     id: 'sophia',
     name: 'Sophia Rodriguez',
     handle: 'sophia_art',
-    avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    avatarUrl: null, // NO EXTERNAL IMAGES
     followerCount: 890,
     followingCount: 234,
     createdAt: new Date('2023-03-10'),
@@ -59,7 +61,7 @@ export const artworkData: Artwork[] = [
     artist: artists[0],
     title: 'Abstract Harmony',
     description: 'A vibrant abstract piece exploring the relationship between color and emotion.',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=400&fit=crop',
+    imageUrl: '', // NO EXTERNAL IMAGES
     imageAiHint: 'Abstract painting with vibrant colors',
     discussionId: 'discussion-1',
     tags: ['abstract', 'color', 'emotion'],
@@ -81,7 +83,7 @@ export const artworkData: Artwork[] = [
     artist: artists[1],
     title: 'Digital Dreams',
     description: 'A futuristic cityscape rendered in digital art, exploring themes of urban isolation.',
-    imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=400&fit=crop',
+    imageUrl: '', // NO EXTERNAL IMAGES
     imageAiHint: 'Digital artwork featuring futuristic cityscape',
     discussionId: 'discussion-2',
     tags: ['digital', 'cityscape', 'futuristic'],
@@ -103,7 +105,7 @@ export const artworkData: Artwork[] = [
     artist: artists[2],
     title: 'Ceramic Contemplation',
     description: 'A hand-crafted ceramic sculpture representing the beauty of human contemplation.',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=400&fit=crop',
+    imageUrl: '', // NO EXTERNAL IMAGES
     imageAiHint: 'Ceramic sculpture of a woman in contemplation',
     discussionId: 'discussion-3',
     tags: ['ceramic', 'sculpture', 'contemplation'],
@@ -127,7 +129,7 @@ export const postData: Post[] = [
     id: '1',
     artworkId: '1',
     artist: artists[0],
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=400&fit=crop',
+    imageUrl: '', // NO EXTERNAL IMAGES
     imageAiHint: 'Abstract painting with vibrant colors',
     caption: 'Just finished this piece! The colors really came together beautifully. What do you think? #abstract #art #painting',
     likes: 42,
@@ -140,7 +142,7 @@ export const postData: Post[] = [
     id: '2',
     artworkId: '2',
     artist: artists[1],
-    imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=400&fit=crop',
+    imageUrl: '', // NO EXTERNAL IMAGES
     imageAiHint: 'Digital artwork featuring futuristic cityscape',
     caption: 'Working on a new digital series. This is the first piece - exploring themes of urban isolation and connection. #digitalart #cityscape #futuristic',
     likes: 67,
@@ -153,7 +155,7 @@ export const postData: Post[] = [
     id: '3',
     artworkId: '3',
     artist: artists[2],
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=400&fit=crop',
+    imageUrl: '', // NO EXTERNAL IMAGES
     imageAiHint: 'Ceramic sculpture of a woman in contemplation',
     caption: 'My latest ceramic piece is finally fired and glazed! The process took weeks but I\'m so happy with how it turned out. #ceramics #sculpture #art',
     likes: 34,

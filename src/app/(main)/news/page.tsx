@@ -21,7 +21,7 @@ import { useAuth } from '@/providers/auth-provider';
 const ARTICLE_COLLECTION = 'newsArticles';
 
 const DEFAULT_ARTICLE_IMAGE =
-  'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80';
+  null; // NO EXTERNAL IMAGES
 
 const createPlaceholderArticle = (theme: string | undefined, id: string): NewsArticle => ({
   id,

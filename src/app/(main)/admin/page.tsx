@@ -52,7 +52,7 @@ const ART_MEDIUM_CATEGORIES = [
 ];
 
 const DEFAULT_ARTICLE_IMAGE =
-  'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80';
+  null; // NO EXTERNAL IMAGES
 export default function AdminPanel() {
   const [artistRequests, setArtistRequests] = useState<ArtistRequest[]>([]);
   const [advertisingApplications, setAdvertisingApplications] = useState<AdvertisingApplication[]>([]);

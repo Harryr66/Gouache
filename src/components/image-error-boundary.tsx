@@ -43,7 +43,7 @@ export class ImageErrorBoundary extends Component<Props, State> {
       // Render fallback UI - use taped banana placeholder if no custom fallback provided
       return this.props.fallback || (
         <img
-          src="https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200"
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23f0f0f0' width='400' height='300'/%3E%3C/svg%3E"
           alt="Loading..."
           className="absolute inset-0 w-full h-full object-cover z-10"
         />

@@ -38,11 +38,10 @@ import { cn } from '@/lib/utils';
 import { DiscoverErrorBoundary } from '@/components/discover-error-boundary';
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
-  // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
-  const placeholderImage = 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800';
-  // Landscape placeholder - use same blue placeholder, fallback to taped banana
-  const landscapeImage = 'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=1200';
-  const landscapeFallback = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200'; // Taped banana placeholder
+  // NO EXTERNAL IMAGES - Return empty array
+  // This function should NOT be used in production
+  console.error('⛔ generatePlaceholderArtworks() should NEVER be called - no external images allowed');
+  return [];
   
   const artistNames = [
     'Alexandra Chen', 'Marcus Rivera', 'Sophie Laurent', 'David Kim', 'Emma Thompson',

@@ -194,12 +194,12 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
         undefined
       )
     : (
-        // For images, use standard imageUrl
+        // For images, use standard imageUrl - NO EXTERNAL PLACEHOLDERS
         artwork.imageUrl || 
         (artwork as any).supportingImages?.[0] || 
         (artwork as any).images?.[0] || 
         (artwork as any).mediaUrls?.[0] || 
-        'https://images.pexels.com/photos/1546249/pexels-photo-1546249.jpeg?auto=compress&cs=tinysrgb&w=800'
+        undefined
       );
   
   // OPTIMIZED: Use optimized image hook for Pinterest/Instagram-style performance
@@ -1122,18 +1122,9 @@ const generateArtistContent = (artist: Artist) => ({
                   });
                 }
                 
-                // If no image URL at all, show taped banana placeholder
+                // If no image URL at all, return null - NO EXTERNAL IMAGES
                 if (!imageSrc || imageSrc === '') {
-                  const tapedBananaUrl = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200';
-                  return (
-                    <Image
-                      src={tapedBananaUrl}
-                      alt={artwork.title || 'Loading...'}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  );
+                  return null;
                 }
                 
                 // Debug: Log the actual image source being used
@@ -1249,50 +1240,23 @@ const generateArtistContent = (artist: Artist) => ({
                   // This prevents React error #300 by catching invalid URLs early
                   const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)(?:\/([^/]+))?/);
                   if (!cloudflareMatch) {
-                    // Invalid URL format - show alternative content tile
-                    console.warn('⚠️ Invalid Cloudflare Images URL format, showing taped banana placeholder:', imageSrc);
-                    const tapedBananaUrl = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200';
-                    return (
-                      <Image
-                        src={tapedBananaUrl}
-                        alt={artwork.title || 'Loading...'}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    );
+                    // Invalid URL format - return null, NO EXTERNAL IMAGES
+                    console.warn('⚠️ Invalid Cloudflare Images URL format, hiding tile:', imageSrc);
+                    return null;
                   }
                   
                   const [, accountHash, imageId, existingVariant] = cloudflareMatch;
                   
                   // Validate components exist and are not empty
                   if (!accountHash || !imageId || accountHash.length === 0 || imageId.length === 0) {
-                    console.warn('⚠️ Invalid Cloudflare Images URL components, showing taped banana placeholder:', { accountHash, imageId, url: imageSrc });
-                    const tapedBananaUrl = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200';
-                    return (
-                      <Image
-                        src={tapedBananaUrl}
-                        alt={artwork.title || 'Loading...'}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    );
+                    console.warn('⚠️ Invalid Cloudflare Images URL components, hiding tile:', { accountHash, imageId, url: imageSrc });
+                    return null;
                   }
                   
                   // Validate format (alphanumeric)
                   if (!/^[a-zA-Z0-9_-]+$/.test(accountHash) || !/^[a-zA-Z0-9_-]+$/.test(imageId)) {
-                    console.warn('⚠️ Invalid Cloudflare Images URL format (non-alphanumeric), showing taped banana placeholder:', { accountHash, imageId, url: imageSrc });
-                    const tapedBananaUrl = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200';
-                    return (
-                      <Image
-                        src={tapedBananaUrl}
-                        alt={artwork.title || 'Loading...'}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    );
+                    console.warn('⚠️ Invalid Cloudflare Images URL format (non-alphanumeric), hiding tile:', { accountHash, imageId, url: imageSrc });
+                    return null;
                   }
                   
                   // CRITICAL: Always try original URL first (it might already work!)
@@ -1387,31 +1351,14 @@ const generateArtistContent = (artist: Artist) => ({
                   }
                   
                   // CRITICAL: Only skip rendering if URL has definitively failed (after all retries)
-                  // Replace with taped banana placeholder instead of alternative content tile
+                  // Return null - NO EXTERNAL IMAGES
                   if (failedImageUrls.has(cloudflareUrl)) {
-                    const tapedBananaUrl = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200';
-                    return (
-                      <Image
-                        src={tapedBananaUrl}
-                        alt={artwork.title || 'Loading...'}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    );
+                    return null;
                   }
                   
                   return (
                     <ImageErrorBoundary
-                      fallback={
-                        <Image
-                          src="https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                          alt={artwork.title || 'Loading...'}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                      }
+                      fallback={null}
                       onError={(error, errorInfo) => {
                         console.error('ImageErrorBoundary caught rendering error:', error, errorInfo);
                         // Mark URL as failed to prevent future render attempts
@@ -1846,16 +1793,7 @@ const generateArtistContent = (artist: Artist) => ({
                   />
                 );
               })()}
-              {/* Error state - show taped banana placeholder */}
-              {imageError && (
-                <Image
-                  src="https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                  alt={artwork.title || 'Loading...'}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-              )}
+              {/* Error state - return null, NO EXTERNAL IMAGES */}
             </>
           )}
         </div>
