@@ -44,8 +44,13 @@ export async function GET(request: NextRequest) {
     // Combine and sort by createdAt (newest first)
     const combinedItems = [...portfolioResult.items, ...discoverResult.items];
     combinedItems.sort((a, b) => {
-      const aTime = a.createdAt?.getTime() || 0;
-      const bTime = b.createdAt?.getTime() || 0;
+      // Handle both Date and Firestore Timestamp types
+      const aTime = a.createdAt instanceof Date 
+        ? a.createdAt.getTime() 
+        : (a.createdAt?.toDate?.() || new Date(0)).getTime();
+      const bTime = b.createdAt instanceof Date 
+        ? b.createdAt.getTime() 
+        : (b.createdAt?.toDate?.() || new Date(0)).getTime();
       return bTime - aTime;
     });
     
