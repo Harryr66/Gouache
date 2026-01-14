@@ -19,11 +19,11 @@ export async function GET() {
     console.log('Checking portfolioItems for videos...');
     
     // Videos with showInPortfolio=false (discover-only videos)
+    // Query without orderBy to avoid index requirement
     const discoverVideosQuery = query(
       collection(db, 'portfolioItems'),
       where('showInPortfolio', '==', false),
-      orderBy('createdAt', 'desc'),
-      limit(10)
+      limit(20)
     );
     const discoverVideosSnapshot = await getDocs(discoverVideosQuery);
     
@@ -84,11 +84,12 @@ export async function GET() {
 
     // Check artworks collection for videos
     console.log('Checking artworks for videos...');
-    const artworksQuery = query(
-      collection(db, 'artworks'),
-      limit(100)
-    );
-    const artworksSnapshot = await getDocs(artworksQuery);
+    try {
+      const artworksQuery = query(
+        collection(db, 'artworks'),
+        limit(100)
+      );
+      const artworksSnapshot = await getDocs(artworksQuery);
     
     let artworksWithVideo = 0;
     const artworkVideoSamples: any[] = [];
@@ -112,13 +113,24 @@ export async function GET() {
       }
     });
 
-    results.artworks = {
-      totalScanned: artworksSnapshot.size,
-      withVideoFields: {
-        count: artworksWithVideo,
-        samples: artworkVideoSamples,
-      },
-    };
+      results.artworks = {
+        totalScanned: artworksSnapshot.size,
+        withVideoFields: {
+          count: artworksWithVideo,
+          samples: artworkVideoSamples,
+        },
+      };
+    } catch (artworksError: any) {
+      console.error('Error querying artworks:', artworksError);
+      results.artworks = {
+        error: artworksError.message,
+        totalScanned: 0,
+        withVideoFields: {
+          count: 0,
+          samples: [],
+        },
+      };
+    }
 
     results.summary = {
       portfolioItemsWithVideos: portfolioWithVideo,
