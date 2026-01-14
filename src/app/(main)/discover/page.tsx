@@ -783,8 +783,8 @@ function DiscoverPageContent() {
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
-  // Pagination state
-  const [hasMore, setHasMore] = useState(true);
+  // Pagination state - DISABLED (broken, loading all content upfront instead)
+  const [hasMore, setHasMore] = useState(false); // Disabled pagination
   const [lastDocument, setLastDocument] = useState<any>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
@@ -1408,10 +1408,9 @@ function DiscoverPageContent() {
         
         // ALWAYS fetch content from artworks collection (runs regardless of portfolioItems)
         // This includes the 100+ items in the artworks collection
-        // MOBILE OPTIMIZATION: Use reasonable limit on mobile to prevent memory issues
-        // Note: After filtering (deleted, non-Cloudflare, etc), actual count will be lower
+        // Load ALL content upfront - pagination is broken, so just load everything
         const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
-        const artworksLimit = isMobileDevice ? 50 : 120; // Mobile: 50 items, Desktop: 120 items
+        const artworksLimit = 200; // Load all content upfront (no pagination needed)
         
         log(`🔍 Discover: Fetching content from artworks collection (limit: ${artworksLimit}, mobile: ${isMobileDevice})...`);
         try {
