@@ -67,6 +67,10 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
   // Ensure delete button only renders on client to avoid hydration errors
   useEffect(() => {
     setMounted(true);
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
   const { registerVideo, requestPlay, isPlaying, getConnectionSpeed, registerVisibleVideo, unregisterVisibleVideo, canAutoplay, handleVideoEnded } = useVideoControl();
   const [showArtistPreview, setShowArtistPreview] = useState(false);
@@ -91,6 +95,8 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
   const imageRef = useRef<HTMLImageElement | null>(null);
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  // CRITICAL: Track if component is mounted to prevent state updates after unmount (prevents React error #300)
+  const isMountedRef = useRef(true);
   
   // Detect mobile for responsive images
   useEffect(() => {
@@ -1423,7 +1429,8 @@ const generateArtistContent = (artist: Artist) => ({
                           }
                         }
                       }}
-                    />
+                      />
+                    </ImageErrorBoundary>
                   );
                 }
                 
