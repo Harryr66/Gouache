@@ -2265,14 +2265,19 @@ function DiscoverPageContent() {
     // NOTE: We don't filter by deleted - if truly deleted, item should be removed from DB entirely
     // The deleted flag is mislabeled in some cases, so we show all content
     
-    // FIRST: For image grid, ONLY include Cloudflare images (NO VIDEOS - this is an IMAGE mosaic)
-    // This ensures we don't show old Firebase Storage images or other sources
+    // FIRST: Filter to ONLY Cloudflare content (images AND videos)
+    // Videos will be shown in video feed, images in grid view
     filtered = filtered.filter((artwork: any) => {
-      // EXCLUDE videos entirely - this is an IMAGE mosaic, not a video mosaic
       const hasVideo = artwork.videoUrl || artwork.mediaType === 'video';
-      if (hasVideo) return false; // Skip all videos - image mosaic is for images only
       
-      // For images, they MUST be from Cloudflare
+      // For videos, they MUST be from Cloudflare Stream
+      if (hasVideo) {
+        const videoUrl = artwork.videoUrl || artwork.mediaUrls?.[0] || '';
+        if (!isCloudflareVideo(videoUrl)) return false; // Skip non-Cloudflare videos
+        return true; // Keep Cloudflare videos
+      }
+      
+      // For images, they MUST be from Cloudflare Images
       const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
       if (!imageUrl) return false; // Skip items with no image
       return isCloudflareImage(imageUrl); // Only Cloudflare images
@@ -2981,6 +2986,39 @@ function DiscoverPageContent() {
                     </Badge>
                   )}
                         </div>
+              )}
+              
+              {/* Image/Video Count Indicator */}
+              {!showLoadingScreen && (
+                <div className="text-sm text-muted-foreground mt-2">
+                  {artworkView === 'grid' ? (
+                    <>
+                      Showing {filteredAndSortedArtworks.filter((item: any) => {
+                        if ('type' in item && item.type === 'ad') return false;
+                        const hasVideo = (item as any).videoUrl || (item as any).mediaType === 'video';
+                        return !hasVideo;
+                      }).length} images
+                      {isLoadingMore && ' • Loading more...'}
+                    </>
+                  ) : (
+                    <>
+                      Showing {visibleFilteredArtworks.filter((item: any) => {
+                        if ('type' in item && item.type === 'ad') return false;
+                        const videoUrl = (item as any).videoUrl || '';
+                        const mediaType = (item as any).mediaType || '';
+                        const mediaUrls = (item as any).mediaUrls || [];
+                        const mediaTypes = (item as any).mediaTypes || [];
+                        const hasVideoUrl = !!videoUrl && videoUrl.length > 0 && isCloudflareVideo(videoUrl);
+                        const hasVideoMediaType = mediaType === 'video' && isCloudflareVideo(videoUrl);
+                        const hasVideoInMediaUrls = Array.isArray(mediaUrls) && mediaUrls.length > 0 && 
+                                                   Array.isArray(mediaTypes) && mediaTypes.includes('video') &&
+                                                   mediaUrls.some((url: string) => isCloudflareVideo(url));
+                        return hasVideoUrl || hasVideoMediaType || hasVideoInMediaUrls;
+                      }).length} videos
+                      {isLoadingMore && ' • Loading more...'}
+                    </>
+                  )}
+                </div>
               )}
             </div>
             
