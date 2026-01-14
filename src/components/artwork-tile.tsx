@@ -41,7 +41,8 @@ import {
   Heart as HeartIcon,
   X,
   Flag,
-  Trash2
+  Trash2,
+  Palette
 } from 'lucide-react';
 
 interface ArtworkTileProps {
@@ -1119,11 +1120,30 @@ const generateArtistContent = (artist: Artist) => ({
                   });
                 }
                 
-                // If no image URL at all, show placeholder
+                // If no image URL at all, show alternative content tile
                 if (!imageSrc || imageSrc === '') {
                   return (
-                    <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
-                      <div className="text-muted-foreground text-xs text-center px-2">No image</div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
+                      <div className="text-center space-y-2">
+                        <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Palette className="w-6 h-6 text-primary/60" />
+                        </div>
+                        {artwork.title && (
+                          <h3 className="text-sm font-semibold text-foreground line-clamp-2">
+                            {artwork.title}
+                          </h3>
+                        )}
+                        {artwork.artist?.name && (
+                          <p className="text-xs text-muted-foreground">
+                            by {artwork.artist.name}
+                          </p>
+                        )}
+                        {artwork.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                            {artwork.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   );
                 }
@@ -1241,11 +1261,25 @@ const generateArtistContent = (artist: Artist) => ({
                   // This prevents React error #300 by catching invalid URLs early
                   const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)(?:\/([^/]+))?/);
                   if (!cloudflareMatch) {
-                    // Invalid URL format - show placeholder immediately without rendering image
-                    console.warn('⚠️ Invalid Cloudflare Images URL format, showing placeholder:', imageSrc);
+                    // Invalid URL format - show alternative content tile
+                    console.warn('⚠️ Invalid Cloudflare Images URL format, showing alternative tile:', imageSrc);
                     return (
-                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
-                        <div className="text-muted-foreground text-xs text-center px-2">Invalid image URL</div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
+                        <div className="text-center space-y-2">
+                          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Palette className="w-6 h-6 text-primary/60" />
+                          </div>
+                          {artwork.title && (
+                            <h3 className="text-sm font-semibold text-foreground line-clamp-2">
+                              {artwork.title}
+                            </h3>
+                          )}
+                          {artwork.artist?.name && (
+                            <p className="text-xs text-muted-foreground">
+                              by {artwork.artist.name}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     );
                   }
@@ -1254,20 +1288,48 @@ const generateArtistContent = (artist: Artist) => ({
                   
                   // Validate components exist and are not empty
                   if (!accountHash || !imageId || accountHash.length === 0 || imageId.length === 0) {
-                    console.warn('⚠️ Invalid Cloudflare Images URL components, showing placeholder:', { accountHash, imageId, url: imageSrc });
+                    console.warn('⚠️ Invalid Cloudflare Images URL components, showing alternative tile:', { accountHash, imageId, url: imageSrc });
                     return (
-                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
-                        <div className="text-muted-foreground text-xs text-center px-2">Invalid image URL</div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
+                        <div className="text-center space-y-2">
+                          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Palette className="w-6 h-6 text-primary/60" />
+                          </div>
+                          {artwork.title && (
+                            <h3 className="text-sm font-semibold text-foreground line-clamp-2">
+                              {artwork.title}
+                            </h3>
+                          )}
+                          {artwork.artist?.name && (
+                            <p className="text-xs text-muted-foreground">
+                              by {artwork.artist.name}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     );
                   }
                   
                   // Validate format (alphanumeric)
                   if (!/^[a-zA-Z0-9_-]+$/.test(accountHash) || !/^[a-zA-Z0-9_-]+$/.test(imageId)) {
-                    console.warn('⚠️ Invalid Cloudflare Images URL format (non-alphanumeric), showing placeholder:', { accountHash, imageId, url: imageSrc });
+                    console.warn('⚠️ Invalid Cloudflare Images URL format (non-alphanumeric), showing alternative tile:', { accountHash, imageId, url: imageSrc });
                     return (
-                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
-                        <div className="text-muted-foreground text-xs text-center px-2">Invalid image URL</div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
+                        <div className="text-center space-y-2">
+                          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Palette className="w-6 h-6 text-primary/60" />
+                          </div>
+                          {artwork.title && (
+                            <h3 className="text-sm font-semibold text-foreground line-clamp-2">
+                              {artwork.title}
+                            </h3>
+                          )}
+                          {artwork.artist?.name && (
+                            <p className="text-xs text-muted-foreground">
+                              by {artwork.artist.name}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     );
                   }
@@ -1302,10 +1364,24 @@ const generateArtistContent = (artist: Artist) => ({
                   
                   // CRITICAL: Double-check URL is valid before rendering to prevent React error #300
                   if (!cloudflareUrl || !cloudflareUrl.startsWith('http') || cloudflareUrl.includes('undefined') || cloudflareUrl.includes('null')) {
-                    console.warn('⚠️ Invalid constructed Cloudflare URL, showing placeholder:', cloudflareUrl);
+                    console.warn('⚠️ Invalid constructed Cloudflare URL, showing alternative tile:', cloudflareUrl);
                     return (
-                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
-                        <div className="text-muted-foreground text-xs text-center px-2">Invalid image URL</div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
+                        <div className="text-center space-y-2">
+                          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Palette className="w-6 h-6 text-primary/60" />
+                          </div>
+                          {artwork.title && (
+                            <h3 className="text-sm font-semibold text-foreground line-clamp-2">
+                              {artwork.title}
+                            </h3>
+                          )}
+                          {artwork.artist?.name && (
+                            <p className="text-xs text-muted-foreground">
+                              by {artwork.artist.name}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     );
                   }
@@ -1350,13 +1426,31 @@ const generateArtistContent = (artist: Artist) => ({
                   }
                   
                   // CRITICAL: Only skip rendering if URL has definitively failed (after all retries)
-                  // Don't be too aggressive - allow images to attempt loading
-                  // This prevents React error #300 while still allowing valid images to load
+                  // Replace with alternative content tile instead of placeholder
                   if (failedImageUrls.has(cloudflareUrl)) {
-                    // Only show placeholder if URL is in failed state (after all retries exhausted)
+                    // Show alternative content tile with artwork information
                     return (
-                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
-                        <div className="text-muted-foreground text-xs text-center px-2">Image failed to load</div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
+                        <div className="text-center space-y-2">
+                          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Palette className="w-6 h-6 text-primary/60" />
+                          </div>
+                          {artwork.title && (
+                            <h3 className="text-sm font-semibold text-foreground line-clamp-2">
+                              {artwork.title}
+                            </h3>
+                          )}
+                          {artwork.artist?.name && (
+                            <p className="text-xs text-muted-foreground">
+                              by {artwork.artist.name}
+                            </p>
+                          )}
+                          {artwork.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                              {artwork.description}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     );
                   }
@@ -1364,8 +1458,27 @@ const generateArtistContent = (artist: Artist) => ({
                   return (
                     <ImageErrorBoundary
                       fallback={
-                        <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
-                          <div className="text-muted-foreground text-xs text-center px-2">Image failed to load</div>
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
+                          <div className="text-center space-y-2">
+                            <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Palette className="w-6 h-6 text-primary/60" />
+                            </div>
+                            {artwork.title && (
+                              <h3 className="text-sm font-semibold text-foreground line-clamp-2">
+                                {artwork.title}
+                              </h3>
+                            )}
+                            {artwork.artist?.name && (
+                              <p className="text-xs text-muted-foreground">
+                                by {artwork.artist.name}
+                              </p>
+                            )}
+                            {artwork.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                {artwork.description}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       }
                       onError={(error, errorInfo) => {
@@ -1424,18 +1537,29 @@ const generateArtistContent = (artist: Artist) => ({
                             // Mark URL as failed to prevent future render attempts
                             failedUrlsRef.current.add(cloudflareUrl);
                             
-                            // Log error for debugging with more details
+                            // Enhanced error logging with full URL details
                             const currentVariant = cloudflareUrl.match(/\/([^/]+)$/)?.[1] || 'unknown';
-                            console.warn('⚠️ Cloudflare image load error:', {
-                              url: cloudflareUrl,
+                            const accountHash = imageSrc.match(/imagedelivery\.net\/([^/]+)/)?.[1];
+                            const imageId = imageSrc.match(/imagedelivery\.net\/[^/]+\/([^/]+)/)?.[1];
+                            
+                            console.error('❌ Cloudflare image load FAILED:', {
                               artworkId: artwork.id,
                               title: artwork.title,
+                              originalUrl: imageSrc,
+                              attemptedUrl: cloudflareUrl,
                               currentVariant,
                               retryCount,
-                              originalUrl: imageSrc,
+                              accountHash,
+                              imageId,
                               hasVideo,
-                              accountHash: imageSrc.match(/imagedelivery\.net\/([^/]+)/)?.[1],
-                              imageId: imageSrc.match(/imagedelivery\.net\/[^/]+\/([^/]+)/)?.[1]
+                              error: e.type || 'load error',
+                              // Check if URL is accessible
+                              urlFormat: {
+                                hasAccountHash: !!accountHash,
+                                hasImageId: !!imageId,
+                                hasVariant: !!currentVariant && currentVariant !== 'unknown',
+                                variant: currentVariant
+                              }
                             });
                             
                             // Try alternative variants before marking as failed
