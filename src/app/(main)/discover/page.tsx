@@ -2143,33 +2143,8 @@ function DiscoverPageContent() {
       console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks (expected ${LOAD_MORE_LIMIT} for 10 rows, columnCount=${columnCount})`);
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
       
-      // SEAMLESS SCROLL: Wait for DOM to update, then scroll to first row of new content
-      // This creates a seamless experience where user sees the new content immediately
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          // Find the first new item element and scroll to it smoothly
-          const firstNewItemIndex = previousCount;
-          const firstNewItem = document.querySelector(`[data-artwork-index="${firstNewItemIndex}"]`);
-          
-          if (firstNewItem) {
-            const scrollTarget = firstNewItem.getBoundingClientRect().top + window.scrollY - 20; // 20px offset from top
-            window.scrollTo({
-              top: scrollTarget,
-              behavior: 'smooth'
-            });
-          } else {
-            // Fallback: scroll to where new content should be
-            const sentinel = document.querySelector('[data-load-more-sentinel]');
-            if (sentinel) {
-              const scrollTarget = sentinel.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.1;
-              window.scrollTo({
-                top: Math.max(0, scrollTarget),
-                behavior: 'smooth'
-              });
-            }
-          }
-        });
-      });
+      // REMOVED: Auto-scroll on pagination - let user control their scroll position
+      // Auto-scrolling was causing uncontrolled behavior on page load
     } catch (error: any) {
       console.error('🔄 SCROLL LOAD: ❌ Error loading more artworks:', error);
       
@@ -2213,24 +2188,9 @@ function DiscoverPageContent() {
     return () => clearTimeout(timeoutId);
   }, [isLoadingMore]);
 
-  // AUTO-LOAD MORE: If initial load doesn't fill viewport, immediately load more
-  useEffect(() => {
-    if (!artworksLoaded || isLoadingMore || !hasMore || artworks.length >= 42) return;
-    
-    // Desktop needs ~42 items to fill viewport + 5 more rows (6 cols × 7 rows)
-    // If we have less, automatically load more to enable continuous scroll
-    const MIN_ITEMS_FOR_DESKTOP = 42;
-    if (artworks.length < MIN_ITEMS_FOR_DESKTOP && hasMore && !isLoadingMore) {
-      log(`📥 Auto-loading more content: Only ${artworks.length} items, loading more to fill viewport`);
-      const timeoutId = setTimeout(() => {
-        if (hasMore && !isLoadingMore) {
-          loadMoreArtworks();
-        }
-      }, 300); // Small delay to allow initial render
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [artworksLoaded, artworks.length, hasMore, isLoadingMore, loadMoreArtworks, log]);
+  // REMOVED: AUTO-LOAD MORE - was causing uncontrolled loading on page load
+  // Let the user control when to load more content via scrolling
+  // The initial load should be sufficient, and pagination should only trigger on user scroll
 
   // OPTIMIZED: Prefetch when user scrolls 75% through content (load more at 75% scroll)
   useEffect(() => {
