@@ -1058,15 +1058,31 @@ function DiscoverPageContent() {
               portfolioItems = apiData.items;
               log(`✅ Discover: Found ${portfolioItems.length} items from cached API (instant response)`);
               
-              // Store last document for pagination - use last item from array for cursor
+              // Store last document for pagination - need to fetch actual DocumentSnapshot
+              // because API returns plain object but Firestore startAfter needs DocumentSnapshot
               if (portfolioItems.length > 0) {
                 const lastItem = portfolioItems[portfolioItems.length - 1];
-                console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Setting lastDocument from last item:', { 
+                console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Fetching lastDocument snapshot for pagination:', { 
                   portfolioItemsCount: portfolioItems.length, 
                   INITIAL_FETCH_LIMIT, 
                   lastItemId: lastItem.id
                 });
-                setLastDocument(lastItem);
+                
+                // Fetch the actual document snapshot for proper pagination
+                try {
+                  const lastDocSnap = await getDoc(doc(db, 'portfolioItems', lastItem.id));
+                  if (lastDocSnap.exists()) {
+                    setLastDocument(lastDocSnap);
+                    console.log('🔄 SCROLL LOAD: ✅ INITIAL LOAD (API) - Set lastDocument snapshot successfully');
+                  } else {
+                    console.warn('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - Last document does not exist, pagination may not work');
+                    setLastDocument(null);
+                  }
+                } catch (docError) {
+                  console.error('🔄 SCROLL LOAD: ❌ INITIAL LOAD (API) - Failed to fetch lastDocument snapshot:', docError);
+                  setLastDocument(null);
+                }
+                
                 // ALWAYS set hasMore to true if we got items - let pagination logic determine if there's more
                 // Don't compare to INITIAL_FETCH_LIMIT because filtering may reduce count, but more content exists
                 setHasMore(true);
@@ -1121,11 +1137,31 @@ function DiscoverPageContent() {
             portfolioItems = portfolioItems.slice(0, INITIAL_FETCH_LIMIT);
             log(`📦 Discover: Found ${portfolioItems.length} portfolio items from direct Firestore (fallback)`);
             
-            // Store last document for pagination
+            // Store last document for pagination - fetch actual DocumentSnapshot
+            // because combined/sorted results lose the snapshot nature
             if (portfolioItems.length > 0) {
-              const lastDoc = portfolioItems[portfolioItems.length - 1];
-              console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Setting lastDocument from Firestore:', { portfolioItemsCount: portfolioItems.length, INITIAL_FETCH_LIMIT, lastDocId: lastDoc.id });
-              setLastDocument(lastDoc as any);
+              const lastItem = portfolioItems[portfolioItems.length - 1];
+              console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Fetching lastDocument snapshot for pagination:', { 
+                portfolioItemsCount: portfolioItems.length, 
+                INITIAL_FETCH_LIMIT, 
+                lastItemId: lastItem.id 
+              });
+              
+              // Fetch the actual document snapshot for proper pagination
+              try {
+                const lastDocSnap = await getDoc(doc(db, 'portfolioItems', lastItem.id));
+                if (lastDocSnap.exists()) {
+                  setLastDocument(lastDocSnap);
+                  console.log('🔄 SCROLL LOAD: ✅ INITIAL LOAD (fallback) - Set lastDocument snapshot successfully');
+                } else {
+                  console.warn('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - Last document does not exist');
+                  setLastDocument(null);
+                }
+              } catch (docError) {
+                console.error('🔄 SCROLL LOAD: ❌ INITIAL LOAD (fallback) - Failed to fetch lastDocument snapshot:', docError);
+                setLastDocument(null);
+              }
+              
               // ALWAYS set hasMore to true if we got items - let pagination logic determine if there's more
               setHasMore(true);
               console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Set hasMore: true (will be corrected by pagination logic)');
@@ -1558,8 +1594,23 @@ function DiscoverPageContent() {
         // Use the last portfolioItem if available, otherwise use the last artwork from artworks collection
         if (portfolioItems.length > 0) {
           const lastPortfolioItem = portfolioItems[portfolioItems.length - 1];
-          console.log('🔄 SCROLL LOAD: 📝 FINAL - Setting lastDocument from portfolioItems:', { lastItemId: lastPortfolioItem.id });
-          setLastDocument(lastPortfolioItem);
+          console.log('🔄 SCROLL LOAD: 📝 FINAL - Fetching lastDocument snapshot from portfolioItems:', { lastItemId: lastPortfolioItem.id });
+          
+          // Fetch the actual document snapshot for proper pagination
+          try {
+            const lastDocSnap = await getDoc(doc(db, 'portfolioItems', lastPortfolioItem.id));
+            if (lastDocSnap.exists()) {
+              setLastDocument(lastDocSnap);
+              console.log('🔄 SCROLL LOAD: ✅ FINAL - Set lastDocument snapshot successfully');
+            } else {
+              console.warn('🔄 SCROLL LOAD: ⚠️ FINAL - Last document does not exist');
+              setLastDocument(null);
+            }
+          } catch (docError) {
+            console.error('🔄 SCROLL LOAD: ❌ FINAL - Failed to fetch lastDocument snapshot:', docError);
+            setLastDocument(null);
+          }
+          
           setHasMore(true); // Always set to true initially since we're loading from multiple sources
         } else if (finalArtworks.length > 0) {
           // Fallback: Use last artwork (but this won't work for pagination since it's from artworks collection)
@@ -1735,13 +1786,21 @@ function DiscoverPageContent() {
       // NOTE: lastDocument should already be a DocumentSnapshot from previous loadMoreArtworks calls
       // Only the initial load from API returns a plain object, but we use direct Firestore for pagination
       // So lastDocument should always be a DocumentSnapshot here
-      const result = await PortfolioService.getDiscoverPortfolioItems({
+      
+      // Add timeout protection to prevent infinite loading states
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Load more timeout after 15 seconds')), 15000);
+      });
+      
+      const loadPromise = PortfolioService.getDiscoverPortfolioItems({
         showInPortfolio: true,
         deleted: false,
         hideAI: discoverSettings.hideAiAssistedArt,
         limit: LOAD_MORE_LIMIT,
         startAfter: lastDocument,
       });
+      
+      const result = await Promise.race([loadPromise, timeoutPromise]);
       
       // If no items returned, check if there's a lastDoc - if so, there might be more content
       // (items might be filtered out, but cursor indicates more content exists)
@@ -1878,12 +1937,46 @@ function DiscoverPageContent() {
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
     } catch (error: any) {
       console.error('🔄 SCROLL LOAD: ❌ Error loading more artworks:', error);
-      setHasMore(false);
+      
+      // Show user-friendly error message
+      if (error.message?.includes('timeout')) {
+        toast({
+          title: 'Loading Timeout',
+          description: 'Taking longer than expected. Please try scrolling again.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Failed to Load More',
+          description: 'Unable to load more artworks. Please refresh the page.',
+          variant: 'destructive',
+        });
+      }
+      
+      // Don't set hasMore to false immediately on error - allow retry
+      // setHasMore(false);
     } finally {
       setIsLoadingMore(false);
       console.log('🔄 SCROLL LOAD: ✅ Finished loading (isLoadingMore set to false)');
     }
   }, [hasMore, lastDocument, isLoadingMore, discoverSettings, columnCount]);
+
+  // SAFETY: Reset isLoadingMore if it gets stuck for too long (20 seconds)
+  useEffect(() => {
+    if (!isLoadingMore) return;
+    
+    const timeoutId = setTimeout(() => {
+      console.warn('🔄 SCROLL LOAD: ⚠️ SAFETY: isLoadingMore stuck for 20 seconds, forcing reset');
+      setIsLoadingMore(false);
+      toast({
+        title: 'Loading Reset',
+        description: 'Loading took too long and was reset. Please try scrolling again.',
+        variant: 'default',
+      });
+    }, 20000); // 20 second safety timeout
+    
+    return () => clearTimeout(timeoutId);
+  }, [isLoadingMore]);
 
   // AUTO-LOAD MORE: If initial load doesn't fill viewport, immediately load more
   useEffect(() => {
