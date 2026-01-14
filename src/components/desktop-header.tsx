@@ -30,7 +30,7 @@ export function DesktopHeader() {
 
   return (
     <div 
-      className="flex items-center justify-between bg-card border-b min-h-16 px-4 sm:px-6 pt-4 pb-4 relative z-[9999]"
+      className="flex items-center justify-between bg-card border-b min-h-16 px-2 sm:px-4 pt-4 pb-4 relative z-[9999]"
       style={{
         position: 'relative',
         touchAction: 'manipulation',
@@ -40,7 +40,7 @@ export function DesktopHeader() {
     >
       <Link 
         href="/" 
-        className="flex items-center pl-4 sm:pl-6"
+        className="flex items-center pl-2 sm:pl-3"
         style={{
           touchAction: 'manipulation',
         }}

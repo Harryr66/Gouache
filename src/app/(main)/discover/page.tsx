@@ -35,6 +35,7 @@ import { useFollow } from '@/providers/follow-provider';
 import { useVideoControl } from '@/providers/video-control-provider';
 import Hls from 'hls.js';
 import { cn } from '@/lib/utils';
+import { DiscoverErrorBoundary } from '@/components/discover-error-boundary';
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   // Use Pexels abstract painting as placeholder: https://www.pexels.com/photo/abstract-painting-1546249/
@@ -304,40 +305,42 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       itemRefs.current.forEach((itemEl, index) => {
         if (!itemEl || index >= items.length) return;
 
-        // Find shortest column
-        const shortestColumnIndex = columnHeights.reduce(
-          (minIndex, height, colIndex) => 
-            height < columnHeights[minIndex] ? colIndex : minIndex,
-          0
-        );
+        try {
+          // Find shortest column
+          const shortestColumnIndex = columnHeights.reduce(
+            (minIndex, height, colIndex) => 
+              height < columnHeights[minIndex] ? colIndex : minIndex,
+            0
+          );
 
-        // Measure ACTUAL rendered height
-        // Use getBoundingClientRect for accurate measurement, Math.ceil to prevent sub-pixel overlap
-        const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) || 0;
-        if (itemHeight <= 0) return; // Skip items with no height
-        
-        // Calculate left position: column_index * (itemWidth + gap)
-        // This ensures uniform gap between columns
-        const left = shortestColumnIndex * (itemWidth + gap);
-        
-        // Calculate top position with ceiling to prevent fractional pixels
-        // This ensures uniform gap between rows
-        const currentColumnHeight = columnHeights[shortestColumnIndex];
-        const top = currentColumnHeight === 0 
-          ? 0 
-          : Math.ceil(currentColumnHeight) + gap;
-        
-        // Debug log for verification (only once per calculation, not per item)
-        // Removed per-item logging to reduce console spam
+          // Measure ACTUAL rendered height
+          // Use getBoundingClientRect for accurate measurement, Math.ceil to prevent sub-pixel overlap
+          const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) || 0;
+          if (itemHeight <= 0) return; // Skip items with no height
+          
+          // Calculate left position: column_index * (itemWidth + gap)
+          // This ensures uniform gap between columns
+          const left = shortestColumnIndex * (itemWidth + gap);
+          
+          // Calculate top position with ceiling to prevent fractional pixels
+          // This ensures uniform gap between rows
+          const currentColumnHeight = columnHeights[shortestColumnIndex];
+          const top = currentColumnHeight === 0 
+            ? 0 
+            : Math.ceil(currentColumnHeight) + gap;
+          
+          // Validate calculated values
+          if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
+            return; // Skip invalid positions
+          }
 
-        // Validate calculated values
-        if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
-          return; // Skip invalid positions
+          newPositions.push({ top, left, width: itemWidth });
+          // Update column height: current top position + item height (gap is already in top calculation)
+          columnHeights[shortestColumnIndex] = top + itemHeight;
+        } catch (error) {
+          console.error('Error calculating masonry position for item', index, error);
+          // Skip this item if calculation fails
         }
-
-        newPositions.push({ top, left, width: itemWidth });
-        // Update column height: current top position + item height (gap is already in top calculation)
-        columnHeights[shortestColumnIndex] = top + itemHeight;
       });
 
       if (newPositions.length > 0) {
@@ -370,37 +373,62 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
     };
     
     // Set up load listeners on next frame to ensure DOM is ready
+    // Wrap in try-catch to prevent crashes on mobile
     const observerTimeout = setTimeout(() => {
-      itemRefs.current.forEach((itemEl) => {
-        if (itemEl) {
-          const media = itemEl.querySelectorAll('img, video');
-          media.forEach((el) => {
-            const imgEl = el as HTMLImageElement;
-            const videoEl = el as HTMLVideoElement;
-            if ((imgEl.complete !== undefined && imgEl.complete) || (videoEl.readyState !== undefined && videoEl.readyState >= 2)) {
-              // Already loaded, trigger calculation
-              handleLoad();
-            } else {
-              el.addEventListener('load', handleLoad);
-              el.addEventListener('loadeddata', handleLoad);
+      try {
+        itemRefs.current.forEach((itemEl) => {
+          if (itemEl) {
+            try {
+              const media = itemEl.querySelectorAll('img, video');
+              media.forEach((el) => {
+                try {
+                  const imgEl = el as HTMLImageElement;
+                  const videoEl = el as HTMLVideoElement;
+                  if ((imgEl.complete !== undefined && imgEl.complete) || (videoEl.readyState !== undefined && videoEl.readyState >= 2)) {
+                    // Already loaded, trigger calculation
+                    handleLoad();
+                  } else {
+                    el.addEventListener('load', handleLoad);
+                    el.addEventListener('loadeddata', handleLoad);
+                  }
+                } catch (error) {
+                  console.error('Error setting up media load listener:', error);
+                }
+              });
+            } catch (error) {
+              console.error('Error querying media elements:', error);
             }
-          });
-        }
-      });
+          }
+        });
+      } catch (error) {
+        console.error('Error setting up load listeners:', error);
+      }
     }, 200);
 
     return () => {
-      clearTimeout(timeout);
-      clearTimeout(observerTimeout);
-      itemRefs.current.forEach((itemEl) => {
-        if (itemEl) {
-          const media = itemEl.querySelectorAll('img, video');
-          media.forEach((el) => {
-            el.removeEventListener('load', handleLoad);
-            el.removeEventListener('loadeddata', handleLoad);
-          });
-        }
-      });
+      try {
+        clearTimeout(timeout);
+        clearTimeout(observerTimeout);
+        itemRefs.current.forEach((itemEl) => {
+          if (itemEl) {
+            try {
+              const media = itemEl.querySelectorAll('img, video');
+              media.forEach((el) => {
+                try {
+                  el.removeEventListener('load', handleLoad);
+                  el.removeEventListener('loadeddata', handleLoad);
+                } catch (error) {
+                  // Ignore cleanup errors
+                }
+              });
+            } catch (error) {
+              // Ignore cleanup errors
+            }
+          }
+        });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
     };
   }, [items.length, columnCount, gap, items]);
 
@@ -1046,16 +1074,34 @@ function DiscoverPageContent() {
   const [marketSortBy, setMarketSortBy] = useState('newest');
   const [showMarketFilters, setShowMarketFilters] = useState(false);
 
-  // Detect mobile device
+  // Detect mobile device with error handling
   useEffect(() => {
-    const checkMobile = () => {
-      if (typeof window === 'undefined') return;
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    try {
+      const checkMobile = () => {
+        if (typeof window === 'undefined') return;
+        try {
+          setIsMobile(window.innerWidth < 768); // md breakpoint
+        } catch (error) {
+          console.error('Error setting mobile state:', error);
+          // Default to mobile if error occurs (safer for mobile devices)
+          setIsMobile(true);
+        }
+      };
+      
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => {
+        try {
+          window.removeEventListener('resize', checkMobile);
+        } catch (error) {
+          console.error('Error removing resize listener:', error);
+        }
+      };
+    } catch (error) {
+      console.error('Error in mobile detection:', error);
+      // Default to mobile on error
+      setIsMobile(true);
+    }
   }, []);
 
   // Set default views based on device
@@ -1096,9 +1142,9 @@ function DiscoverPageContent() {
         
         // Fetch enough items to fill viewport - loading screen provides time for larger initial load
         // Load significantly more to account for filtering (non-Cloudflare images, etc.)
-        // Target: 15+ rows on desktop (5 cols × 15 = 75), but load 3x to account for filtering
-        // This ensures we have enough content even after filtering removes invalid items
-        const INITIAL_FETCH_LIMIT = 150; // Increased from 60 - loading screen allows time for this
+        // MOBILE: Reduce limit to prevent crashes - mobile has less memory
+        // Desktop: 15+ rows (5 cols × 15 = 75), but load 3x to account for filtering
+        const INITIAL_FETCH_LIMIT = isMobile ? 75 : 150; // Mobile: 75 items, Desktop: 150 items
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -1480,9 +1526,9 @@ function DiscoverPageContent() {
         
         // ALWAYS fetch content from artworks collection (runs regardless of portfolioItems)
         // This includes the 100+ items in the artworks collection
-        // Load significantly more for initial load - loading screen provides time
+        // MOBILE: Reduce limit to prevent crashes - mobile has less memory
         // Use existing isMobile state - already detected in useEffect
-        const artworksLimit = 300; // Increased from 200 - loading screen allows time for larger initial load
+        const artworksLimit = isMobile ? 150 : 300; // Mobile: 150 items, Desktop: 300 items
         
         log(`🔍 Discover: Fetching content from artworks collection (limit: ${artworksLimit}, mobile: ${isMobile})...`);
         try {
@@ -2110,31 +2156,47 @@ function DiscoverPageContent() {
       }
 
       // SEAMLESS LOAD: Process ALL items first, then update state in ONE batch
-      // Store the count before update to scroll to first new item
-      const previousCount = artworks.length;
-      const MAX_TOTAL_ARTWORKS = isMobile ? 100 : 200; // Mobile: 100 items, Desktop: 200 items
+      // MOBILE: Use stricter limits to prevent crashes
+      const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200; // Mobile: 50 items (reduced from 100), Desktop: 200 items
       
       // Calculate the complete new artworks array BEFORE updating state
       // This ensures we have all items ready before React renders
-      const updatedArtworks = (() => {
-        const existingIds = new Set(artworks.map(a => a.id));
-        const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
-        const combined = [...artworks, ...uniqueNewArtworks];
-        // Deduplicate entire array by ID (in case of any duplicates in prev)
-        const uniqueCombined = Array.from(
-          new Map(combined.map(a => [a.id, a])).values()
-        );
-        // CRITICAL: Cap at MAX_TOTAL_ARTWORKS to prevent memory issues and crashes
-        // Keep most recent items (slice from end)
-        return uniqueCombined.length > MAX_TOTAL_ARTWORKS
-          ? uniqueCombined.slice(-MAX_TOTAL_ARTWORKS)
-          : uniqueCombined;
-      })();
-      
-      // Batch ALL state updates together in one transition to prevent multiple re-renders
-      startTransition(() => {
-        setArtworks(updatedArtworks);
-      });
+      // Wrap in try-catch to prevent crashes
+      try {
+        const updatedArtworks = (() => {
+          const existingIds = new Set(artworks.map(a => a.id));
+          const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
+          const combined = [...artworks, ...uniqueNewArtworks];
+          // Deduplicate entire array by ID (in case of any duplicates in prev)
+          const uniqueCombined = Array.from(
+            new Map(combined.map(a => [a.id, a])).values()
+          );
+          // CRITICAL: Cap at MAX_TOTAL_ARTWORKS to prevent memory issues and crashes
+          // Keep most recent items (slice from end)
+          return uniqueCombined.length > MAX_TOTAL_ARTWORKS
+            ? uniqueCombined.slice(-MAX_TOTAL_ARTWORKS)
+            : uniqueCombined;
+        })();
+        
+        // Batch ALL state updates together in one transition to prevent multiple re-renders
+        startTransition(() => {
+          setArtworks(updatedArtworks);
+        });
+      } catch (error) {
+        console.error('Error updating artworks state:', error);
+        // Fallback: just add new artworks without complex processing
+        startTransition(() => {
+          setArtworks(prev => {
+            const existingIds = new Set(prev.map(a => a.id));
+            const uniqueNew = newArtworks.filter(a => !existingIds.has(a.id));
+            const combined = [...prev, ...uniqueNew];
+            // Simple cap for mobile safety
+            return combined.length > MAX_TOTAL_ARTWORKS 
+              ? combined.slice(-MAX_TOTAL_ARTWORKS)
+              : combined;
+          });
+        });
+      }
       
       // Update pagination state
       // CRITICAL: Only set hasMore to false if we got NO items AND no lastDoc
@@ -2364,6 +2426,21 @@ function DiscoverPageContent() {
     // FIRST: Filter to ONLY Cloudflare content (images AND videos)
     // Videos will be shown in video feed, images in grid view
     filtered = filtered.filter((artwork: any) => {
+      // CRITICAL: Filter out placeholders - NEVER show placeholder artworks
+      const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
+      if (tags.includes('_placeholder')) {
+        return false; // Skip placeholders
+      }
+      // Filter out placeholder IDs
+      if (artwork.id && typeof artwork.id === 'string' && artwork.id.startsWith('placeholder-')) {
+        return false; // Skip placeholders
+      }
+      // Filter out Pexels images (used in placeholder generation)
+      const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
+      if (imageUrl && (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com'))) {
+        return false; // Skip Pexels placeholder images
+      }
+      
       // CRITICAL: Filter out products/shop items - only show artworks
       if (artwork.type === 'product' || artwork.type === 'Product' || artwork.type === 'marketplace' || artwork.type === 'MarketplaceProduct') {
         return false; // Skip products
@@ -2385,7 +2462,6 @@ function DiscoverPageContent() {
       }
       
       // For images, they MUST be from Cloudflare Images AND have valid URL format
-      const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
       if (!imageUrl) return false; // Skip items with no image
       if (!isCloudflareImage(imageUrl)) return false; // Only Cloudflare images
       // CRITICAL: Validate URL format to prevent 404s and crashes
@@ -3716,12 +3792,14 @@ function DiscoverPageContent() {
 
 export default function DiscoverPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <ThemeLoading text="" size="lg" />
-      </div>
-    }>
-      <DiscoverPageContent />
-    </Suspense>
+    <DiscoverErrorBoundary>
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <ThemeLoading text="" size="lg" />
+        </div>
+      }>
+        <DiscoverPageContent />
+      </Suspense>
+    </DiscoverErrorBoundary>
   );
 }

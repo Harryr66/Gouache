@@ -822,12 +822,13 @@ const generateArtistContent = (artist: Artist) => ({
                               return; // Don't set error yet, will retry
                             }
                             
-                            // After all retries failed, use placeholder - DO NOT call onImageReady
+                            // After all retries failed, show error state - DO NOT use placeholder images
+                            // We only show Cloudflare images, so use alternative content tile instead
                             // Defer state updates to prevent React crash
                             setTimeout(() => {
                               try {
                                 setImageError(true);
-                                setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                                // DO NOT set fallbackImageUrl - we don't use placeholder images
                                 setIsImageLoaded(true);
                                 // DO NOT call onImageReady on error - loading screen must wait for successful loads
                               } catch (stateError) {
@@ -880,12 +881,13 @@ const generateArtistContent = (artist: Artist) => ({
                             return; // Don't set error yet, will retry
                           }
                           
-                          // After all retries failed, use placeholder - DO NOT call onImageReady
+                          // After all retries failed, show error state - DO NOT use placeholder images
+                          // We only show Cloudflare images, so use alternative content tile instead
                           // Defer state updates to prevent React crash
                           setTimeout(() => {
                             try {
                               setImageError(true);
-                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              // DO NOT set fallbackImageUrl - we don't use placeholder images
                               setIsImageLoaded(true);
                               // DO NOT call onImageReady on error - loading screen must wait for successful loads
                             } catch (stateError) {
@@ -1241,7 +1243,7 @@ const generateArtistContent = (artist: Artist) => ({
                           setTimeout(() => {
                             try {
                               setImageError(true);
-                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              // DO NOT set fallbackImageUrl - we don't use placeholder images
                               setIsImageLoaded(true);
                             } catch (stateError) {
                               console.error('Error updating state:', stateError);
@@ -1681,7 +1683,7 @@ const generateArtistContent = (artist: Artist) => ({
                             setTimeout(() => {
                               try {
                                 setImageError(true);
-                                setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                                // DO NOT set fallbackImageUrl - we don't use placeholder images
                                 setIsImageLoaded(true);
                               } catch (stateError) {
                                 console.error('Error updating state:', stateError);
@@ -1712,7 +1714,7 @@ const generateArtistContent = (artist: Artist) => ({
                           setTimeout(() => {
                             try {
                               setImageError(true);
-                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              // DO NOT set fallbackImageUrl - we don't use placeholder images
                               setIsImageLoaded(true);
                             } catch (stateError) {
                               console.error('Error updating state:', stateError);
@@ -1720,10 +1722,10 @@ const generateArtistContent = (artist: Artist) => ({
                           }, 0);
                         } catch (error) {
                           console.error('Error in image error handler:', error);
-                          // Still try to show placeholder
+                          // Show error state - no placeholder images
                           try {
                             setImageError(true);
-                            setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                            // DO NOT set fallbackImageUrl - we don't use placeholder images
                             setIsImageLoaded(true);
                           } catch (fallbackError) {
                             console.error('Error showing fallback:', fallbackError);
@@ -1776,7 +1778,7 @@ const generateArtistContent = (artist: Artist) => ({
                           setTimeout(() => {
                             try {
                               setImageError(true);
-                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              // DO NOT set fallbackImageUrl - we don't use placeholder images
                               setIsImageLoaded(true);
                             } catch (stateError) {
                               console.error('Error updating state:', stateError);
@@ -1832,7 +1834,7 @@ const generateArtistContent = (artist: Artist) => ({
                           setTimeout(() => {
                             try {
                               setImageError(true);
-                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                              // DO NOT set fallbackImageUrl - we don't use placeholder images
                               setIsImageLoaded(true);
                             } catch (stateError) {
                               console.error('Error updating state:', stateError);
@@ -1902,7 +1904,7 @@ const generateArtistContent = (artist: Artist) => ({
                         setTimeout(() => {
                           try {
                             setImageError(true);
-                            setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                            // DO NOT set fallbackImageUrl - we don't use placeholder images
                             setIsImageLoaded(true);
                           } catch (stateError) {
                             console.error('Error updating state:', stateError);
@@ -1915,8 +1917,28 @@ const generateArtistContent = (artist: Artist) => ({
                   />
                 );
               })()}
-              {/* Error state - show placeholder instead of error message */}
-              {imageError && fallbackImageUrl && (
+              {/* Error state - show alternative content tile (no placeholder images) */}
+              {imageError && !fallbackImageUrl && (
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
+                  <div className="text-center space-y-2">
+                    <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Palette className="w-6 h-6 text-primary/60" />
+                    </div>
+                    {artwork.title && (
+                      <h3 className="text-sm font-semibold text-foreground line-clamp-2">
+                        {artwork.title}
+                      </h3>
+                    )}
+                    {artwork.artist?.name && (
+                      <p className="text-xs text-muted-foreground">
+                        by {artwork.artist.name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {/* Legacy fallback - should not be used (only Cloudflare images) */}
+              {imageError && fallbackImageUrl && false && (
                 <Image
                   src={fallbackImageUrl}
                   alt={artwork.imageAiHint || artwork.title || 'Image placeholder'}
