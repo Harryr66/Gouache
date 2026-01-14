@@ -3107,22 +3107,7 @@ function DiscoverPageContent() {
               )}
               
               {/* Image/Video Count Indicator */}
-              {!showLoadingScreen && isLoadingMore && (
-                <div className="text-sm text-muted-foreground mt-2">
-                  Loading more...
-                </div>
-              )}
-              {!showLoadingScreen && (() => {
-                // Content counter removed - no longer showing "Showing X images/videos"
-                return null;
-              })()}
-              {!showLoadingScreen && false && (() => {
-                // Removed content counter code
-                return (
-                  <div className="text-sm text-muted-foreground mt-2">
-                    {artworkView === 'grid' ? (
-                      <>
-                        Showing {Math.min(visibleFilteredArtworks.filter((item: any) => {
+{Math.min(visibleFilteredArtworks.filter((item: any) => {
                           if ('type' in item && item.type === 'ad') return false;
                           const videoUrl = (item as any).videoUrl || '';
                           const mediaType = (item as any).mediaType || '';
