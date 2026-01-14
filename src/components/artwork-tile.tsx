@@ -23,6 +23,7 @@ import { ReportDialog } from '@/components/report-dialog';
 import { engagementTracker } from '@/lib/engagement-tracker';
 import { useVideoControl } from '@/providers/video-control-provider';
 import { useVideoPrefetch } from '@/hooks/use-video-prefetch';
+import { ImageErrorBoundary } from '@/components/image-error-boundary';
 import { 
   UserPlus, 
   UserCheck, 
@@ -1284,6 +1285,16 @@ const generateArtistContent = (artist: Artist) => ({
                       constructed: cloudflareUrl,
                       hasVideo
                     });
+                  }
+                  
+                  // CRITICAL: Double-check URL is valid before rendering to prevent React error #300
+                  if (!cloudflareUrl || !cloudflareUrl.startsWith('http') || cloudflareUrl.includes('undefined') || cloudflareUrl.includes('null')) {
+                    console.warn('⚠️ Invalid constructed Cloudflare URL, showing placeholder:', cloudflareUrl);
+                    return (
+                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
+                        <div className="text-muted-foreground text-xs text-center px-2">Invalid image URL</div>
+                      </div>
+                    );
                   }
                   
                   // Calculate dimensions from aspect ratio to prevent layout shift
