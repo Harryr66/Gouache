@@ -791,6 +791,49 @@ const VideoPlayer = ({
   );
 };
 
+// Video Loading Animation Component with theme-appropriate colors
+const VideoLoadingAnimation = () => {
+  const { theme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Get theme-appropriate colors (same as ThemeLoading component)
+  const getDotColors = (isDark: boolean) => {
+    if (isDark) {
+      return ['#51C4D3', '#77ACF1', '#EF88AD'];
+    } else {
+      return ['#1e3a8a', '#3b82f6', '#60a5fa'];
+    }
+  };
+  
+  const currentTheme = resolvedTheme || theme || 'dark';
+  const isDark = currentTheme === 'dark';
+  const dotColors = getDotColors(isDark);
+  
+  return (
+    <div className="w-full py-12 flex flex-col items-center justify-center gap-3">
+      <div className="flex items-center gap-2">
+        <div 
+          className="w-3 h-3 rounded-full animate-pulse" 
+          style={{ backgroundColor: dotColors[0], animationDelay: '0ms' }}
+        ></div>
+        <div 
+          className="w-3 h-3 rounded-full animate-pulse" 
+          style={{ backgroundColor: dotColors[1], animationDelay: '150ms' }}
+        ></div>
+        <div 
+          className="w-3 h-3 rounded-full animate-pulse" 
+          style={{ backgroundColor: dotColors[2], animationDelay: '300ms' }}
+        ></div>
+      </div>
+      <p className="text-sm text-muted-foreground">Loading videos...</p>
+    </div>
+  );
+};
+
 function DiscoverPageContent() {
   const isDev = process.env.NODE_ENV === 'development';
   // Always log critical messages in production for debugging
@@ -3381,14 +3424,7 @@ function DiscoverPageContent() {
                       {videoArtworks.length === 0 ? (
                         // Always show loading animation - never show "No videos available" message
                         // This prevents flickering and users clicking away
-                        <div className="w-full py-12 flex flex-col items-center justify-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-foreground/60 animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-3 h-3 rounded-full bg-foreground/60 animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-3 h-3 rounded-full bg-foreground/60 animate-pulse" style={{ animationDelay: '300ms' }}></div>
-                          </div>
-                          <p className="text-sm text-muted-foreground">Loading videos...</p>
-                        </div>
+                        <VideoLoadingAnimation />
                       ) : (
                         videoArtworks.map((item) => {
                         const artwork = item as Artwork;

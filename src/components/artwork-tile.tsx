@@ -1122,31 +1122,17 @@ const generateArtistContent = (artist: Artist) => ({
                   });
                 }
                 
-                // If no image URL at all, show alternative content tile
+                // If no image URL at all, show taped banana placeholder
                 if (!imageSrc || imageSrc === '') {
+                  const tapedBananaUrl = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200';
                   return (
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
-                      <div className="text-center space-y-2">
-                        <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Palette className="w-6 h-6 text-primary/60" />
-                        </div>
-                        {artwork.title && (
-                          <h3 className="text-sm font-semibold text-foreground line-clamp-2">
-                            {artwork.title}
-                          </h3>
-                        )}
-                        {artwork.artist?.name && (
-                          <p className="text-xs text-muted-foreground">
-                            by {artwork.artist.name}
-                          </p>
-                        )}
-                        {artwork.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                            {artwork.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                    <Image
+                      src={tapedBananaUrl}
+                      alt={artwork.title || 'Loading...'}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
                   );
                 }
                 
@@ -1264,25 +1250,16 @@ const generateArtistContent = (artist: Artist) => ({
                   const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)(?:\/([^/]+))?/);
                   if (!cloudflareMatch) {
                     // Invalid URL format - show alternative content tile
-                    console.warn('⚠️ Invalid Cloudflare Images URL format, showing alternative tile:', imageSrc);
+                    console.warn('⚠️ Invalid Cloudflare Images URL format, showing taped banana placeholder:', imageSrc);
+                    const tapedBananaUrl = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200';
                     return (
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
-                        <div className="text-center space-y-2">
-                          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Palette className="w-6 h-6 text-primary/60" />
-                          </div>
-                          {artwork.title && (
-                            <h3 className="text-sm font-semibold text-foreground line-clamp-2">
-                              {artwork.title}
-                            </h3>
-                          )}
-                          {artwork.artist?.name && (
-                            <p className="text-xs text-muted-foreground">
-                              by {artwork.artist.name}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                      <Image
+                        src={tapedBananaUrl}
+                        alt={artwork.title || 'Loading...'}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
                     );
                   }
                   
@@ -1290,49 +1267,31 @@ const generateArtistContent = (artist: Artist) => ({
                   
                   // Validate components exist and are not empty
                   if (!accountHash || !imageId || accountHash.length === 0 || imageId.length === 0) {
-                    console.warn('⚠️ Invalid Cloudflare Images URL components, showing alternative tile:', { accountHash, imageId, url: imageSrc });
+                    console.warn('⚠️ Invalid Cloudflare Images URL components, showing taped banana placeholder:', { accountHash, imageId, url: imageSrc });
+                    const tapedBananaUrl = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200';
                     return (
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
-                        <div className="text-center space-y-2">
-                          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Palette className="w-6 h-6 text-primary/60" />
-                          </div>
-                          {artwork.title && (
-                            <h3 className="text-sm font-semibold text-foreground line-clamp-2">
-                              {artwork.title}
-                            </h3>
-                          )}
-                          {artwork.artist?.name && (
-                            <p className="text-xs text-muted-foreground">
-                              by {artwork.artist.name}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                      <Image
+                        src={tapedBananaUrl}
+                        alt={artwork.title || 'Loading...'}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
                     );
                   }
                   
                   // Validate format (alphanumeric)
                   if (!/^[a-zA-Z0-9_-]+$/.test(accountHash) || !/^[a-zA-Z0-9_-]+$/.test(imageId)) {
-                    console.warn('⚠️ Invalid Cloudflare Images URL format (non-alphanumeric), showing alternative tile:', { accountHash, imageId, url: imageSrc });
+                    console.warn('⚠️ Invalid Cloudflare Images URL format (non-alphanumeric), showing taped banana placeholder:', { accountHash, imageId, url: imageSrc });
+                    const tapedBananaUrl = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200';
                     return (
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
-                        <div className="text-center space-y-2">
-                          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Palette className="w-6 h-6 text-primary/60" />
-                          </div>
-                          {artwork.title && (
-                            <h3 className="text-sm font-semibold text-foreground line-clamp-2">
-                              {artwork.title}
-                            </h3>
-                          )}
-                          {artwork.artist?.name && (
-                            <p className="text-xs text-muted-foreground">
-                              by {artwork.artist.name}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                      <Image
+                        src={tapedBananaUrl}
+                        alt={artwork.title || 'Loading...'}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
                     );
                   }
                   
@@ -1428,60 +1387,30 @@ const generateArtistContent = (artist: Artist) => ({
                   }
                   
                   // CRITICAL: Only skip rendering if URL has definitively failed (after all retries)
-                  // Replace with alternative content tile instead of placeholder
+                  // Replace with taped banana placeholder instead of alternative content tile
                   if (failedImageUrls.has(cloudflareUrl)) {
-                    // Show alternative content tile with artwork information
+                    const tapedBananaUrl = 'https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200';
                     return (
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
-                        <div className="text-center space-y-2">
-                          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Palette className="w-6 h-6 text-primary/60" />
-                          </div>
-                          {artwork.title && (
-                            <h3 className="text-sm font-semibold text-foreground line-clamp-2">
-                              {artwork.title}
-                            </h3>
-                          )}
-                          {artwork.artist?.name && (
-                            <p className="text-xs text-muted-foreground">
-                              by {artwork.artist.name}
-                            </p>
-                          )}
-                          {artwork.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                              {artwork.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                      <Image
+                        src={tapedBananaUrl}
+                        alt={artwork.title || 'Loading...'}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
                     );
                   }
                   
                   return (
                     <ImageErrorBoundary
                       fallback={
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
-                          <div className="text-center space-y-2">
-                            <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Palette className="w-6 h-6 text-primary/60" />
-                            </div>
-                            {artwork.title && (
-                              <h3 className="text-sm font-semibold text-foreground line-clamp-2">
-                                {artwork.title}
-                              </h3>
-                            )}
-                            {artwork.artist?.name && (
-                              <p className="text-xs text-muted-foreground">
-                                by {artwork.artist.name}
-                              </p>
-                            )}
-                            {artwork.description && (
-                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                {artwork.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                        <Image
+                          src="https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                          alt={artwork.title || 'Loading...'}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
                       }
                       onError={(error, errorInfo) => {
                         console.error('ImageErrorBoundary caught rendering error:', error, errorInfo);
@@ -1917,25 +1846,15 @@ const generateArtistContent = (artist: Artist) => ({
                   />
                 );
               })()}
-              {/* Error state - show alternative content tile (no placeholder images) */}
+              {/* Error state - show taped banana placeholder */}
               {imageError && (
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
-                  <div className="text-center space-y-2">
-                    <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Palette className="w-6 h-6 text-primary/60" />
-                    </div>
-                    {artwork.title && (
-                      <h3 className="text-sm font-semibold text-foreground line-clamp-2">
-                        {artwork.title}
-                      </h3>
-                    )}
-                    {artwork.artist?.name && (
-                      <p className="text-xs text-muted-foreground">
-                        by {artwork.artist.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <Image
+                  src="https://images.pexels.com/photos/1308881/pexels-photo-1308881.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                  alt={artwork.title || 'Loading...'}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
               )}
             </>
           )}
