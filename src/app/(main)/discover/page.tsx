@@ -327,10 +327,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
           ? 0 
           : Math.ceil(currentColumnHeight) + gap;
         
-        // Debug log for verification
-        if (index === 0) {
-          console.log('🔧 Masonry overlap fix - Gap:', gap, 'px, Height buffer: +2px');
-        }
+        // Debug log for verification (only once per calculation, not per item)
+        // Removed per-item logging to reduce console spam
 
         // Validate calculated values
         if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
@@ -347,19 +345,26 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       }
     };
 
-    // Calculate positions after items render (use requestAnimationFrame for better timing)
+    // Calculate positions after items render (debounced to prevent glitchy recalculations)
     let timeout: NodeJS.Timeout;
+    let calculationScheduled = false;
+    
     const scheduleCalculation = () => {
+      if (calculationScheduled) return; // Prevent multiple scheduled calculations
+      calculationScheduled = true;
+      
+      clearTimeout(timeout);
       timeout = setTimeout(() => {
         requestAnimationFrame(() => {
           calculatePositions();
+          calculationScheduled = false;
         });
-      }, 150);
+      }, 200); // Slightly longer delay to batch multiple updates
     };
     
     scheduleCalculation();
     
-    // Recalculate when images/videos load
+    // Recalculate when images/videos load (debounced)
     const handleLoad = () => {
       scheduleCalculation();
     };
@@ -418,6 +423,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
         return (
           <div
             key={itemKey}
+            data-artwork-index={index}
             ref={(el) => { itemRefs.current[index] = el; }}
             style={{
               position: 'absolute',
@@ -436,6 +442,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       })}
       <div 
         ref={loadMoreRef} 
+        data-load-more-sentinel
         className="h-20 w-full flex items-center justify-center" 
         style={{ position: 'absolute', top: containerHeight, left: 0, right: 0 }} 
       >
@@ -1087,10 +1094,11 @@ function DiscoverPageContent() {
         let portfolioItems: any[] = [];
         let useFallback = false;
         
-        // Fetch enough items to fill viewport - reduced for mobile performance
-        // 60 items ensures: mobile (2 cols × 15 rows), tablet (3 cols × 7 rows), desktop (5 cols × 6 rows)
-        // Load more on scroll for continuous feed
-        const INITIAL_FETCH_LIMIT = 60;
+        // Fetch enough items to fill viewport - loading screen provides time for larger initial load
+        // Load significantly more to account for filtering (non-Cloudflare images, etc.)
+        // Target: 15+ rows on desktop (5 cols × 15 = 75), but load 3x to account for filtering
+        // This ensures we have enough content even after filtering removes invalid items
+        const INITIAL_FETCH_LIMIT = 150; // Increased from 60 - loading screen allows time for this
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -1168,7 +1176,7 @@ function DiscoverPageContent() {
               showInPortfolio: true,
               deleted: false,
               hideAI: discoverSettings.hideAiAssistedArt,
-              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for portfolio items (60 items)
+              limit: INITIAL_FETCH_LIMIT, // Load full limit from portfolio items
             });
             
             // Query discover content (videos uploaded via Discover portal)
@@ -1176,7 +1184,7 @@ function DiscoverPageContent() {
               showInPortfolio: false,
               deleted: false,
               hideAI: discoverSettings.hideAiAssistedArt,
-              limit: Math.floor(INITIAL_FETCH_LIMIT / 2), // Half for discover content (60 items) (60 items)
+              limit: INITIAL_FETCH_LIMIT, // Load full limit from artworks collection
             });
             
             // Combine results, portfolio items first, then discover content
@@ -1189,8 +1197,9 @@ function DiscoverPageContent() {
               return bTime - aTime;
             });
             
-            // Limit to INITIAL_FETCH_LIMIT after combining (120 items for 5+ additional rows)
-            portfolioItems = portfolioItems.slice(0, INITIAL_FETCH_LIMIT);
+            // Don't limit after combining - we want all valid items from both collections
+            // Filtering will happen later, but we want maximum content for initial load
+            // portfolioItems = portfolioItems.slice(0, INITIAL_FETCH_LIMIT); // Removed limit
             log(`📦 Discover: Found ${portfolioItems.length} portfolio items from direct Firestore (fallback)`);
             
             // Store last document for pagination - fetch actual DocumentSnapshot
@@ -1457,9 +1466,9 @@ function DiscoverPageContent() {
         
         // ALWAYS fetch content from artworks collection (runs regardless of portfolioItems)
         // This includes the 100+ items in the artworks collection
-        // Load ALL content upfront - pagination is broken, so just load everything
+        // Load significantly more for initial load - loading screen provides time
         // Use existing isMobile state - already detected in useEffect
-        const artworksLimit = 200; // Load all content upfront (no pagination needed)
+        const artworksLimit = 300; // Increased from 200 - loading screen allows time for larger initial load
         
         log(`🔍 Discover: Fetching content from artworks collection (limit: ${artworksLimit}, mobile: ${isMobile})...`);
         try {
@@ -2075,26 +2084,31 @@ function DiscoverPageContent() {
         newArtworks.push(artwork);
       }
 
-      // STATIC DISPLAY: Process ALL items first, then update state in ONE batch
-      // This ensures all new items appear at once (not staggered/piece by piece)
+      // SEAMLESS LOAD: Process ALL items first, then update state in ONE batch
+      // Store the count before update to scroll to first new item
+      const previousCount = artworks.length;
       const MAX_TOTAL_ARTWORKS = isMobile ? 100 : 200; // Mobile: 100 items, Desktop: 200 items
       
       // Calculate the complete new artworks array BEFORE updating state
       // This ensures we have all items ready before React renders
-      setArtworks(prev => {
-        const existingIds = new Set(prev.map(a => a.id));
+      const updatedArtworks = (() => {
+        const existingIds = new Set(artworks.map(a => a.id));
         const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
-        const combined = [...prev, ...uniqueNewArtworks];
+        const combined = [...artworks, ...uniqueNewArtworks];
         // Deduplicate entire array by ID (in case of any duplicates in prev)
         const uniqueCombined = Array.from(
           new Map(combined.map(a => [a.id, a])).values()
         );
         // CRITICAL: Cap at MAX_TOTAL_ARTWORKS to prevent memory issues and crashes
         // Keep most recent items (slice from end)
-        const capped = uniqueCombined.length > MAX_TOTAL_ARTWORKS
+        return uniqueCombined.length > MAX_TOTAL_ARTWORKS
           ? uniqueCombined.slice(-MAX_TOTAL_ARTWORKS)
           : uniqueCombined;
-        return capped;
+      })();
+      
+      // Batch ALL state updates together in one transition to prevent multiple re-renders
+      startTransition(() => {
+        setArtworks(updatedArtworks);
       });
       
       // Update pagination state
@@ -2128,6 +2142,34 @@ function DiscoverPageContent() {
 
       console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks (expected ${LOAD_MORE_LIMIT} for 10 rows, columnCount=${columnCount})`);
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
+      
+      // SEAMLESS SCROLL: Wait for DOM to update, then scroll to first row of new content
+      // This creates a seamless experience where user sees the new content immediately
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Find the first new item element and scroll to it smoothly
+          const firstNewItemIndex = previousCount;
+          const firstNewItem = document.querySelector(`[data-artwork-index="${firstNewItemIndex}"]`);
+          
+          if (firstNewItem) {
+            const scrollTarget = firstNewItem.getBoundingClientRect().top + window.scrollY - 20; // 20px offset from top
+            window.scrollTo({
+              top: scrollTarget,
+              behavior: 'smooth'
+            });
+          } else {
+            // Fallback: scroll to where new content should be
+            const sentinel = document.querySelector('[data-load-more-sentinel]');
+            if (sentinel) {
+              const scrollTarget = sentinel.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.1;
+              window.scrollTo({
+                top: Math.max(0, scrollTarget),
+                behavior: 'smooth'
+              });
+            }
+          }
+        });
+      });
     } catch (error: any) {
       console.error('🔄 SCROLL LOAD: ❌ Error loading more artworks:', error);
       
