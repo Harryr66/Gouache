@@ -424,9 +424,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
               top: positions[index]?.top ?? 0,
               left: positions[index]?.left ?? 0,
               width: positions[index]?.width || `${100 / columnCount}%`,
-              opacity: positions[index] ? 1 : 0, // Hide until positioned
+              opacity: 1, // Always visible - no opacity transition to prevent glitching
               margin: 0, // Ensure no margins that could create irregular gaps
               padding: 0, // Ensure no padding that could create irregular gaps
+              transition: 'none', // Disable transitions to prevent glitching
             }}
           >
             {renderItem(item)}
@@ -1865,12 +1866,8 @@ function DiscoverPageContent() {
 
     console.log('🔄 SCROLL LOAD: ✅ ALL CONDITIONS MET - PROCEEDING WITH LOAD');
     
-    // STATIC DISPLAY: Add short pause before starting, then load all content in background
-    // This ensures a clean pause, then all items appear at once (not staggered)
+    // Fast loading: Start immediately, no artificial delays
     setIsLoadingMore(true);
-    console.log('🔄 SCROLL LOAD: ⏸️ Pausing briefly before loading...');
-    await new Promise(resolve => setTimeout(resolve, 200)); // 200ms pause for smooth transition
-    
     console.log('🔄 SCROLL LOAD: 📥 Starting to fetch more artworks...');
     log('📥 Discover: Loading more artworks...');
 
@@ -1879,9 +1876,11 @@ function DiscoverPageContent() {
       // CRITICAL: Reduce load limit to prevent crashes with 200+ images
       // Mobile has less memory - use even smaller batches
       // Use existing isMobile state instead of creating new variable
+      // Load enough items to fill 10 rows (accounting for filtering)
+      // Increase limit to ensure we get 10 rows after filtering
       const LOAD_MORE_LIMIT = isMobile 
-        ? Math.min(columnCount * 5, 25)  // Mobile: 5 rows, max 25 items
-        : Math.min(columnCount * 10, 50); // Desktop: 10 rows, max 50 items
+        ? Math.min(columnCount * 8, 40)  // Mobile: 8 rows (load extra to account for filtering)
+        : Math.min(columnCount * 12, 60); // Desktop: 12 rows (load extra to ensure 10 rows after filtering)
       
       // NOTE: lastDocument should already be a DocumentSnapshot from previous loadMoreArtworks calls
       // Only the initial load from API returns a plain object, but we use direct Firestore for pagination
@@ -1894,12 +1893,13 @@ function DiscoverPageContent() {
       
       // Load from BOTH portfolioItems AND artworks collections
       // The 513 images are in artworks collection, so we need to query both
+      // Load full limit from each to ensure we get enough items after filtering
       const [portfolioResult, artworksResult] = await Promise.all([
         PortfolioService.getDiscoverPortfolioItems({
           showInPortfolio: true,
           deleted: false,
           hideAI: discoverSettings.hideAiAssistedArt,
-          limit: Math.floor(LOAD_MORE_LIMIT / 2),
+          limit: LOAD_MORE_LIMIT, // Load full limit (not split) to ensure enough items after filtering
           startAfter: lastDocument,
         }),
         // Also query artworks collection with pagination
@@ -1909,7 +1909,7 @@ function DiscoverPageContent() {
               collection(db, 'artworks'),
               orderBy('createdAt', 'desc'),
               startAfter(lastDocument),
-              limit(Math.floor(LOAD_MORE_LIMIT / 2))
+              limit(LOAD_MORE_LIMIT) // Load full limit (not split) to ensure enough items after filtering
             );
             const snapshot = await getDocs(artworksQuery);
             return {
@@ -2075,7 +2075,7 @@ function DiscoverPageContent() {
         newArtworks.push(artwork);
       }
 
-      // STATIC DISPLAY: Process ALL items first, then update state in ONE synchronous batch
+      // STATIC DISPLAY: Process ALL items first, then update state in ONE batch
       // This ensures all new items appear at once (not staggered/piece by piece)
       const MAX_TOTAL_ARTWORKS = isMobile ? 100 : 200; // Mobile: 100 items, Desktop: 200 items
       
@@ -2095,16 +2095,6 @@ function DiscoverPageContent() {
           ? uniqueCombined.slice(-MAX_TOTAL_ARTWORKS)
           : uniqueCombined;
         return capped;
-      });
-      
-      // STATIC DISPLAY: Use double requestAnimationFrame to ensure all DOM updates happen in one frame
-      // This prevents staggered rendering by batching all React updates together
-      await new Promise(resolve => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            resolve(undefined);
-          });
-        });
       });
       
       // Update pagination state
@@ -2138,10 +2128,6 @@ function DiscoverPageContent() {
 
       console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks (expected ${LOAD_MORE_LIMIT} for 10 rows, columnCount=${columnCount})`);
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
-      
-      // STATIC DISPLAY: Small delay before hiding loader to ensure smooth transition
-      // This gives React time to render all new items before hiding the loading indicator
-      await new Promise(resolve => setTimeout(resolve, 50)); // 50ms delay for smooth display
     } catch (error: any) {
       console.error('🔄 SCROLL LOAD: ❌ Error loading more artworks:', error);
       
