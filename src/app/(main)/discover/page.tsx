@@ -1046,21 +1046,36 @@ function DiscoverPageContent() {
       
       // PINTEREST-LEVEL: Wait for ALL initial viewport images to fully load (only for real content)
       // This ensures zero loading states after screen dismisses
-      const imagesReady = effectiveImagesTotal > 0 && initialImagesReady >= effectiveImagesTotal;
-      const videoPostersReady = effectiveVideoPostersTotal > 0 && initialVideoPostersReady >= effectiveVideoPostersTotal;
+      const imagesReady = effectiveImagesTotal > 0 ? initialImagesReady >= effectiveImagesTotal : true; // If no images, consider ready
+      const videoPostersReady = effectiveVideoPostersTotal > 0 ? initialVideoPostersReady >= effectiveVideoPostersTotal : true; // If no posters, consider ready
       const allMediaReady = imagesReady && videoPostersReady;
-      
+
+      // CRITICAL: If there's no media to wait for, dismiss immediately after joke time
+      if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && jokeTimeMet && artworksLoaded && artworks.length > 0) {
+        console.log(`✅ No media to wait for, dismissing after joke: ${artworks.length} artworks loaded`);
+        setShowLoadingScreen(false);
+        return;
+      }
+
       // CRITICAL: Only dismiss when BOTH joke time is met AND all media is loaded
       if (jokeTimeMet && allMediaReady && artworksLoaded && artworks.length > 0) {
         console.log(`✅ Ready to dismiss: Joke complete + 2s, ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Zero loading states!`);
         setShowLoadingScreen(false);
         return;
       }
-      
-      // Fallback timeout: If joke is done + 2s but media still loading, wait max 3s more (reduced from 5s)
+
+      // Fallback timeout: If joke is done + 2s but media still loading, wait max 5s more
       // This prevents infinite waiting if some images fail
-      if (jokeTimeMet && jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 5000) {
-        console.warn(`⚠️ Timeout after joke + 2s + 3s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
+      if (jokeTimeMet && jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 7000) {
+        console.warn(`⚠️ Timeout after joke + 2s + 5s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
+        setShowLoadingScreen(false);
+        return;
+      }
+      
+      // CRITICAL: Maximum total loading time (15 seconds) - prevent infinite loading
+      const totalLoadingTime = Date.now() - loadingStartTimeRef.current;
+      if (totalLoadingTime > MAX_LOADING_TIME) {
+        console.warn(`⚠️ Maximum loading time (${MAX_LOADING_TIME}ms) exceeded, dismissing loading screen`);
         setShowLoadingScreen(false);
         return;
       }
