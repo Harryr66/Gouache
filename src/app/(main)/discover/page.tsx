@@ -2217,12 +2217,22 @@ function DiscoverPageContent() {
     // NOTE: We don't filter by deleted - if truly deleted, item should be removed from DB entirely
     // The deleted flag is mislabeled in some cases, so we show all content
     
-    // FIRST: For image grid, only include Cloudflare images (all active artists should use Cloudflare)
-    // This ensures we don't show old Firebase Storage images or other sources
+    // FIRST: For image grid, only include Cloudflare images and videos (all active artists should use Cloudflare)
+    // This ensures we don't show old Firebase Storage images/videos or other sources
     filtered = filtered.filter((artwork: any) => {
       const hasVideo = artwork.videoUrl || artwork.mediaType === 'video';
-      // Videos are allowed (they can be from any source)
-      if (hasVideo) return true;
+      
+      // If it's a video, it MUST be from Cloudflare Stream
+      if (hasVideo) {
+        const videoUrl = artwork.videoUrl || artwork.mediaUrls?.[0] || '';
+        if (!isCloudflareVideo(videoUrl)) {
+          return false; // Skip non-Cloudflare videos
+        }
+        // Video has Cloudflare URL - check if it has a valid thumbnail/poster image
+        const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || '';
+        // If no image URL, video might still be valid (thumbnail will be generated)
+        return true; // Allow Cloudflare videos
+      }
       
       // For images, they MUST be from Cloudflare
       const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
