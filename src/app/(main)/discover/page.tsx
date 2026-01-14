@@ -1311,6 +1311,20 @@ function DiscoverPageContent() {
             const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
             const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
             
+            // CRITICAL: Skip products/shop items - only show artworks from portfolio/discover
+            if (item.type === 'product' || item.type === 'Product' || item.type === 'marketplace' || item.type === 'MarketplaceProduct') {
+              skippedNoImage++;
+              continue;
+            }
+            if (item.artworkType === 'merchandise') {
+              skippedNoImage++;
+              continue;
+            }
+            if (item.showInShop === true && item.showInPortfolio !== true) {
+              skippedNoImage++;
+              continue; // Skip shop-only items
+            }
+            
             // CRITICAL: Only fetch images from Cloudflare (all active artists should use Cloudflare)
             // Skip images that are NOT from Cloudflare
             if (!videoUrl && imageUrl && !isCloudflareImage(imageUrl)) {
@@ -1503,6 +1517,11 @@ function DiscoverPageContent() {
             
             // Skip events
             if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
+            
+            // CRITICAL: Skip products/shop items - only show artworks from portfolio/discover
+            if (artworkData.type === 'product' || artworkData.type === 'Product' || artworkData.type === 'marketplace' || artworkData.type === 'MarketplaceProduct') continue;
+            if (artworkData.artworkType === 'merchandise') continue;
+            if (artworkData.showInShop === true && artworkData.showInPortfolio !== true) continue; // Skip shop-only items
             
             // Skip items with invalid/corrupted imageUrls (data URLs from old uploads)
             if (artworkData.imageUrl && artworkData.imageUrl.startsWith('data:image')) continue;
@@ -2030,6 +2049,12 @@ function DiscoverPageContent() {
                         (itemAny.mediaUrls?.[0] && itemAny.mediaTypes?.[0] !== 'video' ? itemAny.mediaUrls[0] : '') || 
                         '';
         
+        // CRITICAL: Filter out products/shop items - only show artworks from portfolio/discover
+        const itemAny = item as any;
+        if (itemAny.type === 'product' || itemAny.type === 'Product' || itemAny.type === 'marketplace' || itemAny.type === 'MarketplaceProduct') continue;
+        if (itemAny.artworkType === 'merchandise') continue;
+        if (itemAny.showInShop === true && itemAny.showInPortfolio !== true) continue; // Skip shop-only items
+        
         // Filter: Only Cloudflare images/videos with valid URLs
         if (videoUrl && !isCloudflareVideo(videoUrl)) continue;
         if (!videoUrl && imageUrl) {
@@ -2339,6 +2364,17 @@ function DiscoverPageContent() {
     // FIRST: Filter to ONLY Cloudflare content (images AND videos)
     // Videos will be shown in video feed, images in grid view
     filtered = filtered.filter((artwork: any) => {
+      // CRITICAL: Filter out products/shop items - only show artworks
+      if (artwork.type === 'product' || artwork.type === 'Product' || artwork.type === 'marketplace' || artwork.type === 'MarketplaceProduct') {
+        return false; // Skip products
+      }
+      if (artwork.artworkType === 'merchandise') {
+        return false; // Skip merchandise
+      }
+      if (artwork.showInShop === true && artwork.showInPortfolio !== true) {
+        return false; // Skip shop-only items
+      }
+      
       const hasVideo = artwork.videoUrl || artwork.mediaType === 'video';
       
       // For videos, they MUST be from Cloudflare Stream
@@ -3071,26 +3107,20 @@ function DiscoverPageContent() {
               )}
               
               {/* Image/Video Count Indicator */}
+              {!showLoadingScreen && isLoadingMore && (
+                <div className="text-sm text-muted-foreground mt-2">
+                  Loading more...
+                </div>
+              )}
               {!showLoadingScreen && (() => {
-                // Use existing isMobile state instead of creating new variable
-                const maxRendered = isMobile ? 75 : 150;
+                // Content counter removed - no longer showing "Showing X images/videos"
+                return null;
+              })()}
+              {!showLoadingScreen && false && (() => {
+                // Removed content counter code
                 return (
                   <div className="text-sm text-muted-foreground mt-2">
                     {artworkView === 'grid' ? (
-                      <>
-                        Showing {Math.min(filteredAndSortedArtworks.filter((item: any) => {
-                          if ('type' in item && item.type === 'ad') return false;
-                          const hasVideo = (item as any).videoUrl || (item as any).mediaType === 'video';
-                          return !hasVideo;
-                        }).length, maxRendered)} images
-                        {filteredAndSortedArtworks.length > maxRendered && ` (of ${filteredAndSortedArtworks.filter((item: any) => {
-                          if ('type' in item && item.type === 'ad') return false;
-                          const hasVideo = (item as any).videoUrl || (item as any).mediaType === 'video';
-                          return !hasVideo;
-                        }).length} total)`}
-                        {isLoadingMore && ' • Loading more...'}
-                      </>
-                    ) : (
                       <>
                         Showing {Math.min(visibleFilteredArtworks.filter((item: any) => {
                           if ('type' in item && item.type === 'ad') return false;
