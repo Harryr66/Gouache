@@ -1181,10 +1181,11 @@ function DiscoverPageContent() {
               setHasMore(false);
             }
             
-            // CHANGED: Always use fallback to include artworks collection
-            // This ensures we get content from BOTH portfolioItems AND artworks collections
-            log('📋 Discover: Always querying artworks collection to include legacy content');
-            useFallback = true;
+            // If empty, immediately use fallback
+            if (portfolioItems.length === 0) {
+              log('📋 Discover: portfolioItems collection is empty, using fallback method');
+              useFallback = true;
+            }
           } catch (portfolioError: any) {
             // If portfolioItems query fails (e.g., missing index), fall back to old method
             log('⚠️ Discover: Error querying portfolioItems, falling back to userProfiles method:', portfolioError?.message || portfolioError);
@@ -1309,6 +1310,10 @@ function DiscoverPageContent() {
           log(`📊 Discover: Summary - Portfolio items: ${portfolioItems.length}, Added: ${fetchedArtworks.length}, Skipped (no image): ${skippedNoImage}, Skipped (no artist): ${skippedNoArtist}`);
         }
         
+        // ALWAYS query artworks collection to include ALL content (portfolioItems + artworks)
+        // This ensures 100+ items from artworks collection are included
+        const shouldQueryArtworks = true; // Always query artworks
+        
         // BACKWARD COMPATIBILITY: If no portfolioItems found or using fallback, use old method (userProfiles.portfolio arrays)
         if (useFallback || (portfolioItems.length === 0 && fetchedArtworks.length === 0)) {
           log('📋 Discover: No portfolioItems found, falling back to userProfiles.portfolio method (backward compatibility)...');
@@ -1404,9 +1409,10 @@ function DiscoverPageContent() {
           log(`📊 Discover: Fallback method - Added ${fetchedArtworks.length} artworks from userProfiles.portfolio`);
         }
         
-        // Also fetch Discover content from artworks collection (non-portfolio content)
-        // This includes content uploaded via Discover portal with showInPortfolio = false
-        log('🔍 Discover: Fetching non-portfolio content from artworks collection...');
+        // ALWAYS fetch content from artworks collection (runs regardless of portfolioItems)
+        // This includes the 100+ items in the artworks collection
+        if (shouldQueryArtworks) {
+          log('🔍 Discover: Fetching content from artworks collection...');
         try {
           // Filter in JavaScript instead of query level to avoid index requirement
           const artworksQuery = query(
@@ -1568,8 +1574,9 @@ function DiscoverPageContent() {
             log(`✅ Discover: Added non-portfolio artwork "${artwork.title}" from ${artwork.artist.name}`);
           }
         } catch (error) {
-          console.error('Error fetching non-portfolio artworks:', error);
+          console.error('Error fetching artworks collection:', error);
         }
+        } // End if (shouldQueryArtworks)
         
         // Sort by createdAt descending (newest first)
           fetchedArtworks.sort((a, b) => {
