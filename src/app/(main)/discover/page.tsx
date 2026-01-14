@@ -992,6 +992,7 @@ function DiscoverPageContent() {
   // Detect mobile device
   useEffect(() => {
     const checkMobile = () => {
+      if (typeof window === 'undefined') return;
       setIsMobile(window.innerWidth < 768); // md breakpoint
     };
     
@@ -1068,20 +1069,25 @@ function DiscoverPageContent() {
                   lastItemId: lastItem.id
                 });
                 
-                // Fetch the actual document snapshot for proper pagination
-                try {
-                  const lastDocSnap = await getDoc(doc(db, 'portfolioItems', lastItem.id));
-                  if (lastDocSnap.exists()) {
-                    setLastDocument(lastDocSnap);
-                    console.log('🔄 SCROLL LOAD: ✅ INITIAL LOAD (API) - Set lastDocument snapshot successfully');
-                  } else {
-                    console.warn('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - Last document does not exist, pagination may not work');
-                    setLastDocument(null);
-                  }
-                } catch (docError) {
-                  console.error('🔄 SCROLL LOAD: ❌ INITIAL LOAD (API) - Failed to fetch lastDocument snapshot:', docError);
-                  setLastDocument(null);
-                }
+                // Fetch the actual document snapshot for proper pagination (non-blocking)
+                // Use a timeout to prevent blocking on slow connections (mobile)
+                Promise.race([
+                  getDoc(doc(db, 'portfolioItems', lastItem.id)),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('getDoc timeout')), 5000))
+                ])
+                  .then((lastDocSnap: any) => {
+                    if (lastDocSnap?.exists()) {
+                      setLastDocument(lastDocSnap);
+                      console.log('🔄 SCROLL LOAD: ✅ INITIAL LOAD (API) - Set lastDocument snapshot successfully');
+                    } else {
+                      console.warn('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - Last document does not exist, using plain object fallback');
+                      setLastDocument(lastItem);
+                    }
+                  })
+                  .catch((docError) => {
+                    console.error('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - Failed to fetch lastDocument snapshot, using plain object fallback:', docError);
+                    setLastDocument(lastItem); // Fallback to plain object
+                  });
                 
                 // ALWAYS set hasMore to true if we got items - let pagination logic determine if there's more
                 // Don't compare to INITIAL_FETCH_LIMIT because filtering may reduce count, but more content exists
@@ -1147,20 +1153,25 @@ function DiscoverPageContent() {
                 lastItemId: lastItem.id 
               });
               
-              // Fetch the actual document snapshot for proper pagination
-              try {
-                const lastDocSnap = await getDoc(doc(db, 'portfolioItems', lastItem.id));
-                if (lastDocSnap.exists()) {
-                  setLastDocument(lastDocSnap);
-                  console.log('🔄 SCROLL LOAD: ✅ INITIAL LOAD (fallback) - Set lastDocument snapshot successfully');
-                } else {
-                  console.warn('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - Last document does not exist');
-                  setLastDocument(null);
-                }
-              } catch (docError) {
-                console.error('🔄 SCROLL LOAD: ❌ INITIAL LOAD (fallback) - Failed to fetch lastDocument snapshot:', docError);
-                setLastDocument(null);
-              }
+              // Fetch the actual document snapshot for proper pagination (non-blocking)
+              // Use a timeout to prevent blocking on slow connections (mobile)
+              Promise.race([
+                getDoc(doc(db, 'portfolioItems', lastItem.id)),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('getDoc timeout')), 5000))
+              ])
+                .then((lastDocSnap: any) => {
+                  if (lastDocSnap?.exists()) {
+                    setLastDocument(lastDocSnap);
+                    console.log('🔄 SCROLL LOAD: ✅ INITIAL LOAD (fallback) - Set lastDocument snapshot successfully');
+                  } else {
+                    console.warn('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - Last document does not exist, using plain object fallback');
+                    setLastDocument(lastItem);
+                  }
+                })
+                .catch((docError) => {
+                  console.error('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - Failed to fetch lastDocument snapshot, using plain object fallback:', docError);
+                  setLastDocument(lastItem); // Fallback to plain object
+                });
               
               // ALWAYS set hasMore to true if we got items - let pagination logic determine if there's more
               setHasMore(true);
@@ -1596,20 +1607,25 @@ function DiscoverPageContent() {
           const lastPortfolioItem = portfolioItems[portfolioItems.length - 1];
           console.log('🔄 SCROLL LOAD: 📝 FINAL - Fetching lastDocument snapshot from portfolioItems:', { lastItemId: lastPortfolioItem.id });
           
-          // Fetch the actual document snapshot for proper pagination
-          try {
-            const lastDocSnap = await getDoc(doc(db, 'portfolioItems', lastPortfolioItem.id));
-            if (lastDocSnap.exists()) {
-              setLastDocument(lastDocSnap);
-              console.log('🔄 SCROLL LOAD: ✅ FINAL - Set lastDocument snapshot successfully');
-            } else {
-              console.warn('🔄 SCROLL LOAD: ⚠️ FINAL - Last document does not exist');
-              setLastDocument(null);
-            }
-          } catch (docError) {
-            console.error('🔄 SCROLL LOAD: ❌ FINAL - Failed to fetch lastDocument snapshot:', docError);
-            setLastDocument(null);
-          }
+          // Fetch the actual document snapshot for proper pagination (non-blocking)
+          // Use a timeout to prevent blocking on slow connections (mobile)
+          Promise.race([
+            getDoc(doc(db, 'portfolioItems', lastPortfolioItem.id)),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('getDoc timeout')), 5000))
+          ])
+            .then((lastDocSnap: any) => {
+              if (lastDocSnap?.exists()) {
+                setLastDocument(lastDocSnap);
+                console.log('🔄 SCROLL LOAD: ✅ FINAL - Set lastDocument snapshot successfully');
+              } else {
+                console.warn('🔄 SCROLL LOAD: ⚠️ FINAL - Last document does not exist, using plain object fallback');
+                setLastDocument(lastPortfolioItem);
+              }
+            })
+            .catch((docError) => {
+              console.error('🔄 SCROLL LOAD: ⚠️ FINAL - Failed to fetch lastDocument snapshot, using plain object fallback:', docError);
+              setLastDocument(lastPortfolioItem); // Fallback to plain object
+            });
           
           setHasMore(true); // Always set to true initially since we're loading from multiple sources
         } else if (finalArtworks.length > 0) {

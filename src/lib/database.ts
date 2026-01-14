@@ -701,8 +701,23 @@ export class PortfolioService {
       q = query(q, orderBy('createdAt', 'desc'));
 
       // Cursor pagination (faster than offset)
+      // Handle both DocumentSnapshot and plain object cursors
       if (options?.startAfter) {
-        q = query(q, startAfter(options.startAfter));
+        try {
+          // Check if it's a DocumentSnapshot (has exists method)
+          if (typeof options.startAfter.exists === 'function') {
+            q = query(q, startAfter(options.startAfter));
+          } else if (options.startAfter.createdAt) {
+            // Plain object with createdAt field - use field value for cursor
+            const createdAtValue = options.startAfter.createdAt?.toDate?.() || 
+                                   (options.startAfter.createdAt instanceof Date ? options.startAfter.createdAt : new Date());
+            q = query(q, startAfter(createdAtValue));
+          } else {
+            console.warn('⚠️ PortfolioService: Invalid startAfter cursor, ignoring pagination');
+          }
+        } catch (cursorError) {
+          console.warn('⚠️ PortfolioService: Error processing startAfter cursor, ignoring pagination:', cursorError);
+        }
       }
       
       // Limit results (reduces data transfer)
