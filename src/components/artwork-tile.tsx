@@ -1272,32 +1272,20 @@ const generateArtistContent = (artist: Artist) => ({
                     );
                   }
                   
-                  // CRITICAL: Try original URL first (it might already work!)
+                  // CRITICAL: Always try original URL first (it might already work!)
                   // Only construct a new URL if original doesn't have a variant
                   // This preserves working URLs from the database
                   let cloudflareUrl: string;
                   
-                  // If original URL already has a variant, use it as-is
-                  // Otherwise, try /public first (most compatible, always exists)
+                  // Always use original URL first - it's what's stored in the database
+                  // If it fails, retry logic will try /public and other variants
                   if (existingVariant) {
-                    // Original URL has a variant - use it as-is (it might work!)
+                    // Original URL has a variant - use it as-is
                     cloudflareUrl = imageSrc;
                   } else {
-                    // Original URL has no variant - construct with /public (most compatible)
+                    // Original URL has no variant - try /public first (most compatible)
                     // /public is the default variant that always exists for Cloudflare Images
                     cloudflareUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
-                  }
-                  
-                  // DEBUG: Log URL construction for troubleshooting
-                  if (process.env.NODE_ENV === 'development') {
-                    console.log('🖼️ Cloudflare URL:', {
-                      original: imageSrc,
-                      hasVariant: !!existingVariant,
-                      variant: existingVariant || 'none',
-                      constructed: cloudflareUrl,
-                      accountHash,
-                      imageId
-                    });
                   }
                   
                   // DEBUG: Log URL construction for troubleshooting
@@ -1451,39 +1439,22 @@ const generateArtistContent = (artist: Artist) => ({
                             });
                             
                             // Try alternative variants before marking as failed
-                            // ALWAYS try /public first (most compatible, always exists)
-                            // Then try other variants if /public works
-                            if (retryCount < 5 && isMountedRef.current) {
+                            // SIMPLIFIED: Always try /public first, then try other variants
+                            if (retryCount < 4 && isMountedRef.current) {
                               const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
                               if (cloudflareMatch) {
                                 const [, accountHash, imageId] = cloudflareMatch;
                                 
-                                // CRITICAL: Always try /public first (most compatible)
-                                // Then try other variants in order
+                                // Simple variant order: public (always exists), then others
                                 const variants = ['public', 'Thumbnail', '720px', '1080px'];
-                                const currentVariant = cloudflareUrl.match(/\/([^/]+)$/)?.[1] || '';
-                                
-                                // Determine next variant to try
-                                let nextVariant: string;
-                                if (currentVariant !== 'public' && retryCount === 0) {
-                                  // First retry: always try /public (most compatible)
-                                  nextVariant = 'public';
-                                } else if (currentVariant === 'public' && retryCount === 1) {
-                                  // Second retry: try Thumbnail (small, fast)
-                                  nextVariant = 'Thumbnail';
-                                } else {
-                                  // Subsequent retries: try next variant in sequence
-                                  const currentIndex = variants.findIndex(v => v === currentVariant);
-                                  const nextIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
-                                  nextVariant = variants[nextIndex] || 'public';
-                                }
+                                const nextVariant = variants[retryCount] || 'public';
                                 
                                 if (imgElement && nextVariant) {
                                   const fallbackUrl = `https://imagedelivery.net/${accountHash}/${imageId}/${nextVariant}`;
                                   
                                   // Don't retry with a URL we've already tried
                                   if (!failedUrlsRef.current.has(fallbackUrl) && fallbackUrl !== cloudflareUrl) {
-                                    console.log(`🔄 Retrying with ${nextVariant} variant (attempt ${retryCount + 1}/5):`, fallbackUrl);
+                                    console.log(`🔄 Retrying with ${nextVariant} variant (attempt ${retryCount + 1}/4):`, fallbackUrl);
                                     // Use setTimeout to retry, but don't update React state
                                     setTimeout(() => {
                                       if (!isMountedRef.current || !imgElement) return;
@@ -1498,18 +1469,18 @@ const generateArtistContent = (artist: Artist) => ({
                                       } catch (retryError) {
                                         console.error('Error retrying image:', retryError);
                                       }
-                                    }, 150); // Very fast retry (150ms)
+                                    }, 100); // Faster retry (100ms)
                                     return;
                                   }
                                 }
                               }
                             }
                             
-                            // Only mark as failed after all retries exhausted (5 attempts: original + 4 retries)
+                            // Only mark as failed after all retries exhausted (4 attempts: original + 3 retries)
                             // CRITICAL: Update state to mark URL as failed for conditional rendering
                             // This prevents React from trying to render the image again
                             // Use setTimeout to defer state update outside of render cycle
-                            if (isMountedRef.current && retryCount >= 5) {
+                            if (isMountedRef.current && retryCount >= 4) {
                               setTimeout(() => {
                                 if (isMountedRef.current) {
                                   setFailedImageUrls(prev => new Set([...prev, cloudflareUrl]));
