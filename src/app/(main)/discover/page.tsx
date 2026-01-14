@@ -1310,9 +1310,6 @@ function DiscoverPageContent() {
           log(`📊 Discover: Summary - Portfolio items: ${portfolioItems.length}, Added: ${fetchedArtworks.length}, Skipped (no image): ${skippedNoImage}, Skipped (no artist): ${skippedNoArtist}`);
         }
         
-        // ALWAYS query artworks collection to include ALL content (portfolioItems + artworks)
-        // This ensures 100+ items from artworks collection are included
-        const shouldQueryArtworks = true; // Always query artworks
         
         // BACKWARD COMPATIBILITY: If no portfolioItems found or using fallback, use old method (userProfiles.portfolio arrays)
         if (useFallback || (portfolioItems.length === 0 && fetchedArtworks.length === 0)) {
@@ -1411,8 +1408,7 @@ function DiscoverPageContent() {
         
         // ALWAYS fetch content from artworks collection (runs regardless of portfolioItems)
         // This includes the 100+ items in the artworks collection
-        if (shouldQueryArtworks) {
-          log('🔍 Discover: Fetching content from artworks collection...');
+        log('🔍 Discover: Fetching content from artworks collection...');
         try {
           // Filter in JavaScript instead of query level to avoid index requirement
           const artworksQuery = query(
@@ -1573,10 +1569,12 @@ function DiscoverPageContent() {
             fetchedArtworks.push(artwork);
             log(`✅ Discover: Added non-portfolio artwork "${artwork.title}" from ${artwork.artist.name}`);
           }
+          
+          log(`📊 Discover: Added ${fetchedArtworks.length} total artworks from artworks collection`);
         } catch (error) {
-          console.error('Error fetching artworks collection:', error);
+          console.error('❌ Error fetching artworks collection:', error);
+          // Don't crash - continue with whatever we have
         }
-        } // End if (shouldQueryArtworks)
         
         // Sort by createdAt descending (newest first)
           fetchedArtworks.sort((a, b) => {
