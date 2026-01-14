@@ -26,15 +26,24 @@ export async function GET(request: NextRequest) {
       // Skip events
       if (data.type === 'event' || data.type === 'Event' || data.eventType) continue;
       
+      // CRITICAL: NEVER mark videos as deleted - videos are valuable content
+      // If a video exists, it should be kept even if other fields are missing
+      const isVideo = data.videoUrl || data.mediaType === 'video' || 
+                     (data.mediaUrls && Array.isArray(data.mediaUrls) && 
+                      data.mediaTypes && Array.isArray(data.mediaTypes) &&
+                      data.mediaTypes.some((type: string) => type === 'video'));
+      if (isVideo) {
+        continue; // Skip videos entirely - never mark as deleted
+      }
+      
       // Check if this item has valid media
       const hasValidMedia = (
         (data.imageUrl && typeof data.imageUrl === 'string' && data.imageUrl.length > 0 && !data.imageUrl.startsWith('data:image')) ||
-        (data.videoUrl && typeof data.videoUrl === 'string' && data.videoUrl.length > 0) ||
         (data.supportingImages && Array.isArray(data.supportingImages) && data.supportingImages.length > 0) ||
         (data.mediaUrls && Array.isArray(data.mediaUrls) && data.mediaUrls.length > 0)
       );
       
-      // If no valid media, mark as deleted
+      // If no valid media, mark as deleted (but never videos - see above)
       if (!hasValidMedia) {
         console.log(`Marking orphaned item as deleted: ${doc.id}`);
         batch.update(doc.ref, {

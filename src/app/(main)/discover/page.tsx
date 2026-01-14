@@ -1225,11 +1225,8 @@ function DiscoverPageContent() {
           
           // Process portfolio items immediately with fallback artist data
           for (const [index, item] of portfolioItems.entries()) {
-            // SKIP DELETED ITEMS IMMEDIATELY - don't even process them
-            if (item.deleted === true) {
-              skippedNoImage++; // Track as skipped
-              continue;
-            }
+            // NOTE: We don't filter by deleted here - if truly deleted, item should be removed from DB entirely
+            // The deleted flag is mislabeled in some cases, so we show all content
             
             // Get artist data (use fallback if not loaded yet)
             let artistData = artistDataMap.get(item.userId);
@@ -1333,8 +1330,8 @@ function DiscoverPageContent() {
             
             const recentPortfolio = portfolio
               .filter((item: any) => {
-                // AGGRESSIVE FILTERING: Skip deleted items, invalid items, and items without media
-                if (item.deleted === true) return false;
+                // NOTE: We don't filter by deleted - if truly deleted, item should be removed from DB entirely
+                // The deleted flag is mislabeled in some cases, so we show all content
                 if (item.showInPortfolio === false && !item.videoUrl) return false; // Skip discover-only items without video
                 
                 // Skip items without any valid media
@@ -1440,8 +1437,8 @@ function DiscoverPageContent() {
           for (const artworkDoc of artworksSnapshot.docs) {
             const artworkData = artworkDoc.data();
             
-            // Skip deleted items
-            if (artworkData.deleted === true) continue;
+            // NOTE: We don't filter by deleted - if truly deleted, item should be removed from DB entirely
+            // The deleted flag is mislabeled in some cases, so we show all content
             
             // Skip events
             if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
@@ -2189,10 +2186,10 @@ function DiscoverPageContent() {
       artworkIds: filtered.slice(0, 10).map((a: any) => a.id)
     });
 
-    // FIRST: Filter out deleted items (like we did for courses - check deleted flag immediately)
-    filtered = filtered.filter((artwork: any) => artwork.deleted !== true);
+    // NOTE: We don't filter by deleted - if truly deleted, item should be removed from DB entirely
+    // The deleted flag is mislabeled in some cases, so we show all content
     
-    // SECOND: For image grid, only include Cloudflare images (all active artists should use Cloudflare)
+    // FIRST: For image grid, only include Cloudflare images (all active artists should use Cloudflare)
     // This ensures we don't show old Firebase Storage images or other sources
     filtered = filtered.filter((artwork: any) => {
       const hasVideo = artwork.videoUrl || artwork.mediaType === 'video';
