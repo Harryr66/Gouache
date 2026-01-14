@@ -1300,15 +1300,15 @@ const generateArtistContent = (artist: Artist) => ({
                     });
                   }
                   
-                  // Debug logging
+                  // DEBUG: Log URL construction for troubleshooting
                   if (process.env.NODE_ENV === 'development') {
-                    console.log('🖼️ Cloudflare URL construction:', {
+                    console.log('🖼️ Cloudflare URL:', {
                       original: imageSrc,
-                      accountHash,
-                      imageId,
-                      existingVariant,
+                      hasVariant: !!existingVariant,
+                      variant: existingVariant || 'none',
                       constructed: cloudflareUrl,
-                      hasVideo
+                      accountHash,
+                      imageId
                     });
                   }
                   

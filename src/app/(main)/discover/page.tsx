@@ -1865,11 +1865,11 @@ function DiscoverPageContent() {
 
     console.log('🔄 SCROLL LOAD: ✅ ALL CONDITIONS MET - PROCEEDING WITH LOAD');
     
-    // SMOOTH LOADING: Add short pause before starting to prevent shuddery/laggy behavior
-    // This gives the UI a moment to stabilize before loading
+    // STATIC DISPLAY: Add short pause before starting, then load all content in background
+    // This ensures a clean pause, then all items appear at once (not staggered)
     setIsLoadingMore(true);
     console.log('🔄 SCROLL LOAD: ⏸️ Pausing briefly before loading...');
-    await new Promise(resolve => setTimeout(resolve, 150)); // 150ms pause
+    await new Promise(resolve => setTimeout(resolve, 200)); // 200ms pause for smooth transition
     
     console.log('🔄 SCROLL LOAD: 📥 Starting to fetch more artworks...');
     log('📥 Discover: Loading more artworks...');
@@ -2075,28 +2075,35 @@ function DiscoverPageContent() {
         newArtworks.push(artwork);
       }
 
-      // SMOOTH DISPLAY: Use startTransition to batch state update and display all at once
-      // This prevents shuddery/laggy behavior by rendering all new items in one update
-      startTransition(() => {
-        // Append new artworks to existing ones, deduplicating by ID to prevent recycling
-        // CRITICAL: Limit total artworks to prevent crashes with 200+ images
-        // Mobile has less memory - use stricter limits
-        // Use existing isMobile state instead of creating new variable
-        const MAX_TOTAL_ARTWORKS = isMobile ? 100 : 200; // Mobile: 100 items, Desktop: 200 items
-        setArtworks(prev => {
-          const existingIds = new Set(prev.map(a => a.id));
-          const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
-          const combined = [...prev, ...uniqueNewArtworks];
-          // Deduplicate entire array by ID (in case of any duplicates in prev)
-          const uniqueCombined = Array.from(
-            new Map(combined.map(a => [a.id, a])).values()
-          );
-          // CRITICAL: Cap at MAX_TOTAL_ARTWORKS to prevent memory issues and crashes
-          // Keep most recent items (slice from end)
-          const capped = uniqueCombined.length > MAX_TOTAL_ARTWORKS
-            ? uniqueCombined.slice(-MAX_TOTAL_ARTWORKS)
-            : uniqueCombined;
-          return capped;
+      // STATIC DISPLAY: Process ALL items first, then update state in ONE synchronous batch
+      // This ensures all new items appear at once (not staggered/piece by piece)
+      const MAX_TOTAL_ARTWORKS = isMobile ? 100 : 200; // Mobile: 100 items, Desktop: 200 items
+      
+      // Calculate the complete new artworks array BEFORE updating state
+      // This ensures we have all items ready before React renders
+      setArtworks(prev => {
+        const existingIds = new Set(prev.map(a => a.id));
+        const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
+        const combined = [...prev, ...uniqueNewArtworks];
+        // Deduplicate entire array by ID (in case of any duplicates in prev)
+        const uniqueCombined = Array.from(
+          new Map(combined.map(a => [a.id, a])).values()
+        );
+        // CRITICAL: Cap at MAX_TOTAL_ARTWORKS to prevent memory issues and crashes
+        // Keep most recent items (slice from end)
+        const capped = uniqueCombined.length > MAX_TOTAL_ARTWORKS
+          ? uniqueCombined.slice(-MAX_TOTAL_ARTWORKS)
+          : uniqueCombined;
+        return capped;
+      });
+      
+      // STATIC DISPLAY: Use double requestAnimationFrame to ensure all DOM updates happen in one frame
+      // This prevents staggered rendering by batching all React updates together
+      await new Promise(resolve => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve(undefined);
+          });
         });
       });
       
@@ -2131,6 +2138,10 @@ function DiscoverPageContent() {
 
       console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks (expected ${LOAD_MORE_LIMIT} for 10 rows, columnCount=${columnCount})`);
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
+      
+      // STATIC DISPLAY: Small delay before hiding loader to ensure smooth transition
+      // This gives React time to render all new items before hiding the loading indicator
+      await new Promise(resolve => setTimeout(resolve, 50)); // 50ms delay for smooth display
     } catch (error: any) {
       console.error('🔄 SCROLL LOAD: ❌ Error loading more artworks:', error);
       
