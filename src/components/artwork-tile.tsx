@@ -1918,7 +1918,7 @@ const generateArtistContent = (artist: Artist) => ({
                 );
               })()}
               {/* Error state - show alternative content tile (no placeholder images) */}
-              {imageError && !fallbackImageUrl && (
+              {imageError && (
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
                   <div className="text-center space-y-2">
                     <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
@@ -1936,15 +1936,6 @@ const generateArtistContent = (artist: Artist) => ({
                     )}
                   </div>
                 </div>
-              )}
-              {/* Legacy fallback - should not be used (only Cloudflare images) */}
-              {imageError && fallbackImageUrl && false && (
-                <Image
-                  src={fallbackImageUrl}
-                  alt={artwork.imageAiHint || artwork.title || 'Image placeholder'}
-                  fill
-                  className="object-cover absolute inset-0 z-20 pointer-events-none"
-                />
               )}
             </>
           )}
