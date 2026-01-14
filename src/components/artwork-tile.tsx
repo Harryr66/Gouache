@@ -1327,6 +1327,33 @@ const generateArtistContent = (artist: Artist) => ({
                     }
                   }, [cloudflareUrl, isImageLoaded, imageError]);
                   
+                  // CRITICAL: Check if URL is valid before rendering to prevent React error #300
+                  // If URL contains invalid characters or is malformed, show placeholder immediately
+                  if (!cloudflareUrl || 
+                      typeof cloudflareUrl !== 'string' || 
+                      cloudflareUrl.length === 0 ||
+                      !cloudflareUrl.startsWith('http') ||
+                      cloudflareUrl.includes('undefined') ||
+                      cloudflareUrl.includes('null') ||
+                      cloudflareUrl.includes('NaN')) {
+                    console.warn('⚠️ Invalid Cloudflare URL detected, showing placeholder immediately:', cloudflareUrl);
+                    return (
+                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
+                        <div className="text-muted-foreground text-xs text-center px-2">Invalid image URL</div>
+                      </div>
+                    );
+                  }
+                  
+                  // CRITICAL: If this URL has already failed, don't try to render it again
+                  // This prevents React error #300 from trying to render invalid images
+                  if (failedUrlsRef.current.has(cloudflareUrl)) {
+                    return (
+                      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
+                        <div className="text-muted-foreground text-xs text-center px-2">Image failed to load</div>
+                      </div>
+                    );
+                  }
+                  
                   return (
                     <ImageErrorBoundary
                       fallback={
@@ -1336,13 +1363,9 @@ const generateArtistContent = (artist: Artist) => ({
                       }
                       onError={(error, errorInfo) => {
                         console.error('ImageErrorBoundary caught rendering error:', error, errorInfo);
-                        try {
-                          setImageError(true);
-                          setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                          setIsImageLoaded(true);
-                        } catch (stateError) {
-                          console.error('Error updating state in ErrorBoundary:', stateError);
-                        }
+                        // Mark URL as failed to prevent future render attempts
+                        failedUrlsRef.current.add(cloudflareUrl);
+                        // Don't update state here - Error Boundary handles the fallback UI
                       }}
                     >
                       <img
@@ -1362,6 +1385,8 @@ const generateArtistContent = (artist: Artist) => ({
                           }
                         }}
                         onLoad={() => {
+                          // Only update state if component is still mounted
+                          if (!isMountedRef.current) return;
                           setIsImageLoaded(true);
                           setImageError(false);
                           setRetryCount(0);
@@ -1374,71 +1399,55 @@ const generateArtistContent = (artist: Artist) => ({
                           }
                         }}
                         onError={(e) => {
+                          // CRITICAL: Prevent React error #300 by immediately hiding failed image
+                          // Don't update React state in error handler - this causes React error #300
                           try {
-                            // CRITICAL: Prevent React error #300 by immediately hiding failed image
-                            // Use try-catch to prevent any errors in error handler from crashing React
                             const imgElement = e.target as HTMLImageElement;
                             if (imgElement) {
+                              // Immediately hide the failed image to prevent React from trying to render it
                               imgElement.style.display = 'none';
                               imgElement.style.opacity = '0';
+                              // Remove src to prevent further load attempts
+                              imgElement.src = '';
                             }
+                            
+                            // Mark URL as failed to prevent future render attempts
+                            failedUrlsRef.current.add(cloudflareUrl);
                             
                             // Log error for debugging (but only once per URL)
-                            if (!failedUrlsRef.current.has(cloudflareUrl)) {
-                              failedUrlsRef.current.add(cloudflareUrl);
-                              console.warn('⚠️ Cloudflare image load error:', {
-                                url: cloudflareUrl,
-                                artworkId: artwork.id,
-                                variant: hasVideo ? 'Thumbnail' : '1080px',
-                                retryCount,
-                                originalUrl: imageSrc
-                              });
-                            }
-                            
-                            // CRITICAL: Check if component is still mounted before updating state
-                            // This prevents React error #300 from state updates after unmount
-                            if (!isMountedRef.current) {
-                              return; // Component unmounted, don't update state
-                            }
-                            
-                            // CRITICAL: If image fails to load, immediately show placeholder to prevent React error #300
-                            // Use requestAnimationFrame to defer state updates to next frame (safer than setTimeout)
-                            requestAnimationFrame(() => {
-                              // Double-check mounted before updating state
-                              if (!isMountedRef.current) return;
-                              
-                              try {
-                                setImageError(true);
-                                setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                                setIsImageLoaded(true); // Show placeholder immediately to prevent crash
-                              } catch (stateError) {
-                                console.error('Error updating state after image failure:', stateError);
-                              }
+                            console.warn('⚠️ Cloudflare image load error:', {
+                              url: cloudflareUrl,
+                              artworkId: artwork.id,
+                              variant: hasVideo ? 'Thumbnail' : '1080px',
+                              retryCount,
+                              originalUrl: imageSrc
                             });
                             
-                            // Only retry if we haven't already failed this URL
-                            if (retryCount < 1 && !failedUrlsRef.current.has(cloudflareUrl)) {
+                            // CRITICAL: Don't update React state in error handler - this causes React error #300
+                            // The Error Boundary will catch the error and show the fallback UI
+                            // State updates in error handlers during render cause React to crash
+                            
+                            // Only retry if we haven't already failed this URL and component is mounted
+                            if (retryCount < 1 && isMountedRef.current) {
                               const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
                               if (cloudflareMatch) {
                                 const [, accountHash, imageId] = cloudflareMatch;
                                 // Try /public variant as fallback (most compatible)
                                 const fallbackUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
                                 
-                                if (fallbackUrl !== cloudflareUrl && !failedUrlsRef.current.has(fallbackUrl)) {
+                                if (fallbackUrl !== cloudflareUrl && !failedUrlsRef.current.has(fallbackUrl) && imgElement) {
                                   console.log('🔄 Retrying with /public variant:', fallbackUrl);
+                                  // Use setTimeout to retry, but don't update React state
                                   setTimeout(() => {
-                                    // Check mounted before retry
-                                    if (!isMountedRef.current) return;
+                                    if (!isMountedRef.current || !imgElement) return;
                                     
                                     try {
+                                      // Directly update img src without triggering React state update
+                                      imgElement.src = fallbackUrl;
+                                      imgElement.style.display = '';
+                                      imgElement.style.opacity = '';
+                                      // Track retry count without triggering re-render
                                       setRetryCount(prev => prev + 1);
-                                      setIsImageLoaded(false);
-                                      setImageError(false);
-                                      if (imgElement) {
-                                        imgElement.src = fallbackUrl;
-                                        imgElement.style.display = '';
-                                        imgElement.style.opacity = '';
-                                      }
                                     } catch (retryError) {
                                       console.error('Error retrying image:', retryError);
                                     }
@@ -1447,19 +1456,15 @@ const generateArtistContent = (artist: Artist) => ({
                                 }
                               }
                             }
+                            
+                            // If all retries failed, Error Boundary will show fallback
+                            // Don't update state here to avoid React error #300
                           } catch (error) {
                             // CRITICAL: Catch any errors in error handler to prevent React crash
                             console.error('Error in image error handler:', error);
-                            // Still try to show placeholder, but only if mounted
-                            if (isMountedRef.current) {
-                              try {
-                                setImageError(true);
-                                setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                                setIsImageLoaded(true);
-                              } catch (fallbackError) {
-                                console.error('Error showing fallback:', fallbackError);
-                              }
-                            }
+                            // Mark URL as failed
+                            failedUrlsRef.current.add(cloudflareUrl);
+                            // Don't update state - let Error Boundary handle it
                           }
                         }}
                       />
