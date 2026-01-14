@@ -64,6 +64,10 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
   const { theme, resolvedTheme } = useTheme();
   const router = useRouter();
   
+  // CRITICAL: Track if component is mounted to prevent state updates after unmount (prevents React error #300)
+  // Must be declared before useEffect that uses it
+  const isMountedRef = useRef(true);
+  
   // Ensure delete button only renders on client to avoid hydration errors
   useEffect(() => {
     setMounted(true);
@@ -95,8 +99,6 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
   const imageRef = useRef<HTMLImageElement | null>(null);
   const intersectionObserverRef = useRef<IntersectionObserver | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  // CRITICAL: Track if component is mounted to prevent state updates after unmount (prevents React error #300)
-  const isMountedRef = useRef(true);
   
   // Detect mobile for responsive images
   useEffect(() => {
@@ -775,7 +777,7 @@ const generateArtistContent = (artist: Artist) => ({
                     </div>
                   )}
                   {imageUrl ? (
-        <Image
+                    <Image
                       src={imageUrl}
                       alt={artwork.imageAiHint || artwork.title || 'Video thumbnail'}
                       fill
@@ -1326,109 +1328,140 @@ const generateArtistContent = (artist: Artist) => ({
                   }, [cloudflareUrl, isImageLoaded, imageError]);
                   
                   return (
-                    <img
-                      src={cloudflareUrl}
-                      alt={artwork.imageAiHint || artwork.title || 'Artwork'}
-                      width={finalWidth}
-                      height={finalHeight}
-                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${imageError ? 'opacity-0' : 'opacity-100'}`}
-                      loading={isInitialViewport ? "eager" : "lazy"}
-                      fetchPriority="high"
-                      decoding="async"
-                      key={`${cloudflareUrl}-${retryCount}`}
-                      onLoadStart={() => {
-                        // Debug: Log when image starts loading
-                        if (process.env.NODE_ENV === 'development') {
-                          console.log('🔄 Image load started:', cloudflareUrl);
-                        }
-                      }}
-                      onLoad={() => {
-                        setIsImageLoaded(true);
-                        setImageError(false);
-                        setRetryCount(0);
-                        if (isInitialViewport && onImageReady) {
-                          onImageReady(false);
-                        }
-                        // Debug logging
-                        if (process.env.NODE_ENV === 'development') {
-                          console.log('✅ Image loaded successfully:', cloudflareUrl);
-                        }
-                      }}
-                      onError={(e) => {
+                    <ImageErrorBoundary
+                      fallback={
+                        <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
+                          <div className="text-muted-foreground text-xs text-center px-2">Image failed to load</div>
+                        </div>
+                      }
+                      onError={(error, errorInfo) => {
+                        console.error('ImageErrorBoundary caught rendering error:', error, errorInfo);
                         try {
-                          // CRITICAL: Prevent React error #300 by immediately hiding failed image
-                          // Use try-catch to prevent any errors in error handler from crashing React
-                          const imgElement = e.target as HTMLImageElement;
-                          if (imgElement) {
-                            imgElement.style.display = 'none';
-                            imgElement.style.opacity = '0';
+                          setImageError(true);
+                          setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                          setIsImageLoaded(true);
+                        } catch (stateError) {
+                          console.error('Error updating state in ErrorBoundary:', stateError);
+                        }
+                      }}
+                    >
+                      <img
+                        src={cloudflareUrl}
+                        alt={artwork.imageAiHint || artwork.title || 'Artwork'}
+                        width={finalWidth}
+                        height={finalHeight}
+                        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 z-10 pointer-events-none ${imageError ? 'opacity-0' : 'opacity-100'}`}
+                        loading={isInitialViewport ? "eager" : "lazy"}
+                        fetchPriority="high"
+                        decoding="async"
+                        key={`${cloudflareUrl}-${retryCount}`}
+                        onLoadStart={() => {
+                          // Debug: Log when image starts loading
+                          if (process.env.NODE_ENV === 'development') {
+                            console.log('🔄 Image load started:', cloudflareUrl);
                           }
-                          
-                          // Log error for debugging (but only once per URL)
-                          if (!failedUrlsRef.current.has(cloudflareUrl)) {
-                            failedUrlsRef.current.add(cloudflareUrl);
-                            console.warn('⚠️ Cloudflare image load error:', {
-                              url: cloudflareUrl,
-                              artworkId: artwork.id,
-                              variant: hasVideo ? 'Thumbnail' : '1080px',
-                              retryCount,
-                              originalUrl: imageSrc
-                            });
+                        }}
+                        onLoad={() => {
+                          setIsImageLoaded(true);
+                          setImageError(false);
+                          setRetryCount(0);
+                          if (isInitialViewport && onImageReady) {
+                            onImageReady(false);
                           }
-                          
-                          // CRITICAL: If image fails to load, immediately show placeholder to prevent React error #300
-                          // Use setTimeout to defer state updates and prevent React from crashing
-                          setTimeout(() => {
-                            try {
-                              setImageError(true);
-                              setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                              setIsImageLoaded(true); // Show placeholder immediately to prevent crash
-                            } catch (stateError) {
-                              console.error('Error updating state after image failure:', stateError);
+                          // Debug logging
+                          if (process.env.NODE_ENV === 'development') {
+                            console.log('✅ Image loaded successfully:', cloudflareUrl);
+                          }
+                        }}
+                        onError={(e) => {
+                          try {
+                            // CRITICAL: Prevent React error #300 by immediately hiding failed image
+                            // Use try-catch to prevent any errors in error handler from crashing React
+                            const imgElement = e.target as HTMLImageElement;
+                            if (imgElement) {
+                              imgElement.style.display = 'none';
+                              imgElement.style.opacity = '0';
                             }
-                          }, 0);
-                          
-                          // Only retry if we haven't already failed this URL
-                          if (retryCount < 1 && !failedUrlsRef.current.has(cloudflareUrl)) {
-                            const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
-                            if (cloudflareMatch) {
-                              const [, accountHash, imageId] = cloudflareMatch;
-                              // Try /public variant as fallback (most compatible)
-                              const fallbackUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
+                            
+                            // Log error for debugging (but only once per URL)
+                            if (!failedUrlsRef.current.has(cloudflareUrl)) {
+                              failedUrlsRef.current.add(cloudflareUrl);
+                              console.warn('⚠️ Cloudflare image load error:', {
+                                url: cloudflareUrl,
+                                artworkId: artwork.id,
+                                variant: hasVideo ? 'Thumbnail' : '1080px',
+                                retryCount,
+                                originalUrl: imageSrc
+                              });
+                            }
+                            
+                            // CRITICAL: Check if component is still mounted before updating state
+                            // This prevents React error #300 from state updates after unmount
+                            if (!isMountedRef.current) {
+                              return; // Component unmounted, don't update state
+                            }
+                            
+                            // CRITICAL: If image fails to load, immediately show placeholder to prevent React error #300
+                            // Use requestAnimationFrame to defer state updates to next frame (safer than setTimeout)
+                            requestAnimationFrame(() => {
+                              // Double-check mounted before updating state
+                              if (!isMountedRef.current) return;
                               
-                              if (fallbackUrl !== cloudflareUrl && !failedUrlsRef.current.has(fallbackUrl)) {
-                                console.log('🔄 Retrying with /public variant:', fallbackUrl);
-                                setTimeout(() => {
-                                  try {
-                                    setRetryCount(prev => prev + 1);
-                                    setIsImageLoaded(false);
-                                    setImageError(false);
-                                    if (imgElement) {
-                                      imgElement.src = fallbackUrl;
-                                      imgElement.style.display = '';
-                                      imgElement.style.opacity = '';
+                              try {
+                                setImageError(true);
+                                setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                                setIsImageLoaded(true); // Show placeholder immediately to prevent crash
+                              } catch (stateError) {
+                                console.error('Error updating state after image failure:', stateError);
+                              }
+                            });
+                            
+                            // Only retry if we haven't already failed this URL
+                            if (retryCount < 1 && !failedUrlsRef.current.has(cloudflareUrl)) {
+                              const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
+                              if (cloudflareMatch) {
+                                const [, accountHash, imageId] = cloudflareMatch;
+                                // Try /public variant as fallback (most compatible)
+                                const fallbackUrl = `https://imagedelivery.net/${accountHash}/${imageId}/public`;
+                                
+                                if (fallbackUrl !== cloudflareUrl && !failedUrlsRef.current.has(fallbackUrl)) {
+                                  console.log('🔄 Retrying with /public variant:', fallbackUrl);
+                                  setTimeout(() => {
+                                    // Check mounted before retry
+                                    if (!isMountedRef.current) return;
+                                    
+                                    try {
+                                      setRetryCount(prev => prev + 1);
+                                      setIsImageLoaded(false);
+                                      setImageError(false);
+                                      if (imgElement) {
+                                        imgElement.src = fallbackUrl;
+                                        imgElement.style.display = '';
+                                        imgElement.style.opacity = '';
+                                      }
+                                    } catch (retryError) {
+                                      console.error('Error retrying image:', retryError);
                                     }
-                                  } catch (retryError) {
-                                    console.error('Error retrying image:', retryError);
-                                  }
-                                }, 500);
-                                return;
+                                  }, 500);
+                                  return;
+                                }
+                              }
+                            }
+                          } catch (error) {
+                            // CRITICAL: Catch any errors in error handler to prevent React crash
+                            console.error('Error in image error handler:', error);
+                            // Still try to show placeholder, but only if mounted
+                            if (isMountedRef.current) {
+                              try {
+                                setImageError(true);
+                                setFallbackImageUrl(generatePlaceholderUrl(400, 600));
+                                setIsImageLoaded(true);
+                              } catch (fallbackError) {
+                                console.error('Error showing fallback:', fallbackError);
                               }
                             }
                           }
-                        } catch (error) {
-                          // CRITICAL: Catch any errors in error handler to prevent React crash
-                          console.error('Error in image error handler:', error);
-                          // Still try to show placeholder
-                          try {
-                            setImageError(true);
-                            setFallbackImageUrl(generatePlaceholderUrl(400, 600));
-                            setIsImageLoaded(true);
-                          } catch (fallbackError) {
-                            console.error('Error showing fallback:', fallbackError);
-                          }
-                        }
-                      }}
+                        }}
                       />
                     </ImageErrorBoundary>
                   );
