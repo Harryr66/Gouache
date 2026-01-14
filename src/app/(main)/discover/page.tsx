@@ -1408,19 +1408,34 @@ function DiscoverPageContent() {
         
         // ALWAYS fetch content from artworks collection (runs regardless of portfolioItems)
         // This includes the 100+ items in the artworks collection
-        log('🔍 Discover: Fetching content from artworks collection...');
+        // MOBILE OPTIMIZATION: Use smaller limit on mobile to prevent memory issues
+        const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
+        const artworksLimit = isMobileDevice ? 30 : 120; // Mobile: 30 items, Desktop: 120 items
+        
+        log(`🔍 Discover: Fetching content from artworks collection (limit: ${artworksLimit}, mobile: ${isMobileDevice})...`);
         try {
           // Filter in JavaScript instead of query level to avoid index requirement
           const artworksQuery = query(
             collection(db, 'artworks'),
             orderBy('createdAt', 'desc'),
-            limit(120) // Initial load: fetch enough to fill viewport + 5+ MORE ROWS for immediate scrolling
+            limit(artworksLimit)
           );
-          const artworksSnapshot = await getDocs(artworksQuery);
+          
+          // Add timeout protection for mobile (10 seconds)
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Artworks query timeout')), 10000);
+          });
+          
+          const artworksSnapshot = await Promise.race([
+            getDocs(artworksQuery),
+            timeoutPromise
+          ]);
           
           // Batch fetch artist data to avoid N+1 queries
           const artistIds = new Set<string>();
           const artworkItems: any[] = [];
+          
+          log(`📦 Discover: Processing ${artworksSnapshot.docs.length} artworks from collection...`);
           
           for (const artworkDoc of artworksSnapshot.docs) {
             const artworkData = artworkDoc.data();
