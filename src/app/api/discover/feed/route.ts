@@ -23,22 +23,45 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50', 10);
     const startAfter = searchParams.get('startAfter'); // For pagination
     
-    // Fetch from Firestore (will be cached by Next.js ISR)
-    const result = await PortfolioService.getDiscoverPortfolioItems({
+    // Fetch BOTH portfolio items AND discover-only content (videos)
+    // Query portfolio items (showInPortfolio: true)
+    const portfolioResult = await PortfolioService.getDiscoverPortfolioItems({
       showInPortfolio: true,
       deleted: false,
       hideAI: hideAI,
-      limit: limit,
+      limit: Math.floor(limit / 2), // Half for portfolio items
       startAfter: startAfter ? JSON.parse(startAfter) : undefined,
     });
     
+    // Query discover-only content (showInPortfolio: false - videos uploaded via Discover portal)
+    const discoverResult = await PortfolioService.getDiscoverPortfolioItems({
+      showInPortfolio: false,
+      deleted: false,
+      hideAI: hideAI,
+      limit: Math.floor(limit / 2), // Half for discover content
+    });
+    
+    // Combine and sort by createdAt (newest first)
+    const combinedItems = [...portfolioResult.items, ...discoverResult.items];
+    combinedItems.sort((a, b) => {
+      const aTime = a.createdAt?.getTime() || 0;
+      const bTime = b.createdAt?.getTime() || 0;
+      return bTime - aTime;
+    });
+    
+    // Limit to requested amount
+    const items = combinedItems.slice(0, limit);
+    
+    // Use last doc from portfolio result for pagination cursor
+    const lastDoc = portfolioResult.lastDoc;
+    
     const response = NextResponse.json({
       success: true,
-      items: result.items,
-      lastDoc: result.lastDoc ? {
-        id: result.lastDoc.id,
+      items,
+      lastDoc: lastDoc ? {
+        id: lastDoc.id,
         // Store minimal data for cursor pagination
-        createdAt: result.lastDoc.data()?.createdAt,
+        createdAt: lastDoc.data()?.createdAt,
       } : null,
       timestamp: Date.now(),
     });
