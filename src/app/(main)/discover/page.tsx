@@ -1408,9 +1408,10 @@ function DiscoverPageContent() {
         
         // ALWAYS fetch content from artworks collection (runs regardless of portfolioItems)
         // This includes the 100+ items in the artworks collection
-        // MOBILE OPTIMIZATION: Use smaller limit on mobile to prevent memory issues
+        // MOBILE OPTIMIZATION: Use reasonable limit on mobile to prevent memory issues
+        // Note: After filtering (deleted, non-Cloudflare, etc), actual count will be lower
         const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
-        const artworksLimit = isMobileDevice ? 30 : 120; // Mobile: 30 items, Desktop: 120 items
+        const artworksLimit = isMobileDevice ? 50 : 120; // Mobile: 50 items, Desktop: 120 items
         
         log(`🔍 Discover: Fetching content from artworks collection (limit: ${artworksLimit}, mobile: ${isMobileDevice})...`);
         try {
@@ -1859,14 +1860,13 @@ function DiscoverPageContent() {
       if (result.items.length === 0) {
         if (result.lastDoc) {
           // There's a cursor, so more content might exist (even if filtered out)
-          console.log('🔄 SCROLL LOAD: ⚠️ No items returned, but lastDoc exists - updating cursor and continuing');
+          console.log('🔄 SCROLL LOAD: ⚠️ No items returned, but lastDoc exists - updating cursor and will try once more');
           setLastDocument(result.lastDoc);
           setHasMore(true);
         } else {
-          // No cursor and no items - but don't immediately give up
-          // Items might be filtered out, so keep trying a few more times
-          console.log('🔄 SCROLL LOAD: ⚠️ No items returned and no lastDoc - might be filtered out, keeping hasMore=true to retry');
-          setHasMore(true); // Keep trying - items might be filtered out but more exist
+          // No cursor and no items - we've reached the end
+          console.log('🔄 SCROLL LOAD: ✅ No more content available (no items and no lastDoc)');
+          setHasMore(false); // FIXED: Stop infinite loop by setting hasMore to false
         }
         setIsLoadingMore(false);
         return;
