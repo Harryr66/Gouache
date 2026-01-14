@@ -84,15 +84,16 @@ export async function GET() {
 
     // Check artworks collection for videos
     console.log('Checking artworks for videos...');
+    let artworksWithVideo = 0;
+    let artworkVideoSamples: any[] = [];
+    let artworksSnapshot: any = null;
+    
     try {
       const artworksQuery = query(
         collection(db, 'artworks'),
         limit(100)
       );
-      const artworksSnapshot = await getDocs(artworksQuery);
-    
-    let artworksWithVideo = 0;
-    const artworkVideoSamples: any[] = [];
+      artworksSnapshot = await getDocs(artworksQuery);
     
     artworksSnapshot.docs.forEach(doc => {
       const data = doc.data();
@@ -113,24 +114,17 @@ export async function GET() {
       }
     });
 
-      results.artworks = {
-        totalScanned: artworksSnapshot.size,
-        withVideoFields: {
-          count: artworksWithVideo,
-          samples: artworkVideoSamples,
-        },
-      };
     } catch (artworksError: any) {
       console.error('Error querying artworks:', artworksError);
-      results.artworks = {
-        error: artworksError.message,
-        totalScanned: 0,
-        withVideoFields: {
-          count: 0,
-          samples: [],
-        },
-      };
     }
+    
+    results.artworks = {
+      totalScanned: artworksSnapshot?.size || 0,
+      withVideoFields: {
+        count: artworksWithVideo,
+        samples: artworkVideoSamples,
+      },
+    };
 
     results.summary = {
       portfolioItemsWithVideos: portfolioWithVideo,
