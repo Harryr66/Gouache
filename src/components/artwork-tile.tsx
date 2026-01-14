@@ -1821,7 +1821,7 @@ const generateArtistContent = (artist: Artist) => ({
                       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Artwork Details
                       </h4>
-                      {artwork.title && (
+                      {artwork.title && artwork.title !== 'Untitled' && (
                         <p className="text-sm font-medium text-foreground">{artwork.title}</p>
                       )}
                       {artwork.description && (
@@ -1912,7 +1912,7 @@ const generateArtistContent = (artist: Artist) => ({
                       Artwork Details
                     </h3>
                     <div className="space-y-2 text-sm text-muted-foreground">
-                      {artwork.title && <p className="text-base font-medium text-foreground">{artwork.title}</p>}
+                      {artwork.title && artwork.title !== 'Untitled' && <p className="text-base font-medium text-foreground">{artwork.title}</p>}
                       {artwork.description && <p>{artwork.description}</p>}
                       <div className="flex flex-wrap gap-3">
                         {artwork.medium && (
