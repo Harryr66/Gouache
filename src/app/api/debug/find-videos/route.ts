@@ -95,7 +95,7 @@ export async function GET() {
       );
       artworksSnapshot = await getDocs(artworksQuery);
     
-    artworksSnapshot.docs.forEach(doc => {
+    artworksSnapshot.docs.forEach((doc: any) => {
       const data = doc.data();
       const hasVideo = data.videoUrl || 
                        data.mediaType === 'video' || 
