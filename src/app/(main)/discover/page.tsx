@@ -1864,7 +1864,13 @@ function DiscoverPageContent() {
     }
 
     console.log('🔄 SCROLL LOAD: ✅ ALL CONDITIONS MET - PROCEEDING WITH LOAD');
+    
+    // SMOOTH LOADING: Add short pause before starting to prevent shuddery/laggy behavior
+    // This gives the UI a moment to stabilize before loading
     setIsLoadingMore(true);
+    console.log('🔄 SCROLL LOAD: ⏸️ Pausing briefly before loading...');
+    await new Promise(resolve => setTimeout(resolve, 150)); // 150ms pause
+    
     console.log('🔄 SCROLL LOAD: 📥 Starting to fetch more artworks...');
     log('📥 Discover: Loading more artworks...');
 
@@ -2069,25 +2075,29 @@ function DiscoverPageContent() {
         newArtworks.push(artwork);
       }
 
-      // Append new artworks to existing ones, deduplicating by ID to prevent recycling
-      // CRITICAL: Limit total artworks to prevent crashes with 200+ images
-      // Mobile has less memory - use stricter limits
-      // Use existing isMobile state instead of creating new variable
-      const MAX_TOTAL_ARTWORKS = isMobile ? 100 : 200; // Mobile: 100 items, Desktop: 200 items
-      setArtworks(prev => {
-        const existingIds = new Set(prev.map(a => a.id));
-        const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
-        const combined = [...prev, ...uniqueNewArtworks];
-        // Deduplicate entire array by ID (in case of any duplicates in prev)
-        const uniqueCombined = Array.from(
-          new Map(combined.map(a => [a.id, a])).values()
-        );
-        // CRITICAL: Cap at MAX_TOTAL_ARTWORKS to prevent memory issues and crashes
-        // Keep most recent items (slice from end)
-        const capped = uniqueCombined.length > MAX_TOTAL_ARTWORKS
-          ? uniqueCombined.slice(-MAX_TOTAL_ARTWORKS)
-          : uniqueCombined;
-        return capped;
+      // SMOOTH DISPLAY: Use startTransition to batch state update and display all at once
+      // This prevents shuddery/laggy behavior by rendering all new items in one update
+      startTransition(() => {
+        // Append new artworks to existing ones, deduplicating by ID to prevent recycling
+        // CRITICAL: Limit total artworks to prevent crashes with 200+ images
+        // Mobile has less memory - use stricter limits
+        // Use existing isMobile state instead of creating new variable
+        const MAX_TOTAL_ARTWORKS = isMobile ? 100 : 200; // Mobile: 100 items, Desktop: 200 items
+        setArtworks(prev => {
+          const existingIds = new Set(prev.map(a => a.id));
+          const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
+          const combined = [...prev, ...uniqueNewArtworks];
+          // Deduplicate entire array by ID (in case of any duplicates in prev)
+          const uniqueCombined = Array.from(
+            new Map(combined.map(a => [a.id, a])).values()
+          );
+          // CRITICAL: Cap at MAX_TOTAL_ARTWORKS to prevent memory issues and crashes
+          // Keep most recent items (slice from end)
+          const capped = uniqueCombined.length > MAX_TOTAL_ARTWORKS
+            ? uniqueCombined.slice(-MAX_TOTAL_ARTWORKS)
+            : uniqueCombined;
+          return capped;
+        });
       });
       
       // Update pagination state
