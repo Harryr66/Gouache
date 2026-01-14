@@ -16,13 +16,21 @@ export async function GET() {
     );
     const totalCount = await getCountFromServer(totalQuery);
 
-    // Count items shown in portfolio
+    // Count items shown in portfolio (images/artworks)
     const portfolioQuery = query(
       collection(db, 'portfolioItems'),
       where('showInPortfolio', '==', true),
       where('deleted', '==', false)
     );
     const portfolioCount = await getCountFromServer(portfolioQuery);
+
+    // Count discover-only items (videos uploaded via Discover portal)
+    const discoverOnlyQuery = query(
+      collection(db, 'portfolioItems'),
+      where('showInPortfolio', '==', false),
+      where('deleted', '==', false)
+    );
+    const discoverOnlyCount = await getCountFromServer(discoverOnlyQuery);
 
     // Count non-AI items
     const nonAIQuery = query(
@@ -44,8 +52,17 @@ export async function GET() {
       success: true,
       counts: {
         total: totalCount.data().count,
-        showInPortfolio: portfolioCount.data().count,
+        portfolioItems: portfolioCount.data().count,
+        discoverOnlyVideos: discoverOnlyCount.data().count,
         nonAI: nonAICount,
+        combined: portfolioCount.data().count + discoverOnlyCount.data().count,
+      },
+      explanation: {
+        total: 'Total non-deleted portfolio items',
+        portfolioItems: 'Items with showInPortfolio=true (images/artworks)',
+        discoverOnlyVideos: 'Items with showInPortfolio=false (videos from Discover portal)',
+        nonAI: 'Non-AI items in portfolio (if hideAI is enabled)',
+        combined: 'Total items that should appear in feed (portfolio + discover)',
       },
       timestamp: Date.now(),
     });
