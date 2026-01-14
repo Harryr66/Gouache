@@ -3383,9 +3383,9 @@ function DiscoverPageContent() {
                         // This prevents flickering and users clicking away
                         <div className="w-full py-12 flex flex-col items-center justify-center gap-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-primary text-primary animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-3 h-3 rounded-full bg-primary text-primary animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-3 h-3 rounded-full bg-primary text-primary animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                            <div className="w-3 h-3 rounded-full bg-foreground/60 animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-3 h-3 rounded-full bg-foreground/60 animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-3 h-3 rounded-full bg-foreground/60 animate-pulse" style={{ animationDelay: '300ms' }}></div>
                           </div>
                           <p className="text-sm text-muted-foreground">Loading videos...</p>
                         </div>
