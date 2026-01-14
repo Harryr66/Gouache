@@ -1875,7 +1875,7 @@ function DiscoverPageContent() {
             );
             const snapshot = await getDocs(artworksQuery);
             return {
-              items: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+              items: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)),
               lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
             };
           } catch (error) {
@@ -1932,7 +1932,8 @@ function DiscoverPageContent() {
       
       // Collect artist IDs from both structures
       for (const item of result.items) {
-        const artistId = item.userId || item.artist?.id || item.artist?.userId || item.artistId;
+        const itemAny = item as any; // Type assertion - items can be from portfolioItems or artworks
+        const artistId = itemAny.userId || itemAny.artist?.id || itemAny.artist?.userId || itemAny.artistId;
         if (artistId) artistIds.add(artistId);
       }
       
@@ -1953,15 +1954,16 @@ function DiscoverPageContent() {
       // Process items - handle both portfolioItems (has userId) and artworks (has artist.id)
       for (const item of result.items) {
         // Get artist ID from either structure
-        const artistId = item.userId || item.artist?.id || item.artist?.userId || item.artistId;
+        const itemAny = item as any; // Type assertion - items can be from portfolioItems or artworks
+        const artistId = itemAny.userId || itemAny.artist?.id || itemAny.artist?.userId || itemAny.artistId;
         let artistData = artistId ? artistDataMap.get(artistId) : null;
         
         if (!artistData && artistId) {
           // Use fallback artist data
           artistData = {
-            displayName: item.artistName || item.artist?.name || item.artist?.displayName || 'Artist',
-            username: item.artistHandle || item.artist?.handle || item.artist?.username || 'artist',
-            avatarUrl: item.artistAvatarUrl || item.artist?.avatarUrl || null,
+            displayName: itemAny.artistName || itemAny.artist?.name || itemAny.artist?.displayName || 'Artist',
+            username: itemAny.artistHandle || itemAny.artist?.handle || itemAny.artist?.username || 'artist',
+            avatarUrl: itemAny.artistAvatarUrl || itemAny.artist?.avatarUrl || null,
             isVerified: false,
             followerCount: 0,
             followingCount: 0,
@@ -1970,15 +1972,15 @@ function DiscoverPageContent() {
         }
         
         // Get media URLs - handle both structures
-        let videoUrl = item.videoUrl || null;
-        if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
-          videoUrl = item.mediaUrls[0];
+        let videoUrl = itemAny.videoUrl || null;
+        if (!videoUrl && itemAny.mediaUrls?.[0] && itemAny.mediaTypes?.[0] === 'video') {
+          videoUrl = itemAny.mediaUrls[0];
         }
-        const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
-        const imageUrl = item.imageUrl || 
-                        item.supportingImages?.[0] || 
-                        item.images?.[0] || 
-                        (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || 
+        const mediaType = itemAny.mediaType || (videoUrl ? 'video' : 'image');
+        const imageUrl = itemAny.imageUrl || 
+                        itemAny.supportingImages?.[0] || 
+                        itemAny.images?.[0] || 
+                        (itemAny.mediaUrls?.[0] && itemAny.mediaTypes?.[0] !== 'video' ? itemAny.mediaUrls[0] : '') || 
                         '';
         
         // Filter: Only Cloudflare images/videos
@@ -1987,20 +1989,20 @@ function DiscoverPageContent() {
         if (!imageUrl && !videoUrl) continue;
         
         // Apply AI filter
-        if (discoverSettings.hideAiAssistedArt && (item.aiAssistance === 'assisted' || item.aiAssistance === 'generated' || item.isAI)) {
+        if (discoverSettings.hideAiAssistedArt && (itemAny.aiAssistance === 'assisted' || itemAny.aiAssistance === 'generated' || itemAny.isAI)) {
           continue;
         }
 
         const artwork: Artwork = {
-          id: item.id,
-          title: item.title || '',
-          description: item.description || '',
+          id: itemAny.id,
+          title: itemAny.title || '',
+          description: itemAny.description || '',
           imageUrl: imageUrl,
-          imageAiHint: item.description || '',
+          imageAiHint: itemAny.description || '',
           ...(videoUrl && { videoUrl: videoUrl as any }),
           ...(mediaType && { mediaType: mediaType as any }),
-          ...(item.mediaUrls && { mediaUrls: item.mediaUrls }),
-          ...(item.mediaTypes && { mediaTypes: item.mediaTypes }),
+          ...(itemAny.mediaUrls && { mediaUrls: itemAny.mediaUrls }),
+          ...(itemAny.mediaTypes && { mediaTypes: itemAny.mediaTypes }),
           artist: {
             id: artistId || '',
             name: artistData?.displayName || artistData?.name || artistData?.username || 'Unknown Artist',
@@ -2012,20 +2014,20 @@ function DiscoverPageContent() {
             followingCount: artistData?.followingCount || 0,
             createdAt: artistData?.createdAt?.toDate?.() || (artistData?.createdAt instanceof Date ? artistData.createdAt : new Date()),
           },
-          likes: item.likes || 0,
-          commentsCount: item.commentsCount || 0,
-          createdAt: item.createdAt instanceof Date ? item.createdAt : (item.createdAt as any)?.toDate?.() || new Date(),
-          updatedAt: item.updatedAt instanceof Date ? item.updatedAt : (item.updatedAt as any)?.toDate?.() || new Date(),
-          category: item.category || '',
-          medium: item.medium || '',
-          tags: item.tags || [],
-          aiAssistance: item.aiAssistance || 'none',
-          isAI: item.isAI || false,
-          isForSale: item.isForSale || false,
-          sold: item.sold || false,
-          price: item.price ? (item.price > 1000 ? item.price / 100 : item.price) : undefined,
-          priceType: item.priceType as 'fixed' | 'contact' | undefined,
-          contactForPrice: item.contactForPrice || item.priceType === 'contact',
+          likes: itemAny.likes || 0,
+          commentsCount: itemAny.commentsCount || 0,
+          createdAt: itemAny.createdAt instanceof Date ? itemAny.createdAt : (itemAny.createdAt as any)?.toDate?.() || new Date(),
+          updatedAt: itemAny.updatedAt instanceof Date ? itemAny.updatedAt : (itemAny.updatedAt as any)?.toDate?.() || new Date(),
+          category: itemAny.category || '',
+          medium: itemAny.medium || '',
+          tags: itemAny.tags || [],
+          aiAssistance: itemAny.aiAssistance || 'none',
+          isAI: itemAny.isAI || false,
+          isForSale: itemAny.isForSale || false,
+          sold: itemAny.sold || false,
+          price: itemAny.price ? (itemAny.price > 1000 ? itemAny.price / 100 : itemAny.price) : undefined,
+          priceType: itemAny.priceType as 'fixed' | 'contact' | undefined,
+          contactForPrice: itemAny.contactForPrice || itemAny.priceType === 'contact',
         };
         
         newArtworks.push(artwork);
