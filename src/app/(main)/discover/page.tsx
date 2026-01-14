@@ -2096,7 +2096,7 @@ function DiscoverPageContent() {
                         '';
         
         // CRITICAL: Filter out products/shop items - only show artworks from portfolio/discover
-        const itemAny = item as any;
+        // itemAny is already defined above, no need to redefine
         if (itemAny.type === 'product' || itemAny.type === 'Product' || itemAny.type === 'marketplace' || itemAny.type === 'MarketplaceProduct') continue;
         if (itemAny.artworkType === 'merchandise') continue;
         if (itemAny.showInShop === true && itemAny.showInPortfolio !== true) continue; // Skip shop-only items
