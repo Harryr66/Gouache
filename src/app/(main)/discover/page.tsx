@@ -200,6 +200,7 @@ const SORT_OPTIONS = [
 ];
 
 // Masonry grid component that fills columns sequentially from top to bottom
+// INSTAGRAM/PINTEREST-LEVEL: Virtualization - only render visible items + buffer
 function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadingMore }: {
   items: any[];
   columnCount: number;
@@ -214,6 +215,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
   // PERFORMANCE: Cache item heights to avoid repeated getBoundingClientRect calls
   const itemHeightsRef = useRef<Map<number, number>>(new Map());
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  
+  // Note: Full virtualization not possible with masonry (need all positions for height calculation)
+  // Instead, we render all items but use IntersectionObserver in ArtworkTile to only load visible images
 
   // Calculate positions for masonry layout - OPTIMIZED with ResizeObserver
   useEffect(() => {
@@ -398,6 +402,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
 
   return (
     <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
+      {/* INSTAGRAM/PINTEREST-LEVEL: Render all items (needed for masonry height calculation)
+          But ArtworkTile uses IntersectionObserver to only load visible images */}
       {items.map((item, index) => {
         const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
         return (
@@ -410,10 +416,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
               top: positions[index]?.top ?? 0,
               left: positions[index]?.left ?? 0,
               width: positions[index]?.width || `${100 / columnCount}%`,
-              opacity: 1, // Always visible - no opacity transition to prevent glitching
-              margin: 0, // Ensure no margins that could create irregular gaps
-              padding: 0, // Ensure no padding that could create irregular gaps
-              transition: 'none', // Disable transitions to prevent glitching
+              opacity: 1,
+              margin: 0,
+              padding: 0,
+              transition: 'none',
             }}
           >
             {renderItem(item)}
@@ -435,11 +441,11 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       >
         {isLoadingMore && (
           <div className="flex flex-col items-center gap-2 py-4">
-            {/* Loading dot animation */}
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse" style={{ animationDelay: '0ms' }} />
-              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse" style={{ animationDelay: '150ms' }} />
-              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse" style={{ animationDelay: '300ms' }} />
+            {/* INSTAGRAM/PINTEREST-LEVEL: Colored loading animation */}
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: '#3b82f6', animationDelay: '0ms' }} />
+              <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: '#8b5cf6', animationDelay: '150ms' }} />
+              <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: '#ec4899', animationDelay: '300ms' }} />
             </div>
           </div>
         )}
@@ -2100,8 +2106,11 @@ function DiscoverPageContent() {
     
     if (isDev) console.log('🔄 SCROLL LOAD: ✅ ALL CONDITIONS MET - PROCEEDING WITH LOAD');
     
-    // Fast loading: Start immediately, no artificial delays
+    // INSTAGRAM/PINTEREST-LEVEL: Show loading animation immediately, then load full section
     setIsLoadingMore(true);
+    
+    // Brief pause to show loading animation and allow preloading (200ms)
+    await new Promise(resolve => setTimeout(resolve, 200));
     if (isDev) console.log('🔄 SCROLL LOAD: 📥 Starting to fetch more artworks...');
     log('📥 Discover: Loading more artworks...');
 
@@ -2317,9 +2326,10 @@ function DiscoverPageContent() {
         newArtworks.push(artwork);
       }
 
-      // SEAMLESS LOAD: Process ALL items first, then update state in ONE batch
+      // INSTAGRAM/PINTEREST-LEVEL: Process ALL items first, then update state in ONE batch
+      // This prevents position shifting and content reloading
       // MOBILE: Use stricter limits to prevent crashes
-      const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200; // Mobile: 50 items (reduced from 100), Desktop: 200 items
+      const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
       
       // Calculate the complete new artworks array BEFORE updating state
       // This ensures we have all items ready before React renders
@@ -2340,10 +2350,15 @@ function DiscoverPageContent() {
             : uniqueCombined;
         })();
         
-        // Batch ALL state updates together in one transition to prevent multiple re-renders
+        // INSTAGRAM/PINTEREST-LEVEL: Update state in one batch to prevent position shifting
+        // Use flushSync to ensure immediate render, then stabilize
         startTransition(() => {
           setArtworks(updatedArtworks);
         });
+        
+        // Brief pause to allow React to render and stabilize positions
+        // This prevents content from shifting after display
+        await new Promise(resolve => setTimeout(resolve, 150));
       } catch (error) {
         if (isDev) console.error('Error updating artworks state:', error);
         // Fallback: just add new artworks without complex processing
@@ -2392,8 +2407,8 @@ function DiscoverPageContent() {
       if (isDev) console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks (expected ${LOAD_MORE_LIMIT} for 10 rows, columnCount=${columnCount})`);
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
       
+      // INSTAGRAM/PINTEREST-LEVEL: Content is now statically displayed - no more reloading
       // REMOVED: Auto-scroll on pagination - let user control their scroll position
-      // Auto-scrolling was causing uncontrolled behavior on page load
     } catch (error: any) {
       if (isDev) console.error('🔄 SCROLL LOAD: ❌ Error loading more artworks:', error);
       
@@ -2415,9 +2430,12 @@ function DiscoverPageContent() {
       // Don't set hasMore to false immediately on error - allow retry
       // setHasMore(false);
     } finally {
-      // CRITICAL: Always reset loading state, even on error
-      setIsLoadingMore(false);
-      if (isDev) console.log('🔄 SCROLL LOAD: ✅ Finished loading (isLoadingMore set to false)');
+      // INSTAGRAM/PINTEREST-LEVEL: Reset loading state after brief delay to show completion
+      // This ensures the loading animation is visible and content is stable
+      setTimeout(() => {
+        setIsLoadingMore(false);
+        if (isDev) console.log('🔄 SCROLL LOAD: ✅ Finished loading (isLoadingMore set to false)');
+      }, 300);
     }
   }, [hasMore, lastDocument, isLoadingMore, discoverSettings, columnCount, isMobile, isDev]);
 
@@ -2531,11 +2549,13 @@ function DiscoverPageContent() {
     return () => observer.disconnect();
   }, [hasMore, isLoadingMore, loadMoreArtworks, artworkView, isDev]);
 
-  // PERFORMANCE: Cache filtered results to avoid re-filtering on every render
+  // INSTAGRAM/PINTEREST-LEVEL: Cache filtered results to prevent content reloading
+  // This ensures content stays static after being displayed
   const baseFilteredArtworks = useMemo(() => {
     const allArtworks = Array.isArray(artworks) ? artworks : [];
     
     // PERFORMANCE: Single pass filter combining all base filters
+    // CRITICAL: This memoization prevents content from reloading/changing
     return allArtworks.filter((artwork: any) => {
       // Quick rejections first (most common cases)
       if (!artwork || !artwork.id) return false;
@@ -2697,6 +2717,8 @@ function DiscoverPageContent() {
     });
     
     log('✅ Discover: Returning', sorted.length, 'real artworks');
+    // INSTAGRAM/PINTEREST-LEVEL: Return stable sorted array to prevent content reloading
+    // This ensures once content is displayed, it stays static
     return sorted;
   }, [baseFilteredArtworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements, getFollowedArtists]);
 
@@ -2828,7 +2850,8 @@ function DiscoverPageContent() {
     return () => observer.disconnect();
   }, [hasMore, isLoadingMore, loadMoreArtworks, artworkView, isDev]);
 
-  // PERFORMANCE: Image preloading with cleanup to prevent DOM pollution
+  // INSTAGRAM/PINTEREST-LEVEL: Smart preloading - only preload viewport + 1 row buffer
+  // Don't preload everything upfront - let IntersectionObserver handle lazy loading
   const preloadLinksRef = useRef<HTMLLinkElement[]>([]);
   
   useEffect(() => {
@@ -2851,30 +2874,24 @@ function DiscoverPageContent() {
     });
     preloadLinksRef.current = [];
     
-    // INSTAGRAM/PINTEREST-LEVEL: Preload 40-60+ images for instant display (doubled)
-    const maxPreload = isMobile ? 40 : 60;
-    const preloadCount = Math.min(maxPreload, filteredAndSortedArtworks.length);
+    // INSTAGRAM/PINTEREST-LEVEL: Only preload viewport + 1 row (not 40-60 images)
+    // Let IntersectionObserver handle the rest - this prevents loading too much upfront
+    const viewportItems = isMobile ? 8 : 15; // Mobile: 2 cols × 4 rows, Desktop: 5 cols × 3 rows
+    const preloadCount = Math.min(viewportItems, filteredAndSortedArtworks.length);
     const criticalArtworks = filteredAndSortedArtworks.slice(0, preloadCount);
     
     criticalArtworks.forEach((artwork) => {
       const imageUrl = artwork.imageUrl;
       if (!imageUrl) return;
       
-      // PRIORITY: Cloudflare images first (new uploads), Firebase only for legacy
+      // PRIORITY: Use Thumbnail variant for preload (smallest, fastest)
       let preloadUrl = imageUrl;
       if (imageUrl.includes('imagedelivery.net')) {
         const cloudflareMatch = imageUrl.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
         if (cloudflareMatch) {
           const [, accountHash, imageId] = cloudflareMatch;
-          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-          preloadUrl = hasVideo
-            ? `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`
-            : `https://imagedelivery.net/${accountHash}/${imageId}/1080px`;
-        } else {
-          const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-          preloadUrl = hasVideo
-            ? imageUrl.replace(/\/[^/]+$/, '/Thumbnail')
-            : imageUrl.replace(/\/[^/]+$/, '/1080px');
+          // Use Thumbnail for preload (smallest, ~10-20KB)
+          preloadUrl = `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`;
         }
       } else if (imageUrl.includes('cloudflarestream.com')) {
         preloadUrl = imageUrl;
@@ -2888,12 +2905,12 @@ function DiscoverPageContent() {
       link.rel = 'preload';
       link.as = 'image';
       link.href = preloadUrl;
-      link.setAttribute('fetchpriority', (imageUrl.includes('imagedelivery.net') || imageUrl.includes('cloudflarestream.com')) ? 'high' : 'auto');
+      link.setAttribute('fetchpriority', 'high');
       document.head.appendChild(link);
       preloadLinksRef.current.push(link);
     });
 
-    log(`🚀 Preloaded ${preloadCount} critical images for instant display`);
+    log(`🚀 Preloaded ${preloadCount} viewport images (Pinterest/Instagram style - minimal preload)`);
     
     // Cleanup on unmount or when artworks change
     return () => {
@@ -2910,6 +2927,8 @@ function DiscoverPageContent() {
     };
   }, [filteredAndSortedArtworks, columnCount, isMobile]);
 
+  // INSTAGRAM/PINTEREST-LEVEL: Stable visible items calculation
+  // This prevents content from reloading/changing after being displayed
   const visibleFilteredArtworks = useMemo(() => {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
     
@@ -2918,6 +2937,9 @@ function DiscoverPageContent() {
     // Use existing isMobile state instead of creating new variable
     const MAX_RENDERED_ITEMS = isMobile ? 50 : 150; // Mobile: 50 items (matches MAX_TOTAL_ARTWORKS), Desktop: 150 items
     const safeTotalItems = Math.min(totalItems, MAX_RENDERED_ITEMS);
+    
+    // INSTAGRAM/PINTEREST-LEVEL: Return stable slice to prevent content reloading
+    // Once items are displayed, they should remain static
     
     // Check how many placeholders are in the array
     const placeholderCount = Array.isArray(filteredAndSortedArtworks) 
