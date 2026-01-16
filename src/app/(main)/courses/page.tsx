@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Brain, Star, Users, Clock } from 'lucide-react';
 import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from '@/components/theme-loading';
-import { TypewriterJoke } from '@/components/typewriter-joke';
 import Image from 'next/image';
 import Link from 'next/link';
 import { fetchActiveAds, mixAdsIntoContent } from '@/lib/ad-fetcher';
@@ -21,12 +20,12 @@ export default function CoursesPage() {
   const [ads, setAds] = useState<any[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   
-  // Loading screen state - identical to Discover page
-  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
+  // OPTIONAL LOADING SCREEN - Only show if there's actually a delay (500ms+)
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false); // Start hidden
   const [coursesLoaded, setCoursesLoaded] = useState(false);
-  const jokeCompleteTimeRef = useRef<number | null>(null);
-  const MIN_JOKE_DISPLAY_TIME = 2000; // 2 seconds minimum after joke completes
   const loadingStartTimeRef = useRef<number>(Date.now());
+  const loadingScreenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const LOADING_SCREEN_DELAY = 500; // Only show loading screen if load takes 500ms+
 
   // Detect mobile device
   useEffect(() => {
@@ -44,11 +43,7 @@ export default function CoursesPage() {
     fetchActiveAds('learn', user?.id).then(setAds).catch(console.error);
   }, [user]);
 
-  // Handle joke completion - called AFTER joke finishes typing + 2s pause
-  const handleJokeComplete = useCallback(() => {
-    console.log('🎭 Joke animation FULLY completed (typing + 2s pause) at:', new Date().toISOString());
-    jokeCompleteTimeRef.current = Date.now();
-  }, []);
+  // Joke handler removed - jokes list preserved in typewriter-joke.tsx for future use
 
   // Courses are already filtered by CourseProvider to only include published and approved courses
   // Rank courses: Higher rating + more students + more reviews = higher rank
@@ -273,42 +268,56 @@ export default function CoursesPage() {
     }
   }, [isLoading, rankedCourses.length]);
 
-  // Dismiss loading screen when both joke is complete + 2s AND courses are loaded
+  // OPTIONAL LOADING SCREEN LOGIC - Only show if there's actually a delay
+  useEffect(() => {
+    // If courses are already loaded, don't show loading screen
+    if (coursesLoaded && !isLoading && rankedCourses.length >= 0) {
+      if (showLoadingScreen) {
+        setShowLoadingScreen(false);
+      }
+      if (loadingScreenTimeoutRef.current) {
+        clearTimeout(loadingScreenTimeoutRef.current);
+        loadingScreenTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    // Only show loading screen if there's a delay (500ms+)
+    if (!showLoadingScreen && !coursesLoaded && isLoading) {
+      loadingScreenTimeoutRef.current = setTimeout(() => {
+        // Only show if still loading after delay
+        if (!coursesLoaded && isLoading) {
+          setShowLoadingScreen(true);
+        }
+      }, LOADING_SCREEN_DELAY);
+    }
+
+    return () => {
+      if (loadingScreenTimeoutRef.current) {
+        clearTimeout(loadingScreenTimeoutRef.current);
+        loadingScreenTimeoutRef.current = null;
+      }
+    };
+  }, [coursesLoaded, isLoading, rankedCourses.length, showLoadingScreen, LOADING_SCREEN_DELAY]);
+
+  // Dismiss loading screen when courses are loaded
   useEffect(() => {
     if (!showLoadingScreen) return;
 
-    const checkIfReadyToDismiss = () => {
-      const jokeComplete = !!jokeCompleteTimeRef.current;
-      const timeSinceJoke = jokeComplete && jokeCompleteTimeRef.current 
-        ? Date.now() - jokeCompleteTimeRef.current 
-        : Infinity;
-      const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
-      
-      // Dismiss when joke is complete + 2s AND courses are loaded
-      if (jokeTimeMet && coursesLoaded && !isLoading) {
-        console.log('✅ Ready to dismiss: Joke complete + 2s, courses loaded.');
-        setShowLoadingScreen(false);
-        return;
-      }
-      
-      // Fallback timeout: Maximum 15 seconds total
-      const totalTime = Date.now() - loadingStartTimeRef.current;
-      if (totalTime > 15000) {
-        console.warn('⚠️ Timeout after 15s, dismissing anyway');
-        setShowLoadingScreen(false);
-        return;
-      }
-    };
-
-    const interval = setInterval(() => {
-      if (showLoadingScreen) {
-        checkIfReadyToDismiss();
-      } else {
-        clearInterval(interval);
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
+    // Dismiss immediately when courses are loaded (no joke wait)
+    if (coursesLoaded && !isLoading) {
+      console.log('✅ Ready to dismiss: Courses loaded.');
+      setShowLoadingScreen(false);
+      return;
+    }
+    
+    // Fallback timeout: Maximum 15 seconds total
+    const totalTime = Date.now() - loadingStartTimeRef.current;
+    if (totalTime > 15000) {
+      console.warn('⚠️ Timeout after 15s, dismissing anyway');
+      setShowLoadingScreen(false);
+      return;
+    }
   }, [showLoadingScreen, coursesLoaded, isLoading]);
 
   return (
@@ -331,7 +340,7 @@ export default function CoursesPage() {
             }}
           >
             <ThemeLoading size="lg" />
-            <TypewriterJoke key="loading-joke" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
+            {/* Joke animation removed to speed up loading - jokes list preserved in typewriter-joke.tsx for future use */}
           </div>
         </div>
       ) : null}
