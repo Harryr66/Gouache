@@ -757,6 +757,7 @@ const VideoPlayer = ({
 };
 
 // Theme-matched loading animation component (reusable for both video and continuous loading)
+// Uses same SCALE animation as ThemeLoading and LoadingTransition components (not fade)
 const ThemeLoadingAnimation = () => {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -779,19 +780,25 @@ const ThemeLoadingAnimation = () => {
   const dotColors = getDotColors(isDark);
   
   return (
-    <div className="flex items-center gap-2">
-      <div 
-        className="w-3 h-3 rounded-full animate-pulse" 
-        style={{ backgroundColor: dotColors[0], animationDelay: '0ms' }}
-      ></div>
-      <div 
-        className="w-3 h-3 rounded-full animate-pulse" 
-        style={{ backgroundColor: dotColors[1], animationDelay: '150ms' }}
-      ></div>
-      <div 
-        className="w-3 h-3 rounded-full animate-pulse" 
-        style={{ backgroundColor: dotColors[2], animationDelay: '300ms' }}
-      ></div>
+    <div className="flex items-center space-x-1">
+      <motion.div
+        className="w-3 h-3 rounded-full"
+        style={{ backgroundColor: dotColors[0] }}
+        animate={{ scale: [1, 1.2, 1] }}
+        transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+      />
+      <motion.div
+        className="w-3 h-3 rounded-full"
+        style={{ backgroundColor: dotColors[1] }}
+        animate={{ scale: [1, 1.2, 1] }}
+        transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+      />
+      <motion.div
+        className="w-3 h-3 rounded-full"
+        style={{ backgroundColor: dotColors[2] }}
+        animate={{ scale: [1, 1.2, 1] }}
+        transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+      />
     </div>
   );
 };
