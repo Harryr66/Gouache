@@ -871,7 +871,7 @@ function DiscoverPageContent() {
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [artworksLoaded, setArtworksLoaded] = useState(false);
   const jokeCompleteTimeRef = useRef<number | null>(null);
-  const MIN_JOKE_DISPLAY_TIME = 2000; // 2 seconds minimum after joke completes
+  const MIN_JOKE_DISPLAY_TIME = 1000; // 1 second minimum after joke completes (reduced from 2s)
   const MAX_LOADING_TIME = 15000; // 15 seconds maximum (fallback timeout)
   const loadingStartTimeRef = useRef<number>(Date.now());
   const loadingScreenDismissedTimeRef = useRef<number | null>(null);
@@ -997,7 +997,7 @@ function DiscoverPageContent() {
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
-        }, 500); // Add stabilization delay even for no-media case
+        }, 200); // Add stabilization delay even for no-media case (reduced from 500ms)
         return;
       }
 
@@ -1006,26 +1006,26 @@ function DiscoverPageContent() {
       if (jokeTimeMet && allMediaReady && artworksLoaded && artworks.length > 0) {
         // Prevent multiple dismissal timeouts
         if (dismissalTimeoutRef.current) return;
-        // Wait 500ms for masonry grid to calculate and stabilize positions
+        // Wait 200ms for masonry grid to calculate and stabilize positions (reduced from 500ms)
         dismissalTimeoutRef.current = setTimeout(() => {
-          console.log(`✅ Ready to dismiss: Joke complete + 2s, ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Positions stabilized!`);
+          console.log(`✅ Ready to dismiss: Joke complete + 1s, ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Positions stabilized!`);
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
-        }, 500);
+        }, 200);
         return;
       }
 
-      // Fallback timeout: If joke is done + 2s but media still loading, wait max 5s more
+      // Fallback timeout: If joke is done + 1s but media still loading, wait max 3s more (total 4s after joke)
       // This prevents infinite waiting if some images fail
-      if (jokeTimeMet && jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 7000) {
+      if (jokeTimeMet && jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 4000) {
         if (dismissalTimeoutRef.current) return;
-        console.warn(`⚠️ Timeout after joke + 2s + 5s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
+        console.warn(`⚠️ Timeout after joke + 1s + 3s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
         dismissalTimeoutRef.current = setTimeout(() => {
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
-        }, 500); // Still add stabilization delay
+        }, 200); // Still add stabilization delay (reduced from 500ms)
         return;
       }
       
@@ -1038,7 +1038,7 @@ function DiscoverPageContent() {
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
-        }, 500); // Still add stabilization delay
+        }, 200); // Still add stabilization delay (reduced from 500ms)
         return;
       }
       
@@ -1553,13 +1553,14 @@ function DiscoverPageContent() {
           log(`📊 Discover: Fallback method - Added ${fetchedArtworks.length} artworks from userProfiles.portfolio`);
         }
         
-        // ALWAYS fetch content from artworks collection (runs regardless of portfolioItems)
-        // This includes the 100+ items in the artworks collection
-        // MOBILE: Reduce limit to prevent crashes - mobile has less memory
-        // Use existing isMobile state - already detected in useEffect
-        const artworksLimit = isMobile ? 50 : 300; // Mobile: 50 items (reduced from 150), Desktop: 300 items
+        // REMOVED: Redundant artworks collection fetch - portfolioItems already contains all content
+        // This was causing multiple reloads after initial load
+        // If portfolioItems is empty, we already have fallback logic above
+        const artworksLimit = isMobile ? 50 : 300; // Keep for reference but don't use
         
-        log(`🔍 Discover: Fetching content from artworks collection (limit: ${artworksLimit}, mobile: ${isMobile})...`);
+        // Skip artworks collection fetch to prevent duplicate reloads
+        // portfolioItems from API/fallback already contains all discover content
+        if (false) { // Disabled to prevent multiple reloads
         try {
           // Filter in JavaScript instead of query level to avoid index requirement
           const artworksQuery = query(
@@ -1750,6 +1751,7 @@ function DiscoverPageContent() {
           console.error('❌ Error fetching artworks collection:', error);
           // Don't crash - continue with whatever we have
         }
+        } // End of disabled artworks collection fetch
         
         // Sort by createdAt descending (newest first)
           fetchedArtworks.sort((a, b) => {
