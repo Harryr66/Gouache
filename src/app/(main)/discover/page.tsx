@@ -441,12 +441,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       >
         {isLoadingMore && (
           <div className="flex flex-col items-center gap-2 py-4">
-            {/* INSTAGRAM/PINTEREST-LEVEL: Colored loading animation */}
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: '#3b82f6', animationDelay: '0ms' }} />
-              <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: '#8b5cf6', animationDelay: '150ms' }} />
-              <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: '#ec4899', animationDelay: '300ms' }} />
-            </div>
+            {/* THEME-MATCHED: Colored loading animation matching ThemeLoading component */}
+            <ThemeLoadingAnimation />
           </div>
         )}
       </div>
@@ -760,8 +756,8 @@ const VideoPlayer = ({
   );
 };
 
-// Video Loading Animation Component with theme-appropriate colors
-const VideoLoadingAnimation = () => {
+// Theme-matched loading animation component (reusable for both video and continuous loading)
+const ThemeLoadingAnimation = () => {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   
@@ -783,21 +779,28 @@ const VideoLoadingAnimation = () => {
   const dotColors = getDotColors(isDark);
   
   return (
+    <div className="flex items-center gap-2">
+      <div 
+        className="w-3 h-3 rounded-full animate-pulse" 
+        style={{ backgroundColor: dotColors[0], animationDelay: '0ms' }}
+      ></div>
+      <div 
+        className="w-3 h-3 rounded-full animate-pulse" 
+        style={{ backgroundColor: dotColors[1], animationDelay: '150ms' }}
+      ></div>
+      <div 
+        className="w-3 h-3 rounded-full animate-pulse" 
+        style={{ backgroundColor: dotColors[2], animationDelay: '300ms' }}
+      ></div>
+    </div>
+  );
+};
+
+// Video Loading Animation Component with theme-appropriate colors
+const VideoLoadingAnimation = () => {
+  return (
     <div className="w-full py-12 flex flex-col items-center justify-center gap-3">
-      <div className="flex items-center gap-2">
-        <div 
-          className="w-3 h-3 rounded-full animate-pulse" 
-          style={{ backgroundColor: dotColors[0], animationDelay: '0ms' }}
-        ></div>
-        <div 
-          className="w-3 h-3 rounded-full animate-pulse" 
-          style={{ backgroundColor: dotColors[1], animationDelay: '150ms' }}
-        ></div>
-        <div 
-          className="w-3 h-3 rounded-full animate-pulse" 
-          style={{ backgroundColor: dotColors[2], animationDelay: '300ms' }}
-        ></div>
-      </div>
+      <ThemeLoadingAnimation />
       <p className="text-sm text-muted-foreground">Loading videos...</p>
     </div>
   );
@@ -1048,12 +1051,13 @@ function DiscoverPageContent() {
       const jokeTimeMet = true; // Always true since we're not waiting for joke
       
       
-      // CRITICAL: Wait for minimum number of images to load before dismissing
-      // Ensure at least 30-40 images are loaded (not just a percentage)
+      // CRITICAL FIX: Wait for minimum number of images to load before dismissing
+      // Ensure at least 40-60 images are loaded (not just a percentage)
       // This prevents dismissing with only 3 images visible
       // Use columnCount to estimate mobile (2-3 cols = mobile)
+      // Match visibleCount targets: 40 mobile, 60 desktop
       const estimatedIsMobile = columnCount <= 3;
-      const MIN_IMAGES_TO_LOAD = estimatedIsMobile ? 30 : 50; // Mobile: 30, Desktop: 50 minimum
+      const MIN_IMAGES_TO_LOAD = estimatedIsMobile ? 40 : 60; // Increased from 30/50 to match visibleCount
       const imagesReady = effectiveImagesTotal > 0
         ? initialImagesReady >= Math.max(
             Math.ceil(effectiveImagesTotal * 0.9), // 90% of available
@@ -1065,10 +1069,10 @@ function DiscoverPageContent() {
         : true; // If no posters, consider ready
       const allMediaReady = imagesReady && videoPostersReady;
 
-      // CRITICAL: If there's no media to wait for, dismiss immediately with stabilization delay
-      // BUT: Still require minimum artworks count
+      // CRITICAL FIX: If there's no media to wait for, dismiss immediately with stabilization delay
+      // BUT: Still require minimum artworks count (matching visibleCount: 40 mobile, 60 desktop)
       const estimatedIsMobileForNoMedia = columnCount <= 3;
-      const minArtworksForNoMedia = estimatedIsMobileForNoMedia ? 30 : 50;
+      const minArtworksForNoMedia = estimatedIsMobileForNoMedia ? 40 : 60; // Increased from 30/50 to match visibleCount
       if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && artworksLoaded && artworks.length >= minArtworksForNoMedia) {
         if (dismissalTimeoutRef.current) return;
         dismissalTimeoutRef.current = setTimeout(() => {
@@ -1080,10 +1084,11 @@ function DiscoverPageContent() {
         return;
       }
 
-      // CRITICAL: Dismiss immediately when all media is loaded (no joke wait)
-      // BUT: Require minimum 30-50 artworks loaded to prevent dismissing with only 3 images
+      // CRITICAL FIX: Dismiss immediately when all media is loaded (no joke wait)
+      // BUT: Require minimum 40-60 artworks loaded to prevent dismissing with only 3 images
+      // This matches visibleCount initial values (40 mobile, 60 desktop)
       const estimatedIsMobileForDismiss = columnCount <= 3;
-      const minArtworksRequired = estimatedIsMobileForDismiss ? 30 : 50;
+      const minArtworksRequired = estimatedIsMobileForDismiss ? 40 : 60; // Increased from 30/50 to match visibleCount
       const hasMinimumArtworks = artworks.length >= minArtworksRequired;
       
       if (allMediaReady && artworksLoaded && hasMinimumArtworks) {
@@ -1250,13 +1255,16 @@ function DiscoverPageContent() {
     if (!isMobile) {
       // Desktop: default to grid view, but allow user to switch
       // Don't force it - let user's choice persist
-      // Desktop: 5 cols × 6 rows = 30 items (INSTAGRAM/PINTEREST-LEVEL initial load)
-      setVisibleCount(30);
+      // CRITICAL FIX: Desktop: 5 cols × 12 rows = 60 items (INSTAGRAM/PINTEREST-LEVEL initial load)
+      // DO NOT set to 30 - this was causing only 3 tiles to show
+      setVisibleCount(60); // Increased from 30 to match initial load target
     } else {
       // On mobile, ensure correct defaults
       setArtworkView('grid');
       setMarketView('list');
       setEventsView('grid'); // Events use grid view on mobile
+      // CRITICAL FIX: Mobile: 2 cols × 20 rows = 40 items (matching initial load target)
+      setVisibleCount(40); // Ensure mobile also uses correct count
       // Mobile: 2 cols × 20 rows = 40 items (INSTAGRAM/PINTEREST-LEVEL initial load - doubled)
       setVisibleCount(40);
     }
@@ -2980,8 +2988,9 @@ function DiscoverPageContent() {
   }, [filteredAndSortedArtworks, visibleCount, ads]);
 
   useEffect(() => {
-    // Reset to device-appropriate count when filters change
-    // INSTAGRAM/PINTEREST-LEVEL: Mobile: 20 items (2 cols × 10 rows), Desktop: 30 items (5 cols × 6 rows)
+    // CRITICAL FIX: Reset to device-appropriate count when filters change
+    // INSTAGRAM/PINTEREST-LEVEL: Mobile: 40 items (2 cols × 20 rows), Desktop: 60 items (5 cols × 12 rows)
+    // DO NOT reset to lower values - this was causing only 3 tiles to show
     // CRITICAL: Ensure we never exceed MAX_TOTAL_ARTWORKS on mobile
     // Keep the doubled initial counts (40 mobile, 60 desktop) when filters change
     const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
