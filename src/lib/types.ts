@@ -604,7 +604,7 @@ export interface NewsArticle {
   summary: string;
   subheadline?: string; // Optional subheadline for articles
   category: string;
-  imageUrl: string;
+  imageUrl: string | null; // Can be null when no image is provided (no external images allowed)
   thumbnailUrl?: string; // Thumbnail image for news page listing
   publishedAt?: Date; // Optional for drafts
   updatedAt?: Date;

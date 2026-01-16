@@ -1743,7 +1743,7 @@ export default function AdminPanel() {
         title: newArticle.title.trim(),
         summary: '', // Empty summary for simplified editor
         category: 'Stories', // Default category
-        imageUrl: heroImageUrl,
+        imageUrl: heroImageUrl || '', // Convert null to empty string
         externalUrl: '',
         featured: false,
         tags: [],
@@ -1786,7 +1786,7 @@ export default function AdminPanel() {
         subheadline: newArticleSubheadline.trim() || '',
         category: 'Stories',
         author: newArticle.author.trim() || '',
-        imageUrl: heroImageUrl,
+        imageUrl: heroImageUrl || '', // Convert null to empty string
         externalUrl: '',
         featured: false,
         tags: [],
@@ -1950,7 +1950,7 @@ export default function AdminPanel() {
         title: newArticle.title.trim(),
         summary: '', // Empty summary for simplified editor
         category: 'Stories', // Default category
-        imageUrl: heroImageUrl,
+        imageUrl: heroImageUrl || '', // Convert null to empty string
         externalUrl: '',
         featured: false,
         tags: [],
@@ -1990,7 +1990,7 @@ export default function AdminPanel() {
           category: 'Stories',
           author: newArticle.author.trim() || undefined,
           authorAvatarUrl: authorAvatarUrl,
-          imageUrl: heroImageUrl,
+          imageUrl: heroImageUrl || '', // Convert null to empty string for NewsArticle
           externalUrl: '',
           featured: false,
           tags: [],
@@ -2218,7 +2218,7 @@ export default function AdminPanel() {
         title: newArticle.title.trim(),
         summary: '',
         category: 'Stories',
-        imageUrl: heroImageUrl,
+        imageUrl: heroImageUrl || '', // Convert null to empty string
         content: bodyContent,
         location: 'evergreen',
         updatedAt: serverTimestamp(),
