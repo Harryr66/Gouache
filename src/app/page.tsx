@@ -33,13 +33,13 @@ export default function RootPage() {
     return () => unsubscribe();
   }, []);
 
-  // Redirect logged-in users (but not anonymous) to discover page
+  // Redirect logged-in users (but not anonymous) to news page
   // Only redirect from root page, not from other pages like /support
   useEffect(() => {
     if (!loading && user && !isAnonymousUser) {
       // Only redirect if user has an email (not anonymous) AND we're on the root page
       if (user.email && user.email !== '' && window.location.pathname === '/') {
-        router.replace('/discover');
+        router.replace('/news');
       }
     }
   }, [user, loading, isAnonymousUser, router]);
@@ -53,8 +53,8 @@ export default function RootPage() {
       // Wait for auth provider to update
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Force redirect to discover page - don't wait for state updates
-      window.location.href = '/discover';
+      // Force redirect to news page - don't wait for state updates
+      window.location.href = '/news';
     } catch (error: any) {
       console.error('Guest login error:', error);
       console.error('Error code:', error.code);

@@ -131,8 +131,8 @@ export function LoginForm() {
       const user = userCredential.user;
       console.log('User signed in:', user);
       
-      // Redirect to discover
-      router.push('/discover');
+      // Redirect to news page
+      router.push('/news');
       
     } catch (error: any) {
       console.error('Login error:', error);

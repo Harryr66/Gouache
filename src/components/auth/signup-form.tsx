@@ -92,8 +92,8 @@ export function SignUpForm() {
         description: `Welcome to Gouache, ${values.name}! Your account has been created successfully.`,
       });
       
-      // Redirect to discover
-      router.push('/discover');
+      // Redirect to news page
+      router.push('/news');
       
     } catch (error: any) {
       console.error('Signup error:', error);
