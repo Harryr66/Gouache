@@ -907,13 +907,13 @@ function DiscoverPageContent() {
   
   // Calculate how many items are in viewport + buffer (for faster loading)
   // This is what we'll wait for before dismissing the loading screen
-  // INSTAGRAM/PINTEREST-LEVEL: Load 6-8 rows initially (30-40 items on desktop, 20+ on mobile)
+  // INSTAGRAM/PINTEREST-LEVEL: Load 12-20 rows initially (60 items on desktop, 40+ on mobile)
   // Note: isMobile is detected later, so we use a safe default (mobile: 2 cols)
   const itemsToWaitFor = useMemo(() => {
-    // Desktop: 5 cols × 6 rows = 30 items (viewport + 4 rows buffer)
-    // Mobile: 2 cols × 10 rows = 20 items (viewport + 8 rows buffer)
-    // Use columnCount to estimate: if 2-3 cols assume mobile (20 items), else desktop (30 items)
-    const rowsToLoad = columnCount <= 3 ? 10 : 6;
+    // Desktop: 5 cols × 12 rows = 60 items (viewport + 10 rows buffer)
+    // Mobile: 2 cols × 20 rows = 40 items (viewport + 18 rows buffer)
+    // Use columnCount to estimate: if 2-3 cols assume mobile (40 items), else desktop (60 items)
+    const rowsToLoad = columnCount <= 3 ? 20 : 12; // Mobile: 20 rows, Desktop: 12 rows (doubled)
     return columnCount * rowsToLoad;
   }, [columnCount]);
   
@@ -1035,14 +1035,14 @@ function DiscoverPageContent() {
       const jokeTimeMet = true; // Always true since we're not waiting for joke
       
       
-      // INSTAGRAM/PINTEREST-LEVEL: Wait for 80% of initial viewport images to load (not 100%)
-      // This ensures fast loading like Instagram/Pinterest - don't wait for every single image
-      // 80% threshold provides smooth experience without blocking on slow images
-      const imagesReady = effectiveImagesTotal > 0 
-        ? initialImagesReady >= Math.ceil(effectiveImagesTotal * 0.8) 
+      // INSTAGRAM/PINTEREST-LEVEL: Wait for 90% of initial viewport images to load (increased from 80%)
+      // This ensures more images are visible before dismissing loading screen
+      // 90% threshold provides better initial experience with more content visible
+      const imagesReady = effectiveImagesTotal > 0
+        ? initialImagesReady >= Math.ceil(effectiveImagesTotal * 0.9)
         : true; // If no images, consider ready
-      const videoPostersReady = effectiveVideoPostersTotal > 0 
-        ? initialVideoPostersReady >= Math.ceil(effectiveVideoPostersTotal * 0.8) 
+      const videoPostersReady = effectiveVideoPostersTotal > 0
+        ? initialVideoPostersReady >= Math.ceil(effectiveVideoPostersTotal * 0.9)
         : true; // If no posters, consider ready
       const allMediaReady = imagesReady && videoPostersReady;
 
@@ -1146,11 +1146,11 @@ function DiscoverPageContent() {
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
   // CRITICAL: Initialize based on device to prevent mobile crashes
-  // INSTAGRAM/PINTEREST-LEVEL: Show 20+ items initially (mobile: 20, desktop: 30)
-  // Mobile (2 cols): 10 rows = 20 items
-  // Desktop (5 cols): 6 rows = 30 items
+  // INSTAGRAM/PINTEREST-LEVEL: Show 40+ items initially (mobile: 40, desktop: 60)
+  // Mobile (2 cols): 20 rows = 40 items
+  // Desktop (5 cols): 12 rows = 60 items
   // Start with mobile-safe default, will update when device is detected
-  const [visibleCount, setVisibleCount] = useState(20); // Mobile: 20 items initially
+  const [visibleCount, setVisibleCount] = useState(40); // Mobile: 40 items initially (doubled from 20)
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market list, Events grid on mobile
@@ -1231,8 +1231,8 @@ function DiscoverPageContent() {
       setArtworkView('grid');
       setMarketView('list');
       setEventsView('grid'); // Events use grid view on mobile
-      // Mobile: 2 cols × 10 rows = 20 items (INSTAGRAM/PINTEREST-LEVEL initial load)
-      setVisibleCount(20);
+      // Mobile: 2 cols × 20 rows = 40 items (INSTAGRAM/PINTEREST-LEVEL initial load - doubled)
+      setVisibleCount(40);
     }
   }, [isMobile]);
 
@@ -1261,9 +1261,10 @@ function DiscoverPageContent() {
         
         // Fetch enough items to fill viewport - loading screen provides time for larger initial load
         // Load significantly more to account for filtering (non-Cloudflare images, etc.)
-        // MOBILE: Reduce limit to prevent crashes - mobile has less memory
-        // Desktop: 15+ rows (5 cols × 15 = 75), but load 3x to account for filtering
-        const INITIAL_FETCH_LIMIT = isMobile ? 40 : 150; // Mobile: 40 items (reduced from 75), Desktop: 150 items
+        // MOBILE: Load enough to show 40+ items after filtering
+        // Desktop: Load enough to show 60+ items after filtering
+        // Load 2x the target to account for filtering losses
+        const INITIAL_FETCH_LIMIT = isMobile ? 80 : 120; // Mobile: 80 items (2x 40), Desktop: 120 items (2x 60)
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -1913,11 +1914,11 @@ function DiscoverPageContent() {
         // Strategy: Load poster images first (fast), limit videos to 3 per viewport, connection-aware preload count
         const connectionSpeed = getConnectionSpeed();
         
-        // INSTAGRAM/PINTEREST-LEVEL: Preload 20-30+ images for instant display (like Instagram/Pinterest)
-        // Desktop: 30 images (5 cols × 6 rows), Mobile: 20 images (2 cols × 10 rows)
-        const preloadCount = isMobile 
-          ? (connectionSpeed === 'fast' ? 20 : connectionSpeed === 'medium' ? 16 : 12)
-          : (connectionSpeed === 'fast' ? 30 : connectionSpeed === 'medium' ? 24 : 18);
+        // INSTAGRAM/PINTEREST-LEVEL: Preload 40-60+ images for instant display (like Instagram/Pinterest)
+        // Desktop: 60 images (5 cols × 12 rows), Mobile: 40 images (2 cols × 20 rows)
+        const preloadCount = isMobile
+          ? (connectionSpeed === 'fast' ? 40 : connectionSpeed === 'medium' ? 32 : 24)
+          : (connectionSpeed === 'fast' ? 60 : connectionSpeed === 'medium' ? 48 : 36);
         
         // Limit videos to 3 per viewport for consistent performance
         const MAX_VIDEOS_PER_VIEWPORT = 3;
@@ -2801,8 +2802,8 @@ function DiscoverPageContent() {
     });
     preloadLinksRef.current = [];
     
-    // INSTAGRAM/PINTEREST-LEVEL: Preload 20-30+ images for instant display
-    const maxPreload = isMobile ? 20 : 30;
+    // INSTAGRAM/PINTEREST-LEVEL: Preload 40-60+ images for instant display (doubled)
+    const maxPreload = isMobile ? 40 : 60;
     const preloadCount = Math.min(maxPreload, filteredAndSortedArtworks.length);
     const criticalArtworks = filteredAndSortedArtworks.slice(0, preloadCount);
     
@@ -2992,12 +2993,12 @@ function DiscoverPageContent() {
         {(showLoadingScreen && initialImagesTotal > 0) && (
           <div className="absolute inset-0 opacity-0 pointer-events-none" style={{ zIndex: -1 }} aria-hidden="true">
             {(() => {
-              // INSTAGRAM/PINTEREST-LEVEL: Preload 20-30+ items during loading screen
-              // Desktop: 30 items (5 cols × 6 rows), Mobile: 20 items (2 cols × 10 rows)
+              // INSTAGRAM/PINTEREST-LEVEL: Preload 40-60+ items during loading screen (doubled)
+              // Desktop: 60 items (5 cols × 12 rows), Mobile: 40 items (2 cols × 20 rows)
               const connectionSpeed = getConnectionSpeed();
               const preloadCount = isMobile
-                ? (connectionSpeed === 'fast' ? 20 : connectionSpeed === 'medium' ? 16 : 12)
-                : (connectionSpeed === 'fast' ? 30 : connectionSpeed === 'medium' ? 24 : 18);
+                ? (connectionSpeed === 'fast' ? 40 : connectionSpeed === 'medium' ? 32 : 24)
+                : (connectionSpeed === 'fast' ? 60 : connectionSpeed === 'medium' ? 48 : 36);
               const MAX_VIDEOS_PER_VIEWPORT = 3;
               
               const preloadTiles: Artwork[] = [];
