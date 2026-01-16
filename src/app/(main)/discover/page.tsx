@@ -1544,6 +1544,13 @@ function DiscoverPageContent() {
           const itemCategory = (item.category || '').toLowerCase();
           const itemTitle = (item.title || '').toLowerCase();
           
+          // HARD FILTER: Test Mug by ID (temporary until we see debug data)
+          if (item.id === 'artwork-1767255654110') {
+            if (isDev) console.log('🚫 CLIENT HARD FILTERED (Test Mug by ID):', item.id);
+            skippedNoImage++;
+            continue;
+          }
+          
           // EMERGENCY DEBUG: Log Test Mug data to see why it's not being filtered CLIENT-SIDE
           if (itemTitle.includes('mug') || item.id === 'artwork-1767255654110') {
             console.log('🔍 CLIENT DEBUG Test Mug data:', {

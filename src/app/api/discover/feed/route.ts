@@ -100,6 +100,12 @@ export async function GET(request: NextRequest) {
     
     // COMPREHENSIVE FILTERING: ONLY Cloudflare media + ONLY artworks (no products/courses/merch)
     const filteredArtworksItems = artworksItems.filter((item: any) => {
+      // HARD FILTER: Test Mug by ID (temporary until we see debug data)
+      if (item.id === 'artwork-1767255654110') {
+        console.log('🚫 API HARD FILTERED (Test Mug by ID):', item.id);
+        return false;
+      }
+      
       // Skip events
       if (item.type === 'event' || item.type === 'Event' || item.eventType) return false;
       
@@ -183,12 +189,21 @@ export async function GET(request: NextRequest) {
       
       // STRICT: Images must be Cloudflare Images with valid format
       if (!videoUrl && imageUrl) {
-        if (!isCloudflareImage(imageUrl)) return false;
-        if (!isValidCloudflareImageUrl(imageUrl)) return false;
+        if (!isCloudflareImage(imageUrl)) {
+          console.log('🚫 API FILTERED (not Cloudflare image):', item.id, imageUrl?.substring(0, 80));
+          return false;
+        }
+        if (!isValidCloudflareImageUrl(imageUrl)) {
+          console.log('🚫 API FILTERED (invalid Cloudflare URL format):', item.id, imageUrl?.substring(0, 80));
+          return false;
+        }
       }
       
       // Must have at least one media source
-      if (!imageUrl && !videoUrl) return false;
+      if (!imageUrl && !videoUrl) {
+        console.log('🚫 API FILTERED (no media):', item.id);
+        return false;
+      }
       
       return true;
     });
