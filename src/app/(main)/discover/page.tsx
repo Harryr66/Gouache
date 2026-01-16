@@ -1141,7 +1141,7 @@ function DiscoverPageContent() {
         // Load significantly more to account for filtering (non-Cloudflare images, etc.)
         // MOBILE: Reduce limit to prevent crashes - mobile has less memory
         // Desktop: 15+ rows (5 cols × 15 = 75), but load 3x to account for filtering
-        const INITIAL_FETCH_LIMIT = isMobile ? 75 : 150; // Mobile: 75 items, Desktop: 150 items
+        const INITIAL_FETCH_LIMIT = isMobile ? 40 : 150; // Mobile: 40 items (reduced from 75), Desktop: 150 items
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -1525,7 +1525,7 @@ function DiscoverPageContent() {
         // This includes the 100+ items in the artworks collection
         // MOBILE: Reduce limit to prevent crashes - mobile has less memory
         // Use existing isMobile state - already detected in useEffect
-        const artworksLimit = isMobile ? 150 : 300; // Mobile: 150 items, Desktop: 300 items
+        const artworksLimit = isMobile ? 50 : 300; // Mobile: 50 items (reduced from 150), Desktop: 300 items
         
         log(`🔍 Discover: Fetching content from artworks collection (limit: ${artworksLimit}, mobile: ${isMobile})...`);
         try {
@@ -1949,8 +1949,8 @@ function DiscoverPageContent() {
       // Use existing isMobile state instead of creating new variable
       // Load enough items to fill 10 rows (accounting for filtering)
       // Increase limit to ensure we get 10 rows after filtering
-      const LOAD_MORE_LIMIT = isMobile 
-        ? Math.min(columnCount * 8, 40)  // Mobile: 8 rows (load extra to account for filtering)
+      const LOAD_MORE_LIMIT = isMobile
+        ? Math.min(columnCount * 5, 20)  // Mobile: 5 rows (reduced from 8), Desktop: 12 rows
         : Math.min(columnCount * 12, 60); // Desktop: 12 rows (load extra to ensure 10 rows after filtering)
       
       // NOTE: lastDocument should already be a DocumentSnapshot from previous loadMoreArtworks calls
@@ -2735,8 +2735,10 @@ function DiscoverPageContent() {
           startTransition(() => {
             setVisibleCount((prev) => {
               // Load additional rows progressively from top to bottom
-              // Add itemsPerRow * 3 to load enough content for smooth continuous scrolling
-              const newCount = prev + (itemsPerRow * 3);
+              // MOBILE: Add fewer items at a time (1 row = itemsPerRow) to prevent memory spikes
+              // Desktop: Add 3 rows for smooth scrolling
+              const increment = isMobile ? itemsPerRow : (itemsPerRow * 3);
+              const newCount = prev + increment;
               const maxCount = filteredAndSortedArtworks.length || newCount;
               // Ensure we never exceed available items AND never exceed MAX_TOTAL_ARTWORKS on mobile
               return Math.min(newCount, maxCount, MAX_TOTAL_ARTWORKS);
@@ -2745,7 +2747,7 @@ function DiscoverPageContent() {
         }
       });
     }, {
-      rootMargin: '800px',
+      rootMargin: isMobile ? '400px' : '800px', // Mobile: smaller rootMargin to reduce memory usage
       threshold: 0.1,
     });
 
@@ -2757,8 +2759,11 @@ function DiscoverPageContent() {
   useEffect(() => {
     if (typeof window === 'undefined' || filteredAndSortedArtworks.length === 0) return;
     
-    // Preload first 24 images (viewport + 2 rows) for instant display without gaps
-    const preloadCount = Math.min(columnCount * 4, 24, filteredAndSortedArtworks.length);
+    // MOBILE: Preload fewer images to reduce memory usage
+    // Desktop: Preload first 24 images (viewport + 2 rows) for instant display without gaps
+    // Mobile: Preload only first 8 images (viewport + 1 row) to prevent crashes
+    const maxPreload = isMobile ? 8 : 24;
+    const preloadCount = Math.min(columnCount * (isMobile ? 2 : 4), maxPreload, filteredAndSortedArtworks.length);
     const criticalArtworks = filteredAndSortedArtworks.slice(0, preloadCount);
     
     criticalArtworks.forEach((artwork) => {
@@ -2814,7 +2819,7 @@ function DiscoverPageContent() {
     // CRITICAL: Limit total items to prevent crashes with 200+ images
     // Mobile has less memory - use stricter limits
     // Use existing isMobile state instead of creating new variable
-    const MAX_RENDERED_ITEMS = isMobile ? 75 : 150; // Mobile: 75 items, Desktop: 150 items
+    const MAX_RENDERED_ITEMS = isMobile ? 50 : 150; // Mobile: 50 items (matches MAX_TOTAL_ARTWORKS), Desktop: 150 items
     const safeTotalItems = Math.min(totalItems, MAX_RENDERED_ITEMS);
     
     // Check how many placeholders are in the array
@@ -2858,8 +2863,10 @@ function DiscoverPageContent() {
   useEffect(() => {
     // Reset to device-appropriate count when filters change
     // Mobile: 12 items (2 cols × 6 rows), Desktop: 40 items (5 cols × 8 rows)
+    // CRITICAL: Ensure we never exceed MAX_TOTAL_ARTWORKS on mobile
+    const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
     const resetCount = isMobile ? 12 : 40;
-    setVisibleCount(resetCount);
+    setVisibleCount(Math.min(resetCount, MAX_TOTAL_ARTWORKS));
   }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, isMobile]);
 
   // Marketplace products useEffect removed - marketplace tab is hidden
