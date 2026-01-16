@@ -25,6 +25,13 @@ export async function GET(request: NextRequest) {
     
     // Fetch BOTH portfolio items AND discover-only content (videos)
     // Query portfolio items (showInPortfolio: true)
+    console.log('📡 API: Fetching portfolio items...', {
+      showInPortfolio: true,
+      deleted: false,
+      hideAI,
+      limit: Math.floor(limit / 2)
+    });
+    
     const portfolioResult = await PortfolioService.getDiscoverPortfolioItems({
       showInPortfolio: true,
       deleted: false,
@@ -33,7 +40,16 @@ export async function GET(request: NextRequest) {
       startAfter: startAfter ? JSON.parse(startAfter) : undefined,
     });
     
+    console.log('✅ API: Portfolio items returned:', portfolioResult.items.length);
+    
     // Query discover-only content (showInPortfolio: false - videos uploaded via Discover portal)
+    console.log('📡 API: Fetching discover content...', {
+      showInPortfolio: false,
+      deleted: false,
+      hideAI,
+      limit: Math.floor(limit / 2)
+    });
+    
     const discoverResult = await PortfolioService.getDiscoverPortfolioItems({
       showInPortfolio: false,
       deleted: false,
@@ -41,8 +57,11 @@ export async function GET(request: NextRequest) {
       limit: Math.floor(limit / 2), // Half for discover content
     });
     
+    console.log('✅ API: Discover content returned:', discoverResult.items.length);
+    
     // Combine and sort by createdAt (newest first)
     const combinedItems = [...portfolioResult.items, ...discoverResult.items];
+    console.log('📦 API: Combined items total:', combinedItems.length);
     combinedItems.sort((a, b) => {
       // Handle both Date and Firestore Timestamp types
       const aTime = a.createdAt instanceof Date 
@@ -56,6 +75,7 @@ export async function GET(request: NextRequest) {
     
     // Limit to requested amount
     const items = combinedItems.slice(0, limit);
+    console.log('✅ API: Final items after limit:', items.length, '(requested:', limit, ')');
     
     // Use last doc from portfolio result for pagination cursor
     const lastDoc = portfolioResult.lastDoc;

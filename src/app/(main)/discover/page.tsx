@@ -1289,7 +1289,13 @@ function DiscoverPageContent() {
             const apiData = await apiResponse.json();
             if (apiData.success && apiData.items) {
               portfolioItems = apiData.items;
-              log(`✅ Discover: Found ${portfolioItems.length} items from cached API (instant response)`);
+              log(`✅ Discover: API returned ${portfolioItems.length} items from cached API`);
+              log(`📊 Discover: First 3 items from API:`, portfolioItems.slice(0, 3).map((i: any) => ({
+                id: i.id,
+                title: i.title,
+                hasImage: !!i.imageUrl,
+                hasVideo: !!i.videoUrl
+              })));
               
               // Store last document for pagination - need to fetch actual DocumentSnapshot
               // because API returns plain object but Firestore startAfter needs DocumentSnapshot
