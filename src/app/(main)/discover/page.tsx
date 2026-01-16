@@ -1289,12 +1289,15 @@ function DiscoverPageContent() {
             const apiData = await apiResponse.json();
             if (apiData.success && apiData.items) {
               portfolioItems = apiData.items;
-              log(`✅ Discover: API returned ${portfolioItems.length} items from cached API`);
-              log(`📊 Discover: First 3 items from API:`, portfolioItems.slice(0, 3).map((i: any) => ({
+              console.log(`🔥 DISCOVER DEBUG: API returned ${portfolioItems.length} items (requested: ${INITIAL_FETCH_LIMIT})`);
+              console.log(`🔥 DISCOVER DEBUG: Sample items:`, portfolioItems.slice(0, 5).map((i: any) => ({
                 id: i.id,
                 title: i.title,
+                type: i.type,
+                eventType: i.eventType,
                 hasImage: !!i.imageUrl,
-                hasVideo: !!i.videoUrl
+                hasVideo: !!i.videoUrl,
+                showInPortfolio: i.showInPortfolio
               })));
               
               // Store last document for pagination - need to fetch actual DocumentSnapshot
@@ -1859,6 +1862,8 @@ function DiscoverPageContent() {
         
         // CRITICAL: Apply ranking system on initial load (not just newest first)
         // This ensures proper content ordering from the start
+        console.log(`🔥 DISCOVER DEBUG: After processing, ${fetchedArtworks.length} artworks ready for ranking`);
+        console.log(`🔥 DISCOVER DEBUG: Breakdown - portfolioItems: ${portfolioItems.length}, skipped: ${skippedNoImage}`);
         log(`🎯 Discover: Applying ranking system to ${fetchedArtworks.length} fetched artworks...`);
         
         // Get followed artist IDs for priority boost
@@ -1896,6 +1901,7 @@ function DiscoverPageContent() {
         // Only show real artworks - no placeholders
         const finalArtworks = safeArtworks;
         
+        console.log(`🔥 DISCOVER DEBUG: FINAL COUNT: ${finalArtworks.length} artworks being set to state`);
         log(`🎯 Discover: Final artworks count: ${finalArtworks.length} (ranked and ready)`);
         
         if (safeArtworks.length === 0) {
