@@ -1527,32 +1527,76 @@ function DiscoverPageContent() {
               continue;
             }
             
-            // CRITICAL: Skip products/shop items/courses - ONLY show artworks from portfolio/discover
-            if (item.type === 'product' || item.type === 'Product' || 
-                item.type === 'marketplace' || item.type === 'MarketplaceProduct' ||
-                item.type === 'course' || item.type === 'Course' ||
-                item.type === 'merchandise' || item.type === 'Merchandise') {
-              if (isDev) console.log('🚫 FILTERED (product/course):', item.id, item.type);
+            // CRITICAL: COMPREHENSIVE PRODUCT/COURSE FILTERING - MULTIPLE LAYERS
+            // Log ALL item data for debugging if it looks suspicious
+            const itemType = (item.type || '').toLowerCase();
+            const itemArtworkType = (item.artworkType || '').toLowerCase();
+            const itemCategory = (item.category || '').toLowerCase();
+            const itemTitle = (item.title || '').toLowerCase();
+            
+            // Layer 1: Type checks (case-insensitive)
+            if (itemType.includes('product') || itemType.includes('merchandise') || 
+                itemType.includes('marketplace') || itemType.includes('course') ||
+                itemType === 'merch' || itemType === 'shop') {
+              if (isDev) console.log('🚫 FILTERED (type):', item.id, item.type);
               skippedNoImage++;
               continue;
             }
-            if (item.artworkType === 'merchandise' || item.artworkType === 'product' || item.artworkType === 'course') {
+            
+            // Layer 2: ArtworkType checks (case-insensitive)
+            if (itemArtworkType.includes('merchandise') || itemArtworkType.includes('product') || 
+                itemArtworkType.includes('course') || itemArtworkType === 'merch') {
               if (isDev) console.log('🚫 FILTERED (artworkType):', item.id, item.artworkType);
               skippedNoImage++;
               continue;
             }
-            if (item.showInShop === true && item.showInPortfolio !== true) {
-              if (isDev) console.log('🚫 FILTERED (shop-only):', item.id);
-              skippedNoImage++;
-              continue; // Skip shop-only items
-            }
-            // Additional check: if title/description suggests it's a product (mugs, shirts, etc.)
-            const title = (item.title || '').toLowerCase();
-            const productKeywords = ['mug', 'shirt', 't-shirt', 'hoodie', 'print', 'poster', 'canvas'];
-            if (productKeywords.some(keyword => title.includes(keyword)) && item.showInShop === true) {
-              if (isDev) console.log('🚫 FILTERED (product keyword):', item.id, title);
+            
+            // Layer 3: Category checks
+            if (itemCategory.includes('product') || itemCategory.includes('merchandise') || 
+                itemCategory.includes('merch') || itemCategory.includes('course')) {
+              if (isDev) console.log('🚫 FILTERED (category):', item.id, item.category);
               skippedNoImage++;
               continue;
+            }
+            
+            // Layer 4: Shop flags
+            if (item.showInShop === true || item.isForSale === true) {
+              // If it's ONLY in shop (not in portfolio), skip it
+              if (item.showInPortfolio !== true) {
+                if (isDev) console.log('🚫 FILTERED (shop-only):', item.id);
+                skippedNoImage++;
+                continue;
+              }
+              
+              // Even if in portfolio, check if title suggests it's a product
+              const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
+                                      'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
+                                      'phone case', 'pillow', 'blanket', 'hat', 'cap'];
+              if (productKeywords.some(keyword => itemTitle.includes(keyword))) {
+                if (isDev) console.log('🚫 FILTERED (product keyword + shop flag):', item.id, itemTitle);
+                skippedNoImage++;
+                continue;
+              }
+            }
+            
+            // Layer 5: Has price/variants fields (products have these)
+            if (item.variants || item.basePrice || item.variantOptions || item.shippingProfile) {
+              if (isDev) console.log('🚫 FILTERED (product fields):', item.id, 'has product-specific fields');
+              skippedNoImage++;
+              continue;
+            }
+            
+            // Layer 6: Debug log ANY item that has suspicious markers
+            if (item.showInShop || itemTitle.match(/mug|cup|shirt|print|poster/i)) {
+              if (isDev) console.log('⚠️ SUSPICIOUS ITEM (allowed but flagged):', item.id, {
+                type: item.type,
+                artworkType: item.artworkType,
+                category: item.category,
+                title: item.title,
+                showInShop: item.showInShop,
+                showInPortfolio: item.showInPortfolio,
+                isForSale: item.isForSale
+              });
             }
             
             // STRICT CLOUDFLARE VALIDATION: Only allow Cloudflare-hosted media
@@ -1764,27 +1808,52 @@ function DiscoverPageContent() {
             // Skip events
             if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
             
-            // CRITICAL: Skip products/shop items/courses - ONLY show artworks from portfolio/discover
-            if (artworkData.type === 'product' || artworkData.type === 'Product' || 
-                artworkData.type === 'marketplace' || artworkData.type === 'MarketplaceProduct' ||
-                artworkData.type === 'course' || artworkData.type === 'Course' ||
-                artworkData.type === 'merchandise' || artworkData.type === 'Merchandise') {
-              if (isDev) console.log('🚫 FILTERED artworks (product/course):', artworkDoc.id, artworkData.type);
+            // CRITICAL: COMPREHENSIVE PRODUCT/COURSE FILTERING
+            const artworkType = (artworkData.type || '').toLowerCase();
+            const artworkArtworkType = (artworkData.artworkType || '').toLowerCase();
+            const artworkCategory = (artworkData.category || '').toLowerCase();
+            const artworkTitle = (artworkData.title || '').toLowerCase();
+            
+            // Layer 1: Type checks
+            if (artworkType.includes('product') || artworkType.includes('merchandise') || 
+                artworkType.includes('marketplace') || artworkType.includes('course') ||
+                artworkType === 'merch' || artworkType === 'shop') {
+              if (isDev) console.log('🚫 FILTERED artworks (type):', artworkDoc.id, artworkData.type);
               continue;
             }
-            if (artworkData.artworkType === 'merchandise' || artworkData.artworkType === 'product' || artworkData.artworkType === 'course') {
+            
+            // Layer 2: ArtworkType checks
+            if (artworkArtworkType.includes('merchandise') || artworkArtworkType.includes('product') || 
+                artworkArtworkType.includes('course') || artworkArtworkType === 'merch') {
               if (isDev) console.log('🚫 FILTERED artworks (artworkType):', artworkDoc.id, artworkData.artworkType);
               continue;
             }
-            if (artworkData.showInShop === true && artworkData.showInPortfolio !== true) {
-              if (isDev) console.log('🚫 FILTERED artworks (shop-only):', artworkDoc.id);
+            
+            // Layer 3: Category checks
+            if (artworkCategory.includes('product') || artworkCategory.includes('merchandise') || 
+                artworkCategory.includes('merch') || artworkCategory.includes('course')) {
+              if (isDev) console.log('🚫 FILTERED artworks (category):', artworkDoc.id, artworkData.category);
               continue;
             }
-            // Additional check: if title/description suggests it's a product
-            const title = (artworkData.title || '').toLowerCase();
-            const productKeywords = ['mug', 'shirt', 't-shirt', 'hoodie', 'print', 'poster', 'canvas'];
-            if (productKeywords.some(keyword => title.includes(keyword)) && artworkData.showInShop === true) {
-              if (isDev) console.log('🚫 FILTERED artworks (product keyword):', artworkDoc.id, title);
+            
+            // Layer 4: Shop flags + keyword detection
+            if (artworkData.showInShop === true || artworkData.isForSale === true) {
+              if (artworkData.showInPortfolio !== true) {
+                if (isDev) console.log('🚫 FILTERED artworks (shop-only):', artworkDoc.id);
+                continue;
+              }
+              const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
+                                      'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
+                                      'phone case', 'pillow', 'blanket', 'hat', 'cap'];
+              if (productKeywords.some(keyword => artworkTitle.includes(keyword))) {
+                if (isDev) console.log('🚫 FILTERED artworks (product keyword):', artworkDoc.id, artworkTitle);
+                continue;
+              }
+            }
+            
+            // Layer 5: Product-specific fields
+            if (artworkData.variants || artworkData.basePrice || artworkData.variantOptions || artworkData.shippingProfile) {
+              if (isDev) console.log('🚫 FILTERED artworks (product fields):', artworkDoc.id);
               continue;
             }
             
@@ -2360,27 +2429,52 @@ function DiscoverPageContent() {
         // CRITICAL: Filter out events - only show artworks from portfolio/discover
         if (itemAny.type === 'event' || itemAny.type === 'Event' || itemAny.eventType) continue;
         
-        // CRITICAL: Filter out products/shop items/courses - ONLY show artworks from portfolio/discover
-        if (itemAny.type === 'product' || itemAny.type === 'Product' || 
-            itemAny.type === 'marketplace' || itemAny.type === 'MarketplaceProduct' ||
-            itemAny.type === 'course' || itemAny.type === 'Course' ||
-            itemAny.type === 'merchandise' || itemAny.type === 'Merchandise') {
-          if (isDev) console.log('🚫 FILTERED loadMore (product/course):', itemAny.id, itemAny.type);
+        // CRITICAL: COMPREHENSIVE PRODUCT/COURSE FILTERING
+        const loadItemType = (itemAny.type || '').toLowerCase();
+        const loadItemArtworkType = (itemAny.artworkType || '').toLowerCase();
+        const loadItemCategory = (itemAny.category || '').toLowerCase();
+        const loadItemTitle = (itemAny.title || '').toLowerCase();
+        
+        // Layer 1: Type checks
+        if (loadItemType.includes('product') || loadItemType.includes('merchandise') || 
+            loadItemType.includes('marketplace') || loadItemType.includes('course') ||
+            loadItemType === 'merch' || loadItemType === 'shop') {
+          if (isDev) console.log('🚫 FILTERED loadMore (type):', itemAny.id, itemAny.type);
           continue;
         }
-        if (itemAny.artworkType === 'merchandise' || itemAny.artworkType === 'product' || itemAny.artworkType === 'course') {
+        
+        // Layer 2: ArtworkType checks
+        if (loadItemArtworkType.includes('merchandise') || loadItemArtworkType.includes('product') || 
+            loadItemArtworkType.includes('course') || loadItemArtworkType === 'merch') {
           if (isDev) console.log('🚫 FILTERED loadMore (artworkType):', itemAny.id, itemAny.artworkType);
           continue;
         }
-        if (itemAny.showInShop === true && itemAny.showInPortfolio !== true) {
-          if (isDev) console.log('🚫 FILTERED loadMore (shop-only):', itemAny.id);
+        
+        // Layer 3: Category checks
+        if (loadItemCategory.includes('product') || loadItemCategory.includes('merchandise') || 
+            loadItemCategory.includes('merch') || loadItemCategory.includes('course')) {
+          if (isDev) console.log('🚫 FILTERED loadMore (category):', itemAny.id, itemAny.category);
           continue;
         }
-        // Additional check: if title suggests it's a product
-        const itemTitle = (itemAny.title || '').toLowerCase();
-        const productKeywords = ['mug', 'shirt', 't-shirt', 'hoodie', 'print', 'poster', 'canvas'];
-        if (productKeywords.some(keyword => itemTitle.includes(keyword)) && itemAny.showInShop === true) {
-          if (isDev) console.log('🚫 FILTERED loadMore (product keyword):', itemAny.id, itemTitle);
+        
+        // Layer 4: Shop flags + keyword detection
+        if (itemAny.showInShop === true || itemAny.isForSale === true) {
+          if (itemAny.showInPortfolio !== true) {
+            if (isDev) console.log('🚫 FILTERED loadMore (shop-only):', itemAny.id);
+            continue;
+          }
+          const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
+                                  'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
+                                  'phone case', 'pillow', 'blanket', 'hat', 'cap'];
+          if (productKeywords.some(keyword => loadItemTitle.includes(keyword))) {
+            if (isDev) console.log('🚫 FILTERED loadMore (product keyword):', itemAny.id, loadItemTitle);
+            continue;
+          }
+        }
+        
+        // Layer 5: Product-specific fields
+        if (itemAny.variants || itemAny.basePrice || itemAny.variantOptions || itemAny.shippingProfile) {
+          if (isDev) console.log('🚫 FILTERED loadMore (product fields):', itemAny.id);
           continue;
         }
         
@@ -2682,21 +2776,46 @@ function DiscoverPageContent() {
         return false;
       }
       
-      // Product/shop/course checks - ONLY show artworks
-      if (artwork.type === 'product' || artwork.type === 'Product' || 
-          artwork.type === 'marketplace' || artwork.type === 'MarketplaceProduct' ||
-          artwork.type === 'course' || artwork.type === 'Course' ||
-          artwork.type === 'merchandise' || artwork.type === 'Merchandise' ||
-          artwork.artworkType === 'merchandise' || 
-          artwork.artworkType === 'product' || 
-          artwork.artworkType === 'course' ||
-          (artwork.showInShop === true && artwork.showInPortfolio !== true)) {
+      // COMPREHENSIVE PRODUCT/SHOP/COURSE FILTERING - ONLY show artworks
+      const memoType = (artwork.type || '').toLowerCase();
+      const memoArtworkType = (artwork.artworkType || '').toLowerCase();
+      const memoCategory = (artwork.category || '').toLowerCase();
+      const memoTitle = (artwork.title || '').toLowerCase();
+      
+      // Layer 1: Type checks
+      if (memoType.includes('product') || memoType.includes('merchandise') || 
+          memoType.includes('marketplace') || memoType.includes('course') ||
+          memoType === 'merch' || memoType === 'shop') {
         return false;
       }
-      // Additional keyword check for products in titles
-      const artworkTitle = (artwork.title || '').toLowerCase();
-      const productKeywords = ['mug', 'shirt', 't-shirt', 'hoodie', 'print', 'poster', 'canvas'];
-      if (productKeywords.some(keyword => artworkTitle.includes(keyword)) && artwork.showInShop === true) {
+      
+      // Layer 2: ArtworkType checks
+      if (memoArtworkType.includes('merchandise') || memoArtworkType.includes('product') || 
+          memoArtworkType.includes('course') || memoArtworkType === 'merch') {
+        return false;
+      }
+      
+      // Layer 3: Category checks
+      if (memoCategory.includes('product') || memoCategory.includes('merchandise') || 
+          memoCategory.includes('merch') || memoCategory.includes('course')) {
+        return false;
+      }
+      
+      // Layer 4: Shop flags + keyword detection
+      if (artwork.showInShop === true || artwork.isForSale === true) {
+        if (artwork.showInPortfolio !== true) {
+          return false;
+        }
+        const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
+                                'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
+                                'phone case', 'pillow', 'blanket', 'hat', 'cap'];
+        if (productKeywords.some(keyword => memoTitle.includes(keyword))) {
+          return false;
+        }
+      }
+      
+      // Layer 5: Product-specific fields
+      if (artwork.variants || artwork.basePrice || artwork.variantOptions || artwork.shippingProfile) {
         return false;
       }
       
