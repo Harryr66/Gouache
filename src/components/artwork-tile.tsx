@@ -1742,6 +1742,9 @@ const generateArtistContent = (artist: Artist) => ({
                     sizes={firebaseSizes} // CRITICAL: Forces Next.js to generate 240px images for grid
                     quality={isInitialViewport ? 75 : 85} // Lower quality for thumbnails (faster load)
                     key={retryCount}
+                    // INSTAGRAM/PINTEREST-LEVEL: Cloudflare handles WebP/AVIF automatically
+                    // Next.js Image will use WebP/AVIF for Firebase images automatically
+                    unoptimized={imageSrc.includes('imagedelivery.net') || imageSrc.includes('cloudflarestream.com')} // Cloudflare handles optimization
                     onLoad={() => {
                       setIsImageLoaded(true);
                       setImageError(false);

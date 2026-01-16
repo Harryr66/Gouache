@@ -923,13 +923,12 @@ function DiscoverPageContent() {
   
   // Calculate how many items are in viewport + buffer (for faster loading)
   // This is what we'll wait for before dismissing the loading screen
-  // INSTAGRAM/PINTEREST-LEVEL: Load 12-20 rows initially (60 items on desktop, 40+ on mobile)
-  // Note: isMobile is detected later, so we use a safe default (mobile: 2 cols)
+  // USER REQUEST: 9 rows initially (as requested 5 times)
   const itemsToWaitFor = useMemo(() => {
-    // Desktop: 5 cols × 12 rows = 60 items (viewport + 10 rows buffer)
-    // Mobile: 2 cols × 20 rows = 40 items (viewport + 18 rows buffer)
-    // Use columnCount to estimate: if 2-3 cols assume mobile (40 items), else desktop (60 items)
-    const rowsToLoad = columnCount <= 3 ? 20 : 12; // Mobile: 20 rows, Desktop: 12 rows (doubled)
+    // Desktop: 5 cols × 9 rows = 45 items
+    // Mobile: 2 cols × 9 rows = 18 items
+    // Use columnCount to estimate: if 2-3 cols assume mobile, else desktop
+    const rowsToLoad = 9; // USER REQUEST: 9 rows (not 12 or 20)
     return columnCount * rowsToLoad;
   }, [columnCount]);
   
@@ -1052,12 +1051,11 @@ function DiscoverPageContent() {
       
       
       // CRITICAL FIX: Wait for minimum number of images to load before dismissing
-      // Ensure at least 40-60 images are loaded (not just a percentage)
+      // USER REQUEST: 9 rows initially
+      // Ensure at least 18-45 images are loaded (not just a percentage)
       // This prevents dismissing with only 3 images visible
-      // Use columnCount to estimate mobile (2-3 cols = mobile)
-      // Match visibleCount targets: 40 mobile, 60 desktop
-      const estimatedIsMobile = columnCount <= 3;
-      const MIN_IMAGES_TO_LOAD = estimatedIsMobile ? 40 : 60; // Increased from 30/50 to match visibleCount
+      // Use isMobile directly (more reliable than columnCount which may be wrong initially)
+      const MIN_IMAGES_TO_LOAD = isMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
       const imagesReady = effectiveImagesTotal > 0
         ? initialImagesReady >= Math.max(
             Math.ceil(effectiveImagesTotal * 0.9), // 90% of available
@@ -1070,9 +1068,9 @@ function DiscoverPageContent() {
       const allMediaReady = imagesReady && videoPostersReady;
 
       // CRITICAL FIX: If there's no media to wait for, dismiss immediately with stabilization delay
-      // BUT: Still require minimum artworks count (matching visibleCount: 40 mobile, 60 desktop)
-      const estimatedIsMobileForNoMedia = columnCount <= 3;
-      const minArtworksForNoMedia = estimatedIsMobileForNoMedia ? 40 : 60; // Increased from 30/50 to match visibleCount
+      // BUT: Still require minimum artworks count (matching 9 rows: 18 mobile, 45 desktop)
+      // Use isMobile directly (more reliable than columnCount)
+      const minArtworksForNoMedia = isMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
       if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && artworksLoaded && artworks.length >= minArtworksForNoMedia) {
         if (dismissalTimeoutRef.current) return;
         dismissalTimeoutRef.current = setTimeout(() => {
@@ -1085,10 +1083,10 @@ function DiscoverPageContent() {
       }
 
       // CRITICAL FIX: Dismiss immediately when all media is loaded (no joke wait)
-      // BUT: Require minimum 40-60 artworks loaded to prevent dismissing with only 3 images
-      // This matches visibleCount initial values (40 mobile, 60 desktop)
-      const estimatedIsMobileForDismiss = columnCount <= 3;
-      const minArtworksRequired = estimatedIsMobileForDismiss ? 40 : 60; // Increased from 30/50 to match visibleCount
+      // BUT: Require minimum 18-45 artworks loaded to prevent dismissing with only 3 images
+      // USER REQUEST: 9 rows initially (18 mobile, 45 desktop)
+      // Use isMobile directly (more reliable than columnCount)
+      const minArtworksRequired = isMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
       const hasMinimumArtworks = artworks.length >= minArtworksRequired;
       
       if (allMediaReady && artworksLoaded && hasMinimumArtworks) {
@@ -1106,13 +1104,15 @@ function DiscoverPageContent() {
 
       // Fallback timeout: If media still loading after 8 seconds, dismiss anyway
       // This prevents infinite waiting if some images fail, but gives more time for initial load
+      // CRITICAL: Still require minimum 18/45 artworks before dismissing (prevents 3-tile issue, 9 rows)
       const timeSinceStart = Date.now() - loadingStartTimeRef.current;
-      if (timeSinceStart > 8000 && artworksLoaded && artworks.length > 0) {
+      const minArtworksForTimeout = isMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
+      if (timeSinceStart > 8000 && artworksLoaded && artworks.length >= minArtworksForTimeout) {
         if (dismissalTimeoutRef.current) return;
         // If we have at least 50% of images loaded, it's good enough (like Instagram/Pinterest)
         const minImagesLoaded = Math.ceil(effectiveImagesTotal * 0.5);
         if (initialImagesReady >= minImagesLoaded) {
-          if (isDev) console.warn(`⚠️ Timeout after 8s but have ${initialImagesReady}/${effectiveImagesTotal} images (50%+), dismissing`);
+          if (isDev) console.warn(`⚠️ Timeout after 8s but have ${artworks.length} artworks (min ${minArtworksForTimeout}) and ${initialImagesReady}/${effectiveImagesTotal} images (50%+), dismissing`);
           dismissalTimeoutRef.current = setTimeout(() => {
             setShowLoadingScreen(false);
             loadingScreenDismissedTimeRef.current = Date.now();
@@ -1123,11 +1123,13 @@ function DiscoverPageContent() {
       }
       
       // CRITICAL: Maximum total loading time (15 seconds) - prevent infinite loading
+      // BUT: Still require minimum 18/45 artworks before dismissing (prevents 3-tile issue, 9 rows)
       const MAX_LOADING_TIME = 15000;
       const totalLoadingTime = Date.now() - loadingStartTimeRef.current;
-      if (totalLoadingTime > MAX_LOADING_TIME) {
+      const minArtworksForMaxTimeout = isMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
+      if (totalLoadingTime > MAX_LOADING_TIME && artworks.length >= minArtworksForMaxTimeout) {
         if (dismissalTimeoutRef.current) return;
-        if (isDev) console.warn(`⚠️ Maximum loading time (${MAX_LOADING_TIME}ms) exceeded, dismissing loading screen`);
+        if (isDev) console.warn(`⚠️ Maximum loading time (${MAX_LOADING_TIME}ms) exceeded with ${artworks.length} artworks (min ${minArtworksForMaxTimeout}), dismissing loading screen`);
         dismissalTimeoutRef.current = setTimeout(() => {
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
@@ -1162,7 +1164,7 @@ function DiscoverPageContent() {
         dismissalTimeoutRef.current = null;
       }
     };
-  }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor, LOADING_SCREEN_DELAY, columnCount]);
+  }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor, LOADING_SCREEN_DELAY, isMobile]);
   
   useEffect(() => {
     setMounted(true);
@@ -1177,12 +1179,14 @@ function DiscoverPageContent() {
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
   // CRITICAL: Initialize based on device to prevent mobile crashes
-  // INSTAGRAM/PINTEREST-LEVEL: Show 40+ items initially (mobile: 40, desktop: 60)
-  // Mobile (2 cols): 20 rows = 40 items
-  // Desktop (5 cols): 12 rows = 60 items
+  // USER REQUEST: 9 rows initially (as requested 5 times)
+  // Mobile (2 cols): 9 rows = 18 items
+  // Desktop (5 cols): 9 rows = 45 items
   // Start with mobile-safe default, will update when device is detected
-  const [visibleCount, setVisibleCount] = useState(40); // Mobile: 40 items initially (doubled from 20)
+  const [visibleCount, setVisibleCount] = useState(18); // Mobile: 18 items (2 cols × 9 rows)
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  // CRITICAL: Track displayed item IDs to preserve their order when new items are added
+  const displayedItemIdsRef = useRef<Set<string>>(new Set());
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market list, Events grid on mobile
   const [artworkView, setArtworkView] = useState<'grid' | 'list'>('grid');
@@ -1222,12 +1226,13 @@ function DiscoverPageContent() {
         else if (width >= 768) newColumnCount = 3;
         setColumnCount(newColumnCount);
         
-        // Update visibleCount with safeguards
-        const MAX_TOTAL_ARTWORKS = width < 768 ? 50 : 200;
+        // Update visibleCount - NO LIMITS, just calculate based on rows
+        // CRITICAL: visibleCount is only for initial load, not for limiting displayed content
         setVisibleCount((prev) => {
           const completeRows = Math.floor(prev / newItemsPerRow);
           const calculated = Math.max(newItemsPerRow, completeRows * newItemsPerRow);
-          return Math.min(calculated, MAX_TOTAL_ARTWORKS);
+          // NO CAPPING - just calculate based on layout
+          return calculated;
         });
       } catch (error) {
         if (isDev) console.error('Error in resize handler:', error);
@@ -1255,18 +1260,15 @@ function DiscoverPageContent() {
     if (!isMobile) {
       // Desktop: default to grid view, but allow user to switch
       // Don't force it - let user's choice persist
-      // CRITICAL FIX: Desktop: 5 cols × 12 rows = 60 items (INSTAGRAM/PINTEREST-LEVEL initial load)
-      // DO NOT set to 30 - this was causing only 3 tiles to show
-      setVisibleCount(60); // Increased from 30 to match initial load target
+      // USER REQUEST: Desktop: 5 cols × 9 rows = 45 items (9 rows as requested 5 times)
+      setVisibleCount(45); // 9 rows × 5 cols = 45 items
     } else {
       // On mobile, ensure correct defaults
       setArtworkView('grid');
       setMarketView('list');
       setEventsView('grid'); // Events use grid view on mobile
-      // CRITICAL FIX: Mobile: 2 cols × 20 rows = 40 items (matching initial load target)
-      setVisibleCount(40); // Ensure mobile also uses correct count
-      // Mobile: 2 cols × 20 rows = 40 items (INSTAGRAM/PINTEREST-LEVEL initial load - doubled)
-      setVisibleCount(40);
+      // USER REQUEST: Mobile: 2 cols × 9 rows = 18 items (9 rows as requested 5 times)
+      setVisibleCount(18); // 9 rows × 2 cols = 18 items
     }
   }, [isMobile]);
 
@@ -1295,10 +1297,11 @@ function DiscoverPageContent() {
         
         // Fetch enough items to fill viewport - loading screen provides time for larger initial load
         // Load significantly more to account for filtering (non-Cloudflare images, etc.)
-        // MOBILE: Load enough to show 40+ items after filtering
-        // Desktop: Load enough to show 60+ items after filtering
+        // USER REQUEST: 9 rows initially
+        // MOBILE: Load enough to show 18 items (2 cols × 9 rows) after filtering
+        // Desktop: Load enough to show 45 items (5 cols × 9 rows) after filtering
         // Load 2x the target to account for filtering losses
-        const INITIAL_FETCH_LIMIT = isMobile ? 80 : 120; // Mobile: 80 items (2x 40), Desktop: 120 items (2x 60)
+        const INITIAL_FETCH_LIMIT = isMobile ? 36 : 90; // Mobile: 36 items (2x 18), Desktop: 90 items (2x 45)
         
         try {
           // Try cached API first (ISR with 5min revalidation)
@@ -2334,28 +2337,21 @@ function DiscoverPageContent() {
         newArtworks.push(artwork);
       }
 
-      // INSTAGRAM/PINTEREST-LEVEL: Process ALL items first, then update state in ONE batch
-      // This prevents position shifting and content reloading
-      // MOBILE: Use stricter limits to prevent crashes
-      const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
-      
-      // Calculate the complete new artworks array BEFORE updating state
-      // This ensures we have all items ready before React renders
-      // Wrap in try-catch to prevent crashes
+      // CRITICAL FIX: ALL CONTENT MUST BE STATIC - NEVER REMOVE EXISTING CONTENT
+      // Simply append new sections - no capping, no removal, no replacement
+      // This ensures section 1 stays static when section 2 loads, section 2 stays static when section 3 loads, etc.
       try {
         const updatedArtworks = (() => {
           const existingIds = new Set(artworks.map(a => a.id));
           const uniqueNewArtworks = newArtworks.filter(a => !existingIds.has(a.id));
+          // SIMPLY APPEND - NEVER REMOVE EXISTING CONTENT
           const combined = [...artworks, ...uniqueNewArtworks];
           // Deduplicate entire array by ID (in case of any duplicates in prev)
           const uniqueCombined = Array.from(
             new Map(combined.map(a => [a.id, a])).values()
           );
-          // CRITICAL: Cap at MAX_TOTAL_ARTWORKS to prevent memory issues and crashes
-          // Keep most recent items (slice from end)
-          return uniqueCombined.length > MAX_TOTAL_ARTWORKS
-            ? uniqueCombined.slice(-MAX_TOTAL_ARTWORKS)
-            : uniqueCombined;
+          // NO CAPPING - ALL CONTENT STAYS STATIC
+          return uniqueCombined;
         })();
         
         // INSTAGRAM/PINTEREST-LEVEL: Update state in one batch to prevent position shifting
@@ -2370,15 +2366,13 @@ function DiscoverPageContent() {
       } catch (error) {
         if (isDev) console.error('Error updating artworks state:', error);
         // Fallback: just add new artworks without complex processing
+        // CRITICAL: NEVER REMOVE EXISTING CONTENT - JUST APPEND
         startTransition(() => {
           setArtworks(prev => {
             const existingIds = new Set(prev.map(a => a.id));
             const uniqueNew = newArtworks.filter(a => !existingIds.has(a.id));
-            const combined = [...prev, ...uniqueNew];
-            // Simple cap for mobile safety
-            return combined.length > MAX_TOTAL_ARTWORKS 
-              ? combined.slice(-MAX_TOTAL_ARTWORKS)
-              : combined;
+            // SIMPLY APPEND - NO CAPPING, NO REMOVAL
+            return [...prev, ...uniqueNew];
           });
         });
       }
@@ -2602,10 +2596,12 @@ function DiscoverPageContent() {
     
     log('🔍 filteredAndSortedArtworks - Input:', {
       totalArtworks: realArtworks.length,
-      artworkIds: realArtworks.slice(0, 10).map((a: any) => a.id)
+      artworkIds: realArtworks.slice(0, 10).map((a: any) => a.id),
+      displayedIdsCount: displayedItemIdsRef.current.size
     });
-
-    // PERFORMANCE: Combine all user filters into single pass
+    
+    // PERFORMANCE: Combine all user filters into single pass FIRST
+    // CRITICAL: Filter BEFORE splitting to preserve displayed items
     const queryLower = deferredSearchQuery ? deferredSearchQuery.toLowerCase() : '';
     const needsSearch = !!deferredSearchQuery;
     const needsMedium = selectedMedium !== 'All';
@@ -2646,25 +2642,40 @@ function DiscoverPageContent() {
         return true;
       });
     }
-
-    // Sort using engagement-based algorithm when 'popular' is selected
-    let sorted = Array.isArray(realArtworks) ? [...realArtworks] : [];
     
+    // CRITICAL FIX: Preserve order of already-displayed items
+    // Split into displayed (keep order) and new items (sort these)
+    // MUST happen AFTER filtering so displayed items don't get filtered out
+    const displayedItems: any[] = [];
+    const newItems: any[] = [];
+    
+    for (const artwork of realArtworks) {
+      if (displayedItemIdsRef.current.has(artwork.id)) {
+        displayedItems.push(artwork);
+      } else {
+        newItems.push(artwork);
+      }
+    }
+    
+    // Sort only NEW items, preserve order of displayed items
+    let sortedNewItems = [...newItems];
+
     // Get followed artist IDs for priority boost
     const followedArtists = getFollowedArtists();
     const followedArtistIds = new Set(followedArtists.map(a => a.id));
     
+    // CRITICAL FIX: Sort ONLY new items, preserve displayed items in their current order
     if (sortBy === 'popular' && artworkEngagements.size > 0) {
-      // Use engagement-based scoring algorithm with follow boost
-      const scoredArtworks = engagementScorer.scoreArtworks(sorted, artworkEngagements, followedArtistIds);
+      // Use engagement-based scoring algorithm with follow boost (only for new items)
+      const scoredArtworks = engagementScorer.scoreArtworks(sortedNewItems, artworkEngagements, followedArtistIds);
       const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
-      sorted = engagementScorer.sortByScore(withDiversity);
+      sortedNewItems = engagementScorer.sortByScore(withDiversity);
     } else {
-      // Traditional sorting for other options, but still prioritize followed artists
+      // Traditional sorting for other options, but still prioritize followed artists (only for new items)
       switch (sortBy) {
         case 'newest':
           // Sort by newest, but prioritize followed artists
-          sorted.sort((a, b) => {
+          sortedNewItems.sort((a, b) => {
             const aIsFollowed = followedArtistIds.has(a.artist.id);
             const bIsFollowed = followedArtistIds.has(b.artist.id);
             if (aIsFollowed && !bIsFollowed) return -1;
@@ -2673,7 +2684,7 @@ function DiscoverPageContent() {
           });
           break;
         case 'oldest':
-          sorted.sort((a, b) => {
+          sortedNewItems.sort((a, b) => {
             const aIsFollowed = followedArtistIds.has(a.artist.id);
             const bIsFollowed = followedArtistIds.has(b.artist.id);
             if (aIsFollowed && !bIsFollowed) return -1;
@@ -2682,7 +2693,7 @@ function DiscoverPageContent() {
           });
           break;
         case 'likes':
-          sorted.sort((a, b) => {
+          sortedNewItems.sort((a, b) => {
             const aIsFollowed = followedArtistIds.has(a.artist.id);
             const bIsFollowed = followedArtistIds.has(b.artist.id);
             if (aIsFollowed && !bIsFollowed) return -1;
@@ -2691,7 +2702,7 @@ function DiscoverPageContent() {
           });
           break;
         case 'recent':
-          sorted.sort((a, b) => {
+          sortedNewItems.sort((a, b) => {
             const aIsFollowed = followedArtistIds.has(a.artist.id);
             const bIsFollowed = followedArtistIds.has(b.artist.id);
             if (aIsFollowed && !bIsFollowed) return -1;
@@ -2702,12 +2713,12 @@ function DiscoverPageContent() {
         default:
           // Default: Use engagement-based ranking if we have engagement data
           if (artworkEngagements.size > 0) {
-            const scoredArtworks = engagementScorer.scoreArtworks(sorted, artworkEngagements, followedArtistIds);
+            const scoredArtworks = engagementScorer.scoreArtworks(sortedNewItems, artworkEngagements, followedArtistIds);
             const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
-            sorted = engagementScorer.sortByScore(withDiversity);
+            sortedNewItems = engagementScorer.sortByScore(withDiversity);
           } else {
             // Fallback to newest if no engagement data, but prioritize followed artists
-            sorted.sort((a, b) => {
+            sortedNewItems.sort((a, b) => {
               const aIsFollowed = followedArtistIds.has(a.artist.id);
               const bIsFollowed = followedArtistIds.has(b.artist.id);
               if (aIsFollowed && !bIsFollowed) return -1;
@@ -2718,6 +2729,13 @@ function DiscoverPageContent() {
           break;
       }
     }
+    
+    // CRITICAL FIX: Combine displayed items (preserved order) + sorted new items (append at end)
+    // This ensures section 1 stays static, section 2 stays static, etc.
+    const sorted = [...displayedItems, ...sortedNewItems];
+    
+    // Update displayed IDs ref to track what's been displayed
+    sorted.forEach(item => displayedItemIdsRef.current.add(item.id));
 
     log('🔍 filteredAndSortedArtworks:', {
       totalFiltered: baseFilteredArtworks.length,
@@ -2935,19 +2953,14 @@ function DiscoverPageContent() {
     };
   }, [filteredAndSortedArtworks, columnCount, isMobile]);
 
-  // INSTAGRAM/PINTEREST-LEVEL: Stable visible items calculation
+  // CRITICAL FIX: ALL CONTENT MUST BE STATIC - NO LIMITS ON RENDERED ITEMS
   // This prevents content from reloading/changing after being displayed
   const visibleFilteredArtworks = useMemo(() => {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
     
-    // CRITICAL: Limit total items to prevent crashes with 200+ images
-    // Mobile has less memory - use stricter limits
-    // Use existing isMobile state instead of creating new variable
-    const MAX_RENDERED_ITEMS = isMobile ? 50 : 150; // Mobile: 50 items (matches MAX_TOTAL_ARTWORKS), Desktop: 150 items
-    const safeTotalItems = Math.min(totalItems, MAX_RENDERED_ITEMS);
-    
-    // INSTAGRAM/PINTEREST-LEVEL: Return stable slice to prevent content reloading
-    // Once items are displayed, they should remain static
+    // NO LIMITS - ALL CONTENT STAYS VISIBLE AND STATIC
+    // User can scroll through all loaded sections without content disappearing
+    const safeTotalItems = totalItems;
     
     // Check how many placeholders are in the array
     const placeholderCount = Array.isArray(filteredAndSortedArtworks) 
@@ -2971,13 +2984,13 @@ function DiscoverPageContent() {
       return [];
     }
     
-    // Show items up to visibleCount, but don't require complete rows
-    // This ensures items display even if there are fewer than itemsPerRow
-    // CRITICAL: Cap at MAX_RENDERED_ITEMS to prevent crashes
-    const finalCount = Math.min(visibleCount, safeTotalItems, MAX_RENDERED_ITEMS);
+    // CRITICAL FIX: Show ALL items - no capping, no limits, no slicing
+    // visibleCount is just for initial load calculation, but once content is loaded, show ALL of it
+    // This ensures section 1, section 2, section 3, etc. all stay visible and static
+    // NEVER slice - show everything that's been loaded
     
     const artworksSlice = Array.isArray(filteredAndSortedArtworks)
-      ? filteredAndSortedArtworks.slice(0, finalCount)
+      ? filteredAndSortedArtworks // NO SLICING - SHOW ALL LOADED ITEMS
       : [];
     
     // Mix ads into artworks
@@ -2989,13 +3002,11 @@ function DiscoverPageContent() {
 
   useEffect(() => {
     // CRITICAL FIX: Reset to device-appropriate count when filters change
-    // INSTAGRAM/PINTEREST-LEVEL: Mobile: 40 items (2 cols × 20 rows), Desktop: 60 items (5 cols × 12 rows)
+    // USER REQUEST: 9 rows initially - Mobile: 18 items (2 cols × 9 rows), Desktop: 45 items (5 cols × 9 rows)
     // DO NOT reset to lower values - this was causing only 3 tiles to show
-    // CRITICAL: Ensure we never exceed MAX_TOTAL_ARTWORKS on mobile
-    // Keep the doubled initial counts (40 mobile, 60 desktop) when filters change
-    const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
-    const resetCount = isMobile ? 40 : 60; // Use doubled values (was 20/30)
-    setVisibleCount(Math.min(resetCount, MAX_TOTAL_ARTWORKS));
+    // NO LIMITS - visibleCount is only for initial load calculation, not for capping displayed content
+    const resetCount = isMobile ? 18 : 45; // 9 rows as requested (was 40/60)
+    setVisibleCount(resetCount);
   }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, isMobile]);
 
   // Marketplace products useEffect removed - marketplace tab is hidden
