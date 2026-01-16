@@ -21,14 +21,20 @@ export function NewsTile({ article }: NewsTileProps) {
   const cardContent = (
     <>
       <div className="relative w-full pt-[60%] overflow-hidden">
-        <img
-          src={article.imageUrl}
-          alt={article.title || 'Coming Soon'}
-          className={cn(
-            'absolute inset-0 h-full w-full transition-transform duration-500',
-            isPlaceholder ? 'object-contain bg-muted p-8' : 'group-hover:scale-105 object-cover'
-          )}
-        />
+        {article.imageUrl ? (
+          <img
+            src={article.imageUrl}
+            alt={article.title || 'Coming Soon'}
+            className={cn(
+              'absolute inset-0 h-full w-full transition-transform duration-500',
+              isPlaceholder ? 'object-contain bg-muted p-8' : 'group-hover:scale-105 object-cover'
+            )}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-muted flex items-center justify-center">
+            <span className="text-muted-foreground text-sm">No image</span>
+          </div>
+        )}
         <div className="absolute top-3 left-3">
           <Badge variant="secondary">{article.category}</Badge>
         </div>
