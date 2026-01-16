@@ -1538,13 +1538,32 @@ function DiscoverPageContent() {
             }
             
             // CRITICAL: COMPREHENSIVE PRODUCT/COURSE FILTERING - MULTIPLE LAYERS
-            // Log ALL item data for debugging if it looks suspicious
-            const itemType = (item.type || '').toLowerCase();
-            const itemArtworkType = (item.artworkType || '').toLowerCase();
-            const itemCategory = (item.category || '').toLowerCase();
-            const itemTitle = (item.title || '').toLowerCase();
-            
-            // Layer 1: Type checks (case-insensitive)
+          // Log ALL item data for debugging if it looks suspicious
+          const itemType = (item.type || '').toLowerCase();
+          const itemArtworkType = (item.artworkType || '').toLowerCase();
+          const itemCategory = (item.category || '').toLowerCase();
+          const itemTitle = (item.title || '').toLowerCase();
+          
+          // EMERGENCY DEBUG: Log Test Mug data to see why it's not being filtered CLIENT-SIDE
+          if (itemTitle.includes('mug') || item.id === 'artwork-1767255654110') {
+            console.log('🔍 CLIENT DEBUG Test Mug data:', {
+              id: item.id,
+              title: item.title,
+              type: item.type,
+              artworkType: item.artworkType,
+              category: item.category,
+              showInShop: item.showInShop,
+              isForSale: item.isForSale,
+              showInPortfolio: item.showInPortfolio,
+              variants: !!item.variants,
+              basePrice: !!item.basePrice,
+              variantOptions: !!item.variantOptions,
+              shippingProfile: !!item.shippingProfile,
+              allFields: Object.keys(item)
+            });
+          }
+          
+          // Layer 1: Type checks (case-insensitive)
             if (itemType.includes('product') || itemType.includes('merchandise') || 
                 itemType.includes('marketplace') || itemType.includes('course') ||
                 itemType === 'merch' || itemType === 'shop') {
