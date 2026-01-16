@@ -761,7 +761,7 @@ const generateArtistContent = (artist: Artist) => ({
               <div 
                 className="absolute inset-0 animate-pulse"
                 style={{
-                  background: currentTheme === 'dark'
+                  background: (resolvedTheme || theme) === 'dark'
                     ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
                     : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
                   backgroundSize: '400% 400%',
@@ -790,7 +790,7 @@ const generateArtistContent = (artist: Artist) => ({
                       <div 
                         className="absolute inset-0 animate-pulse"
                         style={{
-                          background: currentTheme === 'dark'
+                          background: (resolvedTheme || theme) === 'dark'
                             ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
                             : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
                           backgroundSize: '400% 400%',
@@ -936,7 +936,7 @@ const generateArtistContent = (artist: Artist) => ({
                   <div 
                     className="absolute inset-0 animate-pulse"
                     style={{
-                      background: currentTheme === 'dark'
+                      background: (resolvedTheme || theme) === 'dark'
                         ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
                         : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
                       backgroundSize: '400% 400%',
@@ -1127,7 +1127,7 @@ const generateArtistContent = (artist: Artist) => ({
                   <div 
                     className="absolute inset-0 animate-pulse"
                     style={{
-                      background: currentTheme === 'dark'
+                      background: (resolvedTheme || theme) === 'dark'
                         ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
                         : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
                       backgroundSize: '400% 400%',
