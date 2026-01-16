@@ -1682,7 +1682,7 @@ export default function AdminPanel() {
       const bodyContent = bodyElement?.innerHTML || '';
       
       // Upload hero image if provided
-      let heroImageUrl = DEFAULT_ARTICLE_IMAGE;
+      let heroImageUrl: string | null = DEFAULT_ARTICLE_IMAGE;
       if (newArticleImageFile) {
         try {
           const fileName = `${Date.now()}_${newArticleImageFile.name.replace(/\s+/g, '-')}`;
@@ -1889,7 +1889,7 @@ export default function AdminPanel() {
       }
       
       // Upload hero image if provided
-      let heroImageUrl = DEFAULT_ARTICLE_IMAGE;
+      let heroImageUrl: string | null = DEFAULT_ARTICLE_IMAGE;
       if (newArticleImageFile) {
         try {
           const fileName = `${Date.now()}_${newArticleImageFile.name.replace(/\s+/g, '-')}`;
