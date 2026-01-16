@@ -1087,10 +1087,10 @@ function DiscoverPageContent() {
         return;
       }
       
-      // PRIORITY 2: Timeout fallback - After 5 seconds, show whatever we have
-      // This prevents infinite loading if database only has 3 artworks
+      // PRIORITY 2: Timeout fallback - After 15 seconds, show whatever we have
+      // This prevents infinite loading if processing is stuck
       const timeSinceStart = Date.now() - loadingStartTimeRef.current;
-      const TIMEOUT = 5000; // 5 seconds max wait
+      const TIMEOUT = 15000; // 15 seconds max wait (processing can take 5-10s)
       
       if (timeSinceStart > TIMEOUT && artworksLoaded && artworks.length > 0) {
         if (dismissalTimeoutRef.current) return;
