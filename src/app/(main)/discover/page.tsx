@@ -916,17 +916,16 @@ function DiscoverPageContent() {
     }
   }, []);
   
-  // Handle joke completion - called AFTER joke finishes typing + 2s pause
+  // Joke completion handler - preserved for future use if joke animation is re-enabled
+  // Jokes list is preserved in typewriter-joke.tsx component
   const handleJokeComplete = useCallback(() => {
-    console.log('🎭 Joke animation FULLY completed (typing + 2s pause) at:', new Date().toISOString());
+    // No-op: joke animation removed to speed up loading
     jokeCompleteTimeRef.current = Date.now();
   }, []);
   
-  // PARALLEL LOADING LOGIC - Joke and media load simultaneously
-  // The joke entertains the user WHILE media loads in the background
-  // Dismiss when BOTH conditions are met (whichever comes last):
-  // 1. Joke has completed AND been displayed for minimum 2 seconds (ABSOLUTE REQUIREMENT)
-  // 2. Media is ready (video posters + threshold of images) - only viewport + 1 row
+  // LOADING LOGIC - Dismiss immediately when media is ready
+  // Joke animation removed to speed up loading (jokes list preserved in typewriter-joke.tsx)
+  // Dismiss when media is ready (video posters + threshold of images) - only viewport + 1 row
   useEffect(() => {
     // Don't check if loading screen is already dismissed
     if (!showLoadingScreen) {
@@ -948,7 +947,7 @@ function DiscoverPageContent() {
       const itemsToWaitForValue = itemsToWaitFor;
       
       // CRITICAL: If initialImagesTotal is 0 but we have artworks, calculate it now from artworks
-      // This allows media tracking to start immediately, in parallel with joke
+      // This allows media tracking to start immediately
       let effectiveImagesTotal = initialImagesTotal;
       let effectiveVideoPostersTotal = initialVideoPostersTotal;
       
@@ -977,10 +976,9 @@ function DiscoverPageContent() {
         }
       }
       
-      // Check joke timing (ABSOLUTE REQUIREMENT: joke must complete + 2s)
-      const jokeComplete = !!jokeCompleteTimeRef.current;
-      const timeSinceJoke = jokeComplete && jokeCompleteTimeRef.current ? Date.now() - jokeCompleteTimeRef.current : Infinity;
-      const jokeTimeMet = jokeComplete && timeSinceJoke >= MIN_JOKE_DISPLAY_TIME;
+      // Joke animation removed - no longer waiting for joke completion
+      // Dismiss immediately when media is ready
+      const jokeTimeMet = true; // Always true since we're not waiting for joke
       
       
       // PINTEREST-LEVEL: Wait for ALL initial viewport images to fully load (only for real content)
@@ -989,26 +987,26 @@ function DiscoverPageContent() {
       const videoPostersReady = effectiveVideoPostersTotal > 0 ? initialVideoPostersReady >= effectiveVideoPostersTotal : true; // If no posters, consider ready
       const allMediaReady = imagesReady && videoPostersReady;
 
-      // CRITICAL: If there's no media to wait for, dismiss after joke time + stabilization delay
-      if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && jokeTimeMet && artworksLoaded && artworks.length > 0) {
+      // CRITICAL: If there's no media to wait for, dismiss immediately with stabilization delay
+      if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && artworksLoaded && artworks.length > 0) {
         if (dismissalTimeoutRef.current) return;
         dismissalTimeoutRef.current = setTimeout(() => {
-          console.log(`✅ No media to wait for, dismissing after joke: ${artworks.length} artworks loaded`);
+          console.log(`✅ No media to wait for, dismissing immediately: ${artworks.length} artworks loaded`);
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
-        }, 200); // Add stabilization delay even for no-media case (reduced from 500ms)
+        }, 200); // Add stabilization delay even for no-media case
         return;
       }
 
-      // CRITICAL: Only dismiss when BOTH joke time is met AND all media is loaded
-      // Add 500ms delay after media is ready to let masonry positions stabilize
-      if (jokeTimeMet && allMediaReady && artworksLoaded && artworks.length > 0) {
+      // CRITICAL: Dismiss immediately when all media is loaded (no joke wait)
+      // Add 200ms delay after media is ready to let masonry positions stabilize
+      if (allMediaReady && artworksLoaded && artworks.length > 0) {
         // Prevent multiple dismissal timeouts
         if (dismissalTimeoutRef.current) return;
-        // Wait 200ms for masonry grid to calculate and stabilize positions (reduced from 500ms)
+        // Wait 200ms for masonry grid to calculate and stabilize positions
         dismissalTimeoutRef.current = setTimeout(() => {
-          console.log(`✅ Ready to dismiss: Joke complete + 1s, ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Positions stabilized!`);
+          console.log(`✅ Ready to dismiss: ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Positions stabilized!`);
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
@@ -1016,16 +1014,17 @@ function DiscoverPageContent() {
         return;
       }
 
-      // Fallback timeout: If joke is done + 1s but media still loading, wait max 3s more (total 4s after joke)
+      // Fallback timeout: If media still loading after 5 seconds, dismiss anyway
       // This prevents infinite waiting if some images fail
-      if (jokeTimeMet && jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 4000) {
+      const timeSinceStart = Date.now() - loadingStartTimeRef.current;
+      if (timeSinceStart > 5000 && artworksLoaded && artworks.length > 0) {
         if (dismissalTimeoutRef.current) return;
-        console.warn(`⚠️ Timeout after joke + 1s + 3s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
+        console.warn(`⚠️ Timeout after 5s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
         dismissalTimeoutRef.current = setTimeout(() => {
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
-        }, 200); // Still add stabilization delay (reduced from 500ms)
+        }, 200); // Still add stabilization delay
         return;
       }
       
@@ -1043,13 +1042,13 @@ function DiscoverPageContent() {
       }
       
       // Log progress for debugging
-      if (jokeTimeMet && !allMediaReady) {
+      if (!allMediaReady) {
         console.log(`⏳ Waiting for media: ${initialImagesReady}/${effectiveImagesTotal} images, ${initialVideoPostersReady}/${effectiveVideoPostersTotal} posters`);
       }
     }
     
-    // PARALLEL: Check media readiness continuously (don't wait for joke)
-    // Media can start loading immediately while joke plays
+    // Check media readiness continuously
+    // Media can start loading immediately
     checkIfReadyToDismiss();
     
     // Re-check every 500ms to catch when conditions are met
@@ -2976,8 +2975,7 @@ function DiscoverPageContent() {
             }}
           >
             <ThemeLoading size="lg" />
-            {/* Always show joke when loading screen appears (navigation click) */}
-            <TypewriterJoke key="loading-joke" onComplete={handleJokeComplete} typingSpeed={40} pauseAfterComplete={2000} />
+            {/* Joke animation removed to speed up loading - jokes list preserved in typewriter-joke.tsx for future use */}
           </div>
         </div>
       ) : null}
