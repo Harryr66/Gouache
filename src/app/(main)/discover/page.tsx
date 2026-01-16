@@ -1113,12 +1113,11 @@ function DiscoverPageContent() {
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
-  // Initialize with enough items to fill viewport + 5+ MORE ROWS for immediate scrolling
-  // Desktop (6 cols): 7 viewport rows + 5 extra rows = 72 items minimum
-  // Mobile (2 cols): 10 viewport rows + 5 extra rows = 30 items minimum  
-  // Tablet (3 cols): 8 viewport rows + 5 extra rows = 39 items minimum
-  // Using 90 items ensures we cover all screen sizes with 5+ additional rows on initial load
-  const [visibleCount, setVisibleCount] = useState(90);
+  // CRITICAL: Initialize based on device to prevent mobile crashes
+  // Mobile (2 cols): 6 rows = 12 items (safe limit, won't exceed MAX_TOTAL_ARTWORKS of 50)
+  // Desktop (5 cols): 8 rows = 40 items
+  // Start with mobile-safe default, will update when device is detected
+  const [visibleCount, setVisibleCount] = useState(12); // Mobile-safe default
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market list, Events grid on mobile
@@ -1161,16 +1160,20 @@ function DiscoverPageContent() {
     }
   }, []);
 
-  // Set default views based on device
+  // Set default views and visibleCount based on device
   useEffect(() => {
     if (!isMobile) {
       // Desktop: default to grid view, but allow user to switch
       // Don't force it - let user's choice persist
+      // Desktop: 5 cols × 8 rows = 40 items (safe, won't cause memory issues)
+      setVisibleCount(40);
     } else {
       // On mobile, ensure correct defaults
       setArtworkView('grid');
       setMarketView('list');
       setEventsView('grid'); // Events use grid view on mobile
+      // Mobile: 2 cols × 6 rows = 12 items (safe, well below MAX_TOTAL_ARTWORKS of 50)
+      setVisibleCount(12);
     }
   }, [isMobile]);
 
@@ -2757,9 +2760,13 @@ function DiscoverPageContent() {
       setColumnCount(newColumnCount);
       
       // Ensure visibleCount is a multiple of itemsPerRow when it changes
+      // CRITICAL: On mobile, never exceed MAX_TOTAL_ARTWORKS (50) to prevent crashes
+      const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
       setVisibleCount((prev) => {
         const completeRows = Math.floor(prev / newItemsPerRow);
-        return Math.max(newItemsPerRow, completeRows * newItemsPerRow);
+        const calculated = Math.max(newItemsPerRow, completeRows * newItemsPerRow);
+        // Never exceed MAX_TOTAL_ARTWORKS on mobile
+        return Math.min(calculated, MAX_TOTAL_ARTWORKS);
       });
     };
     
