@@ -2082,7 +2082,7 @@ export default function AdminPanel() {
       category: article.category,
       author: article.author || '',
       authorAvatarUrl: article.authorAvatarUrl || '',
-      imageUrl: article.imageUrl,
+      imageUrl: article.imageUrl || '', // Convert null to empty string
       externalUrl: article.externalUrl || '',
       publishedAt: '',
       tags: '',
