@@ -755,12 +755,25 @@ const generateArtistContent = (artist: Artist) => ({
           </Button>
         )}
         <div className="absolute inset-0 bg-muted pointer-events-none">
-          {/* Loading skeleton - only show if poster not loaded yet */}
+          {/* Loading skeleton - aesthetic gradient shimmer */}
           {((hasVideo && !isImageLoaded) || (!hasVideo && !isImageLoaded)) && (
-            <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse z-0 pointer-events-none">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+              <div 
+                className="absolute inset-0 animate-pulse"
+                style={{
+                  background: currentTheme === 'dark'
+                    ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
+                    : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
+                  backgroundSize: '400% 400%',
+                  animation: 'gradientShift 3s ease infinite'
+                }}
+              />
+              <style jsx>{`
+                @keyframes gradientShift {
+                  0%, 100% { background-position: 0% 50%; }
+                  50% { background-position: 100% 50%; }
+                }
+              `}</style>
             </div>
           )}
           
@@ -771,12 +784,19 @@ const generateArtistContent = (artist: Artist) => ({
               {/* For videos, always try to show a poster/thumbnail - use imageUrl if available, otherwise use video's first frame via poster attribute */}
               {(imageUrl || videoUrl) ? (
                 <>
-                  {/* Skeleton loader for video poster - prevents black squares */}
+                  {/* Skeleton loader for video poster - aesthetic gradient shimmer */}
                   {imageUrl && !isImageLoaded && !imageError && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse z-0">
-                      <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                      </div>
+                    <div className="absolute inset-0 z-0 overflow-hidden">
+                      <div 
+                        className="absolute inset-0 animate-pulse"
+                        style={{
+                          background: currentTheme === 'dark'
+                            ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
+                            : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
+                          backgroundSize: '400% 400%',
+                          animation: 'gradientShift 3s ease infinite'
+                        }}
+                      />
                     </div>
                   )}
                   {imageUrl ? (
@@ -911,9 +931,18 @@ const generateArtistContent = (artist: Artist) => ({
                   )}
                 </>
               ) : (
-                // Fallback: show loading placeholder if no imageUrl or videoUrl
-                <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10 pointer-events-none">
-                  <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                // Fallback: show aesthetic loading placeholder if no imageUrl or videoUrl
+                <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
+                  <div 
+                    className="absolute inset-0 animate-pulse"
+                    style={{
+                      background: currentTheme === 'dark'
+                        ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
+                        : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
+                      backgroundSize: '400% 400%',
+                      animation: 'gradientShift 3s ease infinite'
+                    }}
+                  />
                 </div>
               )}
               
@@ -1092,12 +1121,19 @@ const generateArtistContent = (artist: Artist) => ({
                   }}
                 />
               )}
-              {/* Skeleton loader fallback */}
+              {/* Skeleton loader fallback - aesthetic gradient shimmer */}
               {!isImageLoaded && !imageError && !optimizedImage.placeholder && (
-                <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse z-0">
-                  <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                    <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                  </div>
+                <div className="absolute inset-0 z-0 overflow-hidden">
+                  <div 
+                    className="absolute inset-0 animate-pulse"
+                    style={{
+                      background: currentTheme === 'dark'
+                        ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
+                        : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
+                      backgroundSize: '400% 400%',
+                      animation: 'gradientShift 3s ease infinite'
+                    }}
+                  />
                 </div>
               )}
               {/* Use native img for ALL CDN images (faster), Next.js Image only as fallback */}
