@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useMemo, useEffect, useRef } from 'react';
 
 const mobileNavItems = [
-  // { href: '/news', icon: Globe, label: 'News' }, // Hidden from navigation
+  { href: '/news', icon: Globe, label: 'News' },
   { href: '/discover', icon: Eye, label: 'Discover' },
   { href: '/courses', icon: Brain, label: 'Learn' },
   { href: '/profile', icon: Fingerprint, label: 'Profile' },
