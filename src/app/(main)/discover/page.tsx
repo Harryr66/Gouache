@@ -2040,12 +2040,13 @@ function DiscoverPageContent() {
       console.log('🔄 SCROLL LOAD: ========================================');
       console.log('🔄 SCROLL LOAD: 🚀 loadMoreArtworks CALLBACK INVOKED');
       console.log('🔄 SCROLL LOAD: 🔍 CURRENT STATE:', {
-      isLoadingMore: isLoadingMore,
-      hasMore: hasMore,
-      hasLastDocument: !!lastDocument,
-      lastDocumentType: lastDocument ? typeof lastDocument : 'null',
-      lastDocumentId: lastDocument?.id || 'N/A'
-    });
+        isLoadingMore: isLoadingMore,
+        hasMore: hasMore,
+        hasLastDocument: !!lastDocument,
+        lastDocumentType: lastDocument ? typeof lastDocument : 'null',
+        lastDocumentId: lastDocument?.id || 'N/A'
+      });
+    }
     
     if (isLoadingMore) {
       if (isDev) console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: isLoadingMore is TRUE (already loading)');
