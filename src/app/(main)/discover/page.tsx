@@ -1035,11 +1035,17 @@ function DiscoverPageContent() {
       const jokeTimeMet = true; // Always true since we're not waiting for joke
       
       
-      // INSTAGRAM/PINTEREST-LEVEL: Wait for 90% of initial viewport images to load (increased from 80%)
-      // This ensures more images are visible before dismissing loading screen
-      // 90% threshold provides better initial experience with more content visible
+      // CRITICAL: Wait for minimum number of images to load before dismissing
+      // Ensure at least 30-40 images are loaded (not just a percentage)
+      // This prevents dismissing with only 3 images visible
+      // Use columnCount to estimate mobile (2-3 cols = mobile)
+      const estimatedIsMobile = columnCount <= 3;
+      const MIN_IMAGES_TO_LOAD = estimatedIsMobile ? 30 : 50; // Mobile: 30, Desktop: 50 minimum
       const imagesReady = effectiveImagesTotal > 0
-        ? initialImagesReady >= Math.ceil(effectiveImagesTotal * 0.9)
+        ? initialImagesReady >= Math.max(
+            Math.ceil(effectiveImagesTotal * 0.9), // 90% of available
+            MIN_IMAGES_TO_LOAD // OR minimum count, whichever is higher
+          )
         : true; // If no images, consider ready
       const videoPostersReady = effectiveVideoPostersTotal > 0
         ? initialVideoPostersReady >= Math.ceil(effectiveVideoPostersTotal * 0.9)
@@ -1047,10 +1053,13 @@ function DiscoverPageContent() {
       const allMediaReady = imagesReady && videoPostersReady;
 
       // CRITICAL: If there's no media to wait for, dismiss immediately with stabilization delay
-      if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && artworksLoaded && artworks.length > 0) {
+      // BUT: Still require minimum artworks count
+      const estimatedIsMobileForNoMedia = columnCount <= 3;
+      const minArtworksForNoMedia = estimatedIsMobileForNoMedia ? 30 : 50;
+      if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && artworksLoaded && artworks.length >= minArtworksForNoMedia) {
         if (dismissalTimeoutRef.current) return;
         dismissalTimeoutRef.current = setTimeout(() => {
-          if (isDev) console.log(`✅ No media to wait for, dismissing immediately: ${artworks.length} artworks loaded`);
+          if (isDev) console.log(`✅ No media to wait for, dismissing immediately: ${artworks.length} artworks loaded (minimum ${minArtworksForNoMedia} required)`);
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
@@ -1059,13 +1068,17 @@ function DiscoverPageContent() {
       }
 
       // CRITICAL: Dismiss immediately when all media is loaded (no joke wait)
-      // Add 200ms delay after media is ready to let masonry positions stabilize
-      if (allMediaReady && artworksLoaded && artworks.length > 0) {
+      // BUT: Require minimum 30-50 artworks loaded to prevent dismissing with only 3 images
+      const estimatedIsMobileForDismiss = columnCount <= 3;
+      const minArtworksRequired = estimatedIsMobileForDismiss ? 30 : 50;
+      const hasMinimumArtworks = artworks.length >= minArtworksRequired;
+      
+      if (allMediaReady && artworksLoaded && hasMinimumArtworks) {
         // Prevent multiple dismissal timeouts
         if (dismissalTimeoutRef.current) return;
         // Wait 200ms for masonry grid to calculate and stabilize positions
         dismissalTimeoutRef.current = setTimeout(() => {
-          if (isDev) console.log(`✅ Ready to dismiss: ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Positions stabilized!`);
+          if (isDev) console.log(`✅ Ready to dismiss: ${artworks.length} artworks loaded, ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Positions stabilized!`);
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
@@ -1131,7 +1144,7 @@ function DiscoverPageContent() {
         dismissalTimeoutRef.current = null;
       }
     };
-  }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor, LOADING_SCREEN_DELAY]);
+  }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor, LOADING_SCREEN_DELAY, columnCount]);
   
   useEffect(() => {
     setMounted(true);
@@ -2925,8 +2938,9 @@ function DiscoverPageContent() {
     // Reset to device-appropriate count when filters change
     // INSTAGRAM/PINTEREST-LEVEL: Mobile: 20 items (2 cols × 10 rows), Desktop: 30 items (5 cols × 6 rows)
     // CRITICAL: Ensure we never exceed MAX_TOTAL_ARTWORKS on mobile
+    // Keep the doubled initial counts (40 mobile, 60 desktop) when filters change
     const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
-    const resetCount = isMobile ? 20 : 30;
+    const resetCount = isMobile ? 40 : 60; // Use doubled values (was 20/30)
     setVisibleCount(Math.min(resetCount, MAX_TOTAL_ARTWORKS));
   }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, isMobile]);
 
