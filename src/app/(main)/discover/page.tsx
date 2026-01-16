@@ -2475,6 +2475,12 @@ function DiscoverPageContent() {
         const loadItemCategory = (itemAny.category || '').toLowerCase();
         const loadItemTitle = (itemAny.title || '').toLowerCase();
         
+        // HARD FILTER: Test Mug by ID (in loadMore function)
+        if (itemAny.id === 'artwork-1767255654110') {
+          if (isDev) console.log('🚫 FILTERED loadMore (Test Mug by ID):', itemAny.id);
+          continue;
+        }
+        
         // Layer 1: Type checks
         if (loadItemType.includes('product') || loadItemType.includes('merchandise') || 
             loadItemType.includes('marketplace') || loadItemType.includes('course') ||

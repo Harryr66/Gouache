@@ -60,6 +60,12 @@ interface ArtworkTileProps {
 
 // Memoize to prevent unnecessary re-renders (performance optimization)
 export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, onImageError, isInitialViewport: propIsInitialViewport, showDeleteButton = false, onDelete }: ArtworkTileProps) {
+  // HARD FILTER: Block Test Mug at component level (even if it makes it through API/client filters)
+  if (artwork.id === 'artwork-1767255654110') {
+    console.log('🚫 COMPONENT HARD FILTERED (Test Mug by ID):', artwork.id);
+    return null; // Don't render at all
+  }
+  
   const [mounted, setMounted] = useState(false);
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
