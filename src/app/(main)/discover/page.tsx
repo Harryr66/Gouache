@@ -1070,80 +1070,44 @@ function DiscoverPageContent() {
         : true; // If no posters, consider ready
       const allMediaReady = imagesReady && videoPostersReady;
 
-      // CRITICAL FIX: If there's no media to wait for, dismiss immediately with stabilization delay
-      // BUT: Still require minimum artworks count (matching 9 rows: 18 mobile, 45 desktop)
-      // Use currentIsMobile (detected from window width)
-      const minArtworksForNoMedia = currentIsMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
-      if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && artworksLoaded && artworks.length >= minArtworksForNoMedia) {
-        if (dismissalTimeoutRef.current) return;
-        dismissalTimeoutRef.current = setTimeout(() => {
-          if (isDev) console.log(`✅ No media to wait for, dismissing immediately: ${artworks.length} artworks loaded (minimum ${minArtworksForNoMedia} required)`);
-          setShowLoadingScreen(false);
-          loadingScreenDismissedTimeRef.current = Date.now();
-          dismissalTimeoutRef.current = null;
-        }, 200); // Add stabilization delay even for no-media case
-        return;
-      }
+      // DISABLED: No early dismissal - MUST have 18/45 artworks minimum with media ready
+      // User requirement: 9 rows (18 mobile, 45 desktop) - ABSOLUTE REQUIREMENT
 
-      // CRITICAL FIX: Dismiss immediately when all media is loaded (no joke wait)
-      // BUT: Require minimum 18-45 artworks loaded to prevent dismissing with only 3 images
-      // USER REQUEST: 9 rows initially (18 mobile, 45 desktop)
-      // Use currentIsMobile (detected from window width)
-      const minArtworksRequired = currentIsMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
+      // ABSOLUTE REQUIREMENT: 18/45 artworks minimum - NO BYPASSING
+      // USER REQUEST: 9 rows (18 mobile, 45 desktop) - CANNOT BE DISMISSED EARLY
+      const minArtworksRequired = currentIsMobile ? 18 : 45;
       const hasMinimumArtworks = artworks.length >= minArtworksRequired;
       
-      if (allMediaReady && artworksLoaded && hasMinimumArtworks) {
-        // Prevent multiple dismissal timeouts
+      // ONLY dismiss if we have BOTH minimum artworks AND all media ready
+      // If we don't have minimum artworks, KEEP LOADING SCREEN VISIBLE - NO EXCEPTIONS
+      if (artworksLoaded && hasMinimumArtworks && allMediaReady) {
         if (dismissalTimeoutRef.current) return;
-        // Wait 200ms for masonry grid to calculate and stabilize positions
         dismissalTimeoutRef.current = setTimeout(() => {
-          if (isDev) console.log(`✅ Ready to dismiss: ${artworks.length} artworks loaded, ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Positions stabilized!`);
+          if (isDev) console.log(`✅ DISMISSING: ${artworks.length} artworks (min ${minArtworksRequired}), ${initialImagesReady}/${effectiveImagesTotal} images`);
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
         }, 200);
         return;
       }
-
-      // Fallback timeout: If media still loading after 8 seconds, dismiss anyway
-      // This prevents infinite waiting if some images fail, but gives more time for initial load
-      // CRITICAL: Still require minimum 18/45 artworks before dismissing (prevents 3-tile issue, 9 rows)
-      const timeSinceStart = Date.now() - loadingStartTimeRef.current;
-      const minArtworksForTimeout = currentIsMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
-      if (timeSinceStart > 8000 && artworksLoaded && artworks.length >= minArtworksForTimeout) {
-        if (dismissalTimeoutRef.current) return;
-        // If we have at least 50% of images loaded, it's good enough (like Instagram/Pinterest)
-        const minImagesLoaded = Math.ceil(effectiveImagesTotal * 0.5);
-        if (initialImagesReady >= minImagesLoaded) {
-          if (isDev) console.warn(`⚠️ Timeout after 8s but have ${artworks.length} artworks (min ${minArtworksForTimeout}) and ${initialImagesReady}/${effectiveImagesTotal} images (50%+), dismissing`);
-          dismissalTimeoutRef.current = setTimeout(() => {
-            setShowLoadingScreen(false);
-            loadingScreenDismissedTimeRef.current = Date.now();
-            dismissalTimeoutRef.current = null;
-          }, 200); // Still add stabilization delay
-          return;
+      
+      // Log why we're NOT dismissing
+      if (isDev && artworksLoaded) {
+        if (!hasMinimumArtworks) {
+          console.log(`❌ BLOCKING DISMISSAL: Only ${artworks.length} artworks, need ${minArtworksRequired}`);
+        }
+        if (!allMediaReady) {
+          console.log(`❌ BLOCKING DISMISSAL: Media not ready - ${initialImagesReady}/${effectiveImagesTotal} images`);
         }
       }
-      
-      // CRITICAL: Maximum total loading time (15 seconds) - prevent infinite loading
-      // BUT: Still require minimum 18/45 artworks before dismissing (prevents 3-tile issue, 9 rows)
-      const MAX_LOADING_TIME = 15000;
-      const totalLoadingTime = Date.now() - loadingStartTimeRef.current;
-      const minArtworksForMaxTimeout = currentIsMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
-      if (totalLoadingTime > MAX_LOADING_TIME && artworks.length >= minArtworksForMaxTimeout) {
-        if (dismissalTimeoutRef.current) return;
-        if (isDev) console.warn(`⚠️ Maximum loading time (${MAX_LOADING_TIME}ms) exceeded with ${artworks.length} artworks (min ${minArtworksForMaxTimeout}), dismissing loading screen`);
-        dismissalTimeoutRef.current = setTimeout(() => {
-          setShowLoadingScreen(false);
-          loadingScreenDismissedTimeRef.current = Date.now();
-          dismissalTimeoutRef.current = null;
-        }, 200); // Still add stabilization delay
-        return;
-      }
+
+      // DISABLED: No timeout fallbacks - MUST have 18/45 artworks minimum
+      // User requirement: 9 rows (18 mobile, 45 desktop) - NO EXCEPTIONS
+      // If we don't have enough artworks, keep loading screen visible until we do
       
       // Log progress for debugging
-      if (!allMediaReady) {
-        if (isDev) console.log(`⏳ Waiting for media: ${initialImagesReady}/${effectiveImagesTotal} images, ${initialVideoPostersReady}/${effectiveVideoPostersTotal} posters`);
+      if (!allMediaReady || !hasMinimumArtworks) {
+        if (isDev) console.log(`⏳ Waiting: ${artworks.length}/${minArtworksRequired} artworks (need ${minArtworksRequired}), ${initialImagesReady}/${effectiveImagesTotal} images`);
       }
     }
     
@@ -1184,11 +1148,11 @@ function DiscoverPageContent() {
   // CRITICAL: Initialize isMobile early so it can be used in useEffect dependencies
   const [isMobile, setIsMobile] = useState(false);
   // CRITICAL: Initialize based on device to prevent mobile crashes
-  // USER REQUEST: 9 rows initially (as requested 5 times)
+  // USER REQUEST: 9 rows initially - ABSOLUTE REQUIREMENT
   // Mobile (2 cols): 9 rows = 18 items
   // Desktop (5 cols): 9 rows = 45 items
-  // Start with mobile-safe default, will update when device is detected
-  const [visibleCount, setVisibleCount] = useState(18); // Mobile: 18 items (2 cols × 9 rows)
+  // Start with desktop default to ensure we show enough
+  const [visibleCount, setVisibleCount] = useState(45); // Desktop: 45 items (5 cols × 9 rows) - start high
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   // CRITICAL: Track displayed item IDs to preserve their order when new items are added
   const displayedItemIdsRef = useRef<Set<string>>(new Set());
@@ -1532,14 +1496,14 @@ function DiscoverPageContent() {
               continue; // Skip shop-only items
             }
             
-            // CRITICAL: Only fetch images from Cloudflare (all active artists should use Cloudflare)
-            // Skip images that are NOT from Cloudflare
-            if (!videoUrl && imageUrl && !isCloudflareImage(imageUrl)) {
+            // RELAXED: Allow both Cloudflare and non-Cloudflare images
+            // Only skip Pexels stock images
+            if (imageUrl && (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com'))) {
               skippedNoImage++;
-              continue; // Skip non-Cloudflare images
+              continue; // Skip stock images
             }
             
-            // Skip items without media
+            // Skip items without any media
             if (!imageUrl && !videoUrl) {
               skippedNoImage++;
               continue;
@@ -1739,17 +1703,10 @@ function DiscoverPageContent() {
             const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
             const hasVideo = artworkData.videoUrl || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video');
             
-            // CRITICAL: For videos, ONLY accept Cloudflare Stream - filter out Firebase Storage and other sources
-            if (hasVideo) {
-              const videoUrl = artworkData.videoUrl || artworkData.mediaUrls?.[0] || '';
-              if (!isCloudflareVideo(videoUrl)) {
-                continue; // Skip non-Cloudflare videos
-              }
-            }
-            
-            // If it's an image (not video), it MUST be from Cloudflare
-            if (!hasVideo && imageUrl && !isCloudflareImage(imageUrl)) {
-              continue; // Skip non-Cloudflare images
+            // RELAXED: Allow both Cloudflare and non-Cloudflare media
+            // Only skip Pexels stock images
+            if (imageUrl && (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com'))) {
+              continue; // Skip stock images
             }
             
             // Skip items with no valid media at all
@@ -1885,30 +1842,51 @@ function DiscoverPageContent() {
         }
         } // End of disabled artworks collection fetch
         
-        // Sort by createdAt descending (newest first)
-          fetchedArtworks.sort((a, b) => {
+        // CRITICAL: Apply ranking system on initial load (not just newest first)
+        // This ensures proper content ordering from the start
+        log(`🎯 Discover: Applying ranking system to ${fetchedArtworks.length} fetched artworks...`);
+        
+        // Get followed artist IDs for priority boost
+        const followedArtists = getFollowedArtists();
+        const followedArtistIds = new Set(followedArtists.map((a: any) => a.id));
+        
+        // Apply engagement-based scoring if we have engagement data
+        let sortedArtworks = fetchedArtworks;
+        if (artworkEngagements.size > 0) {
+          log(`📊 Discover: Using engagement-based ranking (${artworkEngagements.size} artworks with engagement data)`);
+          const scoredArtworks = engagementScorer.scoreArtworks(fetchedArtworks, artworkEngagements, followedArtistIds);
+          const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
+          sortedArtworks = engagementScorer.sortByScore(withDiversity);
+        } else {
+          // Fallback: Sort by createdAt descending (newest first), but prioritize followed artists
+          log(`📊 Discover: Using newest-first ranking (no engagement data yet)`);
+          sortedArtworks.sort((a, b) => {
+            const aIsFollowed = followedArtistIds.has(a.artist.id);
+            const bIsFollowed = followedArtistIds.has(b.artist.id);
+            if (aIsFollowed && !bIsFollowed) return -1;
+            if (!aIsFollowed && bIsFollowed) return 1;
             const dateA = a.createdAt.getTime();
             const dateB = b.createdAt.getTime();
             return dateB - dateA;
           });
+        }
         
         // No fallback: only show current portfolio items with images, skip deleted/hidden
         
-        // AGGRESSIVE: Use all fetched artworks (only 12 initially), no artificial limit
-        const safeArtworks = Array.isArray(fetchedArtworks) ? fetchedArtworks : [];
-        // Don't slice - use all fetched (only 12 items initially, load more on scroll)
+        // Use all sorted artworks - no artificial limits
+        const safeArtworks = Array.isArray(sortedArtworks) ? sortedArtworks : [];
         
         log(`🎯 Discover: Real artworks count: ${safeArtworks.length}`);
         
         // Only show real artworks - no placeholders
         const finalArtworks = safeArtworks;
         
-        log(`🎯 Discover: Final artworks count: ${finalArtworks.length}`);
+        log(`🎯 Discover: Final artworks count: ${finalArtworks.length} (ranked and ready)`);
         
         if (safeArtworks.length === 0) {
           warn('⚠️ Discover: No real artworks found');
         } else {
-          log(`✅ Discover: Showing ${safeArtworks.length} real artworks`);
+          log(`✅ Discover: Showing ${safeArtworks.length} ranked artworks (engagement-based ordering applied)`);
         }
         
         setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
@@ -2287,13 +2265,11 @@ function DiscoverPageContent() {
         if (itemAny.artworkType === 'merchandise') continue;
         if (itemAny.showInShop === true && itemAny.showInPortfolio !== true) continue; // Skip shop-only items
         
-        // Filter: Only Cloudflare images/videos with valid URLs
-        if (videoUrl && !isCloudflareVideo(videoUrl)) continue;
-        if (!videoUrl && imageUrl) {
-          if (!isCloudflareImage(imageUrl)) continue;
-          // CRITICAL: Validate URL format to prevent 404s and crashes
-          if (!isValidCloudflareImageUrl(imageUrl)) continue;
-        }
+        // RELAXED: Allow both Cloudflare and non-Cloudflare media
+        // Only skip Pexels stock images
+        if (imageUrl && (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com'))) continue;
+        
+        // Skip items without any media
         if (!imageUrl && !videoUrl) continue;
         
         // Apply AI filter
@@ -2578,19 +2554,18 @@ function DiscoverPageContent() {
         return false;
       }
       
-      // Media validation
+      // Media validation - RELAXED: Allow both Cloudflare AND non-Cloudflare images
       const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
       const hasVideo = artwork.videoUrl || artwork.mediaType === 'video';
       
-      if (hasVideo) {
-        const videoUrl = artwork.videoUrl || artwork.mediaUrls?.[0] || '';
-        return isCloudflareVideo(videoUrl);
-      }
+      // Only exclude Pexels images (stock photos)
+      if (imageUrl && (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com'))) return false;
       
-      if (!imageUrl) return false;
-      if (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com')) return false;
-      if (!isCloudflareImage(imageUrl)) return false;
-      return isValidCloudflareImageUrl(imageUrl);
+      // Require at least one valid media source (image or video)
+      const hasValidImage = imageUrl && imageUrl.length > 0;
+      const hasValidVideo = hasVideo && (artwork.videoUrl || artwork.mediaUrls?.[0]);
+      
+      return hasValidImage || hasValidVideo;
     });
   }, [artworks]);
 
@@ -2601,7 +2576,8 @@ function DiscoverPageContent() {
     log('🔍 filteredAndSortedArtworks - Input:', {
       totalArtworks: realArtworks.length,
       artworkIds: realArtworks.slice(0, 10).map((a: any) => a.id),
-      displayedIdsCount: displayedItemIdsRef.current.size
+      displayedIdsCount: displayedItemIdsRef.current.size,
+      sortBy: sortBy
     });
     
     // PERFORMANCE: Combine all user filters into single pass FIRST
@@ -3385,12 +3361,11 @@ function DiscoverPageContent() {
                     const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                     if (hasVideo) return false; // Filter out videos
                     
-                    // CRITICAL: Only show images from Cloudflare with valid URLs
+                    // RELAXED: Allow both Cloudflare and non-Cloudflare images
                     const imageUrl = artwork.imageUrl || (artwork as any).supportingImages?.[0] || (artwork as any).images?.[0] || '';
                     if (!imageUrl) return false; // Skip items with no image
-                    if (!isCloudflareImage(imageUrl)) return false; // Only Cloudflare images
-                    // CRITICAL: Validate URL format to prevent 404s and crashes
-                    if (!isValidCloudflareImageUrl(imageUrl)) return false; // Skip invalid URLs
+                    // Only skip Pexels stock images
+                    if (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com')) return false;
                     
                     return true;
                   });
@@ -3468,21 +3443,20 @@ function DiscoverPageContent() {
                     const mediaTypes = (item as any).mediaTypes || [];
                     const imageUrl = (item as any).imageUrl || '';
                     
-                    // CRITICAL: Only accept Cloudflare Stream videos - filter out Firebase Storage and other sources
-                    // Check for video in multiple ways, but ALL must be Cloudflare:
-                    // 1. Direct videoUrl field (most reliable) - MUST be Cloudflare
-                    const hasVideoUrl = !!videoUrl && videoUrl.length > 0 && isCloudflareVideo(videoUrl);
-                    // 2. mediaType field - but still need Cloudflare URL
-                    const hasVideoMediaType = mediaType === 'video' && isCloudflareVideo(videoUrl);
-                    // 3. mediaUrls array with video type - check if any URL is Cloudflare
+                    // RELAXED: Accept videos from any CDN source (Cloudflare, Firebase, etc.)
+                    // Check for video in multiple ways:
+                    // 1. Direct videoUrl field (most reliable)
+                    const hasVideoUrl = !!videoUrl && videoUrl.length > 0;
+                    // 2. mediaType field
+                    const hasVideoMediaType = mediaType === 'video' && videoUrl.length > 0;
+                    // 3. mediaUrls array with video type
                     const hasVideoInMediaUrls = Array.isArray(mediaUrls) && mediaUrls.length > 0 && 
-                                               Array.isArray(mediaTypes) && mediaTypes.includes('video') &&
-                                               mediaUrls.some((url: string) => isCloudflareVideo(url));
-                    // 4. Check if imageUrl is actually a Cloudflare Stream thumbnail (indicates video)
+                                               Array.isArray(mediaTypes) && mediaTypes.includes('video');
+                    // 4. Check if imageUrl is actually a Stream thumbnail (indicates video)
                     const isCloudflareThumbnail = imageUrl.includes('cloudflarestream.com') && 
                                                   (imageUrl.includes('/thumbnails/') || imageUrl.includes('thumbnail'));
                     
-                    // Only show videos from Cloudflare Stream
+                    // Allow all videos regardless of CDN source
                     const hasVideo = hasVideoUrl || hasVideoMediaType || hasVideoInMediaUrls || isCloudflareThumbnail;
                     
                     // Debug logging for each item
