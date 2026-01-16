@@ -99,15 +99,35 @@ export async function GET(request: NextRequest) {
     };
     
     // COMPREHENSIVE FILTERING: ONLY Cloudflare media + ONLY artworks (no products/courses/merch)
+    // Track filter rejection reasons for debugging
+    const filterRejections = {
+      testMug: 0,
+      events: 0,
+      productType: 0,
+      productArtworkType: 0,
+      productCategory: 0,
+      shopOnly: 0,
+      productKeyword: 0,
+      productFields: 0,
+      invalidVideo: 0,
+      notCloudflareImage: 0,
+      invalidCloudflareUrl: 0,
+      noMedia: 0,
+    };
+    
     const filteredArtworksItems = artworksItems.filter((item: any) => {
       // HARD FILTER: Test Mug by ID (temporary until we see debug data)
       if (item.id === 'artwork-1767255654110') {
         console.log('🚫 API HARD FILTERED (Test Mug by ID):', item.id);
+        filterRejections.testMug++;
         return false;
       }
       
       // Skip events
-      if (item.type === 'event' || item.type === 'Event' || item.eventType) return false;
+      if (item.type === 'event' || item.type === 'Event' || item.eventType) {
+        filterRejections.events++;
+        return false;
+      }
       
       // COMPREHENSIVE PRODUCT/COURSE FILTERING (case-insensitive)
       const itemType = (item.type || '').toLowerCase();
@@ -139,6 +159,7 @@ export async function GET(request: NextRequest) {
           itemType.includes('marketplace') || itemType.includes('course') ||
           itemType === 'merch' || itemType === 'shop') {
         console.log('🚫 API FILTERED (type):', item.id, item.type);
+        filterRejections.productType++;
         return false;
       }
       
@@ -146,6 +167,7 @@ export async function GET(request: NextRequest) {
       if (itemArtworkType.includes('merchandise') || itemArtworkType.includes('product') || 
           itemArtworkType.includes('course') || itemArtworkType === 'merch') {
         console.log('🚫 API FILTERED (artworkType):', item.id, item.artworkType);
+        filterRejections.productArtworkType++;
         return false;
       }
       
@@ -153,6 +175,7 @@ export async function GET(request: NextRequest) {
       if (itemCategory.includes('product') || itemCategory.includes('merchandise') || 
           itemCategory.includes('merch') || itemCategory.includes('course')) {
         console.log('🚫 API FILTERED (category):', item.id, item.category);
+        filterRejections.productCategory++;
         return false;
       }
       
@@ -160,6 +183,7 @@ export async function GET(request: NextRequest) {
       if (item.showInShop === true || item.isForSale === true) {
         if (item.showInPortfolio !== true) {
           console.log('🚫 API FILTERED (shop-only):', item.id);
+          filterRejections.shopOnly++;
           return false;
         }
         const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
@@ -167,6 +191,7 @@ export async function GET(request: NextRequest) {
                                 'phone case', 'pillow', 'blanket', 'hat', 'cap'];
         if (productKeywords.some(keyword => itemTitle.includes(keyword))) {
           console.log('🚫 API FILTERED (product keyword):', item.id, itemTitle);
+          filterRejections.productKeyword++;
           return false;
         }
       }
@@ -174,6 +199,7 @@ export async function GET(request: NextRequest) {
       // Layer 5: Product-specific fields
       if (item.variants || item.basePrice || item.variantOptions || item.shippingProfile) {
         console.log('🚫 API FILTERED (product fields):', item.id);
+        filterRejections.productFields++;
         return false;
       }
       
@@ -185,16 +211,21 @@ export async function GET(request: NextRequest) {
       }
       
       // STRICT: Videos must be Cloudflare Stream
-      if (videoUrl && !isCloudflareVideo(videoUrl)) return false;
+      if (videoUrl && !isCloudflareVideo(videoUrl)) {
+        filterRejections.invalidVideo++;
+        return false;
+      }
       
       // STRICT: Images must be Cloudflare Images with valid format
       if (!videoUrl && imageUrl) {
         if (!isCloudflareImage(imageUrl)) {
           console.log('🚫 API FILTERED (not Cloudflare image):', item.id, imageUrl?.substring(0, 80));
+          filterRejections.notCloudflareImage++;
           return false;
         }
         if (!isValidCloudflareImageUrl(imageUrl)) {
           console.log('🚫 API FILTERED (invalid Cloudflare URL format):', item.id, imageUrl?.substring(0, 80));
+          filterRejections.invalidCloudflareUrl++;
           return false;
         }
       }
@@ -202,6 +233,7 @@ export async function GET(request: NextRequest) {
       // Must have at least one media source
       if (!imageUrl && !videoUrl) {
         console.log('🚫 API FILTERED (no media):', item.id);
+        filterRejections.noMedia++;
         return false;
       }
       
@@ -251,6 +283,8 @@ export async function GET(request: NextRequest) {
         combinedTotal: combinedItems.length,
         finalCount: items.length,
         requested: limit,
+        filterRejections: filterRejections,
+        rejectionRate: `${Math.round((Object.values(filterRejections).reduce((a, b) => a + b, 0) / artworksItems.length) * 100)}%`,
       },
     });
 
