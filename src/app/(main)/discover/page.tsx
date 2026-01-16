@@ -874,6 +874,9 @@ function DiscoverPageContent() {
   const MIN_JOKE_DISPLAY_TIME = 2000; // 2 seconds minimum after joke completes
   const MAX_LOADING_TIME = 15000; // 15 seconds maximum (fallback timeout)
   const loadingStartTimeRef = useRef<number>(Date.now());
+  const loadingScreenDismissedTimeRef = useRef<number | null>(null);
+  const dismissalTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const PROGRESSIVE_LOADING_DELAY = 2000; // 2 seconds delay before progressive loading starts
   
   // Track items per row with state to handle window resize (needed for itemsToWaitFor calculation)
   const [itemsPerRow, setItemsPerRow] = useState(6);
@@ -986,33 +989,56 @@ function DiscoverPageContent() {
       const videoPostersReady = effectiveVideoPostersTotal > 0 ? initialVideoPostersReady >= effectiveVideoPostersTotal : true; // If no posters, consider ready
       const allMediaReady = imagesReady && videoPostersReady;
 
-      // CRITICAL: If there's no media to wait for, dismiss immediately after joke time
+      // CRITICAL: If there's no media to wait for, dismiss after joke time + stabilization delay
       if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && jokeTimeMet && artworksLoaded && artworks.length > 0) {
-        console.log(`✅ No media to wait for, dismissing after joke: ${artworks.length} artworks loaded`);
-        setShowLoadingScreen(false);
+        if (dismissalTimeoutRef.current) return;
+        dismissalTimeoutRef.current = setTimeout(() => {
+          console.log(`✅ No media to wait for, dismissing after joke: ${artworks.length} artworks loaded`);
+          setShowLoadingScreen(false);
+          loadingScreenDismissedTimeRef.current = Date.now();
+          dismissalTimeoutRef.current = null;
+        }, 500); // Add stabilization delay even for no-media case
         return;
       }
 
       // CRITICAL: Only dismiss when BOTH joke time is met AND all media is loaded
+      // Add 500ms delay after media is ready to let masonry positions stabilize
       if (jokeTimeMet && allMediaReady && artworksLoaded && artworks.length > 0) {
-        console.log(`✅ Ready to dismiss: Joke complete + 2s, ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Zero loading states!`);
-        setShowLoadingScreen(false);
+        // Prevent multiple dismissal timeouts
+        if (dismissalTimeoutRef.current) return;
+        // Wait 500ms for masonry grid to calculate and stabilize positions
+        dismissalTimeoutRef.current = setTimeout(() => {
+          console.log(`✅ Ready to dismiss: Joke complete + 2s, ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Positions stabilized!`);
+          setShowLoadingScreen(false);
+          loadingScreenDismissedTimeRef.current = Date.now();
+          dismissalTimeoutRef.current = null;
+        }, 500);
         return;
       }
 
       // Fallback timeout: If joke is done + 2s but media still loading, wait max 5s more
       // This prevents infinite waiting if some images fail
       if (jokeTimeMet && jokeCompleteTimeRef.current && Date.now() - jokeCompleteTimeRef.current > 7000) {
+        if (dismissalTimeoutRef.current) return;
         console.warn(`⚠️ Timeout after joke + 2s + 5s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
-        setShowLoadingScreen(false);
+        dismissalTimeoutRef.current = setTimeout(() => {
+          setShowLoadingScreen(false);
+          loadingScreenDismissedTimeRef.current = Date.now();
+          dismissalTimeoutRef.current = null;
+        }, 500); // Still add stabilization delay
         return;
       }
       
       // CRITICAL: Maximum total loading time (15 seconds) - prevent infinite loading
       const totalLoadingTime = Date.now() - loadingStartTimeRef.current;
       if (totalLoadingTime > MAX_LOADING_TIME) {
+        if (dismissalTimeoutRef.current) return;
         console.warn(`⚠️ Maximum loading time (${MAX_LOADING_TIME}ms) exceeded, dismissing loading screen`);
-        setShowLoadingScreen(false);
+        dismissalTimeoutRef.current = setTimeout(() => {
+          setShowLoadingScreen(false);
+          loadingScreenDismissedTimeRef.current = Date.now();
+          dismissalTimeoutRef.current = null;
+        }, 500); // Still add stabilization delay
         return;
       }
       
@@ -1035,7 +1061,13 @@ function DiscoverPageContent() {
       }
     }, 500);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (dismissalTimeoutRef.current) {
+        clearTimeout(dismissalTimeoutRef.current);
+        dismissalTimeoutRef.current = null;
+      }
+    };
   }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor]);
   
   useEffect(() => {
@@ -2724,6 +2756,13 @@ function DiscoverPageContent() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
+          // CRITICAL: Prevent progressive loading for 2 seconds after loading screen dismisses
+          // This prevents shifting while masonry positions stabilize
+          const timeSinceDismissal = loadingScreenDismissedTimeRef.current 
+            ? Date.now() - loadingScreenDismissedTimeRef.current 
+            : Infinity;
+          const canProgressiveLoad = !loadingScreenDismissedTimeRef.current || timeSinceDismissal > PROGRESSIVE_LOADING_DELAY;
+          
           // If we're showing most of the available items, load more from server
           if (visibleCount >= filteredAndSortedArtworks.length * 0.8 && hasMore && !isLoadingMore) {
             loadMoreArtworks();
@@ -2731,19 +2770,22 @@ function DiscoverPageContent() {
           
           // Also progressively show more items from already loaded data
           // CRITICAL: On mobile, never exceed MAX_TOTAL_ARTWORKS (50) to prevent crashes
-          const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
-          startTransition(() => {
-            setVisibleCount((prev) => {
-              // Load additional rows progressively from top to bottom
-              // MOBILE: Add fewer items at a time (1 row = itemsPerRow) to prevent memory spikes
-              // Desktop: Add 3 rows for smooth scrolling
-              const increment = isMobile ? itemsPerRow : (itemsPerRow * 3);
-              const newCount = prev + increment;
-              const maxCount = filteredAndSortedArtworks.length || newCount;
-              // Ensure we never exceed available items AND never exceed MAX_TOTAL_ARTWORKS on mobile
-              return Math.min(newCount, maxCount, MAX_TOTAL_ARTWORKS);
+          // CRITICAL: Wait 2 seconds after loading screen dismisses before progressive loading
+          if (canProgressiveLoad) {
+            const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
+            startTransition(() => {
+              setVisibleCount((prev) => {
+                // Load additional rows progressively from top to bottom
+                // MOBILE: Add fewer items at a time (1 row = itemsPerRow) to prevent memory spikes
+                // Desktop: Add 3 rows for smooth scrolling
+                const increment = isMobile ? itemsPerRow : (itemsPerRow * 3);
+                const newCount = prev + increment;
+                const maxCount = filteredAndSortedArtworks.length || newCount;
+                // Ensure we never exceed available items AND never exceed MAX_TOTAL_ARTWORKS on mobile
+                return Math.min(newCount, maxCount, MAX_TOTAL_ARTWORKS);
+              });
             });
-          });
+          }
         }
       });
     }, {
