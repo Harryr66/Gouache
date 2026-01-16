@@ -52,13 +52,14 @@ interface ArtworkTileProps {
   hideBanner?: boolean;
   onVideoReady?: () => void; // Callback when video is ready (for preloading)
   onImageReady?: (isVideoPoster?: boolean) => void; // Callback when image is ready (for preloading), with flag for video posters
+  onImageError?: (artworkId: string) => void; // Callback when image fails to load (for filtering out broken items)
   isInitialViewport?: boolean; // Flag to indicate this is in initial viewport
   showDeleteButton?: boolean; // Show temporary delete button (for cleanup)
   onDelete?: (itemId: string) => void; // Callback when delete button is clicked
 }
 
 // Memoize to prevent unnecessary re-renders (performance optimization)
-export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, isInitialViewport: propIsInitialViewport, showDeleteButton = false, onDelete }: ArtworkTileProps) {
+export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, onImageError, isInitialViewport: propIsInitialViewport, showDeleteButton = false, onDelete }: ArtworkTileProps) {
   const [mounted, setMounted] = useState(false);
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
@@ -1519,6 +1520,10 @@ const generateArtistContent = (artist: Artist) => ({
                             // This prevents React from trying to render the image again
                             // Use setTimeout to defer state update outside of render cycle
                             if (isMountedRef.current && retryCount >= 4) {
+                              // Notify parent component to hide this artwork
+                              if (onImageError) {
+                                onImageError(artwork.id);
+                              }
                               setTimeout(() => {
                                 if (isMountedRef.current) {
                                   setFailedImageUrls(prev => new Set([...prev, cloudflareUrl]));

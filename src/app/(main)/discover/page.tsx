@@ -905,6 +905,15 @@ function DiscoverPageContent() {
   const [lastDocument, setLastDocument] = useState<any>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
+  // Track artworks with failed images to auto-hide them
+  const [failedArtworkIds, setFailedArtworkIds] = useState<Set<string>>(new Set());
+  
+  // Callback to handle image load failures - hide artworks with broken Cloudflare images
+  const handleImageError = useCallback((artworkId: string) => {
+    if (isDev) console.log('🚫 Image failed, hiding artwork:', artworkId);
+    setFailedArtworkIds(prev => new Set([...prev, artworkId]));
+  }, [isDev]);
+  
   // Comprehensive logging for state changes (dev only)
   useEffect(() => {
     if (isDev) {
@@ -2768,6 +2777,9 @@ function DiscoverPageContent() {
       // Quick rejections first (most common cases)
       if (!artwork || !artwork.id) return false;
       
+      // CRITICAL: Hide artworks with failed images (deleted from Cloudflare)
+      if (failedArtworkIds.has(artwork.id)) return false;
+      
       // Placeholder checks
       const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
       if (tags.includes('_placeholder') || artwork.id.startsWith('placeholder-')) return false;
@@ -3382,6 +3394,8 @@ function DiscoverPageContent() {
                     onImageReady={isInitial && (hasImage || hasVideo) ? (isVideoPoster) => handleImageReady(artwork.id, isVideoPoster) : undefined}
                     // Track video metadata loading
                     onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
+                    // Hide artworks with failed/deleted Cloudflare images
+                    onImageError={handleImageError}
                   />
                 );
               });
