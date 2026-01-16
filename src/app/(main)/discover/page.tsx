@@ -39,7 +39,9 @@ import { DiscoverErrorBoundary } from '@/components/discover-error-boundary';
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   // NO EXTERNAL IMAGES - Return empty array
   // This function should NOT be used in production
-  console.error('⛔ generatePlaceholderArtworks() should NEVER be called - no external images allowed');
+  if (process.env.NODE_ENV === 'development') {
+    console.error('⛔ generatePlaceholderArtworks() should NEVER be called - no external images allowed');
+  }
   return [];
 };
 
@@ -209,11 +211,15 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [positions, setPositions] = useState<Array<{ top: number; left: number; width: number }>>([]);
+  // PERFORMANCE: Cache item heights to avoid repeated getBoundingClientRect calls
+  const itemHeightsRef = useRef<Map<number, number>>(new Map());
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
-  // Calculate positions for masonry layout
+  // Calculate positions for masonry layout - OPTIMIZED with ResizeObserver
   useEffect(() => {
     if (!containerRef.current || columnCount === 0 || items.length === 0) {
       setPositions([]);
+      itemHeightsRef.current.clear();
       return;
     }
 
@@ -222,16 +228,13 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       
       const containerWidth = containerRef.current.offsetWidth;
       if (!containerWidth || containerWidth <= 0 || !columnCount || columnCount <= 0) {
-        return; // Safety check: don't calculate if container has no width or invalid column count
+        return;
       }
       
-      // Calculate item width accounting for gaps
-      // Total gap space = gap * (columnCount - 1)
-      // Each column gets: (containerWidth - totalGapSpace) / columnCount
       const totalGapSpace = gap * (columnCount - 1);
       const itemWidth = (containerWidth - totalGapSpace) / columnCount;
       if (itemWidth <= 0 || !isFinite(itemWidth)) {
-        return; // Safety check: prevent invalid width calculations
+        return;
       }
       
       const columnHeights = new Array(columnCount).fill(0);
@@ -241,40 +244,37 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
         if (!itemEl || index >= items.length) return;
 
         try {
+          // PERFORMANCE: Use cached height if available, otherwise measure once
+          let itemHeight = itemHeightsRef.current.get(index);
+          if (itemHeight === undefined || itemHeight === 0) {
+            // Only measure if not cached - getBoundingClientRect forces layout recalculation
+            itemHeight = Math.ceil(itemEl.offsetHeight) || 0;
+            if (itemHeight > 0) {
+              itemHeightsRef.current.set(index, itemHeight);
+            } else {
+              return; // Skip items with no height
+            }
+          }
+          
           // Find shortest column
           const shortestColumnIndex = columnHeights.reduce(
             (minIndex, height, colIndex) => 
               height < columnHeights[minIndex] ? colIndex : minIndex,
             0
           );
-
-          // Measure ACTUAL rendered height
-          // Use getBoundingClientRect for accurate measurement, Math.ceil to prevent sub-pixel overlap
-          const itemHeight = Math.ceil(itemEl.getBoundingClientRect().height) || 0;
-          if (itemHeight <= 0) return; // Skip items with no height
           
-          // Calculate left position: column_index * (itemWidth + gap)
-          // This ensures uniform gap between columns
           const left = shortestColumnIndex * (itemWidth + gap);
-          
-          // Calculate top position with ceiling to prevent fractional pixels
-          // This ensures uniform gap between rows
           const currentColumnHeight = columnHeights[shortestColumnIndex];
-          const top = currentColumnHeight === 0 
-            ? 0 
-            : Math.ceil(currentColumnHeight) + gap;
+          const top = currentColumnHeight === 0 ? 0 : Math.ceil(currentColumnHeight) + gap;
           
-          // Validate calculated values
           if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
-            return; // Skip invalid positions
+            return;
           }
 
           newPositions.push({ top, left, width: itemWidth });
-          // Update column height: current top position + item height (gap is already in top calculation)
           columnHeights[shortestColumnIndex] = top + itemHeight;
         } catch (error) {
-          console.error('Error calculating masonry position for item', index, error);
-          // Skip this item if calculation fails
+          if (process.env.NODE_ENV === 'development') console.error('Error calculating masonry position for item', index, error);
         }
       });
 
@@ -283,101 +283,118 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       }
     };
 
-    // Calculate positions after items render (debounced to prevent glitchy recalculations)
+    // PERFORMANCE: Debounced calculation with requestAnimationFrame
     let timeout: NodeJS.Timeout;
+    let rafId: number | null = null;
     let calculationScheduled = false;
     
     const scheduleCalculation = () => {
-      if (calculationScheduled) return; // Prevent multiple scheduled calculations
+      if (calculationScheduled) return;
       calculationScheduled = true;
       
       clearTimeout(timeout);
       timeout = setTimeout(() => {
-        requestAnimationFrame(() => {
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
           calculatePositions();
           calculationScheduled = false;
+          rafId = null;
         });
-      }, 200); // Slightly longer delay to batch multiple updates
+      }, 100); // Reduced from 200ms for faster response
     };
     
     scheduleCalculation();
     
-    // Recalculate when images/videos load (debounced)
-    const handleLoad = () => {
-      scheduleCalculation();
-    };
+    // PERFORMANCE: Use ResizeObserver instead of individual event listeners
+    // This is much more efficient than adding listeners to every image/video
+    let handleMediaLoad: ((e: Event) => void) | null = null;
     
-    // Set up load listeners on next frame to ensure DOM is ready
-    // Wrap in try-catch to prevent crashes on mobile
-    const observerTimeout = setTimeout(() => {
-      try {
-        itemRefs.current.forEach((itemEl) => {
-          if (itemEl) {
-            try {
-              const media = itemEl.querySelectorAll('img, video');
-              media.forEach((el) => {
-                try {
-                  const imgEl = el as HTMLImageElement;
-                  const videoEl = el as HTMLVideoElement;
-                  if ((imgEl.complete !== undefined && imgEl.complete) || (videoEl.readyState !== undefined && videoEl.readyState >= 2)) {
-                    // Already loaded, trigger calculation
-                    handleLoad();
-                  } else {
-                    el.addEventListener('load', handleLoad);
-                    el.addEventListener('loadeddata', handleLoad);
-                  }
-                } catch (error) {
-                  console.error('Error setting up media load listener:', error);
-                }
-              });
-            } catch (error) {
-              console.error('Error querying media elements:', error);
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserverRef.current = new ResizeObserver((entries) => {
+        // Batch height updates
+        let heightsChanged = false;
+        entries.forEach((entry) => {
+          const itemEl = entry.target as HTMLElement;
+          const index = itemRefs.current.indexOf(itemEl as any);
+          if (index >= 0) {
+            const newHeight = Math.ceil(entry.contentRect.height) || 0;
+            const oldHeight = itemHeightsRef.current.get(index);
+            if (newHeight > 0 && newHeight !== oldHeight) {
+              itemHeightsRef.current.set(index, newHeight);
+              heightsChanged = true;
             }
           }
         });
-      } catch (error) {
-        console.error('Error setting up load listeners:', error);
+        if (heightsChanged) {
+          scheduleCalculation();
+        }
+      });
+
+      // Observe all item elements
+      itemRefs.current.forEach((itemEl) => {
+        if (itemEl && resizeObserverRef.current) {
+          resizeObserverRef.current.observe(itemEl);
+        }
+      });
+    } else {
+      // Fallback: Single delegated event listener (much better than individual listeners)
+      handleMediaLoad = (e: Event) => {
+        const target = e.target as HTMLElement;
+        const itemEl = target.closest('[data-artwork-index]') as HTMLElement | null;
+        if (itemEl) {
+          const index = parseInt(itemEl.getAttribute('data-artwork-index') || '-1');
+          if (index >= 0) {
+            // Update cached height
+            const newHeight = Math.ceil(itemEl.offsetHeight) || 0;
+            if (newHeight > 0) {
+              itemHeightsRef.current.set(index, newHeight);
+              scheduleCalculation();
+            }
+          }
+        }
+      };
+
+      // Use event delegation on container instead of individual listeners
+      const container = containerRef.current;
+      if (container && handleMediaLoad) {
+        container.addEventListener('load', handleMediaLoad, true);
+        container.addEventListener('loadeddata', handleMediaLoad, true);
       }
-    }, 200);
+    }
 
     return () => {
-      try {
-        clearTimeout(timeout);
-        clearTimeout(observerTimeout);
-        itemRefs.current.forEach((itemEl) => {
-          if (itemEl) {
-            try {
-              const media = itemEl.querySelectorAll('img, video');
-              media.forEach((el) => {
-                try {
-                  el.removeEventListener('load', handleLoad);
-                  el.removeEventListener('loadeddata', handleLoad);
-                } catch (error) {
-                  // Ignore cleanup errors
-                }
-              });
-            } catch (error) {
-              // Ignore cleanup errors
-            }
-          }
-        });
-      } catch (error) {
-        // Ignore cleanup errors
+      clearTimeout(timeout);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      
+      // Cleanup ResizeObserver
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
+      
+      // Cleanup delegated event listeners
+      const container = containerRef.current;
+      if (container && handleMediaLoad) {
+        container.removeEventListener('load', handleMediaLoad, true);
+        container.removeEventListener('loadeddata', handleMediaLoad, true);
       }
     };
   }, [items.length, columnCount, gap, items]);
 
-  const containerHeight = positions.length > 0 && itemRefs.current.length > 0
-    ? (() => {
-        const heights = positions.map((pos, index) => {
-          const itemEl = itemRefs.current[index];
-          const itemHeight = itemEl?.offsetHeight || 0;
-          const height = pos.top + itemHeight;
-          return isFinite(height) && height > 0 ? height : 0;
-        }).filter(h => h > 0);
-        return heights.length > 0 ? Math.max(...heights) : 0;
-      })()
-    : 0;
+  // PERFORMANCE: Memoize container height calculation to avoid recalculating on every render
+  const containerHeight = useMemo(() => {
+    if (positions.length === 0 || itemRefs.current.length === 0) return 0;
+    
+    // Use cached heights from itemHeightsRef when available
+    const heights = positions.map((pos, index) => {
+      const cachedHeight = itemHeightsRef.current.get(index);
+      const itemHeight = cachedHeight || itemRefs.current[index]?.offsetHeight || 0;
+      const height = pos.top + itemHeight;
+      return isFinite(height) && height > 0 ? height : 0;
+    }).filter(h => h > 0);
+    
+    return heights.length > 0 ? Math.max(...heights) : 0;
+  }, [positions]);
 
   return (
     <div ref={containerRef} className="relative w-full" style={{ minHeight: containerHeight || 'auto' }}>
@@ -459,7 +476,7 @@ const VideoPlayer = ({
       if (videoIdMatch) {
         const videoId = videoIdMatch[1];
         manifestUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-        console.log('🔄 Converted to HLS manifest:', manifestUrl);
+        if (process.env.NODE_ENV === 'development') console.log('🔄 Converted to HLS manifest:', manifestUrl);
       }
     }
 
@@ -473,16 +490,16 @@ const VideoPlayer = ({
       if (canPlayHLS) {
         // Native HLS support (Safari)
         video.src = manifestUrl;
-        console.log('✅ Using native HLS support for:', manifestUrl);
+        if (process.env.NODE_ENV === 'development') console.log('✅ Using native HLS support for:', manifestUrl);
         
         // For Safari, wait for loadedmetadata then play
         video.addEventListener('loadedmetadata', () => {
-          console.log('✅ Video metadata loaded');
+          if (process.env.NODE_ENV === 'development') console.log('✅ Video metadata loaded');
           video.muted = true;
           setIsVideoReady(true);
           video.play()
-            .then(() => console.log('✅ Video playing'))
-            .catch(err => console.log('⚠️ Autoplay prevented:', err));
+            .then(() => { if (process.env.NODE_ENV === 'development') console.log('✅ Video playing'); })
+            .catch(err => { if (process.env.NODE_ENV === 'development') console.log('⚠️ Autoplay prevented:', err); });
         }, { once: true });
         
         video.load();
@@ -498,19 +515,19 @@ const VideoPlayer = ({
         hls.attachMedia(video);
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log('✅ HLS manifest parsed, video ready:', manifestUrl);
+          if (process.env.NODE_ENV === 'development') console.log('✅ HLS manifest parsed, video ready:', manifestUrl);
           setIsVideoReady(true);
           video.play().catch((error) => {
-            console.log('Autoplay prevented:', error);
+            if (process.env.NODE_ENV === 'development') console.log('Autoplay prevented:', error);
           });
         });
 
         hls.on(Hls.Events.ERROR, (event, data) => {
-          console.error('❌ HLS error:', data);
+          if (process.env.NODE_ENV === 'development') console.error('❌ HLS error:', data);
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                console.error('Fatal network error, trying to recover...');
+                if (process.env.NODE_ENV === 'development') console.error('Fatal network error, trying to recover...');
                 // Try to recover from network errors
                 if (retryCountRef.current < 3) {
                   retryCountRef.current++;
@@ -518,12 +535,12 @@ const VideoPlayer = ({
                     hls.startLoad();
                   }, 1000 * retryCountRef.current);
                 } else {
-                  console.error('Max HLS network retries reached');
+                  if (process.env.NODE_ENV === 'development') console.error('Max HLS network retries reached');
                   setHasError(true);
                 }
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
-                console.error('Fatal media error, trying to recover...');
+                if (process.env.NODE_ENV === 'development') console.error('Fatal media error, trying to recover...');
                 // Try to recover from media errors
                 if (retryCountRef.current < 3) {
                   retryCountRef.current++;
@@ -531,12 +548,12 @@ const VideoPlayer = ({
                     hls.recoverMediaError();
                   }, 1000 * retryCountRef.current);
                 } else {
-                  console.error('Max HLS media retries reached');
+                  if (process.env.NODE_ENV === 'development') console.error('Max HLS media retries reached');
                   setHasError(true);
                 }
                 break;
               default:
-                console.error('Fatal error, destroying HLS instance');
+                if (process.env.NODE_ENV === 'development') console.error('Fatal error, destroying HLS instance');
                 // Only show error after retries
                 if (retryCountRef.current < 3) {
                   retryCountRef.current++;
@@ -564,7 +581,7 @@ const VideoPlayer = ({
         hlsRef.current = hls;
       } else {
         // Fallback: try direct URL (might work for some formats)
-        console.warn('⚠️ HLS not supported, trying direct URL:', manifestUrl);
+        if (process.env.NODE_ENV === 'development') console.warn('⚠️ HLS not supported, trying direct URL:', manifestUrl);
         video.src = manifestUrl;
       }
     } else {
@@ -573,12 +590,12 @@ const VideoPlayer = ({
     }
 
     video.addEventListener('canplay', () => {
-      console.log('✅ Video can play:', manifestUrl);
+      if (process.env.NODE_ENV === 'development') console.log('✅ Video can play:', manifestUrl);
       setIsVideoReady(true);
     });
 
     video.addEventListener('loadedmetadata', () => {
-      console.log('✅ Video metadata loaded:', manifestUrl);
+      if (process.env.NODE_ENV === 'development') console.log('✅ Video metadata loaded:', manifestUrl);
       setIsVideoReady(true);
     });
 
@@ -594,7 +611,7 @@ const VideoPlayer = ({
         if (videoIdMatch && videoIdMatch[1] && retryCountRef.current === 0) {
           const videoId = videoIdMatch[1];
           const fallbackUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-          console.log('🔄 404 on customer subdomain, trying videodelivery.net fallback:', fallbackUrl);
+          if (process.env.NODE_ENV === 'development') console.log('🔄 404 on customer subdomain, trying videodelivery.net fallback:', fallbackUrl);
           
           // Try fallback URL
           if (hlsRef.current) {
@@ -775,10 +792,10 @@ const VideoLoadingAnimation = () => {
 
 function DiscoverPageContent() {
   const isDev = process.env.NODE_ENV === 'development';
-  // Always log critical messages in production for debugging
-  const log = (...args: any[]) => { console.log(...args); };
-  const warn = (...args: any[]) => { console.warn(...args); };
-  const error = (...args: any[]) => { console.error(...args); };
+  // Performance: Only log in development to avoid blocking main thread in production
+  const log = (...args: any[]) => { if (isDev) console.log(...args); };
+  const warn = (...args: any[]) => { if (isDev) console.warn(...args); };
+  const error = (...args: any[]) => { if (isDev) console.error(...args); };
   
   // Helper: Check if image URL is from Cloudflare (all active artists should use Cloudflare)
   const isCloudflareImage = (url: string | null | undefined): boolean => {
@@ -855,10 +872,12 @@ function DiscoverPageContent() {
   const [lastDocument, setLastDocument] = useState<any>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
-  // Comprehensive logging for state changes
+  // Comprehensive logging for state changes (dev only)
   useEffect(() => {
-    console.log('🔄 SCROLL LOAD: 📊 STATE UPDATE - hasMore:', hasMore, 'lastDocument:', !!lastDocument, 'isLoadingMore:', isLoadingMore);
-  }, [hasMore, lastDocument, isLoadingMore]);
+    if (isDev) {
+      console.log('🔄 SCROLL LOAD: 📊 STATE UPDATE - hasMore:', hasMore, 'lastDocument:', !!lastDocument, 'isLoadingMore:', isLoadingMore);
+    }
+  }, [hasMore, lastDocument, isLoadingMore, isDev]);
   const [artworkEngagements, setArtworkEngagements] = useState<Map<string, any>>(new Map());
   const [initialVideosReady, setInitialVideosReady] = useState(0);
   const [initialVideosTotal, setInitialVideosTotal] = useState(0);
@@ -1031,7 +1050,7 @@ function DiscoverPageContent() {
       if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && artworksLoaded && artworks.length > 0) {
         if (dismissalTimeoutRef.current) return;
         dismissalTimeoutRef.current = setTimeout(() => {
-          console.log(`✅ No media to wait for, dismissing immediately: ${artworks.length} artworks loaded`);
+          if (isDev) console.log(`✅ No media to wait for, dismissing immediately: ${artworks.length} artworks loaded`);
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
@@ -1046,7 +1065,7 @@ function DiscoverPageContent() {
         if (dismissalTimeoutRef.current) return;
         // Wait 200ms for masonry grid to calculate and stabilize positions
         dismissalTimeoutRef.current = setTimeout(() => {
-          console.log(`✅ Ready to dismiss: ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Positions stabilized!`);
+          if (isDev) console.log(`✅ Ready to dismiss: ALL ${effectiveImagesTotal} images loaded, ${effectiveVideoPostersTotal} video posters loaded. Positions stabilized!`);
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
@@ -1062,7 +1081,7 @@ function DiscoverPageContent() {
         // If we have at least 50% of images loaded, it's good enough (like Instagram/Pinterest)
         const minImagesLoaded = Math.ceil(effectiveImagesTotal * 0.5);
         if (initialImagesReady >= minImagesLoaded) {
-          console.warn(`⚠️ Timeout after 8s but have ${initialImagesReady}/${effectiveImagesTotal} images (50%+), dismissing`);
+          if (isDev) console.warn(`⚠️ Timeout after 8s but have ${initialImagesReady}/${effectiveImagesTotal} images (50%+), dismissing`);
           dismissalTimeoutRef.current = setTimeout(() => {
             setShowLoadingScreen(false);
             loadingScreenDismissedTimeRef.current = Date.now();
@@ -1077,7 +1096,7 @@ function DiscoverPageContent() {
       const totalLoadingTime = Date.now() - loadingStartTimeRef.current;
       if (totalLoadingTime > MAX_LOADING_TIME) {
         if (dismissalTimeoutRef.current) return;
-        console.warn(`⚠️ Maximum loading time (${MAX_LOADING_TIME}ms) exceeded, dismissing loading screen`);
+        if (isDev) console.warn(`⚠️ Maximum loading time (${MAX_LOADING_TIME}ms) exceeded, dismissing loading screen`);
         dismissalTimeoutRef.current = setTimeout(() => {
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
@@ -1088,7 +1107,7 @@ function DiscoverPageContent() {
       
       // Log progress for debugging
       if (!allMediaReady) {
-        console.log(`⏳ Waiting for media: ${initialImagesReady}/${effectiveImagesTotal} images, ${initialVideoPostersReady}/${effectiveVideoPostersTotal} posters`);
+        if (isDev) console.log(`⏳ Waiting for media: ${initialImagesReady}/${effectiveImagesTotal} images, ${initialVideoPostersReady}/${effectiveVideoPostersTotal} posters`);
       }
     }
     
@@ -1144,35 +1163,61 @@ function DiscoverPageContent() {
   const [marketSortBy, setMarketSortBy] = useState('newest');
   const [showMarketFilters, setShowMarketFilters] = useState(false);
 
-  // Detect mobile device with error handling
+  // PERFORMANCE: Consolidated resize handler - single listener for all resize operations
+  // Note: getItemsPerRow is defined later, so we inline the logic here
   useEffect(() => {
-    try {
-      const checkMobile = () => {
-        if (typeof window === 'undefined') return;
-        try {
-          setIsMobile(window.innerWidth < 768); // md breakpoint
-        } catch (error) {
-          console.error('Error setting mobile state:', error);
-          // Default to mobile if error occurs (safer for mobile devices)
-          setIsMobile(true);
-        }
-      };
-      
-      checkMobile();
-      window.addEventListener('resize', checkMobile);
-      return () => {
-        try {
-          window.removeEventListener('resize', checkMobile);
-        } catch (error) {
-          console.error('Error removing resize listener:', error);
-        }
-      };
-    } catch (error) {
-      console.error('Error in mobile detection:', error);
-      // Default to mobile on error
-      setIsMobile(true);
-    }
-  }, []);
+    if (typeof window === 'undefined') return;
+    
+    const handleResize = () => {
+      try {
+        const width = window.innerWidth;
+        
+        // Update mobile detection
+        setIsMobile(width < 768);
+        
+        // Update items per row (inline logic to avoid dependency on getItemsPerRow)
+        let newItemsPerRow = 6; // default
+        if (width >= 1280) newItemsPerRow = 6;
+        else if (width >= 1024) newItemsPerRow = 5;
+        else if (width >= 768) newItemsPerRow = 4;
+        else newItemsPerRow = 3;
+        setItemsPerRow(newItemsPerRow);
+        
+        // Update column count for masonry
+        let newColumnCount = 2; // mobile default
+        if (width >= 1536) newColumnCount = 6;
+        else if (width >= 1280) newColumnCount = 5;
+        else if (width >= 1024) newColumnCount = 4;
+        else if (width >= 768) newColumnCount = 3;
+        setColumnCount(newColumnCount);
+        
+        // Update visibleCount with safeguards
+        const MAX_TOTAL_ARTWORKS = width < 768 ? 50 : 200;
+        setVisibleCount((prev) => {
+          const completeRows = Math.floor(prev / newItemsPerRow);
+          const calculated = Math.max(newItemsPerRow, completeRows * newItemsPerRow);
+          return Math.min(calculated, MAX_TOTAL_ARTWORKS);
+        });
+      } catch (error) {
+        if (isDev) console.error('Error in resize handler:', error);
+      }
+    };
+    
+    // Throttle resize events to prevent excessive calls
+    let resizeTimeout: NodeJS.Timeout;
+    const throttledResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(handleResize, 150);
+    };
+    
+    handleResize(); // Initial call
+    window.addEventListener('resize', throttledResize, { passive: true });
+    
+    return () => {
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', throttledResize);
+    };
+  }, [isDev]);
 
   // Set default views and visibleCount based on device
   useEffect(() => {
@@ -1241,7 +1286,7 @@ function DiscoverPageContent() {
               // because API returns plain object but Firestore startAfter needs DocumentSnapshot
               if (portfolioItems.length > 0) {
                 const lastItem = portfolioItems[portfolioItems.length - 1];
-                console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Fetching lastDocument snapshot for pagination:', { 
+                if (isDev) console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Fetching lastDocument snapshot for pagination:', { 
                   portfolioItemsCount: portfolioItems.length, 
                   INITIAL_FETCH_LIMIT, 
                   lastItemId: lastItem.id
@@ -1256,23 +1301,23 @@ function DiscoverPageContent() {
                   .then((lastDocSnap: any) => {
                     if (lastDocSnap?.exists()) {
                       setLastDocument(lastDocSnap);
-                      console.log('🔄 SCROLL LOAD: ✅ INITIAL LOAD (API) - Set lastDocument snapshot successfully');
+                      if (isDev) console.log('🔄 SCROLL LOAD: ✅ INITIAL LOAD (API) - Set lastDocument snapshot successfully');
                     } else {
-                      console.warn('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - Last document does not exist, using plain object fallback');
+                      if (isDev) console.warn('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - Last document does not exist, using plain object fallback');
                       setLastDocument(lastItem);
                     }
                   })
                   .catch((docError) => {
-                    console.error('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - Failed to fetch lastDocument snapshot, using plain object fallback:', docError);
+                    if (isDev) console.error('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - Failed to fetch lastDocument snapshot, using plain object fallback:', docError);
                     setLastDocument(lastItem); // Fallback to plain object
                   });
                 
                 // ALWAYS set hasMore to true if we got items - let pagination logic determine if there's more
                 // Don't compare to INITIAL_FETCH_LIMIT because filtering may reduce count, but more content exists
                 setHasMore(true);
-                console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Set hasMore: true (will be corrected by pagination logic)');
+                if (isDev) console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (API) - Set hasMore: true (will be corrected by pagination logic)');
               } else {
-                console.log('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - No items, setting hasMore to false');
+                if (isDev) console.log('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (API) - No items, setting hasMore to false');
                 setHasMore(false);
               }
             } else {
@@ -1326,7 +1371,7 @@ function DiscoverPageContent() {
             // because combined/sorted results lose the snapshot nature
             if (portfolioItems.length > 0) {
               const lastItem = portfolioItems[portfolioItems.length - 1];
-              console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Fetching lastDocument snapshot for pagination:', { 
+              if (isDev) console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Fetching lastDocument snapshot for pagination:', { 
                 portfolioItemsCount: portfolioItems.length, 
                 INITIAL_FETCH_LIMIT, 
                 lastItemId: lastItem.id 
@@ -1341,14 +1386,14 @@ function DiscoverPageContent() {
                 .then((lastDocSnap: any) => {
                   if (lastDocSnap?.exists()) {
                     setLastDocument(lastDocSnap);
-                    console.log('🔄 SCROLL LOAD: ✅ INITIAL LOAD (fallback) - Set lastDocument snapshot successfully');
+                    if (isDev) console.log('🔄 SCROLL LOAD: ✅ INITIAL LOAD (fallback) - Set lastDocument snapshot successfully');
                   } else {
-                    console.warn('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - Last document does not exist, using plain object fallback');
+                    if (isDev) console.warn('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - Last document does not exist, using plain object fallback');
                     setLastDocument(lastItem);
                   }
                 })
                 .catch((docError) => {
-                  console.error('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - Failed to fetch lastDocument snapshot, using plain object fallback:', docError);
+                  if (isDev) console.error('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - Failed to fetch lastDocument snapshot, using plain object fallback:', docError);
                   setLastDocument(lastItem); // Fallback to plain object
                 });
               
@@ -1356,7 +1401,7 @@ function DiscoverPageContent() {
               setHasMore(true);
               console.log('🔄 SCROLL LOAD: 📝 INITIAL LOAD (fallback) - Set hasMore: true (will be corrected by pagination logic)');
             } else {
-              console.log('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - No items, setting hasMore to false');
+              if (isDev) console.log('🔄 SCROLL LOAD: ⚠️ INITIAL LOAD (fallback) - No items, setting hasMore to false');
               setHasMore(false);
             }
             
@@ -1393,7 +1438,7 @@ function DiscoverPageContent() {
                 artistDataMap.set(artistId, artistDoc.data());
               }
             } catch (error) {
-              console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
+              if (isDev) console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
             }
           });
           
@@ -1793,7 +1838,7 @@ function DiscoverPageContent() {
           
           log(`📊 Discover: Added ${fetchedArtworks.length} total artworks from artworks collection`);
         } catch (error) {
-          console.error('❌ Error fetching artworks collection:', error);
+          if (isDev) console.error('❌ Error fetching artworks collection:', error);
           // Don't crash - continue with whatever we have
         }
         } // End of disabled artworks collection fetch
@@ -1831,7 +1876,7 @@ function DiscoverPageContent() {
         // Use the last portfolioItem if available, otherwise use the last artwork from artworks collection
         if (portfolioItems.length > 0) {
           const lastPortfolioItem = portfolioItems[portfolioItems.length - 1];
-          console.log('🔄 SCROLL LOAD: 📝 FINAL - Fetching lastDocument snapshot from portfolioItems:', { lastItemId: lastPortfolioItem.id });
+          if (isDev) console.log('🔄 SCROLL LOAD: 📝 FINAL - Fetching lastDocument snapshot from portfolioItems:', { lastItemId: lastPortfolioItem.id });
           
           // Fetch the actual document snapshot for proper pagination (non-blocking)
           // Use a timeout to prevent blocking on slow connections (mobile)
@@ -1842,21 +1887,21 @@ function DiscoverPageContent() {
             .then((lastDocSnap: any) => {
               if (lastDocSnap?.exists()) {
                 setLastDocument(lastDocSnap);
-                console.log('🔄 SCROLL LOAD: ✅ FINAL - Set lastDocument snapshot successfully');
+                if (isDev) console.log('🔄 SCROLL LOAD: ✅ FINAL - Set lastDocument snapshot successfully');
               } else {
-                console.warn('🔄 SCROLL LOAD: ⚠️ FINAL - Last document does not exist, using plain object fallback');
+                if (isDev) console.warn('🔄 SCROLL LOAD: ⚠️ FINAL - Last document does not exist, using plain object fallback');
                 setLastDocument(lastPortfolioItem);
               }
             })
             .catch((docError) => {
-              console.error('🔄 SCROLL LOAD: ⚠️ FINAL - Failed to fetch lastDocument snapshot, using plain object fallback:', docError);
+              if (isDev) console.error('🔄 SCROLL LOAD: ⚠️ FINAL - Failed to fetch lastDocument snapshot, using plain object fallback:', docError);
               setLastDocument(lastPortfolioItem); // Fallback to plain object
             });
           
           setHasMore(true); // Always set to true initially since we're loading from multiple sources
         } else if (finalArtworks.length > 0) {
           // Fallback: Use last artwork (but this won't work for pagination since it's from artworks collection)
-          console.log('🔄 SCROLL LOAD: ⚠️ FINAL - No portfolioItems, cannot set lastDocument properly');
+          if (isDev) console.log('🔄 SCROLL LOAD: ⚠️ FINAL - No portfolioItems, cannot set lastDocument properly');
         }
         
         // AUTO-LOAD MORE: If we don't have enough content to fill viewport, immediately load more
@@ -1991,9 +2036,10 @@ function DiscoverPageContent() {
   // Load more artworks when scrolling to bottom (pagination)
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
   const loadMoreArtworks = useCallback(async () => {
-    console.log('🔄 SCROLL LOAD: ========================================');
-    console.log('🔄 SCROLL LOAD: 🚀 loadMoreArtworks CALLBACK INVOKED');
-    console.log('🔄 SCROLL LOAD: 🔍 CURRENT STATE:', {
+    if (isDev) {
+      console.log('🔄 SCROLL LOAD: ========================================');
+      console.log('🔄 SCROLL LOAD: 🚀 loadMoreArtworks CALLBACK INVOKED');
+      console.log('🔄 SCROLL LOAD: 🔍 CURRENT STATE:', {
       isLoadingMore: isLoadingMore,
       hasMore: hasMore,
       hasLastDocument: !!lastDocument,
@@ -2002,26 +2048,28 @@ function DiscoverPageContent() {
     });
     
     if (isLoadingMore) {
-      console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: isLoadingMore is TRUE (already loading)');
+      if (isDev) console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: isLoadingMore is TRUE (already loading)');
       return;
     }
 
     if (!hasMore) {
-      console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: hasMore is FALSE (no more content)');
+      if (isDev) console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: hasMore is FALSE (no more content)');
       return;
     }
     
     if (!lastDocument) {
-      console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: lastDocument is NULL/UNDEFINED (no pagination cursor)');
-      console.log('🔄 SCROLL LOAD: 💡 This means initial load did not set lastDocument properly!');
+      if (isDev) {
+        console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: lastDocument is NULL/UNDEFINED (no pagination cursor)');
+        console.log('🔄 SCROLL LOAD: 💡 This means initial load did not set lastDocument properly!');
+      }
       return;
     }
 
-    console.log('🔄 SCROLL LOAD: ✅ ALL CONDITIONS MET - PROCEEDING WITH LOAD');
+    if (isDev) console.log('🔄 SCROLL LOAD: ✅ ALL CONDITIONS MET - PROCEEDING WITH LOAD');
     
     // Fast loading: Start immediately, no artificial delays
     setIsLoadingMore(true);
-    console.log('🔄 SCROLL LOAD: 📥 Starting to fetch more artworks...');
+    if (isDev) console.log('🔄 SCROLL LOAD: 📥 Starting to fetch more artworks...');
     log('📥 Discover: Loading more artworks...');
 
     try {
@@ -2070,7 +2118,7 @@ function DiscoverPageContent() {
               lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
             };
           } catch (error) {
-            console.error('Error loading more artworks:', error);
+            if (isDev) console.error('Error loading more artworks:', error);
             return { items: [], lastDoc: null };
           }
         })()
@@ -2084,17 +2132,19 @@ function DiscoverPageContent() {
       
       const loadPromise = Promise.resolve(combinedResult);
       
-      console.log('🔄 SCROLL LOAD: ⏱️ Waiting for result with 15s timeout...');
-      console.log('🔄 SCROLL LOAD: 📋 Query params:', {
-        limit: LOAD_MORE_LIMIT,
-        lastDocumentType: typeof lastDocument,
-        hasExistsMethod: typeof lastDocument?.exists === 'function',
-        lastDocumentId: lastDocument?.id
-      });
+      if (isDev) {
+        console.log('🔄 SCROLL LOAD: ⏱️ Waiting for result with 15s timeout...');
+        console.log('🔄 SCROLL LOAD: 📋 Query params:', {
+          limit: LOAD_MORE_LIMIT,
+          lastDocumentType: typeof lastDocument,
+          hasExistsMethod: typeof lastDocument?.exists === 'function',
+          lastDocumentId: lastDocument?.id
+        });
+      }
       
       const result = await Promise.race([loadPromise, timeoutPromise]);
       
-      console.log('🔄 SCROLL LOAD: ✅ Got result:', {
+      if (isDev) console.log('🔄 SCROLL LOAD: ✅ Got result:', {
         itemsCount: result.items.length,
         hasLastDoc: !!result.lastDoc,
         lastDocId: result.lastDoc?.id
@@ -2105,12 +2155,12 @@ function DiscoverPageContent() {
       if (result.items.length === 0) {
         if (result.lastDoc) {
           // There's a cursor, so more content might exist (even if filtered out)
-          console.log('🔄 SCROLL LOAD: ⚠️ No items returned, but lastDoc exists - updating cursor and will try once more');
+          if (isDev) console.log('🔄 SCROLL LOAD: ⚠️ No items returned, but lastDoc exists - updating cursor and will try once more');
           setLastDocument(result.lastDoc);
           setHasMore(true);
         } else {
           // No cursor and no items - we've reached the end
-          console.log('🔄 SCROLL LOAD: ✅ No more content available (no items and no lastDoc)');
+          if (isDev) console.log('🔄 SCROLL LOAD: ✅ No more content available (no items and no lastDoc)');
           setHasMore(false); // FIXED: Stop infinite loop by setting hasMore to false
         }
         setIsLoadingMore(false);
@@ -2137,7 +2187,7 @@ function DiscoverPageContent() {
             artistDataMap.set(artistId, artistDoc.data());
           }
         } catch (error) {
-          console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
+          if (isDev) console.warn(`⚠️ Failed to fetch artist ${artistId}:`, error);
         }
       });
       await Promise.all(artistPromises);
@@ -2262,7 +2312,7 @@ function DiscoverPageContent() {
           setArtworks(updatedArtworks);
         });
       } catch (error) {
-        console.error('Error updating artworks state:', error);
+        if (isDev) console.error('Error updating artworks state:', error);
         // Fallback: just add new artworks without complex processing
         startTransition(() => {
           setArtworks(prev => {
@@ -2284,35 +2334,35 @@ function DiscoverPageContent() {
       if (result.lastDoc) {
         setLastDocument(result.lastDoc);
         setHasMore(true); // There's more content if lastDoc exists
-        console.log(`🔄 SCROLL LOAD: ✅ More content available (lastDoc exists, got ${result.items.length} items, requested ${LOAD_MORE_LIMIT})`);
+        if (isDev) console.log(`🔄 SCROLL LOAD: ✅ More content available (lastDoc exists, got ${result.items.length} items, requested ${LOAD_MORE_LIMIT})`);
       } else if (newArtworks.length === 0) {
         // No items and no cursor - we've reached the end
         setHasMore(false);
-        console.log(`🔄 SCROLL LOAD: ⚠️ No more content (no items, no lastDoc)`);
+        if (isDev) console.log(`🔄 SCROLL LOAD: ⚠️ No more content (no items, no lastDoc)`);
       } else if (newArtworks.length < LOAD_MORE_LIMIT) {
         // Got some items but fewer than requested - might be the end, but be conservative
         // Only set hasMore to false if we got significantly fewer (less than 50% of requested)
         if (newArtworks.length < LOAD_MORE_LIMIT * 0.5) {
           setHasMore(false);
-          console.log(`🔄 SCROLL LOAD: ⚠️ Likely no more content (got ${newArtworks.length} items, requested ${LOAD_MORE_LIMIT}, less than 50%)`);
+          if (isDev) console.log(`🔄 SCROLL LOAD: ⚠️ Likely no more content (got ${newArtworks.length} items, requested ${LOAD_MORE_LIMIT}, less than 50%)`);
         } else {
           // Got a reasonable amount - might be more, keep hasMore true
           setHasMore(true);
-          console.log(`🔄 SCROLL LOAD: ⚠️ Got ${newArtworks.length} items (requested ${LOAD_MORE_LIMIT}), keeping hasMore=true to allow one more try`);
+          if (isDev) console.log(`🔄 SCROLL LOAD: ⚠️ Got ${newArtworks.length} items (requested ${LOAD_MORE_LIMIT}), keeping hasMore=true to allow one more try`);
         }
       } else {
         // Got full amount - definitely more content
         setHasMore(true);
-        console.log(`🔄 SCROLL LOAD: ✅ Got full amount (${newArtworks.length} items), more content available`);
+        if (isDev) console.log(`🔄 SCROLL LOAD: ✅ Got full amount (${newArtworks.length} items), more content available`);
       }
 
-      console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks (expected ${LOAD_MORE_LIMIT} for 10 rows, columnCount=${columnCount})`);
+      if (isDev) console.log(`🔄 SCROLL LOAD: ✅ Successfully loaded ${newArtworks.length} more artworks (expected ${LOAD_MORE_LIMIT} for 10 rows, columnCount=${columnCount})`);
       log(`✅ Discover: Loaded ${newArtworks.length} more artworks`);
       
       // REMOVED: Auto-scroll on pagination - let user control their scroll position
       // Auto-scrolling was causing uncontrolled behavior on page load
     } catch (error: any) {
-      console.error('🔄 SCROLL LOAD: ❌ Error loading more artworks:', error);
+      if (isDev) console.error('🔄 SCROLL LOAD: ❌ Error loading more artworks:', error);
       
       // Show user-friendly error message
       if (error.message?.includes('timeout')) {
@@ -2333,16 +2383,16 @@ function DiscoverPageContent() {
       // setHasMore(false);
     } finally {
       setIsLoadingMore(false);
-      console.log('🔄 SCROLL LOAD: ✅ Finished loading (isLoadingMore set to false)');
+      if (isDev) console.log('🔄 SCROLL LOAD: ✅ Finished loading (isLoadingMore set to false)');
     }
-  }, [hasMore, lastDocument, isLoadingMore, discoverSettings, columnCount]);
+  }, [hasMore, lastDocument, isLoadingMore, discoverSettings, columnCount, isMobile, isDev]);
 
   // SAFETY: Reset isLoadingMore if it gets stuck for too long (20 seconds)
   useEffect(() => {
     if (!isLoadingMore) return;
     
     const timeoutId = setTimeout(() => {
-      console.warn('🔄 SCROLL LOAD: ⚠️ SAFETY: isLoadingMore stuck for 20 seconds, forcing reset');
+      if (isDev) console.warn('🔄 SCROLL LOAD: ⚠️ SAFETY: isLoadingMore stuck for 20 seconds, forcing reset');
       setIsLoadingMore(false);
       toast({
         title: 'Loading Reset',
@@ -2358,245 +2408,154 @@ function DiscoverPageContent() {
   // Let the user control when to load more content via scrolling
   // The initial load should be sufficient, and pagination should only trigger on user scroll
 
-  // OPTIMIZED: Prefetch when user scrolls 75% through content (load more at 75% scroll)
+  // PERFORMANCE: Consolidated scroll handler - single listener for prefetch and fallback
   useEffect(() => {
-    if (!hasMore || isLoadingMore || !lastDocument) return;
-    
-    const handleScroll = () => {
-      const scrollPercentage = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
-      if (scrollPercentage > 0.75 && !fetchingRef.current) {
-        prefetchNextPage();
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [hasMore, isLoadingMore, lastDocument, prefetchNextPage]);
-
-  // FALLBACK: Scroll listener for grid view (backup if IntersectionObserver fails)
-  useEffect(() => {
-    console.log('🔄 SCROLL LOAD: 📜 Fallback scroll listener useEffect triggered', { artworkView, hasMore, isLoadingMore, hasLastDocument: !!lastDocument });
-    
-    if (artworkView !== 'grid') {
-      console.log('🔄 SCROLL LOAD: 📜 Not grid view, skipping fallback');
-      return;
-    }
-    
-    if (!hasMore) {
-      console.log('🔄 SCROLL LOAD: 📜 No more content (hasMore=false), skipping fallback');
-      return;
-    }
-    
-    if (!lastDocument) {
-      console.log('🔄 SCROLL LOAD: 📜 No lastDocument for pagination, skipping fallback');
-      return;
-    }
-    
-    console.log('🔄 SCROLL LOAD: 📜 Setting up fallback scroll listener for grid view');
+    if (!hasMore || !lastDocument) return;
     
     let scrollTimeout: NodeJS.Timeout | null = null;
     
     const handleScroll = () => {
-      // Debounce scroll events
+      // Debounce scroll events to prevent excessive calls
       if (scrollTimeout) clearTimeout(scrollTimeout);
       
       scrollTimeout = setTimeout(() => {
-        // Check if we're near the bottom (within 500px)
-        const scrollPosition = window.scrollY + window.innerHeight;
-        const documentHeight = document.documentElement.scrollHeight;
-        const distanceFromBottom = documentHeight - scrollPosition;
+        const scrollY = window.scrollY;
+        const innerHeight = window.innerHeight;
+        const scrollHeight = document.documentElement.scrollHeight;
+        const scrollPercentage = (scrollY + innerHeight) / scrollHeight;
+        const distanceFromBottom = scrollHeight - (scrollY + innerHeight);
         
-        console.log('🔄 SCROLL LOAD: 📜 Scroll event', { 
-          scrollPosition, 
-          documentHeight, 
-          distanceFromBottom, 
-          isLoadingMore, 
-          hasMore 
-        });
+        // Prefetch at 75% scroll (if not already loading)
+        if (scrollPercentage > 0.75 && !fetchingRef.current && !isLoadingMore) {
+          prefetchNextPage();
+        }
         
-        if (distanceFromBottom < 500 && !isLoadingMore && hasMore && lastDocument) {
-          console.log('🔄 SCROLL LOAD: 📜 Fallback scroll listener triggered - loading more!', { distanceFromBottom });
+        // Fallback: Load more if IntersectionObserver fails (within 500px of bottom)
+        // Only for grid view and if IntersectionObserver might have missed
+        if (artworkView === 'grid' && distanceFromBottom < 500 && !isLoadingMore && hasMore && lastDocument) {
           loadMoreArtworks();
         }
       }, 100); // Debounce by 100ms
     };
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       if (scrollTimeout) clearTimeout(scrollTimeout);
-      console.log('🔄 SCROLL LOAD: 📜 Cleaning up fallback scroll listener');
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [artworkView, hasMore, isLoadingMore, lastDocument, loadMoreArtworks]);
+  }, [hasMore, isLoadingMore, lastDocument, prefetchNextPage, artworkView, loadMoreArtworks]);
 
-  // IntersectionObserver for infinite scroll pagination (grid view only)
+  // PERFORMANCE: Single IntersectionObserver for both grid and list views (consolidated)
   useEffect(() => {
-    console.log('🔄 SCROLL LOAD: 🔍 useEffect triggered, artworkView:', artworkView, 'hasMore:', hasMore, 'isLoadingMore:', isLoadingMore);
-    // Only set up observer for grid view
-    if (artworkView !== 'grid') {
-      console.log('🔄 SCROLL LOAD: ⚠️ artworkView is not grid, skipping');
-      return;
-    }
-    
-    // Wait for sentinel element to be available (it's rendered inside MasonryGrid)
-    const setupObserver = () => {
     const sentinel = loadMoreRef.current;
-      if (!sentinel) {
-        console.log('🔄 SCROLL LOAD: ⚠️ loadMoreRef.current is null, will retry...');
-        // Retry after a short delay
-        setTimeout(setupObserver, 100);
-        return;
-      }
-      
-      if (!hasMore) {
-        console.log('🔄 SCROLL LOAD: ⚠️ hasMore is false - no more content to load');
-        return;
-      }
-      
-      if (isLoadingMore) {
-        console.log('🔄 SCROLL LOAD: ⚠️ isLoadingMore is true - already loading');
-        return;
-      }
+    if (!sentinel || !hasMore || isLoadingMore) return;
 
-      console.log('🔄 SCROLL LOAD: ✅ Setting up observer for grid view, sentinel found!');
-
+    // PERFORMANCE: Single observer handles both views with appropriate rootMargin
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-            console.log('🔄 SCROLL LOAD: 📍 Entry intersecting:', entry.isIntersecting, 'hasMore:', hasMore, 'isLoadingMore:', isLoadingMore);
           if (entry.isIntersecting && hasMore && !isLoadingMore) {
-              console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks NOW!');
-            // Load more content when sentinel comes into view
+            if (isDev) console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks via IntersectionObserver');
             loadMoreArtworks();
           }
         });
       },
       {
-          rootMargin: '200px', // Start loading 200px before reaching bottom
-        threshold: 0.1, // Trigger when 10% of sentinel is visible
+        rootMargin: artworkView === 'grid' ? '200px' : (isMobile ? '400px' : '800px'),
+        threshold: 0.1,
       }
     );
 
     observer.observe(sentinel);
-      console.log('🔄 SCROLL LOAD: ✅ Observer attached to sentinel');
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, loadMoreArtworks, artworkView, isMobile, isDev]);
 
-    return () => {
-        console.log('🔄 SCROLL LOAD: 🧹 Cleaning up observer');
-      observer.disconnect();
-    };
-    };
-
-    // Try to set up observer immediately, then retry if needed
-    const cleanup = setupObserver();
-    return cleanup;
-  }, [hasMore, isLoadingMore, loadMoreArtworks, artworkView]);
-
-  const filteredAndSortedArtworks = useMemo(() => {
-    let filtered = Array.isArray(artworks) ? artworks : [];
+  // PERFORMANCE: Cache filtered results to avoid re-filtering on every render
+  const baseFilteredArtworks = useMemo(() => {
+    const allArtworks = Array.isArray(artworks) ? artworks : [];
     
-    log('🔍 filteredAndSortedArtworks - Input:', {
-      totalArtworks: filtered.length,
-      artworkIds: filtered.slice(0, 10).map((a: any) => a.id)
-    });
-
-    // NOTE: We don't filter by deleted - if truly deleted, item should be removed from DB entirely
-    // The deleted flag is mislabeled in some cases, so we show all content
-    
-    // FIRST: Filter to ONLY Cloudflare content (images AND videos)
-    // Videos will be shown in video feed, images in grid view
-    filtered = filtered.filter((artwork: any) => {
-      // CRITICAL: Filter out placeholders - NEVER show placeholder artworks
+    // PERFORMANCE: Single pass filter combining all base filters
+    return allArtworks.filter((artwork: any) => {
+      // Quick rejections first (most common cases)
+      if (!artwork || !artwork.id) return false;
+      
+      // Placeholder checks
       const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
-      if (tags.includes('_placeholder')) {
-        return false; // Skip placeholders
+      if (tags.includes('_placeholder') || artwork.id.startsWith('placeholder-')) return false;
+      
+      // Product/shop checks
+      if (artwork.type === 'product' || artwork.type === 'Product' || 
+          artwork.type === 'marketplace' || artwork.type === 'MarketplaceProduct' ||
+          artwork.artworkType === 'merchandise' ||
+          (artwork.showInShop === true && artwork.showInPortfolio !== true)) {
+        return false;
       }
-      // Filter out placeholder IDs
-      if (artwork.id && typeof artwork.id === 'string' && artwork.id.startsWith('placeholder-')) {
-        return false; // Skip placeholders
-      }
-      // Filter out Pexels images (used in placeholder generation)
+      
+      // Media validation
       const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
-      if (imageUrl && (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com'))) {
-        return false; // Skip Pexels placeholder images
-      }
-      
-      // CRITICAL: Filter out products/shop items - only show artworks
-      if (artwork.type === 'product' || artwork.type === 'Product' || artwork.type === 'marketplace' || artwork.type === 'MarketplaceProduct') {
-        return false; // Skip products
-      }
-      if (artwork.artworkType === 'merchandise') {
-        return false; // Skip merchandise
-      }
-      if (artwork.showInShop === true && artwork.showInPortfolio !== true) {
-        return false; // Skip shop-only items
-      }
-      
       const hasVideo = artwork.videoUrl || artwork.mediaType === 'video';
       
-      // For videos, they MUST be from Cloudflare Stream
       if (hasVideo) {
         const videoUrl = artwork.videoUrl || artwork.mediaUrls?.[0] || '';
-        if (!isCloudflareVideo(videoUrl)) return false; // Skip non-Cloudflare videos
-        return true; // Keep Cloudflare videos
+        return isCloudflareVideo(videoUrl);
       }
       
-      // For images, they MUST be from Cloudflare Images AND have valid URL format
-      if (!imageUrl) return false; // Skip items with no image
-      if (!isCloudflareImage(imageUrl)) return false; // Only Cloudflare images
-      // CRITICAL: Validate URL format to prevent 404s and crashes
-      if (!isValidCloudflareImageUrl(imageUrl)) return false; // Skip invalid URLs
-      return true;
+      if (!imageUrl) return false;
+      if (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com')) return false;
+      if (!isCloudflareImage(imageUrl)) return false;
+      return isValidCloudflareImageUrl(imageUrl);
+    });
+  }, [artworks]);
+
+  const filteredAndSortedArtworks = useMemo(() => {
+    // PERFORMANCE: Start from pre-filtered base instead of re-filtering
+    let realArtworks = [...baseFilteredArtworks];
+    
+    log('🔍 filteredAndSortedArtworks - Input:', {
+      totalArtworks: realArtworks.length,
+      artworkIds: realArtworks.slice(0, 10).map((a: any) => a.id)
     });
 
-    // Apply filters to artworks (no placeholders to separate)
-    let realArtworks = [...filtered];
-
-    // Search filter
-    if (deferredSearchQuery) {
-      const queryLower = deferredSearchQuery.toLowerCase();
+    // PERFORMANCE: Combine all user filters into single pass
+    const queryLower = deferredSearchQuery ? deferredSearchQuery.toLowerCase() : '';
+    const needsSearch = !!deferredSearchQuery;
+    const needsMedium = selectedMedium !== 'All';
+    const needsType = selectedArtworkType !== 'All';
+    const needsAI = discoverSettings.hideAiAssistedArt;
+    
+    if (needsSearch || needsMedium || needsType || needsAI) {
       realArtworks = realArtworks.filter(artwork => {
-        const title = (artwork.title || '').toLowerCase();
-        const description = (artwork.description || '').toLowerCase();
-        const artistName = (artwork.artist?.name || '').toLowerCase();
-        const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
-        return (
-          title.includes(queryLower) ||
-          description.includes(queryLower) ||
-          artistName.includes(queryLower) ||
-          tags.some(tag => (tag || '').toLowerCase().includes(queryLower))
-        );
-      });
-    }
-
-    // Medium filter
-    if (selectedMedium !== 'All') {
-      realArtworks = realArtworks.filter(artwork => artwork.medium === selectedMedium);
-    }
-
-    // Artwork Type filter (Original/Print) - only shows artworks for sale
-    if (selectedArtworkType !== 'All') {
-      realArtworks = realArtworks.filter(artwork => {
-        // Only show artworks that are for sale when filtering by type
-        if (!artwork.isForSale) return false;
-        
-        // Check tags for 'print' or 'original'
-        const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
-        const hasPrintTag = tags.some(tag => tag.toLowerCase() === 'print');
-        const hasOriginalTag = tags.some(tag => tag.toLowerCase() === 'original');
-        
-        if (selectedArtworkType === 'Print') {
-          return hasPrintTag;
-        } else if (selectedArtworkType === 'Original') {
-          // If no tags found, default to original for artworks for sale
-          return !hasPrintTag || hasOriginalTag;
+        // Search filter
+        if (needsSearch) {
+          const title = (artwork.title || '').toLowerCase();
+          const description = (artwork.description || '').toLowerCase();
+          const artistName = (artwork.artist?.name || '').toLowerCase();
+          const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
+          const matchesSearch = title.includes(queryLower) ||
+            description.includes(queryLower) ||
+            artistName.includes(queryLower) ||
+            tags.some(tag => (tag || '').toLowerCase().includes(queryLower));
+          if (!matchesSearch) return false;
         }
+        
+        // Medium filter
+        if (needsMedium && artwork.medium !== selectedMedium) return false;
+        
+        // Artwork Type filter
+        if (needsType) {
+          if (!artwork.isForSale) return false;
+          const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
+          const hasPrintTag = tags.some(tag => tag.toLowerCase() === 'print');
+          const hasOriginalTag = tags.some(tag => tag.toLowerCase() === 'original');
+          if (selectedArtworkType === 'Print' && !hasPrintTag) return false;
+          if (selectedArtworkType === 'Original' && hasPrintTag && !hasOriginalTag) return false;
+        }
+        
+        // AI filter
+        if (needsAI && (artwork.isAI || artwork.aiAssistance !== 'none')) return false;
+        
         return true;
       });
-    }
-
-    // Apply discover settings filters
-    if (discoverSettings.hideAiAssistedArt) {
-      realArtworks = realArtworks.filter(artwork => !artwork.isAI && artwork.aiAssistance === 'none');
     }
 
     // Sort using engagement-based algorithm when 'popular' is selected
@@ -2672,13 +2631,13 @@ function DiscoverPageContent() {
     }
 
     log('🔍 filteredAndSortedArtworks:', {
-      totalFiltered: filtered.length,
+      totalFiltered: baseFilteredArtworks.length,
       sortedRealArtworks: sorted.length
     });
     
     log('✅ Discover: Returning', sorted.length, 'real artworks');
     return sorted;
-  }, [artworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements]);
+  }, [baseFilteredArtworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements, getFollowedArtists]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
@@ -2763,36 +2722,7 @@ function DiscoverPageContent() {
     };
   }, []);
 
-  useEffect(() => {
-    const updateItemsPerRow = () => {
-      if (typeof window === 'undefined') return;
-      const width = window.innerWidth;
-      const newItemsPerRow = getItemsPerRow();
-      setItemsPerRow(newItemsPerRow);
-      
-      // Calculate column count for masonry layout based on screen width
-      let newColumnCount = 2; // mobile default
-      if (width >= 1536) newColumnCount = 6; // 2xl - large desktop
-      else if (width >= 1280) newColumnCount = 5; // xl - desktop
-      else if (width >= 1024) newColumnCount = 4; // lg - large tablet/small desktop
-      else if (width >= 768) newColumnCount = 3; // md - tablet
-      setColumnCount(newColumnCount);
-      
-      // Ensure visibleCount is a multiple of itemsPerRow when it changes
-      // CRITICAL: On mobile, never exceed MAX_TOTAL_ARTWORKS (50) to prevent crashes
-      const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
-      setVisibleCount((prev) => {
-        const completeRows = Math.floor(prev / newItemsPerRow);
-        const calculated = Math.max(newItemsPerRow, completeRows * newItemsPerRow);
-        // Never exceed MAX_TOTAL_ARTWORKS on mobile
-        return Math.min(calculated, MAX_TOTAL_ARTWORKS);
-      });
-    };
-    
-    updateItemsPerRow();
-    window.addEventListener('resize', updateItemsPerRow);
-    return () => window.removeEventListener('resize', updateItemsPerRow);
-  }, [getItemsPerRow]);
+  // PERFORMANCE: Resize handling consolidated above - this effect removed
 
   // Infinite scroll observer for list view - progressively show more items
   // Also triggers loadMoreArtworks when we're near the end of visible items
@@ -2847,12 +2777,30 @@ function DiscoverPageContent() {
     return () => observer.disconnect();
   }, [filteredAndSortedArtworks, itemsPerRow, visibleCount, hasMore, isLoadingMore, loadMoreArtworks, artworkView]);
 
-  // Critical image preloading - preload first 6-12 images for instant display
+  // PERFORMANCE: Image preloading with cleanup to prevent DOM pollution
+  const preloadLinksRef = useRef<HTMLLinkElement[]>([]);
+  
   useEffect(() => {
-    if (typeof window === 'undefined' || filteredAndSortedArtworks.length === 0) return;
+    if (typeof window === 'undefined' || filteredAndSortedArtworks.length === 0) {
+      // Clean up old links when no artworks
+      preloadLinksRef.current.forEach(link => link.remove());
+      preloadLinksRef.current = [];
+      return;
+    }
+    
+    // PERFORMANCE: Clean up old preload links first to prevent accumulation
+    preloadLinksRef.current.forEach(link => {
+      try {
+        if (link.parentNode) {
+          link.remove();
+        }
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+    });
+    preloadLinksRef.current = [];
     
     // INSTAGRAM/PINTEREST-LEVEL: Preload 20-30+ images for instant display
-    // Desktop: Preload 30 images (5 cols × 6 rows), Mobile: Preload 20 images (2 cols × 10 rows)
     const maxPreload = isMobile ? 20 : 30;
     const preloadCount = Math.min(maxPreload, filteredAndSortedArtworks.length);
     const criticalArtworks = filteredAndSortedArtworks.slice(0, preloadCount);
@@ -2864,45 +2812,52 @@ function DiscoverPageContent() {
       // PRIORITY: Cloudflare images first (new uploads), Firebase only for legacy
       let preloadUrl = imageUrl;
       if (imageUrl.includes('imagedelivery.net')) {
-        // Cloudflare Images: Use appropriate variant based on media type
         const cloudflareMatch = imageUrl.match(/imagedelivery\.net\/([^/]+)\/([^/]+)/);
         if (cloudflareMatch) {
           const [, accountHash, imageId] = cloudflareMatch;
-          // Check if this is a video poster (has videoUrl) - use /Thumbnail for videos
-          // Use /1080px for regular images to match Instagram/Pinterest quality
           const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
           preloadUrl = hasVideo
-            ? `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail` // Video poster: thumbnail
-            : `https://imagedelivery.net/${accountHash}/${imageId}/1080px`; // Regular image: 1080px (Instagram standard)
+            ? `https://imagedelivery.net/${accountHash}/${imageId}/Thumbnail`
+            : `https://imagedelivery.net/${accountHash}/${imageId}/1080px`;
         } else {
-          // Fallback: determine variant from artwork type
           const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
           preloadUrl = hasVideo
             ? imageUrl.replace(/\/[^/]+$/, '/Thumbnail')
-            : imageUrl.replace(/\/[^/]+$/, '/1080px'); // 1080px (Instagram standard)
+            : imageUrl.replace(/\/[^/]+$/, '/1080px');
         }
       } else if (imageUrl.includes('cloudflarestream.com')) {
-        // Cloudflare Stream thumbnails: Use directly (no Next.js optimization needed)
-        // These are already optimized thumbnails from Cloudflare Stream
         preloadUrl = imageUrl;
       } else if (imageUrl.includes('firebasestorage') || imageUrl.includes('firebase')) {
-        // Firebase (legacy): Use Next.js Image Optimization API with 240px
-        // NOTE: These should be migrated to Cloudflare for better performance
         const encodedUrl = encodeURIComponent(imageUrl);
         preloadUrl = `/_next/image?url=${encodedUrl}&w=240&q=75`;
       }
       
-      // Create preload link
+      // Create preload link and track it for cleanup
       const link = document.createElement('link');
       link.rel = 'preload';
       link.as = 'image';
       link.href = preloadUrl;
       link.setAttribute('fetchpriority', (imageUrl.includes('imagedelivery.net') || imageUrl.includes('cloudflarestream.com')) ? 'high' : 'auto');
       document.head.appendChild(link);
+      preloadLinksRef.current.push(link);
     });
-    
+
     log(`🚀 Preloaded ${preloadCount} critical images for instant display`);
-  }, [filteredAndSortedArtworks, columnCount]);
+    
+    // Cleanup on unmount or when artworks change
+    return () => {
+      preloadLinksRef.current.forEach(link => {
+        try {
+          if (link.parentNode) {
+            link.remove();
+          }
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      });
+      preloadLinksRef.current = [];
+    };
+  }, [filteredAndSortedArtworks, columnCount, isMobile]);
 
   const visibleFilteredArtworks = useMemo(() => {
     const totalItems = Array.isArray(filteredAndSortedArtworks) ? filteredAndSortedArtworks.length : 0;
@@ -2988,7 +2943,7 @@ function DiscoverPageContent() {
         log(`✅ Discover: Loaded ${eventItems.length} active events (from ${eventsSnapshot.docs.length} total)`);
         setEvents(eventItems);
       } catch (error) {
-        console.error('Error fetching events:', error);
+        if (isDev) console.error('Error fetching events:', error);
         // Fallback to placeholder events on error
         const placeholderEvents = generatePlaceholderEvents(theme, 12);
         setEvents(placeholderEvents);
