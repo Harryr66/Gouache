@@ -1782,18 +1782,8 @@ function DiscoverPageContent() {
               continue;
             }
             
-            // Get media URL (support video or image)
-            // Check for video: first check videoUrl, then check mediaUrls array for video type
-            let videoUrl = artworkData.videoUrl || null;
-            if (!videoUrl && artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video') {
-              videoUrl = artworkData.mediaUrls[0];
-            }
-            // For image, prefer imageUrl, then supportingImages, then mediaUrls (but only if not video)
-            // NOTE: imageUrl already filtered above to only include Cloudflare images
+            // Media type (already extracted videoUrl above)
             const mediaType = artworkData.mediaType || (videoUrl ? 'video' : 'image');
-            
-            // Skip items without media
-            if (!imageUrl && !videoUrl) continue;
             
             const artistId = artworkData.artist?.id || artworkData.artist?.userId || artworkData.artistId;
             if (artistId) {
