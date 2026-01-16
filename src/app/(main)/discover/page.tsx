@@ -42,69 +42,6 @@ const generatePlaceholderArtworks = (theme: string | undefined, count: number = 
   // This function should NOT be used in production
   console.error('⛔ generatePlaceholderArtworks() should NEVER be called - no external images allowed');
   return [];
-  
-  const artistNames = [
-    'Alexandra Chen', 'Marcus Rivera', 'Sophie Laurent', 'David Kim', 'Emma Thompson',
-    'James Wilson', 'Isabella Garcia', 'Oliver Brown', 'Maya Patel', 'Lucas Anderson',
-    'Chloe Martinez', 'Noah Taylor', 'Ava Johnson', 'Ethan Davis', 'Zoe White',
-    'Liam Harris', 'Mia Clark', 'Aiden Lewis', 'Lily Walker', 'Jackson Hall'
-  ];
-  
-  const titles = [
-    'Abstract Composition', 'Urban Landscape', 'Portrait Study', 'Nature Series',
-    'Geometric Forms', 'Color Exploration', 'Emotional Expression', 'Minimalist Study',
-    'Dynamic Movement', 'Still Life', 'Contemporary Vision', 'Traditional Technique',
-    'Experimental Work', 'Mixed Media', 'Digital Art', 'Watercolor Study',
-    'Oil Painting', 'Charcoal Drawing', 'Acrylic Piece', 'Ink Illustration'
-  ];
-  
-  const landscapeTitles = [
-    'Panoramic Cityscape', 'Wide Horizon', 'Expansive Landscape', 'Urban Panorama',
-    'Coastal Vista', 'Mountain Range', 'Desert Sunset', 'Forest Path'
-  ];
-  
-  return Array.from({ length: count }, (_, i) => {
-    // Every 8th item is a landscape image (roughly 12.5% landscape, majority portrait)
-    const isLandscape = i % 8 === 0 && i > 0;
-    // Use same blue placeholder for landscape, fallback to taped banana if needed
-    const imageUrl = isLandscape 
-      ? landscapeImage
-      : placeholderImage;
-    const title = isLandscape
-      ? landscapeTitles[i % landscapeTitles.length]
-      : titles[i % titles.length];
-    
-    return {
-      id: `placeholder-${i + 1}`,
-      title: title,
-      description: isLandscape 
-        ? 'A stunning landscape artwork showcasing the beauty of nature and urban environments.'
-        : 'A beautiful artwork showcasing artistic expression and creativity.',
-      imageUrl: imageUrl,
-      imageAiHint: isLandscape ? 'Landscape placeholder artwork' : 'Placeholder artwork',
-      isLandscape: isLandscape, // Add flag to identify landscape images
-      artist: {
-        id: `placeholder-artist-${i + 1}`,
-        name: artistNames[i % artistNames.length],
-        handle: `artist${i + 1}`,
-        avatarUrl: null,
-        isVerified: i % 3 === 0,
-        isProfessional: true,
-        followerCount: Math.floor(Math.random() * 5000) + 100,
-        followingCount: Math.floor(Math.random() * 500) + 50,
-        createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
-      },
-      likes: Math.floor(Math.random() * 500) + 10,
-      commentsCount: Math.floor(Math.random() * 50) + 2,
-      createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
-      updatedAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)),
-      category: ['Painting', 'Drawing', 'Digital', 'Mixed Media'][i % 4],
-      medium: ['Oil', 'Acrylic', 'Watercolor', 'Charcoal', 'Digital'][i % 5],
-      tags: ['art', 'creative', 'contemporary', 'modern', '_placeholder'], // Hidden tag to identify placeholders
-      aiAssistance: 'none' as const,
-      isAI: false,
-    };
-  });
 };
 
 const generatePlaceholderEvents = (theme: string | undefined, count: number = 12) => {
