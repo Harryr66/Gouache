@@ -1296,9 +1296,13 @@ function DiscoverPageContent() {
         // Load significantly more to account for filtering (non-Cloudflare images, etc.)
         // USER REQUEST: 9 rows initially
         // MOBILE: Load enough to show 18 items (2 cols × 9 rows) after filtering
-        // Desktop: Load enough to show 45 items (5 cols × 9 rows) after filtering
-        // Load 2x the target to account for filtering losses
-        const INITIAL_FETCH_LIMIT = isMobile ? 36 : 90; // Mobile: 36 items (2x 18), Desktop: 90 items (2x 45)
+        // Desktop: Load enough to show 27 items (3 cols × 9 rows) after filtering
+        // Current rejection rate: 58% (21/36 filtered = 42% pass rate)
+        // To get 27 items after 58% rejection: 27 / 0.42 = ~64 items needed
+        // API splits limit: portfolio gets limit/2, artworks gets full limit
+        // So we need to request enough that artworks alone gives us 27+ after filtering
+        // Request 100 to ensure we get 27+ items after filtering (100 * 0.42 = 42 artworks + portfolio)
+        const INITIAL_FETCH_LIMIT = isMobile ? 60 : 100; // Mobile: 60 items (to get 18+), Desktop: 100 items (to get 27+)
         
         try {
           // Try cached API first (ISR with 5min revalidation)
