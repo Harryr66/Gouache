@@ -18,7 +18,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { ThemeLoading } from '@/components/theme-loading';
-import { TypewriterJoke } from '@/components/typewriter-joke';
 import { useTheme } from 'next-themes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
