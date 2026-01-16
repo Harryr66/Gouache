@@ -1276,7 +1276,8 @@ function DiscoverPageContent() {
         
         try {
           // Try cached API first (ISR with 5min revalidation)
-          const apiUrl = `/api/discover/feed?hideAI=${discoverSettings.hideAiAssistedArt}&limit=${INITIAL_FETCH_LIMIT}`;
+          // Add cache buster to force fresh data (cache was serving stale 3-item response)
+          const apiUrl = `/api/discover/feed?hideAI=${discoverSettings.hideAiAssistedArt}&limit=${INITIAL_FETCH_LIMIT}&_=${Date.now()}`;
           log(`📡 Discover: Fetching from cached API: ${apiUrl}`);
           
           // Add timeout to prevent hanging (15 seconds max)
