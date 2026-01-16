@@ -1862,7 +1862,8 @@ function DiscoverPageContent() {
         
         // CRITICAL: Apply ranking system on initial load (not just newest first)
         // This ensures proper content ordering from the start
-        console.log(`🔥 DISCOVER DEBUG: After processing, ${fetchedArtworks.length} artworks ready for ranking`);
+        const processingTime = Date.now() - fetchStartTime;
+        console.log(`🔥 DISCOVER DEBUG: After processing, ${fetchedArtworks.length} artworks ready for ranking (took ${processingTime}ms)`);
         console.log(`🔥 DISCOVER DEBUG: Breakdown - portfolioItems: ${portfolioItems.length}, skipped: ${skippedNoImage}`);
         log(`🎯 Discover: Applying ranking system to ${fetchedArtworks.length} fetched artworks...`);
         
