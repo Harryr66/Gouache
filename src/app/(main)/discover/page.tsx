@@ -883,15 +883,16 @@ function DiscoverPageContent() {
   // Track column count for masonry layout (CSS columns) - needed for itemsToWaitFor calculation
   const [columnCount, setColumnCount] = useState(5);
   
-  // Calculate how many items are in viewport + 1 row (for faster loading)
+  // Calculate how many items are in viewport + buffer (for faster loading)
   // This is what we'll wait for before dismissing the loading screen
-  // Wait for viewport + 2 rows to ensure smooth initial display without gaps
+  // INSTAGRAM/PINTEREST-LEVEL: Load 6-8 rows initially (30-40 items on desktop, 20+ on mobile)
+  // Note: isMobile is detected later, so we use a safe default (mobile: 2 cols)
   const itemsToWaitFor = useMemo(() => {
-    // Viewport typically shows 2-3 rows, plus 2 extra rows for buffer = 4-5 rows total
-    // This matches our visibleCount of 24 and ensures no black spaces
-    const estimatedRowsInViewport = 2; // Increased from 1 to fill viewport
-    const extraRows = 2; // Increased from 1 to prevent gaps
-    return columnCount * (estimatedRowsInViewport + extraRows);
+    // Desktop: 5 cols × 6 rows = 30 items (viewport + 4 rows buffer)
+    // Mobile: 2 cols × 10 rows = 20 items (viewport + 8 rows buffer)
+    // Use columnCount to estimate: if 2-3 cols assume mobile (20 items), else desktop (30 items)
+    const rowsToLoad = columnCount <= 3 ? 10 : 6;
+    return columnCount * rowsToLoad;
   }, [columnCount]);
   
   // Track when initial videos are ready
@@ -981,10 +982,15 @@ function DiscoverPageContent() {
       const jokeTimeMet = true; // Always true since we're not waiting for joke
       
       
-      // PINTEREST-LEVEL: Wait for ALL initial viewport images to fully load (only for real content)
-      // This ensures zero loading states after screen dismisses
-      const imagesReady = effectiveImagesTotal > 0 ? initialImagesReady >= effectiveImagesTotal : true; // If no images, consider ready
-      const videoPostersReady = effectiveVideoPostersTotal > 0 ? initialVideoPostersReady >= effectiveVideoPostersTotal : true; // If no posters, consider ready
+      // INSTAGRAM/PINTEREST-LEVEL: Wait for 80% of initial viewport images to load (not 100%)
+      // This ensures fast loading like Instagram/Pinterest - don't wait for every single image
+      // 80% threshold provides smooth experience without blocking on slow images
+      const imagesReady = effectiveImagesTotal > 0 
+        ? initialImagesReady >= Math.ceil(effectiveImagesTotal * 0.8) 
+        : true; // If no images, consider ready
+      const videoPostersReady = effectiveVideoPostersTotal > 0 
+        ? initialVideoPostersReady >= Math.ceil(effectiveVideoPostersTotal * 0.8) 
+        : true; // If no posters, consider ready
       const allMediaReady = imagesReady && videoPostersReady;
 
       // CRITICAL: If there's no media to wait for, dismiss immediately with stabilization delay
@@ -1014,18 +1020,22 @@ function DiscoverPageContent() {
         return;
       }
 
-      // Fallback timeout: If media still loading after 5 seconds, dismiss anyway
-      // This prevents infinite waiting if some images fail
+      // Fallback timeout: If media still loading after 8 seconds, dismiss anyway
+      // This prevents infinite waiting if some images fail, but gives more time for initial load
       const timeSinceStart = Date.now() - loadingStartTimeRef.current;
-      if (timeSinceStart > 5000 && artworksLoaded && artworks.length > 0) {
+      if (timeSinceStart > 8000 && artworksLoaded && artworks.length > 0) {
         if (dismissalTimeoutRef.current) return;
-        console.warn(`⚠️ Timeout after 5s: ${initialImagesReady}/${effectiveImagesTotal} images loaded, dismissing anyway`);
-        dismissalTimeoutRef.current = setTimeout(() => {
-          setShowLoadingScreen(false);
-          loadingScreenDismissedTimeRef.current = Date.now();
-          dismissalTimeoutRef.current = null;
-        }, 200); // Still add stabilization delay
-        return;
+        // If we have at least 50% of images loaded, it's good enough (like Instagram/Pinterest)
+        const minImagesLoaded = Math.ceil(effectiveImagesTotal * 0.5);
+        if (initialImagesReady >= minImagesLoaded) {
+          console.warn(`⚠️ Timeout after 8s but have ${initialImagesReady}/${effectiveImagesTotal} images (50%+), dismissing`);
+          dismissalTimeoutRef.current = setTimeout(() => {
+            setShowLoadingScreen(false);
+            loadingScreenDismissedTimeRef.current = Date.now();
+            dismissalTimeoutRef.current = null;
+          }, 200); // Still add stabilization delay
+          return;
+        }
       }
       
       // CRITICAL: Maximum total loading time (15 seconds) - prevent infinite loading
@@ -1082,10 +1092,11 @@ function DiscoverPageContent() {
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
   // CRITICAL: Initialize based on device to prevent mobile crashes
-  // Mobile (2 cols): 6 rows = 12 items (safe limit, won't exceed MAX_TOTAL_ARTWORKS of 50)
-  // Desktop (5 cols): 8 rows = 40 items
+  // INSTAGRAM/PINTEREST-LEVEL: Show 20+ items initially (mobile: 20, desktop: 30)
+  // Mobile (2 cols): 10 rows = 20 items
+  // Desktop (5 cols): 6 rows = 30 items
   // Start with mobile-safe default, will update when device is detected
-  const [visibleCount, setVisibleCount] = useState(12); // Mobile-safe default
+  const [visibleCount, setVisibleCount] = useState(20); // Mobile: 20 items initially
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   // Default views: Artwork grid, Market list, Events grid on mobile
@@ -1133,15 +1144,15 @@ function DiscoverPageContent() {
     if (!isMobile) {
       // Desktop: default to grid view, but allow user to switch
       // Don't force it - let user's choice persist
-      // Desktop: 5 cols × 8 rows = 40 items (safe, won't cause memory issues)
-      setVisibleCount(40);
+      // Desktop: 5 cols × 6 rows = 30 items (INSTAGRAM/PINTEREST-LEVEL initial load)
+      setVisibleCount(30);
     } else {
       // On mobile, ensure correct defaults
       setArtworkView('grid');
       setMarketView('list');
       setEventsView('grid'); // Events use grid view on mobile
-      // Mobile: 2 cols × 6 rows = 12 items (safe, well below MAX_TOTAL_ARTWORKS of 50)
-      setVisibleCount(12);
+      // Mobile: 2 cols × 10 rows = 20 items (INSTAGRAM/PINTEREST-LEVEL initial load)
+      setVisibleCount(20);
     }
   }, [isMobile]);
 
@@ -1822,8 +1833,11 @@ function DiscoverPageContent() {
         // Strategy: Load poster images first (fast), limit videos to 3 per viewport, connection-aware preload count
         const connectionSpeed = getConnectionSpeed();
         
-        // AGGRESSIVE: Preload only 1-2 items (viewport + 1 row is enough)
-        const preloadCount = connectionSpeed === 'fast' ? 2 : 1;
+        // INSTAGRAM/PINTEREST-LEVEL: Preload 20-30+ images for instant display (like Instagram/Pinterest)
+        // Desktop: 30 images (5 cols × 6 rows), Mobile: 20 images (2 cols × 10 rows)
+        const preloadCount = isMobile 
+          ? (connectionSpeed === 'fast' ? 20 : connectionSpeed === 'medium' ? 16 : 12)
+          : (connectionSpeed === 'fast' ? 30 : connectionSpeed === 'medium' ? 24 : 18);
         
         // Limit videos to 3 per viewport for consistent performance
         const MAX_VIDEOS_PER_VIEWPORT = 3;
@@ -2802,11 +2816,10 @@ function DiscoverPageContent() {
   useEffect(() => {
     if (typeof window === 'undefined' || filteredAndSortedArtworks.length === 0) return;
     
-    // MOBILE: Preload fewer images to reduce memory usage
-    // Desktop: Preload first 24 images (viewport + 2 rows) for instant display without gaps
-    // Mobile: Preload only first 8 images (viewport + 1 row) to prevent crashes
-    const maxPreload = isMobile ? 8 : 24;
-    const preloadCount = Math.min(columnCount * (isMobile ? 2 : 4), maxPreload, filteredAndSortedArtworks.length);
+    // INSTAGRAM/PINTEREST-LEVEL: Preload 20-30+ images for instant display
+    // Desktop: Preload 30 images (5 cols × 6 rows), Mobile: Preload 20 images (2 cols × 10 rows)
+    const maxPreload = isMobile ? 20 : 30;
+    const preloadCount = Math.min(maxPreload, filteredAndSortedArtworks.length);
     const criticalArtworks = filteredAndSortedArtworks.slice(0, preloadCount);
     
     criticalArtworks.forEach((artwork) => {
@@ -2905,10 +2918,10 @@ function DiscoverPageContent() {
 
   useEffect(() => {
     // Reset to device-appropriate count when filters change
-    // Mobile: 12 items (2 cols × 6 rows), Desktop: 40 items (5 cols × 8 rows)
+    // INSTAGRAM/PINTEREST-LEVEL: Mobile: 20 items (2 cols × 10 rows), Desktop: 30 items (5 cols × 6 rows)
     // CRITICAL: Ensure we never exceed MAX_TOTAL_ARTWORKS on mobile
     const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
-    const resetCount = isMobile ? 12 : 40;
+    const resetCount = isMobile ? 20 : 30;
     setVisibleCount(Math.min(resetCount, MAX_TOTAL_ARTWORKS));
   }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, isMobile]);
 
@@ -2987,9 +3000,12 @@ function DiscoverPageContent() {
         {(showLoadingScreen && initialImagesTotal > 0) && (
           <div className="absolute inset-0 opacity-0 pointer-events-none" style={{ zIndex: -1 }} aria-hidden="true">
             {(() => {
-              // Preload enough items to fill viewport + 2 rows (matches itemsToWaitFor)
+              // INSTAGRAM/PINTEREST-LEVEL: Preload 20-30+ items during loading screen
+              // Desktop: 30 items (5 cols × 6 rows), Mobile: 20 items (2 cols × 10 rows)
               const connectionSpeed = getConnectionSpeed();
-              const preloadCount = connectionSpeed === 'fast' ? 24 : connectionSpeed === 'medium' ? 18 : 12;
+              const preloadCount = isMobile
+                ? (connectionSpeed === 'fast' ? 20 : connectionSpeed === 'medium' ? 16 : 12)
+                : (connectionSpeed === 'fast' ? 30 : connectionSpeed === 'medium' ? 24 : 18);
               const MAX_VIDEOS_PER_VIEWPORT = 3;
               
               const preloadTiles: Artwork[] = [];
