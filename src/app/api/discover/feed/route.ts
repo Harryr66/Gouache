@@ -109,6 +109,25 @@ export async function GET(request: NextRequest) {
       const itemCategory = (item.category || '').toLowerCase();
       const itemTitle = (item.title || '').toLowerCase();
       
+      // EMERGENCY DEBUG: Log Test Mug data to see why it's not being filtered
+      if (itemTitle.includes('mug') || item.id === 'artwork-1767255654110') {
+        console.log('🔍 DEBUG Test Mug data:', {
+          id: item.id,
+          title: item.title,
+          type: item.type,
+          artworkType: item.artworkType,
+          category: item.category,
+          showInShop: item.showInShop,
+          isForSale: item.isForSale,
+          showInPortfolio: item.showInPortfolio,
+          variants: !!item.variants,
+          basePrice: !!item.basePrice,
+          variantOptions: !!item.variantOptions,
+          shippingProfile: !!item.shippingProfile,
+          allFields: Object.keys(item)
+        });
+      }
+      
       // Layer 1: Type checks
       if (itemType.includes('product') || itemType.includes('merchandise') || 
           itemType.includes('marketplace') || itemType.includes('course') ||
