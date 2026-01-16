@@ -242,9 +242,79 @@ export async function GET(request: NextRequest) {
     
     console.log('✅ API: Artworks returned (after Cloudflare filter):', filteredArtworksItems.length);
     
-    // Combine ALL sources (portfolioItems are already filtered by PortfolioService)
+    // CRITICAL: Also filter portfolioItems - Test Mug might be in portfolioItems collection!
+    // Apply the same comprehensive filtering to portfolio items
+    const filteredPortfolioItems = portfolioResult.items.filter((item: any) => {
+      // HARD FILTER: Test Mug by ID
+      if (item.id === 'artwork-1767255654110') {
+        console.log('🚫 API HARD FILTERED PORTFOLIO (Test Mug by ID):', item.id);
+        filterRejections.testMug++;
+        return false;
+      }
+      
+      // Skip events
+      if (item.type === 'event' || item.type === 'Event' || item.eventType) {
+        filterRejections.events++;
+        return false;
+      }
+      
+      // COMPREHENSIVE PRODUCT/COURSE FILTERING (case-insensitive)
+      const itemType = (item.type || '').toLowerCase();
+      const itemArtworkType = (item.artworkType || '').toLowerCase();
+      const itemCategory = (item.category || '').toLowerCase();
+      const itemTitle = (item.title || '').toLowerCase();
+      
+      // Layer 1: Type checks
+      if (itemType.includes('product') || itemType.includes('merchandise') || 
+          itemType.includes('marketplace') || itemType.includes('course') ||
+          itemType === 'merch' || itemType === 'shop') {
+        filterRejections.productType++;
+        return false;
+      }
+      
+      // Layer 2: ArtworkType checks
+      if (itemArtworkType.includes('merchandise') || itemArtworkType.includes('product') || 
+          itemArtworkType.includes('course') || itemArtworkType === 'merch') {
+        filterRejections.productArtworkType++;
+        return false;
+      }
+      
+      // Layer 3: Category checks
+      if (itemCategory.includes('product') || itemCategory.includes('merchandise') || 
+          itemCategory.includes('merch') || itemCategory.includes('course')) {
+        filterRejections.productCategory++;
+        return false;
+      }
+      
+      // Layer 4: Shop flags + keyword detection
+      if (item.showInShop === true || item.isForSale === true) {
+        if (item.showInPortfolio !== true) {
+          filterRejections.shopOnly++;
+          return false;
+        }
+        const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
+                                'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
+                                'phone case', 'pillow', 'blanket', 'hat', 'cap'];
+        if (productKeywords.some(keyword => itemTitle.includes(keyword))) {
+          filterRejections.productKeyword++;
+          return false;
+        }
+      }
+      
+      // Layer 5: Product-specific fields
+      if (item.variants || item.basePrice || item.variantOptions || item.shippingProfile) {
+        filterRejections.productFields++;
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log('✅ API: Portfolio items returned (after filter):', filteredPortfolioItems.length, '(before:', portfolioResult.items.length, ')');
+    
+    // Combine ALL sources (both portfolioItems and artworksItems are now filtered)
     const combinedItems = [
-      ...portfolioResult.items, 
+      ...filteredPortfolioItems, 
       ...filteredArtworksItems
     ];
     console.log('📦 API: Combined items total:', combinedItems.length);
@@ -278,13 +348,14 @@ export async function GET(request: NextRequest) {
       // DEBUG: Add breakdown visible in browser console
       debug: {
         portfolioItemsCount: portfolioResult.items.length,
+        portfolioItemsAfterFilter: filteredPortfolioItems.length,
         artworksCount: artworksItems.length,
         artworksAfterFilter: filteredArtworksItems.length,
         combinedTotal: combinedItems.length,
         finalCount: items.length,
         requested: limit,
         filterRejections: filterRejections,
-        rejectionRate: `${Math.round((Object.values(filterRejections).reduce((a, b) => a + b, 0) / artworksItems.length) * 100)}%`,
+        rejectionRate: `${Math.round((Object.values(filterRejections).reduce((a, b) => a + b, 0) / (portfolioResult.items.length + artworksItems.length)) * 100)}%`,
       },
     });
 
