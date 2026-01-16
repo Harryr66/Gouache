@@ -42,25 +42,32 @@ export async function GET(request: NextRequest) {
     
     console.log('✅ API: Portfolio items returned:', portfolioResult.items.length);
     
-    // Query discover-only content (showInPortfolio: false - videos uploaded via Discover portal)
-    console.log('📡 API: Fetching discover content...', {
-      showInPortfolio: false,
-      deleted: false,
-      hideAI,
-      limit: Math.floor(limit / 2)
-    });
+    // CRITICAL FIX: Also query artworks collection (where discover uploads are stored!)
+    console.log('📡 API: Fetching artworks collection...');
     
-    const discoverResult = await PortfolioService.getDiscoverPortfolioItems({
-      showInPortfolio: false,
-      deleted: false,
-      hideAI: hideAI,
-      limit: Math.floor(limit / 2), // Half for discover content
-    });
+    // Dynamic import to avoid build issues
+    const { collection, query, getDocs, orderBy, limit: firestoreLimit } = await import('firebase/firestore');
+    const { db } = await import('@/lib/firebase');
     
-    console.log('✅ API: Discover content returned:', discoverResult.items.length);
+    const artworksQuery = query(
+      collection(db, 'artworks'),
+      orderBy('createdAt', 'desc'),
+      firestoreLimit(limit) // Get full limit from artworks
+    );
     
-    // Combine and sort by createdAt (newest first)
-    const combinedItems = [...portfolioResult.items, ...discoverResult.items];
+    const artworksSnapshot = await getDocs(artworksQuery);
+    const artworksItems = artworksSnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    })) as any[];
+    
+    console.log('✅ API: Artworks returned:', artworksItems.length);
+    
+    // Combine ALL THREE sources
+    const combinedItems = [
+      ...portfolioResult.items, 
+      ...artworksItems
+    ];
     console.log('📦 API: Combined items total:', combinedItems.length);
     combinedItems.sort((a, b) => {
       // Handle both Date and Firestore Timestamp types
@@ -92,7 +99,7 @@ export async function GET(request: NextRequest) {
       // DEBUG: Add breakdown visible in browser console
       debug: {
         portfolioItemsCount: portfolioResult.items.length,
-        discoverItemsCount: discoverResult.items.length,
+        artworksCount: artworksItems.length,
         combinedTotal: combinedItems.length,
         finalCount: items.length,
         requested: limit,
