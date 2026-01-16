@@ -89,6 +89,14 @@ export async function GET(request: NextRequest) {
         createdAt: lastDoc.data()?.createdAt,
       } : null,
       timestamp: Date.now(),
+      // DEBUG: Add breakdown visible in browser console
+      debug: {
+        portfolioItemsCount: portfolioResult.items.length,
+        discoverItemsCount: discoverResult.items.length,
+        combinedTotal: combinedItems.length,
+        finalCount: items.length,
+        requested: limit,
+      },
     });
 
     // Set cache headers for optimal browser caching

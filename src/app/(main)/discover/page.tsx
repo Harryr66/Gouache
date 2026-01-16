@@ -1290,6 +1290,15 @@ function DiscoverPageContent() {
             if (apiData.success && apiData.items) {
               portfolioItems = apiData.items;
               console.log(`🔥 DISCOVER DEBUG: API returned ${portfolioItems.length} items (requested: ${INITIAL_FETCH_LIMIT})`);
+              if (apiData.debug) {
+                console.log(`🔥 DISCOVER DEBUG: API BREAKDOWN:`, {
+                  portfolioItems: apiData.debug.portfolioItemsCount,
+                  discoverItems: apiData.debug.discoverItemsCount,
+                  combined: apiData.debug.combinedTotal,
+                  final: apiData.debug.finalCount,
+                  requested: apiData.debug.requested
+                });
+              }
               console.log(`🔥 DISCOVER DEBUG: Sample items:`, portfolioItems.slice(0, 5).map((i: any) => ({
                 id: i.id,
                 title: i.title,
