@@ -1491,6 +1491,12 @@ function DiscoverPageContent() {
             const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
             const mediaType = item.mediaType || (videoUrl ? 'video' : 'image');
             
+            // CRITICAL: Skip events - only show artworks from portfolio/discover
+            if (item.type === 'event' || item.type === 'Event' || item.eventType) {
+              skippedNoImage++;
+              continue;
+            }
+            
             // CRITICAL: Skip products/shop items - only show artworks from portfolio/discover
             if (item.type === 'product' || item.type === 'Product' || item.type === 'marketplace' || item.type === 'MarketplaceProduct') {
               skippedNoImage++;
@@ -2268,6 +2274,9 @@ function DiscoverPageContent() {
                         (itemAny.mediaUrls?.[0] && itemAny.mediaTypes?.[0] !== 'video' ? itemAny.mediaUrls[0] : '') || 
                         '';
         
+        // CRITICAL: Filter out events - only show artworks from portfolio/discover
+        if (itemAny.type === 'event' || itemAny.type === 'Event' || itemAny.eventType) continue;
+        
         // CRITICAL: Filter out products/shop items - only show artworks from portfolio/discover
         // itemAny is already defined above, no need to redefine
         if (itemAny.type === 'product' || itemAny.type === 'Product' || itemAny.type === 'marketplace' || itemAny.type === 'MarketplaceProduct') continue;
@@ -2554,6 +2563,11 @@ function DiscoverPageContent() {
       // Placeholder checks
       const tags = Array.isArray(artwork.tags) ? artwork.tags : [];
       if (tags.includes('_placeholder') || artwork.id.startsWith('placeholder-')) return false;
+      
+      // Event checks - NEVER show events in artwork feed
+      if (artwork.type === 'event' || artwork.type === 'Event' || artwork.eventType) {
+        return false;
+      }
       
       // Product/shop checks
       if (artwork.type === 'product' || artwork.type === 'Product' || 
