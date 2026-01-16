@@ -2793,14 +2793,16 @@ function DiscoverPageContent() {
           }
           
           // Also progressively show more items from already loaded data
+          // CRITICAL: On mobile, never exceed MAX_TOTAL_ARTWORKS (50) to prevent crashes
+          const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
           startTransition(() => {
             setVisibleCount((prev) => {
               // Load additional rows progressively from top to bottom
               // Add itemsPerRow * 3 to load enough content for smooth continuous scrolling
               const newCount = prev + (itemsPerRow * 3);
               const maxCount = filteredAndSortedArtworks.length || newCount;
-              // Ensure we never exceed available items, maintaining complete rows
-              return Math.min(newCount, maxCount);
+              // Ensure we never exceed available items AND never exceed MAX_TOTAL_ARTWORKS on mobile
+              return Math.min(newCount, maxCount, MAX_TOTAL_ARTWORKS);
             });
           });
         }
@@ -2917,9 +2919,11 @@ function DiscoverPageContent() {
   }, [filteredAndSortedArtworks, visibleCount, ads]);
 
   useEffect(() => {
-    // Reset to fill viewport when filters change (24 items covers most screen sizes)
-    setVisibleCount(24);
-  }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation]);
+    // Reset to device-appropriate count when filters change
+    // Mobile: 12 items (2 cols × 6 rows), Desktop: 40 items (5 cols × 8 rows)
+    const resetCount = isMobile ? 12 : 40;
+    setVisibleCount(resetCount);
+  }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, isMobile]);
 
   // Marketplace products useEffect removed - marketplace tab is hidden
 
