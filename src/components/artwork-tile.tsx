@@ -210,9 +210,8 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
     src: imageUrl || '',
     size: isInitialViewport ? 'thumbnail' : (isMobile ? 'small' : 'large'), // Use 'large' (1080px) for desktop, not 'medium'
     isGrid: true, // Always grid view in discover feed
-    enableBlur: true, // Enable blur placeholder for blur-up effect
     isMobile,
-    enableBlur: true,
+    enableBlur: true, // Enable blur placeholder for blur-up effect
     priority: isInitialViewport,
   });
   
