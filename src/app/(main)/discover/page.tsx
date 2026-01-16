@@ -1293,8 +1293,8 @@ function DiscoverPageContent() {
               console.log(`🔥 DISCOVER DEBUG: API returned ${portfolioItems.length} items (requested: ${INITIAL_FETCH_LIMIT})`);
               if (apiData.debug) {
                 console.log(`🔥 DISCOVER DEBUG: API BREAKDOWN:`, {
-                  portfolioItems: apiData.debug.portfolioItemsCount,
-                  discoverItems: apiData.debug.discoverItemsCount,
+                  portfolioItems: apiData.debug.portfolioItemsCount || 0,
+                  artworks: apiData.debug.artworksCount || 0,
                   combined: apiData.debug.combinedTotal,
                   final: apiData.debug.finalCount,
                   requested: apiData.debug.requested
