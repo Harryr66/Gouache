@@ -83,6 +83,12 @@ export class EngagementScorer {
         finalScore = finalScore * 1.5; // 50% boost for followed artists
       }
       
+      // ADD VARIETY: Random factor (±10%) to prevent same content every time
+      // High-quality content still appears more, but order varies on each load
+      // This is how Instagram/TikTok work - deterministic + small random factor
+      const randomFactor = 0.9 + (Math.random() * 0.2); // 0.9 to 1.1 (±10%)
+      finalScore = finalScore * randomFactor;
+      
       // Ensure legitimate accounts get a minimum score of 1
       // This ensures they always rank above placeholders (which have score 0)
       if (finalScore < 1.0) {
