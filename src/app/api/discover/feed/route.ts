@@ -179,19 +179,23 @@ export async function GET(request: NextRequest) {
         return false;
       }
       
-      // Layer 4: Shop flags + keyword detection
+      // Layer 4: Product keyword detection (ALWAYS check, regardless of shop flags)
+      // Products should be filtered by keywords even if not marked as shop items
+      const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
+                              'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
+                              'phone case', 'pillow', 'blanket', 'hat', 'cap', 'merchandise',
+                              'product', 'merch', 'apparel', 'clothing', 'accessory', 'accessories'];
+      if (productKeywords.some(keyword => itemTitle.includes(keyword))) {
+        console.log('🚫 API FILTERED (product keyword in title):', item.id, itemTitle);
+        filterRejections.productKeyword++;
+        return false;
+      }
+      
+      // Layer 4b: Shop flags (filter shop-only items that aren't in portfolio)
       if (item.showInShop === true || item.isForSale === true) {
         if (item.showInPortfolio !== true) {
-          console.log('🚫 API FILTERED (shop-only):', item.id);
+          console.log('🚫 API FILTERED (shop-only, not in portfolio):', item.id);
           filterRejections.shopOnly++;
-          return false;
-        }
-        const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
-                                'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
-                                'phone case', 'pillow', 'blanket', 'hat', 'cap'];
-        if (productKeywords.some(keyword => itemTitle.includes(keyword))) {
-          console.log('🚫 API FILTERED (product keyword):', item.id, itemTitle);
-          filterRejections.productKeyword++;
           return false;
         }
       }
@@ -286,17 +290,21 @@ export async function GET(request: NextRequest) {
         return false;
       }
       
-      // Layer 4: Shop flags + keyword detection
+      // Layer 4: Product keyword detection (ALWAYS check, regardless of shop flags)
+      // Products should be filtered by keywords even if not marked as shop items
+      const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
+                              'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
+                              'phone case', 'pillow', 'blanket', 'hat', 'cap', 'merchandise',
+                              'product', 'merch', 'apparel', 'clothing', 'accessory', 'accessories'];
+      if (productKeywords.some(keyword => itemTitle.includes(keyword))) {
+        filterRejections.productKeyword++;
+        return false;
+      }
+      
+      // Layer 4b: Shop flags (filter shop-only items that aren't in portfolio)
       if (item.showInShop === true || item.isForSale === true) {
         if (item.showInPortfolio !== true) {
           filterRejections.shopOnly++;
-          return false;
-        }
-        const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
-                                'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
-                                'phone case', 'pillow', 'blanket', 'hat', 'cap'];
-        if (productKeywords.some(keyword => itemTitle.includes(keyword))) {
-          filterRejections.productKeyword++;
           return false;
         }
       }

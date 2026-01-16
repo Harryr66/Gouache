@@ -1599,21 +1599,23 @@ function DiscoverPageContent() {
               continue;
             }
             
-            // Layer 4: Shop flags
+            // Layer 4: Product keyword detection (ALWAYS check, regardless of shop flags)
+            // Products should be filtered by keywords even if not marked as shop items
+            const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
+                                    'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
+                                    'phone case', 'pillow', 'blanket', 'hat', 'cap', 'merchandise',
+                                    'product', 'merch', 'apparel', 'clothing', 'accessory', 'accessories'];
+            if (productKeywords.some(keyword => itemTitle.includes(keyword))) {
+              if (isDev) console.log('🚫 FILTERED (product keyword in title):', item.id, itemTitle);
+              skippedNoImage++;
+              continue;
+            }
+            
+            // Layer 4b: Shop flags (filter shop-only items that aren't in portfolio)
             if (item.showInShop === true || item.isForSale === true) {
               // If it's ONLY in shop (not in portfolio), skip it
               if (item.showInPortfolio !== true) {
-                if (isDev) console.log('🚫 FILTERED (shop-only):', item.id);
-                skippedNoImage++;
-                continue;
-              }
-              
-              // Even if in portfolio, check if title suggests it's a product
-              const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
-                                      'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
-                                      'phone case', 'pillow', 'blanket', 'hat', 'cap'];
-              if (productKeywords.some(keyword => itemTitle.includes(keyword))) {
-                if (isDev) console.log('🚫 FILTERED (product keyword + shop flag):', item.id, itemTitle);
+                if (isDev) console.log('🚫 FILTERED (shop-only, not in portfolio):', item.id);
                 skippedNoImage++;
                 continue;
               }
@@ -1876,17 +1878,21 @@ function DiscoverPageContent() {
               continue;
             }
             
-            // Layer 4: Shop flags + keyword detection
+            // Layer 4: Product keyword detection (ALWAYS check, regardless of shop flags)
+            // Products should be filtered by keywords even if not marked as shop items
+            const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
+                                    'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
+                                    'phone case', 'pillow', 'blanket', 'hat', 'cap', 'merchandise',
+                                    'product', 'merch', 'apparel', 'clothing', 'accessory', 'accessories'];
+            if (productKeywords.some(keyword => artworkTitle.includes(keyword))) {
+              if (isDev) console.log('🚫 FILTERED artworks (product keyword in title):', artworkDoc.id, artworkTitle);
+              continue;
+            }
+            
+            // Layer 4b: Shop flags (filter shop-only items that aren't in portfolio)
             if (artworkData.showInShop === true || artworkData.isForSale === true) {
               if (artworkData.showInPortfolio !== true) {
-                if (isDev) console.log('🚫 FILTERED artworks (shop-only):', artworkDoc.id);
-                continue;
-              }
-              const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
-                                      'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
-                                      'phone case', 'pillow', 'blanket', 'hat', 'cap'];
-              if (productKeywords.some(keyword => artworkTitle.includes(keyword))) {
-                if (isDev) console.log('🚫 FILTERED artworks (product keyword):', artworkDoc.id, artworkTitle);
+                if (isDev) console.log('🚫 FILTERED artworks (shop-only, not in portfolio):', artworkDoc.id);
                 continue;
               }
             }
@@ -2503,17 +2509,21 @@ function DiscoverPageContent() {
           continue;
         }
         
-        // Layer 4: Shop flags + keyword detection
+        // Layer 4: Product keyword detection (ALWAYS check, regardless of shop flags)
+        // Products should be filtered by keywords even if not marked as shop items
+        const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
+                                'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
+                                'phone case', 'pillow', 'blanket', 'hat', 'cap', 'merchandise',
+                                'product', 'merch', 'apparel', 'clothing', 'accessory', 'accessories'];
+        if (productKeywords.some(keyword => loadItemTitle.includes(keyword))) {
+          if (isDev) console.log('🚫 FILTERED loadMore (product keyword in title):', itemAny.id, loadItemTitle);
+          continue;
+        }
+        
+        // Layer 4b: Shop flags (filter shop-only items that aren't in portfolio)
         if (itemAny.showInShop === true || itemAny.isForSale === true) {
           if (itemAny.showInPortfolio !== true) {
-            if (isDev) console.log('🚫 FILTERED loadMore (shop-only):', itemAny.id);
-            continue;
-          }
-          const productKeywords = ['mug', 'cup', 'shirt', 't-shirt', 'tshirt', 'hoodie', 'sweatshirt', 
-                                  'print', 'poster', 'canvas', 'sticker', 'pin', 'bag', 'tote',
-                                  'phone case', 'pillow', 'blanket', 'hat', 'cap'];
-          if (productKeywords.some(keyword => loadItemTitle.includes(keyword))) {
-            if (isDev) console.log('🚫 FILTERED loadMore (product keyword):', itemAny.id, loadItemTitle);
+            if (isDev) console.log('🚫 FILTERED loadMore (shop-only, not in portfolio):', itemAny.id);
             continue;
           }
         }
