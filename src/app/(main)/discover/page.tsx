@@ -1001,6 +1001,9 @@ function DiscoverPageContent() {
       return;
     }
     
+    // Get isMobile from state (declared earlier)
+    const currentIsMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+    
     // Check if we have enough artworks to start checking media (viewport + 1 row)
     // Don't wait for ALL artworks - just enough to fill the viewport
     const hasEnoughArtworks = artworks.length >= itemsToWaitFor || artworksLoaded;
@@ -1054,8 +1057,8 @@ function DiscoverPageContent() {
       // USER REQUEST: 9 rows initially
       // Ensure at least 18-45 images are loaded (not just a percentage)
       // This prevents dismissing with only 3 images visible
-      // Use isMobile directly (more reliable than columnCount which may be wrong initially)
-      const MIN_IMAGES_TO_LOAD = isMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
+      // Use currentIsMobile (detected from window width)
+      const MIN_IMAGES_TO_LOAD = currentIsMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
       const imagesReady = effectiveImagesTotal > 0
         ? initialImagesReady >= Math.max(
             Math.ceil(effectiveImagesTotal * 0.9), // 90% of available
@@ -1069,8 +1072,8 @@ function DiscoverPageContent() {
 
       // CRITICAL FIX: If there's no media to wait for, dismiss immediately with stabilization delay
       // BUT: Still require minimum artworks count (matching 9 rows: 18 mobile, 45 desktop)
-      // Use isMobile directly (more reliable than columnCount)
-      const minArtworksForNoMedia = isMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
+      // Use currentIsMobile (detected from window width)
+      const minArtworksForNoMedia = currentIsMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
       if (effectiveImagesTotal === 0 && effectiveVideoPostersTotal === 0 && artworksLoaded && artworks.length >= minArtworksForNoMedia) {
         if (dismissalTimeoutRef.current) return;
         dismissalTimeoutRef.current = setTimeout(() => {
@@ -1085,8 +1088,8 @@ function DiscoverPageContent() {
       // CRITICAL FIX: Dismiss immediately when all media is loaded (no joke wait)
       // BUT: Require minimum 18-45 artworks loaded to prevent dismissing with only 3 images
       // USER REQUEST: 9 rows initially (18 mobile, 45 desktop)
-      // Use isMobile directly (more reliable than columnCount)
-      const minArtworksRequired = isMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
+      // Use currentIsMobile (detected from window width)
+      const minArtworksRequired = currentIsMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
       const hasMinimumArtworks = artworks.length >= minArtworksRequired;
       
       if (allMediaReady && artworksLoaded && hasMinimumArtworks) {
@@ -1106,7 +1109,7 @@ function DiscoverPageContent() {
       // This prevents infinite waiting if some images fail, but gives more time for initial load
       // CRITICAL: Still require minimum 18/45 artworks before dismissing (prevents 3-tile issue, 9 rows)
       const timeSinceStart = Date.now() - loadingStartTimeRef.current;
-      const minArtworksForTimeout = isMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
+      const minArtworksForTimeout = currentIsMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
       if (timeSinceStart > 8000 && artworksLoaded && artworks.length >= minArtworksForTimeout) {
         if (dismissalTimeoutRef.current) return;
         // If we have at least 50% of images loaded, it's good enough (like Instagram/Pinterest)
@@ -1126,7 +1129,7 @@ function DiscoverPageContent() {
       // BUT: Still require minimum 18/45 artworks before dismissing (prevents 3-tile issue, 9 rows)
       const MAX_LOADING_TIME = 15000;
       const totalLoadingTime = Date.now() - loadingStartTimeRef.current;
-      const minArtworksForMaxTimeout = isMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
+      const minArtworksForMaxTimeout = currentIsMobile ? 18 : 45; // Match 9 rows: mobile 18, desktop 45
       if (totalLoadingTime > MAX_LOADING_TIME && artworks.length >= minArtworksForMaxTimeout) {
         if (dismissalTimeoutRef.current) return;
         if (isDev) console.warn(`⚠️ Maximum loading time (${MAX_LOADING_TIME}ms) exceeded with ${artworks.length} artworks (min ${minArtworksForMaxTimeout}), dismissing loading screen`);
@@ -1164,7 +1167,7 @@ function DiscoverPageContent() {
         dismissalTimeoutRef.current = null;
       }
     };
-  }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor, LOADING_SCREEN_DELAY, isMobile]);
+  }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor, LOADING_SCREEN_DELAY]);
   
   useEffect(() => {
     setMounted(true);
@@ -1178,6 +1181,8 @@ function DiscoverPageContent() {
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
+  // CRITICAL: Initialize isMobile early so it can be used in useEffect dependencies
+  const [isMobile, setIsMobile] = useState(false);
   // CRITICAL: Initialize based on device to prevent mobile crashes
   // USER REQUEST: 9 rows initially (as requested 5 times)
   // Mobile (2 cols): 9 rows = 18 items
@@ -1192,7 +1197,6 @@ function DiscoverPageContent() {
   const [artworkView, setArtworkView] = useState<'grid' | 'list'>('grid');
   const [marketView, setMarketView] = useState<'grid' | 'list'>('list');
   const [eventsView, setEventsView] = useState<'grid' | 'list'>('grid');
-  const [isMobile, setIsMobile] = useState(false);
   const [marketSearchQuery, setMarketSearchQuery] = useState('');
   const [selectedMarketCategory, setSelectedMarketCategory] = useState('All');
   const [marketSortBy, setMarketSortBy] = useState('newest');
