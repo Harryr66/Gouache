@@ -19,6 +19,7 @@ import Image from 'next/image';
 import { useDiscoverSettings } from '@/providers/discover-settings-provider';
 import { ThemeLoading } from '@/components/theme-loading';
 import { useTheme } from 'next-themes';
+import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
