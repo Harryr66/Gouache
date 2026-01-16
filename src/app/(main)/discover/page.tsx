@@ -1548,32 +1548,6 @@ function DiscoverPageContent() {
           const itemCategory = (item.category || '').toLowerCase();
           const itemTitle = (item.title || '').toLowerCase();
           
-          // HARD FILTER: Test Mug by ID (temporary until we see debug data)
-          if (item.id === 'artwork-1767255654110') {
-            if (isDev) console.log('🚫 CLIENT HARD FILTERED (Test Mug by ID):', item.id);
-            skippedNoImage++;
-            continue;
-          }
-          
-          // EMERGENCY DEBUG: Log Test Mug data to see why it's not being filtered CLIENT-SIDE
-          if (itemTitle.includes('mug') || item.id === 'artwork-1767255654110') {
-            console.log('🔍 CLIENT DEBUG Test Mug data:', {
-              id: item.id,
-              title: item.title,
-              type: item.type,
-              artworkType: item.artworkType,
-              category: item.category,
-              showInShop: item.showInShop,
-              isForSale: item.isForSale,
-              showInPortfolio: item.showInPortfolio,
-              variants: !!item.variants,
-              basePrice: !!item.basePrice,
-              variantOptions: !!item.variantOptions,
-              shippingProfile: !!item.shippingProfile,
-              allFields: Object.keys(item)
-            });
-          }
-          
           // Layer 1: Type checks (case-insensitive)
             if (itemType.includes('product') || itemType.includes('merchandise') || 
                 itemType.includes('marketplace') || itemType.includes('course') ||
@@ -2480,12 +2454,6 @@ function DiscoverPageContent() {
         const loadItemArtworkType = (itemAny.artworkType || '').toLowerCase();
         const loadItemCategory = (itemAny.category || '').toLowerCase();
         const loadItemTitle = (itemAny.title || '').toLowerCase();
-        
-        // HARD FILTER: Test Mug by ID (in loadMore function)
-        if (itemAny.id === 'artwork-1767255654110') {
-          if (isDev) console.log('🚫 FILTERED loadMore (Test Mug by ID):', itemAny.id);
-          continue;
-        }
         
         // Layer 1: Type checks
         if (loadItemType.includes('product') || loadItemType.includes('merchandise') || 

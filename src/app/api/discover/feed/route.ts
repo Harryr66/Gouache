@@ -101,7 +101,6 @@ export async function GET(request: NextRequest) {
     // COMPREHENSIVE FILTERING: ONLY Cloudflare media + ONLY artworks (no products/courses/merch)
     // Track filter rejection reasons for debugging
     const filterRejections = {
-      testMug: 0,
       events: 0,
       productType: 0,
       productArtworkType: 0,
@@ -116,13 +115,6 @@ export async function GET(request: NextRequest) {
     };
     
     const filteredArtworksItems = artworksItems.filter((item: any) => {
-      // HARD FILTER: Test Mug by ID (temporary until we see debug data)
-      if (item.id === 'artwork-1767255654110') {
-        console.log('🚫 API HARD FILTERED (Test Mug by ID):', item.id);
-        filterRejections.testMug++;
-        return false;
-      }
-      
       // Skip events
       if (item.type === 'event' || item.type === 'Event' || item.eventType) {
         filterRejections.events++;
@@ -134,25 +126,6 @@ export async function GET(request: NextRequest) {
       const itemArtworkType = (item.artworkType || '').toLowerCase();
       const itemCategory = (item.category || '').toLowerCase();
       const itemTitle = (item.title || '').toLowerCase();
-      
-      // EMERGENCY DEBUG: Log Test Mug data to see why it's not being filtered
-      if (itemTitle.includes('mug') || item.id === 'artwork-1767255654110') {
-        console.log('🔍 DEBUG Test Mug data:', {
-          id: item.id,
-          title: item.title,
-          type: item.type,
-          artworkType: item.artworkType,
-          category: item.category,
-          showInShop: item.showInShop,
-          isForSale: item.isForSale,
-          showInPortfolio: item.showInPortfolio,
-          variants: !!item.variants,
-          basePrice: !!item.basePrice,
-          variantOptions: !!item.variantOptions,
-          shippingProfile: !!item.shippingProfile,
-          allFields: Object.keys(item)
-        });
-      }
       
       // Layer 1: Type checks
       if (itemType.includes('product') || itemType.includes('merchandise') || 
@@ -246,16 +219,9 @@ export async function GET(request: NextRequest) {
     
     console.log('✅ API: Artworks returned (after Cloudflare filter):', filteredArtworksItems.length);
     
-    // CRITICAL: Also filter portfolioItems - Test Mug might be in portfolioItems collection!
+    // CRITICAL: Also filter portfolioItems - products might be in portfolioItems collection!
     // Apply the same comprehensive filtering to portfolio items
     const filteredPortfolioItems = portfolioResult.items.filter((item: any) => {
-      // HARD FILTER: Test Mug by ID
-      if (item.id === 'artwork-1767255654110') {
-        console.log('🚫 API HARD FILTERED PORTFOLIO (Test Mug by ID):', item.id);
-        filterRejections.testMug++;
-        return false;
-      }
-      
       // Skip events
       if (item.type === 'event' || item.type === 'Event' || item.eventType) {
         filterRejections.events++;
