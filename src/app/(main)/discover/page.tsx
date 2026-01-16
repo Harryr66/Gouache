@@ -1070,20 +1070,16 @@ function DiscoverPageContent() {
         : true; // If no posters, consider ready
       const allMediaReady = imagesReady && videoPostersReady;
 
-      // DISABLED: No early dismissal - MUST have 18/45 artworks minimum with media ready
-      // User requirement: 9 rows (18 mobile, 45 desktop) - ABSOLUTE REQUIREMENT
-
-      // ABSOLUTE REQUIREMENT: 18/45 artworks minimum - NO BYPASSING
-      // USER REQUEST: 9 rows (18 mobile, 45 desktop) - CANNOT BE DISMISSED EARLY
+      // PRIORITY 1: Ideal case - Have minimum artworks AND media ready
+      // USER REQUEST: 9 rows (18 mobile, 45 desktop)
       const minArtworksRequired = currentIsMobile ? 18 : 45;
       const hasMinimumArtworks = artworks.length >= minArtworksRequired;
       
-      // ONLY dismiss if we have BOTH minimum artworks AND all media ready
-      // If we don't have minimum artworks, KEEP LOADING SCREEN VISIBLE - NO EXCEPTIONS
+      // BEST CASE: Have minimum artworks AND all media ready
       if (artworksLoaded && hasMinimumArtworks && allMediaReady) {
         if (dismissalTimeoutRef.current) return;
         dismissalTimeoutRef.current = setTimeout(() => {
-          if (isDev) console.log(`✅ DISMISSING: ${artworks.length} artworks (min ${minArtworksRequired}), ${initialImagesReady}/${effectiveImagesTotal} images`);
+          if (isDev) console.log(`✅ DISMISSING (IDEAL): ${artworks.length} artworks (min ${minArtworksRequired}), all media ready`);
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
@@ -1091,23 +1087,30 @@ function DiscoverPageContent() {
         return;
       }
       
-      // Log why we're NOT dismissing
-      if (isDev && artworksLoaded) {
-        if (!hasMinimumArtworks) {
-          console.log(`❌ BLOCKING DISMISSAL: Only ${artworks.length} artworks, need ${minArtworksRequired}`);
-        }
-        if (!allMediaReady) {
-          console.log(`❌ BLOCKING DISMISSAL: Media not ready - ${initialImagesReady}/${effectiveImagesTotal} images`);
-        }
+      // PRIORITY 2: Timeout fallback - After 5 seconds, show whatever we have
+      // This prevents infinite loading if database only has 3 artworks
+      const timeSinceStart = Date.now() - loadingStartTimeRef.current;
+      const TIMEOUT = 5000; // 5 seconds max wait
+      
+      if (timeSinceStart > TIMEOUT && artworksLoaded && artworks.length > 0) {
+        if (dismissalTimeoutRef.current) return;
+        dismissalTimeoutRef.current = setTimeout(() => {
+          if (isDev) console.log(`✅ DISMISSING (TIMEOUT): ${artworks.length} artworks after ${timeSinceStart}ms (showing whatever loaded)`);
+          setShowLoadingScreen(false);
+          loadingScreenDismissedTimeRef.current = Date.now();
+          dismissalTimeoutRef.current = null;
+        }, 200);
+        return;
       }
-
-      // DISABLED: No timeout fallbacks - MUST have 18/45 artworks minimum
-      // User requirement: 9 rows (18 mobile, 45 desktop) - NO EXCEPTIONS
-      // If we don't have enough artworks, keep loading screen visible until we do
       
       // Log progress for debugging
-      if (!allMediaReady || !hasMinimumArtworks) {
-        if (isDev) console.log(`⏳ Waiting: ${artworks.length}/${minArtworksRequired} artworks (need ${minArtworksRequired}), ${initialImagesReady}/${effectiveImagesTotal} images`);
+      if (isDev && artworksLoaded) {
+        if (!hasMinimumArtworks) {
+          console.log(`⏳ Waiting: ${artworks.length}/${minArtworksRequired} artworks, ${Math.round((TIMEOUT - timeSinceStart) / 1000)}s until timeout`);
+        }
+        if (!allMediaReady) {
+          console.log(`⏳ Waiting: Media loading ${initialImagesReady}/${effectiveImagesTotal} images`);
+        }
       }
     }
     
