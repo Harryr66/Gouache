@@ -61,12 +61,68 @@ export async function GET(request: NextRequest) {
       ...doc.data() 
     })) as any[];
     
-    console.log('✅ API: Artworks returned:', artworksItems.length);
+    console.log('✅ API: Artworks returned (before filtering):', artworksItems.length);
     
-    // Combine ALL THREE sources
+    // CLOUDFLARE-ONLY FILTER: Helper functions
+    const isCloudflareImage = (url: string | null | undefined): boolean => {
+      if (!url || typeof url !== 'string') return false;
+      return url.includes('imagedelivery.net') || url.includes('cloudflare.com');
+    };
+    
+    const isValidCloudflareImageUrl = (url: string | null | undefined): boolean => {
+      if (!url || typeof url !== 'string') return false;
+      if (!isCloudflareImage(url)) return false;
+      if (!url.includes('imagedelivery.net')) return false;
+      const match = url.match(/imagedelivery\.net\/([^/]+)\/([^/]+)(?:\/([^/]+))?/);
+      if (!match) return false;
+      const [, accountHash, imageId] = match;
+      if (!accountHash || !imageId || accountHash.length === 0 || imageId.length === 0) return false;
+      if (!/^[a-zA-Z0-9_-]+$/.test(accountHash)) return false;
+      if (!/^[a-zA-Z0-9_-]+$/.test(imageId)) return false;
+      return true;
+    };
+    
+    const isCloudflareVideo = (videoUrl: string | null | undefined): boolean => {
+      if (!videoUrl || typeof videoUrl !== 'string') return false;
+      return videoUrl.includes('cloudflarestream.com') ||
+             videoUrl.includes('videodelivery.net') ||
+             videoUrl.includes('.m3u8');
+    };
+    
+    // Filter artworks to ONLY include Cloudflare-hosted media
+    const filteredArtworksItems = artworksItems.filter((item: any) => {
+      // Skip events and products
+      if (item.type === 'event' || item.type === 'Event' || item.eventType) return false;
+      if (item.type === 'product' || item.type === 'Product' || item.artworkType === 'merchandise') return false;
+      
+      const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || 
+                      (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';
+      let videoUrl = item.videoUrl || null;
+      if (!videoUrl && item.mediaUrls?.[0] && item.mediaTypes?.[0] === 'video') {
+        videoUrl = item.mediaUrls[0];
+      }
+      
+      // STRICT: Videos must be Cloudflare Stream
+      if (videoUrl && !isCloudflareVideo(videoUrl)) return false;
+      
+      // STRICT: Images must be Cloudflare Images with valid format
+      if (!videoUrl && imageUrl) {
+        if (!isCloudflareImage(imageUrl)) return false;
+        if (!isValidCloudflareImageUrl(imageUrl)) return false;
+      }
+      
+      // Must have at least one media source
+      if (!imageUrl && !videoUrl) return false;
+      
+      return true;
+    });
+    
+    console.log('✅ API: Artworks returned (after Cloudflare filter):', filteredArtworksItems.length);
+    
+    // Combine ALL sources (portfolioItems are already filtered by PortfolioService)
     const combinedItems = [
       ...portfolioResult.items, 
-      ...artworksItems
+      ...filteredArtworksItems
     ];
     console.log('📦 API: Combined items total:', combinedItems.length);
     combinedItems.sort((a, b) => {
@@ -100,6 +156,7 @@ export async function GET(request: NextRequest) {
       debug: {
         portfolioItemsCount: portfolioResult.items.length,
         artworksCount: artworksItems.length,
+        artworksAfterFilter: filteredArtworksItems.length,
         combinedTotal: combinedItems.length,
         finalCount: items.length,
         requested: limit,

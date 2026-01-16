@@ -1295,6 +1295,7 @@ function DiscoverPageContent() {
                 console.log(`🔥 DISCOVER DEBUG: API BREAKDOWN:`, {
                   portfolioItems: apiData.debug.portfolioItemsCount || 0,
                   artworks: apiData.debug.artworksCount || 0,
+                  artworksAfterCloudflareFilter: apiData.debug.artworksAfterFilter || 0,
                   combined: apiData.debug.combinedTotal,
                   final: apiData.debug.finalCount,
                   requested: apiData.debug.requested
@@ -1524,11 +1525,23 @@ function DiscoverPageContent() {
               continue; // Skip shop-only items
             }
             
-            // RELAXED: Allow both Cloudflare and non-Cloudflare images
-            // Only skip Pexels stock images
-            if (imageUrl && (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com'))) {
+            // STRICT CLOUDFLARE VALIDATION: Only allow Cloudflare-hosted media
+            // Videos: Must be Cloudflare Stream
+            if (videoUrl && !isCloudflareVideo(videoUrl)) {
               skippedNoImage++;
-              continue; // Skip stock images
+              continue;
+            }
+            
+            // Images: Must be Cloudflare Images with valid format
+            if (!videoUrl && imageUrl) {
+              if (!isCloudflareImage(imageUrl)) {
+                skippedNoImage++;
+                continue;
+              }
+              if (!isValidCloudflareImageUrl(imageUrl)) {
+                skippedNoImage++;
+                continue;
+              }
             }
             
             // Skip items without any media
@@ -1726,20 +1739,22 @@ function DiscoverPageContent() {
             // Skip items with invalid/corrupted imageUrls (data URLs from old uploads)
             if (artworkData.imageUrl && artworkData.imageUrl.startsWith('data:image')) continue;
             
-            // CRITICAL: Only fetch images from Cloudflare (all active artists should use Cloudflare)
-            // Skip images that are NOT from Cloudflare
+            // STRICT CLOUDFLARE VALIDATION: Only show Cloudflare-hosted media
             const imageUrl = artworkData.imageUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] !== 'video' ? artworkData.mediaUrls[0] : '') || '';
-            const hasVideo = artworkData.videoUrl || (artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video');
-            
-            // RELAXED: Allow both Cloudflare and non-Cloudflare media
-            // Only skip Pexels stock images
-            if (imageUrl && (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com'))) {
-              continue; // Skip stock images
+            let videoUrl = artworkData.videoUrl || null;
+            if (!videoUrl && artworkData.mediaUrls?.[0] && artworkData.mediaTypes?.[0] === 'video') {
+              videoUrl = artworkData.mediaUrls[0];
             }
             
-            // Skip items with no valid media at all
-            const hasValidMedia = imageUrl || artworkData.videoUrl || artworkData.supportingImages?.[0] || artworkData.images?.[0] || artworkData.mediaUrls?.[0];
-            if (!hasValidMedia) continue;
+            // Validate Cloudflare media
+            if (videoUrl && !isCloudflareVideo(videoUrl)) continue;
+            if (!videoUrl && imageUrl) {
+              if (!isCloudflareImage(imageUrl)) continue;
+              if (!isValidCloudflareImageUrl(imageUrl)) continue;
+            }
+            
+            // Skip items with no valid media
+            if (!imageUrl && !videoUrl) continue;
             
             // Apply discover settings filters for AI content
             if (discoverSettings.hideAiAssistedArt && (artworkData.aiAssistance === 'assisted' || artworkData.aiAssistance === 'generated' || artworkData.isAI)) {
@@ -2300,9 +2315,12 @@ function DiscoverPageContent() {
         if (itemAny.artworkType === 'merchandise') continue;
         if (itemAny.showInShop === true && itemAny.showInPortfolio !== true) continue; // Skip shop-only items
         
-        // RELAXED: Allow both Cloudflare and non-Cloudflare media
-        // Only skip Pexels stock images
-        if (imageUrl && (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com'))) continue;
+        // STRICT CLOUDFLARE VALIDATION: Only allow Cloudflare-hosted media
+        if (videoUrl && !isCloudflareVideo(videoUrl)) continue;
+        if (!videoUrl && imageUrl) {
+          if (!isCloudflareImage(imageUrl)) continue;
+          if (!isValidCloudflareImageUrl(imageUrl)) continue;
+        }
         
         // Skip items without any media
         if (!imageUrl && !videoUrl) continue;
@@ -2594,18 +2612,21 @@ function DiscoverPageContent() {
         return false;
       }
       
-      // Media validation - RELAXED: Allow both Cloudflare AND non-Cloudflare images
+      // STRICT CLOUDFLARE VALIDATION: Only allow Cloudflare-hosted media
       const imageUrl = artwork.imageUrl || artwork.supportingImages?.[0] || artwork.images?.[0] || '';
-      const hasVideo = artwork.videoUrl || artwork.mediaType === 'video';
+      const videoUrl = artwork.videoUrl || (artwork.mediaType === 'video' ? artwork.mediaUrls?.[0] : null);
       
-      // Only exclude Pexels images (stock photos)
-      if (imageUrl && (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com'))) return false;
+      // Videos: Must be Cloudflare Stream
+      if (videoUrl && !isCloudflareVideo(videoUrl)) return false;
       
-      // Require at least one valid media source (image or video)
-      const hasValidImage = imageUrl && imageUrl.length > 0;
-      const hasValidVideo = hasVideo && (artwork.videoUrl || artwork.mediaUrls?.[0]);
+      // Images: Must be Cloudflare Images with valid format
+      if (!videoUrl && imageUrl) {
+        if (!isCloudflareImage(imageUrl)) return false;
+        if (!isValidCloudflareImageUrl(imageUrl)) return false;
+      }
       
-      return hasValidImage || hasValidVideo;
+      // Require at least one valid media source
+      return (imageUrl && imageUrl.length > 0) || !!videoUrl;
     });
   }, [artworks]);
 
@@ -3401,11 +3422,13 @@ function DiscoverPageContent() {
                     const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
                     if (hasVideo) return false; // Filter out videos
                     
-                    // RELAXED: Allow both Cloudflare and non-Cloudflare images
+                    // STRICT CLOUDFLARE VALIDATION: Only show Cloudflare images
                     const imageUrl = artwork.imageUrl || (artwork as any).supportingImages?.[0] || (artwork as any).images?.[0] || '';
                     if (!imageUrl) return false; // Skip items with no image
-                    // Only skip Pexels stock images
-                    if (imageUrl.includes('pexels.com') || imageUrl.includes('images.pexels.com')) return false;
+                    
+                    // Must be Cloudflare Images
+                    if (!isCloudflareImage(imageUrl)) return false;
+                    if (!isValidCloudflareImageUrl(imageUrl)) return false;
                     
                     return true;
                   });
