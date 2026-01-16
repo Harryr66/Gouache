@@ -2037,6 +2037,13 @@ function DiscoverPageContent() {
   // Load more artworks when scrolling to bottom (pagination)
   // Note: Pagination uses direct Firestore (not cached API) for fresh data
   const loadMoreArtworks = useCallback(async () => {
+    // CRITICAL: Prevent duplicate loads from multiple triggers (IntersectionObserver + scroll listener)
+    const now = Date.now();
+    if (now - lastLoadTimeRef.current < LOAD_COOLDOWN) {
+      if (isDev) console.log('🔄 SCROLL LOAD: ⛔ BLOCKED: Load cooldown active (prevent duplicate loads)');
+      return;
+    }
+    
     if (isDev) {
       console.log('🔄 SCROLL LOAD: ========================================');
       console.log('🔄 SCROLL LOAD: 🚀 loadMoreArtworks CALLBACK INVOKED');
@@ -2045,7 +2052,8 @@ function DiscoverPageContent() {
         hasMore: hasMore,
         hasLastDocument: !!lastDocument,
         lastDocumentType: lastDocument ? typeof lastDocument : 'null',
-        lastDocumentId: lastDocument?.id || 'N/A'
+        lastDocumentId: lastDocument?.id || 'N/A',
+        timeSinceLastLoad: now - lastLoadTimeRef.current
       });
     }
     
@@ -2067,6 +2075,9 @@ function DiscoverPageContent() {
       return;
     }
 
+    // Mark load time to prevent duplicates
+    lastLoadTimeRef.current = now;
+    
     if (isDev) console.log('🔄 SCROLL LOAD: ✅ ALL CONDITIONS MET - PROCEEDING WITH LOAD');
     
     // Fast loading: Start immediately, no artificial delays
@@ -2410,7 +2421,12 @@ function DiscoverPageContent() {
   // Let the user control when to load more content via scrolling
   // The initial load should be sufficient, and pagination should only trigger on user scroll
 
-  // PERFORMANCE: Consolidated scroll handler - single listener for prefetch and fallback
+  // PERFORMANCE: Track last load time to prevent duplicate loads from multiple triggers
+  const lastLoadTimeRef = useRef<number>(0);
+  const LOAD_COOLDOWN = 3000; // 3 second cooldown between loads to prevent duplicates and reloads
+
+  // PERFORMANCE: Consolidated scroll handler - ONLY for prefetch, NOT for loading
+  // IntersectionObserver handles the actual loading - this is just for prefetch optimization
   useEffect(() => {
     if (!hasMore || !lastDocument) return;
     
@@ -2425,19 +2441,16 @@ function DiscoverPageContent() {
         const innerHeight = window.innerHeight;
         const scrollHeight = document.documentElement.scrollHeight;
         const scrollPercentage = (scrollY + innerHeight) / scrollHeight;
-        const distanceFromBottom = scrollHeight - (scrollY + innerHeight);
         
-        // Prefetch at 75% scroll (if not already loading)
+        // ONLY prefetch at 75% scroll - do NOT trigger loadMoreArtworks here
+        // IntersectionObserver handles the actual loading to prevent duplicate loads
         if (scrollPercentage > 0.75 && !fetchingRef.current && !isLoadingMore) {
           prefetchNextPage();
         }
         
-        // Fallback: Load more if IntersectionObserver fails (within 500px of bottom)
-        // Only for grid view and if IntersectionObserver might have missed
-        if (artworkView === 'grid' && distanceFromBottom < 500 && !isLoadingMore && hasMore && lastDocument) {
-          loadMoreArtworks();
-        }
-      }, 100); // Debounce by 100ms
+        // REMOVED: Fallback loadMoreArtworks call - this was causing duplicate loads
+        // IntersectionObserver is the primary mechanism and should handle all loading
+      }, 200); // Increased debounce to 200ms to reduce calls
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -2445,7 +2458,7 @@ function DiscoverPageContent() {
       if (scrollTimeout) clearTimeout(scrollTimeout);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [hasMore, isLoadingMore, lastDocument, prefetchNextPage, artworkView, loadMoreArtworks]);
+  }, [hasMore, isLoadingMore, lastDocument, prefetchNextPage]);
 
   // PERFORMANCE: Single IntersectionObserver for both grid and list views (consolidated)
   useEffect(() => {
@@ -2737,18 +2750,18 @@ function DiscoverPageContent() {
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && hasMore && !isLoadingMore) {
+          // CRITICAL: Only load more when sentinel is actually visible (user scrolled to bottom)
+          // Don't trigger based on visibleCount percentage - that causes premature loads
+          if (isDev) console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks via IntersectionObserver (list view)');
+          loadMoreArtworks();
+          
           // CRITICAL: Prevent progressive loading for 2 seconds after loading screen dismisses
           // This prevents shifting while masonry positions stabilize
           const timeSinceDismissal = loadingScreenDismissedTimeRef.current 
             ? Date.now() - loadingScreenDismissedTimeRef.current 
             : Infinity;
           const canProgressiveLoad = !loadingScreenDismissedTimeRef.current || timeSinceDismissal > PROGRESSIVE_LOADING_DELAY;
-          
-          // If we're showing most of the available items, load more from server
-          if (visibleCount >= filteredAndSortedArtworks.length * 0.8 && hasMore && !isLoadingMore) {
-            loadMoreArtworks();
-          }
           
           // Also progressively show more items from already loaded data
           // CRITICAL: On mobile, never exceed MAX_TOTAL_ARTWORKS (50) to prevent crashes
