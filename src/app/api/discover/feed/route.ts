@@ -98,11 +98,23 @@ export async function GET(request: NextRequest) {
              videoUrl.includes('.m3u8');
     };
     
-    // Filter artworks to ONLY include Cloudflare-hosted media
+    // Filter artworks to ONLY include Cloudflare-hosted media + ONLY artworks (no products/courses)
     const filteredArtworksItems = artworksItems.filter((item: any) => {
-      // Skip events and products
+      // Skip events
       if (item.type === 'event' || item.type === 'Event' || item.eventType) return false;
-      if (item.type === 'product' || item.type === 'Product' || item.artworkType === 'merchandise') return false;
+      
+      // Skip products, merchandise, and courses
+      if (item.type === 'product' || item.type === 'Product' || 
+          item.type === 'marketplace' || item.type === 'MarketplaceProduct' ||
+          item.type === 'course' || item.type === 'Course' ||
+          item.type === 'merchandise' || item.type === 'Merchandise') return false;
+      if (item.artworkType === 'merchandise' || item.artworkType === 'product' || item.artworkType === 'course') return false;
+      if (item.showInShop === true && item.showInPortfolio !== true) return false;
+      
+      // Additional keyword check for products
+      const title = (item.title || '').toLowerCase();
+      const productKeywords = ['mug', 'shirt', 't-shirt', 'hoodie', 'print', 'poster', 'canvas'];
+      if (productKeywords.some(keyword => title.includes(keyword)) && item.showInShop === true) return false;
       
       const imageUrl = item.imageUrl || item.supportingImages?.[0] || item.images?.[0] || 
                       (item.mediaUrls?.[0] && item.mediaTypes?.[0] !== 'video' ? item.mediaUrls[0] : '') || '';

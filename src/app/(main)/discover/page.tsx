@@ -1527,18 +1527,32 @@ function DiscoverPageContent() {
               continue;
             }
             
-            // CRITICAL: Skip products/shop items - only show artworks from portfolio/discover
-            if (item.type === 'product' || item.type === 'Product' || item.type === 'marketplace' || item.type === 'MarketplaceProduct') {
+            // CRITICAL: Skip products/shop items/courses - ONLY show artworks from portfolio/discover
+            if (item.type === 'product' || item.type === 'Product' || 
+                item.type === 'marketplace' || item.type === 'MarketplaceProduct' ||
+                item.type === 'course' || item.type === 'Course' ||
+                item.type === 'merchandise' || item.type === 'Merchandise') {
+              if (isDev) console.log('🚫 FILTERED (product/course):', item.id, item.type);
               skippedNoImage++;
               continue;
             }
-            if (item.artworkType === 'merchandise') {
+            if (item.artworkType === 'merchandise' || item.artworkType === 'product' || item.artworkType === 'course') {
+              if (isDev) console.log('🚫 FILTERED (artworkType):', item.id, item.artworkType);
               skippedNoImage++;
               continue;
             }
             if (item.showInShop === true && item.showInPortfolio !== true) {
+              if (isDev) console.log('🚫 FILTERED (shop-only):', item.id);
               skippedNoImage++;
               continue; // Skip shop-only items
+            }
+            // Additional check: if title/description suggests it's a product (mugs, shirts, etc.)
+            const title = (item.title || '').toLowerCase();
+            const productKeywords = ['mug', 'shirt', 't-shirt', 'hoodie', 'print', 'poster', 'canvas'];
+            if (productKeywords.some(keyword => title.includes(keyword)) && item.showInShop === true) {
+              if (isDev) console.log('🚫 FILTERED (product keyword):', item.id, title);
+              skippedNoImage++;
+              continue;
             }
             
             // STRICT CLOUDFLARE VALIDATION: Only allow Cloudflare-hosted media
@@ -1750,10 +1764,29 @@ function DiscoverPageContent() {
             // Skip events
             if (artworkData.type === 'event' || artworkData.type === 'Event' || artworkData.eventType) continue;
             
-            // CRITICAL: Skip products/shop items - only show artworks from portfolio/discover
-            if (artworkData.type === 'product' || artworkData.type === 'Product' || artworkData.type === 'marketplace' || artworkData.type === 'MarketplaceProduct') continue;
-            if (artworkData.artworkType === 'merchandise') continue;
-            if (artworkData.showInShop === true && artworkData.showInPortfolio !== true) continue; // Skip shop-only items
+            // CRITICAL: Skip products/shop items/courses - ONLY show artworks from portfolio/discover
+            if (artworkData.type === 'product' || artworkData.type === 'Product' || 
+                artworkData.type === 'marketplace' || artworkData.type === 'MarketplaceProduct' ||
+                artworkData.type === 'course' || artworkData.type === 'Course' ||
+                artworkData.type === 'merchandise' || artworkData.type === 'Merchandise') {
+              if (isDev) console.log('🚫 FILTERED artworks (product/course):', artworkDoc.id, artworkData.type);
+              continue;
+            }
+            if (artworkData.artworkType === 'merchandise' || artworkData.artworkType === 'product' || artworkData.artworkType === 'course') {
+              if (isDev) console.log('🚫 FILTERED artworks (artworkType):', artworkDoc.id, artworkData.artworkType);
+              continue;
+            }
+            if (artworkData.showInShop === true && artworkData.showInPortfolio !== true) {
+              if (isDev) console.log('🚫 FILTERED artworks (shop-only):', artworkDoc.id);
+              continue;
+            }
+            // Additional check: if title/description suggests it's a product
+            const title = (artworkData.title || '').toLowerCase();
+            const productKeywords = ['mug', 'shirt', 't-shirt', 'hoodie', 'print', 'poster', 'canvas'];
+            if (productKeywords.some(keyword => title.includes(keyword)) && artworkData.showInShop === true) {
+              if (isDev) console.log('🚫 FILTERED artworks (product keyword):', artworkDoc.id, title);
+              continue;
+            }
             
             // Skip items with invalid/corrupted imageUrls (data URLs from old uploads)
             if (artworkData.imageUrl && artworkData.imageUrl.startsWith('data:image')) continue;
@@ -2327,11 +2360,29 @@ function DiscoverPageContent() {
         // CRITICAL: Filter out events - only show artworks from portfolio/discover
         if (itemAny.type === 'event' || itemAny.type === 'Event' || itemAny.eventType) continue;
         
-        // CRITICAL: Filter out products/shop items - only show artworks from portfolio/discover
-        // itemAny is already defined above, no need to redefine
-        if (itemAny.type === 'product' || itemAny.type === 'Product' || itemAny.type === 'marketplace' || itemAny.type === 'MarketplaceProduct') continue;
-        if (itemAny.artworkType === 'merchandise') continue;
-        if (itemAny.showInShop === true && itemAny.showInPortfolio !== true) continue; // Skip shop-only items
+        // CRITICAL: Filter out products/shop items/courses - ONLY show artworks from portfolio/discover
+        if (itemAny.type === 'product' || itemAny.type === 'Product' || 
+            itemAny.type === 'marketplace' || itemAny.type === 'MarketplaceProduct' ||
+            itemAny.type === 'course' || itemAny.type === 'Course' ||
+            itemAny.type === 'merchandise' || itemAny.type === 'Merchandise') {
+          if (isDev) console.log('🚫 FILTERED loadMore (product/course):', itemAny.id, itemAny.type);
+          continue;
+        }
+        if (itemAny.artworkType === 'merchandise' || itemAny.artworkType === 'product' || itemAny.artworkType === 'course') {
+          if (isDev) console.log('🚫 FILTERED loadMore (artworkType):', itemAny.id, itemAny.artworkType);
+          continue;
+        }
+        if (itemAny.showInShop === true && itemAny.showInPortfolio !== true) {
+          if (isDev) console.log('🚫 FILTERED loadMore (shop-only):', itemAny.id);
+          continue;
+        }
+        // Additional check: if title suggests it's a product
+        const itemTitle = (itemAny.title || '').toLowerCase();
+        const productKeywords = ['mug', 'shirt', 't-shirt', 'hoodie', 'print', 'poster', 'canvas'];
+        if (productKeywords.some(keyword => itemTitle.includes(keyword)) && itemAny.showInShop === true) {
+          if (isDev) console.log('🚫 FILTERED loadMore (product keyword):', itemAny.id, itemTitle);
+          continue;
+        }
         
         // STRICT CLOUDFLARE VALIDATION: Only allow Cloudflare-hosted media
         if (videoUrl && !isCloudflareVideo(videoUrl)) {
@@ -2631,11 +2682,21 @@ function DiscoverPageContent() {
         return false;
       }
       
-      // Product/shop checks
+      // Product/shop/course checks - ONLY show artworks
       if (artwork.type === 'product' || artwork.type === 'Product' || 
           artwork.type === 'marketplace' || artwork.type === 'MarketplaceProduct' ||
-          artwork.artworkType === 'merchandise' ||
+          artwork.type === 'course' || artwork.type === 'Course' ||
+          artwork.type === 'merchandise' || artwork.type === 'Merchandise' ||
+          artwork.artworkType === 'merchandise' || 
+          artwork.artworkType === 'product' || 
+          artwork.artworkType === 'course' ||
           (artwork.showInShop === true && artwork.showInPortfolio !== true)) {
+        return false;
+      }
+      // Additional keyword check for products in titles
+      const artworkTitle = (artwork.title || '').toLowerCase();
+      const productKeywords = ['mug', 'shirt', 't-shirt', 'hoodie', 'print', 'poster', 'canvas'];
+      if (productKeywords.some(keyword => artworkTitle.includes(keyword)) && artwork.showInShop === true) {
         return false;
       }
       
