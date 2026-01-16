@@ -412,8 +412,12 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       >
         {isLoadingMore && (
           <div className="flex flex-col items-center gap-2 py-4">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Loading more artworks...</p>
+            {/* Loading dot animation */}
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse" style={{ animationDelay: '300ms' }} />
+            </div>
           </div>
         )}
       </div>
@@ -867,16 +871,16 @@ function DiscoverPageContent() {
   const initialImageReadyRef = useRef<Set<string>>(new Set());
   const initialVideoPosterRef = useRef<Set<string>>(new Set());
   
-  // CLEAN LOADING SCREEN STATE - Simple and straightforward
-  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
+  // OPTIONAL LOADING SCREEN - Only show if there's actually a delay (500ms+)
+  // This prevents showing loading screen for fast loads (like Instagram/Pinterest)
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false); // Start hidden
   const [artworksLoaded, setArtworksLoaded] = useState(false);
-  const jokeCompleteTimeRef = useRef<number | null>(null);
-  const MIN_JOKE_DISPLAY_TIME = 1000; // 1 second minimum after joke completes (reduced from 2s)
-  const MAX_LOADING_TIME = 15000; // 15 seconds maximum (fallback timeout)
   const loadingStartTimeRef = useRef<number>(Date.now());
   const loadingScreenDismissedTimeRef = useRef<number | null>(null);
   const dismissalTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingScreenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const PROGRESSIVE_LOADING_DELAY = 2000; // 2 seconds delay before progressive loading starts
+  const LOADING_SCREEN_DELAY = 500; // Only show loading screen if load takes 500ms+
   
   // Track items per row with state to handle window resize (needed for itemsToWaitFor calculation)
   const [itemsPerRow, setItemsPerRow] = useState(6);
@@ -917,18 +921,49 @@ function DiscoverPageContent() {
     }
   }, []);
   
-  // Joke completion handler - preserved for future use if joke animation is re-enabled
-  // Jokes list is preserved in typewriter-joke.tsx component
-  const handleJokeComplete = useCallback(() => {
-    // No-op: joke animation removed to speed up loading
-    jokeCompleteTimeRef.current = Date.now();
-  }, []);
+  // Joke handler removed - jokes list preserved in typewriter-joke.tsx for future use
   
-  // LOADING LOGIC - Dismiss immediately when media is ready
-  // Joke animation removed to speed up loading (jokes list preserved in typewriter-joke.tsx)
-  // Dismiss when media is ready (video posters + threshold of images) - only viewport + 1 row
+  // OPTIONAL LOADING SCREEN LOGIC - Only show if there's actually a delay
+  // Show loading screen only if artworks haven't loaded after 500ms (fast loads skip it)
   useEffect(() => {
-    // Don't check if loading screen is already dismissed
+    // If artworks are already loaded, don't show loading screen
+    if (artworksLoaded && artworks.length > 0) {
+      if (showLoadingScreen) {
+        setShowLoadingScreen(false);
+      }
+      return;
+    }
+
+    // Only show loading screen if there's a delay (500ms+)
+    if (!showLoadingScreen && !artworksLoaded) {
+      loadingScreenTimeoutRef.current = setTimeout(() => {
+        // Only show if still loading after delay
+        if (!artworksLoaded && artworks.length === 0) {
+          setShowLoadingScreen(true);
+        }
+      }, LOADING_SCREEN_DELAY);
+    }
+
+    // Cleanup timeout if artworks load before delay
+    if (artworksLoaded && loadingScreenTimeoutRef.current) {
+      clearTimeout(loadingScreenTimeoutRef.current);
+      loadingScreenTimeoutRef.current = null;
+      if (showLoadingScreen) {
+        setShowLoadingScreen(false);
+      }
+    }
+
+    return () => {
+      if (loadingScreenTimeoutRef.current) {
+        clearTimeout(loadingScreenTimeoutRef.current);
+        loadingScreenTimeoutRef.current = null;
+      }
+    };
+  }, [artworksLoaded, artworks.length, showLoadingScreen]);
+
+  // LOADING SCREEN DISMISSAL LOGIC - Dismiss when media is ready
+  useEffect(() => {
+    // Don't check if loading screen is not shown or already dismissed
     if (!showLoadingScreen) {
       return;
     }
@@ -1039,6 +1074,7 @@ function DiscoverPageContent() {
       }
       
       // CRITICAL: Maximum total loading time (15 seconds) - prevent infinite loading
+      const MAX_LOADING_TIME = 15000;
       const totalLoadingTime = Date.now() - loadingStartTimeRef.current;
       if (totalLoadingTime > MAX_LOADING_TIME) {
         if (dismissalTimeoutRef.current) return;
@@ -1047,7 +1083,7 @@ function DiscoverPageContent() {
           setShowLoadingScreen(false);
           loadingScreenDismissedTimeRef.current = Date.now();
           dismissalTimeoutRef.current = null;
-        }, 200); // Still add stabilization delay (reduced from 500ms)
+        }, 200); // Still add stabilization delay
         return;
       }
       
@@ -1077,7 +1113,7 @@ function DiscoverPageContent() {
         dismissalTimeoutRef.current = null;
       }
     };
-  }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor]);
+  }, [showLoadingScreen, artworks.length, artworksLoaded, initialImagesReady, initialImagesTotal, initialVideoPostersReady, initialVideoPostersTotal, getConnectionSpeed, itemsToWaitFor, LOADING_SCREEN_DELAY]);
   
   useEffect(() => {
     setMounted(true);
@@ -2994,7 +3030,8 @@ function DiscoverPageContent() {
       ) : null}
       
       <div className="min-h-screen bg-background">
-        {/* Main content - render immediately so images/videos can load, but hide visually during loading */}
+        {/* Main content - render immediately so images/videos can load */}
+        {/* Only hide visually if loading screen is actually shown (optional) */}
         <div className={showLoadingScreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}>
         {/* Preload tiles invisibly during loading - render in viewport but hidden so browser loads images */}
         {(showLoadingScreen && initialImagesTotal > 0) && (
