@@ -420,11 +420,18 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
           </div>
         );
       })}
+      {/* Sentinel element for infinite scroll - must be positioned after all items */}
       <div 
         ref={loadMoreRef} 
-        data-load-more-sentinel
+        data-load-more-sentinel="true"
         className="h-20 w-full flex items-center justify-center" 
-        style={{ position: 'absolute', top: containerHeight, left: 0, right: 0 }} 
+        style={{ 
+          position: 'absolute', 
+          top: containerHeight > 0 ? containerHeight : '100%', 
+          left: 0, 
+          right: 0,
+          zIndex: 1
+        }} 
       >
         {isLoadingMore && (
           <div className="flex flex-col items-center gap-2 py-4">
@@ -2408,6 +2415,7 @@ function DiscoverPageContent() {
       // Don't set hasMore to false immediately on error - allow retry
       // setHasMore(false);
     } finally {
+      // CRITICAL: Always reset loading state, even on error
       setIsLoadingMore(false);
       if (isDev) console.log('🔄 SCROLL LOAD: ✅ Finished loading (isLoadingMore set to false)');
     }
@@ -2436,7 +2444,7 @@ function DiscoverPageContent() {
 
   // PERFORMANCE: Track last load time to prevent duplicate loads from multiple triggers
   const lastLoadTimeRef = useRef<number>(0);
-  const LOAD_COOLDOWN = 3000; // 3 second cooldown between loads to prevent duplicates and reloads
+  const LOAD_COOLDOWN = 500; // 500ms cooldown - just enough to prevent rapid duplicate triggers
 
   // PERFORMANCE: Consolidated scroll handler - ONLY for prefetch, NOT for loading
   // IntersectionObserver handles the actual loading - this is just for prefetch optimization
@@ -2473,15 +2481,40 @@ function DiscoverPageContent() {
     };
   }, [hasMore, isLoadingMore, lastDocument, prefetchNextPage]);
 
-  // PERFORMANCE: Single IntersectionObserver for both grid and list views (consolidated)
+  // SIMPLE: Single IntersectionObserver for infinite scroll (like Instagram/Pinterest)
+  // This is the ONLY mechanism that triggers loads - simple and reliable
   useEffect(() => {
+    if (artworkView !== 'grid') return; // Grid view only - list view has separate observer
+    if (!hasMore || isLoadingMore) return;
+    
     const sentinel = loadMoreRef.current;
-    if (!sentinel || !hasMore || isLoadingMore) return;
+    if (!sentinel) {
+      // Retry after a short delay if sentinel not ready
+      const timeout = setTimeout(() => {
+        const retrySentinel = loadMoreRef.current;
+        if (retrySentinel && hasMore && !isLoadingMore) {
+          const observer = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting && hasMore && !isLoadingMore) {
+                  if (isDev) console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks via IntersectionObserver');
+                  loadMoreArtworks();
+                }
+              });
+            },
+            { rootMargin: '400px', threshold: 0.1 }
+          );
+          observer.observe(retrySentinel);
+          return () => observer.disconnect();
+        }
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
 
-    // PERFORMANCE: Single observer handles both views with appropriate rootMargin
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          // Simple check: if sentinel is visible and we can load, do it
           if (entry.isIntersecting && hasMore && !isLoadingMore) {
             if (isDev) console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks via IntersectionObserver');
             loadMoreArtworks();
@@ -2489,14 +2522,14 @@ function DiscoverPageContent() {
         });
       },
       {
-        rootMargin: artworkView === 'grid' ? '200px' : (isMobile ? '400px' : '800px'),
+        rootMargin: '400px', // Start loading 400px before reaching bottom
         threshold: 0.1,
       }
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, isLoadingMore, loadMoreArtworks, artworkView, isMobile, isDev]);
+  }, [hasMore, isLoadingMore, loadMoreArtworks, artworkView, isDev]);
 
   // PERFORMANCE: Cache filtered results to avoid re-filtering on every render
   const baseFilteredArtworks = useMemo(() => {
@@ -2753,57 +2786,47 @@ function DiscoverPageContent() {
   // PERFORMANCE: Resize handling consolidated above - this effect removed
 
   // Infinite scroll observer for list view - progressively show more items
-  // Also triggers loadMoreArtworks when we're near the end of visible items
+  // SIMPLE: IntersectionObserver for list view (video feed) - separate from grid
   useEffect(() => {
-    // Only set up observer for list view (grid view has its own observer)
     if (artworkView !== 'list') return;
+    if (!hasMore || isLoadingMore) return;
     
     const sentinel = loadMoreRef.current;
-    if (!sentinel) return;
+    if (!sentinel) {
+      // Retry after a short delay if sentinel not ready
+      const timeout = setTimeout(() => {
+        const retrySentinel = loadMoreRef.current;
+        if (retrySentinel && hasMore && !isLoadingMore) {
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting && hasMore && !isLoadingMore) {
+                if (isDev) console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks via IntersectionObserver (list view)');
+                loadMoreArtworks();
+              }
+            });
+          }, { rootMargin: '400px', threshold: 0.1 });
+          observer.observe(retrySentinel);
+          return () => observer.disconnect();
+        }
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting && hasMore && !isLoadingMore) {
-          // CRITICAL: Only load more when sentinel is actually visible (user scrolled to bottom)
-          // Don't trigger based on visibleCount percentage - that causes premature loads
           if (isDev) console.log('🔄 SCROLL LOAD: 🚀 TRIGGERING loadMoreArtworks via IntersectionObserver (list view)');
           loadMoreArtworks();
-          
-          // CRITICAL: Prevent progressive loading for 2 seconds after loading screen dismisses
-          // This prevents shifting while masonry positions stabilize
-          const timeSinceDismissal = loadingScreenDismissedTimeRef.current 
-            ? Date.now() - loadingScreenDismissedTimeRef.current 
-            : Infinity;
-          const canProgressiveLoad = !loadingScreenDismissedTimeRef.current || timeSinceDismissal > PROGRESSIVE_LOADING_DELAY;
-          
-          // Also progressively show more items from already loaded data
-          // CRITICAL: On mobile, never exceed MAX_TOTAL_ARTWORKS (50) to prevent crashes
-          // CRITICAL: Wait 2 seconds after loading screen dismisses before progressive loading
-          if (canProgressiveLoad) {
-            const MAX_TOTAL_ARTWORKS = isMobile ? 50 : 200;
-            startTransition(() => {
-              setVisibleCount((prev) => {
-                // Load additional rows progressively from top to bottom
-                // MOBILE: Add fewer items at a time (1 row = itemsPerRow) to prevent memory spikes
-                // Desktop: Add 3 rows for smooth scrolling
-                const increment = isMobile ? itemsPerRow : (itemsPerRow * 3);
-                const newCount = prev + increment;
-                const maxCount = filteredAndSortedArtworks.length || newCount;
-                // Ensure we never exceed available items AND never exceed MAX_TOTAL_ARTWORKS on mobile
-                return Math.min(newCount, maxCount, MAX_TOTAL_ARTWORKS);
-              });
-            });
-          }
         }
       });
     }, {
-      rootMargin: isMobile ? '400px' : '800px', // Mobile: smaller rootMargin to reduce memory usage
+      rootMargin: '400px',
       threshold: 0.1,
     });
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [filteredAndSortedArtworks, itemsPerRow, visibleCount, hasMore, isLoadingMore, loadMoreArtworks, artworkView]);
+  }, [hasMore, isLoadingMore, loadMoreArtworks, artworkView, isDev]);
 
   // PERFORMANCE: Image preloading with cleanup to prevent DOM pollution
   const preloadLinksRef = useRef<HTMLLinkElement[]>([]);
