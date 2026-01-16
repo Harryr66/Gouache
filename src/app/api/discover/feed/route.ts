@@ -66,7 +66,16 @@ export async function GET(request: NextRequest) {
     // CLOUDFLARE-ONLY FILTER: Helper functions
     const isCloudflareImage = (url: string | null | undefined): boolean => {
       if (!url || typeof url !== 'string') return false;
-      return url.includes('imagedelivery.net') || url.includes('cloudflare.com');
+      
+      // Explicitly REJECT non-Cloudflare sources
+      if (url.includes('firebasestorage.googleapis.com')) return false;
+      if (url.includes('firebase.com')) return false;
+      if (url.startsWith('data:')) return false;
+      if (url.includes('pexels.com')) return false;
+      if (url.includes('unsplash.com')) return false;
+      
+      // MUST be Cloudflare Images
+      return url.includes('imagedelivery.net');
     };
     
     const isValidCloudflareImageUrl = (url: string | null | undefined): boolean => {

@@ -816,7 +816,16 @@ function DiscoverPageContent() {
   // Helper: Check if image URL is from Cloudflare (all active artists should use Cloudflare)
   const isCloudflareImage = (url: string | null | undefined): boolean => {
     if (!url || typeof url !== 'string') return false;
-    return url.includes('imagedelivery.net') || url.includes('cloudflare.com');
+    
+    // Explicitly REJECT non-Cloudflare sources
+    if (url.includes('firebasestorage.googleapis.com')) return false;
+    if (url.includes('firebase.com')) return false;
+    if (url.startsWith('data:')) return false;
+    if (url.includes('pexels.com')) return false;
+    if (url.includes('unsplash.com')) return false;
+    
+    // MUST be Cloudflare Images
+    return url.includes('imagedelivery.net');
   };
   
   // Helper: Validate Cloudflare Images URL format to prevent 404s
@@ -1528,6 +1537,7 @@ function DiscoverPageContent() {
             // STRICT CLOUDFLARE VALIDATION: Only allow Cloudflare-hosted media
             // Videos: Must be Cloudflare Stream
             if (videoUrl && !isCloudflareVideo(videoUrl)) {
+              if (isDev) console.log('🚫 FILTERED (invalid video):', item.id, videoUrl);
               skippedNoImage++;
               continue;
             }
@@ -1535,10 +1545,12 @@ function DiscoverPageContent() {
             // Images: Must be Cloudflare Images with valid format
             if (!videoUrl && imageUrl) {
               if (!isCloudflareImage(imageUrl)) {
+                if (isDev) console.log('🚫 FILTERED (not Cloudflare image):', item.id, imageUrl);
                 skippedNoImage++;
                 continue;
               }
               if (!isValidCloudflareImageUrl(imageUrl)) {
+                if (isDev) console.log('🚫 FILTERED (invalid Cloudflare URL):', item.id, imageUrl);
                 skippedNoImage++;
                 continue;
               }
@@ -1747,10 +1759,19 @@ function DiscoverPageContent() {
             }
             
             // Validate Cloudflare media
-            if (videoUrl && !isCloudflareVideo(videoUrl)) continue;
+            if (videoUrl && !isCloudflareVideo(videoUrl)) {
+              if (isDev) console.log('🚫 FILTERED artworks (invalid video):', artworkDoc.id, videoUrl);
+              continue;
+            }
             if (!videoUrl && imageUrl) {
-              if (!isCloudflareImage(imageUrl)) continue;
-              if (!isValidCloudflareImageUrl(imageUrl)) continue;
+              if (!isCloudflareImage(imageUrl)) {
+                if (isDev) console.log('🚫 FILTERED artworks (not Cloudflare):', artworkDoc.id, imageUrl);
+                continue;
+              }
+              if (!isValidCloudflareImageUrl(imageUrl)) {
+                if (isDev) console.log('🚫 FILTERED artworks (invalid URL):', artworkDoc.id, imageUrl);
+                continue;
+              }
             }
             
             // Skip items with no valid media
@@ -2316,10 +2337,19 @@ function DiscoverPageContent() {
         if (itemAny.showInShop === true && itemAny.showInPortfolio !== true) continue; // Skip shop-only items
         
         // STRICT CLOUDFLARE VALIDATION: Only allow Cloudflare-hosted media
-        if (videoUrl && !isCloudflareVideo(videoUrl)) continue;
+        if (videoUrl && !isCloudflareVideo(videoUrl)) {
+          if (isDev) console.log('🚫 FILTERED loadMore (invalid video):', itemAny.id, videoUrl);
+          continue;
+        }
         if (!videoUrl && imageUrl) {
-          if (!isCloudflareImage(imageUrl)) continue;
-          if (!isValidCloudflareImageUrl(imageUrl)) continue;
+          if (!isCloudflareImage(imageUrl)) {
+            if (isDev) console.log('🚫 FILTERED loadMore (not Cloudflare):', itemAny.id, imageUrl);
+            continue;
+          }
+          if (!isValidCloudflareImageUrl(imageUrl)) {
+            if (isDev) console.log('🚫 FILTERED loadMore (invalid URL):', itemAny.id, imageUrl);
+            continue;
+          }
         }
         
         // Skip items without any media
