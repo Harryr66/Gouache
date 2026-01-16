@@ -210,6 +210,7 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
     src: imageUrl || '',
     size: isInitialViewport ? 'thumbnail' : (isMobile ? 'small' : 'large'), // Use 'large' (1080px) for desktop, not 'medium'
     isGrid: true, // Always grid view in discover feed
+    enableBlur: true, // Enable blur placeholder for blur-up effect
     isMobile,
     enableBlur: true,
     priority: isInitialViewport,
@@ -756,26 +757,18 @@ const generateArtistContent = (artist: Artist) => ({
           </Button>
         )}
         <div className="absolute inset-0 bg-muted pointer-events-none">
-          {/* Loading skeleton - aesthetic gradient shimmer */}
-          {((hasVideo && !isImageLoaded) || (!hasVideo && !isImageLoaded)) && (
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-              <div 
-                className="absolute inset-0 animate-pulse"
-                style={{
-                  background: (resolvedTheme || theme) === 'dark'
-                    ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
-                    : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
-                  backgroundSize: '400% 400%',
-                  animation: 'gradientShift 3s ease infinite'
-                }}
-              />
-              <style jsx>{`
-                @keyframes gradientShift {
-                  0%, 100% { background-position: 0% 50%; }
-                  50% { background-position: 100% 50%; }
-                }
-              `}</style>
-            </div>
+          {/* Blur-up placeholder - shows blurred version of actual image while loading */}
+          {((hasVideo && !isImageLoaded) || (!hasVideo && !isImageLoaded)) && imageUrl && (
+            <div 
+              className="absolute inset-0 z-0 pointer-events-none overflow-hidden"
+              style={{
+                backgroundImage: `url(${optimizedImage.placeholder || imageUrl.replace(/\/[^/]+$/, '/Thumbnail')})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                filter: 'blur(20px)',
+                transform: 'scale(1.1)', // Slight scale to prevent blur edge artifacts
+              }}
+            />
           )}
           
           {/* Media content */}
@@ -785,20 +778,18 @@ const generateArtistContent = (artist: Artist) => ({
               {/* For videos, always try to show a poster/thumbnail - use imageUrl if available, otherwise use video's first frame via poster attribute */}
               {(imageUrl || videoUrl) ? (
                 <>
-                  {/* Skeleton loader for video poster - aesthetic gradient shimmer */}
+                  {/* Blur-up placeholder for video poster - shows blurred version of actual image */}
                   {imageUrl && !isImageLoaded && !imageError && (
-                    <div className="absolute inset-0 z-0 overflow-hidden">
-                      <div 
-                        className="absolute inset-0 animate-pulse"
-                        style={{
-                          background: (resolvedTheme || theme) === 'dark'
-                            ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
-                            : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
-                          backgroundSize: '400% 400%',
-                          animation: 'gradientShift 3s ease infinite'
-                        }}
-                      />
-                    </div>
+                    <div 
+                      className="absolute inset-0 z-0 overflow-hidden"
+                      style={{
+                        backgroundImage: `url(${optimizedImage.placeholder || imageUrl.replace(/\/[^/]+$/, '/Thumbnail')})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        filter: 'blur(20px)',
+                        transform: 'scale(1.1)', // Slight scale to prevent blur edge artifacts
+                      }}
+                    />
                   )}
                   {imageUrl ? (
                     <Image
@@ -1109,33 +1100,18 @@ const generateArtistContent = (artist: Artist) => ({
             </>
           ) : (
             <>
-              {/* Blur-up placeholder (Pinterest/Instagram style) - shows instantly */}
-              {!isImageLoaded && !imageError && (artwork.blurPlaceholder || optimizedImage.placeholder) && (
+              {/* Blur-up placeholder (Pinterest/Instagram style) - shows blurred version of actual image */}
+              {!isImageLoaded && !imageError && imageUrl && (
                 <div 
-                  className="absolute inset-0 z-0 blur-xl scale-110"
+                  className="absolute inset-0 z-0 overflow-hidden"
                   style={{
-                    backgroundImage: `url(${artwork.blurPlaceholder || optimizedImage.placeholder})`,
+                    backgroundImage: `url(${optimizedImage.placeholder || imageUrl.replace(/\/[^/]+$/, '/Thumbnail')})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     filter: 'blur(20px)',
-                    opacity: 0.6,
+                    transform: 'scale(1.1)', // Slight scale to prevent blur edge artifacts
                   }}
                 />
-              )}
-              {/* Skeleton loader fallback - aesthetic gradient shimmer */}
-              {!isImageLoaded && !imageError && !optimizedImage.placeholder && (
-                <div className="absolute inset-0 z-0 overflow-hidden">
-                  <div 
-                    className="absolute inset-0 animate-pulse"
-                    style={{
-                      background: (resolvedTheme || theme) === 'dark'
-                        ? 'linear-gradient(135deg, rgba(81, 196, 211, 0.15) 0%, rgba(119, 172, 241, 0.1) 35%, rgba(239, 136, 173, 0.15) 70%, rgba(81, 196, 211, 0.1) 100%)'
-                        : 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(59, 130, 246, 0.12) 35%, rgba(96, 165, 250, 0.08) 70%, rgba(30, 58, 138, 0.06) 100%)',
-                      backgroundSize: '400% 400%',
-                      animation: 'gradientShift 3s ease infinite'
-                    }}
-                  />
-                </div>
               )}
               {/* Use native img for ALL CDN images (faster), Next.js Image only as fallback */}
               {(() => {
