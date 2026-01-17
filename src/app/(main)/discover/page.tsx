@@ -1113,12 +1113,24 @@ function DiscoverPageContent() {
         return;
       }
       
+      // PRIORITY 1.5: Empty state - If loaded but 0 artworks, dismiss immediately
+      if (artworksLoaded && artworks.length === 0) {
+        if (dismissalTimeoutRef.current) return;
+        dismissalTimeoutRef.current = setTimeout(() => {
+          if (isDev) console.log(`✅ DISMISSING (EMPTY): No artworks to show`);
+          setShowLoadingScreen(false);
+          loadingScreenDismissedTimeRef.current = Date.now();
+          dismissalTimeoutRef.current = null;
+        }, 200);
+        return;
+      }
+      
       // PRIORITY 2: Timeout fallback - After 15 seconds, show whatever we have
       // This prevents infinite loading if processing is stuck
       const timeSinceStart = Date.now() - loadingStartTimeRef.current;
       const TIMEOUT = 15000; // 15 seconds max wait (processing can take 5-10s)
       
-      if (timeSinceStart > TIMEOUT && artworksLoaded && artworks.length > 0) {
+      if (timeSinceStart > TIMEOUT && artworksLoaded) {
         if (dismissalTimeoutRef.current) return;
         dismissalTimeoutRef.current = setTimeout(() => {
           if (isDev) console.log(`✅ DISMISSING (TIMEOUT): ${artworks.length} artworks after ${timeSinceStart}ms (showing whatever loaded)`);
