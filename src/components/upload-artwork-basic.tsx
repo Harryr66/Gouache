@@ -64,6 +64,8 @@ export function UploadArtworkBasic() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [extractedThumbnailBlob, setExtractedThumbnailBlob] = useState<Blob | null>(null);
+  const [processVideo, setProcessVideo] = useState<File | null>(null);
+  const [processVideoPreview, setProcessVideoPreview] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -91,40 +93,31 @@ export function UploadArtworkBasic() {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       
-      // Validate video files (max 60 seconds)
+      // IMAGES ONLY - reject videos from main upload
+      // Videos can only be added as process videos (supplemental)
+      const imageFiles: File[] = [];
+      let videoRejected = false;
+      
       for (const file of selectedFiles) {
         if (file.type.startsWith('video/')) {
-          try {
-            const duration = await getVideoDuration(file);
-            if (duration > 60) {
-              toast({
-                title: 'Video too long',
-                description: `Video "${file.name}" is ${Math.round(duration)} seconds. Maximum length is 60 seconds.`,
-                variant: 'destructive',
-              });
-              continue; // Skip this file
-            }
-          } catch (error) {
-            toast({
-              title: 'Error reading video',
-              description: `Could not read video "${file.name}". Please try another file.`,
-              variant: 'destructive',
-            });
-            continue; // Skip this file
-          }
+          videoRejected = true;
+          continue; // Skip videos - they should use the process video upload
+        }
+        if (file.type.startsWith('image/')) {
+          imageFiles.push(file);
         }
       }
       
-      // Only add valid files
-      const validFiles = selectedFiles.filter(file => {
-        if (file.type.startsWith('video/')) {
-          // We already validated videos above, so if it's still in the array, it's valid
-          return true;
-        }
-        return file.type.startsWith('image/');
-      });
+      if (videoRejected) {
+        toast({
+          title: 'Images only',
+          description: 'Use the "Process Video" section below to add a behind-the-scenes video.',
+        });
+      }
       
-      setFiles(prev => [...prev, ...validFiles]);
+      if (imageFiles.length > 0) {
+        setFiles(prev => [...prev, ...imageFiles]);
+      }
     }
   };
 
@@ -870,6 +863,9 @@ export function UploadArtworkBasic() {
         setThumbnailPreview(null);
         setExtractedThumbnailBlob(null);
         setBulkUploadSeparately(false);
+        if (processVideoPreview) URL.revokeObjectURL(processVideoPreview);
+        setProcessVideo(null);
+        setProcessVideoPreview(null);
         
         setUploading(false);
         
@@ -1020,6 +1016,25 @@ export function UploadArtworkBasic() {
         return '';
       };
 
+      // Upload process video if provided (supplemental to the main image)
+      let processVideoUrl: string | undefined = undefined;
+      if (processVideo) {
+        try {
+          setCurrentUploadingFile('Uploading process video...');
+          const { uploadMedia } = await import('@/lib/media-upload-v2');
+          const processVideoResult = await uploadMedia(processVideo, 'video', user.id);
+          processVideoUrl = processVideoResult.url;
+          console.log('✅ Process video uploaded:', processVideoUrl);
+        } catch (error) {
+          console.warn('Failed to upload process video:', error);
+          toast({
+            title: 'Process video upload failed',
+            description: 'Your artwork will be uploaded without the process video.',
+            variant: 'destructive',
+          });
+        }
+      }
+
       // Always create artwork/post for Discover feed (regardless of portfolio toggle or sale status)
       // This ensures all uploads from this portal appear in Discover
       const artworkForDiscover: any = {
@@ -1068,6 +1083,8 @@ export function UploadArtworkBasic() {
         commentsCount: 0,
         isAI: false,
         aiAssistance: 'none' as const,
+        // Process video (supplemental behind-the-scenes video)
+        ...(processVideoUrl && { processVideoUrl }),
       };
 
       // Add dimensions if provided and adding to portfolio
@@ -1215,6 +1232,9 @@ export function UploadArtworkBasic() {
       setUseAccountEmail(true);
       setAlternativeEmail('');
       setDimensions({ width: '', height: '', unit: 'cm' });
+      if (processVideoPreview) URL.revokeObjectURL(processVideoPreview);
+      setProcessVideo(null);
+      setProcessVideoPreview(null);
 
       // Navigate to portfolio
       router.push('/profile?tab=portfolio');
@@ -1481,6 +1501,86 @@ export function UploadArtworkBasic() {
               rows={3}
             />
           </div>
+
+          {/* Process Video (Optional) - Only show when images are selected */}
+          {files.length > 0 && (
+            <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+              <Label>Process Video (Optional)</Label>
+              <p className="text-xs text-muted-foreground">
+                Add a behind-the-scenes video (max 60 seconds) showing your creative process. This will display alongside your artwork when viewers expand it.
+              </p>
+              
+              <Input
+                type="file"
+                id="processVideo"
+                accept="video/*"
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    // Validate video duration (max 60 seconds)
+                    try {
+                      const duration = await getVideoDuration(file);
+                      if (duration > 60) {
+                        toast({
+                          title: 'Video too long',
+                          description: `Process video is ${Math.round(duration)} seconds. Maximum length is 60 seconds.`,
+                          variant: 'destructive',
+                        });
+                        return;
+                      }
+                      setProcessVideo(file);
+                      setProcessVideoPreview(URL.createObjectURL(file));
+                    } catch (error) {
+                      toast({
+                        title: 'Error reading video',
+                        description: 'Could not read video file. Please try another file.',
+                        variant: 'destructive',
+                      });
+                    }
+                  }
+                }}
+                className="hidden"
+              />
+              
+              {processVideo ? (
+                <div className="relative rounded-lg overflow-hidden border bg-muted">
+                  <video
+                    src={processVideoPreview || ''}
+                    className="w-full max-h-48 object-contain"
+                    controls
+                    muted
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => {
+                      if (processVideoPreview) URL.revokeObjectURL(processVideoPreview);
+                      setProcessVideo(null);
+                      setProcessVideoPreview(null);
+                    }}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Remove
+                  </Button>
+                  <div className="absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                    Process Video
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('processVideo')?.click()}
+                  className="w-full"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Add Process Video
+                </Button>
+              )}
+            </div>
+          )}
 
           {/* Discovery Tags */}
           <div className="space-y-2">

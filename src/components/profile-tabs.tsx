@@ -930,6 +930,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           // Add main image/video URLs
           if (itemData.imageUrl) urlsToDelete.push(itemData.imageUrl);
           if (itemData.videoUrl) urlsToDelete.push(itemData.videoUrl);
+          if (itemData.processVideoUrl) urlsToDelete.push(itemData.processVideoUrl); // Process video
           if (itemData.videoVariants?.thumbnail) urlsToDelete.push(itemData.videoVariants.thumbnail);
           if (itemData.videoVariants?.full) urlsToDelete.push(itemData.videoVariants.full);
 

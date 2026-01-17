@@ -906,6 +906,18 @@ export function PortfolioManager() {
           }
         }
       }
+      
+      // Delete process video if exists (supplemental behind-the-scenes video)
+      const itemAny = item as any;
+      if (itemAny.processVideoUrl) {
+        try {
+          const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
+          await deleteCloudflareMediaByUrl(itemAny.processVideoUrl);
+          console.log('✅ Process video deleted from Cloudflare');
+        } catch (error) {
+          console.error('Error deleting process video:', error);
+        }
+      }
 
       // HARD DELETE from portfolioItems collection
       await PortfolioService.deletePortfolioItem(item.id);

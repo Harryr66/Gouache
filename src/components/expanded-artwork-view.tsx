@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share2, Bookmark, Flag, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Flag, MoreHorizontal, Play } from 'lucide-react';
 import { Artwork, Discussion } from '@/lib/types';
 import { useAuth } from '@/providers/auth-provider';
 import { useContent } from '@/providers/content-provider';
@@ -24,6 +24,10 @@ export function ExpandedArtworkView({ artwork, discussion, onClose }: ExpandedAr
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [showComments, setShowComments] = useState(false);
+    const [showProcessVideo, setShowProcessVideo] = useState(false);
+    
+    // Check if artwork has a process video
+    const processVideoUrl = (artwork as any).processVideoUrl;
 
     const isCreator = useMemo(() => {
         if (!user || !discussion) return false;
@@ -53,34 +57,62 @@ export function ExpandedArtworkView({ artwork, discussion, onClose }: ExpandedAr
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 md:p-6">
             <div className="bg-background rounded-lg max-w-2xl w-full max-h-[70vh] overflow-hidden shadow-2xl">
                 <div className="flex flex-col lg:flex-row h-full">
-                    {/* Image Section */}
-                    <div className="lg:w-2/3 bg-muted flex items-center justify-center p-4 allow-pinch-zoom">
-                        <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
-                            {(() => {
-                                // Use native img for Cloudflare Stream URLs to prevent Next.js Image optimization
-                                if (artwork.imageUrl && artwork.imageUrl.includes('cloudflarestream.com')) {
-                                    return (
+                    {/* Image/Video Section */}
+                    <div className="lg:w-2/3 bg-muted flex flex-col items-center justify-center p-4 allow-pinch-zoom">
+                        <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center flex-1">
+                            {showProcessVideo && processVideoUrl ? (
+                                // Show process video
+                                <video
+                                    src={processVideoUrl}
+                                    className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
+                                    controls
+                                    autoPlay
+                                    playsInline
+                                />
+                            ) : (
+                                // Show main image
+                                <>
+                                    {artwork.imageUrl && artwork.imageUrl.includes('cloudflarestream.com') ? (
                                         <img
                                             src={artwork.imageUrl}
                                             alt={artwork.imageAiHint}
                                             className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
                                             style={{ maxWidth: '100%', maxHeight: '100%' }}
                                         />
-                                    );
-                                }
-                                // Use Next.js Image for other URLs
-                                return (
-                                    <Image
-                                        src={artwork.imageUrl}
-                                        alt={artwork.imageAiHint}
-                                        width={800}
-                                        height={600}
-                                        className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
-                                        style={{ maxWidth: '100%', maxHeight: '100%' }}
-                                    />
-                                );
-                            })()}
+                                    ) : (
+                                        <Image
+                                            src={artwork.imageUrl}
+                                            alt={artwork.imageAiHint}
+                                            width={800}
+                                            height={600}
+                                            className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
+                                            style={{ maxWidth: '100%', maxHeight: '100%' }}
+                                        />
+                                    )}
+                                </>
+                            )}
                         </div>
+                        
+                        {/* Process Video Toggle */}
+                        {processVideoUrl && (
+                            <div className="mt-3 flex gap-2">
+                                <Button
+                                    variant={!showProcessVideo ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setShowProcessVideo(false)}
+                                >
+                                    Artwork
+                                </Button>
+                                <Button
+                                    variant={showProcessVideo ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setShowProcessVideo(true)}
+                                >
+                                    <Play className="h-4 w-4 mr-1" />
+                                    Process Video
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Details Section */}
