@@ -268,24 +268,22 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
         }
 
         try {
-          // PERFORMANCE: Use cached height if available, otherwise measure
+          // PERFORMANCE: Use cached height if available, otherwise measure once
           let itemHeight = itemHeightsRef.current.get(index);
-          
-          // Always try to measure the actual height first
-          const measuredHeight = Math.ceil(itemEl.offsetHeight) || 0;
-          
-          if (measuredHeight > 0) {
-            // We have a real measurement - use and cache it
-            itemHeight = measuredHeight;
-            itemHeightsRef.current.set(index, itemHeight);
-          } else if (itemHeight === undefined || itemHeight === 0) {
-            // No measurement and no cache - use estimate but DON'T cache it
-            // This ensures we'll measure again on next recalculation
-            const estimatedHeight = itemWidth * 1.2;
-            itemHeight = estimatedHeight;
-            // NOTE: Don't cache estimates - we want to re-measure when content loads
+          if (itemHeight === undefined || itemHeight === 0) {
+            // Only measure if not cached - getBoundingClientRect forces layout recalculation
+            itemHeight = Math.ceil(itemEl.offsetHeight) || 0;
+            if (itemHeight > 0) {
+              itemHeightsRef.current.set(index, itemHeight);
+            } else {
+              // Use estimated minimum height to prevent stacking at (0,0)
+              // Typical aspect ratio is ~4:3 or 16:9, so estimate based on width
+              const estimatedHeight = itemWidth * 1.2; // Slightly taller than square
+              itemHeight = estimatedHeight;
+              itemHeightsRef.current.set(index, itemHeight);
+              // Don't return - still calculate position to prevent overlap
+            }
           }
-          // If we have a cached height and no new measurement, use the cached value
           
           // Find shortest column
           const shortestColumnIndex = columnHeights.reduce(
@@ -518,7 +516,6 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
               width: positions[index]?.width || `${100 / columnCount}%`,
               opacity: positions[index] ? 1 : 0, // Hide items without calculated positions
               visibility: positions[index] ? 'visible' : 'hidden', // Prevent layout shift
-              zIndex: positions[index] ? 1 : 0, // Ensure positioned items are above unpositioned ones
               margin: 0,
               padding: 0,
               transition: 'none',
