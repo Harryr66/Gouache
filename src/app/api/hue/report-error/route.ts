@@ -92,20 +92,26 @@ Be specific, actionable, and use actual code paths from the error context. NO ge
       fix = 'AI fix generation failed. Manual review required.';
     }
 
-    // Send email with error report and fix
-    const emailResult = await sendErrorReportEmail({
-      errorMessage: message,
-      stack,
-      route,
-      timestamp,
-      userAgent,
-      userContext: userContext || 'No context provided',
-      fix,
-    });
+    // TEMPORARILY DISABLED: Email quota reached
+    // TODO: Re-enable when quota resets
+    const EMAIL_ENABLED = false;
+    
+    if (EMAIL_ENABLED) {
+      const emailResult = await sendErrorReportEmail({
+        errorMessage: message,
+        stack,
+        route,
+        timestamp,
+        userAgent,
+        userContext: userContext || 'No context provided',
+        fix,
+      });
 
-    if (!emailResult.success) {
-      console.error('Failed to send email:', emailResult.error);
-      // Still return success to user, but log the error
+      if (!emailResult.success) {
+        console.error('Failed to send email:', emailResult.error);
+      }
+    } else {
+      console.log('Hue error report received (email disabled):', { message, route });
     }
 
     return NextResponse.json({
