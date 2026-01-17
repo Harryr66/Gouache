@@ -1676,8 +1676,35 @@ export function UploadArtworkBasic() {
             </p>
           </div>
 
-          {/* All uploads go to Portfolio - Dimensions and Sale options */}
-          <>
+          {/* Mark for Sale Toggle - Prominent styled section */}
+          <div className="p-5 rounded-xl border-2 border-primary/40 bg-primary/5 space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-2 flex-1">
+                <h3 className="text-lg font-bold text-foreground">
+                  Mark for Sale
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Enable to list this artwork in your shop with pricing and delivery options.
+                </p>
+              </div>
+              <div className="flex-shrink-0 pt-1">
+                <Switch
+                  id="isForSale"
+                  checked={isForSale}
+                  onCheckedChange={(checked) => startTransition(() => setIsForSale(checked))}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-primary/80 font-medium">
+              {isForSale ? '✓ This artwork will appear in your shop' : 'Not for sale'}
+            </p>
+          </div>
+
+          {/* Sale Options (only shown if for sale) */}
+          {isForSale && (
+            <div className="space-y-4 p-4 border rounded-lg border-l-2 border-primary/30">
+              <Label className="text-base font-semibold mb-4 block">Sale Details</Label>
+              
               {/* Dimensions */}
               <div className="space-y-2">
                 <Label>Dimensions (Optional)</Label>
@@ -1714,31 +1741,6 @@ export function UploadArtworkBasic() {
                 </div>
               </div>
 
-              {/* Mark for Sale */}
-              <div className="space-y-4 p-4 border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label htmlFor="isForSale" className="cursor-pointer text-base font-semibold">
-                      Mark this item for sale
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Enable this to list this artwork in your shop.
-                    </p>
-                  </div>
-                  <Switch
-                    id="isForSale"
-                    checked={isForSale}
-                    onCheckedChange={(checked) => startTransition(() => setIsForSale(checked))}
-                  />
-                </div>
-              </div>
-            </>
-
-          {/* Sale Options (only shown if for sale) */}
-          {isForSale && (
-            <div className="space-y-4 p-4 border rounded-lg border-l-2">
-              <Label className="text-base font-semibold mb-4 block">Pricing & Delivery</Label>
-              
               {/* Artwork Type */}
               <div className="space-y-2">
                 <Label>Artwork Type</Label>
