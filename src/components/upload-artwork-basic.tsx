@@ -84,7 +84,7 @@ export function UploadArtworkBasic() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const [addToPortfolio, setAddToPortfolio] = useState(false); // Default to false - content goes to Discover only unless toggle is enabled
+  const [addToPortfolio, setAddToPortfolio] = useState(true); // Always add to portfolio - Discover-only content removed
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentUploadingFile, setCurrentUploadingFile] = useState<string>('');
   const [bulkUploadSeparately, setBulkUploadSeparately] = useState(false); // Bulk upload each file separately
@@ -1676,41 +1676,8 @@ export function UploadArtworkBasic() {
             </p>
           </div>
 
-          {/* Add to Portfolio Toggle */}
-          <div className="p-5 rounded-xl border-2 border-primary/40 bg-primary/5 space-y-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-2 flex-1">
-                <h3 className="text-lg font-bold text-foreground">
-                  This is an Artwork
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Enable to mark this as artwork and add to your profile's portfolio. When disabled, this will be posted as discover content only.
-                </p>
-              </div>
-              <div className="flex-shrink-0 pt-1">
-                <Switch
-                  id="addToPortfolio"
-                  checked={addToPortfolio}
-                  onCheckedChange={(checked) => {
-                    startTransition(() => {
-                      setAddToPortfolio(checked);
-                      // Reset for sale when portfolio toggle is disabled
-                      if (!checked) {
-                        setIsForSale(false);
-                      }
-                    });
-                  }}
-                />
-              </div>
-            </div>
-            <p className="text-xs text-primary/80 font-medium">
-              Add to my portfolio
-            </p>
-          </div>
-
-          {/* Only show Dimensions and Sale options if adding to portfolio */}
-          {addToPortfolio && (
-            <>
+          {/* All uploads go to Portfolio - Dimensions and Sale options */}
+          <>
               {/* Dimensions */}
               <div className="space-y-2">
                 <Label>Dimensions (Optional)</Label>
@@ -1766,7 +1733,6 @@ export function UploadArtworkBasic() {
                 </div>
               </div>
             </>
-          )}
 
           {/* Sale Options (only shown if for sale) */}
           {isForSale && (

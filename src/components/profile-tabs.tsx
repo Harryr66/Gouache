@@ -1333,10 +1333,10 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
   console.log('🎯 ProfileTabs render:', { isProfessional, userId, isOwnProfile, hideShop, hideLearn });
 
   if (isProfessional) {
-    // For professional artists, show tabs: Portfolio, Discover, Shop (if enabled), Learn (if enabled)
+    // For professional artists, show tabs: Portfolio, Shop (if enabled), Learn (if enabled)
+    // Discover tab removed - all content goes to Portfolio
     const visibleTabs = [
       { value: 'portfolio', label: 'Portfolio', icon: Palette },
-      { value: 'discover', label: 'Discover', icon: Eye },
       ...(hideShop ? [] : [{ value: 'shop', label: 'Shop', icon: ShoppingBag }]),
       ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: Brain }]),
     ];
@@ -1389,10 +1389,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           </TabsContent>
         )}
 
-        {/* Discover Tab - Shows generic content (not marked as artwork) */}
-        <TabsContent value="discover" className="space-y-4">
-          <DiscoverContentDisplay userId={userId} isOwnProfile={isOwnProfile} />
-        </TabsContent>
+        {/* Discover Tab removed - all content now goes to Portfolio */}
 
         {/* Learn Tab */}
         {!hideLearn && (

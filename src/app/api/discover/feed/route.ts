@@ -123,6 +123,15 @@ export async function GET(request: NextRequest) {
         return false;
       }
       
+      // CRITICAL: Only show Portfolio artworks OR Shop items
+      // Filter out "discover-only" content that's not in portfolio
+      const isInPortfolio = item.showInPortfolio === true;
+      const isForSale = item.isForSale === true || item.showInShop === true;
+      if (!isInPortfolio && !isForSale) {
+        // Not in portfolio and not for sale - skip this item
+        return false;
+      }
+      
       // CRITICAL: Artwork MUST have a valid userId to appear in Discover
       // This prevents orphaned/misconfigured content from appearing
       const userId = item.userId || item.artistId || item.artist?.id || item.artist?.userId;
