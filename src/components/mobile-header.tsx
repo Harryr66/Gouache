@@ -1,66 +1,16 @@
-
 'use client';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Settings, Fingerprint } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { Settings } from 'lucide-react';
 
 export function MobileHeader() {
-  const pathname = usePathname();
-  const headerRef = useRef<HTMLElement>(null);
-
-  // Add native event listeners as absolute fallback
-  useEffect(() => {
-    if (!headerRef.current) return;
-    
-    const header = headerRef.current;
-    const links = header.querySelectorAll('a');
-    
-    const nativeHandlers = Array.from(links).map((link) => {
-      const handleNativeClick = (e: Event) => {
-        const href = (link as HTMLAnchorElement).href;
-        if (href && href !== window.location.href) {
-          window.location.href = href;
-        }
-      };
-      
-      link.addEventListener('click', handleNativeClick, { capture: true, passive: false });
-      return { link, handler: handleNativeClick };
-    });
-    
-    return () => {
-      nativeHandlers.forEach(({ link, handler }) => {
-        link.removeEventListener('click', handler, { capture: true });
-      });
-    };
-  }, []);
-
   return (
-    <header 
-      ref={headerRef}
-      className="sticky top-0 z-[9999] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden"
-      style={{ 
-        position: 'sticky', // Explicitly set to ensure it's in root stacking context
-        pointerEvents: 'auto', // Ensure header is always clickable
-        touchAction: 'manipulation', // Optimize touch handling on mobile
-        isolation: 'isolate', // Create new stacking context to ensure it's always on top
-        zIndex: 9999, // Maximum z-index
-      }}
-    >
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
       <div className="container flex min-h-14 items-center pt-4 pb-4 pl-2">
         {/* Gouache Logo */}
         <div className="flex-shrink-0">
-          <Link 
-            href="/" 
-            className="flex items-center pl-2"
-            style={{
-              pointerEvents: 'auto', // Ensure logo link is clickable
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
+          <Link href="/" className="flex items-center pl-2">
             <span className="sr-only">Gouache</span>
             <img
               src="/assets/gouache-logo-light-20241111.png"
@@ -79,40 +29,14 @@ export function MobileHeader() {
           </Link>
         </div>
         
-        {/* Action Buttons - Settings only (Profile moved to bottom nav) */}
+        {/* Settings Button */}
         <div className="flex flex-1 items-center justify-end">
-            <Button 
-              variant="ghost"
-              size="icon" 
-              className="h-9 w-9 rounded-lg"
-              asChild
-              style={{
-                pointerEvents: 'auto',
-                touchAction: 'manipulation',
-                zIndex: 1,
-              }}
-            >
-              <Link 
-                href="/settings"
-                style={{
-                  pointerEvents: 'auto',
-                  touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent',
-                  zIndex: 1,
-                }}
-                onClick={(e) => {
-                  // Ensure click is not prevented
-                  e.stopPropagation();
-                  // Force navigation as backup
-                  if (!e.defaultPrevented) {
-                    window.location.href = '/settings';
-                  }
-                }}
-              >
-                <Settings className="h-5 w-5" />
-                <span className="sr-only">Settings</span>
-              </Link>
-            </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" asChild>
+            <Link href="/settings">
+              <Settings className="h-5 w-5" />
+              <span className="sr-only">Settings</span>
+            </Link>
+          </Button>
         </div>
       </div>
     </header>
