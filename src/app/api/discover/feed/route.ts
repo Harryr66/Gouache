@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
     // COMPREHENSIVE FILTERING: ONLY Cloudflare media + ONLY artworks (no products/courses/merch)
     // Track filter rejection reasons for debugging
     const filterRejections = {
+      noUserId: 0,
       events: 0,
       productType: 0,
       productArtworkType: 0,
@@ -115,6 +116,15 @@ export async function GET(request: NextRequest) {
     };
     
     const filteredArtworksItems = artworksItems.filter((item: any) => {
+      // CRITICAL: Artwork MUST have a valid userId to appear in Discover
+      // This prevents orphaned/misconfigured content from appearing
+      const userId = item.userId || item.artistId || item.artist?.id || item.artist?.userId;
+      if (!userId) {
+        console.log('🚫 API FILTERED (no userId):', item.id, item.title);
+        filterRejections.noUserId++;
+        return false;
+      }
+      
       // Skip events
       if (item.type === 'event' || item.type === 'Event' || item.eventType) {
         filterRejections.events++;
@@ -222,6 +232,13 @@ export async function GET(request: NextRequest) {
     // CRITICAL: Also filter portfolioItems - products might be in portfolioItems collection!
     // Apply the same comprehensive filtering to portfolio items
     const filteredPortfolioItems = portfolioResult.items.filter((item: any) => {
+      // CRITICAL: Must have valid userId
+      const userId = item.userId || item.artistId || item.artist?.id || item.artist?.userId;
+      if (!userId) {
+        filterRejections.noUserId++;
+        return false;
+      }
+      
       // Skip events
       if (item.type === 'event' || item.type === 'Event' || item.eventType) {
         filterRejections.events++;
