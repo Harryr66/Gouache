@@ -1282,7 +1282,9 @@ export function PortfolioManager() {
                       const itemData = itemDoc.data();
                       
                       // Delete media from Cloudflare
-                      const urls = [itemData.imageUrl, itemData.videoUrl, ...(itemData.supportingImages || []), ...(itemData.mediaUrls || [])].filter(Boolean);
+                      const supportingImgs = Array.isArray(itemData.supportingImages) ? itemData.supportingImages : [];
+                      const mediaUrlsArr = Array.isArray(itemData.mediaUrls) ? itemData.mediaUrls : [];
+                      const urls = [itemData.imageUrl, itemData.videoUrl, ...supportingImgs, ...mediaUrlsArr].filter(Boolean);
                       for (const url of urls) {
                         if (url?.includes('cloudflarestream.com') || url?.includes('imagedelivery.net')) {
                           await deleteCloudflareMediaByUrl(url);

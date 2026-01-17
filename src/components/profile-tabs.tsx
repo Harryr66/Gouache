@@ -251,7 +251,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                     if (!courseDoc.exists()) continue;
                     const courseData = courseDoc.data();
                     
-                    const urls = [courseData.thumbnail, courseData.videoUrl, ...(courseData.mediaUrls || [])].filter(Boolean);
+                    const mediaUrlsArr = Array.isArray(courseData.mediaUrls) ? courseData.mediaUrls : [];
+                    const urls = [courseData.thumbnail, courseData.videoUrl, ...mediaUrlsArr].filter(Boolean);
                     for (const url of urls) {
                       if (url?.includes('cloudflarestream.com') || url?.includes('imagedelivery.net')) {
                         await deleteCloudflareMediaByUrl(url);
@@ -1144,7 +1145,9 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
                   const { writeBatch, doc: firestoreDoc } = await import('firebase/firestore');
                   
                   for (const item of discoverContent) {
-                    const urls = [item.imageUrl, item.videoUrl, ...(item.supportingImages || []), ...(item.mediaUrls || [])].filter(Boolean);
+                    const supportingImgs = Array.isArray(item.supportingImages) ? item.supportingImages : [];
+                    const mediaUrlsArr = Array.isArray(item.mediaUrls) ? item.mediaUrls : [];
+                    const urls = [item.imageUrl, item.videoUrl, ...supportingImgs, ...mediaUrlsArr].filter(Boolean);
                     for (const url of urls) {
                       if (url?.includes('cloudflarestream.com') || url?.includes('imagedelivery.net')) {
                         await deleteCloudflareMediaByUrl(url);
