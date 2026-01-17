@@ -257,7 +257,12 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
             if (itemHeight > 0) {
               itemHeightsRef.current.set(index, itemHeight);
             } else {
-              return; // Skip items with no height
+              // Use estimated minimum height to prevent stacking at (0,0)
+              // Typical aspect ratio is ~4:3 or 16:9, so estimate based on width
+              const estimatedHeight = itemWidth * 1.2; // Slightly taller than square
+              itemHeight = estimatedHeight;
+              itemHeightsRef.current.set(index, itemHeight);
+              // Don't return - still calculate position to prevent overlap
             }
           }
           
@@ -417,7 +422,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
               top: positions[index]?.top ?? 0,
               left: positions[index]?.left ?? 0,
               width: positions[index]?.width || `${100 / columnCount}%`,
-              opacity: 1,
+              opacity: positions[index] ? 1 : 0, // Hide items without calculated positions
+              visibility: positions[index] ? 'visible' : 'hidden', // Prevent layout shift
               margin: 0,
               padding: 0,
               transition: 'none',
