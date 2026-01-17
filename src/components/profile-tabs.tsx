@@ -739,6 +739,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     const [discoverContent, setDiscoverContent] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [itemToDelete, setItemToDelete] = useState<{ id: string; type: string } | null>(null);
+    const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+    const [isDeletingAll, setIsDeletingAll] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -1100,9 +1102,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
         </Card>
       );
     }
-
-    const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
-    const [isDeletingAll, setIsDeletingAll] = useState(false);
 
     const handleDeleteAll = async () => {
       setIsDeletingAll(true);
