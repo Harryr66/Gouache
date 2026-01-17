@@ -1,26 +1,23 @@
 'use client';
 
 import React from 'react';
-import { LayoutGrid } from 'lucide-react';
+import { Users, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ViewSelectorProps {
-  view: 'grid' | 'list';
+  view: 'grid' | 'list'; // 'list' = following only, 'grid' = all content
   onViewChange: (view: 'grid' | 'list') => void;
   className?: string;
   style?: React.CSSProperties;
   disabled?: boolean;
 }
 
-// Images only - single grid button for symmetry
+/**
+ * View Selector Toggle
+ * Left: Following (artists you follow only)
+ * Right: All (discover all content) - DEFAULT
+ */
 export function ViewSelector({ view, onViewChange, className, style, disabled = false }: ViewSelectorProps) {
-  // Force grid view only
-  React.useEffect(() => {
-    if (view !== 'grid') {
-      onViewChange('grid');
-    }
-  }, [view, onViewChange]);
-
   const hasExplicitWidth = className?.includes('w-[') || className?.includes('w-1/') || className?.includes('!w-') || className?.includes('flex-[') || style?.flex;
   
   return (
@@ -33,9 +30,30 @@ export function ViewSelector({ view, onViewChange, className, style, disabled = 
       )}
       style={style}
     >
-      {/* Single grid button - images only */}
+      {/* Following button (left) */}
       <button
-        className="flex-1 flex items-center justify-center h-full relative z-10 bg-muted rounded-[4px] m-0.5"
+        onClick={() => !disabled && onViewChange('list')}
+        disabled={disabled}
+        className={cn(
+          'flex-1 flex items-center justify-center h-full relative z-10 rounded-[4px] m-0.5 transition-colors',
+          view === 'list' ? 'bg-muted' : 'bg-transparent hover:bg-muted/50',
+          disabled && 'opacity-50 cursor-not-allowed'
+        )}
+        title="Following only"
+      >
+        <Users className="h-4 w-4" />
+      </button>
+      
+      {/* All content button (right) - default */}
+      <button
+        onClick={() => !disabled && onViewChange('grid')}
+        disabled={disabled}
+        className={cn(
+          'flex-1 flex items-center justify-center h-full relative z-10 rounded-[4px] m-0.5 transition-colors',
+          view === 'grid' ? 'bg-muted' : 'bg-transparent hover:bg-muted/50',
+          disabled && 'opacity-50 cursor-not-allowed'
+        )}
+        title="All content"
       >
         <LayoutGrid className="h-4 w-4" />
       </button>

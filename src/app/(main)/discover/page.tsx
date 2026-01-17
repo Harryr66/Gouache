@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition, useCallback } from 'react';
-import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp, Loader2 } from 'lucide-react';
+import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp, Loader2, Users } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
@@ -2884,8 +2884,28 @@ function DiscoverPageContent() {
       totalArtworks: realArtworks.length,
       artworkIds: realArtworks.slice(0, 10).map((a: any) => a.id),
       displayedIdsCount: displayedItemIdsRef.current.size,
-      sortBy: sortBy
+      sortBy: sortBy,
+      artworkView: artworkView
     });
+    
+    // FOLLOWING FILTER: When artworkView is 'list', show only followed artists' content
+    if (artworkView === 'list') {
+      const followedArtistsForFilter = getFollowedArtists();
+      const followedIds = new Set(followedArtistsForFilter.map(a => a.id));
+      
+      if (followedIds.size > 0) {
+        realArtworks = realArtworks.filter(artwork => {
+          const artworkAny = artwork as any;
+          const artistId = artwork.artist?.id || artworkAny.userId || artworkAny.artistId;
+          return artistId && followedIds.has(artistId);
+        });
+        log('🔍 Following filter applied:', { followedCount: followedIds.size, afterFilter: realArtworks.length });
+      } else {
+        // No followed artists - show empty state
+        realArtworks = [];
+        log('🔍 Following filter: No followed artists, showing empty');
+      }
+    }
     
     // PERFORMANCE: Combine all user filters into single pass FIRST
     // CRITICAL: Filter BEFORE splitting to preserve displayed items
@@ -3033,7 +3053,7 @@ function DiscoverPageContent() {
     // INSTAGRAM/PINTEREST-LEVEL: Return stable sorted array to prevent content reloading
     // This ensures once content is displayed, it stays static
     return sorted;
-  }, [baseFilteredArtworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements, getFollowedArtists]);
+  }, [baseFilteredArtworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements, getFollowedArtists, artworkView]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
@@ -3726,28 +3746,90 @@ function DiscoverPageContent() {
               />
             ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
-                {/* Video feed - Only videos, 1 per row, 1 column, full width */}
+                {/* Following feed - Images from artists you follow only */}
                 {(() => {
-                  // CRITICAL: Log all artworks first to see what we're working with
-                  console.log('🎬 VIDEO FEED DEBUG - All visibleFilteredArtworks:', {
-                    total: visibleFilteredArtworks.length,
-                    sample: visibleFilteredArtworks.slice(0, 5).map((item: any) => ({
-                      id: item.id,
-                      title: item.title,
-                      videoUrl: item.videoUrl,
-                      mediaType: item.mediaType,
-                      mediaUrls: item.mediaUrls,
-                      mediaTypes: item.mediaTypes,
-                      imageUrl: item.imageUrl,
-                      allKeys: Object.keys(item)
-                    }))
+                  // Following mode shows ONLY content from followed artists
+                  console.log('👥 FOLLOWING FEED - filteredAndSortedArtworks:', {
+                    total: filteredAndSortedArtworks.length
                   });
                   
-                  // Filter to only videos for video feed (list view)
-                  const videoArtworks = visibleFilteredArtworks.filter((item) => {
-                    if ('type' in item && item.type === 'ad') return false; // Exclude ads
+                  // Filter to only images (same as grid view) from followed artists
+                  const followingArtworks = filteredAndSortedArtworks.filter((item) => {
+                    if ('type' in item && item.type === 'ad') return true; // Keep ads
+                    const artwork = item as Artwork;
+                    const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+                    if (hasVideo) return false; // Filter out videos
                     
-                    // Access videoUrl directly from item (not through artwork cast)
+                    const imageUrl = artwork.imageUrl || (artwork as any).supportingImages?.[0] || (artwork as any).images?.[0] || '';
+                    if (!imageUrl) return false;
+                    if (!isCloudflareImage(imageUrl)) return false;
+                    if (!isValidCloudflareImageUrl(imageUrl)) return false;
+                    
+                    return true;
+                  });
+                  
+                  // If no content from followed artists, show empty state
+                  if (followingArtworks.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                        <Users className="h-16 w-16 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">No content from artists you follow</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Follow artists to see their work here, or switch to "All" to discover new artists.
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={() => setArtworkView('grid')}
+                        >
+                          Discover All Artists
+                        </Button>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <MasonryGrid
+                      items={followingArtworks}
+                      columnCount={columnCount}
+                      gap={4}
+                      renderItem={(item) => {
+                        const isAd = 'type' in item && item.type === 'ad';
+                        if (isAd) {
+                          return (
+                            <AdTile
+                              campaign={item.campaign}
+                              placement="discover"
+                              userId={user?.id}
+                              isMobile={isMobile}
+                            />
+                          );
+                        }
+                        
+                        const artwork = item as Artwork;
+                        const isInitial = followingArtworks.indexOf(item) < 12;
+                        
+                        return (
+                          <ArtworkTile 
+                            artwork={artwork} 
+                            hideBanner={false}
+                            isInitialViewport={isInitial}
+                          />
+                        );
+                      }}
+                      loadMoreRef={loadMoreRef}
+                      isLoadingMore={isLoadingMore}
+                    />
+                  );
+                })()}
+              </>
+            ) : !showLoadingScreen ? (
+              <>
+                {/* Legacy video feed fallback - should not reach here */}
+                {(() => {
+                  console.log('⚠️ Legacy video feed path reached');
+                  
+                  const videoArtworks = visibleFilteredArtworks.filter((item) => {
+                    if ('type' in item && item.type === 'ad') return false;
                     const videoUrl = (item as any).videoUrl || '';
                     const mediaType = (item as any).mediaType || '';
                     const mediaUrls = (item as any).mediaUrls || [];
