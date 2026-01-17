@@ -390,6 +390,82 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
     };
   }, [items.length, columnCount, gap, items]);
 
+  // Separate effect to observe new items and recalculate positions when items change
+  useEffect(() => {
+    if (!resizeObserverRef.current || items.length === 0) return;
+    
+    // When items change, observe any new items and trigger recalculation
+    const observeNewItems = () => {
+      itemRefs.current.forEach((itemEl, index) => {
+        if (itemEl && index < items.length && resizeObserverRef.current) {
+          try {
+            resizeObserverRef.current.observe(itemEl);
+          } catch (e) {
+            // Item might already be observed, ignore
+          }
+        }
+      });
+    };
+    
+    // Observe after a short delay to allow new items to render
+    const timeoutId = setTimeout(() => {
+      observeNewItems();
+      // Also trigger a recalculation for new items
+      // Force recalculation by temporarily clearing and re-setting positions
+      const recalculate = () => {
+        if (!containerRef.current) return;
+        
+        const containerWidth = containerRef.current.offsetWidth;
+        if (!containerWidth || containerWidth <= 0 || !columnCount || columnCount <= 0) return;
+        
+        const totalGapSpace = gap * (columnCount - 1);
+        const itemWidth = (containerWidth - totalGapSpace) / columnCount;
+        if (itemWidth <= 0 || !isFinite(itemWidth)) return;
+        
+        const columnHeights = new Array(columnCount).fill(0);
+        const newPositions: Array<{ top: number; left: number; width: number } | null> = new Array(items.length).fill(null);
+
+        for (let index = 0; index < items.length; index++) {
+          const itemEl = itemRefs.current[index];
+          if (!itemEl) continue;
+
+          let itemHeight = itemHeightsRef.current.get(index);
+          if (itemHeight === undefined || itemHeight === 0) {
+            itemHeight = Math.ceil(itemEl.offsetHeight) || 0;
+            if (itemHeight > 0) {
+              itemHeightsRef.current.set(index, itemHeight);
+            } else {
+              continue;
+            }
+          }
+          
+          const shortestColumnIndex = columnHeights.reduce(
+            (minIndex, height, colIndex) => 
+              height < columnHeights[minIndex] ? colIndex : minIndex,
+            0
+          );
+          
+          const left = shortestColumnIndex * (itemWidth + gap);
+          const currentColumnHeight = columnHeights[shortestColumnIndex];
+          const top = currentColumnHeight === 0 ? 0 : Math.ceil(currentColumnHeight) + gap;
+          
+          if (isFinite(top) && isFinite(left) && isFinite(itemWidth)) {
+            newPositions[index] = { top, left, width: itemWidth };
+            columnHeights[shortestColumnIndex] = top + itemHeight;
+          }
+        }
+
+        if (newPositions.some(p => p !== null)) {
+          setPositions(newPositions as Array<{ top: number; left: number; width: number }>);
+        }
+      };
+      
+      recalculate();
+    }, 150);
+    
+    return () => clearTimeout(timeoutId);
+  }, [items.length, columnCount, gap]);
+
   // PERFORMANCE: Memoize container height calculation to avoid recalculating on every render
   const containerHeight = useMemo(() => {
     if (positions.length === 0 || itemRefs.current.length === 0) return 0;
