@@ -1105,90 +1105,109 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
 
     const handleDeleteAll = async () => {
       setIsDeletingAll(true);
-      try {
-        const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
-        const batch = writeBatch(db);
-        let deleteCount = 0;
+      
+      // Use setTimeout to allow UI to update before heavy processing
+      setTimeout(async () => {
+        try {
+          const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
+          const batch = writeBatch(db);
+          const deleteCount = discoverContent.length;
 
-        for (const item of discoverContent) {
-          // Get full item data for media URLs
-          let itemData: any = null;
-          if (item.type === 'artwork') {
-            const artworkDoc = await getDoc(doc(db, 'artworks', item.id));
-            if (artworkDoc.exists()) {
-              itemData = artworkDoc.data();
+          // Collect all URLs and batch operations in parallel
+          const allUrlsToDelete: string[] = [];
+          const relatedPostQueries: Promise<any>[] = [];
+
+          // Phase 1: Collect all data in parallel (non-blocking)
+          const itemDataPromises = discoverContent.map(async (item) => {
+            let itemData: any = null;
+            if (item.type === 'artwork') {
+              const artworkDoc = await getDoc(doc(db, 'artworks', item.id));
+              if (artworkDoc.exists()) itemData = artworkDoc.data();
+            } else if (item.type === 'post') {
+              const postDoc = await getDoc(doc(db, 'posts', item.id));
+              if (postDoc.exists()) itemData = postDoc.data();
             }
-          } else if (item.type === 'post') {
-            const postDoc = await getDoc(doc(db, 'posts', item.id));
-            if (postDoc.exists()) {
-              itemData = postDoc.data();
+            return { item, itemData };
+          });
+
+          const itemsWithData = await Promise.all(itemDataPromises);
+
+          // Phase 2: Prepare batch operations and collect URLs
+          for (const { item, itemData } of itemsWithData) {
+            if (itemData) {
+              if (itemData.imageUrl) allUrlsToDelete.push(itemData.imageUrl);
+              if (itemData.videoUrl) allUrlsToDelete.push(itemData.videoUrl);
+              if (itemData.processVideoUrl) allUrlsToDelete.push(itemData.processVideoUrl);
+              if (itemData.supportingImages) allUrlsToDelete.push(...itemData.supportingImages);
+              if (itemData.mediaUrls) allUrlsToDelete.push(...itemData.mediaUrls);
             }
-          }
 
-          // Delete media from Cloudflare/Firebase
-          if (itemData) {
-            const urlsToDelete: string[] = [];
-            if (itemData.imageUrl) urlsToDelete.push(itemData.imageUrl);
-            if (itemData.videoUrl) urlsToDelete.push(itemData.videoUrl);
-            if (itemData.processVideoUrl) urlsToDelete.push(itemData.processVideoUrl);
-            if (itemData.supportingImages) urlsToDelete.push(...itemData.supportingImages);
-            if (itemData.mediaUrls) urlsToDelete.push(...itemData.mediaUrls);
-
-            for (const url of urlsToDelete) {
-              if (!url || typeof url !== 'string') continue;
-              try {
-                if (url.includes('cloudflarestream.com') || url.includes('imagedelivery.net')) {
-                  await deleteCloudflareMediaByUrl(url);
-                } else if (url.includes('firebasestorage.googleapis.com')) {
-                  const urlParts = url.split('/o/');
-                  if (urlParts.length > 1) {
-                    const pathParts = urlParts[1].split('?');
-                    const storagePath = decodeURIComponent(pathParts[0]);
-                    const fileRef = ref(storage, storagePath);
-                    await deleteObject(fileRef);
-                  }
-                }
-              } catch (e) {
-                console.error('Error deleting media:', e);
+            if (item.type === 'artwork') {
+              batch.delete(doc(db, 'artworks', item.id));
+              batch.delete(doc(db, 'portfolioItems', item.id));
+              relatedPostQueries.push(
+                getDocs(query(collection(db, 'posts'), where('artworkId', '==', item.id)))
+                  .then(snapshot => snapshot.forEach(postDoc => batch.delete(postDoc.ref)))
+                  .catch(() => {})
+              );
+            } else if (item.type === 'post') {
+              batch.delete(doc(db, 'posts', item.id));
+              if (item.artworkId) {
+                batch.delete(doc(db, 'artworks', item.artworkId));
+                batch.delete(doc(db, 'portfolioItems', item.artworkId));
               }
             }
           }
 
-          // Delete from Firestore
-          if (item.type === 'artwork') {
-            batch.delete(doc(db, 'artworks', item.id));
-            batch.delete(doc(db, 'portfolioItems', item.id));
-            // Delete related posts
-            const postsQuery = query(collection(db, 'posts'), where('artworkId', '==', item.id));
-            const postsSnapshot = await getDocs(postsQuery);
-            postsSnapshot.forEach((postDoc) => batch.delete(postDoc.ref));
-          } else if (item.type === 'post') {
-            batch.delete(doc(db, 'posts', item.id));
-            if (item.artworkId) {
-              batch.delete(doc(db, 'artworks', item.artworkId));
-              batch.delete(doc(db, 'portfolioItems', item.artworkId));
-            }
-          }
-          deleteCount++;
-        }
+          // Wait for related post queries
+          await Promise.all(relatedPostQueries);
 
-        await batch.commit();
-        setDiscoverContent([]);
-        toast({
-          title: "All content deleted",
-          description: `Successfully deleted ${deleteCount} items from your discover tab.`,
-        });
-      } catch (error) {
-        console.error('Error deleting all discover content:', error);
-        toast({
-          title: "Delete failed",
-          description: "Failed to delete all content. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsDeletingAll(false);
-        setShowDeleteAllDialog(false);
-      }
+          // Phase 3: Commit Firestore batch first (fast)
+          await batch.commit();
+          
+          // Update UI immediately after Firestore commit
+          setDiscoverContent([]);
+          toast({
+            title: "All content deleted",
+            description: `Successfully deleted ${deleteCount} items from your discover tab.`,
+          });
+
+          // Phase 4: Delete media in background (don't block UI)
+          // Fire and forget - media deletion happens async
+          Promise.all(
+            allUrlsToDelete
+              .filter(url => url && typeof url === 'string')
+              .map(async (url) => {
+                try {
+                  if (url.includes('cloudflarestream.com') || url.includes('imagedelivery.net')) {
+                    await deleteCloudflareMediaByUrl(url);
+                  } else if (url.includes('firebasestorage.googleapis.com')) {
+                    const urlParts = url.split('/o/');
+                    if (urlParts.length > 1) {
+                      const pathParts = urlParts[1].split('?');
+                      const storagePath = decodeURIComponent(pathParts[0]);
+                      const fileRef = ref(storage, storagePath);
+                      await deleteObject(fileRef);
+                    }
+                  }
+                } catch (e) {
+                  console.error('Error deleting media (background):', e);
+                }
+              })
+          ).catch(console.error);
+
+        } catch (error) {
+          console.error('Error deleting all discover content:', error);
+          toast({
+            title: "Delete failed",
+            description: "Failed to delete all content. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsDeletingAll(false);
+          setShowDeleteAllDialog(false);
+        }
+      }, 50); // Small delay to let UI update
     };
 
     return (
