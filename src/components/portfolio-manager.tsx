@@ -1265,8 +1265,45 @@ export function PortfolioManager() {
         
         return (
           <>
-            {/* Delete All Button */}
-            <div className="flex justify-end mb-4">
+            {/* Delete All Buttons */}
+            <div className="flex justify-end gap-2 mb-4">
+              {/* NUKE DATABASE - deletes ALL content from all collections */}
+              <Button
+                variant="destructive"
+                className="bg-black hover:bg-gray-900 border-2 border-red-500"
+                onClick={async () => {
+                  if (!confirm('⚠️ NUCLEAR OPTION ⚠️\n\nThis will delete ALL content from the ENTIRE DATABASE:\n- All artworks\n- All portfolio items\n- All posts\n- All courses\n\nAre you absolutely sure?')) return;
+                  if (!confirm('FINAL WARNING: This is irreversible. Type "DELETE" in the next prompt to confirm.')) return;
+                  const typed = prompt('Type DELETE to confirm:');
+                  if (typed !== 'DELETE') {
+                    toast({ title: "Cancelled", description: "You didn't type DELETE." });
+                    return;
+                  }
+                  
+                  try {
+                    toast({ title: "Nuking...", description: "Deleting all database content..." });
+                    const res = await fetch('/api/admin/nuke-all-content', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ deleteAll: true }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      toast({ title: "Database Nuked", description: `Deleted ${data.total} items: ${data.deleted.artworks} artworks, ${data.deleted.portfolioItems} portfolio, ${data.deleted.posts} posts, ${data.deleted.courses} courses` });
+                      setPortfolioItems([]);
+                      // Force page reload to clear all caches
+                      window.location.reload();
+                    } else {
+                      toast({ variant: 'destructive', title: 'Nuke Failed', description: data.error });
+                    }
+                  } catch (error: any) {
+                    toast({ variant: 'destructive', title: 'Nuke Failed', description: error.message });
+                  }
+                }}
+              >
+                ☢️ NUKE DATABASE
+              </Button>
+              
               <Button
                 variant="destructive"
                 onClick={async () => {
