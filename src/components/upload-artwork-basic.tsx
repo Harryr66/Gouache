@@ -1215,23 +1215,23 @@ export function UploadArtworkBasic() {
       <CardHeader>
         <CardTitle>Discover Uploads</CardTitle>
         <CardDescription>
-          Upload images & videos to showcase in your portfolio, creation process & get discovered by new fans.
+          Upload images to showcase in your portfolio and get discovered by new fans.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Media Upload (Images & Videos) */}
+          {/* Media Upload (Images Only) */}
           <div className="space-y-2">
-            <Label>Images & Videos *</Label>
+            <Label>Images *</Label>
             <p className="text-xs text-muted-foreground">
-              Upload images or short videos (max 60 seconds). Videos will autoplay in the discover feed.
+              Upload images to showcase your artwork.
             </p>
             
-            {/* Hidden file input */}
+            {/* Hidden file input - IMAGES ONLY */}
             <Input
               type="file"
               id="images"
-              accept="image/*,video/*"
+              accept="image/*"
               multiple
               onChange={handleFileChange}
               className="hidden"
@@ -1251,9 +1251,9 @@ export function UploadArtworkBasic() {
             >
               {files.length === 0 ? (
                 <div className="text-center space-y-2">
-                  <p className="text-sm font-medium">Click or drag images and videos here</p>
+                  <p className="text-sm font-medium">Click or drag images here</p>
                   <p className="text-xs text-muted-foreground">
-                    Select multiple files at once or add them one by one. Videos must be 60 seconds or less.
+                    Select multiple images at once or add them one by one.
                   </p>
                 </div>
               ) : (
