@@ -907,9 +907,31 @@ export function PortfolioManager() {
         }
       }
 
-      // NEW: Soft delete from portfolioItems collection
+      // HARD DELETE from portfolioItems collection
       await PortfolioService.deletePortfolioItem(item.id);
       console.log('✅ Portfolio item deleted from portfolioItems collection');
+      
+      // CRITICAL: Also delete from artworks collection (what Discover uses)
+      try {
+        const { deleteDoc: firestoreDeleteDoc } = await import('firebase/firestore');
+        await firestoreDeleteDoc(doc(db, 'artworks', item.id));
+        console.log('✅ Artwork deleted from artworks collection');
+      } catch (artworkError) {
+        console.warn('⚠️ Could not delete from artworks collection (may not exist):', artworkError);
+      }
+      
+      // Also delete related posts
+      try {
+        const { collection: firestoreCollection, query: firestoreQuery, where: firestoreWhere, getDocs: firestoreGetDocs, deleteDoc: firestoreDeleteDoc } = await import('firebase/firestore');
+        const postsQuery = firestoreQuery(firestoreCollection(db, 'posts'), firestoreWhere('artworkId', '==', item.id));
+        const postsSnapshot = await firestoreGetDocs(postsQuery);
+        for (const postDoc of postsSnapshot.docs) {
+          await firestoreDeleteDoc(postDoc.ref);
+        }
+        console.log(`✅ Deleted ${postsSnapshot.size} related posts`);
+      } catch (postsError) {
+        console.warn('⚠️ Could not delete related posts:', postsError);
+      }
       
       // BACKWARD COMPATIBILITY: Also remove from userProfiles.portfolio array if it exists
       try {

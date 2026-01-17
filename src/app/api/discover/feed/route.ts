@@ -46,11 +46,14 @@ export async function GET(request: NextRequest) {
     console.log('📡 API: Fetching artworks collection...');
     
     // Dynamic import to avoid build issues
-    const { collection, query, getDocs, orderBy, limit: firestoreLimit } = await import('firebase/firestore');
+    const { collection, query, getDocs, orderBy, limit: firestoreLimit, where } = await import('firebase/firestore');
     const { db } = await import('@/lib/firebase');
     
+    // Query with deleted filter at database level for efficiency
     const artworksQuery = query(
       collection(db, 'artworks'),
+      where('deleted', '!=', true), // Filter out soft-deleted at query level
+      orderBy('deleted'), // Required for inequality filter
       orderBy('createdAt', 'desc'),
       firestoreLimit(limit) // Get full limit from artworks
     );

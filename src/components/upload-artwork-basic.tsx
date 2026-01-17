@@ -767,9 +767,27 @@ export function UploadArtworkBasic() {
             }
           }
           
+          // Extract Cloudflare ID from URL for deletion tracking
+          const extractCloudflareId = (url: string): string => {
+            if (url.includes('imagedelivery.net')) {
+              const match = url.match(/imagedelivery\.net\/[^/]+\/([^/]+)/);
+              return match ? match[1] : '';
+            }
+            if (url.includes('cloudflarestream.com')) {
+              const match = url.match(/cloudflarestream\.com\/([^/]+)/);
+              return match ? match[1] : '';
+            }
+            return '';
+          };
+
           // Create artwork/post for Discover feed
           const artworkForDiscover: any = {
             id: separateArtworkItem.id,
+            // CANONICAL FIELDS - Required for clean system
+            userId: user.id, // TOP-LEVEL userId for queries
+            cloudflareImageId: extractCloudflareId(uploadedUrl), // For deletion
+            deleted: false, // Soft delete flag
+            // Artist info (denormalized for display)
             artist: {
               id: user.id,
               name: user.displayName || user.username || 'Artist',
@@ -989,10 +1007,28 @@ export function UploadArtworkBasic() {
         }
       }
 
+      // Helper to extract Cloudflare ID from URL for deletion tracking
+      const extractCloudflareIdFromUrl = (url: string): string => {
+        if (url.includes('imagedelivery.net')) {
+          const match = url.match(/imagedelivery\.net\/[^/]+\/([^/]+)/);
+          return match ? match[1] : '';
+        }
+        if (url.includes('cloudflarestream.com')) {
+          const match = url.match(/cloudflarestream\.com\/([^/]+)/);
+          return match ? match[1] : '';
+        }
+        return '';
+      };
+
       // Always create artwork/post for Discover feed (regardless of portfolio toggle or sale status)
       // This ensures all uploads from this portal appear in Discover
       const artworkForDiscover: any = {
         id: artworkItem?.id || `artwork-${Date.now()}`,
+        // CANONICAL FIELDS - Required for clean system
+        userId: user.id, // TOP-LEVEL userId for queries
+        cloudflareImageId: extractCloudflareIdFromUrl(primaryMediaUrl), // For deletion
+        deleted: false, // Soft delete flag
+        // Artist info (denormalized for display)
         artist: {
           id: user.id,
           name: user.displayName || user.username || 'Artist',

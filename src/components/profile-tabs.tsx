@@ -999,15 +999,25 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
           }
         }
 
-        // Now mark as deleted in Firestore
+        // HARD DELETE from Firestore (not soft delete)
         const batch = writeBatch(db);
         
-        // Mark the main document as deleted
+        // Delete the main document
         if (itemToDelete.type === 'artwork') {
           const artworkRef = doc(db, 'artworks', itemToDelete.id);
-          batch.update(artworkRef, { deleted: true, updatedAt: serverTimestamp() });
+          batch.delete(artworkRef);
+          console.log('🗑️ HARD DELETE: artwork', itemToDelete.id);
 
-          // Try to find and mark related post as deleted too
+          // Also delete from portfolioItems if exists
+          try {
+            const portfolioRef = doc(db, 'portfolioItems', itemToDelete.id);
+            batch.delete(portfolioRef);
+            console.log('🗑️ HARD DELETE: portfolioItem', itemToDelete.id);
+          } catch (error) {
+            // May not exist, that's OK
+          }
+
+          // Find and delete related posts
           try {
             const postsQuery = query(
               collection(db, 'posts'),
@@ -1015,29 +1025,35 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
             );
             const postsSnapshot = await getDocs(postsQuery);
             postsSnapshot.forEach((postDoc) => {
-              batch.update(postDoc.ref, { deleted: true, updatedAt: serverTimestamp() });
+              batch.delete(postDoc.ref);
+              console.log('🗑️ HARD DELETE: related post', postDoc.id);
             });
           } catch (error) {
             console.error('Error finding related post:', error);
-            // Continue with deletion even if post lookup fails
           }
         } else if (itemToDelete.type === 'post') {
           const postRef = doc(db, 'posts', itemToDelete.id);
-          batch.update(postRef, { deleted: true, updatedAt: serverTimestamp() });
+          batch.delete(postRef);
+          console.log('🗑️ HARD DELETE: post', itemToDelete.id);
 
-          // For posts, also mark related artwork as deleted if it exists (use itemData we already fetched)
+          // For posts, also delete related artwork if it exists
           if (itemData?.artworkId) {
             try {
               const artworkRef = doc(db, 'artworks', itemData.artworkId);
-              batch.update(artworkRef, { deleted: true, updatedAt: serverTimestamp() });
+              batch.delete(artworkRef);
+              console.log('🗑️ HARD DELETE: related artwork', itemData.artworkId);
+              
+              // Also delete from portfolioItems
+              const portfolioRef = doc(db, 'portfolioItems', itemData.artworkId);
+              batch.delete(portfolioRef);
             } catch (error) {
-              console.error('Error updating related artwork:', error);
-              // Continue with deletion even if artwork update fails
+              console.error('Error deleting related artwork:', error);
             }
           }
         }
 
         await batch.commit();
+        console.log('✅ Batch delete committed successfully');
 
         // Remove from local state
         setDiscoverContent(prev => prev.filter(item => item.id !== itemToDelete.id));
