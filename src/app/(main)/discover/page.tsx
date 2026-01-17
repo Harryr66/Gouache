@@ -216,7 +216,6 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
   // PERFORMANCE: Cache item heights to avoid repeated getBoundingClientRect calls
   const itemHeightsRef = useRef<Map<number, number>>(new Map());
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
-  const previousItemsLengthRef = useRef<number>(0);
   
   // Note: Full virtualization not possible with masonry (need all positions for height calculation)
   // Instead, we render all items but use IntersectionObserver in ArtworkTile to only load visible images
@@ -243,29 +242,11 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
         return;
       }
       
-      // CRITICAL: Always recalculate from scratch to maintain uniformity
-      // Start with empty column heights for proper layout
       const columnHeights = new Array(columnCount).fill(0);
       const newPositions: Array<{ top: number; left: number; width: number }> = [];
 
-      // Process items in order - ensure we have refs for all items
-      for (let index = 0; index < items.length; index++) {
-        const itemEl = itemRefs.current[index];
-        if (!itemEl) {
-          // Item not yet rendered - use estimated height and continue
-          const estimatedHeight = itemWidth * 1.2;
-          const shortestColumnIndex = columnHeights.reduce(
-            (minIndex, height, colIndex) => 
-              height < columnHeights[minIndex] ? colIndex : minIndex,
-            0
-          );
-          const left = shortestColumnIndex * (itemWidth + gap);
-          const currentColumnHeight = columnHeights[shortestColumnIndex];
-          const top = currentColumnHeight === 0 ? 0 : Math.ceil(currentColumnHeight) + gap;
-          newPositions.push({ top, left, width: itemWidth });
-          columnHeights[shortestColumnIndex] = top + estimatedHeight;
-          continue;
-        }
+      itemRefs.current.forEach((itemEl, index) => {
+        if (!itemEl || index >= items.length) return;
 
         try {
           // PERFORMANCE: Use cached height if available, otherwise measure once
@@ -276,12 +257,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
             if (itemHeight > 0) {
               itemHeightsRef.current.set(index, itemHeight);
             } else {
-              // Use estimated minimum height to prevent stacking at (0,0)
-              // Typical aspect ratio is ~4:3 or 16:9, so estimate based on width
-              const estimatedHeight = itemWidth * 1.2; // Slightly taller than square
-              itemHeight = estimatedHeight;
-              itemHeightsRef.current.set(index, itemHeight);
-              // Don't return - still calculate position to prevent overlap
+              return; // Skip items with no height
             }
           }
           
@@ -304,38 +280,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
           columnHeights[shortestColumnIndex] = top + itemHeight;
         } catch (error) {
           if (process.env.NODE_ENV === 'development') console.error('Error calculating masonry position for item', index, error);
-          // On error, still add position to prevent gaps
-          const estimatedHeight = itemWidth * 1.2;
-          const shortestColumnIndex = columnHeights.reduce(
-            (minIndex, height, colIndex) => 
-              height < columnHeights[minIndex] ? colIndex : minIndex,
-            0
-          );
-          const left = shortestColumnIndex * (itemWidth + gap);
-          const currentColumnHeight = columnHeights[shortestColumnIndex];
-          const top = currentColumnHeight === 0 ? 0 : Math.ceil(currentColumnHeight) + gap;
-          newPositions.push({ top, left, width: itemWidth });
-          columnHeights[shortestColumnIndex] = top + estimatedHeight;
         }
-      }
+      });
 
-      // CRITICAL: Ensure positions array matches items array length exactly
-      // Pad with estimated positions if needed to prevent layout breaks
-      while (newPositions.length < items.length) {
-        const index = newPositions.length;
-        const estimatedHeight = itemWidth * 1.2;
-        const shortestColumnIndex = columnHeights.reduce(
-          (minIndex, height, colIndex) => 
-            height < columnHeights[minIndex] ? colIndex : minIndex,
-          0
-        );
-        const left = shortestColumnIndex * (itemWidth + gap);
-        const currentColumnHeight = columnHeights[shortestColumnIndex];
-        const top = currentColumnHeight === 0 ? 0 : Math.ceil(currentColumnHeight) + gap;
-        newPositions.push({ top, left, width: itemWidth });
-        columnHeights[shortestColumnIndex] = top + estimatedHeight;
-      }
-      
       if (newPositions.length > 0) {
         setPositions(newPositions);
       }
@@ -363,18 +310,6 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
     
     scheduleCalculation();
     
-    // Force immediate recalculation when items are added (for infinite scroll)
-    // This ensures new items get positions immediately
-    if (items.length > previousItemsLengthRef.current) {
-      // New items added - force immediate calculation after render
-      previousItemsLengthRef.current = items.length;
-      setTimeout(() => {
-        calculatePositions();
-      }, 100);
-    } else {
-      previousItemsLengthRef.current = items.length;
-    }
-    
     // PERFORMANCE: Use ResizeObserver instead of individual event listeners
     // This is much more efficient than adding listeners to every image/video
     let handleMediaLoad: ((e: Event) => void) | null = null;
@@ -400,21 +335,12 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
         }
       });
 
-      // Observe all item elements - including newly added ones
-      const observeItems = () => {
-        itemRefs.current.forEach((itemEl) => {
-          if (itemEl && resizeObserverRef.current) {
-            resizeObserverRef.current.observe(itemEl);
-          }
-        });
-      };
-      
-      observeItems();
-      
-      // Re-observe after a short delay to catch newly rendered items
-      const observeTimeout = setTimeout(() => {
-        observeItems();
-      }, 200);
+      // Observe all item elements
+      itemRefs.current.forEach((itemEl) => {
+        if (itemEl && resizeObserverRef.current) {
+          resizeObserverRef.current.observe(itemEl);
+        }
+      });
     } else {
       // Fallback: Single delegated event listener (much better than individual listeners)
       handleMediaLoad = (e: Event) => {
@@ -459,29 +385,6 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       }
     };
   }, [items.length, columnCount, gap, items]);
-  
-  // Separate effect to handle new items being added (for infinite scroll)
-  useEffect(() => {
-    if (!resizeObserverRef.current || items.length === 0) return;
-    
-    // When items change, ensure new items are observed
-    const observeNewItems = () => {
-      itemRefs.current.forEach((itemEl, index) => {
-        if (itemEl && index < items.length && resizeObserverRef.current) {
-          try {
-            resizeObserverRef.current.observe(itemEl);
-          } catch (e) {
-            // Item might already be observed, ignore
-          }
-        }
-      });
-    };
-    
-    // Observe new items after they render
-    const timeoutId = setTimeout(observeNewItems, 100);
-    
-    return () => clearTimeout(timeoutId);
-  }, [items.length]);
 
   // PERFORMANCE: Memoize container height calculation to avoid recalculating on every render
   const containerHeight = useMemo(() => {
@@ -514,8 +417,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
               top: positions[index]?.top ?? 0,
               left: positions[index]?.left ?? 0,
               width: positions[index]?.width || `${100 / columnCount}%`,
-              opacity: positions[index] ? 1 : 0, // Hide items without calculated positions
-              visibility: positions[index] ? 'visible' : 'hidden', // Prevent layout shift
+              opacity: 1,
               margin: 0,
               padding: 0,
               transition: 'none',
