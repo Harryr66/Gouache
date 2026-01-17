@@ -1113,8 +1113,8 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
               if (itemData.imageUrl) allUrlsToDelete.push(itemData.imageUrl);
               if (itemData.videoUrl) allUrlsToDelete.push(itemData.videoUrl);
               if (itemData.processVideoUrl) allUrlsToDelete.push(itemData.processVideoUrl);
-              if (itemData.supportingImages) allUrlsToDelete.push(...itemData.supportingImages);
-              if (itemData.mediaUrls) allUrlsToDelete.push(...itemData.mediaUrls);
+              if (Array.isArray(itemData.supportingImages)) allUrlsToDelete.push(...itemData.supportingImages);
+              if (Array.isArray(itemData.mediaUrls)) allUrlsToDelete.push(...itemData.mediaUrls);
             }
 
             if (item.type === 'artwork') {
