@@ -110,8 +110,8 @@ export function UploadArtworkBasic() {
       
       if (videoRejected) {
         toast({
-          title: 'Images only',
-          description: 'Use the "Process Video" section below to add a behind-the-scenes video.',
+          title: 'Videos go in Process Video',
+          description: 'Add your video below as a process video to accompany your artwork.',
         });
       }
       
@@ -274,8 +274,8 @@ export function UploadArtworkBasic() {
     
     if (!user || !files.length) {
       toast({
-        title: 'Missing information',
-        description: 'Please select at least one image or video.',
+        title: 'Image required',
+        description: 'Please upload at least one image to continue.',
         variant: 'destructive',
       });
       return;
