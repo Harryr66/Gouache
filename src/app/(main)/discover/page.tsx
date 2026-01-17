@@ -200,8 +200,7 @@ const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently Updated' }
 ];
 
-// Masonry grid component that fills columns sequentially from top to bottom
-// INSTAGRAM/PINTEREST-LEVEL: Virtualization - only render visible items + buffer
+// Masonry grid component - SIMPLIFIED for reliability
 function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadingMore }: {
   items: any[];
   columnCount: number;
@@ -213,258 +212,148 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [positions, setPositions] = useState<Array<{ top: number; left: number; width: number }>>([]);
-  // PERFORMANCE: Cache item heights to avoid repeated getBoundingClientRect calls
   const itemHeightsRef = useRef<Map<number, number>>(new Map());
-  const resizeObserverRef = useRef<ResizeObserver | null>(null);
-  // Track previous items length to detect new items being added
-  const prevItemsLengthRef = useRef<number>(0);
-  // Ref-based calculation function for use in callbacks
-  const calculatePositionsRef = useRef<(() => void) | null>(null);
+  const calculationIdRef = useRef<number>(0); // Prevent stale calculations
   
-  // Note: Full virtualization not possible with masonry (need all positions for height calculation)
-  // Instead, we render all items but use IntersectionObserver in ArtworkTile to only load visible images
-
-  // Calculate positions for masonry layout - OPTIMIZED with ResizeObserver
-  useEffect(() => {
+  // Single, clean calculation function
+  const calculatePositions = useCallback(() => {
     if (!containerRef.current || columnCount === 0 || items.length === 0) {
       setPositions([]);
+      return;
+    }
+    
+    const containerWidth = containerRef.current.offsetWidth;
+    if (!containerWidth || containerWidth <= 0) return;
+    
+    const totalGapSpace = gap * (columnCount - 1);
+    const itemWidth = (containerWidth - totalGapSpace) / columnCount;
+    if (itemWidth <= 0 || !isFinite(itemWidth)) return;
+    
+    const columnHeights = new Array(columnCount).fill(0);
+    const newPositions: Array<{ top: number; left: number; width: number }> = [];
+
+    // Process ALL items in order
+    for (let index = 0; index < items.length; index++) {
+      const itemEl = itemRefs.current[index];
+      
+      // Get height - measure if needed
+      let itemHeight = itemHeightsRef.current.get(index) || 0;
+      if (itemEl && itemHeight === 0) {
+        itemHeight = itemEl.offsetHeight || 0;
+        if (itemHeight > 0) {
+          itemHeightsRef.current.set(index, itemHeight);
+        }
+      }
+      
+      // Use estimated height if no real height yet (prevents layout jumps)
+      if (itemHeight === 0) {
+        itemHeight = 250; // Reasonable estimate for artwork tiles
+      }
+      
+      // Find shortest column
+      let shortestCol = 0;
+      for (let col = 1; col < columnCount; col++) {
+        if (columnHeights[col] < columnHeights[shortestCol]) {
+          shortestCol = col;
+        }
+      }
+      
+      const left = shortestCol * (itemWidth + gap);
+      const top = columnHeights[shortestCol];
+      
+      newPositions.push({ top, left, width: itemWidth });
+      columnHeights[shortestCol] = top + itemHeight + gap;
+    }
+
+    setPositions(newPositions);
+  }, [items.length, columnCount, gap]);
+
+  // Main effect - runs on items/layout changes
+  useEffect(() => {
+    if (items.length === 0) {
+      setPositions([]);
       itemHeightsRef.current.clear();
-      prevItemsLengthRef.current = 0;
       return;
     }
 
-    // Detect if new items were added (infinite scroll)
-    const isNewItemsAdded = items.length > prevItemsLengthRef.current;
-    prevItemsLengthRef.current = items.length;
-
-    const calculatePositions = () => {
-      if (!containerRef.current) return;
-      
-      const containerWidth = containerRef.current.offsetWidth;
-      if (!containerWidth || containerWidth <= 0 || !columnCount || columnCount <= 0) {
-        return;
+    // Increment calculation ID to invalidate any pending calculations
+    const currentCalcId = ++calculationIdRef.current;
+    
+    // Initial calculation after a brief delay for refs to be set
+    const initialTimeout = setTimeout(() => {
+      if (calculationIdRef.current === currentCalcId) {
+        calculatePositions();
       }
-      
-      const totalGapSpace = gap * (columnCount - 1);
-      const itemWidth = (containerWidth - totalGapSpace) / columnCount;
-      if (itemWidth <= 0 || !isFinite(itemWidth)) {
-        return;
+    }, 10);
+    
+    // Recalculate after images likely loaded
+    const loadTimeout = setTimeout(() => {
+      if (calculationIdRef.current === currentCalcId) {
+        // Clear height cache to remeasure
+        itemHeightsRef.current.clear();
+        calculatePositions();
       }
-      
-      const columnHeights = new Array(columnCount).fill(0);
-      const newPositions: Array<{ top: number; left: number; width: number }> = [];
-      let allItemsPositioned = true;
-
-      // Process items in order to maintain correct index mapping
-      for (let index = 0; index < items.length; index++) {
-        const itemEl = itemRefs.current[index];
-        
-        if (!itemEl) {
-          // Item ref not yet set - this item will be positioned on next calculation
-          allItemsPositioned = false;
-          // Push placeholder to maintain index alignment
-          newPositions.push({ top: -9999, left: -9999, width: itemWidth });
-          continue;
-        }
-
-        try {
-          // PERFORMANCE: Use cached height if available, otherwise measure once
-          let itemHeight = itemHeightsRef.current.get(index);
-          if (itemHeight === undefined || itemHeight === 0) {
-            // Only measure if not cached - getBoundingClientRect forces layout recalculation
-            itemHeight = Math.ceil(itemEl.offsetHeight) || 0;
-            if (itemHeight > 0) {
-              itemHeightsRef.current.set(index, itemHeight);
-            } else {
-              // Item has no height yet - will be positioned on next calculation
-              allItemsPositioned = false;
-              newPositions.push({ top: -9999, left: -9999, width: itemWidth });
-              continue;
-            }
-          }
-          
-          // Find shortest column
-          const shortestColumnIndex = columnHeights.reduce(
-            (minIndex, height, colIndex) => 
-              height < columnHeights[minIndex] ? colIndex : minIndex,
-            0
-          );
-          
-          const left = shortestColumnIndex * (itemWidth + gap);
-          const currentColumnHeight = columnHeights[shortestColumnIndex];
-          const top = currentColumnHeight === 0 ? 0 : Math.ceil(currentColumnHeight) + gap;
-          
-          if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
-            newPositions.push({ top: -9999, left: -9999, width: itemWidth });
-            allItemsPositioned = false;
-            continue;
-          }
-
-          newPositions.push({ top, left, width: itemWidth });
-          columnHeights[shortestColumnIndex] = top + itemHeight;
-        } catch (error) {
-          if (process.env.NODE_ENV === 'development') console.error('Error calculating masonry position for item', index, error);
-          newPositions.push({ top: -9999, left: -9999, width: itemWidth });
-          allItemsPositioned = false;
-        }
-      }
-
-      // Always update positions - items with top: -9999 will be hidden via CSS
-      setPositions(newPositions);
-      
-      // If not all items were positioned, schedule another calculation
-      if (!allItemsPositioned) {
-        setTimeout(() => {
-          if (calculatePositionsRef.current) {
-            calculatePositionsRef.current();
-          }
-        }, 50);
-      }
-    };
-    
-    // Store ref for use in callbacks
-    calculatePositionsRef.current = calculatePositions;
-
-    // PERFORMANCE: Debounced calculation with requestAnimationFrame
-    let timeout: NodeJS.Timeout;
-    let rafId: number | null = null;
-    let calculationScheduled = false;
-    
-    const scheduleCalculation = () => {
-      if (calculationScheduled) return;
-      calculationScheduled = true;
-      
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        if (rafId !== null) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(() => {
-          calculatePositions();
-          calculationScheduled = false;
-          rafId = null;
-        });
-      }, 50); // Faster response for smoother infinite scroll
-    };
-    
-    // Initial calculation
-    scheduleCalculation();
-    
-    // If new items were added, schedule additional calculations to catch them after render
-    if (isNewItemsAdded) {
-      // Multiple rapid recalculations to ensure new items get positioned quickly
-      [0, 100, 200, 400].forEach(delay => {
-        setTimeout(calculatePositions, delay);
-      });
-    }
-    
-    // PERFORMANCE: Use ResizeObserver instead of individual event listeners
-    // This is much more efficient than adding listeners to every image/video
-    let handleMediaLoad: ((e: Event) => void) | null = null;
-    
-    if (typeof ResizeObserver !== 'undefined') {
-      resizeObserverRef.current = new ResizeObserver((entries) => {
-        // Batch height updates
-        let heightsChanged = false;
-        entries.forEach((entry) => {
-          const itemEl = entry.target as HTMLElement;
-          const indexAttr = itemEl.getAttribute('data-artwork-index');
-          const index = indexAttr ? parseInt(indexAttr, 10) : -1;
-          if (index >= 0 && index < items.length) {
-            const newHeight = Math.ceil(entry.contentRect.height) || 0;
-            const oldHeight = itemHeightsRef.current.get(index);
-            if (newHeight > 0 && newHeight !== oldHeight) {
-              itemHeightsRef.current.set(index, newHeight);
-              heightsChanged = true;
-            }
-          }
-        });
-        if (heightsChanged) {
-          scheduleCalculation();
-        }
-      });
-
-      // Observe all item elements that currently have refs
-      itemRefs.current.forEach((itemEl) => {
-        if (itemEl && resizeObserverRef.current) {
-          resizeObserverRef.current.observe(itemEl);
-        }
-      });
-    } else {
-      // Fallback: Single delegated event listener (much better than individual listeners)
-      handleMediaLoad = (e: Event) => {
-        const target = e.target as HTMLElement;
-        const itemEl = target.closest('[data-artwork-index]') as HTMLElement | null;
-        if (itemEl) {
-          const index = parseInt(itemEl.getAttribute('data-artwork-index') || '-1');
-          if (index >= 0) {
-            // Update cached height
-            const newHeight = Math.ceil(itemEl.offsetHeight) || 0;
-            if (newHeight > 0) {
-              itemHeightsRef.current.set(index, newHeight);
-              scheduleCalculation();
-            }
-          }
-        }
-      };
-
-      // Use event delegation on container instead of individual listeners
-      const container = containerRef.current;
-      if (container && handleMediaLoad) {
-        container.addEventListener('load', handleMediaLoad, true);
-        container.addEventListener('loadeddata', handleMediaLoad, true);
-      }
-    }
+    }, 300);
 
     return () => {
-      clearTimeout(timeout);
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      
-      // Cleanup ResizeObserver
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect();
-        resizeObserverRef.current = null;
-      }
-      
-      // Cleanup delegated event listeners
-      const container = containerRef.current;
-      if (container && handleMediaLoad) {
-        container.removeEventListener('load', handleMediaLoad, true);
-        container.removeEventListener('loadeddata', handleMediaLoad, true);
-      }
+      clearTimeout(initialTimeout);
+      clearTimeout(loadTimeout);
     };
-  }, [items.length, columnCount, gap, items]);
-  
-  // Secondary effect: observe new item refs after they're set by React render
+  }, [items, columnCount, gap, calculatePositions]);
+
+  // ResizeObserver for height changes
   useEffect(() => {
-    if (!resizeObserverRef.current) return;
+    if (typeof ResizeObserver === 'undefined') return;
     
-    // Observe any items that have refs but aren't being observed yet
-    itemRefs.current.forEach((itemEl, index) => {
-      if (itemEl && index < items.length) {
-        try {
-          resizeObserverRef.current?.observe(itemEl);
-        } catch (e) {
-          // Already observed
+    const observer = new ResizeObserver((entries) => {
+      let needsRecalc = false;
+      
+      entries.forEach((entry) => {
+        const el = entry.target as HTMLElement;
+        const indexStr = el.getAttribute('data-artwork-index');
+        if (indexStr) {
+          const index = parseInt(indexStr, 10);
+          const newHeight = Math.round(entry.contentRect.height);
+          const oldHeight = itemHeightsRef.current.get(index) || 0;
+          
+          // Only recalc if height changed significantly (>5px)
+          if (newHeight > 0 && Math.abs(newHeight - oldHeight) > 5) {
+            itemHeightsRef.current.set(index, newHeight);
+            needsRecalc = true;
+          }
         }
+      });
+      
+      if (needsRecalc) {
+        // Debounce recalculation
+        requestAnimationFrame(() => {
+          calculatePositions();
+        });
       }
     });
-  }, [positions, items.length]);
+
+    // Observe all current items
+    itemRefs.current.forEach((el) => {
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [positions.length, calculatePositions]);
 
 
-  // PERFORMANCE: Memoize container height calculation to avoid recalculating on every render
+  // Calculate container height from positions
   const containerHeight = useMemo(() => {
-    if (positions.length === 0 || itemRefs.current.length === 0) return 0;
+    if (positions.length === 0) return 0;
     
-    // Use cached heights from itemHeightsRef when available
-    // Only consider valid positions (not placeholders with top: -9999)
-    const heights = positions.map((pos, index) => {
-      if (!pos || pos.top < 0) return 0; // Handle null or placeholder positions
-      const cachedHeight = itemHeightsRef.current.get(index);
-      const itemHeight = cachedHeight || itemRefs.current[index]?.offsetHeight || 0;
-      const height = pos.top + itemHeight;
-      return isFinite(height) && height > 0 ? height : 0;
-    }).filter(h => h > 0);
+    let maxHeight = 0;
+    positions.forEach((pos, index) => {
+      if (!pos) return;
+      const itemHeight = itemHeightsRef.current.get(index) || 250;
+      const bottom = pos.top + itemHeight;
+      if (bottom > maxHeight) maxHeight = bottom;
+    });
     
-    return heights.length > 0 ? Math.max(...heights) : 0;
+    return maxHeight;
   }, [positions]);
 
   return (
@@ -474,34 +363,18 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       {items.map((item, index) => {
         const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
         const pos = positions[index];
-        // Valid position: exists and has non-negative top (placeholder uses -9999)
-        const hasValidPosition = pos && pos.top >= 0 && pos.left >= 0;
         return (
           <div
             key={itemKey}
             data-artwork-index={index}
-            ref={(el) => { 
-              itemRefs.current[index] = el;
-              // When ref is set for a new item, trigger observation
-              if (el && resizeObserverRef.current) {
-                try {
-                  resizeObserverRef.current.observe(el);
-                } catch (e) {
-                  // Already observed
-                }
-              }
-            }}
+            ref={(el) => { itemRefs.current[index] = el; }}
             style={{
               position: 'absolute',
-              top: hasValidPosition ? pos.top : 0,
-              left: hasValidPosition ? pos.left : 0,
-              width: pos?.width || `${100 / columnCount}%`,
-              opacity: hasValidPosition ? 1 : 0,
-              visibility: hasValidPosition ? 'visible' : 'hidden',
-              pointerEvents: hasValidPosition ? 'auto' : 'none',
+              top: pos?.top ?? 0,
+              left: pos?.left ?? 0,
+              width: pos?.width ?? `${100 / columnCount}%`,
               margin: 0,
               padding: 0,
-              transition: 'none',
             }}
           >
             {renderItem(item)}
