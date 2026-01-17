@@ -1435,7 +1435,7 @@ export function UploadArtworkBasic() {
                           </Label>
                           {bulkUploadSeparately ? (
                             <p className="text-xs text-muted-foreground">
-                              ✓ Each file will be uploaded as a separate post. You can add titles, descriptions, and process videos by editing each post from your profile.
+                              ✓ Each file will be uploaded as a separate post. You cannot add titles, descriptions, and process videos for separate bulk uploads but you can later by editing each post from your profile.
                             </p>
                           ) : (
                             <p className="text-xs text-muted-foreground">
