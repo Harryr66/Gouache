@@ -1677,7 +1677,7 @@ export function UploadArtworkBasic() {
           </div>
 
           {/* Mark for Sale Toggle - Prominent styled section */}
-          <div className="p-5 rounded-xl border-2 border-primary/40 bg-primary/5 space-y-3">
+          <div className="p-5 rounded-xl border-2 border-blue-500/60 bg-blue-500/10 space-y-3">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-2 flex-1">
                 <h3 className="text-lg font-bold text-foreground">
@@ -1695,7 +1695,7 @@ export function UploadArtworkBasic() {
                 />
               </div>
             </div>
-            <p className="text-xs text-primary/80 font-medium">
+            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
               {isForSale ? '✓ This artwork will appear in your shop' : 'Not for sale'}
             </p>
           </div>
