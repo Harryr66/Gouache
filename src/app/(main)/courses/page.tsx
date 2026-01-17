@@ -373,7 +373,7 @@ export default function CoursesPage() {
               className="flex-1 flex items-center justify-center gap-2 h-12 rounded-lg border-2 border-border data-[state=active]:bg-background data-[state=active]:border-primary data-[state=inactive]:bg-transparent"
             >
               <Video className="h-4 w-4" />
-              Live Class
+              Learn Live
             </TabsTrigger>
           </TabsList>
 
@@ -473,14 +473,14 @@ export default function CoursesPage() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Video className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Live Classes Coming Soon</h3>
+                <h3 className="text-xl font-semibold mb-2">Learn Live Coming Soon</h3>
                 <p className="text-muted-foreground text-center max-w-md">
                   Join live interactive sessions with artists. Get real-time feedback, 
                   ask questions, and learn alongside other students.
                 </p>
                 <div className="flex items-center gap-2 mt-6 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Check back soon for scheduled live classes</span>
+                  <span>Check back soon for scheduled live sessions</span>
                 </div>
               </CardContent>
             </Card>
