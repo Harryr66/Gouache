@@ -1677,32 +1677,35 @@ export function UploadArtworkBasic() {
           </div>
 
           {/* Add to Portfolio Toggle */}
-          <div className="flex items-start justify-between space-x-4 py-4 border-t">
-            <div className="space-y-1 flex-1">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="addToPortfolio" className="text-base font-semibold cursor-pointer">
-                  This is an Artwork. (Add to my portfolio).
-                </Label>
+          <div className="p-5 rounded-xl border-2 border-primary/40 bg-primary/5 space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-2 flex-1">
+                <h3 className="text-lg font-bold text-foreground">
+                  This is an Artwork
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Enable to mark this as artwork and add to your profile's portfolio. When disabled, this will be posted as discover content only.
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Enable to mark this as artwork and add to your profile's portfolio. When disabled, this will be posted as discover content only.
-              </p>
+              <div className="flex-shrink-0 pt-1">
+                <Switch
+                  id="addToPortfolio"
+                  checked={addToPortfolio}
+                  onCheckedChange={(checked) => {
+                    startTransition(() => {
+                      setAddToPortfolio(checked);
+                      // Reset for sale when portfolio toggle is disabled
+                      if (!checked) {
+                        setIsForSale(false);
+                      }
+                    });
+                  }}
+                />
+              </div>
             </div>
-            <div className="flex-shrink-0 pt-1">
-              <Switch
-                id="addToPortfolio"
-                checked={addToPortfolio}
-                onCheckedChange={(checked) => {
-                  startTransition(() => {
-                    setAddToPortfolio(checked);
-                    // Reset for sale when portfolio toggle is disabled
-                    if (!checked) {
-                      setIsForSale(false);
-                    }
-                  });
-                }}
-              />
-            </div>
+            <p className="text-xs text-primary/80 font-medium">
+              Add to my portfolio
+            </p>
           </div>
 
           {/* Only show Dimensions and Sale options if adding to portfolio */}
