@@ -6,10 +6,17 @@ export const dynamic = 'force-dynamic';
 /**
  * Delete orphaned content from the database
  * Orphaned = items without valid userId OR items with artist = "System"
+ * 
+ * Optional: Pass ?deleteAll=true to delete ALL content (nuclear option)
+ * Optional: Pass ?userId=xxx to delete all content for a specific user
  */
 export async function POST(request: NextRequest) {
   try {
     const adminDb = getAdminDb();
+    const { searchParams } = new URL(request.url);
+    const deleteAllContent = searchParams.get('deleteAll') === 'true';
+    const targetUserId = searchParams.get('userId');
+    
     const results = {
       artworksDeleted: 0,
       portfolioItemsDeleted: 0,
@@ -18,8 +25,8 @@ export async function POST(request: NextRequest) {
       errors: [] as string[],
     };
 
-    // Find and delete orphaned artworks
-    console.log('🔍 Finding orphaned artworks...');
+    // Find and delete artworks
+    console.log('🔍 Finding artworks to delete...', { deleteAllContent, targetUserId });
     const artworksSnapshot = await adminDb.collection('artworks').get();
     
     for (const doc of artworksSnapshot.docs) {
@@ -32,7 +39,17 @@ export async function POST(request: NextRequest) {
       
       const isOrphaned = !userId || isSystemArtist || hasRecoveredDescription;
       
-      if (isOrphaned) {
+      // Determine if we should delete this item
+      let shouldDelete = false;
+      if (deleteAllContent) {
+        shouldDelete = true; // Delete everything
+      } else if (targetUserId && userId === targetUserId) {
+        shouldDelete = true; // Delete items for specific user
+      } else if (isOrphaned) {
+        shouldDelete = true; // Delete orphaned items
+      }
+      
+      if (shouldDelete) {
         try {
           // Delete from Cloudflare if has media URLs
           const imageUrl = data.imageUrl;
@@ -83,8 +100,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Find and delete orphaned portfolioItems
-    console.log('🔍 Finding orphaned portfolioItems...');
+    // Find and delete portfolioItems
+    console.log('🔍 Finding portfolioItems to delete...');
     const portfolioSnapshot = await adminDb.collection('portfolioItems').get();
     
     for (const doc of portfolioSnapshot.docs) {
@@ -96,20 +113,29 @@ export async function POST(request: NextRequest) {
       
       const isOrphaned = !userId || isSystemArtist || hasRecoveredDescription;
       
-      if (isOrphaned) {
+      let shouldDelete = false;
+      if (deleteAllContent) {
+        shouldDelete = true;
+      } else if (targetUserId && userId === targetUserId) {
+        shouldDelete = true;
+      } else if (isOrphaned) {
+        shouldDelete = true;
+      }
+      
+      if (shouldDelete) {
         try {
           await doc.ref.delete();
           results.portfolioItemsDeleted++;
           results.deletedIds.push(doc.id);
-          console.log(`🗑️ Deleted orphaned portfolioItem: ${doc.id}`);
+          console.log(`🗑️ Deleted portfolioItem: ${doc.id}`);
         } catch (error: any) {
           results.errors.push(`Failed to delete portfolioItem ${doc.id}: ${error.message}`);
         }
       }
     }
 
-    // Find and delete orphaned posts
-    console.log('🔍 Finding orphaned posts...');
+    // Find and delete posts
+    console.log('🔍 Finding posts to delete...');
     const postsSnapshot = await adminDb.collection('posts').get();
     
     for (const doc of postsSnapshot.docs) {
@@ -120,12 +146,21 @@ export async function POST(request: NextRequest) {
       
       const isOrphaned = !userId || isSystemArtist;
       
-      if (isOrphaned) {
+      let shouldDelete = false;
+      if (deleteAllContent) {
+        shouldDelete = true;
+      } else if (targetUserId && userId === targetUserId) {
+        shouldDelete = true;
+      } else if (isOrphaned) {
+        shouldDelete = true;
+      }
+      
+      if (shouldDelete) {
         try {
           await doc.ref.delete();
           results.postsDeleted++;
           results.deletedIds.push(doc.id);
-          console.log(`🗑️ Deleted orphaned post: ${doc.id}`);
+          console.log(`🗑️ Deleted post: ${doc.id}`);
         } catch (error: any) {
           results.errors.push(`Failed to delete post ${doc.id}: ${error.message}`);
         }
