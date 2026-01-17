@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
   try {
+    const adminDb = getAdminDb();
     const results = {
       artworksDeleted: 0,
       portfolioItemsDeleted: 0,
@@ -151,6 +152,7 @@ export async function POST(request: NextRequest) {
 // GET endpoint to preview what would be deleted (dry run)
 export async function GET() {
   try {
+    const adminDb = getAdminDb();
     const orphaned = {
       artworks: [] as any[],
       portfolioItems: [] as any[],
