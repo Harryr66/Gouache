@@ -342,8 +342,8 @@ export function UploadArtworkBasic() {
       return;
     }
 
-    // Title is optional - default to "Untitled" if not provided
-    const finalTitle = title.trim() || 'Untitled';
+    // Title is optional - store empty string if not provided (don't show "Untitled")
+    const finalTitle = title.trim();
     
     // Tags are optional - no validation needed
 
@@ -1525,7 +1525,7 @@ export function UploadArtworkBasic() {
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter title (or leave blank for 'Untitled')"
+                placeholder="Enter title (optional)"
               />
             )}
           </div>

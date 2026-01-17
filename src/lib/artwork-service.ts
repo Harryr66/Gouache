@@ -126,7 +126,7 @@ export async function createArtwork(
       userId: userId, // CANONICAL user identifier
       imageUrl: uploadResult.url,
       cloudflareImageId: cloudflareImageId || '',
-      title: metadata.title || 'Untitled',
+      title: metadata.title || '',
       description: metadata.description || '',
       deleted: false,
       

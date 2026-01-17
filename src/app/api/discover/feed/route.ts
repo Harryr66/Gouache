@@ -49,13 +49,12 @@ export async function GET(request: NextRequest) {
     const { collection, query, getDocs, orderBy, limit: firestoreLimit, where } = await import('firebase/firestore');
     const { db } = await import('@/lib/firebase');
     
-    // Query with deleted filter at database level for efficiency
+    // Query artworks - filter deleted items in code (not query) for reliability
+    // Firestore's != operator has limitations with missing fields
     const artworksQuery = query(
       collection(db, 'artworks'),
-      where('deleted', '!=', true), // Filter out soft-deleted at query level
-      orderBy('deleted'), // Required for inequality filter
       orderBy('createdAt', 'desc'),
-      firestoreLimit(limit) // Get full limit from artworks
+      firestoreLimit(limit * 2) // Get more to account for filtering
     );
     
     const artworksSnapshot = await getDocs(artworksQuery);
@@ -119,6 +118,11 @@ export async function GET(request: NextRequest) {
     };
     
     const filteredArtworksItems = artworksItems.filter((item: any) => {
+      // Filter deleted items (check in code since Firestore != has limitations)
+      if (item.deleted === true) {
+        return false;
+      }
+      
       // CRITICAL: Artwork MUST have a valid userId to appear in Discover
       // This prevents orphaned/misconfigured content from appearing
       const userId = item.userId || item.artistId || item.artist?.id || item.artist?.userId;
@@ -254,6 +258,11 @@ export async function GET(request: NextRequest) {
     // CRITICAL: Also filter portfolioItems - products might be in portfolioItems collection!
     // Apply the same comprehensive filtering to portfolio items
     const filteredPortfolioItems = portfolioResult.items.filter((item: any) => {
+      // Filter deleted items
+      if (item.deleted === true) {
+        return false;
+      }
+      
       // CRITICAL: Must have valid userId
       const userId = item.userId || item.artistId || item.artist?.id || item.artist?.userId;
       if (!userId) {
