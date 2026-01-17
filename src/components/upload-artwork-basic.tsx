@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, startTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1423,7 +1423,7 @@ export function UploadArtworkBasic() {
                         <Checkbox
                           id="bulkUploadSeparately"
                           checked={bulkUploadSeparately}
-                          onCheckedChange={(checked) => setBulkUploadSeparately(checked === true)}
+                          onCheckedChange={(checked) => startTransition(() => setBulkUploadSeparately(checked === true))}
                           className="h-5 w-5 mt-0.5"
                         />
                         <div className="flex-1 space-y-1">
@@ -1673,11 +1673,13 @@ export function UploadArtworkBasic() {
                 id="addToPortfolio"
                 checked={addToPortfolio}
                 onCheckedChange={(checked) => {
-                  setAddToPortfolio(checked);
-                  // Reset for sale when portfolio toggle is disabled
-                  if (!checked) {
-                    setIsForSale(false);
-                  }
+                  startTransition(() => {
+                    setAddToPortfolio(checked);
+                    // Reset for sale when portfolio toggle is disabled
+                    if (!checked) {
+                      setIsForSale(false);
+                    }
+                  });
                 }}
               />
             </div>
@@ -1736,7 +1738,7 @@ export function UploadArtworkBasic() {
                   <Switch
                     id="isForSale"
                     checked={isForSale}
-                    onCheckedChange={setIsForSale}
+                    onCheckedChange={(checked) => startTransition(() => setIsForSale(checked))}
                   />
                 </div>
               </div>
