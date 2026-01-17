@@ -125,6 +125,25 @@ export async function GET(request: NextRequest) {
         return false;
       }
       
+      // CRITICAL: Filter out "System" artist (orphaned/recovered content)
+      const artistName = item.artist?.name || item.artistName || '';
+      const isSystemArtist = artistName.toLowerCase() === 'system' || 
+                             userId.toLowerCase() === 'system' ||
+                             item.artist?.id?.toLowerCase() === 'system';
+      if (isSystemArtist) {
+        console.log('🚫 API FILTERED (System artist):', item.id, item.title);
+        filterRejections.noUserId++;
+        return false;
+      }
+      
+      // CRITICAL: Filter out recovered/orphaned content by description
+      const description = item.description || '';
+      if (description.includes('recovered from Cloudflare')) {
+        console.log('🚫 API FILTERED (recovered content):', item.id, item.title);
+        filterRejections.noUserId++;
+        return false;
+      }
+      
       // Skip events
       if (item.type === 'event' || item.type === 'Event' || item.eventType) {
         filterRejections.events++;
@@ -235,6 +254,23 @@ export async function GET(request: NextRequest) {
       // CRITICAL: Must have valid userId
       const userId = item.userId || item.artistId || item.artist?.id || item.artist?.userId;
       if (!userId) {
+        filterRejections.noUserId++;
+        return false;
+      }
+      
+      // CRITICAL: Filter out "System" artist (orphaned/recovered content)
+      const artistName = item.artist?.name || item.artistName || '';
+      const isSystemArtist = artistName.toLowerCase() === 'system' || 
+                             userId.toLowerCase() === 'system' ||
+                             item.artist?.id?.toLowerCase() === 'system';
+      if (isSystemArtist) {
+        filterRejections.noUserId++;
+        return false;
+      }
+      
+      // CRITICAL: Filter out recovered/orphaned content by description
+      const description = item.description || '';
+      if (description.includes('recovered from Cloudflare')) {
         filterRejections.noUserId++;
         return false;
       }
