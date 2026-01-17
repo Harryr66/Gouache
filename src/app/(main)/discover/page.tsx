@@ -305,6 +305,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
   useEffect(() => {
     if (typeof ResizeObserver === 'undefined') return;
     
+    let recalcScheduled = false;
+    
     const observer = new ResizeObserver((entries) => {
       let needsRecalc = false;
       
@@ -324,21 +326,28 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
         }
       });
       
-      if (needsRecalc) {
+      if (needsRecalc && !recalcScheduled) {
+        recalcScheduled = true;
         // Debounce recalculation
         requestAnimationFrame(() => {
           calculatePositions();
+          recalcScheduled = false;
         });
       }
     });
 
-    // Observe all current items
-    itemRefs.current.forEach((el) => {
-      if (el) observer.observe(el);
-    });
+    // Observe all current items - use timeout to ensure refs are set after render
+    const observeTimeout = setTimeout(() => {
+      itemRefs.current.forEach((el) => {
+        if (el) observer.observe(el);
+      });
+    }, 50);
 
-    return () => observer.disconnect();
-  }, [positions.length, calculatePositions]);
+    return () => {
+      clearTimeout(observeTimeout);
+      observer.disconnect();
+    };
+  }, [items.length, calculatePositions]); // Depend on items.length to observe new items
 
 
   // Calculate container height from positions
@@ -363,6 +372,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       {items.map((item, index) => {
         const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
         const pos = positions[index];
+        const hasPosition = pos !== undefined;
         return (
           <div
             key={itemKey}
@@ -373,6 +383,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
               top: pos?.top ?? 0,
               left: pos?.left ?? 0,
               width: pos?.width ?? `${100 / columnCount}%`,
+              // CRITICAL: Hide items without calculated positions to prevent stacking at 0,0
+              opacity: hasPosition ? 1 : 0,
+              visibility: hasPosition ? 'visible' : 'hidden',
               margin: 0,
               padding: 0,
             }}
