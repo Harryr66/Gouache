@@ -1101,8 +1101,134 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       );
     }
 
+    const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+    const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+    const handleDeleteAll = async () => {
+      setIsDeletingAll(true);
+      try {
+        const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
+        const batch = writeBatch(db);
+        let deleteCount = 0;
+
+        for (const item of discoverContent) {
+          // Get full item data for media URLs
+          let itemData: any = null;
+          if (item.type === 'artwork') {
+            const artworkDoc = await getDoc(doc(db, 'artworks', item.id));
+            if (artworkDoc.exists()) {
+              itemData = artworkDoc.data();
+            }
+          } else if (item.type === 'post') {
+            const postDoc = await getDoc(doc(db, 'posts', item.id));
+            if (postDoc.exists()) {
+              itemData = postDoc.data();
+            }
+          }
+
+          // Delete media from Cloudflare/Firebase
+          if (itemData) {
+            const urlsToDelete: string[] = [];
+            if (itemData.imageUrl) urlsToDelete.push(itemData.imageUrl);
+            if (itemData.videoUrl) urlsToDelete.push(itemData.videoUrl);
+            if (itemData.processVideoUrl) urlsToDelete.push(itemData.processVideoUrl);
+            if (itemData.supportingImages) urlsToDelete.push(...itemData.supportingImages);
+            if (itemData.mediaUrls) urlsToDelete.push(...itemData.mediaUrls);
+
+            for (const url of urlsToDelete) {
+              if (!url || typeof url !== 'string') continue;
+              try {
+                if (url.includes('cloudflarestream.com') || url.includes('imagedelivery.net')) {
+                  await deleteCloudflareMediaByUrl(url);
+                } else if (url.includes('firebasestorage.googleapis.com')) {
+                  const urlParts = url.split('/o/');
+                  if (urlParts.length > 1) {
+                    const pathParts = urlParts[1].split('?');
+                    const storagePath = decodeURIComponent(pathParts[0]);
+                    const fileRef = ref(storage, storagePath);
+                    await deleteObject(fileRef);
+                  }
+                }
+              } catch (e) {
+                console.error('Error deleting media:', e);
+              }
+            }
+          }
+
+          // Delete from Firestore
+          if (item.type === 'artwork') {
+            batch.delete(doc(db, 'artworks', item.id));
+            batch.delete(doc(db, 'portfolioItems', item.id));
+            // Delete related posts
+            const postsQuery = query(collection(db, 'posts'), where('artworkId', '==', item.id));
+            const postsSnapshot = await getDocs(postsQuery);
+            postsSnapshot.forEach((postDoc) => batch.delete(postDoc.ref));
+          } else if (item.type === 'post') {
+            batch.delete(doc(db, 'posts', item.id));
+            if (item.artworkId) {
+              batch.delete(doc(db, 'artworks', item.artworkId));
+              batch.delete(doc(db, 'portfolioItems', item.artworkId));
+            }
+          }
+          deleteCount++;
+        }
+
+        await batch.commit();
+        setDiscoverContent([]);
+        toast({
+          title: "All content deleted",
+          description: `Successfully deleted ${deleteCount} items from your discover tab.`,
+        });
+      } catch (error) {
+        console.error('Error deleting all discover content:', error);
+        toast({
+          title: "Delete failed",
+          description: "Failed to delete all content. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsDeletingAll(false);
+        setShowDeleteAllDialog(false);
+      }
+    };
+
     return (
       <div className="space-y-4">
+        {/* Delete All Button - Only show for profile owner */}
+        {isOwnProfile && discoverContent.length > 0 && (
+          <div className="flex justify-end">
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => setShowDeleteAllDialog(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete All ({discoverContent.length})
+            </Button>
+          </div>
+        )}
+
+        {/* Delete All Confirmation Dialog */}
+        <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete All Discover Content</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete ALL {discoverContent.length} items from your discover tab? 
+                This will permanently remove all media files and cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)} disabled={isDeletingAll}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteAll} disabled={isDeletingAll}>
+                {isDeletingAll ? 'Deleting...' : `Delete All ${discoverContent.length} Items`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
           {discoverContent.map((item) => {
             // For videos, prioritize thumbnail/poster image, fallback to video URL for construction

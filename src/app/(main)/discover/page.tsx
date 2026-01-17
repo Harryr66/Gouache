@@ -3433,7 +3433,7 @@ function DiscoverPageContent() {
                   <ArtworkTile 
                     key={`preload-${artwork.id}`}
                     artwork={artwork} 
-                    hideBanner={isMobile && artworkView === 'list'}
+                    hideBanner={true}
                     // Mark as initial viewport so videos start loading immediately and autoplay when ready
                     isInitialViewport={isInitial && (hasVideo || hasImage) ? true : undefined}
                     // Track image loading (including video posters) - ArtworkTile will pass isVideoPoster flag
@@ -3735,7 +3735,7 @@ function DiscoverPageContent() {
                   return (
                     <ArtworkTile 
                       artwork={artwork} 
-                      hideBanner={isMobile && (artworkView as string) === 'list'}
+                      hideBanner={true}
                       isInitialViewport={isInitial && hasVideo}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
                     />
@@ -3811,7 +3811,7 @@ function DiscoverPageContent() {
                         return (
                           <ArtworkTile 
                             artwork={artwork} 
-                            hideBanner={false}
+                            hideBanner={true}
                             isInitialViewport={isInitial}
                           />
                         );
