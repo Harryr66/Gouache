@@ -384,7 +384,7 @@ export function ShopDisplay({ userId, isOwnProfile }: ShopDisplayProps) {
                   <Button asChild variant="gradient">
                     <a href="/profile">
                       <ImageIcon className="h-4 w-4 mr-2" />
-                      Add Artwork to Portfolio
+                      Add Artworks or Products
                     </a>
                   </Button>
                   <p className="text-xs text-muted-foreground">
