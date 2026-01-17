@@ -2042,8 +2042,11 @@ function DiscoverPageContent() {
           log(`✅ Discover: Showing ${safeArtworks.length} ranked artworks (engagement-based ordering applied)`);
         }
         
-        setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
-        setArtworksLoaded(true); // Mark artworks as loaded
+        // PERFORMANCE: Use startTransition to prevent blocking UI during large state updates
+        startTransition(() => {
+          setArtworks(Array.isArray(finalArtworks) ? finalArtworks : []);
+          setArtworksLoaded(true); // Mark artworks as loaded
+        });
         
         // CRITICAL: Set lastDocument from the LAST item in the final artworks array for pagination
         // Use the last portfolioItem if available, otherwise use the last artwork from artworks collection
@@ -2158,8 +2161,10 @@ function DiscoverPageContent() {
         const fetchDuration = Date.now() - fetchStartTime;
         error(`❌ Error fetching artworks from artist profiles (took ${fetchDuration}ms):`, err);
         // On error, show empty state - no placeholders
-        setArtworks([]);
-        setArtworksLoaded(true); // Mark artworks as loaded even on error
+        startTransition(() => {
+          setArtworks([]);
+          setArtworksLoaded(true); // Mark artworks as loaded even on error
+        });
         // DO NOT reset joke completion state - it must remain true once set to prevent overlay from reappearing
         // setJokeComplete(false); // REMOVED - causes second loading screen
         // setJokeCompleteTime(null); // REMOVED - causes second loading screen
