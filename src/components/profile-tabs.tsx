@@ -1078,31 +1078,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
       }
     };
 
-
-    if (loading) {
-      return (
-        <div className="flex justify-center py-8">
-          <ThemeLoading text="" size="sm" />
-        </div>
-      );
-    }
-
-    if (discoverContent.length === 0) {
-      return (
-        <Card className="p-8 text-center">
-          <CardContent>
-            <Eye className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <CardTitle className="mb-2">No discover content yet</CardTitle>
-            <CardDescription>
-              {isOwnProfile 
-                ? "Share process videos, art tips, and other interesting content."
-                : "This artist hasn't uploaded any discover content yet."}
-            </CardDescription>
-          </CardContent>
-        </Card>
-      );
-    }
-
     const handleDeleteAll = async () => {
       setIsDeletingAll(true);
       
@@ -1209,6 +1184,31 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
         }
       }, 50); // Small delay to let UI update
     };
+
+    // Conditional returns after all hooks and function definitions
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <ThemeLoading text="" size="sm" />
+        </div>
+      );
+    }
+
+    if (discoverContent.length === 0) {
+      return (
+        <Card className="p-8 text-center">
+          <CardContent>
+            <Eye className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <CardTitle className="mb-2">No discover content yet</CardTitle>
+            <CardDescription>
+              {isOwnProfile 
+                ? "Share process videos, art tips, and other interesting content."
+                : "This artist hasn't uploaded any discover content yet."}
+            </CardDescription>
+          </CardContent>
+        </Card>
+      );
+    }
 
     return (
       <div className="space-y-4">
