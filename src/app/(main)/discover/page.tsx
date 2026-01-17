@@ -3153,6 +3153,30 @@ function DiscoverPageContent() {
     return sorted;
   }, [baseFilteredArtworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements, getFollowedArtists, artworkView]);
 
+  // Memoize image-only artworks for grid view to prevent array recreation on every render
+  const imageOnlyArtworks = useMemo(() => {
+    // Grid view shows ONLY images (no videos) from Cloudflare
+    // Videos will only appear in video feed (list view)
+    return filteredAndSortedArtworks.filter((item) => {
+      // Keep ads
+      if ('type' in item && item.type === 'ad') return true;
+      // Filter out videos - only show images in grid view
+      const artwork = item as Artwork;
+      const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
+      if (hasVideo) return false; // Filter out videos
+      
+      // STRICT CLOUDFLARE VALIDATION: Only show Cloudflare images
+      const imageUrl = artwork.imageUrl || (artwork as any).supportingImages?.[0] || (artwork as any).images?.[0] || '';
+      if (!imageUrl) return false; // Skip items with no image
+      
+      // Must be Cloudflare Images
+      if (!isCloudflareImage(imageUrl)) return false;
+      if (!isValidCloudflareImageUrl(imageUrl)) return false;
+      
+      return true;
+    });
+  }, [filteredAndSortedArtworks]);
+
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
     let filtered = Array.isArray(marketplaceProducts) ? marketplaceProducts : [];
@@ -3775,37 +3799,7 @@ function DiscoverPageContent() {
               </div>
             ) : !showLoadingScreen && artworkView === 'grid' ? (
               <MasonryGrid
-                items={(() => {
-                  // Grid view shows ONLY images (no videos) from Cloudflare
-                  // Videos will only appear in video feed (list view)
-                  // CRITICAL: Use ALL filteredAndSortedArtworks for grid view, not visibleFilteredArtworks
-                  // This ensures all items are displayed and gaps are filled
-                  const imageOnlyArtworks = filteredAndSortedArtworks.filter((item) => {
-                    // Keep ads
-                    if ('type' in item && item.type === 'ad') return true;
-                    // Filter out videos - only show images in grid view
-                    const artwork = item as Artwork;
-                    const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
-                    if (hasVideo) return false; // Filter out videos
-                    
-                    // STRICT CLOUDFLARE VALIDATION: Only show Cloudflare images
-                    const imageUrl = artwork.imageUrl || (artwork as any).supportingImages?.[0] || (artwork as any).images?.[0] || '';
-                    if (!imageUrl) return false; // Skip items with no image
-                    
-                    // Must be Cloudflare Images
-                    if (!isCloudflareImage(imageUrl)) return false;
-                    if (!isValidCloudflareImageUrl(imageUrl)) return false;
-                    
-                    return true;
-                  });
-                  console.log('🖼️ Grid view (images only):', {
-                    artworkView,
-                    totalArtworks: filteredAndSortedArtworks.length,
-                    imageArtworksCount: imageOnlyArtworks.length,
-                    filteredOut: filteredAndSortedArtworks.length - imageOnlyArtworks.length
-                  });
-                  return imageOnlyArtworks;
-                })()}
+                items={imageOnlyArtworks}
                 columnCount={columnCount}
                 gap={4}
                 renderItem={(item) => {
