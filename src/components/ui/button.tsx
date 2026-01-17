@@ -42,54 +42,50 @@ export interface ButtonProps
   asChild?: boolean
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+// Memoized gradient content wrapper to reduce re-renders
+const GradientContent = React.memo(({ children }: { children: React.ReactNode }) => (
+  <span className="relative z-[2] inline-flex items-center justify-center gap-2">
+    {children}
+  </span>
+))
+GradientContent.displayName = "GradientContent"
+
+const Button = React.memo(React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, children, ...props }, ref) => {
-    const classes = cn(buttonVariants({ variant, size, className }))
+    const classes = React.useMemo(
+      () => cn(buttonVariants({ variant, size, className })),
+      [variant, size, className]
+    )
 
-    if (variant === "gradient") {
-      let content: React.ReactNode
-
-      if (React.isValidElement(children)) {
-        const element = children as React.ReactElement<{
-          className?: string
-          children?: React.ReactNode
-        }>
-        const existing = element.props.className
-        content = React.cloneElement(element, {
-          className: cn(
-            existing,
-            "relative inline-flex items-center justify-center gap-2"
-          ),
-          children: (
-            <span className="relative z-[2] inline-flex items-center justify-center gap-2">
-              {element.props.children}
-            </span>
-          ),
-        })
-      } else {
-        content = (
-          <span className="relative z-[2] inline-flex items-center justify-center gap-2">
-            {children}
-          </span>
-        )
+    const content = React.useMemo(() => {
+      if (variant === "gradient") {
+        if (React.isValidElement(children)) {
+          const element = children as React.ReactElement<{
+            className?: string
+            children?: React.ReactNode
+          }>
+          const existing = element.props.className
+          return React.cloneElement(element, {
+            className: cn(
+              existing,
+              "relative inline-flex items-center justify-center gap-2"
+            ),
+            children: <GradientContent>{element.props.children}</GradientContent>,
+          })
+        }
+        return <GradientContent>{children}</GradientContent>
       }
-
-      const Comp = asChild ? Slot : "button"
-      return (
-        <Comp ref={ref} className={classes} {...props}>
-          {content}
-        </Comp>
-      )
-    }
+      return children
+    }, [variant, children])
 
     const Comp = asChild ? Slot : "button"
     return (
       <Comp ref={ref} className={classes} {...props}>
-        {children}
+        {content}
       </Comp>
     )
   }
-)
+))
 Button.displayName = "Button"
 
 export { Button, buttonVariants }
