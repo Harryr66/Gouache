@@ -171,7 +171,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Deleted ${totalDeleted} orphaned items`,
+      message: `Deleted ${totalDeleted} items`,
+      params: { deleteAllContent, targetUserId },
       ...results,
       timestamp: new Date().toISOString(),
     });
