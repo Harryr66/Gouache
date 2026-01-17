@@ -359,18 +359,20 @@ export default function CoursesPage() {
         </div>
 
         <Tabs defaultValue="courses" className="w-full">
-          {/* Tabs styled to match Discover page - 50/50 width with padding */}
-          <TabsList className="mb-6 w-full h-auto p-0 bg-transparent gap-4">
+          {/* Tabs styled to match Discover page - 50/50 width with minimal gap */}
+          <TabsList className="mb-6 w-full h-auto p-0 bg-transparent" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px' }}>
             <TabsTrigger 
               value="courses" 
-              className="flex-1 flex items-center justify-center gap-2 h-12 rounded-lg border-2 border-border data-[state=active]:bg-background data-[state=active]:border-primary data-[state=inactive]:bg-transparent"
+              className="flex items-center justify-center gap-2 h-10 rounded-l-md border-2 border-border"
+              style={{ width: '100%', boxSizing: 'border-box' }}
             >
               <Brain className="h-4 w-4" />
               Courses
             </TabsTrigger>
             <TabsTrigger 
               value="live" 
-              className="flex-1 flex items-center justify-center gap-2 h-12 rounded-lg border-2 border-border data-[state=active]:bg-background data-[state=active]:border-primary data-[state=inactive]:bg-transparent"
+              className="flex items-center justify-center gap-2 h-10 rounded-r-md border-2 border-border"
+              style={{ width: '100%', boxSizing: 'border-box' }}
             >
               <Video className="h-4 w-4" />
               Learn Live
