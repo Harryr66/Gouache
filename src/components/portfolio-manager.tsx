@@ -1265,54 +1265,6 @@ export function PortfolioManager() {
         
         return (
           <>
-            {/* Delete All Button */}
-            <div className="flex justify-end mb-4">
-              <Button
-                variant="destructive"
-                onClick={async () => {
-                  if (!confirm(`DELETE ALL ${portfolioItems.length} portfolio items? This will permanently delete from Cloudflare AND Firebase. Cannot be undone!`)) return;
-                  
-                  try {
-                    const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
-                    const { writeBatch, doc: firestoreDoc, collection, query, where, getDocs, getDoc } = await import('firebase/firestore');
-                    
-                    for (const item of portfolioItems) {
-                      const itemDoc = await getDoc(firestoreDoc(db, 'portfolioItems', item.id));
-                      if (!itemDoc.exists()) continue;
-                      const itemData = itemDoc.data();
-                      
-                      // Delete media from Cloudflare
-                      const supportingImgs = Array.isArray(itemData.supportingImages) ? itemData.supportingImages : [];
-                      const mediaUrlsArr = Array.isArray(itemData.mediaUrls) ? itemData.mediaUrls : [];
-                      const urls = [itemData.imageUrl, itemData.videoUrl, ...supportingImgs, ...mediaUrlsArr].filter(Boolean);
-                      for (const url of urls) {
-                        if (url?.includes('cloudflarestream.com') || url?.includes('imagedelivery.net')) {
-                          await deleteCloudflareMediaByUrl(url);
-                        }
-                      }
-                      
-                      // Hard delete from Firestore
-                      const batch = writeBatch(db);
-                      batch.delete(firestoreDoc(db, 'portfolioItems', item.id));
-                      const artworkDoc = await getDoc(firestoreDoc(db, 'artworks', item.id));
-                      if (artworkDoc.exists()) batch.delete(firestoreDoc(db, 'artworks', item.id));
-                      const postsSnap = await getDocs(query(collection(db, 'posts'), where('artworkId', '==', item.id)));
-                      postsSnap.forEach(p => batch.delete(p.ref));
-                      await batch.commit();
-                    }
-                    
-                    toast({ title: "Deleted", description: `Deleted all ${portfolioItems.length} portfolio items.` });
-                    setPortfolioItems([]);
-                  } catch (error: any) {
-                    toast({ variant: 'destructive', title: 'Delete Failed', description: error.message });
-                  }
-                }}
-                className="flex items-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete All ({portfolioItems.length})
-              </Button>
-            </div>
             <div 
               className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1"
               data-portfolio-count={portfolioItems.length}

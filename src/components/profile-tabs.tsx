@@ -234,52 +234,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
 
     return (
       <div className="space-y-4">
-        {/* Delete All Courses Button */}
-        {isOwnProfile && availableCourses.length > 0 && (
-          <div className="flex justify-end">
-            <Button
-              variant="destructive"
-              onClick={async () => {
-                if (!confirm(`DELETE ALL ${availableCourses.length} courses? This will permanently delete from Cloudflare AND Firebase. Cannot be undone!`)) return;
-                
-                try {
-                  const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
-                  const { writeBatch, doc: firestoreDoc, collection, query, where, getDocs, getDoc } = await import('firebase/firestore');
-                  
-                  for (const course of availableCourses) {
-                    const courseDoc = await getDoc(firestoreDoc(db, 'courses', course.id));
-                    if (!courseDoc.exists()) continue;
-                    const courseData = courseDoc.data();
-                    
-                    const mediaUrlsArr = Array.isArray(courseData.mediaUrls) ? courseData.mediaUrls : [];
-                    const urls = [courseData.thumbnail, courseData.videoUrl, ...mediaUrlsArr].filter(Boolean);
-                    for (const url of urls) {
-                      if (url?.includes('cloudflarestream.com') || url?.includes('imagedelivery.net')) {
-                        await deleteCloudflareMediaByUrl(url);
-                      }
-                    }
-                    
-                    const batch = writeBatch(db);
-                    batch.delete(firestoreDoc(db, 'courses', course.id));
-                    const artworksSnap = await getDocs(query(collection(db, 'artworks'), where('courseId', '==', course.id)));
-                    artworksSnap.forEach(a => batch.delete(a.ref));
-                    await batch.commit();
-                  }
-                  
-                  toast({ title: "Deleted", description: `Deleted all ${availableCourses.length} courses.` });
-                  setProfileCourses([]);
-                } catch (error: any) {
-                  toast({ variant: 'destructive', title: 'Delete Failed', description: error.message });
-                }
-              }}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete All ({availableCourses.length})
-            </Button>
-          </div>
-        )}
-        
         <div className="grid grid-cols-3 gap-2">
         {availableCourses.map((course) => {
           const isEnrolled = enrolledCourseIds.includes(course.id);
@@ -1132,48 +1086,6 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
 
     return (
       <div className="space-y-4">
-        {/* Delete All Button */}
-        {isOwnProfile && discoverContent.length > 0 && (
-          <div className="flex justify-end">
-            <Button
-              variant="destructive"
-              onClick={async () => {
-                if (!confirm(`DELETE ALL ${discoverContent.length} discover items? This will permanently delete from Cloudflare AND Firebase. Cannot be undone!`)) return;
-                
-                try {
-                  const { deleteCloudflareMediaByUrl } = await import('@/lib/cloudflare-delete');
-                  const { writeBatch, doc: firestoreDoc } = await import('firebase/firestore');
-                  
-                  for (const item of discoverContent) {
-                    const supportingImgs = Array.isArray(item.supportingImages) ? item.supportingImages : [];
-                    const mediaUrlsArr = Array.isArray(item.mediaUrls) ? item.mediaUrls : [];
-                    const urls = [item.imageUrl, item.videoUrl, ...supportingImgs, ...mediaUrlsArr].filter(Boolean);
-                    for (const url of urls) {
-                      if (url?.includes('cloudflarestream.com') || url?.includes('imagedelivery.net')) {
-                        await deleteCloudflareMediaByUrl(url);
-                      }
-                    }
-                    
-                    const batch = writeBatch(db);
-                    if (item.type === 'artwork') batch.delete(firestoreDoc(db, 'artworks', item.id));
-                    if (item.type === 'post') batch.delete(firestoreDoc(db, 'posts', item.id));
-                    await batch.commit();
-                  }
-                  
-                  toast({ title: "Deleted", description: `Deleted all ${discoverContent.length} discover items.` });
-                  setDiscoverContent([]);
-                } catch (error: any) {
-                  toast({ variant: 'destructive', title: 'Delete Failed', description: error.message });
-                }
-              }}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete All ({discoverContent.length})
-            </Button>
-          </div>
-        )}
-
         <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
           {discoverContent.map((item) => {
             // For videos, prioritize thumbnail/poster image, fallback to video URL for construction
