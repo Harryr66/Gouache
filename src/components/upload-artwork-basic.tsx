@@ -88,6 +88,9 @@ export function UploadArtworkBasic() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentUploadingFile, setCurrentUploadingFile] = useState<string>('');
   const [bulkUploadSeparately, setBulkUploadSeparately] = useState(false); // Bulk upload each file separately
+  
+  // Maximum images per upload to prevent accidents and timeouts
+  const MAX_IMAGES = 10;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -115,7 +118,26 @@ export function UploadArtworkBasic() {
         });
       }
       
-      if (imageFiles.length > 0) {
+      // Check if adding these would exceed the limit
+      const currentCount = files.length;
+      const availableSlots = MAX_IMAGES - currentCount;
+      
+      if (availableSlots <= 0) {
+        toast({
+          title: `Maximum ${MAX_IMAGES} images`,
+          description: 'Remove some images or upload in batches.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      if (imageFiles.length > availableSlots) {
+        toast({
+          title: `Only adding ${availableSlots} images`,
+          description: `Maximum ${MAX_IMAGES} images per upload. ${imageFiles.length - availableSlots} images were not added.`,
+        });
+        setFiles(prev => [...prev, ...imageFiles.slice(0, availableSlots)]);
+      } else if (imageFiles.length > 0) {
         setFiles(prev => [...prev, ...imageFiles]);
       }
     }
@@ -149,36 +171,39 @@ export function UploadArtworkBasic() {
     e.preventDefault();
     setIsDragging(false);
     
-    const droppedFiles = Array.from(e.dataTransfer.files).filter(
-      file => file.type.startsWith('image/') || file.type.startsWith('video/')
-    );
+    // IMAGES ONLY - filter out videos (they go in process video section)
+    const allDropped = Array.from(e.dataTransfer.files);
+    const imageFiles = allDropped.filter(file => file.type.startsWith('image/'));
+    const hasVideos = allDropped.some(file => file.type.startsWith('video/'));
     
-    // Validate video files
-    for (const file of droppedFiles) {
-      if (file.type.startsWith('video/')) {
-        try {
-          const duration = await getVideoDuration(file);
-          if (duration > 60) {
-            toast({
-              title: 'Video too long',
-              description: `Video "${file.name}" is ${Math.round(duration)} seconds. Maximum length is 60 seconds.`,
-              variant: 'destructive',
-            });
-            droppedFiles.splice(droppedFiles.indexOf(file), 1);
-          }
-        } catch (error) {
-          toast({
-            title: 'Error reading video',
-            description: `Could not read video "${file.name}". Please try another file.`,
-            variant: 'destructive',
-          });
-          droppedFiles.splice(droppedFiles.indexOf(file), 1);
-        }
-      }
+    if (hasVideos) {
+      toast({
+        title: 'Videos go in Process Video',
+        description: 'Add your video below as a process video to accompany your artwork.',
+      });
     }
     
-    if (droppedFiles.length > 0) {
-      setFiles(prev => [...prev, ...droppedFiles]);
+    // Check if adding these would exceed the limit
+    const currentCount = files.length;
+    const availableSlots = MAX_IMAGES - currentCount;
+    
+    if (availableSlots <= 0) {
+      toast({
+        title: `Maximum ${MAX_IMAGES} images`,
+        description: 'Remove some images or upload in batches.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (imageFiles.length > availableSlots) {
+      toast({
+        title: `Only adding ${availableSlots} images`,
+        description: `Maximum ${MAX_IMAGES} images per upload. ${imageFiles.length - availableSlots} images were not added.`,
+      });
+      setFiles(prev => [...prev, ...imageFiles.slice(0, availableSlots)]);
+    } else if (imageFiles.length > 0) {
+      setFiles(prev => [...prev, ...imageFiles]);
     }
   };
 
@@ -1278,7 +1303,12 @@ export function UploadArtworkBasic() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Media Upload (Images Only) */}
           <div className="space-y-2">
-            <Label>Images *</Label>
+            <div className="flex items-center justify-between">
+              <Label>Images *</Label>
+              <span className="text-xs text-muted-foreground">
+                {files.length}/{MAX_IMAGES} max
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground">
               Upload images to showcase your artwork.
             </p>
