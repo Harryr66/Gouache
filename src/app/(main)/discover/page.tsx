@@ -216,6 +216,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
   // PERFORMANCE: Cache item heights to avoid repeated getBoundingClientRect calls
   const itemHeightsRef = useRef<Map<number, number>>(new Map());
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  // Track previous items length to detect new items being added
+  const prevItemsLengthRef = useRef<number>(0);
+  // Ref-based calculation function for use in callbacks
+  const calculatePositionsRef = useRef<(() => void) | null>(null);
   
   // Note: Full virtualization not possible with masonry (need all positions for height calculation)
   // Instead, we render all items but use IntersectionObserver in ArtworkTile to only load visible images
@@ -225,8 +229,13 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
     if (!containerRef.current || columnCount === 0 || items.length === 0) {
       setPositions([]);
       itemHeightsRef.current.clear();
+      prevItemsLengthRef.current = 0;
       return;
     }
+
+    // Detect if new items were added (infinite scroll)
+    const isNewItemsAdded = items.length > prevItemsLengthRef.current;
+    prevItemsLengthRef.current = items.length;
 
     const calculatePositions = () => {
       if (!containerRef.current) return;
@@ -243,12 +252,20 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       }
       
       const columnHeights = new Array(columnCount).fill(0);
-      const newPositions: Array<{ top: number; left: number; width: number } | null> = new Array(items.length).fill(null);
+      const newPositions: Array<{ top: number; left: number; width: number }> = [];
+      let allItemsPositioned = true;
 
       // Process items in order to maintain correct index mapping
       for (let index = 0; index < items.length; index++) {
         const itemEl = itemRefs.current[index];
-        if (!itemEl) continue; // Skip items without refs
+        
+        if (!itemEl) {
+          // Item ref not yet set - this item will be positioned on next calculation
+          allItemsPositioned = false;
+          // Push placeholder to maintain index alignment
+          newPositions.push({ top: -9999, left: -9999, width: itemWidth });
+          continue;
+        }
 
         try {
           // PERFORMANCE: Use cached height if available, otherwise measure once
@@ -259,7 +276,10 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
             if (itemHeight > 0) {
               itemHeightsRef.current.set(index, itemHeight);
             } else {
-              continue; // Skip items with no height
+              // Item has no height yet - will be positioned on next calculation
+              allItemsPositioned = false;
+              newPositions.push({ top: -9999, left: -9999, width: itemWidth });
+              continue;
             }
           }
           
@@ -275,22 +295,35 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
           const top = currentColumnHeight === 0 ? 0 : Math.ceil(currentColumnHeight) + gap;
           
           if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
+            newPositions.push({ top: -9999, left: -9999, width: itemWidth });
+            allItemsPositioned = false;
             continue;
           }
 
-          // CRITICAL: Use index assignment, not push, to maintain correct mapping
-          newPositions[index] = { top, left, width: itemWidth };
+          newPositions.push({ top, left, width: itemWidth });
           columnHeights[shortestColumnIndex] = top + itemHeight;
         } catch (error) {
           if (process.env.NODE_ENV === 'development') console.error('Error calculating masonry position for item', index, error);
+          newPositions.push({ top: -9999, left: -9999, width: itemWidth });
+          allItemsPositioned = false;
         }
       }
 
-      // Only update if we have at least one positioned item
-      if (newPositions.some(p => p !== null)) {
-        setPositions(newPositions as Array<{ top: number; left: number; width: number }>);
+      // Always update positions - items with top: -9999 will be hidden via CSS
+      setPositions(newPositions);
+      
+      // If not all items were positioned, schedule another calculation
+      if (!allItemsPositioned) {
+        setTimeout(() => {
+          if (calculatePositionsRef.current) {
+            calculatePositionsRef.current();
+          }
+        }, 50);
       }
     };
+    
+    // Store ref for use in callbacks
+    calculatePositionsRef.current = calculatePositions;
 
     // PERFORMANCE: Debounced calculation with requestAnimationFrame
     let timeout: NodeJS.Timeout;
@@ -309,10 +342,19 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
           calculationScheduled = false;
           rafId = null;
         });
-      }, 100); // Reduced from 200ms for faster response
+      }, 50); // Faster response for smoother infinite scroll
     };
     
+    // Initial calculation
     scheduleCalculation();
+    
+    // If new items were added, schedule additional calculations to catch them after render
+    if (isNewItemsAdded) {
+      // Multiple rapid recalculations to ensure new items get positioned quickly
+      [0, 100, 200, 400].forEach(delay => {
+        setTimeout(calculatePositions, delay);
+      });
+    }
     
     // PERFORMANCE: Use ResizeObserver instead of individual event listeners
     // This is much more efficient than adding listeners to every image/video
@@ -324,8 +366,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
         let heightsChanged = false;
         entries.forEach((entry) => {
           const itemEl = entry.target as HTMLElement;
-          const index = itemRefs.current.indexOf(itemEl as any);
-          if (index >= 0) {
+          const indexAttr = itemEl.getAttribute('data-artwork-index');
+          const index = indexAttr ? parseInt(indexAttr, 10) : -1;
+          if (index >= 0 && index < items.length) {
             const newHeight = Math.ceil(entry.contentRect.height) || 0;
             const oldHeight = itemHeightsRef.current.get(index);
             if (newHeight > 0 && newHeight !== oldHeight) {
@@ -345,28 +388,6 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
           resizeObserverRef.current.observe(itemEl);
         }
       });
-      
-      // Re-observe after delays to catch newly rendered items
-      // This handles the case where items render after the initial observation
-      const observeDelays = [100, 300, 500];
-      const observeTimeouts = observeDelays.map(delay => 
-        setTimeout(() => {
-          itemRefs.current.forEach((itemEl, index) => {
-            if (itemEl && index < items.length && resizeObserverRef.current) {
-              try {
-                resizeObserverRef.current.observe(itemEl);
-              } catch (e) {
-                // Already observed, ignore
-              }
-            }
-          });
-          // Trigger recalculation after observing
-          scheduleCalculation();
-        }, delay)
-      );
-      
-      // Store for cleanup
-      (resizeObserverRef as any)._observeTimeouts = observeTimeouts;
     } else {
       // Fallback: Single delegated event listener (much better than individual listeners)
       handleMediaLoad = (e: Event) => {
@@ -397,11 +418,6 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       clearTimeout(timeout);
       if (rafId !== null) cancelAnimationFrame(rafId);
       
-      // Cleanup observe timeouts
-      if ((resizeObserverRef as any)?._observeTimeouts) {
-        (resizeObserverRef as any)._observeTimeouts.forEach((t: NodeJS.Timeout) => clearTimeout(t));
-      }
-      
       // Cleanup ResizeObserver
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect();
@@ -416,6 +432,22 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       }
     };
   }, [items.length, columnCount, gap, items]);
+  
+  // Secondary effect: observe new item refs after they're set by React render
+  useEffect(() => {
+    if (!resizeObserverRef.current) return;
+    
+    // Observe any items that have refs but aren't being observed yet
+    itemRefs.current.forEach((itemEl, index) => {
+      if (itemEl && index < items.length) {
+        try {
+          resizeObserverRef.current?.observe(itemEl);
+        } catch (e) {
+          // Already observed
+        }
+      }
+    });
+  }, [positions, items.length]);
 
 
   // PERFORMANCE: Memoize container height calculation to avoid recalculating on every render
@@ -423,8 +455,9 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
     if (positions.length === 0 || itemRefs.current.length === 0) return 0;
     
     // Use cached heights from itemHeightsRef when available
+    // Only consider valid positions (not placeholders with top: -9999)
     const heights = positions.map((pos, index) => {
-      if (!pos) return 0; // Handle null positions
+      if (!pos || pos.top < 0) return 0; // Handle null or placeholder positions
       const cachedHeight = itemHeightsRef.current.get(index);
       const itemHeight = cachedHeight || itemRefs.current[index]?.offsetHeight || 0;
       const height = pos.top + itemHeight;
@@ -441,19 +474,31 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       {items.map((item, index) => {
         const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
         const pos = positions[index];
-        const hasPosition = pos && pos.top !== undefined;
+        // Valid position: exists and has non-negative top (placeholder uses -9999)
+        const hasValidPosition = pos && pos.top >= 0 && pos.left >= 0;
         return (
           <div
             key={itemKey}
             data-artwork-index={index}
-            ref={(el) => { itemRefs.current[index] = el; }}
+            ref={(el) => { 
+              itemRefs.current[index] = el;
+              // When ref is set for a new item, trigger observation
+              if (el && resizeObserverRef.current) {
+                try {
+                  resizeObserverRef.current.observe(el);
+                } catch (e) {
+                  // Already observed
+                }
+              }
+            }}
             style={{
               position: 'absolute',
-              top: hasPosition ? pos.top : 0,
-              left: hasPosition ? pos.left : 0,
-              width: hasPosition ? pos.width : `${100 / columnCount}%`,
-              opacity: hasPosition ? 1 : 0, // Hide items without positions
-              visibility: hasPosition ? 'visible' : 'hidden', // Prevent layout interference
+              top: hasValidPosition ? pos.top : 0,
+              left: hasValidPosition ? pos.left : 0,
+              width: pos?.width || `${100 / columnCount}%`,
+              opacity: hasValidPosition ? 1 : 0,
+              visibility: hasValidPosition ? 'visible' : 'hidden',
+              pointerEvents: hasValidPosition ? 'auto' : 'none',
               margin: 0,
               padding: 0,
               transition: 'none',
