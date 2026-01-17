@@ -243,10 +243,12 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
       }
       
       const columnHeights = new Array(columnCount).fill(0);
-      const newPositions: Array<{ top: number; left: number; width: number }> = [];
+      const newPositions: Array<{ top: number; left: number; width: number } | null> = new Array(items.length).fill(null);
 
-      itemRefs.current.forEach((itemEl, index) => {
-        if (!itemEl || index >= items.length) return;
+      // Process items in order to maintain correct index mapping
+      for (let index = 0; index < items.length; index++) {
+        const itemEl = itemRefs.current[index];
+        if (!itemEl) continue; // Skip items without refs
 
         try {
           // PERFORMANCE: Use cached height if available, otherwise measure once
@@ -257,7 +259,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
             if (itemHeight > 0) {
               itemHeightsRef.current.set(index, itemHeight);
             } else {
-              return; // Skip items with no height
+              continue; // Skip items with no height
             }
           }
           
@@ -273,18 +275,20 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
           const top = currentColumnHeight === 0 ? 0 : Math.ceil(currentColumnHeight) + gap;
           
           if (!isFinite(top) || !isFinite(left) || !isFinite(itemWidth)) {
-            return;
+            continue;
           }
 
-          newPositions.push({ top, left, width: itemWidth });
+          // CRITICAL: Use index assignment, not push, to maintain correct mapping
+          newPositions[index] = { top, left, width: itemWidth };
           columnHeights[shortestColumnIndex] = top + itemHeight;
         } catch (error) {
           if (process.env.NODE_ENV === 'development') console.error('Error calculating masonry position for item', index, error);
         }
-      });
+      }
 
-      if (newPositions.length > 0) {
-        setPositions(newPositions);
+      // Only update if we have at least one positioned item
+      if (newPositions.some(p => p !== null)) {
+        setPositions(newPositions as Array<{ top: number; left: number; width: number }>);
       }
     };
 
@@ -392,6 +396,7 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
     
     // Use cached heights from itemHeightsRef when available
     const heights = positions.map((pos, index) => {
+      if (!pos) return 0; // Handle null positions
       const cachedHeight = itemHeightsRef.current.get(index);
       const itemHeight = cachedHeight || itemRefs.current[index]?.offsetHeight || 0;
       const height = pos.top + itemHeight;
@@ -407,6 +412,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
           But ArtworkTile uses IntersectionObserver to only load visible images */}
       {items.map((item, index) => {
         const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
+        const pos = positions[index];
+        const hasPosition = pos && pos.top !== undefined;
         return (
           <div
             key={itemKey}
@@ -414,10 +421,11 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
             ref={(el) => { itemRefs.current[index] = el; }}
             style={{
               position: 'absolute',
-              top: positions[index]?.top ?? 0,
-              left: positions[index]?.left ?? 0,
-              width: positions[index]?.width || `${100 / columnCount}%`,
-              opacity: 1,
+              top: hasPosition ? pos.top : 0,
+              left: hasPosition ? pos.left : 0,
+              width: hasPosition ? pos.width : `${100 / columnCount}%`,
+              opacity: hasPosition ? 1 : 0, // Hide items without positions
+              visibility: hasPosition ? 'visible' : 'hidden', // Prevent layout interference
               margin: 0,
               padding: 0,
               transition: 'none',
