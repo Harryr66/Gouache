@@ -1088,6 +1088,9 @@ function DiscoverPageContent() {
     const fetchArtworks = async () => {
       fetchingRef.current = true;
       const fetchStartTime = Date.now();
+      
+      // PERFORMANCE: Yield to main thread to allow UI to paint before heavy processing
+      await new Promise(resolve => setTimeout(resolve, 0));
       try {
         // DO NOT set loading to true here - loading is already managed by joke completion logic
         // Setting it to true here would reset the loading screen after joke completes
