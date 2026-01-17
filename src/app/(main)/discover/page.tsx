@@ -1014,32 +1014,30 @@ function DiscoverPageContent() {
       try {
         const width = window.innerWidth;
         
-        // Update mobile detection
-        setIsMobile(width < 768);
+        // Calculate all values first
+        const newIsMobile = width < 768;
         
-        // Update items per row (inline logic to avoid dependency on getItemsPerRow)
-        let newItemsPerRow = 6; // default
+        let newItemsPerRow = 6;
         if (width >= 1280) newItemsPerRow = 6;
         else if (width >= 1024) newItemsPerRow = 5;
         else if (width >= 768) newItemsPerRow = 4;
         else newItemsPerRow = 3;
-        setItemsPerRow(newItemsPerRow);
         
-        // Update column count for masonry
-        let newColumnCount = 2; // mobile default
+        let newColumnCount = 2;
         if (width >= 1536) newColumnCount = 6;
         else if (width >= 1280) newColumnCount = 5;
         else if (width >= 1024) newColumnCount = 4;
         else if (width >= 768) newColumnCount = 3;
-        setColumnCount(newColumnCount);
         
-        // Update visibleCount - NO LIMITS, just calculate based on rows
-        // CRITICAL: visibleCount is only for initial load, not for limiting displayed content
-        setVisibleCount((prev) => {
-          const completeRows = Math.floor(prev / newItemsPerRow);
-          const calculated = Math.max(newItemsPerRow, completeRows * newItemsPerRow);
-          // NO CAPPING - just calculate based on layout
-          return calculated;
+        // PERFORMANCE: Batch all state updates in startTransition to prevent UI blocking
+        startTransition(() => {
+          setIsMobile(newIsMobile);
+          setItemsPerRow(newItemsPerRow);
+          setColumnCount(newColumnCount);
+          setVisibleCount((prev) => {
+            const completeRows = Math.floor(prev / newItemsPerRow);
+            return Math.max(newItemsPerRow, completeRows * newItemsPerRow);
+          });
         });
       } catch (error) {
         if (isDev) console.error('Error in resize handler:', error);
@@ -1064,19 +1062,17 @@ function DiscoverPageContent() {
 
   // Set default views and visibleCount based on device
   useEffect(() => {
-    if (!isMobile) {
-      // Desktop: default to grid view, but allow user to switch
-      // Don't force it - let user's choice persist
-      // USER REQUEST: Desktop: 5 cols × 9 rows = 45 items (9 rows as requested 5 times)
-      setVisibleCount(45); // 9 rows × 5 cols = 45 items
-    } else {
-      // On mobile, ensure correct defaults
-      setArtworkView('grid');
-      setMarketView('list');
-      setEventsView('grid'); // Events use grid view on mobile
-      // USER REQUEST: Mobile: 2 cols × 9 rows = 18 items (9 rows as requested 5 times)
-      setVisibleCount(18); // 9 rows × 2 cols = 18 items
-    }
+    // PERFORMANCE: Use startTransition for non-urgent state updates
+    startTransition(() => {
+      if (!isMobile) {
+        setVisibleCount(45); // 9 rows × 5 cols = 45 items
+      } else {
+        setArtworkView('grid');
+        setMarketView('list');
+        setEventsView('grid');
+        setVisibleCount(18); // 9 rows × 2 cols = 18 items
+      }
+    });
   }, [isMobile]);
 
   // Track if fetch is in progress to prevent multiple simultaneous calls
@@ -3155,7 +3151,9 @@ function DiscoverPageContent() {
     // DO NOT reset to lower values - this was causing only 3 tiles to show
     // NO LIMITS - visibleCount is only for initial load calculation, not for capping displayed content
     const resetCount = isMobile ? 18 : 45; // 9 rows as requested (was 40/60)
-    setVisibleCount(resetCount);
+    startTransition(() => {
+      setVisibleCount(resetCount);
+    });
   }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, isMobile, followingOnly]);
 
   // Marketplace products useEffect removed - marketplace tab is hidden
