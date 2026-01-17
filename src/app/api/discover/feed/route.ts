@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PortfolioService } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 300; // Revalidate every 5 minutes (ISR)
+export const revalidate = 0; // No caching - always fresh
 
 /**
  * Cached Discover Feed API
@@ -386,9 +386,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Set cache headers for optimal browser caching
-    // Public cache for 5 minutes (matches revalidate time)
-    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    // No caching - always fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     
     return response;
   } catch (error: any) {
