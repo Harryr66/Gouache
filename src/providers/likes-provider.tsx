@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, startTransition } from 'react';
 import { getAuth } from 'firebase/auth';
 import { arrayRemove, arrayUnion, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -24,19 +24,25 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
     async function loadLikes() {
       const user = auth.currentUser;
       if (!user) {
-        setLikedArtworkIds(new Set());
-        setLoading(false);
+        startTransition(() => {
+          setLikedArtworkIds(new Set());
+          setLoading(false);
+        });
         return;
       }
 
       try {
         const userDoc = await getDoc(doc(db, 'userProfiles', user.uid));
         const liked = userDoc.exists() ? (userDoc.data()?.likedArtworks ?? []) : [];
-        setLikedArtworkIds(new Set(liked));
+        startTransition(() => {
+          setLikedArtworkIds(new Set(liked));
+        });
       } catch (error) {
         console.error('Failed to load liked artworks', error);
       } finally {
-        setLoading(false);
+        startTransition(() => {
+          setLoading(false);
+        });
       }
     }
 
@@ -90,7 +96,9 @@ export function LikesProvider({ children }: { children: React.ReactNode }) {
         await engagementTracker.recordLike(artworkId, true);
       }
 
-      setLikedArtworkIds(new Set(currentlyLiked));
+      startTransition(() => {
+        setLikedArtworkIds(new Set(currentlyLiked));
+      });
     } catch (error) {
       console.error('Failed to persist like', error);
     }

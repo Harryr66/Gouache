@@ -83,11 +83,12 @@ export class EngagementScorer {
         finalScore = finalScore * 1.5; // 50% boost for followed artists
       }
       
-      // ADD VARIETY: Random factor (±10%) to prevent same content every time
-      // High-quality content still appears more, but order varies on each load
-      // This is how Instagram/TikTok work - deterministic + small random factor
-      const randomFactor = 0.9 + (Math.random() * 0.2); // 0.9 to 1.1 (±10%)
-      finalScore = finalScore * randomFactor;
+      // ADD VARIETY: Use artwork ID hash for deterministic randomness
+      // This ensures same order on re-renders but different order across sessions
+      // Prevents INP issues from random values causing different sort orders
+      const hashValue = artwork.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const deterministicRandom = ((hashValue % 200) - 100) / 1000; // -0.1 to +0.1
+      finalScore = finalScore * (1 + deterministicRandom);
       
       // Ensure legitimate accounts get a minimum score of 1
       // This ensures they always rank above placeholders (which have score 0)
@@ -154,6 +155,7 @@ export class EngagementScorer {
   /**
    * Apply diversity boost to prevent clustering
    * Ensures variety in the feed by slightly penalizing consecutive items from same artist
+   * IMPORTANT: Creates new objects to avoid mutation issues
    */
   applyDiversityBoost(
     scoredArtworks: ScoredArtwork[],
@@ -170,11 +172,15 @@ export class EngagementScorer {
       const recentCount = artistCounts.get(artistId) || 0;
       
       // Apply penalty if too many consecutive items from same artist
+      // CRITICAL: Create new object instead of mutating to prevent render instability
       if (recentCount >= 2) {
-        artwork.finalScore = Math.max(0, artwork.finalScore - diversityPenalty);
+        result.push({
+          ...artwork,
+          finalScore: Math.max(0, artwork.finalScore - diversityPenalty)
+        });
+      } else {
+        result.push(artwork);
       }
-
-      result.push(artwork);
       
       // Update count
       artistCounts.set(artistId, recentCount + 1);

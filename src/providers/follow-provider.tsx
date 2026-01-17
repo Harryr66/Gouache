@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, startTransition } from 'react';
 import { Artist } from '@/lib/types';
 import { getAuth } from 'firebase/auth';
 import { db } from '@/lib/firebase';
@@ -68,9 +68,11 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
       const user = auth.currentUser;
       
       if (!user) {
-        setFollowedArtists([]);
-        setFollowedArtistIds(new Set());
-        setLoading(false);
+        startTransition(() => {
+          setFollowedArtists([]);
+          setFollowedArtistIds(new Set());
+          setLoading(false);
+        });
         return;
       }
 
@@ -79,21 +81,22 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
         if (userDoc.exists()) {
           const data = userDoc.data();
           const followedIds = data.following || [];
-          setFollowedArtistIds(new Set(followedIds));
           
-          // Update followingCount if it doesn't match the array length
+          // Immediately update IDs for fast filtering
+          startTransition(() => {
+            setFollowedArtistIds(new Set(followedIds));
+          });
+          
+          // Update followingCount in background (non-blocking)
           if (followedIds.length !== (data.followingCount || 0)) {
-            try {
-              await updateDoc(doc(db, 'userProfiles', user.uid), {
-                followingCount: followedIds.length,
-              });
-            } catch (error) {
-              console.error('Error syncing followingCount:', error);
-            }
+            updateDoc(doc(db, 'userProfiles', user.uid), {
+              followingCount: followedIds.length,
+            }).catch(error => console.error('Error syncing followingCount:', error));
           }
 
-          // Fetch artist data for followed artists
-          const artistPromises = followedIds.map(async (artistId: string) => {
+          // Fetch artist data for followed artists in background
+          // Don't await - let UI be responsive
+          Promise.all(followedIds.map(async (artistId: string) => {
             try {
               const artistDoc = await getDoc(doc(db, 'userProfiles', artistId));
               if (artistDoc.exists()) {
@@ -117,15 +120,19 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
               console.error(`Error fetching artist ${artistId}:`, error);
             }
             return null;
+          })).then(results => {
+            const artists = results.filter(Boolean) as Artist[];
+            startTransition(() => {
+              setFollowedArtists(artists);
+            });
           });
-
-          const artists = (await Promise.all(artistPromises)).filter(Boolean) as Artist[];
-          setFollowedArtists(artists);
         }
       } catch (error) {
         console.error('Error loading followed artists:', error);
       } finally {
-        setLoading(false);
+        startTransition(() => {
+          setLoading(false);
+        });
       }
     };
 
