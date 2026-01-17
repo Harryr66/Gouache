@@ -154,40 +154,75 @@ export class EngagementScorer {
 
   /**
    * Apply diversity boost to prevent clustering
-   * Ensures variety in the feed by slightly penalizing consecutive items from same artist
-   * IMPORTANT: Creates new objects to avoid mutation issues
+   * Spreads out items from the same artist AND items with the same image
+   * Uses interleaving to ensure variety in the feed
    */
   applyDiversityBoost(
     scoredArtworks: ScoredArtwork[],
-    diversityPenalty: number = 0.1
+    diversityPenalty: number = 0.15
   ): ScoredArtwork[] {
-    const result: ScoredArtwork[] = [];
-    const artistCounts = new Map<string, number>();
-
-    for (let i = 0; i < scoredArtworks.length; i++) {
-      const artwork = scoredArtworks[i];
-      const artistId = artwork.artist.id;
-      
-      // Check if previous items were from same artist
-      const recentCount = artistCounts.get(artistId) || 0;
-      
-      // Apply penalty if too many consecutive items from same artist
-      // CRITICAL: Create new object instead of mutating to prevent render instability
-      if (recentCount >= 2) {
-        result.push({
-          ...artwork,
-          finalScore: Math.max(0, artwork.finalScore - diversityPenalty)
-        });
-      } else {
-        result.push(artwork);
+    if (scoredArtworks.length <= 1) return scoredArtworks;
+    
+    // Group artworks by image URL to detect duplicates
+    const imageGroups = new Map<string, ScoredArtwork[]>();
+    const noImageArtworks: ScoredArtwork[] = [];
+    
+    for (const artwork of scoredArtworks) {
+      const imageUrl = artwork.imageUrl || '';
+      if (!imageUrl) {
+        noImageArtworks.push(artwork);
+        continue;
       }
       
-      // Update count
-      artistCounts.set(artistId, recentCount + 1);
+      // Use first 100 chars of URL as key (handles variant suffixes)
+      const imageKey = imageUrl.substring(0, 100);
+      const group = imageGroups.get(imageKey) || [];
+      group.push(artwork);
+      imageGroups.set(imageKey, group);
+    }
+    
+    // Interleave items to spread duplicates apart
+    const result: ScoredArtwork[] = [];
+    const artistLastPosition = new Map<string, number>();
+    const imageLastPosition = new Map<string, number>();
+    
+    // Sort artworks by score first
+    const sortedArtworks = [...scoredArtworks].sort((a, b) => b.finalScore - a.finalScore);
+    
+    for (const artwork of sortedArtworks) {
+      const artistId = artwork.artist.id;
+      const imageKey = (artwork.imageUrl || '').substring(0, 100);
       
-      // Reset count after 5 items (allow some clustering)
-      if (i > 0 && i % 5 === 0) {
-        artistCounts.clear();
+      // Calculate position penalty based on how recently we saw same artist/image
+      const artistLastPos = artistLastPosition.get(artistId) ?? -10;
+      const imageLastPos = imageLastPosition.get(imageKey) ?? -10;
+      const currentPos = result.length;
+      
+      const artistDistance = currentPos - artistLastPos;
+      const imageDistance = currentPos - imageLastPos;
+      
+      // Apply penalty if same artist/image appeared too recently
+      let adjustedScore = artwork.finalScore;
+      
+      // Penalty for same artist within last 3 positions
+      if (artistDistance < 3) {
+        adjustedScore -= diversityPenalty * (3 - artistDistance);
+      }
+      
+      // Stronger penalty for same image within last 5 positions
+      if (imageDistance < 5 && imageKey) {
+        adjustedScore -= diversityPenalty * 2 * (5 - imageDistance);
+      }
+      
+      result.push({
+        ...artwork,
+        finalScore: Math.max(0.01, adjustedScore)
+      });
+      
+      // Track positions
+      artistLastPosition.set(artistId, currentPos);
+      if (imageKey) {
+        imageLastPosition.set(imageKey, currentPos);
       }
     }
 
