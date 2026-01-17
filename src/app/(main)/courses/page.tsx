@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Star, Users, Clock } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Brain, Star, Users, Clock, Video, Calendar } from 'lucide-react';
 import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from '@/components/theme-loading';
 import Image from 'next/image';
@@ -347,7 +348,7 @@ export default function CoursesPage() {
       
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <Brain className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold">Gouache Learn</h1>
@@ -357,6 +358,19 @@ export default function CoursesPage() {
           </p>
         </div>
 
+        <Tabs defaultValue="courses" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="courses" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              Courses
+            </TabsTrigger>
+            <TabsTrigger value="live" className="flex items-center gap-2">
+              <Video className="h-4 w-4" />
+              Live Class
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="courses">
         {rankedCourses.length === 0 || rankedCourses.every((c: any) => {
           const id = c.id || '';
           const title = (c.title || '').trim().toLowerCase();
@@ -446,6 +460,25 @@ export default function CoursesPage() {
           </div>
           </>
         )}
+          </TabsContent>
+
+          <TabsContent value="live">
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Video className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Live Classes Coming Soon</h3>
+                <p className="text-muted-foreground text-center max-w-md">
+                  Join live interactive sessions with artists. Get real-time feedback, 
+                  ask questions, and learn alongside other students.
+                </p>
+                <div className="flex items-center gap-2 mt-6 text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>Check back soon for scheduled live classes</span>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
         </div>
       </div>
     </>
