@@ -167,12 +167,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // CRITICAL: Also clear userProfiles.portfolio arrays (legacy storage)
+    let userProfilesCleared = 0;
+    if (deleteAllContent) {
+      console.log('🔍 Clearing userProfiles.portfolio arrays...');
+      const userProfilesSnapshot = await adminDb.collection('userProfiles').get();
+      
+      for (const doc of userProfilesSnapshot.docs) {
+        const data = doc.data();
+        if (data.portfolio && Array.isArray(data.portfolio) && data.portfolio.length > 0) {
+          try {
+            await doc.ref.update({ portfolio: [] });
+            userProfilesCleared++;
+            console.log(`🗑️ Cleared portfolio array for user: ${doc.id}`);
+          } catch (error: any) {
+            results.errors.push(`Failed to clear userProfiles.portfolio for ${doc.id}: ${error.message}`);
+          }
+        }
+      }
+    }
+
     const totalDeleted = results.artworksDeleted + results.portfolioItemsDeleted + results.postsDeleted;
 
     return NextResponse.json({
       success: true,
-      message: `Deleted ${totalDeleted} items`,
+      message: `Deleted ${totalDeleted} items, cleared ${userProfilesCleared} user portfolio arrays`,
       params: { deleteAllContent, targetUserId },
+      userProfilesCleared,
       ...results,
       timestamp: new Date().toISOString(),
     });
