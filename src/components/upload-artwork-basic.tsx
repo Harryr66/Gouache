@@ -1435,7 +1435,7 @@ export function UploadArtworkBasic() {
                           </Label>
                           {bulkUploadSeparately ? (
                             <p className="text-xs text-muted-foreground">
-                              ✓ Each file will be uploaded as a separate post with the same title, description, and tags.
+                              ✓ Each file will be uploaded as a separate post. You can add titles, descriptions, and process videos by editing each post from your profile.
                             </p>
                           ) : (
                             <p className="text-xs text-muted-foreground">
@@ -1509,31 +1509,51 @@ export function UploadArtworkBasic() {
             </div>
           )}
 
-          {/* Title */}
+          {/* Title - disabled for bulk separate uploads */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title {bulkUploadSeparately && files.length > 1 ? '(Optional - defaults to "Untitled")' : '(Optional - defaults to "Untitled")'}</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter title (or leave blank for 'Untitled')"
-            />
+            <Label htmlFor="title" className={bulkUploadSeparately && files.length > 1 ? 'text-muted-foreground' : ''}>
+              Title (Optional)
+            </Label>
+            {bulkUploadSeparately && files.length > 1 ? (
+              <div className="p-3 bg-muted/50 rounded-md border border-dashed">
+                <p className="text-sm text-muted-foreground">
+                  Titles disabled for bulk upload. Edit each post individually after upload.
+                </p>
+              </div>
+            ) : (
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter title (or leave blank for 'Untitled')"
+              />
+            )}
           </div>
 
-          {/* Description */}
+          {/* Description - disabled for bulk separate uploads */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add a description..."
-              rows={3}
-            />
+            <Label htmlFor="description" className={bulkUploadSeparately && files.length > 1 ? 'text-muted-foreground' : ''}>
+              Description
+            </Label>
+            {bulkUploadSeparately && files.length > 1 ? (
+              <div className="p-3 bg-muted/50 rounded-md border border-dashed">
+                <p className="text-sm text-muted-foreground">
+                  Descriptions disabled for bulk upload. Edit each post individually after upload.
+                </p>
+              </div>
+            ) : (
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add a description..."
+                rows={3}
+              />
+            )}
           </div>
 
-          {/* Process Video (Optional) - Only show when images are selected */}
-          {files.length > 0 && (
+          {/* Process Video (Optional) - Only show when images are selected and NOT bulk uploading */}
+          {files.length > 0 && !(bulkUploadSeparately && files.length > 1) && (
             <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
               <Label>Process Video (Optional)</Label>
               <p className="text-xs text-muted-foreground">
