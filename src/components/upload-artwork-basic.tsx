@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, startTransition } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -88,6 +88,19 @@ export function UploadArtworkBasic() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentUploadingFile, setCurrentUploadingFile] = useState<string>('');
   const [bulkUploadSeparately, setBulkUploadSeparately] = useState(false); // Bulk upload each file separately
+  
+  // Per-file data for bulk separate uploads (when for sale)
+  const [perFileSaleData, setPerFileSaleData] = useState<Record<string, {
+    width: string;
+    height: string;
+    unit: 'cm' | 'in' | 'px';
+    priceType: 'fixed' | 'contact';
+    price: string;
+    currency: 'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD';
+    contactEmail: string;
+    deliveryScope: 'worldwide' | 'specific';
+    selectedCountries: string[];
+  }>>({});
   
   // Maximum images per upload to prevent accidents and timeouts
   const MAX_IMAGES = 10;
@@ -275,6 +288,40 @@ export function UploadArtworkBasic() {
       }
     }
   };
+
+  // Initialize per-file sale data when files change (for bulk separate uploads with for sale)
+  useEffect(() => {
+    if (isForSale && bulkUploadSeparately && files.length > 1) {
+      const newPerFileData: typeof perFileSaleData = { ...perFileSaleData };
+      files.forEach((file, index) => {
+        const fileKey = `${file.name}-${index}`;
+        if (!newPerFileData[fileKey]) {
+          newPerFileData[fileKey] = {
+            width: dimensions.width,
+            height: dimensions.height,
+            unit: dimensions.unit,
+            priceType: priceType,
+            price: price,
+            currency: currency,
+            contactEmail: useAccountEmail ? (user?.email || '') : alternativeEmail,
+            deliveryScope: deliveryScope,
+            selectedCountries: selectedCountries,
+          };
+        }
+      });
+      // Remove data for files that no longer exist
+      Object.keys(newPerFileData).forEach(key => {
+        const fileIndex = parseInt(key.split('-').pop() || '-1');
+        if (fileIndex < 0 || fileIndex >= files.length) {
+          delete newPerFileData[key];
+        }
+      });
+      setPerFileSaleData(newPerFileData);
+    } else if (!isForSale || !bulkUploadSeparately || files.length <= 1) {
+      // Clear per-file data when not in bulk separate mode
+      setPerFileSaleData({});
+    }
+  }, [files, isForSale, bulkUploadSeparately, dimensions.width, dimensions.height, dimensions.unit, priceType, price, currency, deliveryScope, selectedCountries]);
 
   // Helper to check if tag exists (case-insensitive)
   const tagExists = (tag: string): boolean => {
@@ -624,6 +671,20 @@ export function UploadArtworkBasic() {
           
           setCurrentUploadingFile(`Creating artwork ${i + 1}/${processedFiles.length}: ${file.name}`);
           
+          // Get per-file sale data if bulk separate upload with for sale
+          const fileKey = `${file.name}-${originalIndex}`;
+          const fileSaleData = isForSale && bulkUploadSeparately && perFileSaleData[fileKey] ? perFileSaleData[fileKey] : {
+            width: dimensions.width,
+            height: dimensions.height,
+            unit: dimensions.unit,
+            priceType: priceType,
+            price: price,
+            currency: currency,
+            contactEmail: useAccountEmail ? (user.email || '') : alternativeEmail,
+            deliveryScope: deliveryScope,
+            selectedCountries: selectedCountries,
+          };
+          
           // Get image dimensions if it's an image
           let imageWidth: number | undefined;
           let imageHeight: number | undefined;
@@ -693,29 +754,29 @@ export function UploadArtworkBasic() {
             isAI: false,
           };
           
-          // Add sale-related fields if for sale
+          // Add sale-related fields if for sale (use per-file data if available)
           if (isForSale && addToPortfolio) {
-            if (priceType === 'fixed' && price.trim()) {
-              separateArtworkItem.price = parseFloat(price) * 100;
-              separateArtworkItem.currency = currency;
-            } else if (priceType === 'contact') {
+            if (fileSaleData.priceType === 'fixed' && fileSaleData.price.trim()) {
+              separateArtworkItem.price = parseFloat(fileSaleData.price) * 100;
+              separateArtworkItem.currency = fileSaleData.currency;
+            } else if (fileSaleData.priceType === 'contact') {
               separateArtworkItem.priceType = 'contact';
               separateArtworkItem.contactForPrice = true;
-              separateArtworkItem.contactEmail = useAccountEmail ? (user.email || '') : alternativeEmail.trim();
+              separateArtworkItem.contactEmail = fileSaleData.contactEmail.trim();
             }
-            separateArtworkItem.deliveryScope = deliveryScope;
-            if (deliveryScope === 'specific' && selectedCountries.length > 0) {
-              separateArtworkItem.deliveryCountries = selectedCountries.join(', ');
+            separateArtworkItem.deliveryScope = fileSaleData.deliveryScope;
+            if (fileSaleData.deliveryScope === 'specific' && fileSaleData.selectedCountries.length > 0) {
+              separateArtworkItem.deliveryCountries = fileSaleData.selectedCountries.join(', ');
             }
           }
           
-          // Add dimensions if provided
+          // Add dimensions if provided (use per-file data if available)
           if (addToPortfolio) {
-            if (dimensions.width && dimensions.height) {
+            if (fileSaleData.width && fileSaleData.height) {
               separateArtworkItem.dimensions = {
-                width: parseFloat(dimensions.width) || 0,
-                height: parseFloat(dimensions.height) || 0,
-                unit: dimensions.unit,
+                width: parseFloat(fileSaleData.width) || 0,
+                height: parseFloat(fileSaleData.height) || 0,
+                unit: fileSaleData.unit,
               };
             } else {
               separateArtworkItem.dimensions = { width: 0, height: 0, unit: 'cm' };
@@ -1700,8 +1761,241 @@ export function UploadArtworkBasic() {
             </p>
           </div>
 
-          {/* Sale Options (only shown if for sale) */}
-          {isForSale && (
+          {/* Bulk Separate Upload Sale Table (only shown when for sale + bulk separate) */}
+          {isForSale && bulkUploadSeparately && files.length > 1 && (
+            <div className="space-y-4 border-t pt-4">
+              <Label className="text-base font-semibold">Individual Sale Details</Label>
+              <div className="overflow-x-auto">
+                <table className="w-full border-separate border-spacing-0">
+                  <thead>
+                    <tr className="text-left text-sm font-medium text-muted-foreground border-b">
+                      <th className="p-2">Image</th>
+                      <th className="p-2">Dimensions</th>
+                      <th className="p-2">Pricing</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {files.map((file, index) => {
+                      const fileKey = `${file.name}-${index}`;
+                      const fileData = perFileSaleData[fileKey] || {
+                        width: '',
+                        height: '',
+                        unit: 'cm' as const,
+                        priceType: 'fixed' as const,
+                        price: '',
+                        currency: 'USD' as const,
+                        contactEmail: '',
+                        deliveryScope: 'worldwide' as const,
+                        selectedCountries: [] as string[],
+                      };
+                      const filePreview = URL.createObjectURL(file);
+                      
+                      return (
+                        <React.Fragment key={fileKey}>
+                          <tr className="border-b">
+                            {/* Thumbnail */}
+                            <td className="p-2">
+                              <div className="relative w-16 h-16 rounded overflow-hidden">
+                                <img
+                                  src={filePreview}
+                                  alt={file.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            </td>
+                            
+                            {/* Dimensions */}
+                            <td className="p-2">
+                              <div className="space-y-1">
+                                <div className="grid grid-cols-3 gap-1">
+                                  <Input
+                                    placeholder="Width"
+                                    value={fileData.width}
+                                    onChange={(e) => {
+                                      setPerFileSaleData(prev => ({
+                                        ...prev,
+                                        [fileKey]: { ...prev[fileKey], width: e.target.value }
+                                      }));
+                                    }}
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    className="h-8 text-xs"
+                                  />
+                                  <Input
+                                    placeholder="Height"
+                                    value={fileData.height}
+                                    onChange={(e) => {
+                                      setPerFileSaleData(prev => ({
+                                        ...prev,
+                                        [fileKey]: { ...prev[fileKey], height: e.target.value }
+                                      }));
+                                    }}
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    className="h-8 text-xs"
+                                  />
+                                  <Select
+                                    value={fileData.unit}
+                                    onValueChange={(value: 'cm' | 'in' | 'px') => {
+                                      setPerFileSaleData(prev => ({
+                                        ...prev,
+                                        [fileKey]: { ...prev[fileKey], unit: value }
+                                      }));
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-8 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="cm">cm</SelectItem>
+                                      <SelectItem value="in">in</SelectItem>
+                                      <SelectItem value="px">px</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            </td>
+                            
+                            {/* Pricing */}
+                            <td className="p-2">
+                              <div className="space-y-2">
+                                <Select
+                                  value={fileData.priceType}
+                                  onValueChange={(value: 'fixed' | 'contact') => {
+                                    setPerFileSaleData(prev => ({
+                                      ...prev,
+                                      [fileKey]: { ...prev[fileKey], priceType: value }
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="fixed">Set Price</SelectItem>
+                                    <SelectItem value="contact">Contact Artist</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                {fileData.priceType === 'fixed' ? (
+                                  <div className="grid grid-cols-2 gap-1">
+                                    <Input
+                                      placeholder="Price"
+                                      value={fileData.price}
+                                      onChange={(e) => {
+                                        setPerFileSaleData(prev => ({
+                                          ...prev,
+                                          [fileKey]: { ...prev[fileKey], price: e.target.value }
+                                        }));
+                                      }}
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      className="h-8 text-xs"
+                                    />
+                                    <Select
+                                      value={fileData.currency}
+                                      onValueChange={(value: 'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD') => {
+                                        setPerFileSaleData(prev => ({
+                                          ...prev,
+                                          [fileKey]: { ...prev[fileKey], currency: value }
+                                        }));
+                                      }}
+                                    >
+                                      <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="USD">USD</SelectItem>
+                                        <SelectItem value="GBP">GBP</SelectItem>
+                                        <SelectItem value="EUR">EUR</SelectItem>
+                                        <SelectItem value="CAD">CAD</SelectItem>
+                                        <SelectItem value="AUD">AUD</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                ) : (
+                                  <Input
+                                    placeholder="Contact email"
+                                    value={fileData.contactEmail}
+                                    onChange={(e) => {
+                                      setPerFileSaleData(prev => ({
+                                        ...prev,
+                                        [fileKey]: { ...prev[fileKey], contactEmail: e.target.value }
+                                      }));
+                                    }}
+                                    type="email"
+                                    className="h-8 text-xs"
+                                  />
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                          
+                          {/* Shipping row - spans all columns */}
+                          <tr className="border-b">
+                            <td colSpan={3} className="p-2">
+                              <div className="space-y-2">
+                                <Label className="text-xs">Shipping Availability</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className={fileData.deliveryScope === 'worldwide' ? 'bg-primary text-primary-foreground' : ''}
+                                    onClick={() => {
+                                      setPerFileSaleData(prev => ({
+                                        ...prev,
+                                        [fileKey]: { ...prev[fileKey], deliveryScope: 'worldwide', selectedCountries: [] }
+                                      }));
+                                    }}
+                                  >
+                                    Worldwide
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className={fileData.deliveryScope === 'specific' ? 'bg-primary text-primary-foreground' : ''}
+                                    onClick={() => {
+                                      setPerFileSaleData(prev => ({
+                                        ...prev,
+                                        [fileKey]: { ...prev[fileKey], deliveryScope: 'specific' }
+                                      }));
+                                    }}
+                                  >
+                                    Specific Countries
+                                  </Button>
+                                </div>
+                                {fileData.deliveryScope === 'specific' && (
+                                  <Input
+                                    placeholder="Enter countries (comma-separated)"
+                                    value={fileData.selectedCountries.join(', ')}
+                                    onChange={(e) => {
+                                      const countries = e.target.value.split(',').map(c => c.trim()).filter(c => c);
+                                      setPerFileSaleData(prev => ({
+                                        ...prev,
+                                        [fileKey]: { ...prev[fileKey], selectedCountries: countries }
+                                      }));
+                                    }}
+                                    className="h-8 text-xs"
+                                  />
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Sale Options (only shown if for sale and NOT bulk separate) */}
+          {isForSale && !(bulkUploadSeparately && files.length > 1) && (
             <div className="space-y-4 p-4 border rounded-lg border-l-2 border-primary/30">
               <Label className="text-base font-semibold mb-4 block">Sale Details</Label>
               
