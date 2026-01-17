@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { DollarSign, LayoutGrid } from 'lucide-react';
+import { Store, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ViewSelectorProps {
@@ -41,7 +41,7 @@ export function ViewSelector({ view, onViewChange, className, style, disabled = 
         )}
         title="Art Market - Priced artworks"
       >
-        <DollarSign className="h-4 w-4" />
+        <Store className="h-4 w-4" />
       </button>
       
       {/* All content button (right) - default */}
