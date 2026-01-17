@@ -1479,7 +1479,7 @@ export function UploadArtworkBasic() {
                   </div>
                   
                   {files.length > 1 && (
-                    <div className="space-y-3 p-4 border-2 border-primary/30 rounded-lg bg-primary/10">
+                    <div className="space-y-3 p-4 border-2 border-blue-500/60 rounded-lg bg-blue-500/10">
                       <div className="flex items-start space-x-3">
                         <Checkbox
                           id="bulkUploadSeparately"
