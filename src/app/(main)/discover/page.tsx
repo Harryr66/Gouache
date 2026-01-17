@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useMemo, useRef, useDeferredValue, startTransition, useCallback } from 'react';
-import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp, Loader2, Users } from 'lucide-react';
+import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp, Loader2, Users, DollarSign } from 'lucide-react';
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
@@ -1150,6 +1150,7 @@ function DiscoverPageContent() {
   const [selectedArtworkType, setSelectedArtworkType] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
+  const [followingOnly, setFollowingOnly] = useState(false); // Following filter for dropdown
   const [selectedEventLocation, setSelectedEventLocation] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('All Events');
   const [showEventFilters, setShowEventFilters] = useState(false);
@@ -2860,8 +2861,23 @@ function DiscoverPageContent() {
       artworkView: artworkView
     });
     
-    // FOLLOWING FILTER: When artworkView is 'list', show only followed artists' content
+    // ART MARKET FILTER: When artworkView is 'list', show only artworks with a set price
+    // (NOT contact for price - those stay in the main feed labeled as "for sale")
     if (artworkView === 'list') {
+      realArtworks = realArtworks.filter(artwork => {
+        const artworkAny = artwork as any;
+        // Must be marked for sale AND have a numeric price (not contact for price)
+        const isForSale = artwork.isForSale || artworkAny.isForSale;
+        const hasPrice = artwork.price && artwork.price > 0;
+        const isContactForPrice = artwork.contactForPrice || artworkAny.contactForPrice || artwork.priceType === 'contact';
+        // Only include items with a set price, exclude contact for price
+        return isForSale && hasPrice && !isContactForPrice;
+      });
+      log('🔍 Art Market filter applied:', { afterFilter: realArtworks.length });
+    }
+    
+    // FOLLOWING FILTER: When followingOnly is enabled, show only followed artists' content
+    if (followingOnly) {
       const followedArtistsForFilter = getFollowedArtists();
       const followedIds = new Set(followedArtistsForFilter.map(a => a.id));
       
@@ -3025,7 +3041,7 @@ function DiscoverPageContent() {
     // INSTAGRAM/PINTEREST-LEVEL: Return stable sorted array to prevent content reloading
     // This ensures once content is displayed, it stays static
     return sorted;
-  }, [baseFilteredArtworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements, getFollowedArtists, artworkView]);
+  }, [baseFilteredArtworks, deferredSearchQuery, selectedMedium, selectedArtworkType, sortBy, discoverSettings.hideAiAssistedArt, artworkEngagements, getFollowedArtists, artworkView, followingOnly]);
 
   // Memoize image-only artworks for grid view to prevent array recreation on every render
   const imageOnlyArtworks = useMemo(() => {
@@ -3310,7 +3326,7 @@ function DiscoverPageContent() {
     // NO LIMITS - visibleCount is only for initial load calculation, not for capping displayed content
     const resetCount = isMobile ? 18 : 45; // 9 rows as requested (was 40/60)
     setVisibleCount(resetCount);
-  }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, isMobile]);
+  }, [searchQuery, selectedMedium, selectedArtworkType, sortBy, selectedEventLocation, isMobile, followingOnly]);
 
   // Marketplace products useEffect removed - marketplace tab is hidden
 
@@ -3597,6 +3613,25 @@ function DiscoverPageContent() {
                       </Select>
                     </div>
                   </div>
+                  {/* Following Filter Toggle */}
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <button
+                      onClick={() => startTransition(() => setFollowingOnly(!followingOnly))}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                        followingOnly 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-muted hover:bg-muted/80"
+                      )}
+                    >
+                      <Users className="h-4 w-4" />
+                      Following Only
+                    </button>
+                    <span className="text-xs text-muted-foreground">
+                      {followingOnly ? "Showing content from artists you follow" : "Showing all artists"}
+                    </span>
+                  </div>
+                  
                   <div className="mt-2 flex gap-2">
                     <Button
                       variant="outline"
@@ -3607,6 +3642,7 @@ function DiscoverPageContent() {
                           setSelectedArtworkType('All');
                           setSortBy('newest');
                           setSearchQuery('');
+                          setFollowingOnly(false);
                         });
                       }}
                     >
@@ -3618,9 +3654,15 @@ function DiscoverPageContent() {
               )}
 
               {/* Active Filters Display */}
-              {(selectedMedium !== 'All' || selectedArtworkType !== 'All' || searchQuery) && (
+              {(selectedMedium !== 'All' || selectedArtworkType !== 'All' || searchQuery || followingOnly) && (
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-sm text-muted-foreground">Active filters:</span>
+                  {followingOnly && (
+                    <Badge variant="secondary" className="gap-1">
+                      Following Only
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => startTransition(() => setFollowingOnly(false))} />
+                    </Badge>
+                  )}
                   {searchQuery && (
                     <Badge variant="secondary" className="gap-1">
                       Search: {searchQuery}
@@ -3712,15 +3754,14 @@ function DiscoverPageContent() {
               />
             ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
-                {/* Following feed - Images from artists you follow only */}
+                {/* Art Market - Artworks with set prices only */}
                 {(() => {
-                  // Following mode shows ONLY content from followed artists
-                  console.log('👥 FOLLOWING FEED - filteredAndSortedArtworks:', {
+                  console.log('💰 ART MARKET - filteredAndSortedArtworks:', {
                     total: filteredAndSortedArtworks.length
                   });
                   
-                  // Filter to only images (same as grid view) from followed artists
-                  const followingArtworks = filteredAndSortedArtworks.filter((item) => {
+                  // Filter to only images with prices (same filtering already done in filteredAndSortedArtworks)
+                  const pricedArtworks = filteredAndSortedArtworks.filter((item) => {
                     if ('type' in item && item.type === 'ad') return true; // Keep ads
                     const artwork = item as Artwork;
                     const hasVideo = (artwork as any).videoUrl || (artwork as any).mediaType === 'video';
@@ -3734,20 +3775,20 @@ function DiscoverPageContent() {
                     return true;
                   });
                   
-                  // If no content from followed artists, show empty state
-                  if (followingArtworks.length === 0) {
+                  // If no priced artworks, show empty state
+                  if (pricedArtworks.length === 0) {
                     return (
                       <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                        <Users className="h-16 w-16 text-muted-foreground mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">No content from artists you follow</h3>
+                        <DollarSign className="h-16 w-16 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">No artworks available for purchase</h3>
                         <p className="text-muted-foreground mb-4">
-                          Follow artists to see their work here, or switch to "All" to discover new artists.
+                          There are currently no artworks with set prices. Check back later or browse all content.
                         </p>
                         <Button
                           variant="outline"
                           onClick={() => setArtworkView('grid')}
                         >
-                          Discover All Artists
+                          Browse All Artworks
                         </Button>
                       </div>
                     );
@@ -3755,7 +3796,7 @@ function DiscoverPageContent() {
                   
                   return (
                     <MasonryGrid
-                      items={followingArtworks}
+                      items={pricedArtworks}
                       columnCount={columnCount}
                       gap={4}
                       renderItem={(item) => {
@@ -3772,7 +3813,7 @@ function DiscoverPageContent() {
                         }
                         
                         const artwork = item as Artwork;
-                        const isInitial = followingArtworks.indexOf(item) < 12;
+                        const isInitial = pricedArtworks.indexOf(item) < 12;
                         
                         return (
                           <ArtworkTile 
