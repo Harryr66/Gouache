@@ -23,7 +23,7 @@ export function ViewSelector({ view, onViewChange, className, style, disabled = 
   return (
     <div 
       className={cn(
-        'flex h-10 rounded-md border-2 border-border bg-background relative',
+        'flex h-10 rounded-md border-2 border-border bg-background relative p-0',
         !hasExplicitWidth && 'flex-1',
         !className?.includes('overflow-visible') && 'overflow-hidden',
         className
@@ -35,8 +35,8 @@ export function ViewSelector({ view, onViewChange, className, style, disabled = 
         onClick={() => !disabled && onViewChange('list')}
         disabled={disabled}
         className={cn(
-          'flex-1 flex items-center justify-center h-full relative z-10 rounded-[4px] m-0.5 transition-colors',
-          view === 'list' ? 'bg-muted' : 'bg-transparent hover:bg-muted/50',
+          'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
+          view === 'list' ? 'bg-muted rounded-l-[4px]' : 'bg-transparent hover:bg-muted/50',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
         title="Following only"
@@ -49,8 +49,8 @@ export function ViewSelector({ view, onViewChange, className, style, disabled = 
         onClick={() => !disabled && onViewChange('grid')}
         disabled={disabled}
         className={cn(
-          'flex-1 flex items-center justify-center h-full relative z-10 rounded-[4px] m-0.5 transition-colors',
-          view === 'grid' ? 'bg-muted' : 'bg-transparent hover:bg-muted/50',
+          'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
+          view === 'grid' ? 'bg-muted rounded-r-[4px]' : 'bg-transparent hover:bg-muted/50',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
         title="All content"
