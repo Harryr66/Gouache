@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Calendar, ShoppingBag, Palette, Sparkles, ImageIcon, LinkIcon } from 'lucide-react';
+import { Building2, Calendar, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PartnersPage() {
@@ -11,56 +11,9 @@ export default function PartnersPage() {
       <div className="text-center mb-8">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 break-words">Partner with Gouache</h1>
         <p className="text-muted-foreground text-lg">
-          Join Gouache as an artist or gallery partner
+          Apply to become a gallery partner on Gouache
         </p>
       </div>
-
-      {/* Artist Account Request Card */}
-      <Card className="mb-6 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-full">
-              <Palette className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <CardTitle>Request an Artist Account</CardTitle>
-              <CardDescription>
-                Are you an artist? Apply for a professional artist account to share your work on Gouache.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-4 mb-6">
-            <div className="flex items-start gap-2">
-              <Sparkles className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <p className="font-medium text-sm">Verified Profile</p>
-                <p className="text-xs text-muted-foreground">Professional artist badge</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <ImageIcon className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <p className="font-medium text-sm">Portfolio Features</p>
-                <p className="text-xs text-muted-foreground">Showcase your work</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <LinkIcon className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <p className="font-medium text-sm">Sell Artwork</p>
-                <p className="text-xs text-muted-foreground">List in Art Market</p>
-              </div>
-            </div>
-          </div>
-          <Link href="/partners/artist-request">
-            <Button variant="gradient" className="w-full sm:w-auto">
-              Apply for Artist Account
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
 
       {/* Gallery Account Request Card */}
       <Card className="mb-8 border-primary/20 bg-gradient-to-r from-blue-500/5 to-transparent">

@@ -1841,12 +1841,21 @@ function DiscoverPageContent() {
         }
         } // End of disabled artworks collection fetch
         
+        // CRITICAL: Deduplicate artworks by ID before ranking
+        // This prevents the same artwork from appearing multiple times in the feed
+        const deduplicatedArtworks = Array.from(
+          new Map(fetchedArtworks.map(a => [a.id, a])).values()
+        );
+        if (isDev && deduplicatedArtworks.length !== fetchedArtworks.length) {
+          console.log(`🔄 DISCOVER: Removed ${fetchedArtworks.length - deduplicatedArtworks.length} duplicate artworks`);
+        }
+        
         // CRITICAL: Apply ranking system on initial load (not just newest first)
         // This ensures proper content ordering from the start
         const processingTime = Date.now() - fetchStartTime;
-        console.log(`🔥 DISCOVER DEBUG: After processing, ${fetchedArtworks.length} artworks ready for ranking (took ${processingTime}ms)`);
+        console.log(`🔥 DISCOVER DEBUG: After processing, ${deduplicatedArtworks.length} artworks ready for ranking (took ${processingTime}ms)`);
         console.log(`🔥 DISCOVER DEBUG: Breakdown - portfolioItems: ${portfolioItems.length}, skipped: ${skippedNoImage}`);
-        log(`🎯 Discover: Applying ranking system to ${fetchedArtworks.length} fetched artworks...`);
+        log(`🎯 Discover: Applying ranking system to ${deduplicatedArtworks.length} fetched artworks...`);
         
         // Get followed artist IDs for priority boost
         const followedArtists = getFollowedArtists();
