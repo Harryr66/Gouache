@@ -194,6 +194,10 @@ export async function POST(request: NextRequest) {
       shippingConfigPresent: !!shippingConfig,
     });
 
+    // 0% platform commission - commission free platform
+    const platformCommissionPercentage = 0;
+    const platformCommissionAmount = 0;
+
     // Create Stripe Checkout Session
     // NOTE: We removed transfer_data from here because it's incompatible with shipping_address_collection
     // Transfers to connected accounts will be handled in the webhook after payment is captured
@@ -212,8 +216,8 @@ export async function POST(request: NextRequest) {
           platform: 'gouache',
           productAmount: amountInCents.toString(),
           totalAmount: amountInCents.toString(),
-          platformCommissionAmount: '0',
-          platformCommissionPercentage: '0',
+          platformCommissionAmount: '0', // Commission free
+          platformCommissionPercentage: '0', // Commission free
           ...(itemType === 'merchandise' || itemType === 'product' ? { stock: (itemData.stock || 0).toString() } : {}),
         },
       },

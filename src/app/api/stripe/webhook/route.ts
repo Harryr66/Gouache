@@ -356,9 +356,10 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         console.log('✅ Payment captured successfully:', paymentIntentId);
 
         // Transfer funds to connected account after successful capture
+        // Commission free - artist receives full amount (minus Stripe fees only)
         try {
           const transfer = await stripe.transfers.create({
-            amount: capturedPayment.amount, // Full amount (no platform fee for now)
+            amount: capturedPayment.amount, // Full amount - commission free
             currency: capturedPayment.currency,
             destination: stripeAccountId,
             transfer_group: session.id,
@@ -369,9 +370,11 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
               itemId,
               userId,
               artistId,
+              platformCommission: '0',
+              platformCommissionPercentage: '0',
             },
           });
-          console.log('✅ Funds transferred to connected account:', transfer.id);
+          console.log('✅ Funds transferred to connected account:', transfer.id, '(commission free)');
         } catch (transferError: any) {
           console.error('❌ Transfer to connected account failed:', transferError);
           // Don't rollback enrollment - payment was captured successfully

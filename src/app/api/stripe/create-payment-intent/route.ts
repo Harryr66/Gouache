@@ -145,16 +145,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 0% platform commission - artist receives full payment minus Stripe fees
-    const platformCommissionPercentage = 0; // 0% platform fee
-    const platformCommissionAmount = 0; // No commission
+    // 0% platform commission - commission free platform
+    // Artist receives full payment minus Stripe processing fees only
+    const platformCommissionPercentage = 0;
+    const platformCommissionAmount = 0;
     const applicationFeeAmount = 0;
 
-    // SIMPLE: Charge exactly what artist set, Stripe deducts fees from ARTIST
-    // Artist sets $1.00 → Buyer pays $1.00 → Artist receives ~$0.67 after Stripe fees
-    // Platform pays NOTHING
-    const totalAmountInCents = amountInCents; // Charge exactly what artist set
-    const stripeFeeAmount = 0; // Stripe deducts from artist automatically
+    // Buyer pays exactly what artist set
+    // Artist receives 100% minus Stripe fees (no platform commission)
+    const totalAmountInCents = amountInCents;
 
     // Create payment intent with MANUAL capture
     // Card is AUTHORIZED but NOT CHARGED until we capture it
@@ -173,11 +172,10 @@ export async function POST(request: NextRequest) {
         itemId: itemId,
         itemTitle: itemData.title || 'Untitled',
         platform: 'gouache',
-        productAmount: totalAmountInCents.toString(), // What artist set
-        totalAmount: totalAmountInCents.toString(), // What buyer pays (same)
-        stripeFeeAmount: '0', // Stripe deducts from artist automatically
-        platformCommissionAmount: platformCommissionAmount.toString(), // 0%
-        platformCommissionPercentage: platformCommissionPercentage.toString(), // 0%
+        productAmount: totalAmountInCents.toString(),
+        totalAmount: totalAmountInCents.toString(),
+        platformCommissionAmount: '0', // Commission free
+        platformCommissionPercentage: '0', // Commission free
         ...(itemType === 'merchandise' || itemType === 'product' ? { stock: (itemData.stock || 0).toString() } : {}),
       },
       description: description || `Purchase: ${itemData.title || itemType}`,
@@ -190,12 +188,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
-      amount: paymentIntent.amount, // What buyer pays (what artist set)
+      amount: paymentIntent.amount,
       currency: paymentIntent.currency,
-      applicationFeeAmount, // 0%
-      productAmount: totalAmountInCents, // What artist set
-      totalAmount: totalAmountInCents, // What buyer pays
-      stripeFeeAmount: 0, // Stripe deducts from artist
+      applicationFeeAmount, // 0% - commission free
+      productAmount: totalAmountInCents,
+      totalAmount: totalAmountInCents,
       platformCommissionAmount,
       platformCommissionPercentage,
     });
