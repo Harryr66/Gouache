@@ -109,7 +109,10 @@ export function mixAdsIntoContent<T extends { id: string }>(
   ads: AdCampaign[],
   maxAds: number = 3
 ): Array<T | { type: 'ad'; campaign: AdCampaign }> {
+  console.log(`[Ads] mixAdsIntoContent: ${content.length} content items, ${ads.length} ads available`);
+  
   if (ads.length === 0 || content.length === 0) {
+    console.log(`[Ads] Skipping mix: ${ads.length === 0 ? 'no ads' : 'no content'}`);
     return content;
   }
 
@@ -124,8 +127,10 @@ export function mixAdsIntoContent<T extends { id: string }>(
       (index + 1) * adInterval,
       result.length - 1
     );
+    console.log(`[Ads] Inserting "${ad.title}" at position ${position}`);
     result.splice(position, 0, { type: 'ad', campaign: ad });
   });
 
+  console.log(`[Ads] Mixed result: ${result.length} total items (${shuffledAds.length} ads inserted)`);
   return result;
 }
