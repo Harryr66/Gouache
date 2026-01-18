@@ -20,23 +20,39 @@ export async function fetchActiveAds(
 
     const adsSnapshot = await getDocs(adsQuery);
     
+    console.log(`[Ads] Found ${adsSnapshot.docs.length} active ${placement} campaigns`);
+    
     const ads = adsSnapshot.docs
       .map((doc) => {
         const data = doc.data();
+        const startDate = data.startDate?.toDate?.() || (data.startDate ? new Date(data.startDate) : new Date());
+        const endDate = data.endDate?.toDate?.() || (data.endDate ? new Date(data.endDate) : undefined);
+        
+        console.log(`[Ads] Campaign "${data.title}": startDate=${startDate.toISOString()}, now=${now.toISOString()}, isActive=${data.isActive}`);
+        
         return {
           id: doc.id,
           ...data,
           createdAt: data.createdAt?.toDate?.() || new Date(),
           updatedAt: data.updatedAt?.toDate?.() || new Date(),
-          startDate: data.startDate?.toDate?.() || new Date(),
-          endDate: data.endDate?.toDate?.(),
+          startDate,
+          endDate,
           lastSpentReset: data.lastSpentReset?.toDate?.() || data.lastSpentReset,
         } as AdCampaign;
       })
       .filter((ad) => {
         // Filter by date range
-        if (ad.startDate && ad.startDate > now) return false;
-        if (ad.endDate && ad.endDate < now) return false;
+        const startCheck = ad.startDate && ad.startDate > now;
+        const endCheck = ad.endDate && ad.endDate < now;
+        
+        if (startCheck) {
+          console.log(`[Ads] Filtered out "${ad.title}": startDate in future`);
+          return false;
+        }
+        if (endCheck) {
+          console.log(`[Ads] Filtered out "${ad.title}": endDate passed`);
+          return false;
+        }
         
         // Filter by budget - don't show ads that have exceeded budget (unless uncapped)
         if (!ad.uncappedBudget && ad.budget && ad.spent !== undefined) {
@@ -72,9 +88,11 @@ export async function fetchActiveAds(
           if (ad.targetAudience.excludeUsers.includes(userId)) return false;
         }
         
+        console.log(`[Ads] ✅ Including "${ad.title}" in feed`);
         return true;
       });
 
+    console.log(`[Ads] Returning ${ads.length} ads for ${placement}`);
     return ads;
   } catch (error) {
     console.error('Error fetching ads:', error);

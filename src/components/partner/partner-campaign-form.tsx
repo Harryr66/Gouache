@@ -263,6 +263,10 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       const costPerClick = values.costPerClick ? Math.round(parseFloat(values.costPerClick) * 100) : undefined;
 
       // Create campaign data - only include defined values (Firestore rejects undefined)
+      // Use the user-selected startDate, not serverTimestamp, so the ad shows immediately
+      const startDateValue = new Date(values.startDate);
+      startDateValue.setHours(0, 0, 0, 0); // Start of day to ensure it shows today
+      
       const campaignData: Record<string, any> = {
         partnerId,
         title: values.title,
@@ -278,7 +282,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
         uncappedBudget: values.uncappedBudget || false,
         billingModel: values.billingModel,
         currency: values.currency || 'usd',
-        startDate: serverTimestamp(),
+        startDate: startDateValue,
         lastSpentReset: serverTimestamp(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
