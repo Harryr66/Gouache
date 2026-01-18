@@ -95,7 +95,7 @@ export default function SupportPage() {
                     </div>
                     <div>
                       <p className="font-medium text-foreground">What are the fees?</p>
-                      <p>Gouache takes a small platform fee. Stripe payment processing fees also apply. Check your Business Dashboard for details.</p>
+                      <p>Gouache is commission-free! We take 0% platform commission on your sales. Only standard Stripe payment processing fees apply (~2.9% + $0.30 per transaction).</p>
                     </div>
                     <div>
                       <p className="font-medium text-foreground">How do I process refunds?</p>
@@ -107,7 +107,7 @@ export default function SupportPage() {
             </div>
 
             {/* Privacy & Safety */}
-            <div className="bg-card border rounded-lg p-6">
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-6">
               <div className="flex items-start gap-4">
                 <Shield className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
                 <div>
@@ -127,7 +127,7 @@ export default function SupportPage() {
             </div>
 
             {/* Technical Issues */}
-            <div className="bg-card border rounded-lg p-6">
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-6">
               <div className="flex items-start gap-4">
                 <HelpCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
                 <div>

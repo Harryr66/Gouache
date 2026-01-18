@@ -376,28 +376,8 @@ export default function CoursesPage() {
           </p>
         </div>
 
-        <Tabs defaultValue="live" className="w-full">
-          {/* Tabs styled to match Discover page - 50/50 width with minimal gap */}
-          <TabsList className="mb-6 w-full h-auto p-0 bg-transparent" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px' }}>
-            <TabsTrigger 
-              value="live" 
-              className="flex items-center justify-center gap-2 h-10 rounded-l-md border-2 border-border"
-              style={{ width: '100%', boxSizing: 'border-box' }}
-            >
-              <Video className="h-4 w-4" />
-              Learn Live
-            </TabsTrigger>
-            <TabsTrigger 
-              value="courses" 
-              className="flex items-center justify-center gap-2 h-10 rounded-r-md border-2 border-border"
-              style={{ width: '100%', boxSizing: 'border-box' }}
-            >
-              <GraduationCap className="h-4 w-4" />
-              Courses
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="courses">
+        {/* Courses content - tabs hidden for now, showing courses by default */}
+        <div className="w-full">
         {rankedCourses.length === 0 || rankedCourses.every((c: any) => {
           const id = c.id || '';
           const title = (c.title || '').trim().toLowerCase();
@@ -487,110 +467,9 @@ export default function CoursesPage() {
           </div>
           </>
         )}
-          </TabsContent>
+        </div>
 
-          <TabsContent value="live">
-            <div className="space-y-6">
-              {/* Go Live Button for Artists */}
-              {isArtist && (
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                  <div>
-                    <h3 className="font-semibold">Ready to go live?</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Start a live class, Q&A, or workshop for your followers
-                    </p>
-                  </div>
-                  <GoLiveButton />
-                </div>
-              )}
-
-              {/* Currently Live Streams */}
-              {liveStreams.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Radio className="h-5 w-5 text-red-500 animate-pulse" />
-                    <h2 className="text-lg font-semibold">Live Now</h2>
-                    <Badge variant="destructive">{liveStreams.length}</Badge>
-                  </div>
-                  <div className={isMobile ? "grid grid-cols-1 gap-4" : "grid grid-cols-2 md:grid-cols-3 gap-4"}>
-                    {liveStreams.map((stream) => (
-                      <StreamCard
-                        key={stream.id}
-                        stream={stream}
-                        isOwner={user?.id === stream.artistId}
-                        onEnd={() => endStream(stream.id)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* My Scheduled Streams (for artists) */}
-              {isArtist && myStreams.filter(s => s.status === 'scheduled').length > 0 && (
-                <div className="space-y-4">
-                  <h2 className="text-lg font-semibold">Your Scheduled Streams</h2>
-                  <div className={isMobile ? "grid grid-cols-1 gap-4" : "grid grid-cols-2 md:grid-cols-3 gap-4"}>
-                    {myStreams
-                      .filter(s => s.status === 'scheduled')
-                      .map((stream) => (
-                        <StreamCard
-                          key={stream.id}
-                          stream={stream}
-                          showArtist={false}
-                          isOwner={true}
-                          onGoLive={() => goLive(stream.id)}
-                          onCancel={() => cancelStream(stream.id)}
-                        />
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Upcoming Streams */}
-              {scheduledStreams.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-semibold">Upcoming Streams</h2>
-                  </div>
-                  <div className={isMobile ? "grid grid-cols-1 gap-4" : "grid grid-cols-2 md:grid-cols-3 gap-4"}>
-                    {scheduledStreams.map((stream) => (
-                      <StreamCard
-                        key={stream.id}
-                        stream={stream}
-                        isOwner={user?.id === stream.artistId}
-                        onGoLive={() => goLive(stream.id)}
-                        onCancel={() => cancelStream(stream.id)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Empty State */}
-              {liveStreams.length === 0 && scheduledStreams.length === 0 && (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-16">
-                    <Video className="h-16 w-16 text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">No Live Streams Yet</h3>
-                    <p className="text-muted-foreground text-center max-w-md mb-6">
-                      Join live interactive sessions with artists. Get real-time feedback, 
-                      ask questions, and learn alongside other students.
-                    </p>
-                    {isArtist ? (
-                      <GoLiveButton size="lg" />
-                    ) : (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>Check back soon for scheduled live sessions</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+        {/* Live Lessons feature hidden for now - will be re-enabled in future */}
         </div>
       </div>
     </>

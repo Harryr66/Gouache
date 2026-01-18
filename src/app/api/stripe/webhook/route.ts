@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
+
 // Handle Stripe Checkout Session completion (for physical products with shipping AND donations)
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   console.log('🎉 Checkout session completed:', session.id);
@@ -351,41 +352,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
       // CRITICAL: Capture payment AFTER enrollment created
       // If capture fails, we should delete the enrollment
+      // NOTE: With destination charges (transfer_data.destination), Stripe automatically
+      // transfers funds to the connected account - no manual transfer needed
       try {
         const capturedPayment = await stripe.paymentIntents.capture(paymentIntentId);
         console.log('✅ Payment captured successfully:', paymentIntentId);
-
-        // Transfer funds to connected account after successful capture
-        // Commission free - artist receives full amount (minus Stripe fees only)
-        try {
-          const transfer = await stripe.transfers.create({
-            amount: capturedPayment.amount, // Full amount - commission free
-            currency: capturedPayment.currency,
-            destination: stripeAccountId,
-            transfer_group: session.id,
-            metadata: {
-              paymentIntentId,
-              sessionId: session.id,
-              itemType,
-              itemId,
-              userId,
-              artistId,
-              platformCommission: '0',
-              platformCommissionPercentage: '0',
-            },
-          });
-          console.log('✅ Funds transferred to connected account:', transfer.id, '(commission free)');
-        } catch (transferError: any) {
-          console.error('❌ Transfer to connected account failed:', transferError);
-          // Don't rollback enrollment - payment was captured successfully
-          // Artist just won't receive funds automatically - manual intervention needed
-          console.error('⚠️ MANUAL INTERVENTION REQUIRED: Payment captured but transfer failed', {
-            sessionId: session.id,
-            paymentIntentId,
-            stripeAccountId,
-            artistId,
-          });
-        }
+        console.log('✅ Funds automatically transferred to connected account via destination charge (commission free)');
       } catch (captureError: any) {
         console.error('❌ CRITICAL: Payment capture failed after enrollment created:', captureError);
         
@@ -486,6 +458,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
       // CRITICAL: Capture the authorized payment now that artwork is marked as sold
       // If capture fails, we should revert the sold status
+      // NOTE: With destination charges (transfer_data.destination), Stripe automatically
+      // transfers funds to the connected account - no manual transfer needed
       try {
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
           apiVersion: '2025-10-29.clover',
@@ -493,33 +467,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         
         const capturedPayment = await stripe.paymentIntents.capture(paymentIntentId);
         console.log('💰 Payment captured after artwork marked as sold');
-
-        // Transfer funds to connected account after successful capture
-        try {
-          const transfer = await stripe.transfers.create({
-            amount: capturedPayment.amount,
-            currency: capturedPayment.currency,
-            destination: stripeAccountId,
-            transfer_group: session.id,
-            metadata: {
-              paymentIntentId,
-              sessionId: session.id,
-              itemType,
-              itemId,
-              userId,
-              artistId,
-            },
-          });
-          console.log('✅ Funds transferred to connected account:', transfer.id);
-        } catch (transferError: any) {
-          console.error('❌ Transfer to connected account failed:', transferError);
-          console.error('⚠️ MANUAL INTERVENTION REQUIRED: Payment captured but transfer failed', {
-            sessionId: session.id,
-            paymentIntentId,
-            stripeAccountId,
-            artistId,
-          });
-        }
+        console.log('✅ Funds automatically transferred to connected account via destination charge (commission free)');
       } catch (captureError: any) {
         console.error('❌ CRITICAL: Payment capture failed after marking artwork as sold:', captureError);
         
@@ -656,6 +604,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
       // CRITICAL: Capture the authorized payment
       // If capture fails, we should revert the purchase and restore stock
+      // NOTE: With destination charges (transfer_data.destination), Stripe automatically
+      // transfers funds to the connected account - no manual transfer needed
       const purchaseId = purchaseRef.id; // Save for rollback
       
       try {
@@ -665,33 +615,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         
         const capturedPayment = await stripe.paymentIntents.capture(paymentIntentId);
         console.log('💰 Payment captured after product purchase recorded');
-
-        // Transfer funds to connected account after successful capture
-        try {
-          const transfer = await stripe.transfers.create({
-            amount: capturedPayment.amount,
-            currency: capturedPayment.currency,
-            destination: stripeAccountId,
-            transfer_group: session.id,
-            metadata: {
-              paymentIntentId,
-              sessionId: session.id,
-              itemType,
-              itemId,
-              userId,
-              artistId,
-            },
-          });
-          console.log('✅ Funds transferred to connected account:', transfer.id);
-        } catch (transferError: any) {
-          console.error('❌ Transfer to connected account failed:', transferError);
-          console.error('⚠️ MANUAL INTERVENTION REQUIRED: Payment captured but transfer failed', {
-            sessionId: session.id,
-            paymentIntentId,
-            stripeAccountId,
-            artistId,
-          });
-        }
+        console.log('✅ Funds automatically transferred to connected account via destination charge (commission free)');
       } catch (captureError: any) {
         console.error('❌ CRITICAL: Payment capture failed after product purchase:', captureError);
         

@@ -198,18 +198,22 @@ export async function POST(request: NextRequest) {
     const platformCommissionPercentage = 0;
     const platformCommissionAmount = 0;
 
-    // Create Stripe Checkout Session
-    // NOTE: We removed transfer_data from here because it's incompatible with shipping_address_collection
-    // Transfers to connected accounts will be handled in the webhook after payment is captured
+    // Create Stripe Checkout Session with destination charge
+    // Using transfer_data.destination - funds go directly to artist's connected account
+    // Stripe fees are automatically deducted from artist's account (not platform)
+    // This works perfectly with shipping_address_collection
     const sessionConfig: any = {
       payment_method_types: ['card'],
       mode: 'payment',
       payment_intent_data: {
         capture_method: 'manual', // CRITICAL: Authorize only, capture after confirmation
+        transfer_data: {
+          destination: stripeAccountId, // Destination charge - funds go directly to artist
+        },
         metadata: {
           userId: buyerId,
           artistId: artistId,
-          stripeAccountId: stripeAccountId, // Store for webhook transfer
+          stripeAccountId: stripeAccountId,
           itemType: itemType,
           itemId: itemId,
           itemTitle: itemData.title || 'Untitled',

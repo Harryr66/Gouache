@@ -116,6 +116,7 @@ export default function ProfileEditPage() {
     hideSocialIcons: false,
     hideAboutArtist: false,
     aboutInstructor: '',
+    artistBio: '',  // About the Artist bio displayed on expanded artwork tiles
     bannerImageUrl: '',
     // Upcoming event fields
     eventCity: '',
@@ -2410,57 +2411,56 @@ export default function ProfileEditPage() {
                         </p>
                       </div>
                     </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {portfolioImages.map((url, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={url}
-                              alt={`Portfolio ${index + 1}`}
-                              className="w-full h-32 object-cover rounded-lg"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="destructive"
-                              className="absolute top-2 right-2 h-6 w-6 rounded-full p-0 opacity-0 group-hover:opacity-100"
-                              onClick={() => removePortfolioImage(index)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
-                        {portfolioImages.length < 10 && (
-                          <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center h-32">
-                            <div 
-                              className="cursor-pointer w-full h-full flex items-center justify-center"
-                              onClick={() => {
-                                console.log('🎯 Add image clicked, triggering file input');
-                                const fileInput = document.getElementById('portfolio-upload') as HTMLInputElement;
-                                if (fileInput) {
-                                  console.log('🎯 File input found, clicking it');
-                                  fileInput.click();
-                                } else {
-                                  console.error('❌ File input not found');
-                                }
-                              }}
-                            >
-                              <div className="text-center">
-                                <Plus className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">Add Image</span>
-                              </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {portfolioImages.map((url, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={url}
+                            alt={`Portfolio ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-2 right-2 h-6 w-6 rounded-full p-0 opacity-0 group-hover:opacity-100"
+                            onClick={() => removePortfolioImage(index)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                      {portfolioImages.length < 10 && (
+                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center h-32">
+                          <div 
+                            className="cursor-pointer w-full h-full flex items-center justify-center"
+                            onClick={() => {
+                              console.log('🎯 Add image clicked, triggering file input');
+                              const fileInput = document.getElementById('portfolio-upload') as HTMLInputElement;
+                              if (fileInput) {
+                                console.log('🎯 File input found, clicking it');
+                                fileInput.click();
+                              } else {
+                                console.error('❌ File input not found');
+                              }
+                            }}
+                          >
+                            <div className="text-center">
+                              <Plus className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">Add Image</span>
                             </div>
-                            <input
-                              id="portfolio-upload"
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              onChange={handlePortfolioImageUpload}
-                              className="hidden"
-                              style={{ display: 'none' }}
-                            />
                           </div>
-                        )}
-                      </div>
+                          <input
+                            id="portfolio-upload"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handlePortfolioImageUpload}
+                            className="hidden"
+                            style={{ display: 'none' }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2477,45 +2477,45 @@ export default function ProfileEditPage() {
                   </div>
 
                   {/* About the Instructor */}
-                      <div className="space-y-2">
-                        <Label htmlFor="aboutInstructor">About the Instructor (optional, max 2 sentences)</Label>
-                        <Textarea
-                          id="aboutInstructor"
-                          value={formData.aboutInstructor}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const sentences = value.split(/[.!?]+/).filter(s => s.trim().length > 0);
-                            if (sentences.length <= 2) {
-                              handleInputChange('aboutInstructor', value);
-                            }
-                          }}
-                          placeholder="Write a brief description about yourself as an instructor..."
-                          rows={3}
-                          maxLength={300}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {formData.aboutInstructor.split(/[.!?]+/).filter(s => s.trim().length > 0).length}/2 sentences
-                        </p>
-                      </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="aboutInstructor">About the Instructor (optional, max 2 sentences)</Label>
+                    <Textarea
+                      id="aboutInstructor"
+                      value={formData.aboutInstructor}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const sentences = value.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                        if (sentences.length <= 2) {
+                          handleInputChange('aboutInstructor', value);
+                        }
+                      }}
+                      placeholder="Write a brief description about yourself as an instructor..."
+                      rows={3}
+                      maxLength={300}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.aboutInstructor.split(/[.!?]+/).filter(s => s.trim().length > 0).length}/2 sentences
+                    </p>
+                  </div>
 
                   {/* Social Links */}
                   <div className="space-y-4">
                     <Label>Social Media Links</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                          <Label htmlFor="website">Website (optional)</Label>
-                          <Input
-                            id="website"
-                            value={artistRequestData.socialLinks.website}
-                            onChange={(e) => setArtistRequestData(prev => ({ 
-                              ...prev, 
-                              socialLinks: { ...prev.socialLinks, website: e.target.value }
-                            }))}
-                            placeholder="https://yourwebsite.com"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="instagram">Instagram (optional)</Label>
+                        <Label htmlFor="website">Website (optional)</Label>
+                        <Input
+                          id="website"
+                          value={artistRequestData.socialLinks.website}
+                          onChange={(e) => setArtistRequestData(prev => ({ 
+                            ...prev, 
+                            socialLinks: { ...prev.socialLinks, website: e.target.value }
+                          }))}
+                          placeholder="https://yourwebsite.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="instagram">Instagram (optional)</Label>
                         <Input
                           id="instagram"
                           value={artistRequestData.socialLinks.instagram}
@@ -2527,7 +2527,7 @@ export default function ProfileEditPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="x">X / Twitter (optional)</Label>
+                        <Label htmlFor="x">X / Twitter (optional)</Label>
                         <Input
                           id="x"
                           value={artistRequestData.socialLinks.x}
@@ -2539,7 +2539,7 @@ export default function ProfileEditPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="tiktok">TikTok (optional)</Label>
+                        <Label htmlFor="tiktok">TikTok (optional)</Label>
                         <Input
                           id="tiktok"
                           value={artistRequestData.socialLinks.tiktok}

@@ -201,13 +201,14 @@ const SORT_OPTIONS = [
 ];
 
 // Masonry grid component - CSS COLUMNS approach (no JavaScript positioning issues)
-function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadingMore }: {
+function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadingMore, hasMore = true }: {
   items: any[];
   columnCount: number;
   gap: number;
   renderItem: (item: any) => React.ReactNode;
   loadMoreRef: React.RefObject<HTMLDivElement>;
   isLoadingMore?: boolean;
+  hasMore?: boolean;
 }) {
   return (
     <div className="w-full">
@@ -238,11 +239,17 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
         ref={loadMoreRef} 
         className="h-20 w-full flex items-center justify-center"
       >
-        {isLoadingMore && (
+        {isLoadingMore ? (
           <div className="flex flex-col items-center gap-2 py-4">
             <ThemeLoadingAnimation />
           </div>
-        )}
+        ) : !hasMore && items.length > 0 ? (
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <div className="h-px w-16 bg-muted-foreground/30 mb-2" />
+            <p className="text-sm text-muted-foreground">You&apos;ve reached the end</p>
+            <p className="text-xs text-muted-foreground/70">Check back later for new content</p>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -2690,17 +2697,14 @@ function DiscoverPageContent() {
       artworkView: artworkView
     });
     
-    // ART MARKET FILTER: When artworkView is 'list', show only artworks with a set price
-    // (NOT contact for price - those stay in the main feed labeled as "for sale")
+    // ART MARKET FILTER: When artworkView is 'list', show ALL artworks marked for sale
+    // This includes both priced items AND "contact for price" items
     if (artworkView === 'list') {
       realArtworks = realArtworks.filter(artwork => {
         const artworkAny = artwork as any;
-        // Must be marked for sale AND have a numeric price (not contact for price)
+        // Must be marked for sale (includes both priced items and contact for price)
         const isForSale = artwork.isForSale || artworkAny.isForSale;
-        const hasPrice = artwork.price && artwork.price > 0;
-        const isContactForPrice = artwork.contactForPrice || artworkAny.contactForPrice || artwork.priceType === 'contact';
-        // Only include items with a set price, exclude contact for price
-        return isForSale && hasPrice && !isContactForPrice;
+        return isForSale;
       });
       log('🔍 Art Market filter applied:', { afterFilter: realArtworks.length });
     }
@@ -3583,6 +3587,7 @@ function DiscoverPageContent() {
                 }}
                 loadMoreRef={loadMoreRef}
                 isLoadingMore={isLoadingMore}
+                hasMore={hasMore}
               />
             ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
@@ -3657,6 +3662,7 @@ function DiscoverPageContent() {
                       }}
                       loadMoreRef={loadMoreRef}
                       isLoadingMore={isLoadingMore}
+                      hasMore={hasMore}
                     />
                   );
                 })()}
