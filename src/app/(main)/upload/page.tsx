@@ -7,7 +7,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Image, Package, Calendar, ArrowLeft, Brain } from 'lucide-react';
+import { Image, Package, Calendar, ArrowLeft, GraduationCap } from 'lucide-react';
 import { UploadArtworkBasic } from '@/components/upload-artwork-basic';
 import { UploadProductBasic } from '@/components/upload-product-basic';
 // REMOVED: Artwork and Product upload portals
@@ -464,7 +464,7 @@ export default function UploadPage() {
         >
           <CardHeader>
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-              <Brain className="h-6 w-6 text-primary" />
+              <GraduationCap className="h-6 w-6 text-primary" />
             </div>
             <CardTitle>Upload Course</CardTitle>
             <CardDescription>

@@ -18,7 +18,7 @@ import {
   Coffee,
   ImageIcon,
   Calendar,
-  Brain,
+  GraduationCap,
   Settings,
   LogOut,
   Building2,

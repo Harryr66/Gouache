@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Star, Users, Clock, Video, Calendar } from 'lucide-react';
+import { GraduationCap, Star, Users, Clock, Video, Calendar } from 'lucide-react';
 import { useCourses } from '@/providers/course-provider';
 import { ThemeLoading } from '@/components/theme-loading';
 import Image from 'next/image';
@@ -350,7 +350,7 @@ export default function CoursesPage() {
         <div className="container mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <Brain className="h-8 w-8 text-primary" />
+            <GraduationCap className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold">Gouache Learn</h1>
           </div>
           <p className="text-muted-foreground">
@@ -366,7 +366,7 @@ export default function CoursesPage() {
               className="flex items-center justify-center gap-2 h-10 rounded-l-md border-2 border-border"
               style={{ width: '100%', boxSizing: 'border-box' }}
             >
-              <Brain className="h-4 w-4" />
+              <GraduationCap className="h-4 w-4" />
               Courses
             </TabsTrigger>
             <TabsTrigger 
@@ -390,7 +390,7 @@ export default function CoursesPage() {
             {process.env.NODE_ENV === 'development' && console.log('🚫 Rendering empty state - rankedCourses.length:', rankedCourses.length)}
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <Brain className="h-12 w-12 text-muted-foreground mb-4" />
+              <GraduationCap className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-lg">No courses available yet</p>
               <p className="text-sm text-muted-foreground mt-2">Check back soon for new courses!</p>
             </CardContent>
@@ -428,7 +428,7 @@ export default function CoursesPage() {
                       />
                     ) : (
                       <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <Brain className="h-12 w-12 text-muted-foreground" />
+                        <GraduationCap className="h-12 w-12 text-muted-foreground" />
                       </div>
                     )}
                   </div>

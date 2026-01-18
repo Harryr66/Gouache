@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, Brain, Palette, Grid3x3, Play, Edit, Eye, Trash2, X, Archive } from 'lucide-react';
+import { Plus, Upload, Users, BookOpen, Package, Heart, ShoppingBag, GraduationCap, Palette, Grid3x3, Play, Edit, Eye, Trash2, X, Archive } from 'lucide-react';
 import { ArtworkCard } from './artwork-card';
 import { PortfolioManager } from './portfolio-manager';
 import { ShopDisplay } from './shop-display';
@@ -1338,7 +1338,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
     const visibleTabs = [
       { value: 'portfolio', label: 'Portfolio', icon: Palette },
       ...(hideShop ? [] : [{ value: 'shop', label: 'Shop', icon: ShoppingBag }]),
-      ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: Brain }]),
+      ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: GraduationCap }]),
     ];
     
     const defaultTab = visibleTabs[0]?.value || 'portfolio';
@@ -1413,7 +1413,7 @@ export function ProfileTabs({ userId, isOwnProfile, isProfessional, hideShop = t
   const visibleTabs = [
     { value: 'liked', label: 'Liked', icon: Heart },
     { value: 'following', label: 'Following', icon: Users },
-    ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: Brain }]),
+    ...(hideLearn ? [] : [{ value: 'learn', label: 'Learn', icon: GraduationCap }]),
   ];
   
   const gridCols = visibleTabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3';

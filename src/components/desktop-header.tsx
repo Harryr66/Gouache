@@ -4,12 +4,12 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Eye, Fingerprint, Globe, Brain } from 'lucide-react';
+import { Eye, Fingerprint, Globe, GraduationCap } from 'lucide-react';
 
 const navigation = [
   { name: 'News', href: '/news', icon: Globe },
   { name: 'Discover', href: '/discover', icon: Eye },
-  { name: 'Learn', href: '/courses', icon: Brain },
+  { name: 'Learn', href: '/courses', icon: GraduationCap },
   { name: 'Profile', href: '/profile', icon: Fingerprint },
 ];
 

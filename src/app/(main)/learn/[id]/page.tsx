@@ -17,7 +17,7 @@ import {
   Play, 
   Award, 
   BookOpen, 
-  Brain, 
+  GraduationCap, 
   MessageCircle, 
   Heart, 
   Download,

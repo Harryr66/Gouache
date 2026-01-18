@@ -8,7 +8,7 @@ import {
   Eye,
   Upload,
   User,
-  Brain,
+  GraduationCap,
   Globe
 } from 'lucide-react';
 
@@ -28,7 +28,7 @@ const navigation = [
   { name: 'Docuseries', href: '/feed', icon: RoundedPlayIcon },
   { name: 'News', href: '/news', icon: Globe },
   { name: 'Discover', href: '/discover', icon: Eye },
-  { name: 'Learn', href: '/learn', icon: Brain },
+  { name: 'Learn', href: '/learn', icon: GraduationCap },
   { name: 'Upload Profile', href: '/upload', icon: Upload },
   { name: 'Profile', href: '/profile', icon: User },
 ];
