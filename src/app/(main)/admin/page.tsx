@@ -1500,6 +1500,10 @@ export default function AdminPanel() {
   };
 
   const handleSuspendArtist = async (request: ArtistRequest) => {
+    if (!request.userId) {
+      toast({ title: 'Error', description: 'User ID is missing', variant: 'destructive' });
+      return;
+    }
     setIsProcessing(true);
     try {
       await updateDoc(doc(db, 'userProfiles', request.userId), {
@@ -1534,6 +1538,10 @@ export default function AdminPanel() {
   };
 
   const handleReinstateArtist = async (request: ArtistRequest) => {
+    if (!request.userId) {
+      toast({ title: 'Error', description: 'User ID is missing', variant: 'destructive' });
+      return;
+    }
     setIsProcessing(true);
     try {
       await updateDoc(doc(db, 'userProfiles', request.userId), {
@@ -1570,6 +1578,10 @@ export default function AdminPanel() {
   };
 
   const handleConvertToProfessional = async (request: ArtistRequest) => {
+    if (!request.userId) {
+      toast({ title: 'Error', description: 'User ID is missing', variant: 'destructive' });
+      return;
+    }
     setIsProcessing(true);
     try {
       // Get current user profile to check status
@@ -1636,6 +1648,10 @@ export default function AdminPanel() {
   };
 
   const handleRemoveArtist = async (request: ArtistRequest) => {
+    if (!request.userId) {
+      toast({ title: 'Error', description: 'User ID is missing', variant: 'destructive' });
+      return;
+    }
     setIsProcessing(true);
     try {
       await updateDoc(doc(db, 'artistRequests', request.id), {
