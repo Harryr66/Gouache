@@ -30,8 +30,9 @@ const formSchema = z.object({
   uncappedBudget: z.boolean().default(false),
   budget: z.string().optional(),
   dailyBudget: z.string().optional(),
-  costPerImpression: z.string().min(1, 'Cost per impression is required'),
-  costPerClick: z.string().min(1, 'Cost per click is required'),
+  billingModel: z.enum(['cpm', 'cpc']),
+  costPerImpression: z.string().optional(),
+  costPerClick: z.string().optional(),
   currency: z.string().min(1, 'Currency is required'),
 }).refine((data) => {
   // Either uncappedBudget is true OR budget is provided
@@ -39,6 +40,24 @@ const formSchema = z.object({
 }, {
   message: "Either enable uncapped budget or provide a total budget",
   path: ["budget"],
+}).refine((data) => {
+  // If CPM, cost per impression must be provided
+  if (data.billingModel === 'cpm') {
+    return data.costPerImpression && parseFloat(data.costPerImpression) > 0;
+  }
+  return true;
+}, {
+  message: "Cost per 1,000 impressions is required for awareness campaigns",
+  path: ["costPerImpression"],
+}).refine((data) => {
+  // If CPC, cost per click must be provided
+  if (data.billingModel === 'cpc') {
+    return data.costPerClick && parseFloat(data.costPerClick) > 0;
+  }
+  return true;
+}, {
+  message: "Cost per click is required for click campaigns",
+  path: ["costPerClick"],
 });
 
 interface PartnerCampaignFormProps {
@@ -71,6 +90,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       uncappedBudget: false,
       budget: '',
       dailyBudget: '',
+      billingModel: 'cpc',
       costPerImpression: '',
       costPerClick: '',
       currency: 'usd',
@@ -404,41 +424,63 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
             ) : (
               <div className="relative">
                 {imagePreview && (
-                  <div className="relative w-full h-64 rounded-lg overflow-hidden">
-                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={removeMedia}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                  <div className="flex flex-col items-center gap-4">
+                    {/* Preview container with 4:5 aspect ratio to match discover feed */}
+                    <div className="relative w-full max-w-[300px] rounded-lg overflow-hidden border border-border" style={{ aspectRatio: '4/5' }}>
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute top-2 left-2">
+                        <span className="text-[10px] font-medium text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
+                          Sponsored
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2"
+                        onClick={removeMedia}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Preview shows how your ad will appear in the Discover feed (4:5 aspect ratio)
+                    </p>
                   </div>
                 )}
                 {videoPreview && (
-                  <div className="relative w-full rounded-lg overflow-hidden">
-                    <video src={videoPreview} controls className="w-full max-h-96" />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={removeMedia}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                    {videoAspectRatio !== null && (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Aspect ratio: {videoAspectRatio.toFixed(2)}:1
-                        {maxWidthFormat && (
-                          <span className="ml-2 text-amber-600">
-                            (Requires 1:1 or 16:9 for max-width format)
-                          </span>
-                        )}
+                  <div className="flex flex-col items-center gap-4">
+                    {/* Preview container with 9:16 aspect ratio to match discover feed */}
+                    <div className="relative w-full max-w-[300px] rounded-lg overflow-hidden border border-border" style={{ aspectRatio: maxWidthFormat ? (videoAspectRatio || 16/9) : '9/16' }}>
+                      <video src={videoPreview} controls className="w-full h-full object-cover" />
+                      <div className="absolute top-2 left-2 z-10">
+                        <span className="text-[10px] font-medium text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
+                          Sponsored
+                        </span>
                       </div>
-                    )}
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 z-10"
+                        onClick={removeMedia}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground text-center">
+                      {videoAspectRatio !== null && (
+                        <p>
+                          Video aspect ratio: {videoAspectRatio.toFixed(2)}:1
+                          {maxWidthFormat && (
+                            <span className="ml-2 text-amber-600">
+                              (Requires 1:1 or 16:9 for max-width format)
+                            </span>
+                          )}
+                        </p>
+                      )}
+                      <p className="mt-1">Preview shows how your ad will appear in the Discover feed</p>
+                    </div>
                   </div>
                 )}
               </div>

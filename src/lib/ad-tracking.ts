@@ -10,7 +10,7 @@ export async function trackAdClick(
   placement: 'news' | 'discover' | 'learn'
 ): Promise<void> {
   try {
-    // Get campaign to check budget and cost per click
+    // Get campaign to check budget and billing model
     const campaignDoc = await getDoc(doc(db, 'adCampaigns', campaignId));
     if (!campaignDoc.exists()) {
       console.error('Campaign not found:', campaignId);
@@ -18,12 +18,17 @@ export async function trackAdClick(
     }
 
     const campaignData = campaignDoc.data();
+    const billingModel = campaignData.billingModel || 'cpc'; // Default to CPC for legacy
     const costPerClick = campaignData.costPerClick || 0;
     const currentSpent = campaignData.spent || 0;
     const currentDailySpent = campaignData.dailySpent || 0;
     const budget = campaignData.budget;
     const dailyBudget = campaignData.dailyBudget;
     const uncappedBudget = campaignData.uncappedBudget || false;
+    
+    // Only charge for clicks if billing model is CPC
+    const chargeAmount = billingModel === 'cpc' ? costPerClick : 0;
+    
     // Handle lastSpentReset date conversion
     let lastSpentResetDate: Date;
     if (campaignData.lastSpentReset) {
@@ -45,12 +50,12 @@ export async function trackAdClick(
     const dailySpentToUse = needsDailyReset ? 0 : currentDailySpent;
     
     // Calculate new spent amounts
-    const newSpent = currentSpent + costPerClick;
-    const newDailySpent = dailySpentToUse + costPerClick;
+    const newSpent = currentSpent + chargeAmount;
+    const newDailySpent = dailySpentToUse + chargeAmount;
 
-    // Check budget limits
-    const wouldExceedBudget = !uncappedBudget && budget && newSpent >= budget;
-    const wouldExceedDailyBudget = dailyBudget && newDailySpent >= dailyBudget;
+    // Check budget limits (only if we're charging)
+    const wouldExceedBudget = chargeAmount > 0 && !uncappedBudget && budget && newSpent >= budget;
+    const wouldExceedDailyBudget = chargeAmount > 0 && dailyBudget && newDailySpent >= dailyBudget;
 
     // Record the click
     await addDoc(collection(db, 'adClicks'), {
@@ -59,7 +64,6 @@ export async function trackAdClick(
       placement,
       clickedAt: serverTimestamp(),
       userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : null,
-      // Note: IP address would need to be captured server-side for privacy/security
     });
 
     // Update campaign
@@ -68,21 +72,23 @@ export async function trackAdClick(
       updatedAt: serverTimestamp(),
     };
 
-    // Update spending if within limits
-    if (!wouldExceedBudget && !wouldExceedDailyBudget) {
-      updateData.spent = newSpent;
-      updateData.dailySpent = newDailySpent;
-      if (needsDailyReset) {
-        updateData.lastSpentReset = serverTimestamp();
-      }
-    } else {
-      // Budget exceeded - deactivate campaign
-      updateData.isActive = false;
-      if (wouldExceedBudget) {
-        updateData.spent = budget; // Cap at budget
-      }
-      if (wouldExceedDailyBudget) {
-        updateData.dailySpent = dailyBudget; // Cap at daily budget
+    // Only update spending if billing model is CPC
+    if (chargeAmount > 0) {
+      if (!wouldExceedBudget && !wouldExceedDailyBudget) {
+        updateData.spent = newSpent;
+        updateData.dailySpent = newDailySpent;
+        if (needsDailyReset) {
+          updateData.lastSpentReset = serverTimestamp();
+        }
+      } else {
+        // Budget exceeded - deactivate campaign
+        updateData.isActive = false;
+        if (wouldExceedBudget) {
+          updateData.spent = budget; // Cap at budget
+        }
+        if (wouldExceedDailyBudget) {
+          updateData.dailySpent = dailyBudget; // Cap at daily budget
+        }
       }
     }
 
@@ -102,7 +108,7 @@ export async function trackAdImpression(
   placement: 'news' | 'discover' | 'learn'
 ): Promise<void> {
   try {
-    // Get campaign to check budget and cost per impression
+    // Get campaign to check budget and billing model
     const campaignDoc = await getDoc(doc(db, 'adCampaigns', campaignId));
     if (!campaignDoc.exists()) {
       console.error('Campaign not found:', campaignId);
@@ -110,12 +116,17 @@ export async function trackAdImpression(
     }
 
     const campaignData = campaignDoc.data();
+    const billingModel = campaignData.billingModel || 'cpc'; // Default to CPC for legacy
     const costPerImpression = campaignData.costPerImpression || 0;
     const currentSpent = campaignData.spent || 0;
     const currentDailySpent = campaignData.dailySpent || 0;
     const budget = campaignData.budget;
     const dailyBudget = campaignData.dailyBudget;
     const uncappedBudget = campaignData.uncappedBudget || false;
+    
+    // Only charge for impressions if billing model is CPM
+    const chargeAmount = billingModel === 'cpm' ? costPerImpression : 0;
+    
     // Handle lastSpentReset date conversion
     let lastSpentResetDate: Date;
     if (campaignData.lastSpentReset) {
@@ -137,12 +148,12 @@ export async function trackAdImpression(
     const dailySpentToUse = needsDailyReset ? 0 : currentDailySpent;
     
     // Calculate new spent amounts
-    const newSpent = currentSpent + costPerImpression;
-    const newDailySpent = dailySpentToUse + costPerImpression;
+    const newSpent = currentSpent + chargeAmount;
+    const newDailySpent = dailySpentToUse + chargeAmount;
 
-    // Check budget limits
-    const wouldExceedBudget = !uncappedBudget && budget && newSpent >= budget;
-    const wouldExceedDailyBudget = dailyBudget && newDailySpent >= dailyBudget;
+    // Check budget limits (only if we're charging)
+    const wouldExceedBudget = chargeAmount > 0 && !uncappedBudget && budget && newSpent >= budget;
+    const wouldExceedDailyBudget = chargeAmount > 0 && dailyBudget && newDailySpent >= dailyBudget;
 
     // Update campaign
     const updateData: any = {
@@ -150,21 +161,23 @@ export async function trackAdImpression(
       updatedAt: serverTimestamp(),
     };
 
-    // Update spending if within limits
-    if (!wouldExceedBudget && !wouldExceedDailyBudget) {
-      updateData.spent = newSpent;
-      updateData.dailySpent = newDailySpent;
-      if (needsDailyReset) {
-        updateData.lastSpentReset = serverTimestamp();
-      }
-    } else {
-      // Budget exceeded - deactivate campaign
-      updateData.isActive = false;
-      if (wouldExceedBudget) {
-        updateData.spent = budget; // Cap at budget
-      }
-      if (wouldExceedDailyBudget) {
-        updateData.dailySpent = dailyBudget; // Cap at daily budget
+    // Only update spending if billing model is CPM
+    if (chargeAmount > 0) {
+      if (!wouldExceedBudget && !wouldExceedDailyBudget) {
+        updateData.spent = newSpent;
+        updateData.dailySpent = newDailySpent;
+        if (needsDailyReset) {
+          updateData.lastSpentReset = serverTimestamp();
+        }
+      } else {
+        // Budget exceeded - deactivate campaign
+        updateData.isActive = false;
+        if (wouldExceedBudget) {
+          updateData.spent = budget; // Cap at budget
+        }
+        if (wouldExceedDailyBudget) {
+          updateData.dailySpent = dailyBudget; // Cap at daily budget
+        }
       }
     }
 

@@ -1349,8 +1349,9 @@ export interface AdCampaign {
   dailySpent?: number; // Amount spent today in cents
   lastSpentReset?: Date; // Date when dailySpent was last reset
   uncappedBudget?: boolean; // If true, campaign has no budget limit
-  costPerImpression?: number; // Cost per impression in cents (CPM)
-  costPerClick?: number; // Cost per click in cents (CPC)
+  billingModel?: 'cpm' | 'cpc'; // Billing model: CPM for awareness, CPC for clicks
+  costPerImpression?: number; // Cost per impression in cents (CPM) - only used if billingModel is 'cpm'
+  costPerClick?: number; // Cost per click in cents (CPC) - only used if billingModel is 'cpc'
   currency?: string; // Currency code (USD, GBP, etc.)
   // Dynamic targeting
   targetAudience?: {
