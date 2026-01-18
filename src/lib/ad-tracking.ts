@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, addDoc, doc, updateDoc, increment, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, increment, serverTimestamp, getDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
 
 /**
  * Track an ad click
@@ -108,6 +108,37 @@ export async function trackAdImpression(
   placement: 'news' | 'discover' | 'learn'
 ): Promise<void> {
   try {
+    // Check if this user has already had an impression for this ad today
+    // This prevents charging for the same user seeing the same ad multiple times per day
+    if (userId) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const existingImpressionQuery = query(
+        collection(db, 'adImpressions'),
+        where('campaignId', '==', campaignId),
+        where('userId', '==', userId),
+        where('impressionDate', '==', today.toISOString().split('T')[0])
+      );
+      
+      const existingImpressions = await getDocs(existingImpressionQuery);
+      
+      if (!existingImpressions.empty) {
+        // User already saw this ad today - don't count as billable impression
+        console.log('Skipping duplicate impression for user:', userId, 'campaign:', campaignId);
+        return;
+      }
+      
+      // Record this impression to prevent duplicates
+      await addDoc(collection(db, 'adImpressions'), {
+        campaignId,
+        userId,
+        placement,
+        impressionDate: today.toISOString().split('T')[0], // YYYY-MM-DD format for easy querying
+        impressionAt: serverTimestamp(),
+      });
+    }
+    
     // Get campaign to check budget and billing model
     const campaignDoc = await getDoc(doc(db, 'adCampaigns', campaignId));
     if (!campaignDoc.exists()) {
