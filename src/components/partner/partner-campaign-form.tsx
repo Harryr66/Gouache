@@ -118,6 +118,30 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
     },
   });
 
+  // Reset form when editing a different campaign
+  useEffect(() => {
+    if (existingCampaign) {
+      form.reset({
+        title: existingCampaign.title || '',
+        placement: existingCampaign.placement || 'news',
+        clickUrl: existingCampaign.clickUrl || '',
+        startDate: formatDateForInput(existingCampaign.startDate) || new Date().toISOString().split('T')[0],
+        endDate: formatDateForInput(existingCampaign.endDate) || '',
+        uncappedBudget: existingCampaign.uncappedBudget || false,
+        budget: centsToDisplay(existingCampaign.budget),
+        dailyBudget: centsToDisplay(existingCampaign.dailyBudget),
+        billingModel: existingCampaign.billingModel || 'cpc',
+        costPerImpression: cpmCentsToDisplay(existingCampaign.costPerImpression),
+        costPerClick: centsToDisplay(existingCampaign.costPerClick),
+        currency: existingCampaign.currency || 'usd',
+      });
+      setMediaType(existingCampaign.mediaType || 'image');
+      setImagePreview(existingCampaign.imageUrl || null);
+      setVideoPreview(existingCampaign.videoUrl || null);
+      setMaxWidthFormat(existingCampaign.maxWidthFormat || false);
+    }
+  }, [existingCampaign]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -210,7 +234,9 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       return;
     }
 
-    if (mediaType === 'image' && !imageFile) {
+    // Only require new media upload if creating new campaign (not editing)
+    // When editing, existing media is preserved if no new file uploaded
+    if (mediaType === 'image' && !imageFile && !existingCampaign?.imageUrl) {
       toast({
         title: 'Image required',
         description: 'Please upload an image for your campaign.',
@@ -219,7 +245,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       return;
     }
 
-    if (mediaType === 'video' && !videoFile) {
+    if (mediaType === 'video' && !videoFile && !existingCampaign?.videoUrl) {
       toast({
         title: 'Video required',
         description: 'Please upload a video for your campaign.',
