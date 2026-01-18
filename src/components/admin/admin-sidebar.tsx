@@ -26,34 +26,25 @@ interface AdminSidebarProps {
 export function AdminSidebar(props: AdminSidebarProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-      {/* Professional Verification */}
+      {/* Artist Account Requests */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Professional Verification</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Artist Account Requests
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <button
-            onClick={() => props.setSelectedView('artist-management')}
-            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
-              props.selectedView === 'artist-management' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-            }`}
-          >
-            <span className="flex items-center gap-2 text-sm">
-              <Users className="h-4 w-4" />
-              Manage Artists
-            </span>
-            <Badge variant={props.selectedView === 'artist-management' ? 'secondary' : 'outline'}>
-              ({props.approvedRequests.length})
-            </Badge>
-          </button>
           <button
             onClick={() => props.setSelectedView('artist-pending')}
             className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
               props.selectedView === 'artist-pending' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
             }`}
           >
-            <span className="text-sm">Pending</span>
-            <Badge variant={props.selectedView === 'artist-pending' ? 'secondary' : 'outline'}>({props.pendingRequests.length})</Badge>
+            <span className="text-sm">Pending Review</span>
+            <Badge variant={props.pendingRequests.length > 0 ? 'destructive' : (props.selectedView === 'artist-pending' ? 'secondary' : 'outline')}>
+              ({props.pendingRequests.length})
+            </Badge>
           </button>
           <button
             onClick={() => props.setSelectedView('artist-approved')}
@@ -81,6 +72,29 @@ export function AdminSidebar(props: AdminSidebarProps) {
           >
             <span className="text-sm">Suspended</span>
             <Badge variant={props.selectedView === 'artist-suspended' ? 'secondary' : 'outline'}>({props.suspendedRequests.length})</Badge>
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* Professional Artists */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Professional Artists</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <button
+            onClick={() => props.setSelectedView('artist-management')}
+            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+              props.selectedView === 'artist-management' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+            }`}
+          >
+            <span className="flex items-center gap-2 text-sm">
+              <Users className="h-4 w-4" />
+              Manage Artists
+            </span>
+            <Badge variant={props.selectedView === 'artist-management' ? 'secondary' : 'outline'}>
+              ({props.approvedRequests.length})
+            </Badge>
           </button>
           <button
             onClick={() => props.setSelectedView('artist-invites')}

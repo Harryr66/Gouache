@@ -122,9 +122,17 @@ export interface Gallery {
 
 export interface ArtistRequest {
   id: string;
-  userId: string;
-  user: User;
+  userId?: string;
+  user: {
+    id?: string;
+    displayName: string;
+    email: string;
+    avatarUrl?: string | null;
+  };
+  name?: string; // Applicant name (for non-logged-in users)
+  email?: string; // Applicant email
   portfolioImages: string[];
+  portfolioDescription?: string;
   artistStatement?: string;
   experience: string;
   socialLinks?: {
@@ -139,6 +147,7 @@ export interface ArtistRequest {
   reviewedBy?: string;
   rejectionReason?: string;
   notes?: string;
+  source?: string; // Where the request came from
 }
 
 export interface ArtistInvite {

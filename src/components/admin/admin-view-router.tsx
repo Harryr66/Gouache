@@ -326,70 +326,117 @@ export function AdminViewRouter(props: any) {
               </Card>
             ) : (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Pending Professional Verification Requests</h2>
+              <h2 className="text-2xl font-bold">Pending Artist Account Requests</h2>
+              <p className="text-muted-foreground">Review artist applications and their portfolio submissions.</p>
               {props.pendingRequests.map((request: any) => (
                 <Card key={request.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.user.avatarUrl || ''} />
-                          <AvatarFallback>
-                            {request.user.displayName?.charAt(0) || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold">{request.user.displayName}</h3>
-                            <Badge variant="outline">Pending</Badge>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                        <div>
-                              <p><strong>Email:</strong> {request.user.email}</p>
-                              <p><strong>Experience:</strong> {request.experience || 'Not provided'}</p>
-                              {(request.socialLinks?.instagram || request.socialLinks?.x || request.socialLinks?.tiktok || request.socialLinks?.website) && (
-                                <div className="mt-2 space-y-1">
-                                  <p><strong>Social Links:</strong></p>
-                                  {request.socialLinks?.instagram && (
-                                    <p className="text-xs">Instagram: <a href={request.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.instagram}</a></p>
-                                  )}
-                                  {request.socialLinks?.x && (
-                                    <p className="text-xs">X: <a href={request.socialLinks.x} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.x}</a></p>
-                                  )}
-                                  {request.socialLinks?.tiktok && (
-                                    <p className="text-xs">TikTok: <a href={request.socialLinks.tiktok} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.tiktok}</a></p>
-                                  )}
-                                  {request.socialLinks?.website && (
-                                    <p className="text-xs">Website: <a href={request.socialLinks.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.website}</a></p>
-                                  )}
-                                </div>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-4">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={request.user?.avatarUrl || ''} />
+                            <AvatarFallback>
+                              {(request.user?.displayName || request.name || 'U')?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold">{request.user?.displayName || request.name || 'Unknown'}</h3>
+                              <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Pending Review</Badge>
+                              {request.source && (
+                                <Badge variant="secondary" className="text-xs">{request.source}</Badge>
                               )}
-                        </div>
-                            <div>
-                              <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
-                              <p><strong>Portfolio Images:</strong> {request.portfolioImages.length}</p>
-                      </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                              <div>
+                                <p><strong>Email:</strong> {request.user?.email || request.email}</p>
+                                <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                                <p><strong>Portfolio Images:</strong> {request.portfolioImages?.length || 0}</p>
+                              </div>
+                              <div>
+                                {(request.socialLinks?.instagram || request.socialLinks?.x || request.socialLinks?.tiktok || request.socialLinks?.website) && (
+                                  <div className="space-y-1">
+                                    <p><strong>Social Links:</strong></p>
+                                    {request.socialLinks?.website && (
+                                      <p className="text-xs">Website: <a href={request.socialLinks.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.website}</a></p>
+                                    )}
+                                    {request.socialLinks?.instagram && (
+                                      <p className="text-xs">Instagram: <a href={request.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.instagram}</a></p>
+                                    )}
+                                    {request.socialLinks?.x && (
+                                      <p className="text-xs">X: <a href={request.socialLinks.x} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.x}</a></p>
+                                    )}
+                                    {request.socialLinks?.tiktok && (
+                                      <p className="text-xs">TikTok: <a href={request.socialLinks.tiktok} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.socialLinks.tiktok}</a></p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          {request.artistStatement && (
-                            <p className="text-sm mt-2">{request.artistStatement}</p>
-                          )}
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => props.setSelectedRequest(request)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Review
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => props.setSelectedRequest(request)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                      </div>
+                      
+                      {/* Artist Statement Preview */}
+                      {request.artistStatement && (
+                        <div className="bg-muted/50 p-3 rounded-md">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">Artist Statement</p>
+                          <p className="text-sm line-clamp-3">{request.artistStatement}</p>
+                        </div>
+                      )}
+                      
+                      {/* Experience Preview */}
+                      {request.experience && (
+                        <div className="bg-muted/50 p-3 rounded-md">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">Experience</p>
+                          <p className="text-sm line-clamp-2">{request.experience}</p>
+                        </div>
+                      )}
+                      
+                      {/* Portfolio Images Preview */}
+                      {request.portfolioImages && request.portfolioImages.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground mb-2">Portfolio Preview ({request.portfolioImages.length} images)</p>
+                          <div className="flex gap-2 overflow-x-auto pb-2">
+                            {request.portfolioImages.slice(0, 5).map((imageUrl: string, index: number) => (
+                              <a 
+                                key={index} 
+                                href={imageUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex-shrink-0"
+                              >
+                                <img 
+                                  src={imageUrl} 
+                                  alt={`Portfolio ${index + 1}`} 
+                                  className="h-20 w-20 object-cover rounded-md border hover:opacity-80 transition-opacity"
+                                />
+                              </a>
+                            ))}
+                            {request.portfolioImages.length > 5 && (
+                              <div className="flex-shrink-0 h-20 w-20 bg-muted rounded-md border flex items-center justify-center">
+                                <span className="text-sm text-muted-foreground">+{request.portfolioImages.length - 5}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               ))}
-                            </div>
+            </div>
           )
         )}
 

@@ -15,8 +15,9 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Building2, Calendar, ShoppingBag } from 'lucide-react';
+import { Loader2, Building2, Calendar, ShoppingBag, Palette } from 'lucide-react';
 import { Gallery } from '@/lib/types';
+import Link from 'next/link';
 
 const gallerySignupSchema = z.object({
   galleryName: z.string().min(2, { message: 'Gallery name must be at least 2 characters.' }),
@@ -160,8 +161,44 @@ export default function PartnersPage() {
       <div className="text-center mb-8">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 break-words">Partner with Gouache</h1>
         <p className="text-muted-foreground text-lg">
-          Create a Gallery account to list events and artworks for sale
+          Join Gouache as an artist or gallery partner
         </p>
+      </div>
+
+      {/* Artist Account Request Card */}
+      <Card className="mb-8 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-full">
+              <Palette className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Request an Artist Account</CardTitle>
+              <CardDescription>
+                Are you an artist? Apply for a professional artist account to share your work on Gouache.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Artist accounts include a verified profile, portfolio features, the ability to sell artwork, and access to live streaming tools.
+          </p>
+          <Link href="/partners/artist-request">
+            <Button variant="gradient" className="w-full sm:w-auto">
+              Apply for Artist Account
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      <div className="relative my-8">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">Or create a gallery account</span>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 mb-8">

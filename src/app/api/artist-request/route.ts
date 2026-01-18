@@ -5,11 +5,23 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, artistStatement, experience, socialLinks, source } = body as {
+    const { 
+      name, 
+      email, 
+      artistStatement, 
+      experience, 
+      portfolioDescription,
+      portfolioImages,
+      socialLinks, 
+      source,
+      userId 
+    } = body as {
       name?: string;
       email?: string;
       artistStatement?: string;
       experience?: string;
+      portfolioDescription?: string;
+      portfolioImages?: string[];
       socialLinks?: {
         instagram?: string;
         website?: string;
@@ -17,6 +29,7 @@ export async function POST(request: Request) {
         tiktok?: string;
       };
       source?: string;
+      userId?: string;
     };
 
     if (!name || !email) {
@@ -38,8 +51,32 @@ export async function POST(request: Request) {
       email: trimmedEmail,
       status: 'pending',
       submittedAt: serverTimestamp(),
-      source: source || 'discover-coming-soon'
+      source: source || 'discover-coming-soon',
+      // Create a user object for compatibility with admin panel display
+      user: {
+        displayName: trimmedName,
+        email: trimmedEmail,
+        avatarUrl: null,
+      }
     };
+
+    // Add userId if provided (for logged-in users)
+    if (userId) {
+      artistRequest.userId = userId;
+      artistRequest.user.id = userId;
+    }
+
+    // Add portfolio images (required for full applications)
+    if (portfolioImages && Array.isArray(portfolioImages) && portfolioImages.length > 0) {
+      artistRequest.portfolioImages = portfolioImages;
+    } else {
+      artistRequest.portfolioImages = [];
+    }
+
+    // Add portfolio description
+    if (portfolioDescription?.trim()) {
+      artistRequest.portfolioDescription = portfolioDescription.trim();
+    }
 
     // Add optional fields only if they have values
     if (artistStatement?.trim()) {
