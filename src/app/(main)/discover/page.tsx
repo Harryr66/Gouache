@@ -3158,7 +3158,9 @@ function DiscoverPageContent() {
     // Mix ads into artworks
     const result = mixAdsIntoContent(artworksSlice, ads, 2);
     
-    log('✅ visibleFilteredArtworks: Returning', result.length, 'items');
+    const adsInResult = result.filter(item => 'type' in item && item.type === 'ad').length;
+    log('✅ visibleFilteredArtworks: Returning', result.length, 'items with', adsInResult, 'ads');
+    
     return result;
   }, [filteredAndSortedArtworks, visibleCount, ads]);
 
