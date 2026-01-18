@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -83,22 +83,22 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
   const isEditing = !!existingCampaign;
 
   // Helper to format date for input
-  const formatDateForInput = (date: Date | undefined) => {
+  const formatDateForInput = useCallback((date: Date | undefined) => {
     if (!date) return '';
     return date.toISOString().split('T')[0];
-  };
+  }, []);
 
   // Helper to convert cents to dollars for display
-  const centsToDisplay = (cents: number | undefined) => {
+  const centsToDisplay = useCallback((cents: number | undefined) => {
     if (!cents) return '';
     return (cents / 100).toFixed(2);
-  };
+  }, []);
 
   // CPM is stored as cost per impression in cents, display as cost per 1000
-  const cpmCentsToDisplay = (centsPerImpression: number | undefined) => {
+  const cpmCentsToDisplay = useCallback((centsPerImpression: number | undefined) => {
     if (!centsPerImpression) return '';
     return ((centsPerImpression * 1000) / 100).toFixed(2);
-  };
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -140,7 +140,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       setVideoPreview(existingCampaign.videoUrl || null);
       setMaxWidthFormat(existingCampaign.maxWidthFormat || false);
     }
-  }, [existingCampaign]);
+  }, [existingCampaign, form, formatDateForInput, centsToDisplay, cpmCentsToDisplay]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
