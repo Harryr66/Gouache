@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
@@ -33,13 +33,13 @@ const budgetRanges = [
 
 export default function AdvertisePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedAdTypes, setSelectedAdTypes] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     companyName: '',
     contactName: '',
     email: '',
     phone: '',
     website: '',
-    advertisingType: '',
     budget: '',
     targetAudience: '',
     campaignGoals: '',
@@ -51,16 +51,31 @@ export default function AdvertisePage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleAdTypeToggle = (value: string) => {
+    setSelectedAdTypes(prev => 
+      prev.includes(value) 
+        ? prev.filter(t => t !== value)
+        : [...prev, value]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate required fields
-    const requiredFields = ['companyName', 'contactName', 'email', 'advertisingType'];
-    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
-    if (missingFields.length > 0) {
+    if (!formData.companyName || !formData.contactName || !formData.email) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedAdTypes.length === 0) {
+      toast({
+        title: "Missing Information",
+        description: "Please select at least one advertising type.",
         variant: "destructive",
       });
       return;
@@ -74,7 +89,7 @@ export default function AdvertisePage() {
         email: formData.email,
         phone: formData.phone,
         website: formData.website,
-        advertisingType: formData.advertisingType,
+        advertisingTypes: selectedAdTypes,
         budget: formData.budget,
         targetAudience: formData.targetAudience,
         campaignGoals: formData.campaignGoals,
@@ -93,7 +108,7 @@ export default function AdvertisePage() {
         const notifyRes = await fetch('/api/notify-advertising', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...adData, applicationId: adDocRef.id, sendTo: 'news@gouache.art' }),
+          body: JSON.stringify({ ...adData, applicationId: adDocRef.id, sendTo: 'advertising@gouache.art' }),
         });
         if (!notifyRes.ok) {
           console.warn('⚠️ Advertising email notification failed', await notifyRes.text());
@@ -114,13 +129,13 @@ export default function AdvertisePage() {
         email: '',
         phone: '',
         website: '',
-        advertisingType: '',
         budget: '',
         targetAudience: '',
         campaignGoals: '',
         message: '',
         timeline: ''
       });
+      setSelectedAdTypes([]);
     } catch (error) {
       console.error('Error submitting application:', error);
       toast({
@@ -240,37 +255,54 @@ export default function AdvertisePage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-foreground">Campaign Details</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="advertisingType">Advertising Type *</Label>
-                    <Select value={formData.advertisingType} onValueChange={(value) => handleInputChange('advertisingType', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select advertising type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {advertisingTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
+                {/* Multi-select Advertising Types */}
+                <div className="space-y-3">
+                  <Label>Advertising Types * (Select all that apply)</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {advertisingTypes.map((type) => (
+                      <div 
+                        key={type.value} 
+                        className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          selectedAdTypes.includes(type.value) 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                        onClick={() => handleAdTypeToggle(type.value)}
+                      >
+                        <Checkbox
+                          id={type.value}
+                          checked={selectedAdTypes.includes(type.value)}
+                          onCheckedChange={() => handleAdTypeToggle(type.value)}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1">
+                          <label 
+                            htmlFor={type.value} 
+                            className="text-sm font-medium cursor-pointer"
+                          >
                             {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-0.5">{type.description}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="budget">Budget Range</Label>
-                    <Select value={formData.budget} onValueChange={(value) => handleInputChange('budget', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select budget range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {budgetRanges.map((range) => (
-                          <SelectItem key={range.value} value={range.value}>
-                            {range.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="budget">Budget Range</Label>
+                  <Select value={formData.budget} onValueChange={(value) => handleInputChange('budget', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select budget range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {budgetRanges.map((range) => (
+                        <SelectItem key={range.value} value={range.value}>
+                          {range.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -328,8 +360,8 @@ export default function AdvertisePage() {
           <h3 className="text-lg font-semibold text-foreground mb-2">Questions?</h3>
           <p className="text-muted-foreground mb-4">
             Contact our advertising team at{' '}
-            <a href="mailto:news@gouache.art" className="text-primary hover:underline">
-              news@gouache.art
+            <a href="mailto:advertising@gouache.art" className="text-primary hover:underline">
+              advertising@gouache.art
             </a>
           </p>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
