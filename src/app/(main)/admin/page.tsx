@@ -1662,8 +1662,10 @@ export default function AdminPanel() {
 
       await deleteDoc(doc(db, 'userProfiles', request.userId));
 
-      if (request.user.username) {
-        await setDoc(doc(db, 'handles', request.user.username), { userId: null }, { merge: true });
+      // Clear the handle if user has one
+      const userAny = request.user as any;
+      if (userAny.username) {
+        await setDoc(doc(db, 'handles', userAny.username), { userId: null }, { merge: true });
       }
 
       setArtistRequests((prev) => prev.filter((item: any) => item.id !== request.id));
