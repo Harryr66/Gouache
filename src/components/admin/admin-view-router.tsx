@@ -691,6 +691,226 @@ export function AdminViewRouter(props: any) {
           )
         )}
 
+        {/* Gallery Account Requests - Pending */}
+        {props.selectedView === 'gallery-pending' && (
+          (props.galleryRequests?.filter((r: any) => r.status === 'pending').length || 0) === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No pending gallery requests</h3>
+                <p className="text-muted-foreground text-center">
+                  All gallery requests have been reviewed.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Pending Gallery Account Requests</h2>
+              <p className="text-muted-foreground">Review gallery applications and their submissions.</p>
+              {props.galleryRequests?.filter((r: any) => r.status === 'pending').map((request: any) => (
+                <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-4">
+                          <div className="h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                            <span className="text-blue-600 font-semibold text-lg">
+                              {request.galleryName?.charAt(0) || 'G'}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold">{request.galleryName}</h3>
+                              <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Pending Review</Badge>
+                              <Badge variant="secondary" className="text-xs capitalize">{request.galleryType || 'Gallery'}</Badge>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                              <div>
+                                <p><strong>Contact:</strong> {request.contactName}</p>
+                                <p><strong>Email:</strong> {request.email}</p>
+                                <p><strong>Location:</strong> {request.city}, {request.country}</p>
+                                <p><strong>Years Operating:</strong> {request.yearsOperating || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                                <p><strong>Gallery Images:</strong> {request.galleryImages?.length || 0}</p>
+                                {request.website && (
+                                  <p><strong>Website:</strong> <a href={request.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.website}</a></p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => props.handleApproveGallery?.(request)}
+                            disabled={props.isProcessing}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => props.handleRejectGallery?.(request)}
+                            disabled={props.isProcessing}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Gallery Description */}
+                      {request.bio && (
+                        <div className="bg-muted/50 p-3 rounded-md">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">Gallery Description</p>
+                          <p className="text-sm line-clamp-3">{request.bio}</p>
+                        </div>
+                      )}
+                      
+                      {/* Artists Represented */}
+                      {request.artistsRepresented && (
+                        <div className="bg-muted/50 p-3 rounded-md">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">Artists Represented</p>
+                          <p className="text-sm line-clamp-2">{request.artistsRepresented}</p>
+                        </div>
+                      )}
+                      
+                      {/* Exhibition History */}
+                      {request.exhibitionHistory && (
+                        <div className="bg-muted/50 p-3 rounded-md">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">Exhibition History</p>
+                          <p className="text-sm line-clamp-2">{request.exhibitionHistory}</p>
+                        </div>
+                      )}
+                      
+                      {/* Gallery Images Preview */}
+                      {request.galleryImages && request.galleryImages.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground mb-2">Gallery Images ({request.galleryImages.length})</p>
+                          <div className="flex gap-2 overflow-x-auto pb-2">
+                            {request.galleryImages.slice(0, 5).map((imageUrl: string, index: number) => (
+                              <a 
+                                key={index} 
+                                href={imageUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex-shrink-0"
+                              >
+                                <img 
+                                  src={imageUrl} 
+                                  alt={`Gallery ${index + 1}`} 
+                                  className="h-20 w-20 object-cover rounded-md border hover:opacity-80 transition-opacity"
+                                />
+                              </a>
+                            ))}
+                            {request.galleryImages.length > 5 && (
+                              <div className="flex-shrink-0 h-20 w-20 bg-muted rounded-md border flex items-center justify-center">
+                                <span className="text-sm text-muted-foreground">+{request.galleryImages.length - 5}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Gallery Account Requests - Approved */}
+        {props.selectedView === 'gallery-approved' && (
+          (props.galleryRequests?.filter((r: any) => r.status === 'approved').length || 0) === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Check className="h-12 w-12 text-green-500 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No approved galleries</h3>
+                <p className="text-muted-foreground text-center">
+                  Approved gallery accounts will appear here.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Approved Gallery Accounts</h2>
+              {props.galleryRequests?.filter((r: any) => r.status === 'approved').map((request: any) => (
+                <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex gap-4">
+                        <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                          <span className="text-green-600 font-semibold text-lg">
+                            {request.galleryName?.charAt(0) || 'G'}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{request.galleryName}</h3>
+                            <Badge variant="default" className="bg-green-500">Approved</Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            <p><strong>Contact:</strong> {request.contactName} ({request.email})</p>
+                            <p><strong>Location:</strong> {request.city}, {request.country}</p>
+                            <p><strong>Approved:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Gallery Account Requests - Rejected */}
+        {props.selectedView === 'gallery-rejected' && (
+          (props.galleryRequests?.filter((r: any) => r.status === 'rejected').length || 0) === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <X className="h-12 w-12 text-red-500 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No rejected galleries</h3>
+                <p className="text-muted-foreground text-center">
+                  Rejected gallery requests will appear here.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Rejected Gallery Requests</h2>
+              {props.galleryRequests?.filter((r: any) => r.status === 'rejected').map((request: any) => (
+                <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex gap-4">
+                        <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                          <span className="text-red-600 font-semibold text-lg">
+                            {request.galleryName?.charAt(0) || 'G'}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{request.galleryName}</h3>
+                            <Badge variant="destructive">Rejected</Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            <p><strong>Contact:</strong> {request.contactName} ({request.email})</p>
+                            <p><strong>Reason:</strong> {request.rejectionReason || 'No reason provided'}</p>
+                            <p><strong>Rejected:</strong> {request.reviewedAt instanceof Date ? request.reviewedAt.toLocaleDateString() : (request.reviewedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
+        )}
+
         {props.selectedView === 'news-articles' && (
           <div className="space-y-6">
             {/* Article Editor */}

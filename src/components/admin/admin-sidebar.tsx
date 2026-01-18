@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Megaphone, ShoppingCart, Package, AlertCircle, BookOpen, Database } from 'lucide-react';
+import { Users, Megaphone, ShoppingCart, Package, AlertCircle, BookOpen, Database, Building2 } from 'lucide-react';
 
 interface AdminSidebarProps {
   selectedView: string;
@@ -12,6 +12,7 @@ interface AdminSidebarProps {
   pendingRequests: any[];
   rejectedRequests: any[];
   suspendedRequests: any[];
+  galleryRequests?: any[];
   activeNewsArticles: any[];
   marketplaceProducts: any[];
   affiliateRequests: any[];
@@ -104,6 +105,51 @@ export function AdminSidebar(props: AdminSidebarProps) {
           >
             <span className="text-sm">Invite Console</span>
             <Badge variant={props.selectedView === 'artist-invites' ? 'secondary' : 'outline'}>New</Badge>
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* Gallery Account Requests */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Gallery Requests
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <button
+            onClick={() => props.setSelectedView('gallery-pending')}
+            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+              props.selectedView === 'gallery-pending' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+            }`}
+          >
+            <span className="text-sm">Pending Review</span>
+            <Badge variant={(props.galleryRequests?.filter((r: any) => r.status === 'pending').length || 0) > 0 ? 'destructive' : (props.selectedView === 'gallery-pending' ? 'secondary' : 'outline')}>
+              ({props.galleryRequests?.filter((r: any) => r.status === 'pending').length || 0})
+            </Badge>
+          </button>
+          <button
+            onClick={() => props.setSelectedView('gallery-approved')}
+            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+              props.selectedView === 'gallery-approved' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+            }`}
+          >
+            <span className="text-sm">Approved</span>
+            <Badge variant={props.selectedView === 'gallery-approved' ? 'secondary' : 'outline'}>
+              ({props.galleryRequests?.filter((r: any) => r.status === 'approved').length || 0})
+            </Badge>
+          </button>
+          <button
+            onClick={() => props.setSelectedView('gallery-rejected')}
+            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+              props.selectedView === 'gallery-rejected' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+            }`}
+          >
+            <span className="text-sm">Rejected</span>
+            <Badge variant={props.selectedView === 'gallery-rejected' ? 'secondary' : 'outline'}>
+              ({props.galleryRequests?.filter((r: any) => r.status === 'rejected').length || 0})
+            </Badge>
           </button>
         </CardContent>
       </Card>

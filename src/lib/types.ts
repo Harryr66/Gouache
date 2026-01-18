@@ -150,6 +150,38 @@ export interface ArtistRequest {
   source?: string; // Where the request came from
 }
 
+export interface GalleryRequest {
+  id: string;
+  userId?: string;
+  galleryName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  galleryType: 'commercial' | 'non-profit' | 'artist-run' | 'museum' | 'other';
+  location: string;
+  city?: string;
+  country?: string;
+  website?: string;
+  bio?: string;
+  yearsOperating?: string;
+  artistsRepresented?: string;
+  exhibitionHistory?: string;
+  galleryImages: string[];
+  socialLinks?: {
+    instagram?: string;
+    facebook?: string;
+    x?: string;
+    website?: string;
+  };
+  status: 'pending' | 'approved' | 'rejected' | 'suspended';
+  submittedAt: Date;
+  reviewedAt?: Date;
+  reviewedBy?: string;
+  rejectionReason?: string;
+  notes?: string;
+  source?: string;
+}
+
 export interface ArtistInvite {
   id: string;
   email: string;

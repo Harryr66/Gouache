@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, getDocs, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ArtistRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport } from '@/lib/types';
+import { ArtistRequest, GalleryRequest, Episode, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport } from '@/lib/types';
 import { DEFAULT_ARTICLE_IMAGE } from '@/lib/admin-constants';
 
 export function useAdminData() {
   const [artistRequests, setArtistRequests] = useState<ArtistRequest[]>([]);
+  const [galleryRequests, setGalleryRequests] = useState<GalleryRequest[]>([]);
   const [advertisingApplications, setAdvertisingApplications] = useState<AdvertisingApplication[]>([]);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [marketplaceProducts, setMarketplaceProducts] = useState<MarketplaceProduct[]>([]);
@@ -70,6 +71,7 @@ export function useAdminData() {
         
         const [
           artistSnapshot,
+          gallerySnapshot,
           advertisingSnapshot,
           episodesSnapshot,
           marketplaceSnapshot,
@@ -82,6 +84,7 @@ export function useAdminData() {
           userReportsSnapshot
         ] = await Promise.all([
           getDocs(query(collection(db, 'artistRequests'), orderBy('submittedAt', 'desc'))),
+          getDocs(query(collection(db, 'galleryRequests'), orderBy('submittedAt', 'desc'))),
           getDocs(query(collection(db, 'advertisingApplications'), orderBy('submittedAt', 'desc'))),
           getDocs(query(collection(db, 'episodes'), orderBy('createdAt', 'desc'))),
           getDocs(query(collection(db, 'marketplaceProducts'), orderBy('createdAt', 'desc'))),
@@ -95,6 +98,7 @@ export function useAdminData() {
         ]);
 
         setArtistRequests(artistSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as ArtistRequest[]);
+        setGalleryRequests(gallerySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as GalleryRequest[]);
         setAdvertisingApplications(advertisingSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as AdvertisingApplication[]);
         setEpisodes(episodesSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as Episode[]);
         setMarketplaceProducts(marketplaceSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as MarketplaceProduct[]);
@@ -179,6 +183,7 @@ export function useAdminData() {
 
   return {
     artistRequests,
+    galleryRequests,
     advertisingApplications,
     episodes,
     marketplaceProducts,
@@ -193,6 +198,7 @@ export function useAdminData() {
     loading,
     loadingArtists,
     setArtistRequests,
+    setGalleryRequests,
     setAdvertisingApplications,
     setEpisodes,
     setMarketplaceProducts,
