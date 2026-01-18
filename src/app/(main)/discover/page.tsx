@@ -2889,8 +2889,8 @@ function DiscoverPageContent() {
   const imageOnlyArtworks = useMemo(() => {
     // Grid view shows ONLY images (no videos) from Cloudflare
     // Videos will only appear in video feed (list view)
-    // NOTE: Diversity/spreading of similar images is handled by engagementScorer.applyDiversityBoost
-    return filteredAndSortedArtworks.filter((item) => {
+    // Start with visibleFilteredArtworks which includes mixed-in ads
+    return visibleFilteredArtworks.filter((item) => {
       // Keep ads
       if ('type' in item && item.type === 'ad') return true;
       // Filter out videos - only show images in grid view
@@ -2908,7 +2908,7 @@ function DiscoverPageContent() {
       
       return true;
     });
-  }, [filteredAndSortedArtworks]);
+  }, [visibleFilteredArtworks]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
