@@ -1288,6 +1288,39 @@ export interface PartnerAccount {
   createdAt: Date;
   isActive: boolean;
   accountType: 'partner';
+  // Stripe billing fields
+  stripeCustomerId?: string; // Stripe Customer ID for billing
+  paymentMethodId?: string; // Default payment method ID
+  paymentMethodLast4?: string; // Last 4 digits of card for display
+  paymentMethodBrand?: string; // Card brand (visa, mastercard, etc.)
+  billingEmail?: string; // Email for invoices (defaults to email if not set)
+  billingSetupComplete?: boolean; // Whether billing is fully set up
+  lastBilledAt?: Date; // Last billing date
+  totalSpentAllTime?: number; // Total amount spent across all time (in cents)
+}
+
+export interface PartnerBillingRecord {
+  id: string;
+  partnerId: string;
+  amount: number; // Amount in cents
+  currency: string;
+  status: 'pending' | 'paid' | 'failed' | 'refunded';
+  stripePaymentIntentId?: string;
+  stripeInvoiceId?: string;
+  billingPeriodStart: Date;
+  billingPeriodEnd: Date;
+  campaignBreakdown: {
+    campaignId: string;
+    campaignTitle: string;
+    impressions: number;
+    clicks: number;
+    impressionCost: number; // in cents
+    clickCost: number; // in cents
+    totalCost: number; // in cents
+  }[];
+  createdAt: Date;
+  paidAt?: Date;
+  failureReason?: string;
 }
 
 export interface AdCampaign {
