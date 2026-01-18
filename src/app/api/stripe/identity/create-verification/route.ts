@@ -16,24 +16,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create a verification session with Stripe Identity
+    // Create a verification session using the custom verification flow
     const session = await stripe.identity.verificationSessions.create({
-      type: 'document',
+      verification_flow: 'vf_1SqrlAEVdIMoZzwZiw98m9nw',
       provided_details: {
         email: email,
-      },
-      options: {
-        document: {
-          require_matching_selfie: true,
-          allowed_types: ['passport', 'driving_license', 'id_card'],
-        },
       },
       metadata: {
         user_id: userId,
         expected_name: expectedName, // Store the expected name to verify later
         purpose: 'artist_account_verification',
       },
-    });
+    } as any);
 
     return NextResponse.json({
       clientSecret: session.client_secret,
