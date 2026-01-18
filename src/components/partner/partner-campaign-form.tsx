@@ -365,13 +365,13 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                 }}
               >
                 <Video className="mr-2 h-4 w-4" />
-                Video (max 60s)
+                Video (max 30s)
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {mediaType === 'image' 
                 ? 'Recommended: 1080×1350px (4:5 portrait) or 1080×1080px (1:1 square). Min 600px width.'
-                : 'Recommended: 1080×1920px (9:16 portrait) or 1920×1080px (16:9 landscape). Max 60 seconds.'}
+                : 'Recommended: 1080×1920px (9:16 portrait) or 1920×1080px (16:9 landscape). Max 30 seconds.'}
             </p>
           </div>
 
@@ -390,7 +390,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                 <label htmlFor="media-upload" className="cursor-pointer">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    Click to upload {mediaType === 'image' ? 'an image' : 'a video (max 60 seconds)'}
+                    Click to upload {mediaType === 'image' ? 'an image' : 'a video (max 30 seconds)'}
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">
                     {mediaType === 'image' 
