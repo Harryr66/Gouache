@@ -156,10 +156,14 @@ export class EngagementScorer {
    * Apply diversity boost to prevent clustering
    * Spreads out items from the same artist AND items with the same image
    * Uses greedy selection with penalties to ensure variety in the feed
+   * 
+   * @param columnCount - Number of columns in CSS grid (default 5). Used to prevent
+   *                      same images appearing vertically adjacent in CSS columns layout.
    */
   applyDiversityBoost(
     scoredArtworks: ScoredArtwork[],
-    diversityPenalty: number = 0.25
+    diversityPenalty: number = 0.25,
+    columnCount: number = 5
   ): ScoredArtwork[] {
     if (scoredArtworks.length <= 1) return scoredArtworks;
     
@@ -167,8 +171,8 @@ export class EngagementScorer {
     // This actually reorders items instead of just adjusting scores
     const result: ScoredArtwork[] = [];
     const remaining = [...scoredArtworks];
-    const artistLastPosition = new Map<string, number>();
-    const imageLastPosition = new Map<string, number>();
+    const artistPositions = new Map<string, number[]>(); // Track ALL positions
+    const imagePositions = new Map<string, number[]>(); // Track ALL positions
     
     // Extract Cloudflare image ID from URL for better grouping
     const getImageKey = (url: string): string => {
@@ -176,6 +180,13 @@ export class EngagementScorer {
       const match = url.match(/imagedelivery\.net\/[^/]+\/([^/]+)/);
       return match ? match[1] : url.substring(0, 80);
     };
+    
+    // CSS columns fill top-to-bottom. For N columns:
+    // - Vertical neighbors differ by exactly N positions
+    // - Horizontal neighbors differ by 1 position
+    // Minimum safe distance to avoid ANY adjacency = columnCount + 1
+    const MIN_IMAGE_DISTANCE = columnCount * 4; // 4 rows minimum between same images
+    const MIN_ARTIST_DISTANCE = columnCount * 2; // 2 rows minimum between same artist
     
     while (remaining.length > 0) {
       const currentPos = result.length;
@@ -190,25 +201,38 @@ export class EngagementScorer {
         
         let adjustedScore = artwork.finalScore;
         
-        // Apply penalty if same artist appeared recently
-        const artistLastPos = artistLastPosition.get(artistId);
-        if (artistLastPos !== undefined) {
-          const artistDistance = currentPos - artistLastPos;
-          if (artistDistance < 4) {
-            // Strong penalty for same artist within 4 positions
-            adjustedScore -= diversityPenalty * (4 - artistDistance) * 0.5;
+        // Apply penalty if same artist appeared recently (check ALL previous positions)
+        const artistPrevPositions = artistPositions.get(artistId) || [];
+        for (const prevPos of artistPrevPositions) {
+          const distance = currentPos - prevPos;
+          if (distance < MIN_ARTIST_DISTANCE) {
+            // Penalty increases as distance decreases
+            const penalty = diversityPenalty * (MIN_ARTIST_DISTANCE - distance) * 0.3;
+            adjustedScore -= penalty;
+          }
+          // Extra penalty for exact vertical adjacency (same column)
+          if (distance % columnCount === 0 && distance <= columnCount * 2) {
+            adjustedScore -= 10; // Very heavy penalty for vertical adjacency
           }
         }
         
         // Apply stronger penalty if same image appeared recently
         if (imageKey) {
-          const imageLastPos = imageLastPosition.get(imageKey);
-          if (imageLastPos !== undefined) {
-            const imageDistance = currentPos - imageLastPos;
-            if (imageDistance < 8) {
-              // Very strong penalty for same image within 8 positions
-              // This ensures duplicates are spread at least 8 items apart
-              adjustedScore -= diversityPenalty * (8 - imageDistance);
+          const imagePrevPositions = imagePositions.get(imageKey) || [];
+          for (const prevPos of imagePrevPositions) {
+            const distance = currentPos - prevPos;
+            if (distance < MIN_IMAGE_DISTANCE) {
+              // Heavy penalty - same image should be very spread out
+              const penalty = diversityPenalty * (MIN_IMAGE_DISTANCE - distance) * 0.5;
+              adjustedScore -= penalty;
+            }
+            // CRITICAL: Massive penalty for exact vertical adjacency (same column)
+            if (distance % columnCount === 0 && distance <= columnCount * 3) {
+              adjustedScore -= 100; // Essentially forbid vertical adjacency for same image
+            }
+            // Also penalize horizontal adjacency (1 position apart)
+            if (distance === 1) {
+              adjustedScore -= 100; // Forbid horizontal adjacency
             }
           }
         }
@@ -229,9 +253,17 @@ export class EngagementScorer {
         finalScore: Math.max(0.01, bestAdjustedScore)
       });
       
-      // Track positions for next iteration
-      if (artistId) artistLastPosition.set(artistId, currentPos);
-      if (imageKey) imageLastPosition.set(imageKey, currentPos);
+      // Track ALL positions for proper distance checking
+      if (artistId) {
+        const positions = artistPositions.get(artistId) || [];
+        positions.push(currentPos);
+        artistPositions.set(artistId, positions);
+      }
+      if (imageKey) {
+        const positions = imagePositions.get(imageKey) || [];
+        positions.push(currentPos);
+        imagePositions.set(imageKey, positions);
+      }
     }
 
     return result;

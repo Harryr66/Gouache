@@ -1850,7 +1850,7 @@ function DiscoverPageContent() {
         if (artworkEngagements.size > 0) {
           log(`📊 Discover: Using engagement-based ranking (${artworkEngagements.size} artworks with engagement data)`);
           const scoredArtworks = engagementScorer.scoreArtworks(fetchedArtworks, artworkEngagements, followedArtistIds);
-          const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
+          const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks, 0.25, columnCount);
           sortedArtworks = engagementScorer.sortByScore(withDiversity);
         } else {
           // Fallback: Sort by createdAt descending (newest first), but prioritize followed artists
@@ -2792,7 +2792,7 @@ function DiscoverPageContent() {
     if (sortBy === 'popular' && artworkEngagements.size > 0) {
       // Use engagement-based scoring algorithm with follow boost (only for new items)
       const scoredArtworks = engagementScorer.scoreArtworks(sortedNewItems, artworkEngagements, followedArtistIds);
-      const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
+      const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks, 0.25, columnCount);
       sortedNewItems = engagementScorer.sortByScore(withDiversity);
     } else {
       // Traditional sorting for other options, but still prioritize followed artists (only for new items)
@@ -2838,7 +2838,7 @@ function DiscoverPageContent() {
           // Default: Use engagement-based ranking if we have engagement data
           if (artworkEngagements.size > 0) {
             const scoredArtworks = engagementScorer.scoreArtworks(sortedNewItems, artworkEngagements, followedArtistIds);
-            const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks);
+            const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks, 0.25, columnCount);
             sortedNewItems = engagementScorer.sortByScore(withDiversity);
           } else {
             // Fallback to newest if no engagement data, but prioritize followed artists
