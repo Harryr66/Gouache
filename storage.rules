@@ -65,6 +65,12 @@ match /advertisements/{allPaths=**} {
   allow write: if request.auth != null; // Only allow authenticated users to upload advertisements
 }
 
+// Allow uploads to ad-campaigns folder (for partner advertising campaigns)
+match /ad-campaigns/{allPaths=**} {
+  allow read: if true; // Allow public read access
+  allow write: if request.auth != null; // Only allow authenticated users to upload ad campaign media
+}
+
 // Allow uploads to news folder (for news article images and section images)
 match /news/{allPaths=**} {
   allow read: if true; // Allow public read access
