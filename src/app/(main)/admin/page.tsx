@@ -630,6 +630,9 @@ export default function AdminPanel() {
       }));
 
       // Get current user profile to merge with existing portfolio if any
+      if (!request.userId) {
+        throw new Error('User ID is required');
+      }
       const userProfileRef = doc(db, 'userProfiles', request.userId);
       const userProfileSnap = await getDoc(userProfileRef);
       const existingPortfolio = userProfileSnap.data()?.portfolio || [];
