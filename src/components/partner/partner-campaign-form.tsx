@@ -546,11 +546,11 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                             field.onChange(current.filter((v: string) => v !== 'news-banner'));
                           }
                         }}
-                        disabled={form.watch('adFormat') !== 'banner'}
+                        disabled={form.watch('adFormat') !== 'banner' || mediaType === 'video'}
                       />
                       <div className="flex-1">
                         <p className="font-medium">Newsroom - Banner</p>
-                        <p className="text-xs text-muted-foreground">Full-width banner below newsletter signup (banner format only)</p>
+                        <p className="text-xs text-muted-foreground">Full-width banner below newsletter signup (image only, banner format)</p>
                       </div>
                     </div>
                   </Card>
@@ -586,11 +586,11 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                             field.onChange(current.filter((v: string) => v !== 'learn-banner'));
                           }
                         }}
-                        disabled={form.watch('adFormat') !== 'banner'}
+                        disabled={form.watch('adFormat') !== 'banner' || mediaType === 'video'}
                       />
                       <div className="flex-1">
                         <p className="font-medium">Learn - Banner</p>
-                        <p className="text-xs text-muted-foreground">Full-width banner below "Gouache Learn" headline (banner format only)</p>
+                        <p className="text-xs text-muted-foreground">Full-width banner below "Gouache Learn" headline (image only, banner format)</p>
                       </div>
                     </div>
                   </Card>

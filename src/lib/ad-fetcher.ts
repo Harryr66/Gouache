@@ -149,7 +149,8 @@ export function mixAdsIntoContent<T extends { id: string }>(
 
 /**
  * Fetch a single banner ad for a specific placement
- * Returns the first active banner ad found, or null if none available
+ * Returns the first active IMAGE banner ad found, or null if none available
+ * BANNERS ARE IMAGE-ONLY to reduce system strain - video ads are filtered out
  */
 export async function fetchBannerAd(
   placement: 'news-banner' | 'learn-banner',
@@ -161,6 +162,13 @@ export async function fetchBannerAd(
     userId
   );
   
-  // Return the first banner ad found (they're already filtered and shuffled)
-  return ads.length > 0 ? ads[0] : null;
+  // Filter to image-only ads for banners (video not supported to reduce system strain)
+  const imageAds = ads.filter(ad => ad.mediaType === 'image');
+  
+  if (imageAds.length === 0 && ads.length > 0) {
+    console.log('[Ads] Banner placement has video ads but banners are image-only, skipping');
+  }
+  
+  // Return the first image banner ad found
+  return imageAds.length > 0 ? imageAds[0] : null;
 }
