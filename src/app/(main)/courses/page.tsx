@@ -517,7 +517,7 @@ export default function CoursesPage() {
                       <StreamCard
                         key={stream.id}
                         stream={stream}
-                        isOwner={user?.uid === stream.artistId}
+                        isOwner={user?.id === stream.artistId}
                         onEnd={() => endStream(stream.id)}
                       />
                     ))}
@@ -558,7 +558,7 @@ export default function CoursesPage() {
                       <StreamCard
                         key={stream.id}
                         stream={stream}
-                        isOwner={user?.uid === stream.artistId}
+                        isOwner={user?.id === stream.artistId}
                         onGoLive={() => goLive(stream.id)}
                         onCancel={() => cancelStream(stream.id)}
                       />
