@@ -107,6 +107,7 @@ export default function ProfileEditPage() {
     hideShowcaseLocations: false,
     hideShop: true,   // Hidden by default
     hideLearn: true,   // Hidden by default
+    hideLiveStream: false,   // Enabled by default for artists
     hideSocialIcons: false,
     hideAboutArtist: false,
     aboutInstructor: '',
@@ -170,6 +171,7 @@ export default function ProfileEditPage() {
             // If undefined, default to hidden (true) until artist explicitly disables
             hideShop: user.isProfessional ? (changes.hideShop ?? (user.hideShop ?? true)) : true,
             hideLearn: user.isProfessional ? (changes.hideLearn ?? (user.hideLearn ?? true)) : true,
+            hideLiveStream: user.isProfessional ? (changes.hideLiveStream ?? ((user as any).hideLiveStream ?? false)) : true,
             hideSocialIcons: user.isProfessional ? (changes.hideSocialIcons ?? ((user as any).hideSocialIcons ?? false)) : false,
             hideAboutArtist: user.isProfessional ? (changes.hideAboutArtist ?? ((user as any).hideAboutArtist ?? false)) : false,
             aboutInstructor: user.isProfessional ? (changes.aboutInstructor || (user as any).aboutInstructor || '') : '',

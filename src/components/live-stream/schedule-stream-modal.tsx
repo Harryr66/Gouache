@@ -8,9 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, Video, Plus, Trash2, Link, DollarSign } from 'lucide-react';
+import { Calendar, Clock, Video, Plus, Trash2, Link, DollarSign, Copy, Check, Share2, ExternalLink } from 'lucide-react';
 import { useLiveStream } from '@/providers/live-stream-provider';
 import { StreamScheduleFormData, StreamType, STREAM_TYPE_LABELS } from '@/lib/live-stream-types';
+import { useToast } from '@/hooks/use-toast';
 
 interface ScheduleStreamModalProps {
   isOpen: boolean;
@@ -27,7 +28,10 @@ interface MaterialInput {
 
 export function ScheduleStreamModal({ isOpen, onClose, onSuccess }: ScheduleStreamModalProps) {
   const { scheduleStream } = useLiveStream();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdStreamId, setCreatedStreamId] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
   
   // Form state
   const [title, setTitle] = useState('');
@@ -69,6 +73,52 @@ export function ScheduleStreamModal({ isOpen, onClose, onSuccess }: ScheduleStre
     setMaterials([]);
     setShowAddMaterial(false);
     setNewMaterial({ name: '', description: '', affiliateUrl: '', price: '' });
+    setCreatedStreamId(null);
+    setCopiedLink(false);
+  };
+  
+  // Generate shareable URL
+  const getShareableUrl = (streamId: string) => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://gouache.app';
+    return `${baseUrl}/live/${streamId}`;
+  };
+  
+  const copyShareableLink = async () => {
+    if (!createdStreamId) return;
+    const url = getShareableUrl(createdStreamId);
+    await navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    toast({
+      title: 'Link Copied!',
+      description: 'Share this link with your followers',
+    });
+    setTimeout(() => setCopiedLink(false), 3000);
+  };
+  
+  const shareToSocial = (platform: string) => {
+    if (!createdStreamId) return;
+    const url = getShareableUrl(createdStreamId);
+    const text = `Join my live stream: ${title}`;
+    
+    let shareUrl = '';
+    switch (platform) {
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        break;
+      case 'linkedin':
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+        break;
+      case 'whatsapp':
+        shareUrl = `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`;
+        break;
+    }
+    
+    if (shareUrl) {
+      window.open(shareUrl, '_blank', 'width=600,height=400');
+    }
   };
 
   const handleAddMaterial = () => {
@@ -120,8 +170,7 @@ export function ScheduleStreamModal({ isOpen, onClose, onSuccess }: ScheduleStre
       const streamId = await scheduleStream(formData);
       
       if (streamId) {
-        resetForm();
-        onClose();
+        setCreatedStreamId(streamId);
         onSuccess?.(streamId);
       }
     } catch (error) {
@@ -130,24 +179,140 @@ export function ScheduleStreamModal({ isOpen, onClose, onSuccess }: ScheduleStre
       setIsSubmitting(false);
     }
   };
+  
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   // Get minimum date (today)
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Video className="h-5 w-5 text-primary" />
-            Schedule Live Stream
-          </DialogTitle>
-          <DialogDescription>
-            Schedule a live class, Q&A, or workshop for your followers
-          </DialogDescription>
-        </DialogHeader>
+        {createdStreamId ? (
+          // Success State - Show shareable link
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-green-600">
+                <Check className="h-5 w-5" />
+                Stream Scheduled!
+              </DialogTitle>
+              <DialogDescription>
+                Your live stream has been scheduled. Share the link with your followers!
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6 py-4">
+              {/* Stream Info */}
+              <div className="p-4 bg-muted rounded-lg">
+                <h3 className="font-semibold mb-1">{title}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {scheduledDate && scheduledTime && 
+                    new Date(`${scheduledDate}T${scheduledTime}`).toLocaleString()}
+                </p>
+              </div>
+              
+              {/* Shareable Link */}
+              <div className="space-y-3">
+                <Label>Shareable Link</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={getShareableUrl(createdStreamId)} 
+                    readOnly 
+                    className="font-mono text-sm"
+                  />
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={copyShareableLink}
+                  >
+                    {copiedLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Social Share Buttons */}
+              <div className="space-y-3">
+                <Label>Share on Social Media</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => shareToSocial('twitter')}
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Twitter/X
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => shareToSocial('facebook')}
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Facebook
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => shareToSocial('linkedin')}
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    LinkedIn
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => shareToSocial('whatsapp')}
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    WhatsApp
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Open Stream Page */}
+              <div className="flex gap-3 pt-4 border-t">
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={handleClose}
+                >
+                  Close
+                </Button>
+                <Button 
+                  type="button"
+                  className="flex-1"
+                  onClick={() => {
+                    window.open(getShareableUrl(createdStreamId), '_blank');
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View Stream Page
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          // Form State
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Video className="h-5 w-5 text-primary" />
+                Schedule Live Stream
+              </DialogTitle>
+              <DialogDescription>
+                Schedule a live class, Q&A, or workshop for your followers
+              </DialogDescription>
+            </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}
           <div className="space-y-4">
             <div>
@@ -397,14 +562,16 @@ export function ScheduleStreamModal({ isOpen, onClose, onSuccess }: ScheduleStre
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || !title || !scheduledDate || !scheduledTime}>
               {isSubmitting ? 'Scheduling...' : 'Schedule Stream'}
             </Button>
           </div>
-        </form>
+            </form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
