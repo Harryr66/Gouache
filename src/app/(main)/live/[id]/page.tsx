@@ -210,7 +210,7 @@ export default function LiveStreamPage() {
   const isLive = currentStream.status === 'live';
   const isScheduled = currentStream.status === 'scheduled';
   const isEnded = currentStream.status === 'ended';
-  const isOwner = user?.uid === currentStream.artistId;
+  const isOwner = user?.id === currentStream.artistId;
   const canStartNow = isScheduled && 
     currentStream.scheduledStartTime <= new Date(Date.now() + 15 * 60 * 1000);
 

@@ -93,8 +93,8 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
         setScheduledStreams(scheduled);
         
         // Load user's streams if logged in
-        if (user?.uid) {
-          const myStreamsList = await getArtistStreams(user.uid);
+        if (user?.id) {
+          const myStreamsList = await getArtistStreams(user.id);
           setMyStreams(myStreamsList);
         }
       } catch (error) {
@@ -114,7 +114,7 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       unsubscribe();
     };
-  }, [user?.uid]);
+  }, [user?.id]);
   
   // Refresh functions
   const refreshLiveStreams = useCallback(async () => {
@@ -136,14 +136,14 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
   }, []);
   
   const refreshMyStreams = useCallback(async () => {
-    if (!user?.uid) return;
+    if (!user?.id) return;
     try {
-      const myStreamsList = await getArtistStreams(user.uid);
+      const myStreamsList = await getArtistStreams(user.id);
       setMyStreams(myStreamsList);
     } catch (error) {
       console.error('Error refreshing my streams:', error);
     }
-  }, [user?.uid]);
+  }, [user?.id]);
   
   const getStreamById = useCallback(async (streamId: string) => {
     try {
@@ -156,7 +156,7 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
   
   // Schedule a new stream
   const scheduleStream = useCallback(async (formData: StreamScheduleFormData): Promise<string | null> => {
-    if (!user?.uid) {
+    if (!user?.id) {
       toast({
         title: 'Error',
         description: 'You must be logged in to schedule a stream',
@@ -168,7 +168,7 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userAny = user as any;
       const streamId = await createLiveStream(
-        user.uid,
+        user.id,
         userAny.displayName || userAny.username || 'Artist',
         userAny.avatarUrl || userAny.profileImage,
         userAny.username,
@@ -193,7 +193,7 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
       });
       return null;
     }
-  }, [user?.uid, profile, toast, refreshMyStreams, refreshScheduledStreams]);
+  }, [user?.id, profile, toast, refreshMyStreams, refreshScheduledStreams]);
   
   // Go live - returns streaming credentials
   const goLive = useCallback(async (streamId: string): Promise<{
@@ -324,7 +324,7 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
   
   // Send chat message
   const sendChatMessage = useCallback(async (message: string, isQuestion: boolean = false): Promise<boolean> => {
-    if (!currentStream || !user?.uid) {
+    if (!currentStream || !user?.id) {
       return false;
     }
     
@@ -332,7 +332,7 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
       const userAny = user as any;
       await addChatMessage(
         currentStream.id,
-        user.uid,
+        user.id,
         userAny.displayName || userAny.username || 'User',
         userAny.avatarUrl || userAny.profileImage,
         message,
