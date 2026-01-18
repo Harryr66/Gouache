@@ -4,7 +4,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-01-27.acacia',
+  apiVersion: '2025-10-29.clover',
 });
 
 // This endpoint can be called by a cron job on the 1st of each month
