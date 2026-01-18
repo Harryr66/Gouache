@@ -155,75 +155,83 @@ export class EngagementScorer {
   /**
    * Apply diversity boost to prevent clustering
    * Spreads out items from the same artist AND items with the same image
-   * Uses interleaving to ensure variety in the feed
+   * Uses greedy selection with penalties to ensure variety in the feed
    */
   applyDiversityBoost(
     scoredArtworks: ScoredArtwork[],
-    diversityPenalty: number = 0.15
+    diversityPenalty: number = 0.25
   ): ScoredArtwork[] {
     if (scoredArtworks.length <= 1) return scoredArtworks;
     
-    // Group artworks by image URL to detect duplicates
-    const imageGroups = new Map<string, ScoredArtwork[]>();
-    const noImageArtworks: ScoredArtwork[] = [];
-    
-    for (const artwork of scoredArtworks) {
-      const imageUrl = artwork.imageUrl || '';
-      if (!imageUrl) {
-        noImageArtworks.push(artwork);
-        continue;
-      }
-      
-      // Use first 100 chars of URL as key (handles variant suffixes)
-      const imageKey = imageUrl.substring(0, 100);
-      const group = imageGroups.get(imageKey) || [];
-      group.push(artwork);
-      imageGroups.set(imageKey, group);
-    }
-    
-    // Interleave items to spread duplicates apart
+    // GREEDY SELECTION: Pick highest scoring item, apply penalties, repeat
+    // This actually reorders items instead of just adjusting scores
     const result: ScoredArtwork[] = [];
+    const remaining = [...scoredArtworks];
     const artistLastPosition = new Map<string, number>();
     const imageLastPosition = new Map<string, number>();
     
-    // Sort artworks by score first
-    const sortedArtworks = [...scoredArtworks].sort((a, b) => b.finalScore - a.finalScore);
+    // Extract Cloudflare image ID from URL for better grouping
+    const getImageKey = (url: string): string => {
+      if (!url) return '';
+      const match = url.match(/imagedelivery\.net\/[^/]+\/([^/]+)/);
+      return match ? match[1] : url.substring(0, 80);
+    };
     
-    for (const artwork of sortedArtworks) {
-      const artistId = artwork.artist.id;
-      const imageKey = (artwork.imageUrl || '').substring(0, 100);
-      
-      // Calculate position penalty based on how recently we saw same artist/image
-      const artistLastPos = artistLastPosition.get(artistId) ?? -10;
-      const imageLastPos = imageLastPosition.get(imageKey) ?? -10;
+    while (remaining.length > 0) {
       const currentPos = result.length;
+      let bestIdx = 0;
+      let bestAdjustedScore = -Infinity;
       
-      const artistDistance = currentPos - artistLastPos;
-      const imageDistance = currentPos - imageLastPos;
-      
-      // Apply penalty if same artist/image appeared too recently
-      let adjustedScore = artwork.finalScore;
-      
-      // Penalty for same artist within last 3 positions
-      if (artistDistance < 3) {
-        adjustedScore -= diversityPenalty * (3 - artistDistance);
+      // Find the item with highest adjusted score considering diversity penalties
+      for (let i = 0; i < remaining.length; i++) {
+        const artwork = remaining[i];
+        const artistId = artwork.artist?.id || '';
+        const imageKey = getImageKey(artwork.imageUrl || '');
+        
+        let adjustedScore = artwork.finalScore;
+        
+        // Apply penalty if same artist appeared recently
+        const artistLastPos = artistLastPosition.get(artistId);
+        if (artistLastPos !== undefined) {
+          const artistDistance = currentPos - artistLastPos;
+          if (artistDistance < 4) {
+            // Strong penalty for same artist within 4 positions
+            adjustedScore -= diversityPenalty * (4 - artistDistance) * 0.5;
+          }
+        }
+        
+        // Apply stronger penalty if same image appeared recently
+        if (imageKey) {
+          const imageLastPos = imageLastPosition.get(imageKey);
+          if (imageLastPos !== undefined) {
+            const imageDistance = currentPos - imageLastPos;
+            if (imageDistance < 8) {
+              // Very strong penalty for same image within 8 positions
+              // This ensures duplicates are spread at least 8 items apart
+              adjustedScore -= diversityPenalty * (8 - imageDistance);
+            }
+          }
+        }
+        
+        if (adjustedScore > bestAdjustedScore) {
+          bestAdjustedScore = adjustedScore;
+          bestIdx = i;
+        }
       }
       
-      // Stronger penalty for same image within last 5 positions
-      if (imageDistance < 5 && imageKey) {
-        adjustedScore -= diversityPenalty * 2 * (5 - imageDistance);
-      }
+      // Pick the best item
+      const selected = remaining.splice(bestIdx, 1)[0];
+      const artistId = selected.artist?.id || '';
+      const imageKey = getImageKey(selected.imageUrl || '');
       
       result.push({
-        ...artwork,
-        finalScore: Math.max(0.01, adjustedScore)
+        ...selected,
+        finalScore: Math.max(0.01, bestAdjustedScore)
       });
       
-      // Track positions
-      artistLastPosition.set(artistId, currentPos);
-      if (imageKey) {
-        imageLastPosition.set(imageKey, currentPos);
-      }
+      // Track positions for next iteration
+      if (artistId) artistLastPosition.set(artistId, currentPos);
+      if (imageKey) imageLastPosition.set(imageKey, currentPos);
     }
 
     return result;

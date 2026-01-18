@@ -2876,7 +2876,8 @@ function DiscoverPageContent() {
   const imageOnlyArtworks = useMemo(() => {
     // Grid view shows ONLY images (no videos) from Cloudflare
     // Videos will only appear in video feed (list view)
-    const filtered = filteredAndSortedArtworks.filter((item) => {
+    // NOTE: Diversity/spreading of similar images is handled by engagementScorer.applyDiversityBoost
+    return filteredAndSortedArtworks.filter((item) => {
       // Keep ads
       if ('type' in item && item.type === 'ad') return true;
       // Filter out videos - only show images in grid view
@@ -2894,63 +2895,7 @@ function DiscoverPageContent() {
       
       return true;
     });
-    
-    // COLUMN-AWARE INTERLEAVING: Spread similar images apart for CSS columns layout
-    // CSS columns fill top-to-bottom, so items at positions i and i+columnCount are vertically adjacent
-    // Items at positions i and i+1 are horizontally adjacent (in different columns)
-    if (filtered.length <= 1 || columnCount <= 1) return filtered;
-    
-    // Group items by image URL
-    const imageGroups = new Map<string, any[]>();
-    const noImageItems: any[] = [];
-    
-    for (const item of filtered) {
-      if ('type' in item && item.type === 'ad') {
-        noImageItems.push(item);
-        continue;
-      }
-      const imageUrl = (item as any).imageUrl || '';
-      // Extract Cloudflare image ID for grouping
-      const match = imageUrl.match(/imagedelivery\.net\/[^/]+\/([^/]+)/);
-      const imageKey = match ? match[1] : imageUrl.substring(0, 60);
-      
-      const group = imageGroups.get(imageKey) || [];
-      group.push(item);
-      imageGroups.set(imageKey, group);
-    }
-    
-    // Build result array by interleaving groups
-    // Take one item from each group in round-robin fashion
-    const result: any[] = [];
-    const groupIterators = Array.from(imageGroups.values()).map(g => ({ items: g, index: 0 }));
-    
-    // Sort groups by size (largest first) to ensure even distribution
-    groupIterators.sort((a, b) => b.items.length - a.items.length);
-    
-    let iterations = 0;
-    const maxIterations = filtered.length * 2; // Safety limit
-    
-    while (result.length < filtered.length - noImageItems.length && iterations < maxIterations) {
-      for (const group of groupIterators) {
-        if (group.index < group.items.length) {
-          result.push(group.items[group.index]);
-          group.index++;
-        }
-      }
-      iterations++;
-    }
-    
-    // Add ads back at regular intervals
-    if (noImageItems.length > 0) {
-      const interval = Math.floor(result.length / (noImageItems.length + 1));
-      for (let i = 0; i < noImageItems.length; i++) {
-        const insertPos = Math.min((i + 1) * interval, result.length);
-        result.splice(insertPos, 0, noImageItems[i]);
-      }
-    }
-    
-    return result;
-  }, [filteredAndSortedArtworks, columnCount]);
+  }, [filteredAndSortedArtworks]);
 
   // Filter and sort marketplace products
   const filteredAndSortedMarketProducts = useMemo(() => {
