@@ -348,7 +348,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
               <Button
                 type="button"
                 variant={mediaType === 'image' ? 'default' : 'outline'}
-                className={mediaType === 'image' ? 'bg-primary ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}
+                className={mediaType === 'image' ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}
                 onClick={() => {
                   setMediaType('image');
                   removeMedia();
@@ -360,7 +360,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
               <Button
                 type="button"
                 variant={mediaType === 'video' ? 'default' : 'outline'}
-                className={mediaType === 'video' ? 'bg-primary ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}
+                className={mediaType === 'video' ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}
                 onClick={() => {
                   setMediaType('video');
                   removeMedia();
