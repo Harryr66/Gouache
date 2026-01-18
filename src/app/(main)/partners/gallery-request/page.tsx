@@ -44,9 +44,9 @@ export default function GalleryRequestPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [galleryImages, setGalleryImages] = useState<{ file: File; preview: string }[]>([]);
+  const [portfolioImages, setPortfolioImages] = useState<{ file: File; preview: string }[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const portfolioInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<GalleryRequestForm>({
     resolver: zodResolver(galleryRequestSchema),
@@ -70,7 +70,7 @@ export default function GalleryRequestPage() {
     },
   });
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePortfolioImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
@@ -79,7 +79,7 @@ export default function GalleryRequestPage() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.type.startsWith('image/')) {
-        if (galleryImages.length + newImages.length < 10) {
+        if (portfolioImages.length + newImages.length < 15) {
           newImages.push({
             file,
             preview: URL.createObjectURL(file),
@@ -88,26 +88,26 @@ export default function GalleryRequestPage() {
       }
     }
 
-    setGalleryImages([...galleryImages, ...newImages]);
+    setPortfolioImages([...portfolioImages, ...newImages]);
     
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (portfolioInputRef.current) {
+      portfolioInputRef.current.value = '';
     }
   };
 
-  const removeImage = (index: number) => {
-    const newImages = [...galleryImages];
+  const removePortfolioImage = (index: number) => {
+    const newImages = [...portfolioImages];
     URL.revokeObjectURL(newImages[index].preview);
     newImages.splice(index, 1);
-    setGalleryImages(newImages);
+    setPortfolioImages(newImages);
   };
 
-  const uploadGalleryImages = async (): Promise<string[]> => {
+  const uploadPortfolioImages = async (): Promise<string[]> => {
     const uploadedUrls: string[] = [];
     
-    for (const image of galleryImages) {
+    for (const image of portfolioImages) {
       const timestamp = Date.now();
-      const fileName = `gallery-requests/${timestamp}-${image.file.name}`;
+      const fileName = `gallery-requests/portfolio/${timestamp}-${image.file.name}`;
       const storageRef = ref(storage, fileName);
       
       await uploadBytes(storageRef, image.file);
@@ -129,11 +129,11 @@ export default function GalleryRequestPage() {
       return;
     }
 
-    // Validate gallery images
-    if (galleryImages.length < 3) {
+    // Validate portfolio images (artworks by represented artists)
+    if (portfolioImages.length < 5) {
       toast({
-        title: 'Gallery Images Required',
-        description: 'Please upload at least 3 images of your gallery space or exhibitions.',
+        title: 'Portfolio Required',
+        description: 'Please upload at least 5 images of artworks by artists you represent.',
         variant: 'destructive',
       });
       return;
@@ -142,9 +142,9 @@ export default function GalleryRequestPage() {
     setIsLoading(true);
 
     try {
-      // Upload gallery images first
+      // Upload portfolio images
       setUploadingImages(true);
-      const uploadedImageUrls = await uploadGalleryImages();
+      const uploadedPortfolioUrls = await uploadPortfolioImages();
       setUploadingImages(false);
 
       // Build social links object
@@ -174,7 +174,7 @@ export default function GalleryRequestPage() {
           yearsOperating: values.yearsOperating,
           artistsRepresented: values.artistsRepresented,
           exhibitionHistory: values.exhibitionHistory,
-          galleryImages: uploadedImageUrls,
+          portfolioImages: uploadedPortfolioUrls,
           socialLinks,
           source: 'partners-gallery-request',
           userId: user?.id || null,
@@ -532,25 +532,25 @@ export default function GalleryRequestPage() {
                 />
               </div>
 
-              {/* Gallery Images */}
+              {/* Portfolio - Artworks by Represented Artists */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg border-b pb-2">Gallery Images *</h3>
+                <h3 className="font-semibold text-lg border-b pb-2">Artist Portfolio *</h3>
                 <p className="text-sm text-muted-foreground">
-                  Upload 3-10 images of your gallery space, exhibitions, or represented artworks.
+                  Upload 5-15 images of artworks by artists your gallery represents. This helps us understand the quality and style of work you showcase.
                 </p>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                  {galleryImages.map((image, index) => (
+                  {portfolioImages.map((image, index) => (
                     <div key={index} className="relative aspect-square rounded-lg overflow-hidden border">
                       <Image
                         src={image.preview}
-                        alt={`Gallery ${index + 1}`}
+                        alt={`Portfolio ${index + 1}`}
                         fill
                         className="object-cover"
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage(index)}
+                        onClick={() => removePortfolioImage(index)}
                         className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                       >
                         <X className="h-4 w-4" />
@@ -558,29 +558,29 @@ export default function GalleryRequestPage() {
                     </div>
                   ))}
                   
-                  {galleryImages.length < 10 && (
+                  {portfolioImages.length < 15 && (
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => portfolioInputRef.current?.click()}
                       className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 flex flex-col items-center justify-center gap-2 transition-colors"
                     >
                       <Upload className="h-6 w-6 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Add Image</span>
+                      <span className="text-xs text-muted-foreground">Add Artwork</span>
                     </button>
                   )}
                 </div>
                 
                 <input
-                  ref={fileInputRef}
+                  ref={portfolioInputRef}
                   type="file"
                   accept="image/*"
                   multiple
-                  onChange={handleImageSelect}
+                  onChange={handlePortfolioImageSelect}
                   className="hidden"
                 />
                 
                 <p className="text-xs text-muted-foreground">
-                  {galleryImages.length}/10 images uploaded {galleryImages.length < 3 && '(minimum 3 required)'}
+                  {portfolioImages.length}/15 artworks uploaded {portfolioImages.length < 5 && '(minimum 5 required)'}
                 </p>
               </div>
 

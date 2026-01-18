@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       yearsOperating,
       artistsRepresented,
       exhibitionHistory,
-      galleryImages,
+      portfolioImages,
       socialLinks, 
       source,
       userId 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       yearsOperating?: string;
       artistsRepresented?: string;
       exhibitionHistory?: string;
-      galleryImages?: string[];
+      portfolioImages?: string[];
       socialLinks?: {
         instagram?: string;
         facebook?: string;
@@ -109,11 +109,11 @@ export async function POST(request: Request) {
       galleryRequest.exhibitionHistory = exhibitionHistory.trim();
     }
 
-    // Add gallery images
-    if (galleryImages && Array.isArray(galleryImages) && galleryImages.length > 0) {
-      galleryRequest.galleryImages = galleryImages;
+    // Add portfolio images (artworks by represented artists)
+    if (portfolioImages && Array.isArray(portfolioImages) && portfolioImages.length > 0) {
+      galleryRequest.portfolioImages = portfolioImages;
     } else {
-      galleryRequest.galleryImages = [];
+      galleryRequest.portfolioImages = [];
     }
 
     // Add social links

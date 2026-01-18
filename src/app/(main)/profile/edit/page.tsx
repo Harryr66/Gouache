@@ -76,6 +76,11 @@ export default function ProfileEditPage() {
   const [showArtistRequest, setShowArtistRequest] = useState(false);
   const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  // Identity verification state
+  const [identityVerificationStatus, setIdentityVerificationStatus] = useState<'pending' | 'verifying' | 'verified' | 'failed' | 'name_mismatch'>('pending');
+  const [identitySessionId, setIdentitySessionId] = useState<string | null>(null);
+  const [verifiedName, setVerifiedName] = useState<string | null>(null);
+  const [isStartingVerification, setIsStartingVerification] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const isInitialMount = useRef(true);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -738,18 +743,121 @@ export default function ProfileEditPage() {
     setPortfolioImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Start Stripe Identity verification
+  const startIdentityVerification = async () => {
+    if (!user) return;
+    
+    setIsStartingVerification(true);
+    try {
+      const response = await fetch('/api/stripe/identity/create-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          userId: user.id,
+          expectedName: formData.name || user.displayName, // Must match account name
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to start verification');
+      }
+
+      const { clientSecret, sessionId } = await response.json();
+      setIdentitySessionId(sessionId);
+      setIdentityVerificationStatus('verifying');
+
+      // Load Stripe and open identity verification modal
+      const { loadStripe } = await import('@stripe/stripe-js');
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+      
+      if (stripe) {
+        const result = await stripe.verifyIdentity(clientSecret);
+        
+        if (result.error) {
+          console.error('Identity verification error:', result.error);
+          setIdentityVerificationStatus('failed');
+          toast({
+            title: "Verification failed",
+            description: result.error.message || "Identity verification was not completed.",
+            variant: "destructive"
+          });
+        } else {
+          // Check verification status
+          await checkIdentityVerificationStatus(sessionId);
+        }
+      }
+    } catch (error) {
+      console.error('Error starting identity verification:', error);
+      setIdentityVerificationStatus('failed');
+      toast({
+        title: "Verification error",
+        description: error instanceof Error ? error.message : "Failed to start identity verification.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsStartingVerification(false);
+    }
+  };
+
+  // Check identity verification status
+  const checkIdentityVerificationStatus = async (sessionId: string) => {
+    try {
+      const response = await fetch(`/api/stripe/identity/create-verification?sessionId=${sessionId}`);
+      const data = await response.json();
+
+      if (data.verified && data.nameMatch) {
+        setIdentityVerificationStatus('verified');
+        setVerifiedName(data.verifiedName);
+        toast({
+          title: "Identity verified",
+          description: "Your identity has been verified and matches your account name.",
+        });
+      } else if (data.verified && !data.nameMatch) {
+        setIdentityVerificationStatus('name_mismatch');
+        setVerifiedName(data.verifiedName);
+        toast({
+          title: "Name mismatch",
+          description: `The name on your ID (${data.verifiedName}) does not match your account name (${data.expectedName}). Please update your account name or verify with matching ID.`,
+          variant: "destructive"
+        });
+      } else if (data.status === 'requires_input') {
+        setIdentityVerificationStatus('failed');
+        toast({
+          title: "Verification incomplete",
+          description: "Please complete the verification process.",
+          variant: "destructive"
+        });
+      } else {
+        setIdentityVerificationStatus('pending');
+      }
+    } catch (error) {
+      console.error('Error checking verification status:', error);
+    }
+  };
+
   const handleArtistRequestSubmit = async () => {
     if (!user) return;
 
-    if (portfolioImages.length === 0) {
+    if (portfolioImages.length < 3) {
       toast({
         title: "Portfolio required",
-        description: "Please upload at least one portfolio image.",
+        description: "Please upload at least 3 portfolio images.",
         variant: "destructive"
       });
       return;
     }
 
+    // Require identity verification
+    if (identityVerificationStatus !== 'verified') {
+      toast({
+        title: "Identity verification required",
+        description: "Please complete identity verification before submitting your artist request.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsSubmittingRequest(true);
     try {
@@ -825,7 +933,10 @@ export default function ProfileEditPage() {
         status: 'approved',
         submittedAt: serverTimestamp(),
         reviewedAt: serverTimestamp(),
-        reviewedBy: 'auto-approved'
+        reviewedBy: 'auto-approved',
+        identityVerified: true,
+        identitySessionId: identitySessionId,
+        verifiedName: verifiedName,
       };
 
       // Only include optional fields if they have values (Firestore doesn't allow undefined)
@@ -2156,13 +2267,149 @@ export default function ProfileEditPage() {
                 </Button>
               ) : (
                 <div className="space-y-6">
-                  {/* Portfolio Images */}
+                  {/* Step 1: Identity Verification */}
                   <div className="space-y-4">
-                    <div>
-                      <Label>Portfolio Images *</Label>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Upload 3-10 images showcasing your best work
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold",
+                        identityVerificationStatus === 'verified' 
+                          ? "bg-green-500 text-white" 
+                          : "bg-primary text-primary-foreground"
+                      )}>
+                        {identityVerificationStatus === 'verified' ? <Check className="h-4 w-4" /> : '1'}
+                      </div>
+                      <div>
+                        <Label className="text-base">Identity Verification *</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Verify your identity using a government-issued ID. The name must match your account name exactly.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {identityVerificationStatus === 'pending' && (
+                      <div className="ml-11 space-y-3">
+                        <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-amber-800 dark:text-amber-200">Important</p>
+                              <p className="text-sm text-amber-700 dark:text-amber-300">
+                                Your account name is: <strong>{formData.name || user?.displayName}</strong>. 
+                                The name on your ID must match this exactly.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <Button 
+                          type="button"
+                          onClick={startIdentityVerification}
+                          disabled={isStartingVerification}
+                        >
+                          {isStartingVerification ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Starting verification...
+                            </>
+                          ) : (
+                            'Verify My Identity'
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {identityVerificationStatus === 'verifying' && (
+                      <div className="ml-11 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+                          <p className="text-blue-800 dark:text-blue-200">Verification in progress...</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {identityVerificationStatus === 'verified' && (
+                      <div className="ml-11 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Check className="h-5 w-5 text-green-600" />
+                          <div>
+                            <p className="font-medium text-green-800 dark:text-green-200">Identity Verified</p>
+                            <p className="text-sm text-green-700 dark:text-green-300">
+                              Verified as: {verifiedName}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {identityVerificationStatus === 'name_mismatch' && (
+                      <div className="ml-11 space-y-3">
+                        <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-red-800 dark:text-red-200">Name Mismatch</p>
+                              <p className="text-sm text-red-700 dark:text-red-300">
+                                ID name: <strong>{verifiedName}</strong><br />
+                                Account name: <strong>{formData.name || user?.displayName}</strong><br />
+                                Please update your account name above to match your ID, then verify again.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <Button 
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setIdentityVerificationStatus('pending');
+                            setIdentitySessionId(null);
+                          }}
+                        >
+                          Try Again
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {identityVerificationStatus === 'failed' && (
+                      <div className="ml-11 space-y-3">
+                        <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-red-800 dark:text-red-200">Verification Failed</p>
+                              <p className="text-sm text-red-700 dark:text-red-300">
+                                Please try again with a valid government-issued ID.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <Button 
+                          type="button"
+                          onClick={startIdentityVerification}
+                          disabled={isStartingVerification}
+                        >
+                          Try Again
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Step 2: Portfolio Images */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold",
+                        portfolioImages.length >= 3 
+                          ? "bg-green-500 text-white" 
+                          : "bg-muted text-muted-foreground"
+                      )}>
+                        {portfolioImages.length >= 3 ? <Check className="h-4 w-4" /> : '2'}
+                      </div>
+                      <div>
+                        <Label className="text-base">Portfolio Images *</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Upload 3-10 images showcasing your best work
+                        </p>
+                      </div>
+                    </div>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {portfolioImages.map((url, index) => (
                           <div key={index} className="relative group">
@@ -2318,10 +2565,23 @@ export default function ProfileEditPage() {
                     <Button
                       type="button"
                       onClick={handleArtistRequestSubmit}
-                      disabled={isSubmittingRequest || portfolioImages.length === 0}
+                      disabled={isSubmittingRequest || portfolioImages.length < 3 || identityVerificationStatus !== 'verified'}
                     >
-                      {isSubmittingRequest ? 'Submitting...' : 'Submit Verification Request'}
+                      {isSubmittingRequest ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        'Submit Artist Account Request'
+                      )}
                     </Button>
+                    {(portfolioImages.length < 3 || identityVerificationStatus !== 'verified') && (
+                      <p className="text-xs text-muted-foreground">
+                        {identityVerificationStatus !== 'verified' && 'Complete identity verification • '}
+                        {portfolioImages.length < 3 && `Upload ${3 - portfolioImages.length} more portfolio image${3 - portfolioImages.length > 1 ? 's' : ''}`}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

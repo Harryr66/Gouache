@@ -733,7 +733,7 @@ export function AdminViewRouter(props: any) {
                               </div>
                               <div>
                                 <p><strong>Submitted:</strong> {request.submittedAt instanceof Date ? request.submittedAt.toLocaleDateString() : (request.submittedAt as any)?.toDate?.()?.toLocaleDateString() || 'N/A'}</p>
-                                <p><strong>Gallery Images:</strong> {request.galleryImages?.length || 0}</p>
+                                <p><strong>Portfolio Images:</strong> {request.portfolioImages?.length || 0}</p>
                                 {request.website && (
                                   <p><strong>Website:</strong> <a href={request.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{request.website}</a></p>
                                 )}
@@ -786,11 +786,11 @@ export function AdminViewRouter(props: any) {
                       )}
                       
                       {/* Gallery Images Preview */}
-                      {request.galleryImages && request.galleryImages.length > 0 && (
+                      {request.portfolioImages && request.portfolioImages.length > 0 && (
                         <div>
-                          <p className="text-xs font-semibold text-muted-foreground mb-2">Gallery Images ({request.galleryImages.length})</p>
+                          <p className="text-xs font-semibold text-muted-foreground mb-2">Portfolio Images ({request.portfolioImages.length})</p>
                           <div className="flex gap-2 overflow-x-auto pb-2">
-                            {request.galleryImages.slice(0, 5).map((imageUrl: string, index: number) => (
+                            {request.portfolioImages.slice(0, 5).map((imageUrl: string, index: number) => (
                               <a 
                                 key={index} 
                                 href={imageUrl} 
@@ -805,9 +805,9 @@ export function AdminViewRouter(props: any) {
                                 />
                               </a>
                             ))}
-                            {request.galleryImages.length > 5 && (
+                            {request.portfolioImages.length > 5 && (
                               <div className="flex-shrink-0 h-20 w-20 bg-muted rounded-md border flex items-center justify-center">
-                                <span className="text-sm text-muted-foreground">+{request.galleryImages.length - 5}</span>
+                                <span className="text-sm text-muted-foreground">+{request.portfolioImages.length - 5}</span>
                               </div>
                             )}
                           </div>

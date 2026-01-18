@@ -166,7 +166,7 @@ export interface GalleryRequest {
   yearsOperating?: string;
   artistsRepresented?: string;
   exhibitionHistory?: string;
-  galleryImages: string[];
+  portfolioImages: string[]; // Artworks by represented artists
   socialLinks?: {
     instagram?: string;
     facebook?: string;
