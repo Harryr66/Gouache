@@ -193,7 +193,7 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
       });
       return null;
     }
-  }, [user?.id, profile, toast, refreshMyStreams, refreshScheduledStreams]);
+  }, [user, toast, refreshMyStreams, refreshScheduledStreams]);
   
   // Go live - returns streaming credentials
   const goLive = useCallback(async (streamId: string): Promise<{
