@@ -107,7 +107,7 @@ export default function SupportPage() {
             </div>
 
             {/* Privacy & Safety */}
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-6">
+            <div className="bg-card border rounded-lg p-6">
               <div className="flex items-start gap-4">
                 <Shield className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
                 <div>
@@ -127,7 +127,7 @@ export default function SupportPage() {
             </div>
 
             {/* Technical Issues */}
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-6">
+            <div className="bg-card border rounded-lg p-6">
               <div className="flex items-start gap-4">
                 <HelpCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
                 <div>
@@ -149,7 +149,7 @@ export default function SupportPage() {
         </div>
 
         {/* Still Need Help */}
-        <div className="bg-primary/10 border border-primary/20 rounded-lg p-8 text-center">
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-8 text-center">
           <h2 className="text-2xl font-semibold mb-2">Still Need Help?</h2>
           <p className="text-muted-foreground mb-6">
             Can't find what you're looking for? We're happy to assist you personally.
