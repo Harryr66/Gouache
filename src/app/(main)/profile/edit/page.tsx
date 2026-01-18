@@ -266,6 +266,7 @@ export default function ProfileEditPage() {
           // Default to hidden (true) when field is undefined
           hideShop: ((user as any).hideShop ?? true),
           hideLearn: ((user as any).hideLearn ?? true),
+          hideLiveStream: user.isProfessional ? (((user as any).hideLiveStream ?? false)) : true,
           hideSocialIcons: user.isProfessional ? (((user as any).hideSocialIcons ?? false)) : false,
           hideAboutArtist: user.isProfessional ? (((user as any).hideAboutArtist ?? false)) : false,
           aboutInstructor: user.isProfessional ? (((user as any).aboutInstructor || '')) : '',
@@ -906,6 +907,7 @@ export default function ProfileEditPage() {
         formData.hideShowcaseLocations !== initialFormDataRef.current.hideShowcaseLocations ||
         formData.hideShop !== initialFormDataRef.current.hideShop ||
         formData.hideLearn !== initialFormDataRef.current.hideLearn ||
+        formData.hideLiveStream !== initialFormDataRef.current.hideLiveStream ||
         formData.hideSocialIcons !== initialFormDataRef.current.hideSocialIcons ||
         formData.hideAboutArtist !== initialFormDataRef.current.hideAboutArtist ||
         formData.aboutInstructor !== initialFormDataRef.current.aboutInstructor ||
