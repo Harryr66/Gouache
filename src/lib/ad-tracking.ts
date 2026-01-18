@@ -2,6 +2,35 @@ import { db } from './firebase';
 import { collection, addDoc, doc, updateDoc, increment, serverTimestamp, getDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
 
 /**
+ * Generate a simple browser fingerprint for anonymous users
+ * This is not cryptographically secure but sufficient for ad deduplication
+ */
+function getAnonymousFingerprint(): string {
+  if (typeof window === 'undefined') return '';
+  
+  const components = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width,
+    screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency || 0,
+    navigator.maxTouchPoints || 0,
+  ];
+  
+  // Simple hash function
+  const str = components.join('|');
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return `anon_${Math.abs(hash).toString(36)}`;
+}
+
+/**
  * Track an ad click
  */
 export async function trackAdClick(
@@ -110,14 +139,17 @@ export async function trackAdImpression(
   try {
     // Check if this user has already had an impression for this ad today
     // This prevents charging for the same user seeing the same ad multiple times per day
-    if (userId) {
+    // For anonymous users, use a browser fingerprint
+    const trackingId = userId || getAnonymousFingerprint();
+    
+    if (trackingId) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
       const existingImpressionQuery = query(
         collection(db, 'adImpressions'),
         where('campaignId', '==', campaignId),
-        where('userId', '==', userId),
+        where('trackingId', '==', trackingId),
         where('impressionDate', '==', today.toISOString().split('T')[0])
       );
       
@@ -125,14 +157,16 @@ export async function trackAdImpression(
       
       if (!existingImpressions.empty) {
         // User already saw this ad today - don't count as billable impression
-        console.log('Skipping duplicate impression for user:', userId, 'campaign:', campaignId);
+        console.log('Skipping duplicate impression for:', trackingId, 'campaign:', campaignId);
         return;
       }
       
       // Record this impression to prevent duplicates
       await addDoc(collection(db, 'adImpressions'), {
         campaignId,
-        userId,
+        trackingId, // Use trackingId instead of userId for both logged-in and anonymous
+        userId: userId || null, // Keep userId for reference if available
+        isAnonymous: !userId,
         placement,
         impressionDate: today.toISOString().split('T')[0], // YYYY-MM-DD format for easy querying
         impressionAt: serverTimestamp(),

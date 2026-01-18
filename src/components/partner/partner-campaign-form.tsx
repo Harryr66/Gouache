@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Image as ImageIcon, Video, AlertCircle } from 'lucide-react';
+import { Loader2, Upload, X, Image as ImageIcon, Video, AlertCircle, Eye, MousePointerClick } from 'lucide-react';
 import { AdCampaign } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -170,20 +170,20 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // Validate pricing is provided
-    if (!values.costPerImpression || parseFloat(values.costPerImpression) <= 0) {
+    // Validate pricing based on billing model
+    if (values.billingModel === 'cpm' && (!values.costPerImpression || parseFloat(values.costPerImpression) <= 0)) {
       toast({
         title: 'Pricing required',
-        description: 'Please enter a cost per 1,000 impressions (CPM).',
+        description: 'Please enter a cost per 1,000 impressions (CPM) for awareness campaigns.',
         variant: 'destructive',
       });
       return;
     }
 
-    if (!values.costPerClick || parseFloat(values.costPerClick) <= 0) {
+    if (values.billingModel === 'cpc' && (!values.costPerClick || parseFloat(values.costPerClick) <= 0)) {
       toast({
         title: 'Pricing required',
-        description: 'Please enter a cost per click (CPC).',
+        description: 'Please enter a cost per click (CPC) for click campaigns.',
         variant: 'destructive',
       });
       return;
@@ -553,11 +553,53 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
           {/* Budget Section */}
           <div className="border-t pt-6 space-y-4">
             <div>
-              <h3 className="text-sm font-semibold mb-2">Budget & Pricing *</h3>
+              <h3 className="text-sm font-semibold mb-2">Campaign Goal & Pricing *</h3>
               <p className="text-xs text-muted-foreground mb-4">
-                Set pricing and budget limits for your campaign.
+                Choose your billing model based on your campaign goal.
               </p>
             </div>
+
+            {/* Billing Model Selection */}
+            <FormField
+              control={form.control}
+              name="billingModel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Campaign Goal *</FormLabel>
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <Card 
+                      className={`p-4 cursor-pointer transition-all ${field.value === 'cpm' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                      onClick={() => field.onChange('cpm')}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-full ${field.value === 'cpm' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                          <Eye className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Brand Awareness</p>
+                          <p className="text-xs text-muted-foreground">Pay per 1,000 impressions (CPM)</p>
+                        </div>
+                      </div>
+                    </Card>
+                    <Card 
+                      className={`p-4 cursor-pointer transition-all ${field.value === 'cpc' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                      onClick={() => field.onChange('cpc')}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-full ${field.value === 'cpc' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                          <MousePointerClick className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Drive Clicks</p>
+                          <p className="text-xs text-muted-foreground">Pay per click (CPC)</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -585,77 +627,81 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="costPerImpression"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cost Per 1,000 Impressions (CPM) *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.01" 
-                        min="0"
-                        placeholder="0.00" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    <p className="text-xs text-muted-foreground">
-                      Cost per 1,000 ad views
-                    </p>
-                  </FormItem>
-                )}
-              />
+              {/* Show CPM input only when CPM billing model is selected */}
+              {form.watch('billingModel') === 'cpm' && (
+                <FormField
+                  control={form.control}
+                  name="costPerImpression"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cost Per 1,000 Impressions (CPM) *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          placeholder="0.00" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        You pay this amount for every 1,000 ad views
+                      </p>
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Show CPC input only when CPC billing model is selected */}
+              {form.watch('billingModel') === 'cpc' && (
+                <FormField
+                  control={form.control}
+                  name="costPerClick"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cost Per Click (CPC) *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          placeholder="0.00" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        You pay this amount when someone clicks your ad
+                      </p>
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="costPerClick"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cost Per Click (CPC) *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.01" 
-                        min="0"
-                        placeholder="0.00" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    <p className="text-xs text-muted-foreground">
-                      Cost when user clicks ad
-                    </p>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="dailyBudget"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Daily Budget (Optional)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.01" 
-                        min="0"
-                        placeholder="0.00" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    <p className="text-xs text-muted-foreground">
-                      Maximum spend per day
-                    </p>
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="dailyBudget"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Daily Budget (Optional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      min="0"
+                      placeholder="0.00" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-xs text-muted-foreground">
+                    Maximum spend per day. Campaign pauses when reached and resumes next day.
+                  </p>
+                </FormItem>
+              )}
+            />
 
             {/* Uncapped Budget Option */}
             <div className="space-y-3">
