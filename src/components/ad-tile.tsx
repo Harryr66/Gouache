@@ -102,8 +102,10 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
         gridColumn: '1 / -1' // Fallback for grid layouts
       } : undefined}
     >
-      <div className="absolute top-2 right-2 z-10">
-        <Badge variant="secondary" className="text-xs">Ad</Badge>
+      <div className="absolute top-2 left-2 z-10">
+        <span className="text-[10px] font-medium text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
+          Sponsored
+        </span>
       </div>
       <a
         href={campaign.clickUrl}
