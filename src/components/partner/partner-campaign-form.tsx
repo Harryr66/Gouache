@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { db } from '@/lib/firebase';
 import { storage } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,38 +62,59 @@ const formSchema = z.object({
 
 interface PartnerCampaignFormProps {
   partnerId: string;
+  existingCampaign?: AdCampaign | null;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerCampaignFormProps) {
+export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, onCancel }: PartnerCampaignFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+  const [mediaType, setMediaType] = useState<'image' | 'video'>(existingCampaign?.mediaType || 'image');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(existingCampaign?.imageUrl || null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(existingCampaign?.videoUrl || null);
   const [showUncappedDialog, setShowUncappedDialog] = useState(false);
-  const [maxWidthFormat, setMaxWidthFormat] = useState(false);
+  const [maxWidthFormat, setMaxWidthFormat] = useState(existingCampaign?.maxWidthFormat || false);
   const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isEditing = !!existingCampaign;
+
+  // Helper to format date for input
+  const formatDateForInput = (date: Date | undefined) => {
+    if (!date) return '';
+    return date.toISOString().split('T')[0];
+  };
+
+  // Helper to convert cents to dollars for display
+  const centsToDisplay = (cents: number | undefined) => {
+    if (!cents) return '';
+    return (cents / 100).toFixed(2);
+  };
+
+  // CPM is stored as cost per impression in cents, display as cost per 1000
+  const cpmCentsToDisplay = (centsPerImpression: number | undefined) => {
+    if (!centsPerImpression) return '';
+    return ((centsPerImpression * 1000) / 100).toFixed(2);
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: '',
-      placement: 'news',
-      clickUrl: '',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: '',
-      uncappedBudget: false,
-      budget: '',
-      dailyBudget: '',
-      billingModel: 'cpc',
-      costPerImpression: '',
-      costPerClick: '',
-      currency: 'usd',
+      title: existingCampaign?.title || '',
+      placement: existingCampaign?.placement || 'news',
+      clickUrl: existingCampaign?.clickUrl || '',
+      startDate: formatDateForInput(existingCampaign?.startDate) || new Date().toISOString().split('T')[0],
+      endDate: formatDateForInput(existingCampaign?.endDate) || '',
+      uncappedBudget: existingCampaign?.uncappedBudget || false,
+      budget: centsToDisplay(existingCampaign?.budget),
+      dailyBudget: centsToDisplay(existingCampaign?.dailyBudget),
+      billingModel: existingCampaign?.billingModel || 'cpc',
+      costPerImpression: cpmCentsToDisplay(existingCampaign?.costPerImpression),
+      costPerClick: centsToDisplay(existingCampaign?.costPerClick),
+      currency: existingCampaign?.currency || 'usd',
     },
   });
 
@@ -262,29 +283,21 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       const costPerImpression = values.costPerImpression ? Math.round((parseFloat(values.costPerImpression) / 1000) * 100) : undefined; // CPM to cost per impression in cents
       const costPerClick = values.costPerClick ? Math.round(parseFloat(values.costPerClick) * 100) : undefined;
 
-      // Create campaign data - only include defined values (Firestore rejects undefined)
       // Use the user-selected startDate, not serverTimestamp, so the ad shows immediately
       const startDateValue = new Date(values.startDate);
       startDateValue.setHours(0, 0, 0, 0); // Start of day to ensure it shows today
       
+      // Build campaign data - only include defined values (Firestore rejects undefined)
       const campaignData: Record<string, any> = {
-        partnerId,
         title: values.title,
         placement: values.placement,
         mediaType,
         clickUrl: values.clickUrl,
         maxWidthFormat: mediaType === 'video' ? maxWidthFormat : false,
-        isActive: true,
-        clicks: 0,
-        impressions: 0,
-        spent: 0,
-        dailySpent: 0,
         uncappedBudget: values.uncappedBudget || false,
         billingModel: values.billingModel,
         currency: values.currency || 'usd',
         startDate: startDateValue,
-        lastSpentReset: serverTimestamp(),
-        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
@@ -298,12 +311,37 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       if (costPerImpression) campaignData.costPerImpression = costPerImpression;
       if (costPerClick) campaignData.costPerClick = costPerClick;
 
-      await addDoc(collection(db, 'adCampaigns'), campaignData);
+      if (isEditing && existingCampaign) {
+        // UPDATE existing campaign
+        // Keep existing media if no new file uploaded
+        if (!imageUrl && existingCampaign.imageUrl) campaignData.imageUrl = existingCampaign.imageUrl;
+        if (!videoUrl && existingCampaign.videoUrl) campaignData.videoUrl = existingCampaign.videoUrl;
+        if (!videoDuration && existingCampaign.videoDuration) campaignData.videoDuration = existingCampaign.videoDuration;
+        
+        await updateDoc(doc(db, 'adCampaigns', existingCampaign.id), campaignData);
 
-      toast({
-        title: 'Campaign Created',
-        description: 'Your advertising campaign has been created successfully.',
-      });
+        toast({
+          title: 'Campaign Updated',
+          description: 'Your advertising campaign has been updated successfully.',
+        });
+      } else {
+        // CREATE new campaign
+        campaignData.partnerId = partnerId;
+        campaignData.isActive = true;
+        campaignData.clicks = 0;
+        campaignData.impressions = 0;
+        campaignData.spent = 0;
+        campaignData.dailySpent = 0;
+        campaignData.lastSpentReset = serverTimestamp();
+        campaignData.createdAt = serverTimestamp();
+
+        await addDoc(collection(db, 'adCampaigns'), campaignData);
+
+        toast({
+          title: 'Campaign Created',
+          description: 'Your advertising campaign has been created successfully.',
+        });
+      }
 
       // Cleanup
       if (imagePreview) URL.revokeObjectURL(imagePreview);
@@ -808,7 +846,7 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
           <div className="flex gap-2">
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Campaign
+              {isEditing ? 'Update Campaign' : 'Create Campaign'}
             </Button>
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel

@@ -207,6 +207,7 @@ export default function PartnerDashboardPage() {
   const [billingRecords, setBillingRecords] = useState<PartnerBillingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<AdCampaign | null>(null);
   const [activeTab, setActiveTab] = useState('campaigns');
 
   useEffect(() => {
@@ -318,7 +319,18 @@ export default function PartnerDashboardPage() {
 
   const handleCampaignCreated = () => {
     setShowCreateForm(false);
+    setEditingCampaign(null);
     loadPartnerData();
+  };
+
+  const handleEditCampaign = (campaign: AdCampaign) => {
+    setEditingCampaign(campaign);
+    setShowCreateForm(true);
+  };
+
+  const handleCancelForm = () => {
+    setShowCreateForm(false);
+    setEditingCampaign(null);
   };
 
   const toggleCampaignStatus = async (campaignId: string, currentStatus: boolean) => {
@@ -490,8 +502,9 @@ export default function PartnerDashboardPage() {
               {showCreateForm ? (
                 <PartnerCampaignForm
                   partnerId={partnerAccount.id}
+                  existingCampaign={editingCampaign}
                   onSuccess={handleCampaignCreated}
-                  onCancel={() => setShowCreateForm(false)}
+                  onCancel={handleCancelForm}
                 />
               ) : campaigns.length === 0 ? (
                 <div className="text-center py-12">
@@ -545,6 +558,13 @@ export default function PartnerDashboardPage() {
                           ) : (
                             <ImageIcon className="h-5 w-5 text-muted-foreground" />
                           )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditCampaign(campaign)}
+                          >
+                            Edit
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
