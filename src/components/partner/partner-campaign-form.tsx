@@ -262,42 +262,39 @@ export function PartnerCampaignForm({ partnerId, onSuccess, onCancel }: PartnerC
       const costPerImpression = values.costPerImpression ? Math.round((parseFloat(values.costPerImpression) / 1000) * 100) : undefined; // CPM to cost per impression in cents
       const costPerClick = values.costPerClick ? Math.round(parseFloat(values.costPerClick) * 100) : undefined;
 
-      // Create campaign
-      const campaignData: Omit<AdCampaign, 'id'> = {
+      // Create campaign data - only include defined values (Firestore rejects undefined)
+      const campaignData: Record<string, any> = {
         partnerId,
         title: values.title,
         placement: values.placement,
         mediaType,
-        imageUrl,
-        videoUrl,
-        videoDuration,
-        maxWidthFormat: mediaType === 'video' ? maxWidthFormat : false,
         clickUrl: values.clickUrl,
-        startDate: new Date(values.startDate),
-        endDate: values.endDate ? new Date(values.endDate) : undefined,
+        maxWidthFormat: mediaType === 'video' ? maxWidthFormat : false,
         isActive: true,
         clicks: 0,
         impressions: 0,
-        budget: budget,
-        dailyBudget,
         spent: 0,
         dailySpent: 0,
-        lastSpentReset: new Date(),
         uncappedBudget: values.uncappedBudget || false,
-        costPerImpression,
-        costPerClick,
+        billingModel: values.billingModel,
         currency: values.currency || 'usd',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await addDoc(collection(db, 'adCampaigns'), {
-        ...campaignData,
         startDate: serverTimestamp(),
-        endDate: values.endDate ? serverTimestamp() : null,
+        lastSpentReset: serverTimestamp(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      // Only add optional fields if they have values
+      if (imageUrl) campaignData.imageUrl = imageUrl;
+      if (videoUrl) campaignData.videoUrl = videoUrl;
+      if (videoDuration) campaignData.videoDuration = videoDuration;
+      if (values.endDate) campaignData.endDate = new Date(values.endDate);
+      if (budget) campaignData.budget = budget;
+      if (dailyBudget) campaignData.dailyBudget = dailyBudget;
+      if (costPerImpression) campaignData.costPerImpression = costPerImpression;
+      if (costPerClick) campaignData.costPerClick = costPerClick;
+
+      await addDoc(collection(db, 'adCampaigns'), campaignData);
 
       toast({
         title: 'Campaign Created',
