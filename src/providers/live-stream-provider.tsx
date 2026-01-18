@@ -73,7 +73,7 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
   const [chatMessages, setChatMessages] = useState<StreamChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   
   // Real-time subscription refs
@@ -156,7 +156,7 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
   
   // Schedule a new stream
   const scheduleStream = useCallback(async (formData: StreamScheduleFormData): Promise<string | null> => {
-    if (!user?.uid || !profile) {
+    if (!user?.uid) {
       toast({
         title: 'Error',
         description: 'You must be logged in to schedule a stream',
@@ -166,11 +166,12 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
+      const userAny = user as any;
       const streamId = await createLiveStream(
         user.uid,
-        profile.displayName || profile.username || 'Artist',
-        profile.profileImage,
-        profile.username,
+        userAny.displayName || userAny.username || 'Artist',
+        userAny.avatarUrl || userAny.profileImage,
+        userAny.username,
         formData
       );
       
@@ -323,16 +324,17 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
   
   // Send chat message
   const sendChatMessage = useCallback(async (message: string, isQuestion: boolean = false): Promise<boolean> => {
-    if (!currentStream || !user?.uid || !profile) {
+    if (!currentStream || !user?.uid) {
       return false;
     }
     
     try {
+      const userAny = user as any;
       await addChatMessage(
         currentStream.id,
         user.uid,
-        profile.displayName || profile.username || 'User',
-        profile.profileImage,
+        userAny.displayName || userAny.username || 'User',
+        userAny.avatarUrl || userAny.profileImage,
         message,
         isQuestion
       );
@@ -341,7 +343,7 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
       console.error('Error sending message:', error);
       return false;
     }
-  }, [currentStream, user?.uid, profile]);
+  }, [currentStream, user]);
   
   // Like current stream
   const likeCurrentStream = useCallback(async (): Promise<boolean> => {

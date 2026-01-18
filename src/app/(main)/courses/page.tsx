@@ -21,7 +21,7 @@ import { StreamCard } from '@/components/live-stream/stream-card';
 export default function CoursesPage() {
   const router = useRouter();
   const { courses, isLoading } = useCourses();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { 
     liveStreams, 
     scheduledStreams, 
@@ -34,8 +34,10 @@ export default function CoursesPage() {
   const [ads, setAds] = useState<any[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   
-  // Check if user is an artist (can go live)
-  const isArtist = profile?.accountType === 'artist' || profile?.accountType === 'gallery';
+  // Check if user is an artist (can go live) - check user properties
+  const isArtist = (user as any)?.accountType === 'artist' || 
+                   (user as any)?.accountType === 'gallery' ||
+                   (user as any)?.isProfessional === true;
   
   // OPTIONAL LOADING SCREEN - Only show if there's actually a delay (500ms+)
   const [showLoadingScreen, setShowLoadingScreen] = useState(false); // Start hidden
