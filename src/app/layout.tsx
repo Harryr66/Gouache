@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { AuthProvider } from '@/providers/auth-provider';
 import { CourseProvider } from '@/providers/course-provider';
+import { LiveStreamProvider } from '@/providers/live-stream-provider';
 import { DiscoverSettingsProvider } from '@/providers/discover-settings-provider';
 import { LikesProvider } from '@/providers/likes-provider';
 import { VideoControlProvider } from '@/providers/video-control-provider';
@@ -76,15 +77,17 @@ export default function RootLayout({
           <AuthProvider>
             <LikesProvider>
               <CourseProvider>
-                <DiscoverSettingsProvider>
-                  <VideoControlProvider>
-                    <CloudflarePreconnect />
-                    <ServiceWorkerRegister />
-                    {children}
-                    <Toaster />
-                    <HueChatbot />
-                  </VideoControlProvider>
-                </DiscoverSettingsProvider>
+                <LiveStreamProvider>
+                  <DiscoverSettingsProvider>
+                    <VideoControlProvider>
+                      <CloudflarePreconnect />
+                      <ServiceWorkerRegister />
+                      {children}
+                      <Toaster />
+                      <HueChatbot />
+                    </VideoControlProvider>
+                  </DiscoverSettingsProvider>
+                </LiveStreamProvider>
               </CourseProvider>
             </LikesProvider>
           </AuthProvider>
