@@ -23,7 +23,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  placement: z.enum(['news', 'discover', 'learn']),
+  placement: z.enum(['news', 'discover', 'learn']), // Legacy field for backwards compatibility
+  placements: z.array(z.enum(['discover-tiles', 'news-tiles', 'news-banner', 'learn-tiles', 'learn-banner'])).min(1, 'Select at least one placement'),
+  adFormat: z.enum(['square', 'portrait', 'large', 'banner']),
   clickUrl: z.string().url('Please enter a valid URL'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().optional(),
@@ -58,6 +60,25 @@ const formSchema = z.object({
 }, {
   message: "Cost per click is required for click campaigns",
   path: ["costPerClick"],
+}).refine((data) => {
+  // Banner format can only be used with banner placements
+  if (data.adFormat === 'banner') {
+    return data.placements.some(p => p.includes('banner'));
+  }
+  return true;
+}, {
+  message: "Banner format requires at least one banner placement (news-banner or learn-banner)",
+  path: ["adFormat"],
+}).refine((data) => {
+  // Banner placements require banner format
+  const hasBannerPlacement = data.placements.some(p => p.includes('banner'));
+  if (hasBannerPlacement) {
+    return data.adFormat === 'banner';
+  }
+  return true;
+}, {
+  message: "Banner placements require banner format",
+  path: ["placements"],
 });
 
 interface PartnerCampaignFormProps {
@@ -105,6 +126,8 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
     defaultValues: {
       title: existingCampaign?.title || '',
       placement: existingCampaign?.placement || 'news',
+      placements: existingCampaign?.placements || [],
+      adFormat: existingCampaign?.adFormat || 'portrait',
       clickUrl: existingCampaign?.clickUrl || '',
       startDate: formatDateForInput(existingCampaign?.startDate) || new Date().toISOString().split('T')[0],
       endDate: formatDateForInput(existingCampaign?.endDate) || '',
@@ -124,6 +147,8 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       form.reset({
         title: existingCampaign.title || '',
         placement: existingCampaign.placement || 'news',
+        placements: existingCampaign.placements || [],
+        adFormat: existingCampaign.adFormat || 'portrait',
         clickUrl: existingCampaign.clickUrl || '',
         startDate: formatDateForInput(existingCampaign.startDate) || new Date().toISOString().split('T')[0],
         endDate: formatDateForInput(existingCampaign.endDate) || '',
@@ -317,6 +342,8 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       const campaignData: Record<string, any> = {
         title: values.title,
         placement: values.placement,
+        placements: values.placements,
+        adFormat: values.adFormat,
         mediaType,
         clickUrl: values.clickUrl,
         maxWidthFormat: mediaType === 'video' ? maxWidthFormat : false,
@@ -406,22 +433,168 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
 
           <FormField
             control={form.control}
-            name="placement"
+            name="adFormat"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Placement *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select placement" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="news">News</SelectItem>
-                    <SelectItem value="discover">Discover (Artwork Feed)</SelectItem>
-                    <SelectItem value="learn">Learn Section</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FormLabel>Ad Format *</FormLabel>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <Card
+                    className={`p-3 cursor-pointer transition-all ${field.value === 'square' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                    onClick={() => field.onChange('square')}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className={`w-12 h-12 border-2 ${field.value === 'square' ? 'border-primary' : 'border-muted-foreground'}`} />
+                      <p className="font-medium text-sm">Square</p>
+                      <p className="text-xs text-muted-foreground text-center">1:1 (1080×1080px)</p>
+                    </div>
+                  </Card>
+                  <Card
+                    className={`p-3 cursor-pointer transition-all ${field.value === 'portrait' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                    onClick={() => field.onChange('portrait')}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className={`w-10 h-12 border-2 ${field.value === 'portrait' ? 'border-primary' : 'border-muted-foreground'}`} />
+                      <p className="font-medium text-sm">Portrait</p>
+                      <p className="text-xs text-muted-foreground text-center">4:5 (1080×1350px)</p>
+                    </div>
+                  </Card>
+                  <Card
+                    className={`p-3 cursor-pointer transition-all ${field.value === 'large' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                    onClick={() => field.onChange('large')}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className={`w-12 h-16 border-2 ${field.value === 'large' ? 'border-primary' : 'border-muted-foreground'}`} />
+                      <p className="font-medium text-sm">Large</p>
+                      <p className="text-xs text-muted-foreground text-center">9:16 (1080×1920px)</p>
+                    </div>
+                  </Card>
+                  <Card
+                    className={`p-3 cursor-pointer transition-all ${field.value === 'banner' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                    onClick={() => field.onChange('banner')}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className={`w-16 h-6 border-2 ${field.value === 'banner' ? 'border-primary' : 'border-muted-foreground'}`} />
+                      <p className="font-medium text-sm">Banner</p>
+                      <p className="text-xs text-muted-foreground text-center">6:1 (1800×300px)</p>
+                    </div>
+                  </Card>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="placements"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ad Placements *</FormLabel>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Select where your ad will appear. You can choose multiple locations.
+                </p>
+                <div className="space-y-3">
+                  <Card className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={field.value?.includes('discover-tiles')}
+                        onCheckedChange={(checked) => {
+                          const current = field.value || [];
+                          if (checked) {
+                            field.onChange([...current, 'discover-tiles']);
+                          } else {
+                            field.onChange(current.filter((v: string) => v !== 'discover-tiles'));
+                          }
+                        }}
+                        disabled={form.watch('adFormat') === 'banner'}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium">Discover Feed - Tiles</p>
+                        <p className="text-xs text-muted-foreground">Show in artwork grid (square, portrait, or large)</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={field.value?.includes('news-tiles')}
+                        onCheckedChange={(checked) => {
+                          const current = field.value || [];
+                          if (checked) {
+                            field.onChange([...current, 'news-tiles']);
+                          } else {
+                            field.onChange(current.filter((v: string) => v !== 'news-tiles'));
+                          }
+                        }}
+                        disabled={form.watch('adFormat') === 'banner'}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium">Newsroom - Article Tiles</p>
+                        <p className="text-xs text-muted-foreground">Show between news articles (square, portrait, or large)</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={field.value?.includes('news-banner')}
+                        onCheckedChange={(checked) => {
+                          const current = field.value || [];
+                          if (checked) {
+                            field.onChange([...current, 'news-banner']);
+                          } else {
+                            field.onChange(current.filter((v: string) => v !== 'news-banner'));
+                          }
+                        }}
+                        disabled={form.watch('adFormat') !== 'banner'}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium">Newsroom - Banner</p>
+                        <p className="text-xs text-muted-foreground">Full-width banner below newsletter signup (banner format only)</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={field.value?.includes('learn-tiles')}
+                        onCheckedChange={(checked) => {
+                          const current = field.value || [];
+                          if (checked) {
+                            field.onChange([...current, 'learn-tiles']);
+                          } else {
+                            field.onChange(current.filter((v: string) => v !== 'learn-tiles'));
+                          }
+                        }}
+                        disabled={form.watch('adFormat') === 'banner'}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium">Learn - Course Tiles</p>
+                        <p className="text-xs text-muted-foreground">Show between courses (square, portrait, or large)</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={field.value?.includes('learn-banner')}
+                        onCheckedChange={(checked) => {
+                          const current = field.value || [];
+                          if (checked) {
+                            field.onChange([...current, 'learn-banner']);
+                          } else {
+                            field.onChange(current.filter((v: string) => v !== 'learn-banner'));
+                          }
+                        }}
+                        disabled={form.watch('adFormat') !== 'banner'}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium">Learn - Banner</p>
+                        <p className="text-xs text-muted-foreground">Full-width banner below "Gouache Learn" headline (banner format only)</p>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
                 <FormMessage />
               </FormItem>
             )}

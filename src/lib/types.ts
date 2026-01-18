@@ -1328,7 +1328,9 @@ export interface AdCampaign {
   partnerId: string;
   title: string;
   description?: string;
-  placement: 'news' | 'discover' | 'learn';
+  placement: 'news' | 'discover' | 'learn'; // Legacy: kept for backwards compatibility, use placements[] instead
+  placements?: Array<'discover-tiles' | 'news-tiles' | 'news-banner' | 'learn-tiles' | 'learn-banner'>; // New: specific placement options
+  adFormat?: 'square' | 'portrait' | 'large' | 'banner'; // Ad format/size
   imageUrl?: string;
   videoUrl?: string;
   mediaType: 'image' | 'video';

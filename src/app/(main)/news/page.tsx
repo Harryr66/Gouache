@@ -14,8 +14,9 @@ import { Filter, Loader2, Check } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
-import { fetchActiveAds, mixAdsIntoContent } from '@/lib/ad-fetcher';
+import { fetchActiveAds, mixAdsIntoContent, fetchBannerAd } from '@/lib/ad-fetcher';
 import { AdTile } from '@/components/ad-tile';
+import { AdBanner } from '@/components/ad-banner';
 import { useAuth } from '@/providers/auth-provider';
 
 const ARTICLE_COLLECTION = 'newsArticles';
@@ -43,6 +44,7 @@ export default function NewsPage() {
   const { user } = useAuth();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [ads, setAds] = useState<any[]>([]);
+  const [bannerAd, setBannerAd] = useState<AdCampaign | null>(null);
   const [filteredCategory, setFilteredCategory] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -86,9 +88,13 @@ export default function NewsPage() {
         if (!isMounted) return;
         setArticles(loadedArticles);
 
-        // Load ads
-        const activeAds = await fetchActiveAds('news', user?.id);
+        // Load tile ads
+        const activeAds = await fetchActiveAds('news', 'news-tiles', user?.id);
         setAds(activeAds);
+        
+        // Load banner ad
+        const activeBannerAd = await fetchBannerAd('news-banner', user?.id);
+        setBannerAd(activeBannerAd);
       } catch (error) {
         console.error('Failed to load newsroom content:', error);
       } finally {
@@ -269,6 +275,11 @@ export default function NewsPage() {
           </form>
         </div>
       </div>
+
+      {/* Banner Ad - Only show if active banner ad exists */}
+      {bannerAd && (
+        <AdBanner campaign={bannerAd} placement="news" userId={user?.id} />
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-20">

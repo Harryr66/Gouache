@@ -11,8 +11,9 @@ import { useLiveStream } from '@/providers/live-stream-provider';
 import { ThemeLoading } from '@/components/theme-loading';
 import Image from 'next/image';
 import Link from 'next/link';
-import { fetchActiveAds, mixAdsIntoContent } from '@/lib/ad-fetcher';
+import { fetchActiveAds, mixAdsIntoContent, fetchBannerAd } from '@/lib/ad-fetcher';
 import { AdTile } from '@/components/ad-tile';
+import { AdBanner } from '@/components/ad-banner';
 import { useAuth } from '@/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { GoLiveButton } from '@/components/live-stream/go-live-button';
@@ -32,6 +33,7 @@ export default function CoursesPage() {
     endStream,
   } = useLiveStream();
   const [ads, setAds] = useState<any[]>([]);
+  const [bannerAd, setBannerAd] = useState<any>(null);
   const [isMobile, setIsMobile] = useState(false);
   
   // Check if user is an artist (can go live) - check user properties
@@ -59,7 +61,19 @@ export default function CoursesPage() {
 
   // Fetch ads for learn section
   useEffect(() => {
-    fetchActiveAds('learn', user?.id).then(setAds).catch(console.error);
+    const loadAds = async () => {
+      try {
+        const [tileAds, banner] = await Promise.all([
+          fetchActiveAds('learn', 'learn-tiles', user?.id),
+          fetchBannerAd('learn-banner', user?.id)
+        ]);
+        setAds(tileAds);
+        setBannerAd(banner);
+      } catch (error) {
+        console.error('Error loading ads:', error);
+      }
+    };
+    loadAds();
   }, [user]);
 
   // Joke handler removed - jokes list preserved in typewriter-joke.tsx for future use
@@ -375,6 +389,11 @@ export default function CoursesPage() {
             Learn directly from your favourite artists
           </p>
         </div>
+
+        {/* Banner Ad - Only show if active banner ad exists */}
+        {bannerAd && (
+          <AdBanner campaign={bannerAd} placement="learn" userId={user?.id} />
+        )}
 
         {/* Courses content - tabs hidden for now, showing courses by default */}
         <div className="w-full">

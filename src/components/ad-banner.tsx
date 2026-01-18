@@ -1,53 +1,27 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { AdCampaign } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Video, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { trackAdClick, trackAdImpression } from '@/lib/ad-tracking';
 
-type AdTileProps = {
+type AdBannerProps = {
   campaign: AdCampaign;
   placement: 'news' | 'discover' | 'learn';
   userId?: string;
-  isMobile?: boolean;
-  format?: 'square' | 'portrait' | 'large'; // Override format for tile rendering
 };
 
-export function AdTile({ campaign, placement, userId, isMobile = false, format }: AdTileProps) {
+export function AdBanner({ campaign, placement, userId }: AdBannerProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
   const [isMediaLoaded, setIsMediaLoaded] = useState(false);
   const impressionTracked = useRef(false);
-  const tileRef = useRef<HTMLDivElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoWatchTimer = useRef<NodeJS.Timeout | null>(null);
   const videoWatchStartTime = useRef<number | null>(null);
   
-  // Determine actual format to use (prop override or campaign setting)
-  const actualFormat = format || campaign.adFormat || 'portrait';
-  
-  // Detect video aspect ratio for max-width format
-  useEffect(() => {
-    if (campaign.mediaType === 'video' && campaign.videoUrl && campaign.maxWidthFormat) {
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      video.onloadedmetadata = () => {
-        const aspectRatio = video.videoWidth / video.videoHeight;
-        setVideoAspectRatio(aspectRatio);
-        window.URL.revokeObjectURL(video.src);
-      };
-      video.onerror = () => {
-        setVideoAspectRatio(16/9); // Default to 16:9 for max-width format
-        window.URL.revokeObjectURL(video.src);
-      };
-      video.src = campaign.videoUrl;
-    }
-  }, [campaign.videoUrl, campaign.mediaType, campaign.maxWidthFormat]);
-
-  // Track impression when ad comes into view
+  // Track impression when banner comes into view
   // For images: track when 50% visible
   // For videos: track after 2+ seconds of watch time
   useEffect(() => {
@@ -61,7 +35,6 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format }
           if (entry.isIntersecting && !impressionTracked.current) {
             if (isVideo) {
               // For video ads: start watching timer when visible
-              // Only count impression after 2+ seconds of actual playback
               if (!videoWatchStartTime.current) {
                 videoWatchStartTime.current = Date.now();
                 
@@ -77,7 +50,6 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format }
                   if (videoWatchStartTime.current && !impressionTracked.current) {
                     const watchTime = Date.now() - videoWatchStartTime.current;
                     if (watchTime >= 2000) {
-                      // 2+ seconds watched - count as impression
                       impressionTracked.current = true;
                       trackAdImpression(campaign.id, userId, placement).catch(console.error);
                       if (videoWatchTimer.current) {
@@ -112,8 +84,8 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format }
       { threshold: 0.5 }
     );
 
-    if (tileRef.current) {
-      observer.observe(tileRef.current);
+    if (bannerRef.current) {
+      observer.observe(bannerRef.current);
     }
 
     return () => {
@@ -146,61 +118,48 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format }
 
   const mediaUrl = campaign.videoUrl || campaign.imageUrl;
   const isVideo = campaign.mediaType === 'video';
-  const isMaxWidthFormat = campaign.maxWidthFormat && isVideo && isMobile;
-
-  // Calculate aspect ratio based on format
-  const getAspectRatioPadding = () => {
-    if (isMaxWidthFormat && videoAspectRatio) {
-      return `${(1 / videoAspectRatio) * 100}%`;
-    }
-    switch (actualFormat) {
-      case 'square':
-        return '100%'; // 1:1
-      case 'portrait':
-        return `${(3 / 2) * 100}%`; // 2:3 (portrait)
-      case 'large':
-        return `${(16 / 9) * 100}%`; // 9:16 (tall portrait)
-      default:
-        return `${(3 / 2) * 100}%`; // Default to 2:3
-    }
-  };
 
   return (
-    <Card 
-      ref={tileRef} 
-      className={cn(
-        'overflow-hidden transition hover:shadow-lg group flex flex-col cursor-pointer relative mb-1 rounded-none',
-        // For max-width format in CSS columns, we need to break out of columns
-        isMaxWidthFormat ? 'column-span-all w-full' : 'break-inside-avoid'
-      )}
-      style={isMaxWidthFormat ? { 
-        columnSpan: 'all',
-        width: '100%',
-        gridColumn: '1 / -1' // Fallback for grid layouts
-      } : undefined}
+    <div 
+      ref={bannerRef}
+      className="w-full my-6"
     >
-      <div className="absolute top-2 left-2 z-10">
-        <span className="text-[10px] font-medium text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
-          Sponsored
-        </span>
-      </div>
       <a
         href={campaign.clickUrl}
         onClick={handleClick}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex flex-col h-full"
+        className={cn(
+          "relative block w-full rounded-lg overflow-hidden group cursor-pointer",
+          "transition-shadow duration-300 hover:shadow-xl",
+          "border border-border/50"
+        )}
       >
+        {/* Sponsored badge */}
+        <div className="absolute top-3 left-3 z-10">
+          <span className="text-xs font-medium text-white bg-black/60 px-2 py-1 rounded">
+            Sponsored
+          </span>
+        </div>
+
+        {/* Learn more badge */}
+        <div className="absolute top-3 right-3 z-10">
+          <span className="text-xs font-medium text-white bg-primary/80 px-2 py-1 rounded flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            Learn more <ExternalLink className="h-3 w-3" />
+          </span>
+        </div>
+
+        {/* Media container - aspect ratio 6:1 for banner */}
         <div 
-          className="relative w-full overflow-hidden"
+          className="relative w-full overflow-hidden bg-muted"
           style={{
-            paddingBottom: getAspectRatioPadding()
+            paddingBottom: `${(1 / 6) * 100}%` // 6:1 aspect ratio for banner
           }}
         >
           <div className="absolute inset-0">
             {/* Loading skeleton */}
             {!isMediaLoaded && (
-              <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse">
+              <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted/80 to-muted animate-pulse">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 </div>
@@ -212,7 +171,7 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format }
               <video
                 ref={videoRef}
                 src={campaign.videoUrl}
-                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${!isMediaLoaded ? 'opacity-0' : 'opacity-100'}`}
+                className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 ${!isMediaLoaded ? 'opacity-0' : 'opacity-100'} group-hover:scale-105`}
                 muted
                 loop
                 playsInline
@@ -224,8 +183,8 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format }
             ) : (
               <img
                 src={campaign.imageUrl || ''}
-                alt={campaign.title}
-                className={`absolute inset-0 h-full w-full transition-all duration-500 group-hover:scale-105 object-cover ${!isMediaLoaded ? 'opacity-0' : 'opacity-100'}`}
+                alt="Advertisement"
+                className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 ${!isMediaLoaded ? 'opacity-0' : 'opacity-100'} group-hover:scale-105`}
                 loading="eager"
                 onLoad={() => setIsMediaLoaded(true)}
                 onError={() => setIsMediaLoaded(true)}
@@ -233,15 +192,7 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format }
             )}
           </div>
         </div>
-
-        <CardContent className="flex flex-col justify-between flex-1 p-5">
-          <div className="flex items-center justify-end text-xs">
-            <span className="font-medium text-primary flex items-center gap-1">
-              Learn more <ExternalLink className="h-3 w-3" />
-            </span>
-          </div>
-        </CardContent>
       </a>
-    </Card>
+    </div>
   );
 }

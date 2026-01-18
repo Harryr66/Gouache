@@ -2035,7 +2035,7 @@ function DiscoverPageContent() {
     fetchArtworks();
     
     // Fetch ads for discover feed
-    fetchActiveAds('discover', user?.id).then(setAds).catch(console.error);
+    fetchActiveAds('discover', 'discover-tiles', user?.id).then(setAds).catch(console.error);
     
     // Cleanup: reset fetch flag if component unmounts
     return () => {

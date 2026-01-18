@@ -7,20 +7,22 @@ import { AdCampaign } from './types';
  */
 export async function fetchActiveAds(
   placement: 'news' | 'discover' | 'learn',
+  specificPlacement?: 'discover-tiles' | 'news-tiles' | 'news-banner' | 'learn-tiles' | 'learn-banner',
   userId?: string
 ): Promise<AdCampaign[]> {
   try {
     const now = new Date();
     
+    // Query for campaigns that match the placement
+    // Support both legacy 'placement' field and new 'placements' array
     const adsQuery = query(
       collection(db, 'adCampaigns'),
-      where('placement', '==', placement),
       where('isActive', '==', true)
     );
 
     const adsSnapshot = await getDocs(adsQuery);
     
-    console.log(`[Ads] Found ${adsSnapshot.docs.length} active ${placement} campaigns`);
+    console.log(`[Ads] Found ${adsSnapshot.docs.length} active campaigns`);
     
     const ads = adsSnapshot.docs
       .map((doc) => {
@@ -41,6 +43,16 @@ export async function fetchActiveAds(
         } as AdCampaign;
       })
       .filter((ad) => {
+        // Filter by placement - support both legacy and new system
+        const matchesLegacyPlacement = ad.placement === placement;
+        const matchesNewPlacement = specificPlacement && ad.placements?.includes(specificPlacement);
+        const matchesGeneralPlacement = !specificPlacement && ad.placements?.some(p => p.startsWith(placement));
+        
+        if (!matchesLegacyPlacement && !matchesNewPlacement && !matchesGeneralPlacement) {
+          console.log(`[Ads] Filtered out "${ad.title}": placement mismatch`);
+          return false;
+        }
+        
         // Filter by date range
         const startCheck = ad.startDate && ad.startDate > now;
         const endCheck = ad.endDate && ad.endDate < now;
@@ -92,7 +104,7 @@ export async function fetchActiveAds(
         return true;
       });
 
-    console.log(`[Ads] Returning ${ads.length} ads for ${placement}`);
+    console.log(`[Ads] Returning ${ads.length} ads for ${specificPlacement || placement}`);
     return ads;
   } catch (error) {
     console.error('Error fetching ads:', error);
@@ -133,4 +145,22 @@ export function mixAdsIntoContent<T extends { id: string }>(
 
   console.log(`[Ads] Mixed result: ${result.length} total items (${shuffledAds.length} ads inserted)`);
   return result;
+}
+
+/**
+ * Fetch a single banner ad for a specific placement
+ * Returns the first active banner ad found, or null if none available
+ */
+export async function fetchBannerAd(
+  placement: 'news-banner' | 'learn-banner',
+  userId?: string
+): Promise<AdCampaign | null> {
+  const ads = await fetchActiveAds(
+    placement.startsWith('news') ? 'news' : 'learn',
+    placement,
+    userId
+  );
+  
+  // Return the first banner ad found (they're already filtered and shuffled)
+  return ads.length > 0 ? ads[0] : null;
 }
