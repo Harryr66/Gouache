@@ -21,6 +21,9 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
   const [isMediaLoaded, setIsMediaLoaded] = useState(false);
   const impressionTracked = useRef(false);
   const tileRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoWatchTimer = useRef<NodeJS.Timeout | null>(null);
+  const videoWatchStartTime = useRef<number | null>(null);
   
   // Detect video aspect ratio for max-width format
   useEffect(() => {
@@ -41,16 +44,64 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
   }, [campaign.videoUrl, campaign.mediaType, campaign.maxWidthFormat]);
 
   // Track impression when ad comes into view
+  // For images: track when 50% visible
+  // For videos: track after 2+ seconds of watch time
   useEffect(() => {
     if (impressionTracked.current) return;
+
+    const isVideo = campaign.mediaType === 'video';
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && !impressionTracked.current) {
-            impressionTracked.current = true;
-            trackAdImpression(campaign.id, userId, placement).catch(console.error);
-            observer.disconnect();
+            if (isVideo) {
+              // For video ads: start watching timer when visible
+              // Only count impression after 2+ seconds of actual playback
+              if (!videoWatchStartTime.current) {
+                videoWatchStartTime.current = Date.now();
+                
+                // Start playing the video when in view
+                if (videoRef.current) {
+                  videoRef.current.play().catch(() => {
+                    // Autoplay blocked - still track based on visibility time
+                  });
+                }
+                
+                // Check every 100ms if 2 seconds have passed
+                videoWatchTimer.current = setInterval(() => {
+                  if (videoWatchStartTime.current && !impressionTracked.current) {
+                    const watchTime = Date.now() - videoWatchStartTime.current;
+                    if (watchTime >= 2000) {
+                      // 2+ seconds watched - count as impression
+                      impressionTracked.current = true;
+                      trackAdImpression(campaign.id, userId, placement).catch(console.error);
+                      if (videoWatchTimer.current) {
+                        clearInterval(videoWatchTimer.current);
+                        videoWatchTimer.current = null;
+                      }
+                      observer.disconnect();
+                    }
+                  }
+                }, 100);
+              }
+            } else {
+              // For image ads: immediate impression on visibility
+              impressionTracked.current = true;
+              trackAdImpression(campaign.id, userId, placement).catch(console.error);
+              observer.disconnect();
+            }
+          } else if (!entry.isIntersecting && isVideo) {
+            // Video scrolled out of view - pause timer and video
+            if (videoWatchTimer.current) {
+              clearInterval(videoWatchTimer.current);
+              videoWatchTimer.current = null;
+            }
+            videoWatchStartTime.current = null;
+            
+            if (videoRef.current) {
+              videoRef.current.pause();
+            }
           }
         });
       },
@@ -61,8 +112,13 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
       observer.observe(tileRef.current);
     }
 
-    return () => observer.disconnect();
-  }, [campaign.id, userId, placement]);
+    return () => {
+      observer.disconnect();
+      if (videoWatchTimer.current) {
+        clearInterval(videoWatchTimer.current);
+      }
+    };
+  }, [campaign.id, userId, placement, campaign.mediaType]);
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -139,6 +195,7 @@ export function AdTile({ campaign, placement, userId, isMobile = false }: AdTile
             {/* Media content */}
             {isVideo && campaign.videoUrl ? (
               <video
+                ref={videoRef}
                 src={campaign.videoUrl}
                 className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${!isMediaLoaded ? 'opacity-0' : 'opacity-100'}`}
                 muted
