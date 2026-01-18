@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { db } from '@/lib/firebase';
@@ -244,17 +244,18 @@ export default function PartnerDashboardPage() {
       }
 
       let partnerId = '';
+      let partnerData: PartnerAccount;
 
       if (!partnerSnapshot.empty) {
-        const partnerData = partnerSnapshot.docs[0].data() as PartnerAccount;
+        const data = partnerSnapshot.docs[0].data() as PartnerAccount;
         partnerId = partnerSnapshot.docs[0].id;
-        setPartnerAccount({
-          ...partnerData,
+        partnerData = {
+          ...data,
           id: partnerId,
-        });
+        };
       } else if (isAdmin) {
         partnerId = 'admin';
-        setPartnerAccount({
+        partnerData = {
           id: 'admin',
           email: user.email || '',
           companyName: 'Gouache Admin',
@@ -263,48 +264,61 @@ export default function PartnerDashboardPage() {
           isActive: true,
           accountType: 'partner',
           billingSetupComplete: true, // Admin doesn't need billing setup
-        });
-      }
-
-      // Load campaigns
-      let campaignsQuery;
-      if (isAdmin && partnerSnapshot.empty) {
-        campaignsQuery = query(
-          collection(db, 'adCampaigns'),
-          orderBy('createdAt', 'desc')
-        );
+        };
       } else {
-        campaignsQuery = query(
-          collection(db, 'adCampaigns'),
-          where('partnerId', '==', partnerId),
-          orderBy('createdAt', 'desc')
-        );
+        return;
       }
 
-      const campaignsSnapshot = await getDocs(campaignsQuery);
-      const loadedCampaigns = campaignsSnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id,
-        createdAt: doc.data().createdAt?.toDate?.() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate?.() || new Date(),
-        startDate: doc.data().startDate?.toDate?.() || new Date(),
-        endDate: doc.data().endDate?.toDate?.(),
-      })) as AdCampaign[];
+      // Set partner account immediately (non-blocking)
+      startTransition(() => {
+        setPartnerAccount(partnerData);
+      });
 
-      setCampaigns(loadedCampaigns);
-
-      // Load billing records
-      if (partnerId && partnerId !== 'admin') {
-        try {
-          const billingRes = await fetch(`/api/partner/billing-history?partnerId=${partnerId}`);
-          if (billingRes.ok) {
-            const { records } = await billingRes.json();
-            setBillingRecords(records);
-          }
-        } catch (e) {
-          console.error('Error loading billing history:', e);
+      // Load campaigns and billing in parallel
+      const campaignsPromise = (async () => {
+        let campaignsQuery;
+        if (isAdmin && partnerSnapshot.empty) {
+          campaignsQuery = query(
+            collection(db, 'adCampaigns'),
+            orderBy('createdAt', 'desc')
+          );
+        } else {
+          campaignsQuery = query(
+            collection(db, 'adCampaigns'),
+            where('partnerId', '==', partnerId),
+            orderBy('createdAt', 'desc')
+          );
         }
-      }
+
+        const campaignsSnapshot = await getDocs(campaignsQuery);
+        return campaignsSnapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+          createdAt: doc.data().createdAt?.toDate?.() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate?.() || new Date(),
+          startDate: doc.data().startDate?.toDate?.() || new Date(),
+          endDate: doc.data().endDate?.toDate?.(),
+        })) as AdCampaign[];
+      })();
+
+      const billingPromise = (partnerId && partnerId !== 'admin') 
+        ? fetch(`/api/partner/billing-history?partnerId=${partnerId}`)
+            .then(res => res.ok ? res.json() : { records: [] })
+            .then(data => data.records || [])
+            .catch(() => [])
+        : Promise.resolve([]);
+
+      // Wait for both in parallel
+      const [loadedCampaigns, loadedBillingRecords] = await Promise.all([
+        campaignsPromise,
+        billingPromise
+      ]);
+
+      // Update state in a single transition (non-blocking)
+      startTransition(() => {
+        setCampaigns(loadedCampaigns);
+        setBillingRecords(loadedBillingRecords);
+      });
     } catch (error) {
       console.error('Error loading partner data:', error);
       toast({
