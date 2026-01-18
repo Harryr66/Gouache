@@ -144,8 +144,13 @@ export async function createLiveStream(
 
 /**
  * Start a live stream (go live)
+ * Creates a Cloudflare Stream Live Input and returns streaming credentials
  */
-export async function startLiveStream(streamId: string): Promise<void> {
+export async function startLiveStream(streamId: string): Promise<{
+  rtmpUrl: string;
+  streamKey: string;
+  playbackUrl: string;
+}> {
   const streamRef = doc(db, STREAMS_COLLECTION, streamId);
   const streamDoc = await getDoc(streamRef);
   
@@ -155,10 +160,35 @@ export async function startLiveStream(streamId: string): Promise<void> {
   
   const streamData = streamDoc.data();
   
+  // Create Cloudflare Live Input
+  const liveInputResponse = await fetch('/api/live-stream/create-input', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      streamId,
+      streamTitle: streamData.title,
+      recordingEnabled: streamData.recordingEnabled || false,
+    }),
+  });
+  
+  if (!liveInputResponse.ok) {
+    const error = await liveInputResponse.json();
+    throw new Error(error.error || 'Failed to create live input');
+  }
+  
+  const { liveInput } = await liveInputResponse.json();
+  
+  // Update stream with Cloudflare Live Input details
   await updateDoc(streamRef, {
     status: 'live',
     actualStartTime: serverTimestamp(),
     updatedAt: serverTimestamp(),
+    // Cloudflare Live Input details
+    liveInputId: liveInput.uid,
+    streamKey: liveInput.rtmpStreamKey,
+    rtmpUrl: liveInput.rtmpUrl,
+    playbackUrl: liveInput.playbackUrl,
+    embedUrl: liveInput.embedUrl,
   });
   
   // Send notifications to followers (fire and forget)
@@ -175,13 +205,33 @@ export async function startLiveStream(streamId: string): Promise<void> {
       }),
     }).catch(err => console.error('Failed to send live notifications:', err));
   }
+  
+  return {
+    rtmpUrl: liveInput.rtmpUrl,
+    streamKey: liveInput.rtmpStreamKey,
+    playbackUrl: liveInput.playbackUrl,
+  };
 }
 
 /**
  * End a live stream
+ * Cleans up the Cloudflare Live Input
  */
 export async function endLiveStream(streamId: string): Promise<void> {
   const streamRef = doc(db, STREAMS_COLLECTION, streamId);
+  const streamDoc = await getDoc(streamRef);
+  
+  if (streamDoc.exists()) {
+    const streamData = streamDoc.data();
+    
+    // Delete the Cloudflare Live Input if it exists
+    if (streamData.liveInputId) {
+      fetch(`/api/live-stream/create-input?liveInputId=${streamData.liveInputId}`, {
+        method: 'DELETE',
+      }).catch(err => console.error('Failed to delete live input:', err));
+    }
+  }
+  
   await updateDoc(streamRef, {
     status: 'ended',
     actualEndTime: serverTimestamp(),

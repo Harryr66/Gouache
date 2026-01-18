@@ -39,7 +39,12 @@ interface LiveStreamContextType {
   
   // Stream operations
   scheduleStream: (formData: StreamScheduleFormData) => Promise<string | null>;
-  goLive: (streamId: string) => Promise<boolean>;
+  goLive: (streamId: string) => Promise<{
+    success: boolean;
+    rtmpUrl?: string;
+    streamKey?: string;
+    playbackUrl?: string;
+  }>;
   endStream: (streamId: string) => Promise<boolean>;
   cancelStream: (streamId: string) => Promise<boolean>;
   deleteStream: (streamId: string) => Promise<boolean>;
@@ -189,24 +194,32 @@ export const LiveStreamProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user?.uid, profile, toast, refreshMyStreams, refreshScheduledStreams]);
   
-  // Go live
-  const goLive = useCallback(async (streamId: string): Promise<boolean> => {
+  // Go live - returns streaming credentials
+  const goLive = useCallback(async (streamId: string): Promise<{
+    success: boolean;
+    rtmpUrl?: string;
+    streamKey?: string;
+    playbackUrl?: string;
+  }> => {
     try {
-      await startLiveStream(streamId);
+      const credentials = await startLiveStream(streamId);
       toast({
         title: "You're Live!",
         description: 'Your stream is now live. Your followers have been notified.',
       });
       await refreshMyStreams();
-      return true;
-    } catch (error) {
+      return {
+        success: true,
+        ...credentials,
+      };
+    } catch (error: any) {
       console.error('Error starting stream:', error);
       toast({
         title: 'Error',
-        description: 'Failed to start stream. Please try again.',
+        description: error.message || 'Failed to start stream. Please try again.',
         variant: 'destructive',
       });
-      return false;
+      return { success: false };
     }
   }, [toast, refreshMyStreams]);
   
