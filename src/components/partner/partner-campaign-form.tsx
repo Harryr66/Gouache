@@ -100,7 +100,7 @@ const formSchema = z.object({
   }
   return true;
 }, {
-  message: "Tile placements require square, portrait, or large format",
+  message: "Tile placements require portrait format",
   path: ["adFormat"],
 });
 
@@ -544,7 +544,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                         <p className="font-medium">Discover Feed - Tiles</p>
                         <p className="text-xs text-muted-foreground">Show in artwork grid</p>
                         <p className="text-xs text-muted-foreground/70 mt-1">
-                          Square: 1080×1080px • Portrait: 1080×1350px • Large: 1080×1920px
+                          Portrait: 1080×1350px (4:5 ratio)
                         </p>
                       </div>
                     </div>
@@ -566,7 +566,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                         <p className="font-medium">Newsroom - Article Tiles</p>
                         <p className="text-xs text-muted-foreground">Show between news articles</p>
                         <p className="text-xs text-muted-foreground/70 mt-1">
-                          Square: 1080×1080px • Portrait: 1080×1350px • Large: 1080×1920px
+                          Portrait: 1080×1350px (4:5 ratio)
                         </p>
                       </div>
                     </div>
@@ -610,7 +610,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                         <p className="font-medium">Learn - Course Tiles</p>
                         <p className="text-xs text-muted-foreground">Show between courses</p>
                         <p className="text-xs text-muted-foreground/70 mt-1">
-                          Square: 1080×1080px • Portrait: 1080×1350px • Large: 1080×1920px
+                          Portrait: 1080×1350px (4:5 ratio)
                         </p>
                       </div>
                     </div>

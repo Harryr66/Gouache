@@ -17,18 +17,10 @@ type AdTileProps = {
 };
 
 /**
- * Map ad format to grid tile size (simplified: portrait or landscape only)
+ * All tile ads use portrait size to match the grid
  */
-function getAdTileSize(adFormat: string | undefined): TileSize {
-  switch (adFormat) {
-    case 'landscape':
-      return 'landscape';
-    case 'square':
-    case 'portrait':
-    case 'large':
-    default:
-      return 'portrait';
-  }
+function getAdTileSize(): TileSize {
+  return 'portrait';
 }
 
 export function AdTile({ campaign, placement, userId, isMobile = false, tileSize }: AdTileProps) {
@@ -44,8 +36,8 @@ export function AdTile({ campaign, placement, userId, isMobile = false, tileSize
   // All tile ads use portrait format (4:5) to match the grid
   const actualFormat = 'portrait';
   
-  // Get tile size for structured grid (use prop, or derive from adFormat)
-  const effectiveTileSize = tileSize || getAdTileSize(campaign.adFormat);
+  // Get tile size for structured grid - all tiles use portrait
+  const effectiveTileSize = tileSize || getAdTileSize();
   
   // Detect video aspect ratio for max-width format
   useEffect(() => {
