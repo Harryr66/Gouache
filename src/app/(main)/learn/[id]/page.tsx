@@ -331,21 +331,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   }, [courseId, user?.id, courseEnrollments, getCourse]); // Use user?.id to trigger when user changes
 
   const handleEnroll = async () => {
-    // ============================================
-    // CRITICAL: COMPREHENSIVE PRE-PAYMENT VALIDATION
-    // DO NOT PROCEED TO PAYMENT IF ANY CHECK FAILS
-    // ============================================
-    
-    // Check 1: Idempotency - prevent double clicks
-    if (isProcessingPayment) {
-      toast({
-        title: "Please Wait",
-        description: "Payment is already being processed.",
-      });
-      return;
-    }
-    
-    // Check 2: User authentication
+    // User authentication check
     if (!user) {
       toast({
         title: "Login required",
@@ -356,7 +342,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       return;
     }
 
-    // Check 3: Course data loaded
+    // Course data validation
     if (!course) {
       toast({
         title: "Error",
@@ -366,7 +352,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       return;
     }
 
-    // Check 4: Course ID valid
+    // Course ID validation
     if (!courseId || courseId === 'undefined' || courseId === 'null') {
       toast({
         title: "Error",
@@ -376,7 +362,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       return;
     }
 
-    // Check 5: Not already enrolled
+    // Check if already enrolled
     if (isEnrolled) {
       toast({
         title: "Already Enrolled",
@@ -386,7 +372,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       return;
     }
 
-    // Check 6: Race condition protection - verify enrollment doesn't exist
+    // Verify enrollment doesn't exist
     const existingEnrollment = courseEnrollments.find(e => e.courseId === courseId && e.userId === user.id);
     if (existingEnrollment) {
       toast({
@@ -396,18 +382,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       setIsEnrolled(true);
       router.push(`/learn/${courseId}/player`);
       return;
-    }
-
-    // Check 7: For paid courses, validate instructor and Stripe setup
-    if (course.price && course.price > 0) {
-      if (!course.instructor?.userId) {
-        toast({
-          title: "Payment Unavailable",
-          description: "Instructor account not configured. Contact support.",
-          variant: "destructive",
-        });
-        return;
-      }
     }
 
     // ============================================
