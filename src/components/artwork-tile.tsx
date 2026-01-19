@@ -219,8 +219,16 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
   // Detect media aspect ratio for dynamic height calculation (Pinterest-style masonry)
   useEffect(() => {
     // First check dimensions if available (works for both images and videos)
+    // Check both dimensions object and imageWidth/imageHeight fields
     if (artwork.dimensions && artwork.dimensions.width && artwork.dimensions.height) {
       const aspectRatio = artwork.dimensions.width / artwork.dimensions.height;
+      setMediaAspectRatio(aspectRatio);
+      return;
+    }
+    
+    // Also check imageWidth/imageHeight if available (prevents layout shift)
+    if ((artwork as any).imageWidth && (artwork as any).imageHeight) {
+      const aspectRatio = (artwork as any).imageWidth / (artwork as any).imageHeight;
       setMediaAspectRatio(aspectRatio);
       return;
     }

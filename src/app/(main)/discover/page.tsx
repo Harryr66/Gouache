@@ -228,6 +228,8 @@ function MasonryGrid({ items, columnCount, gap, renderItem, loadMoreRef, isLoadi
               style={{
                 breakInside: 'avoid',
                 marginBottom: `${gap}px`,
+                // Prevent this item from causing layout shifts in other columns
+                contain: 'layout',
               }}
             >
               {renderItem(item)}

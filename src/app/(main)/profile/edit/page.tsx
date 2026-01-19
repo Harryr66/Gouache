@@ -1602,7 +1602,8 @@ export default function ProfileEditPage() {
           </CardContent>
         </Card>
 
-        {/* Simple Newsletter Link Section */}
+        {/* Simple Newsletter Link Section - Artist accounts only */}
+        {isArtistAccount && (
         <Card id="newsletter-link">
           <CardHeader>
             <CardTitle>Newsletter Link</CardTitle>
@@ -1626,6 +1627,7 @@ export default function ProfileEditPage() {
             </div>
           </CardContent>
         </Card>
+        )}
 
 
         {/* Basic Information */}
@@ -1738,7 +1740,8 @@ export default function ProfileEditPage() {
               />
             </div>
 
-            {/* Edit Profile Features */}
+            {/* Edit Profile Features - Artist accounts only */}
+            {isArtistAccount && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Edit Profile Features</h3>
               
@@ -1768,42 +1771,40 @@ export default function ProfileEditPage() {
                 />
               </div>
 
-              {isArtistAccount && (
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label>Hide Events & Locations</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Hide the "Events & Locations" carousel from your public profile
-                      </p>
-                    </div>
-                    <Switch
-                      checked={formData.hideShowcaseLocations}
-                      onCheckedChange={(checked) => handleInputChange('hideShowcaseLocations', checked)}
-                    />
-                  </div>
-              )}
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Hide Events & Locations</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Hide the "Events & Locations" carousel from your public profile
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.hideShowcaseLocations}
+                  onCheckedChange={(checked) => handleInputChange('hideShowcaseLocations', checked)}
+                />
+              </div>
 
-              {/* Shop and Learn toggles - visible for all users */}
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                  <Label>Enable shop</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Show the "Shop" tab on your public profile
-                      </p>
-                    </div>
-                    <Switch
-                      checked={!formData.hideShop}
-                      onCheckedChange={(checked) => {
-                        if (!checked) {
-                          const confirmDisable = window.confirm(
-                            'Are you sure you want to disable your Shop tab? Customers will no longer see your shop on your profile.'
-                          );
-                          if (!confirmDisable) return;
-                        }
-                        handleInputChange('hideShop', !checked);
-                      }}
-                    />
-                  </div>
+              {/* Shop and Learn toggles - Artist accounts only */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Enable Shop</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Show the "Shop" tab on your public profile
+                  </p>
+                </div>
+                <Switch
+                  checked={!formData.hideShop}
+                  onCheckedChange={(checked) => {
+                    if (!checked) {
+                      const confirmDisable = window.confirm(
+                        'Are you sure you want to disable your Shop tab? Customers will no longer see your shop on your profile.'
+                      );
+                      if (!confirmDisable) return;
+                    }
+                    handleInputChange('hideShop', !checked);
+                  }}
+                />
+              </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -1826,7 +1827,7 @@ export default function ProfileEditPage() {
                 />
               </div>
 
-              {/* Tip Jar Setting - Only for professional artists */}
+              {/* Tip Jar Setting */}
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label>Enable Tip Jar</Label>
@@ -1836,12 +1837,7 @@ export default function ProfileEditPage() {
                 </div>
                 <Switch
                   checked={formData.tipJarEnabled || false}
-                  disabled={!isArtistAccount}
-                  onCheckedChange={(checked) => {
-                    if (isArtistAccount) {
-                      handleInputChange('tipJarEnabled', checked);
-                    }
-                  }}
+                  onCheckedChange={(checked) => handleInputChange('tipJarEnabled', checked)}
                 />
               </div>
 
@@ -1908,6 +1904,7 @@ export default function ProfileEditPage() {
                 />
               </div>
             </div>
+            )}
           </CardContent>
         </Card>
 

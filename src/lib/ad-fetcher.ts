@@ -128,22 +128,25 @@ export function mixAdsIntoContent<T extends { id: string }>(
     return content;
   }
 
-  const shuffledAds = [...ads].sort(() => Math.random() - 0.5).slice(0, maxAds);
+  // IMPORTANT: Use deterministic ad selection and positioning to prevent layout shifts
+  // Sort ads by ID for consistent ordering across renders
+  const sortedAds = [...ads].sort((a, b) => a.id.localeCompare(b.id)).slice(0, maxAds);
   const result: Array<T | { type: 'ad'; campaign: AdCampaign }> = [...content];
   
-  // Insert ads at random positions (every 3-5 items)
-  const adInterval = Math.floor(Math.random() * 2) + 3; // 3 or 4
+  // Fixed ad positions: insert after position 4, 12, 24, etc. (deterministic, not random)
+  // This prevents layout shifts when content re-renders
+  const adPositions = [4, 12, 24, 40, 60];
   
-  shuffledAds.forEach((ad, index) => {
+  sortedAds.forEach((ad, index) => {
     const position = Math.min(
-      (index + 1) * adInterval,
-      result.length - 1
+      adPositions[index] || (index + 1) * 12,
+      result.length
     );
-    console.log(`[Ads] Inserting "${ad.title}" at position ${position}`);
+    console.log(`[Ads] Inserting "${ad.title}" at fixed position ${position}`);
     result.splice(position, 0, { type: 'ad', campaign: ad });
   });
 
-  console.log(`[Ads] Mixed result: ${result.length} total items (${shuffledAds.length} ads inserted)`);
+  console.log(`[Ads] Mixed result: ${result.length} total items (${sortedAds.length} ads inserted)`);
   return result;
 }
 
