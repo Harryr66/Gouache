@@ -688,18 +688,8 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                 if (mediaType === 'video') {
                   return 'Video: Max 15 seconds. Recommended 1080×1920px (9:16) or 1920×1080px (16:9)';
                 }
-                switch (selectedFormat) {
-                  case 'square':
-                    return 'Image: 1080×1080px (1:1 ratio)';
-                  case 'portrait':
-                    return 'Image: 1080×1350px (4:5 ratio)';
-                  case 'large':
-                    return 'Image: 1080×1920px (9:16 ratio)';
-                  case 'banner':
-                    return 'Image: 1800×300px (6:1 ratio) - Banner format only';
-                  default:
-                    return 'Select a format above to see recommended dimensions';
-                }
+                // For images, recommend uploading high-res and Cloudflare will auto-resize
+                return 'Upload high-resolution image (min 2160×2160px recommended). Cloudflare will automatically optimize for your selected format.';
               })()}
             </p>
           </div>
