@@ -79,6 +79,16 @@ const formSchema = z.object({
 }, {
   message: "Banner placements require banner format",
   path: ["placements"],
+}).refine((data) => {
+  // Tile placements require non-banner formats
+  const hasTilePlacement = data.placements.some(p => p.includes('tiles'));
+  if (hasTilePlacement) {
+    return data.adFormat !== 'banner';
+  }
+  return true;
+}, {
+  message: "Tile placements require square, portrait, or large format",
+  path: ["adFormat"],
 });
 
 interface PartnerCampaignFormProps {
