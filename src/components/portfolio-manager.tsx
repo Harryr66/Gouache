@@ -1478,24 +1478,42 @@ export function PortfolioManager() {
 
             <div className="space-y-2">
               <Label htmlFor="edit-tags">Tags</Label>
-              <Input
-                id="edit-tags"
-                value={editingItem.tags.join(', ')}
-                onChange={(e) => setEditingItem(prev => prev ? { 
-                  ...prev, 
-                  tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
-                } : null)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    // Trigger the save action
+              <div className="flex gap-2">
+                <Input
+                  id="edit-tags"
+                  value={editingItem.tags.join(', ')}
+                  onChange={(e) => setEditingItem(prev => prev ? { 
+                    ...prev, 
+                    tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
+                  } : null)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      // Trigger the save action
+                      if (editingItem) {
+                        handleUpdateItem(editingItem);
+                      }
+                    }
+                  }}
+                  placeholder="abstract, painting, modern (comma-separated)"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
                     if (editingItem) {
                       handleUpdateItem(editingItem);
                     }
-                  }
-                }}
-                placeholder="abstract, painting, modern (comma-separated)"
-              />
+                  }}
+                  className="shrink-0"
+                >
+                  Add Tags
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Separate tags with commas. Press Enter or click "Add Tags" to save.
+              </p>
             </div>
 
             {/* For Sale Toggle */}
