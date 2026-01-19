@@ -1326,7 +1326,8 @@ export interface PartnerBillingRecord {
 export interface AdCampaign {
   id: string;
   partnerId: string;
-  title: string;
+  title: string; // Internal campaign name (not shown to users)
+  caption?: string; // Optional caption shown on the ad (e.g., "Shop Now", "Learn More")
   description?: string;
   placement: 'news' | 'discover' | 'learn'; // Legacy: kept for backwards compatibility, use placements[] instead
   placements?: Array<'discover-tiles' | 'news-tiles' | 'news-banner' | 'learn-tiles' | 'learn-banner'>; // New: specific placement options

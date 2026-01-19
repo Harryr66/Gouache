@@ -250,7 +250,10 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format, 
 
         {/* Only show CardContent if not in structured grid (tileSize not set) */}
         {!tileSize && (
-          <CardContent className="flex flex-col justify-between flex-1 p-5">
+          <CardContent className="flex flex-col justify-between flex-1 p-4">
+            {campaign.caption && (
+              <p className="text-sm font-medium text-foreground mb-2 line-clamp-2">{campaign.caption}</p>
+            )}
             <div className="flex items-center justify-end text-xs">
               <span className="font-medium text-primary flex items-center gap-1">
                 Learn more <ExternalLink className="h-3 w-3" />

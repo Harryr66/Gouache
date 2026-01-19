@@ -95,11 +95,17 @@ export function AdBanner({ campaign, placement, userId }: AdBannerProps) {
           </span>
         </div>
 
-        {/* Learn more badge */}
+        {/* Caption or Learn more badge */}
         <div className="absolute top-3 right-3 z-10">
-          <span className="text-xs font-medium text-white bg-primary/80 px-2 py-1 rounded flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            Learn more <ExternalLink className="h-3 w-3" />
-          </span>
+          {campaign.caption ? (
+            <span className="text-xs font-medium text-white bg-black/60 px-2 py-1 rounded">
+              {campaign.caption}
+            </span>
+          ) : (
+            <span className="text-xs font-medium text-white bg-primary/80 px-2 py-1 rounded flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              Learn more <ExternalLink className="h-3 w-3" />
+            </span>
+          )}
         </div>
 
         {/* Media container - aspect ratio 6:1 for banner (IMAGE ONLY) */}

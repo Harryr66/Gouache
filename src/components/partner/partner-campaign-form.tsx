@@ -23,6 +23,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
+  caption: z.string().max(50, 'Caption must be 50 characters or less').optional(),
   placement: z.enum(['news', 'discover', 'learn']), // Legacy field for backwards compatibility
   placements: z.array(z.enum(['discover-tiles', 'news-tiles', 'news-banner', 'learn-tiles', 'learn-banner'])).min(1, 'Select at least one placement'),
   adFormat: z.enum(['square', 'portrait', 'large', 'banner']),
@@ -147,6 +148,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: existingCampaign?.title || '',
+      caption: existingCampaign?.caption || '',
       placement: existingCampaign?.placement || 'news',
       placements: existingCampaign?.placements || [],
       adFormat: existingCampaign?.adFormat || 'portrait',
@@ -168,6 +170,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
     if (existingCampaign) {
       form.reset({
         title: existingCampaign.title || '',
+        caption: existingCampaign.caption || '',
         placement: existingCampaign.placement || 'news',
         placements: existingCampaign.placements || [],
         adFormat: existingCampaign.adFormat || 'portrait',
@@ -377,6 +380,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       };
 
       // Only add optional fields if they have values
+      if (values.caption?.trim()) campaignData.caption = values.caption.trim();
       if (imageUrl) campaignData.imageUrl = imageUrl;
       if (videoUrl) campaignData.videoUrl = videoUrl;
       if (videoDuration) campaignData.videoDuration = videoDuration;
@@ -448,6 +452,22 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                 <FormControl>
                   <Input placeholder="Summer Art Sale" {...field} />
                 </FormControl>
+                <p className="text-xs text-muted-foreground">Internal name for your reference (not shown to users)</p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="caption"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ad Caption (Optional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="Shop Now • Limited Time Offer" maxLength={50} {...field} />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">Short text displayed on your ad (max 50 characters)</p>
                 <FormMessage />
               </FormItem>
             )}
