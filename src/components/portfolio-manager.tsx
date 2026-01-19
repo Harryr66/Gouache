@@ -780,6 +780,7 @@ export function PortfolioManager() {
               name: user.displayName || user.username || 'Artist',
               handle: user.username || undefined,
               avatarUrl: user.avatarUrl || null,
+              email: user.email || undefined,
             },
             tags: updatedTags, // Use updated tags with print/original
             isForSale: true,
@@ -846,11 +847,14 @@ export function PortfolioManager() {
         title: "Portfolio updated",
         description: "Artwork details have been updated.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating portfolio item:', error);
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      console.error('Error details:', errorMessage);
+      
       toast({
         title: "Update failed",
-        description: "Failed to update artwork. Please try again.",
+        description: `Failed to update artwork: ${errorMessage}`,
         variant: "destructive"
       });
     }
@@ -1481,6 +1485,15 @@ export function PortfolioManager() {
                   ...prev, 
                   tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
                 } : null)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    // Trigger the save action
+                    if (editingItem) {
+                      handleUpdateItem(editingItem);
+                    }
+                  }
+                }}
                 placeholder="abstract, painting, modern (comma-separated)"
               />
             </div>
