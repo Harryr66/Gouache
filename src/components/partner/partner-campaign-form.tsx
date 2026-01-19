@@ -122,7 +122,23 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
   const [showUncappedDialog, setShowUncappedDialog] = useState(false);
   const [maxWidthFormat, setMaxWidthFormat] = useState(existingCampaign?.maxWidthFormat || false);
   const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
+  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Get required aspect ratio based on selected format
+  const getRequiredAspectRatio = (format: string) => {
+    switch (format) {
+      case 'square': return { ratio: 1, tolerance: 0.05, label: '1:1 (square)' };
+      case 'banner': return { ratio: 6, tolerance: 0.5, label: '6:1 (banner)' };
+      default: return { ratio: 1, tolerance: 0.05, label: '1:1 (square)' };
+    }
+  };
+  
+  // Check if aspect ratio matches required format
+  const isValidAspectRatio = (actualRatio: number, format: string) => {
+    const required = getRequiredAspectRatio(format);
+    return Math.abs(actualRatio - required.ratio) <= required.tolerance;
+  };
 
   const isEditing = !!existingCampaign;
 
@@ -234,9 +250,32 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
         });
         return;
       }
-      setImageFile(file);
-      const url = URL.createObjectURL(file);
-      setImagePreview(url);
+      
+      // Check image dimensions and aspect ratio
+      const img = new Image();
+      img.onload = () => {
+        const aspectRatio = img.naturalWidth / img.naturalHeight;
+        setImageAspectRatio(aspectRatio);
+        
+        const selectedFormat = form.getValues('adFormat');
+        const required = getRequiredAspectRatio(selectedFormat);
+        
+        if (!isValidAspectRatio(aspectRatio, selectedFormat)) {
+          toast({
+            title: 'Wrong aspect ratio',
+            description: `${selectedFormat === 'banner' ? 'Banner' : 'Square'} format requires ${required.label} aspect ratio. Your image is ${aspectRatio.toFixed(2)}:1. Please upload a ${selectedFormat === 'banner' ? '1800×300px' : '1080×1080px'} image.`,
+            variant: 'destructive',
+          });
+          URL.revokeObjectURL(img.src);
+          return;
+        }
+        
+        setImageFile(file);
+        const url = URL.createObjectURL(file);
+        setImagePreview(url);
+        URL.revokeObjectURL(img.src);
+      };
+      img.src = URL.createObjectURL(file);
     } else {
       // Validate video
       if (!file.type.startsWith('video/')) {
@@ -248,7 +287,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
         return;
       }
 
-      // Check video duration (max 60 seconds) and aspect ratio
+      // Check video duration (max 15 seconds) and aspect ratio
       const video = document.createElement('video');
       video.preload = 'metadata';
       video.onloadedmetadata = () => {
@@ -265,6 +304,24 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
           window.URL.revokeObjectURL(video.src);
           return;
         }
+        
+        // Check aspect ratio for the selected format
+        const selectedFormat = form.getValues('adFormat');
+        const required = getRequiredAspectRatio(selectedFormat);
+        
+        // For max-width format, allow landscape (16:9) or square (1:1)
+        const isMaxWidthValid = maxWidthFormat && (Math.abs(aspectRatio - 1) < 0.1 || Math.abs(aspectRatio - 16/9) < 0.1);
+        
+        if (!isMaxWidthValid && !isValidAspectRatio(aspectRatio, selectedFormat)) {
+          toast({
+            title: 'Wrong aspect ratio',
+            description: `${selectedFormat === 'banner' ? 'Banner' : 'Square'} format requires ${required.label} aspect ratio. Your video is ${aspectRatio.toFixed(2)}:1.`,
+            variant: 'destructive',
+          });
+          window.URL.revokeObjectURL(video.src);
+          return;
+        }
+        
         setVideoFile(file);
         const url = URL.createObjectURL(file);
         setVideoPreview(url);
@@ -286,6 +343,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
     setImagePreview(null);
     setVideoPreview(null);
     setVideoAspectRatio(null);
+    setImageAspectRatio(null);
     setMaxWidthFormat(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -293,6 +351,24 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    // Validate media aspect ratio matches selected format
+    const currentAspectRatio = mediaType === 'image' ? imageAspectRatio : videoAspectRatio;
+    if (currentAspectRatio && !isEditing) {
+      // For max-width video format, allow landscape or square
+      const isMaxWidthValid = maxWidthFormat && mediaType === 'video' && 
+        (Math.abs(currentAspectRatio - 1) < 0.1 || Math.abs(currentAspectRatio - 16/9) < 0.1);
+      
+      if (!isMaxWidthValid && !isValidAspectRatio(currentAspectRatio, values.adFormat)) {
+        const required = getRequiredAspectRatio(values.adFormat);
+        toast({
+          title: 'Media does not match format',
+          description: `Your ${mediaType} has ${currentAspectRatio.toFixed(2)}:1 aspect ratio but ${values.adFormat} format requires ${required.label}. Please upload media with the correct dimensions.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+    
     // Validate pricing based on billing model
     if (values.billingModel === 'cpm' && (!values.costPerImpression || parseFloat(values.costPerImpression) <= 0)) {
       toast({
