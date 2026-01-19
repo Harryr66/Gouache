@@ -86,16 +86,21 @@ export function StructuredGrid({
   // For larger screens, landscape spans 2 of N columns
   const landscapeSpan = effectiveColumnCount <= 2 ? 2 : 2;
 
+  // Calculate row height based on column width
+  // Each column is roughly (100vw / columnCount), row height should be half that for square aspect
+  // This creates a unit grid where portrait = 2 units tall, square/landscape = 1 unit tall
+  const rowHeight = `calc((100vw - ${(effectiveColumnCount + 1) * gap}px) / ${effectiveColumnCount} / 2)`;
+
   return (
     <div className="w-full">
-      {/* CSS Grid layout with dense packing */}
+      {/* CSS Grid layout with dense packing and fixed row heights */}
       <div 
         className="grid"
         style={{ 
           gridTemplateColumns: `repeat(${effectiveColumnCount}, 1fr)`,
           gap: `${gap}px`,
           gridAutoFlow: 'dense', // Fill gaps automatically
-          gridAutoRows: 'auto',
+          gridAutoRows: rowHeight, // Fixed row height for seamless alignment
         }}
       >
         {processedItems.map(({ item, tileSize }, index) => {
