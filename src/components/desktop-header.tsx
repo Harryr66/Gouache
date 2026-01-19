@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, startTransition } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Eye, Fingerprint, Globe, GraduationCap } from 'lucide-react';
 
@@ -15,6 +15,7 @@ const navigation = [
 
 export function DesktopHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   
   // Memoize active states to prevent re-computation during scroll
   // Normalize pathname to handle query params and ensure stable comparison
@@ -73,6 +74,13 @@ export function DesktopHeader() {
             <Link
               key={item.name}
               href={item.href}
+              prefetch={false}
+              onClick={(e) => {
+                e.preventDefault();
+                startTransition(() => {
+                  router.push(item.href);
+                });
+              }}
               className={cn(
                 'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
                 {

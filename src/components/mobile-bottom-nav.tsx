@@ -2,10 +2,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Eye, Globe, GraduationCap, Fingerprint } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, startTransition } from 'react';
 
 const mobileNavItems = [
   { href: '/news', icon: Globe, label: 'News' },
@@ -16,6 +16,7 @@ const mobileNavItems = [
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const navRef = useRef<HTMLElement>(null);
   
   // Memoize active states to prevent re-computation during scroll
@@ -30,33 +31,6 @@ export function MobileBottomNav() {
     }));
   }, [pathname]);
 
-  // Add native event listeners as absolute fallback - these CANNOT be blocked
-  useEffect(() => {
-    if (!navRef.current) return;
-    
-    const nav = navRef.current;
-    const links = nav.querySelectorAll('a');
-    
-    // Add native click handlers that bypass React event system
-    const nativeHandlers = Array.from(links).map((link) => {
-      const handleNativeClick = (e: Event) => {
-        // Force navigation - this CANNOT be prevented
-        const href = (link as HTMLAnchorElement).href;
-        if (href && href !== window.location.href) {
-          window.location.href = href;
-        }
-      };
-      
-      link.addEventListener('click', handleNativeClick, { capture: true, passive: false });
-      return { link, handler: handleNativeClick };
-    });
-    
-    return () => {
-      nativeHandlers.forEach(({ link, handler }) => {
-        link.removeEventListener('click', handler, { capture: true });
-      });
-    };
-  }, [activeStates]);
 
   return (
     <nav 
@@ -76,6 +50,7 @@ export function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               className={cn(
                 'flex flex-col items-center justify-center p-3 rounded-lg transition-all text-foreground flex-1 max-w-[25%]',
                 {
@@ -91,12 +66,12 @@ export function MobileBottomNav() {
                 position: 'relative', // Ensure z-index works
               }}
               onClick={(e) => {
-                // Ensure click is not prevented
+                e.preventDefault();
                 e.stopPropagation();
-                // Force navigation as backup
-                if (!e.defaultPrevented) {
-                  window.location.href = item.href;
-                }
+                // Use startTransition for non-blocking navigation
+                startTransition(() => {
+                  router.push(item.href);
+                });
               }}
             >
               <item.icon className="h-7 w-7" />
