@@ -13,7 +13,6 @@ type AdTileProps = {
   placement: 'news' | 'discover' | 'learn';
   userId?: string;
   isMobile?: boolean;
-  format?: 'square' | 'portrait' | 'large'; // Override format for tile rendering
   tileSize?: TileSize; // Grid tile size for structured layout
 };
 
@@ -32,7 +31,7 @@ function getAdTileSize(adFormat: string | undefined): TileSize {
   }
 }
 
-export function AdTile({ campaign, placement, userId, isMobile = false, format, tileSize }: AdTileProps) {
+export function AdTile({ campaign, placement, userId, isMobile = false, tileSize }: AdTileProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
   const [isMediaLoaded, setIsMediaLoaded] = useState(false);
@@ -42,8 +41,8 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format, 
   const videoWatchTimer = useRef<NodeJS.Timeout | null>(null);
   const videoWatchStartTime = useRef<number | null>(null);
   
-  // Determine actual format to use (prop override or campaign setting)
-  const actualFormat = format || campaign.adFormat || 'portrait';
+  // All tile ads use portrait format (4:5) to match the grid
+  const actualFormat = 'portrait';
   
   // Get tile size for structured grid (use prop, or derive from adFormat)
   const effectiveTileSize = tileSize || getAdTileSize(campaign.adFormat);
@@ -167,24 +166,13 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format, 
   const isVideo = campaign.mediaType === 'video';
   const isMaxWidthFormat = campaign.maxWidthFormat && isVideo && isMobile;
 
-  // Calculate aspect ratio based on adFormat for proper grid fitting
+  // Calculate aspect ratio - tiles are always 4:5 portrait to match the grid
   const getAspectRatioPadding = () => {
     if (isMaxWidthFormat && videoAspectRatio) {
       return `${(1 / videoAspectRatio) * 100}%`;
     }
-    // Match the selected ad format to proper aspect ratios
-    switch (actualFormat) {
-      case 'square':
-        return '100%'; // 1:1
-      case 'portrait':
-        return '125%'; // 4:5 (same as most artwork tiles)
-      case 'large':
-        return '177.78%'; // 9:16
-      case 'banner':
-        return '16.67%'; // 6:1
-      default:
-        return '125%'; // Default to 4:5 portrait
-    }
+    // All tile ads use 4:5 portrait to fit the grid layout
+    return '125%'; // 4:5 aspect ratio
   };
 
   return (

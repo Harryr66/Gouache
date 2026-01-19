@@ -26,7 +26,7 @@ const formSchema = z.object({
   caption: z.string().max(50, 'Caption must be 50 characters or less').optional(),
   placement: z.enum(['news', 'discover', 'learn']), // Legacy field for backwards compatibility
   placements: z.array(z.enum(['discover-tiles', 'news-tiles', 'news-banner', 'learn-tiles', 'learn-banner'])).min(1, 'Select at least one placement'),
-  adFormat: z.enum(['square', 'portrait', 'large', 'banner']),
+  adFormat: z.enum(['portrait', 'banner']), // Only formats that fit: Portrait (4:5) for tiles, Banner (6:1) for banners
   clickUrl: z.string().url('Please enter a valid URL'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().optional(),
@@ -665,43 +665,23 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                     </p>
                   )}
                   <div className="grid grid-cols-2 gap-3 mt-2">
+                    {/* Tile placements: Only Portrait format (4:5) - matches the grid layout */}
                     {showTileFormats && (
-                      <>
-                        <Card
-                          className={`p-3 cursor-pointer transition-all ${field.value === 'square' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
-                          onClick={() => field.onChange('square')}
-                        >
-                          <div className="flex flex-col items-center gap-2">
-                            <div className={`w-12 h-12 border-2 ${field.value === 'square' ? 'border-primary' : 'border-muted-foreground'}`} />
-                            <p className="font-medium text-sm">Square</p>
-                            <p className="text-xs text-muted-foreground text-center">1:1 (1080×1080px)</p>
-                          </div>
-                        </Card>
-                        <Card
-                          className={`p-3 cursor-pointer transition-all ${field.value === 'portrait' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
-                          onClick={() => field.onChange('portrait')}
-                        >
-                          <div className="flex flex-col items-center gap-2">
-                            <div className={`w-10 h-12 border-2 ${field.value === 'portrait' ? 'border-primary' : 'border-muted-foreground'}`} />
-                            <p className="font-medium text-sm">Portrait</p>
-                            <p className="text-xs text-muted-foreground text-center">4:5 (1080×1350px)</p>
-                          </div>
-                        </Card>
-                        <Card
-                          className={`p-3 cursor-pointer transition-all ${field.value === 'large' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
-                          onClick={() => field.onChange('large')}
-                        >
-                          <div className="flex flex-col items-center gap-2">
-                            <div className={`w-12 h-16 border-2 ${field.value === 'large' ? 'border-primary' : 'border-muted-foreground'}`} />
-                            <p className="font-medium text-sm">Large</p>
-                            <p className="text-xs text-muted-foreground text-center">9:16 (1080×1920px)</p>
-                          </div>
-                        </Card>
-                      </>
+                      <Card
+                        className={`p-3 cursor-pointer transition-all col-span-2 ${field.value === 'portrait' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                        onClick={() => field.onChange('portrait')}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div className={`w-10 h-12 border-2 ${field.value === 'portrait' ? 'border-primary' : 'border-muted-foreground'}`} />
+                          <p className="font-medium text-sm">Portrait</p>
+                          <p className="text-xs text-muted-foreground text-center">4:5 (1080×1350px) — Fits the grid layout</p>
+                        </div>
+                      </Card>
                     )}
+                    {/* Banner placements: Only Banner format (6:1) */}
                     {showBannerFormat && (
                       <Card
-                        className={`p-3 cursor-pointer transition-all ${field.value === 'banner' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'} ${!showTileFormats ? 'col-span-2' : ''}`}
+                        className={`p-3 cursor-pointer transition-all col-span-2 ${field.value === 'banner' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
                         onClick={() => field.onChange('banner')}
                       >
                         <div className="flex flex-col items-center gap-2">
@@ -789,15 +769,9 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                     {/* Preview container with dynamic aspect ratio based on selected format */}
                     {(() => {
                       const selectedFormat = form.watch('adFormat');
-                      // Get aspect ratio based on format
+                      // Get aspect ratio based on format (only portrait and banner now)
                       const getAspectRatio = () => {
-                        switch (selectedFormat) {
-                          case 'square': return '1/1';
-                          case 'portrait': return '4/5';
-                          case 'large': return '9/16';
-                          case 'banner': return '6/1';
-                          default: return '4/5';
-                        }
+                        return selectedFormat === 'banner' ? '6/1' : '4/5';
                       };
                       // Get max width based on format (banner is wider)
                       const getMaxWidth = () => {
@@ -805,13 +779,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                       };
                       // Get format label for display
                       const getFormatLabel = () => {
-                        switch (selectedFormat) {
-                          case 'square': return 'Square (1:1)';
-                          case 'portrait': return 'Portrait (4:5)';
-                          case 'large': return 'Large (9:16)';
-                          case 'banner': return 'Banner (6:1)';
-                          default: return 'Portrait (4:5)';
-                        }
+                        return selectedFormat === 'banner' ? 'Banner (6:1)' : 'Portrait (4:5)';
                       };
                       return (
                         <>
@@ -850,27 +818,16 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                   <div className="flex flex-col items-center gap-4">
                     {/* Preview container with dynamic aspect ratio based on selected format */}
                     {(() => {
-                      const selectedFormat = form.watch('adFormat');
-                      // For video, use actual aspect ratio if max-width, otherwise match format
+                      // For video, use actual aspect ratio if max-width, otherwise 4:5 portrait
                       const getAspectRatio = () => {
                         if (maxWidthFormat && videoAspectRatio) {
                           return videoAspectRatio;
                         }
-                        switch (selectedFormat) {
-                          case 'square': return '1/1';
-                          case 'portrait': return '4/5';
-                          case 'large': return '9/16';
-                          default: return '4/5';
-                        }
+                        return '4/5'; // All tile ads use portrait
                       };
                       const getFormatLabel = () => {
                         if (maxWidthFormat) return 'Max-width format';
-                        switch (selectedFormat) {
-                          case 'square': return 'Square (1:1)';
-                          case 'portrait': return 'Portrait (4:5)';
-                          case 'large': return 'Large (9:16)';
-                          default: return 'Portrait (4:5)';
-                        }
+                        return 'Portrait (4:5)';
                       };
                       return (
                         <>
