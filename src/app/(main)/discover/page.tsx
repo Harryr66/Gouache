@@ -3619,9 +3619,8 @@ function DiscoverPageContent() {
                   // Return tile size for ad items based on their adFormat
                   if ('type' in item && item.type === 'ad') {
                     const adFormat = item.campaign?.adFormat;
-                    if (adFormat === 'square') return 'square';
                     if (adFormat === 'landscape') return 'landscape';
-                    return 'portrait';
+                    return 'portrait'; // square and portrait both map to portrait
                   }
                   return undefined;
                 }}
@@ -3716,9 +3715,8 @@ function DiscoverPageContent() {
                       getItemTileSize={(item) => {
                         if ('type' in item && item.type === 'ad') {
                           const adFormat = item.campaign?.adFormat;
-                          if (adFormat === 'square') return 'square';
                           if (adFormat === 'landscape') return 'landscape';
-                          return 'portrait';
+                          return 'portrait'; // square and portrait both map to portrait
                         }
                         return undefined;
                       }}
