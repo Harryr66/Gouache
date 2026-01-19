@@ -180,13 +180,22 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
         return date.toISOString().split('T')[0];
       };
       const centsToStr = (cents: number | undefined) => {
-        if (!cents) return '';
+        if (cents === undefined || cents === null) return '';
         return (cents / 100).toFixed(2);
       };
       const cpmToStr = (centsPerImpression: number | undefined) => {
-        if (!centsPerImpression) return '';
+        if (centsPerImpression === undefined || centsPerImpression === null) return '';
         return ((centsPerImpression * 1000) / 100).toFixed(2);
       };
+      
+      console.log('[Campaign Load] Loading existing campaign:', {
+        id: existingCampaign.id,
+        billingModel: existingCampaign.billingModel,
+        costPerImpression: existingCampaign.costPerImpression,
+        costPerClick: existingCampaign.costPerClick,
+        cpmDisplayValue: cpmToStr(existingCampaign.costPerImpression),
+        cpcDisplayValue: centsToStr(existingCampaign.costPerClick),
+      });
       
       form.reset({
         title: existingCampaign.title || '',
@@ -374,10 +383,20 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       }
 
       // Parse budget values (convert to cents)
-      const budget = values.uncappedBudget ? undefined : (values.budget ? Math.round(parseFloat(values.budget) * 100) : undefined);
-      const dailyBudget = values.dailyBudget ? Math.round(parseFloat(values.dailyBudget) * 100) : undefined;
-      const costPerImpression = values.costPerImpression ? Math.round((parseFloat(values.costPerImpression) / 1000) * 100) : undefined; // CPM to cost per impression in cents
-      const costPerClick = values.costPerClick ? Math.round(parseFloat(values.costPerClick) * 100) : undefined;
+      // Use parseFloat and check for NaN, not just truthy (0 is a valid value)
+      const budget = values.uncappedBudget ? undefined : (values.budget && !isNaN(parseFloat(values.budget)) ? Math.round(parseFloat(values.budget) * 100) : undefined);
+      const dailyBudget = values.dailyBudget && !isNaN(parseFloat(values.dailyBudget)) ? Math.round(parseFloat(values.dailyBudget) * 100) : undefined;
+      // CPM: values.costPerImpression is cost per 1000 impressions in dollars, convert to cost per impression in cents
+      const costPerImpressionValue = values.costPerImpression && !isNaN(parseFloat(values.costPerImpression)) ? Math.round((parseFloat(values.costPerImpression) / 1000) * 100) : undefined;
+      const costPerClickValue = values.costPerClick && !isNaN(parseFloat(values.costPerClick)) ? Math.round(parseFloat(values.costPerClick) * 100) : undefined;
+      
+      console.log('[Campaign Save] Billing values:', {
+        billingModel: values.billingModel,
+        rawCPM: values.costPerImpression,
+        rawCPC: values.costPerClick,
+        parsedCPM: costPerImpressionValue,
+        parsedCPC: costPerClickValue,
+      });
 
       // Use the user-selected startDate, not serverTimestamp, so the ad shows immediately
       const startDateValue = new Date(values.startDate);
@@ -405,10 +424,17 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       if (videoUrl) campaignData.videoUrl = videoUrl;
       if (videoDuration) campaignData.videoDuration = videoDuration;
       if (values.endDate) campaignData.endDate = new Date(values.endDate);
-      if (budget) campaignData.budget = budget;
-      if (dailyBudget) campaignData.dailyBudget = dailyBudget;
-      if (costPerImpression) campaignData.costPerImpression = costPerImpression;
-      if (costPerClick) campaignData.costPerClick = costPerClick;
+      if (budget !== undefined) campaignData.budget = budget;
+      if (dailyBudget !== undefined) campaignData.dailyBudget = dailyBudget;
+      // ALWAYS save the billing values based on the selected model
+      if (values.billingModel === 'cpm' && costPerImpressionValue !== undefined) {
+        campaignData.costPerImpression = costPerImpressionValue;
+      }
+      if (values.billingModel === 'cpc' && costPerClickValue !== undefined) {
+        campaignData.costPerClick = costPerClickValue;
+      }
+      
+      console.log('[Campaign Save] Final campaignData:', campaignData);
 
       if (isEditing && existingCampaign) {
         // UPDATE existing campaign
