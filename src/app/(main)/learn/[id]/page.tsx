@@ -384,12 +384,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       return;
     }
 
-    // ============================================
-    // VALIDATION PASSED - SAFE TO PROCEED
-    // ============================================
-    
-    setIsProcessingPayment(true);
-
+    // Process enrollment
     try {
       // For course links, redirect to external URL
       if (course.courseType === 'affiliate' && course.externalUrl) {
@@ -433,8 +428,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     } catch (error) {
       console.error('Error enrolling:', error);
       // Error toast is handled by enrollInCourse
-    } finally {
-      setIsProcessingPayment(false);
     }
   };
 
