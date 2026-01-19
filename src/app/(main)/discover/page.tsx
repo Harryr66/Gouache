@@ -3318,14 +3318,21 @@ function DiscoverPageContent() {
         {/* Tabs for Artwork/Events/Market */}
         <Tabs
           value={activeTab}
-        onValueChange={(value) => {
+          onValueChange={(value) => {
+            // PERFORMANCE: Update tab state immediately in startTransition for responsive UI
             startTransition(() => {
               setActiveTab(value as 'artwork' | 'events');
             });
-            // Defer router update to avoid blocking UI
-            setTimeout(() => {
+            // Defer router update to next idle period to avoid blocking UI paint
+            // Using requestIdleCallback with fallback for better scheduling
+            const updateUrl = () => {
               router.replace(`/discover?tab=${value}`, { scroll: false });
-            }, 0);
+            };
+            if (typeof requestIdleCallback !== 'undefined') {
+              requestIdleCallback(updateUrl, { timeout: 100 });
+            } else {
+              setTimeout(updateUrl, 16); // ~1 frame delay as fallback
+            }
           }}
           className="mb-6"
         >
