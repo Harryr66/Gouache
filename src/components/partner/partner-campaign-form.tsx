@@ -188,14 +188,12 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
         return ((centsPerImpression * 1000) / 100).toFixed(2);
       };
       
-      console.log('[Campaign Load] Loading existing campaign:', {
-        id: existingCampaign.id,
-        billingModel: existingCampaign.billingModel,
-        costPerImpression: existingCampaign.costPerImpression,
-        costPerClick: existingCampaign.costPerClick,
-        cpmDisplayValue: cpmToStr(existingCampaign.costPerImpression),
-        cpcDisplayValue: centsToStr(existingCampaign.costPerClick),
-      });
+      console.log('[Campaign Load] id:', existingCampaign.id, 
+        'billingModel:', existingCampaign.billingModel,
+        'costPerImpression (raw cents):', existingCampaign.costPerImpression,
+        'costPerClick (raw cents):', existingCampaign.costPerClick,
+        'CPM display:', cpmToStr(existingCampaign.costPerImpression),
+        'CPC display:', centsToStr(existingCampaign.costPerClick));
       
       form.reset({
         title: existingCampaign.title || '',
@@ -390,13 +388,11 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       const costPerImpressionValue = values.costPerImpression && !isNaN(parseFloat(values.costPerImpression)) ? Math.round((parseFloat(values.costPerImpression) / 1000) * 100) : undefined;
       const costPerClickValue = values.costPerClick && !isNaN(parseFloat(values.costPerClick)) ? Math.round(parseFloat(values.costPerClick) * 100) : undefined;
       
-      console.log('[Campaign Save] Billing values:', {
-        billingModel: values.billingModel,
-        rawCPM: values.costPerImpression,
-        rawCPC: values.costPerClick,
-        parsedCPM: costPerImpressionValue,
-        parsedCPC: costPerClickValue,
-      });
+      console.log('[Campaign Save] Billing values - billingModel:', values.billingModel, 
+        'rawCPM:', values.costPerImpression, 
+        'rawCPC:', values.costPerClick,
+        'parsedCPM:', costPerImpressionValue,
+        'parsedCPC:', costPerClickValue);
 
       // Use the user-selected startDate, not serverTimestamp, so the ad shows immediately
       const startDateValue = new Date(values.startDate);
@@ -434,7 +430,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
         campaignData.costPerClick = costPerClickValue;
       }
       
-      console.log('[Campaign Save] Final campaignData:', campaignData);
+      console.log('[Campaign Save] Final campaignData - costPerImpression:', campaignData.costPerImpression, 'costPerClick:', campaignData.costPerClick, 'billingModel:', campaignData.billingModel);
 
       if (isEditing && existingCampaign) {
         // UPDATE existing campaign
