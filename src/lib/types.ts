@@ -852,6 +852,7 @@ export interface User {
   suggestionsEnabled?: boolean;
   hideLocation?: boolean;
   hideFlags?: boolean;
+  hideName?: boolean;
   hideCard?: boolean;
   hideShowcaseLocations?: boolean;
   hideUpcomingEvents?: boolean;
