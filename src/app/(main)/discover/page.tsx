@@ -36,7 +36,7 @@ import { useVideoControl } from '@/providers/video-control-provider';
 import Hls from 'hls.js';
 import { cn } from '@/lib/utils';
 import { DiscoverErrorBoundary } from '@/components/discover-error-boundary';
-import { StructuredGrid } from '@/components/structured-grid';
+// StructuredGrid removed - using MasonryGrid for now until grid layout issues resolved
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   // NO EXTERNAL IMAGES - Return empty array
@@ -3563,11 +3563,11 @@ function DiscoverPageContent() {
                 )}
               </div>
             ) : !showLoadingScreen && artworkView === 'grid' ? (
-              <StructuredGrid
+              <MasonryGrid
                 items={imageOnlyArtworks}
                 columnCount={columnCount}
                 gap={4}
-                renderItem={(item, tileSize) => {
+                renderItem={(item) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
                   if (isAd) {
@@ -3577,7 +3577,6 @@ function DiscoverPageContent() {
                         placement="discover"
                         userId={user?.id}
                         isMobile={isMobile}
-                        tileSize={tileSize}
                       />
                     );
                   }
@@ -3596,34 +3595,12 @@ function DiscoverPageContent() {
                       hideBanner={true}
                       isInitialViewport={isInitial && hasVideo}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
-                      tileSize={tileSize}
                     />
                   );
                 }}
                 loadMoreRef={loadMoreRef}
                 isLoadingMore={isLoadingMore}
                 hasMore={hasMore}
-                getItemAspectRatio={(item) => {
-                  // Return aspect ratio for artwork items
-                  if ('type' in item && item.type === 'ad') return undefined;
-                  const artwork = item as Artwork;
-                  // Calculate from width/height if available, otherwise use stored aspectRatio
-                  const width = (artwork as any).imageWidth || (artwork as any).dimensions?.width;
-                  const height = (artwork as any).imageHeight || (artwork as any).dimensions?.height;
-                  if (width && height && width > 0 && height > 0) {
-                    return width / height;
-                  }
-                  return (artwork as any).aspectRatio || (artwork as any).imageAspectRatio || undefined;
-                }}
-                getItemTileSize={(item) => {
-                  // Return tile size for ad items based on their adFormat
-                  if ('type' in item && item.type === 'ad') {
-                    const adFormat = item.campaign?.adFormat;
-                    if (adFormat === 'landscape') return 'landscape';
-                    return 'portrait'; // square and portrait both map to portrait
-                  }
-                  return undefined;
-                }}
               />
             ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
@@ -3668,11 +3645,11 @@ function DiscoverPageContent() {
                   }
                   
                   return (
-                    <StructuredGrid
+                    <MasonryGrid
                       items={pricedArtworks}
                       columnCount={columnCount}
                       gap={4}
-                      renderItem={(item, tileSize) => {
+                      renderItem={(item) => {
                         const isAd = 'type' in item && item.type === 'ad';
                         if (isAd) {
                           return (
@@ -3681,7 +3658,6 @@ function DiscoverPageContent() {
                               placement="discover"
                               userId={user?.id}
                               isMobile={isMobile}
-                              tileSize={tileSize}
                             />
                           );
                         }
@@ -3694,32 +3670,12 @@ function DiscoverPageContent() {
                             artwork={artwork} 
                             hideBanner={true}
                             isInitialViewport={isInitial}
-                            tileSize={tileSize}
                           />
                         );
                       }}
                       loadMoreRef={loadMoreRef}
                       isLoadingMore={isLoadingMore}
                       hasMore={hasMore}
-                      getItemAspectRatio={(item) => {
-                        if ('type' in item && item.type === 'ad') return undefined;
-                        const artwork = item as Artwork;
-                        // Calculate from width/height if available
-                        const width = (artwork as any).imageWidth || (artwork as any).dimensions?.width;
-                        const height = (artwork as any).imageHeight || (artwork as any).dimensions?.height;
-                        if (width && height && width > 0 && height > 0) {
-                          return width / height;
-                        }
-                        return (artwork as any).aspectRatio || (artwork as any).imageAspectRatio || undefined;
-                      }}
-                      getItemTileSize={(item) => {
-                        if ('type' in item && item.type === 'ad') {
-                          const adFormat = item.campaign?.adFormat;
-                          if (adFormat === 'landscape') return 'landscape';
-                          return 'portrait'; // square and portrait both map to portrait
-                        }
-                        return undefined;
-                      }}
                     />
                   );
                 })()}
