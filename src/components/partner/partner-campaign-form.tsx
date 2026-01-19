@@ -165,9 +165,29 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
     },
   });
 
-  // Reset form when editing a different campaign
+  // Track which campaign we've already populated the form for
+  const populatedCampaignIdRef = useRef<string | null>(null);
+
+  // Reset form ONLY when switching to a different campaign (not on every render)
   useEffect(() => {
-    if (existingCampaign) {
+    // Only reset if we have a campaign AND it's different from what we already populated
+    if (existingCampaign && existingCampaign.id !== populatedCampaignIdRef.current) {
+      populatedCampaignIdRef.current = existingCampaign.id;
+      
+      // Helper functions inlined to avoid dependency issues
+      const formatDate = (date: Date | undefined) => {
+        if (!date) return '';
+        return date.toISOString().split('T')[0];
+      };
+      const centsToStr = (cents: number | undefined) => {
+        if (!cents) return '';
+        return (cents / 100).toFixed(2);
+      };
+      const cpmToStr = (centsPerImpression: number | undefined) => {
+        if (!centsPerImpression) return '';
+        return ((centsPerImpression * 1000) / 100).toFixed(2);
+      };
+      
       form.reset({
         title: existingCampaign.title || '',
         caption: existingCampaign.caption || '',
@@ -175,14 +195,14 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
         placements: existingCampaign.placements || [],
         adFormat: existingCampaign.adFormat || 'portrait',
         clickUrl: existingCampaign.clickUrl || '',
-        startDate: formatDateForInput(existingCampaign.startDate) || new Date().toISOString().split('T')[0],
-        endDate: formatDateForInput(existingCampaign.endDate) || '',
+        startDate: formatDate(existingCampaign.startDate) || new Date().toISOString().split('T')[0],
+        endDate: formatDate(existingCampaign.endDate) || '',
         uncappedBudget: existingCampaign.uncappedBudget || false,
-        budget: centsToDisplay(existingCampaign.budget),
-        dailyBudget: centsToDisplay(existingCampaign.dailyBudget),
+        budget: centsToStr(existingCampaign.budget),
+        dailyBudget: centsToStr(existingCampaign.dailyBudget),
         billingModel: existingCampaign.billingModel || 'cpc',
-        costPerImpression: cpmCentsToDisplay(existingCampaign.costPerImpression),
-        costPerClick: centsToDisplay(existingCampaign.costPerClick),
+        costPerImpression: cpmToStr(existingCampaign.costPerImpression),
+        costPerClick: centsToStr(existingCampaign.costPerClick),
         currency: existingCampaign.currency || 'usd',
       });
       setMediaType(existingCampaign.mediaType || 'image');
@@ -190,7 +210,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       setVideoPreview(existingCampaign.videoUrl || null);
       setMaxWidthFormat(existingCampaign.maxWidthFormat || false);
     }
-  }, [existingCampaign, formatDateForInput, centsToDisplay, cpmCentsToDisplay]);
+  }, [existingCampaign, form]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
