@@ -3607,7 +3607,13 @@ function DiscoverPageContent() {
                   // Return aspect ratio for artwork items
                   if ('type' in item && item.type === 'ad') return undefined;
                   const artwork = item as Artwork;
-                  return (artwork as any).aspectRatio || (artwork as any).imageAspectRatio || 0.75;
+                  // Calculate from width/height if available, otherwise use stored aspectRatio
+                  const width = (artwork as any).imageWidth || (artwork as any).dimensions?.width;
+                  const height = (artwork as any).imageHeight || (artwork as any).dimensions?.height;
+                  if (width && height && width > 0 && height > 0) {
+                    return width / height;
+                  }
+                  return (artwork as any).aspectRatio || (artwork as any).imageAspectRatio || undefined;
                 }}
                 getItemTileSize={(item) => {
                   // Return tile size for ad items based on their adFormat
@@ -3699,7 +3705,13 @@ function DiscoverPageContent() {
                       getItemAspectRatio={(item) => {
                         if ('type' in item && item.type === 'ad') return undefined;
                         const artwork = item as Artwork;
-                        return (artwork as any).aspectRatio || (artwork as any).imageAspectRatio || 0.75;
+                        // Calculate from width/height if available
+                        const width = (artwork as any).imageWidth || (artwork as any).dimensions?.width;
+                        const height = (artwork as any).imageHeight || (artwork as any).dimensions?.height;
+                        if (width && height && width > 0 && height > 0) {
+                          return width / height;
+                        }
+                        return (artwork as any).aspectRatio || (artwork as any).imageAspectRatio || undefined;
                       }}
                       getItemTileSize={(item) => {
                         if ('type' in item && item.type === 'ad') {

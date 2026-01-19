@@ -53,7 +53,11 @@ export function StructuredGrid({
   
   // Process items to assign tile sizes
   const processedItems = useMemo(() => {
-    return items.map((item) => {
+    // Track index for deterministic random distribution when no aspect ratio
+    let noAspectIndex = 0;
+    const tileSizePattern: TileSize[] = ['portrait', 'square', 'landscape', 'portrait', 'square', 'portrait'];
+    
+    return items.map((item, index) => {
       // Check for pre-set tile size (e.g., ads with adFormat)
       const presetSize = getItemTileSize?.(item);
       if (presetSize) {
@@ -66,8 +70,11 @@ export function StructuredGrid({
         return { item, tileSize: getTileSize(aspectRatio) };
       }
       
-      // Default to portrait if no aspect ratio available
-      return { item, tileSize: 'portrait' as TileSize };
+      // No aspect ratio - use varied pattern to create visual interest
+      // This creates a mix of sizes instead of all portrait
+      const patternTileSize = tileSizePattern[noAspectIndex % tileSizePattern.length];
+      noAspectIndex++;
+      return { item, tileSize: patternTileSize };
     });
   }, [items, getItemAspectRatio, getItemTileSize]);
 
