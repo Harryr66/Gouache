@@ -61,9 +61,7 @@ export function StructuredGrid({
       // Check for pre-set tile size (e.g., ads with adFormat)
       const presetSize = getItemTileSize?.(item);
       if (presetSize) {
-        // Map any 'square' to 'portrait' for simplified grid
-        const mappedSize = presetSize === 'square' ? 'portrait' : presetSize;
-        return { item, tileSize: mappedSize as TileSize };
+        return { item, tileSize: presetSize };
       }
       
       // Get aspect ratio and determine tile size
