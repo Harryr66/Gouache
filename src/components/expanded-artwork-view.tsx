@@ -205,7 +205,7 @@ export function ExpandedArtworkView({ artwork, discussion, onClose }: ExpandedAr
                                             <p className="text-sm text-muted-foreground">Price</p>
                                             <p className="text-2xl font-bold">${artwork.price.toLocaleString()}</p>
                                         </div>
-                                        <Button>Buy Now</Button>
+                                        <Button>View Details</Button>
                                     </div>
                                 </div>
                             )}

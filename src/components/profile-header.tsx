@@ -29,6 +29,7 @@ import {
   ExternalLink,
   MoreVertical,
   Flag,
+  BadgeCheck,
 } from 'lucide-react';
 import { Instagram, Twitter } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -140,14 +141,24 @@ export function ProfileHeader({
             <div>
               <div className="flex items-center gap-2">
                 {!user.hideName && (
-                  <h1 className="text-2xl md:text-3xl font-headline font-bold text-foreground">
-                    {user.displayName || 'User'}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl md:text-3xl font-headline font-bold text-foreground">
+                      {user.displayName || 'User'}
+                    </h1>
+                    {user.isVerified && (
+                      <BadgeCheck className="h-6 w-6 md:h-7 md:w-7 text-blue-500 fill-blue-500" />
+                    )}
+                  </div>
                 )}
               </div>
-              <p className={`text-muted-foreground ${user.hideName ? 'text-2xl md:text-3xl font-headline font-bold text-foreground' : 'text-base md:text-lg'}`}>
-                {user.username}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className={`${user.hideName ? 'text-2xl md:text-3xl font-headline font-bold text-foreground' : 'text-base md:text-lg text-muted-foreground'}`}>
+                  {user.username}
+                </p>
+                {user.hideName && user.isVerified && (
+                  <BadgeCheck className="h-5 w-5 md:h-6 md:w-6 text-blue-500 fill-blue-500" />
+                )}
+              </div>
               {user.location && !user.hideLocation && (
                 <div className="mt-1 flex items-center gap-2 text-muted-foreground">
                   <MapPin className="h-4 w-4" />

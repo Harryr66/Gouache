@@ -142,10 +142,6 @@ export default function ArtworkPage() {
               }
             }
 
-            // Check if artwork is a print (check multiple fields)
-            const artworkIsPrint = data.isPrint || data.type === 'print' || data.artworkType === 'print' || (data.stock !== undefined && data.stock !== null);
-            setIsPrint(artworkIsPrint);
-
             setArtwork({
               id: artworkDocumentId,
               title: data.title || 'Untitled',
@@ -221,10 +217,6 @@ export default function ArtworkPage() {
                 }
               }
 
-              // Check if artwork is a print (check multiple fields)
-              const artworkIsPrint = data.isPrint || data.type === 'print' || data.artworkType === 'print' || (data.stock !== undefined && data.stock !== null);
-              setIsPrint(artworkIsPrint);
-              
               setArtwork({
                 id: foundDoc.id, // Use the actual document ID
                 title: data.title || 'Untitled',

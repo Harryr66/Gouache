@@ -341,6 +341,23 @@ export default function ProfileEditPage() {
           } else if (!user.isProfessional) {
             setBannerPreviewImage(null);
           }
+          
+          // Load verification status
+          const loadVerificationStatus = async () => {
+            try {
+              const userProfileDoc = await getDoc(doc(db, 'userProfiles', user.id));
+              if (userProfileDoc.exists()) {
+                const profileData = userProfileDoc.data();
+                if (profileData.isVerified || profileData.stripeIdentityVerified) {
+                  setIdentityVerificationStatus('verified');
+                }
+              }
+            } catch (error) {
+              console.error('Error loading verification status:', error);
+            }
+          };
+          
+          loadVerificationStatus();
         };
         
         loadUserData();
@@ -849,9 +866,28 @@ export default function ProfileEditPage() {
       if (data.verified && data.nameMatch) {
         setIdentityVerificationStatus('verified');
         setVerifiedName(data.verifiedName);
+        
+        // Save verification status to Firestore
+        if (user) {
+          try {
+            await updateDoc(doc(db, 'userProfiles', user.id), {
+              isVerified: true,
+              stripeIdentityVerified: true,
+              verificationCompletedAt: new Date(),
+            });
+            
+            // Update local user state if using auth provider
+            if (refreshUser) {
+              await refreshUser();
+            }
+          } catch (error) {
+            console.error('Error saving verification status:', error);
+          }
+        }
+        
         toast({
           title: "Identity verified",
-          description: "Your identity has been verified and matches your account name.",
+          description: "Your identity has been verified! You now have a verification badge on your profile.",
         });
       } else if (data.verified && !data.nameMatch) {
         setIdentityVerificationStatus('name_mismatch');
@@ -888,15 +924,8 @@ export default function ProfileEditPage() {
       return;
     }
 
-    // Require identity verification
-    if (identityVerificationStatus !== 'verified') {
-      toast({
-        title: "Identity verification required",
-        description: "Please complete identity verification before submitting your artist request.",
-        variant: "destructive"
-      });
-      return;
-    }
+    // Identity verification is now optional
+    // Artists can get verified later for a verification badge
 
     setIsSubmittingRequest(true);
     try {
@@ -1878,6 +1907,103 @@ export default function ProfileEditPage() {
               />
             </div>
 
+            {/* Identity Verification - Available to all users */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-base">Identity Verification (Optional)</Label>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-5 w-5 p-0 hover:bg-transparent"
+                          type="button"
+                        >
+                          <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Why should I verify my identity?</DialogTitle>
+                          <DialogDescription className="pt-4">
+                            Get a verified badge on your profile! Identity verification helps build trust with buyers and collectors by confirming you are who you say you are. Verification is handled securely via Stripe Identity and is completely optional.
+                          </DialogDescription>
+                        </DialogHeader>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Get a verified badge on your profile by verifying your identity with a government-issued ID
+                  </p>
+                </div>
+              </div>
+
+              {identityVerificationStatus === 'pending' && (
+                <Button
+                  type="button"
+                  onClick={startIdentityVerification}
+                  disabled={isStartingVerification || !formData.firstName || !formData.lastName}
+                  className="w-full"
+                >
+                  {isStartingVerification ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Starting verification...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      Start Identity Verification
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {identityVerificationStatus === 'verified' && (
+                <div className="flex items-center gap-2 text-green-600 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                  <Check className="h-5 w-5" />
+                  <div>
+                    <p className="font-medium">Identity Verified</p>
+                    <p className="text-sm text-muted-foreground">You have a verified badge on your profile</p>
+                  </div>
+                </div>
+              )}
+
+              {identityVerificationStatus === 'failed' && (
+                <div className="text-red-600 text-sm">
+                  <p className="font-medium">Verification failed</p>
+                  <p className="text-muted-foreground">Please try again or contact support</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={startIdentityVerification}
+                    disabled={isStartingVerification}
+                    className="mt-2"
+                    size="sm"
+                  >
+                    Retry Verification
+                  </Button>
+                </div>
+              )}
+
+              {identityVerificationStatus === 'name_mismatch' && verifiedName && (
+                <div className="text-amber-600 text-sm space-y-2">
+                  <p className="font-medium">Name mismatch</p>
+                  <p className="text-muted-foreground">
+                    The name on your ID ({verifiedName}) doesn't match your account name. Please update your account name above and try again.
+                  </p>
+                </div>
+              )}
+
+              {!formData.firstName || !formData.lastName && (
+                <p className="text-xs text-muted-foreground">
+                  Please enter your first and last name above before starting verification
+                </p>
+              )}
+            </div>
+
             {/* Privacy Settings - Available to all users */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Privacy Settings</h3>
@@ -2436,7 +2562,7 @@ export default function ProfileEditPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <Label className="text-base">Identity Verification *</Label>
+                          <Label className="text-base">Identity Verification (Optional)</Label>
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button 
@@ -2450,16 +2576,16 @@ export default function ProfileEditPage() {
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-md">
                               <DialogHeader>
-                                <DialogTitle>Why do I need to verify my identity?</DialogTitle>
+                                <DialogTitle>Why should I verify my identity?</DialogTitle>
                                 <DialogDescription className="pt-4">
-                                  Gouache enforces ID verifications to prevent against fraudsters impersonating artists and listing or selling counterfeit artworks. ID verification is handled securely via Stripe Identification.
+                                  Get a verified badge on your profile! Identity verification helps build trust with buyers and collectors by confirming you are who you say you are. Verification is handled securely via Stripe Identity and is completely optional.
                                 </DialogDescription>
                               </DialogHeader>
                             </DialogContent>
                           </Dialog>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Verify your identity using a government-issued ID. The name must match your account name exactly.
+                          Get a verified badge on your profile by verifying your identity with a government-issued ID. Your legal name must match the ID exactly.
                         </p>
                       </div>
                     </div>

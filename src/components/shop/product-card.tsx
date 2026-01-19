@@ -165,7 +165,7 @@ export function ProductCard({
             disabled={product.stock === 0}
             className="px-3"
           >
-            Buy Now
+            Contact Seller
           </Button>
         </div>
 

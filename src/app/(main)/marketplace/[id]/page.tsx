@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, ShoppingCart, Heart, Package, TrendingUp, Check, X, Edit, Plus, Minus, Save, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, Heart, Package, TrendingUp, Check, X, Edit, Plus, Minus, Save, Trash2, Loader2, User } from 'lucide-react';
 import { MarketplaceProduct } from '@/lib/types';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -23,12 +23,6 @@ import { useAuth } from '@/providers/auth-provider';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AboutTheArtist } from '@/components/about-the-artist';
-import { CheckoutForm } from '@/components/checkout-form';
-import { Elements } from '@stripe/react-stripe-js';
-import { getStripePromise } from '@/lib/stripe-client';
-import { verifyMarketplacePurchase } from '@/lib/purchase-verification';
-
-// Use shared Stripe promise utility
 
 // Placeholder products generator (same as marketplace page)
 const generatePlaceholderProducts = (generatePlaceholderUrl: (w: number, h: number) => string): MarketplaceProduct[] => {
@@ -300,78 +294,9 @@ function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [showCheckout, setShowCheckout] = useState(false);
+  const [showContactDialog, setShowContactDialog] = useState(false);
   const [sellerProfilePicture, setSellerProfilePicture] = useState<string | null>(null);
-  
-  // CRITICAL: Payment safety states
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
-  const [isVerifying, setIsVerifying] = useState(false); // Shows verification overlay
-
-  // ============================================
-  // PAYMENT SUCCESS HANDLER - WAIT FOR WEBHOOK
-  // ============================================
-  const handleCheckoutSuccess = async (paymentIntentId: string) => {
-    console.log('[Marketplace] Payment AUTHORIZED, updating stock...');
-    
-    setIsVerifying(true);
-    setShowCheckout(false);
-    
-    try {
-      toast({
-        title: "Processing Purchase...",
-        description: "Please wait, do not close this page.",
-        duration: 30000,
-      });
-      
-      // STEP 1: Check if purchase record created (webhook)
-      console.log('[Marketplace] Step 1: Checking purchase record...');
-      
-      // Poll briefly to confirm webhook processed the purchase
-      const verified = await verifyMarketplacePurchase(product!.id, paymentIntentId, user!.id, 5); // 10 seconds
-      
-      if (verified) {
-        // Purchase recorded, now capture payment
-        console.log('[Marketplace] Step 2: Capturing payment...');
-        const captureResponse = await fetch('/api/stripe/capture-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentIntentId }),
-        });
-
-        if (!captureResponse.ok) {
-          throw new Error('Failed to capture payment');
-        }
-
-        console.log('[Marketplace] ✅ Payment captured, purchase complete');
-        
-        toast({
-          title: "Purchase Complete!",
-          description: "You will receive a confirmation email shortly.",
-        });
-        
-        window.location.reload();
-      } else {
-        // Webhook didn't fire yet, payment still authorized but NOT captured
-        toast({
-          title: "Processing...",
-          description: "Your payment is being processed. Your card has NOT been charged yet. Please refresh in a moment.",
-          duration: 10000,
-        });
-      }
-    } catch (error: any) {
-      console.error('[Marketplace] Error:', error);
-      
-      toast({
-        title: "Purchase Processing",
-        description: "Your card was NOT charged. Error: " + error.message,
-        variant: "destructive",
-        duration: 30000,
-      });
-    } finally {
-      setIsVerifying(false);
-      setIsProcessingPayment(false);
-    }
-  };
+  const [sellerEmail, setSellerEmail] = useState<string | null>(null);
   
   // Edit mode state
   const isEditMode = searchParams?.get('edit') === 'true';
@@ -610,6 +535,7 @@ function ProductDetailPage() {
             hasPhotoURL: !!sellerData.photoURL 
           });
           setSellerProfilePicture(sellerData.profilePicture || sellerData.photoURL || null);
+          setSellerEmail(sellerData.email || null);
         } else {
           console.log('⚠️ Seller profile not found in userProfiles for ID:', product.sellerId);
         }
@@ -678,63 +604,24 @@ function ProductDetailPage() {
   const mainImage = images[selectedImageIndex] || placeholderImage;
 
   const handlePurchase = () => {
-    // ========================================
-    // CRITICAL: COMPREHENSIVE PRE-PAYMENT VALIDATION
-    // DO NOT PROCEED IF ANY CHECK FAILS
-    // ========================================
-    
     // Check 1: Affiliate products - redirect to external site
     if (product.isAffiliate && product.affiliateLink) {
       window.open(product.affiliateLink, '_blank');
       return;
     }
 
-    // Check 2: Idempotency - prevent double clicks
-    if (isProcessingPayment) {
-      toast({
-        title: "Please Wait",
-        description: "Payment is already being processed.",
-      });
-      return;
-    }
-
-    // Check 3: User authentication
+    // Check 2: User authentication
     if (!user) {
+      toast({
+        title: 'Sign in Required',
+        description: 'Please sign in to contact the seller.',
+        variant: 'destructive'
+      });
       router.push('/login?redirect=' + encodeURIComponent(`/marketplace/${product.id}`));
       return;
     }
 
-    // Check 4: Product data validation
-    if (!product || !product.id) {
-      toast({
-        title: 'Error',
-        description: 'Product data not loaded. Please refresh the page.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Check 5: Product price validation
-    if (!product.price || product.price <= 0) {
-      toast({
-        title: 'Invalid Price',
-        description: 'Product price is not set correctly.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Check 6: Seller information validation
-    if (!product.sellerId) {
-      toast({
-        title: 'Seller information missing',
-        description: 'Unable to process purchase. Seller information is not available.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Check 7: Stock availability
+    // Check 3: Stock availability
     if (product.stock !== undefined && product.stock <= 0) {
       toast({
         title: 'Out of Stock',
@@ -744,7 +631,7 @@ function ProductDetailPage() {
       return;
     }
 
-    // Check 8: Cannot purchase own product
+    // Check 4: Cannot purchase own product
     if (user.id === product.sellerId) {
       toast({
         title: 'Cannot Purchase Own Product',
@@ -754,43 +641,7 @@ function ProductDetailPage() {
       return;
     }
 
-    // ========================================
-    // VALIDATION PASSED - REDIRECT TO STRIPE CHECKOUT
-    // Physical products require shipping address collection
-    // ========================================
-    setIsProcessingPayment(true);
-
-    // Create Stripe Checkout Session for shipping address collection
-    fetch('/api/stripe/create-checkout-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        itemId: product.id,
-        itemType: 'merchandise',
-        buyerId: user.id,
-        buyerEmail: user.email, // BUYER's email for checkout
-      }),
-    })
-    .then(async (response) => {
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create checkout session');
-      }
-      return response.json();
-    })
-    .then((data) => {
-      // Redirect to Stripe Checkout
-      window.location.href = data.url;
-    })
-    .catch((error) => {
-      console.error('Error creating checkout session:', error);
-      setIsProcessingPayment(false);
-      toast({
-        title: 'Checkout Error',
-        description: error.message || 'Failed to start checkout process.',
-        variant: 'destructive'
-      });
-    });
+    setShowContactDialog(true);
   };
 
   const handleSaveEdit = async () => {
@@ -1294,15 +1145,22 @@ function ProductDetailPage() {
                   onClick={handlePurchase}
                   disabled={product.stock === 0}
                 >
-                  <ShoppingCart className="h-5 w-5 mr-2" />
-                  {product.stock === 0
-                    ? 'Sold'
-                    : product.isAffiliate
-                    ? 'Buy Now'
-                    : 'Buy Now'}
+                  {product.stock === 0 ? (
+                    'Out of Stock'
+                  ) : product.isAffiliate ? (
+                    <>
+                      <Mail className="h-5 w-5 mr-2" />
+                      Visit External Site
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-5 w-5 mr-2" />
+                      Contact Seller to Purchase
+                    </>
+                  )}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  0% platform commission • Artists keep 100% of sales
+                  Contact sellers directly to arrange payment and shipping
                 </p>
               </div>
                 </>
@@ -1367,64 +1225,87 @@ function ProductDetailPage() {
         </div>
       </div>
 
-      {/* Checkout Dialog */}
-      {product && product.price && product.price > 0 && product.sellerId && !product.isAffiliate && (
-        <Dialog open={showCheckout} onOpenChange={(open) => {
-          setShowCheckout(open);
-          if (!open) setIsProcessingPayment(false); // Reset processing state if dialog closed
-        }}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* Contact Seller Dialog */}
+      {product && !product.isAffiliate && (
+        <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Purchase Product</DialogTitle>
+              <DialogTitle>Contact Seller</DialogTitle>
             </DialogHeader>
-            {getStripePromise() ? (
-              <CheckoutForm
-                amount={product.price}
-                currency={product.currency || 'USD'}
-                artistId={product.sellerId}
-                itemId={product.id}
-                itemType="merchandise"
-                itemTitle={product.title}
-                buyerId={user?.id || ''}
-                onSuccess={handleCheckoutSuccess}
-                onCancel={() => {
-                  setShowCheckout(false);
-                  setIsProcessingPayment(false);
-                }}
-              />
-            ) : (
-              <div className="p-8 text-center">
-                <p className="text-muted-foreground mb-4">
-                  Payment processing is not configured. Please contact support.
-                </p>
-                <Button variant="outline" onClick={() => {
-                  setShowCheckout(false);
-                  setIsProcessingPayment(false);
-                }}>
-                  Close
-                </Button>
+            <div className="space-y-4 py-4">
+              <div className="flex items-start gap-4">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={sellerProfilePicture || avatarPlaceholder} alt={product.sellerName} />
+                  <AvatarFallback>{product.sellerName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-2">
+                  <div>
+                    <p className="font-medium">{product.sellerName}</p>
+                  </div>
+                  {product.price && product.price > 0 && (
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm font-medium">Listed Price:</p>
+                      <p className="text-lg font-bold">
+                        {product.currency || 'USD'} {product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+              
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm font-medium mb-2">Seller Contact Email:</p>
+                {sellerEmail ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 p-2 bg-background rounded border">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <a 
+                        href={`mailto:${sellerEmail}?subject=Inquiry about ${encodeURIComponent(product.title)}`}
+                        className="text-sm font-medium text-blue-600 hover:underline break-all"
+                      >
+                        {sellerEmail}
+                      </a>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Contact the seller directly to discuss purchase details, shipping, and payment arrangements.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Seller email not available. Please try contacting through their profile.
+                  </p>
+                )}
+              </div>
+              
+              {product.shippingInfo && (
+                <div className="text-xs text-muted-foreground">
+                  <p className="font-medium mb-1">Shipping:</p>
+                  <p>
+                    {product.shippingInfo.freeShipping ? 'Free shipping' : `Shipping cost: ${product.currency} ${product.shippingInfo.shippingCost?.toFixed(2)}`}
+                    {product.shippingInfo.estimatedDays && ` (${product.shippingInfo.estimatedDays} days)`}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowContactDialog(false)} className="flex-1">
+                Close
+              </Button>
+              {sellerEmail && (
+                <Button 
+                  variant="gradient" 
+                  onClick={() => {
+                    window.location.href = `mailto:${sellerEmail}?subject=Inquiry about ${encodeURIComponent(product.title)}&body=Hello,\n\nI'm interested in purchasing "${product.title}".${product.price && product.price > 0 ? `\n\nI saw it is listed at ${product.currency || 'USD'} ${product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.` : ''}\n\nPlease let me know about availability and how we can proceed with the purchase.\n\nThank you!`;
+                  }}
+                  className="flex-1"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Email
+                </Button>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
-      )}
-      
-      {/* CRITICAL: Verification Loading Overlay */}
-      {isVerifying && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <Card className="w-full max-w-md p-6 mx-4">
-            <div className="flex flex-col items-center gap-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <h3 className="font-semibold text-lg text-center">Verifying Purchase</h3>
-              <p className="text-sm text-muted-foreground text-center">
-                Your payment was successful. We're verifying your purchase with the database...
-              </p>
-              <p className="text-xs text-muted-foreground text-center">
-                This usually takes just a few seconds.
-              </p>
-            </div>
-          </Card>
-        </div>
       )}
     </div>
   );

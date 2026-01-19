@@ -30,7 +30,8 @@ import {
   ExternalLink,
   Edit,
   Trash2,
-  Loader2
+  Loader2,
+  Mail
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePlaceholder } from '@/hooks/use-placeholder';
@@ -208,9 +209,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [isOwner, setIsOwner] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  
-  // NEW: Critical payment safety states
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
+  const [showContactDialog, setShowContactDialog] = useState(false);
+  const [instructorEmail, setInstructorEmail] = useState<string | null>(null);
   
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(800, 450);
@@ -301,13 +301,14 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             setIsEnrolled(!!isValidEnrollment);
           }
           
-          // Fetch instructor's profile to check hideAboutArtist setting
+          // Fetch instructor's profile to check hideAboutArtist setting and get email
           if (courseData.instructor?.userId) {
             try {
               const instructorProfileDoc = await getDoc(doc(db, 'userProfiles', courseData.instructor.userId));
               if (instructorProfileDoc.exists()) {
                 const instructorData = instructorProfileDoc.data();
                 setHideAboutInstructor(instructorData.hideAboutArtist === true);
+                setInstructorEmail(instructorData.email || null);
               }
             } catch (error) {
               console.error('Error fetching instructor profile:', error);
@@ -440,29 +441,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       } else if (course.courseType === 'hosted') {
         // For hosted courses, check if payment is required
         if (course.price && course.price > 0) {
-          // Paid course - redirect to Stripe Checkout
-          console.log('[handleEnroll] Creating Stripe Checkout Session for paid course');
-          
-          // Create Stripe Checkout Session
-          const response = await fetch('/api/stripe/create-checkout-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              itemId: courseId,
-              itemType: 'course',
-              buyerId: user.id,
-              buyerEmail: user.email, // BUYER's email for checkout
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to create checkout session');
-          }
-
-          const data = await response.json();
-          // Redirect to Stripe Checkout
-          window.location.href = data.url;
+          // Paid course - show contact instructor dialog
+          console.log('[handleEnroll] Opening contact instructor dialog for paid course');
+          setShowContactDialog(true);
         } else {
           // Free course - enroll directly
           console.log('[handleEnroll] Enrolling in free course');
@@ -930,8 +911,22 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                         size="lg"
                         onClick={handleEnroll}
                       >
-                        <span className="hidden sm:inline">{course.courseType === 'affiliate' ? 'Purchase & Access Course' : 'Enroll Now'}</span>
-                        <span className="sm:hidden">{course.courseType === 'affiliate' ? 'Purchase' : 'Enroll'}</span>
+                        {course.courseType === 'affiliate' ? (
+                          <>
+                            <span className="hidden sm:inline">Visit External Course</span>
+                            <span className="sm:hidden">Visit Course</span>
+                          </>
+                        ) : course.price && course.price > 0 ? (
+                          <>
+                            <span className="hidden sm:inline">Contact Instructor to Enroll</span>
+                            <span className="sm:hidden">Contact Instructor</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="hidden sm:inline">Enroll Now (Free)</span>
+                            <span className="sm:hidden">Enroll</span>
+                          </>
+                        )}
                       </Button>
                       {course.courseType === 'affiliate' && course.externalUrl && (
                         <p className="text-xs text-muted-foreground text-center mt-2">
@@ -1050,6 +1045,85 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Contact Instructor Dialog */}
+      {course && course.instructor && (
+        <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Contact Instructor</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-start gap-4">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={course.instructor.avatar || avatarPlaceholder} alt={course.instructor.name} />
+                  <AvatarFallback>{course.instructor.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-2">
+                  <div>
+                    <p className="font-medium">{course.instructor.name}</p>
+                  </div>
+                  {course.price && course.price > 0 && (
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm font-medium">Course Price:</p>
+                      <p className="text-lg font-bold">
+                        ${course.price.toFixed(2)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm font-medium mb-2">Instructor Contact Email:</p>
+                {instructorEmail ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 p-2 bg-background rounded border">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <a 
+                        href={`mailto:${instructorEmail}?subject=Inquiry about ${encodeURIComponent(course.title)}`}
+                        className="text-sm font-medium text-blue-600 hover:underline break-all"
+                      >
+                        {instructorEmail}
+                      </a>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Contact the instructor directly to discuss enrollment, pricing, and payment arrangements.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Instructor email not available. Please try contacting through their profile.
+                  </p>
+                )}
+              </div>
+              
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p><strong>Duration:</strong> {course.duration}</p>
+                <p><strong>Level:</strong> {course.level}</p>
+                {course.students !== undefined && <p><strong>Students:</strong> {course.students.toLocaleString()}</p>}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowContactDialog(false)} className="flex-1">
+                Close
+              </Button>
+              {instructorEmail && (
+                <Button 
+                  variant="gradient" 
+                  onClick={() => {
+                    window.location.href = `mailto:${instructorEmail}?subject=Inquiry about ${encodeURIComponent(course.title)}&body=Hello,\n\nI'm interested in enrolling in "${course.title}".${course.price && course.price > 0 ? `\n\nI saw it is priced at $${course.price.toFixed(2)}.` : ''}\n\nCould you please provide more information about enrollment and payment?\n\nThank you!`;
+                  }}
+                  className="flex-1"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Email
+                </Button>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

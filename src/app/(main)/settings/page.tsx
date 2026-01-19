@@ -782,14 +782,14 @@ function SettingsPageContent() {
               </Card>
             ) : (
               <>
-            {(user?.isProfessional || hasApprovedArtistRequest) && (
+            {/* Business Management & Payments sections temporarily hidden - direct artist-to-buyer contact only */}
+            {/* {(user?.isProfessional || hasApprovedArtistRequest) && (
               <div>
                 <h2 className="text-lg font-semibold mb-4">Business Management</h2>
                 <BusinessManager />
               </div>
             )}
-            {/* Payments section temporarily hidden - direct artist-to-buyer contact only */}
-            {/* <div data-payments-section>
+            <div data-payments-section>
               <h2 className="text-lg font-semibold mb-4">Payments & Payouts</h2>
               <StripeIntegrationWizard />
             </div> */}

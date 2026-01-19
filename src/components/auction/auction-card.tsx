@@ -126,10 +126,10 @@ export function AuctionCard({ auction, onBid, currentUserId }: AuctionCardProps)
           </div>
         )}
 
-        {/* Buy Now Price */}
+        {/* Listed Price */}
         {auction.buyNowPrice && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Buy Now</span>
+            <span className="text-muted-foreground">Listed Price</span>
             <span className="font-medium text-green-600">${auction.buyNowPrice.toLocaleString()}</span>
           </div>
         )}

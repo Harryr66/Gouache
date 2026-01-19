@@ -113,7 +113,7 @@ export default function ArtistProfilePage() {
           const profileData = {
             id: userDoc.id,
             displayName: data.displayName || data.name || 'User',
-            isVerified: data.isVerified !== false && isProfessionalFlag === true, // All approved professional artists are verified
+            isVerified: data.isVerified === true || data.stripeIdentityVerified === true, // Verified via Stripe Identity
             username: data.handle || data.username || `user_${userDoc.id}`,
             avatarUrl: data.avatarUrl || undefined,
             bannerImageUrl: data.bannerImageUrl || undefined,
