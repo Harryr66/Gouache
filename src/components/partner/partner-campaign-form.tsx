@@ -138,10 +138,10 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
     return (cents / 100).toFixed(2);
   }, []);
 
-  // CPM is stored as cost per impression in cents, display as cost per 1000
-  const cpmCentsToDisplay = useCallback((centsPerImpression: number | undefined) => {
-    if (!centsPerImpression) return '';
-    return ((centsPerImpression * 1000) / 100).toFixed(2);
+  // CPM is stored as cents per 1000 impressions, display as dollars per 1000
+  const cpmCentsToDisplay = useCallback((centsPerThousand: number | undefined) => {
+    if (centsPerThousand === undefined || centsPerThousand === null) return '';
+    return (centsPerThousand / 100).toFixed(2);
   }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -183,9 +183,10 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
         if (cents === undefined || cents === null) return '';
         return (cents / 100).toFixed(2);
       };
-      const cpmToStr = (centsPerImpression: number | undefined) => {
-        if (centsPerImpression === undefined || centsPerImpression === null) return '';
-        return ((centsPerImpression * 1000) / 100).toFixed(2);
+      // CPM is stored as cents per 1000 impressions, display as dollars per 1000
+      const cpmToStr = (centsPerThousand: number | undefined) => {
+        if (centsPerThousand === undefined || centsPerThousand === null) return '';
+        return (centsPerThousand / 100).toFixed(2);
       };
       
       console.log('[Campaign Load] id:', existingCampaign.id, 
@@ -384,15 +385,16 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       // Use parseFloat and check for NaN, not just truthy (0 is a valid value)
       const budget = values.uncappedBudget ? undefined : (values.budget && !isNaN(parseFloat(values.budget)) ? Math.round(parseFloat(values.budget) * 100) : undefined);
       const dailyBudget = values.dailyBudget && !isNaN(parseFloat(values.dailyBudget)) ? Math.round(parseFloat(values.dailyBudget) * 100) : undefined;
-      // CPM: values.costPerImpression is cost per 1000 impressions in dollars, convert to cost per impression in cents
-      const costPerImpressionValue = values.costPerImpression && !isNaN(parseFloat(values.costPerImpression)) ? Math.round((parseFloat(values.costPerImpression) / 1000) * 100) : undefined;
+      // CPM: Store as cents per 1000 impressions (NOT per single impression) to preserve precision
+      // User enters dollars per 1000 → multiply by 100 to get cents per 1000
+      const costPerImpressionValue = values.costPerImpression && !isNaN(parseFloat(values.costPerImpression)) ? Math.round(parseFloat(values.costPerImpression) * 100) : undefined;
       const costPerClickValue = values.costPerClick && !isNaN(parseFloat(values.costPerClick)) ? Math.round(parseFloat(values.costPerClick) * 100) : undefined;
       
       console.log('[Campaign Save] Billing values - billingModel:', values.billingModel, 
         'rawCPM:', values.costPerImpression, 
         'rawCPC:', values.costPerClick,
-        'parsedCPM:', costPerImpressionValue,
-        'parsedCPC:', costPerClickValue);
+        'parsedCPM (cents per 1000):', costPerImpressionValue,
+        'parsedCPC (cents):', costPerClickValue);
 
       // Use the user-selected startDate, not serverTimestamp, so the ad shows immediately
       const startDateValue = new Date(values.startDate);
