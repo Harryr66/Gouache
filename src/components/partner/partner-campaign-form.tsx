@@ -722,62 +722,130 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
               <div className="relative">
                 {imagePreview && (
                   <div className="flex flex-col items-center gap-4">
-                    {/* Preview container with 4:5 aspect ratio to match discover feed */}
-                    <div className="relative w-full max-w-[300px] rounded-lg overflow-hidden border border-border" style={{ aspectRatio: '4/5' }}>
-                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                      <div className="absolute top-2 left-2">
-                        <span className="text-[10px] font-medium text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
-                          Sponsored
-                        </span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2"
-                        onClick={removeMedia}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Preview shows how your ad will appear in the Discover feed (4:5 aspect ratio)
-                    </p>
+                    {/* Preview container with dynamic aspect ratio based on selected format */}
+                    {(() => {
+                      const selectedFormat = form.watch('adFormat');
+                      // Get aspect ratio based on format
+                      const getAspectRatio = () => {
+                        switch (selectedFormat) {
+                          case 'square': return '1/1';
+                          case 'portrait': return '4/5';
+                          case 'large': return '9/16';
+                          case 'banner': return '6/1';
+                          default: return '4/5';
+                        }
+                      };
+                      // Get max width based on format (banner is wider)
+                      const getMaxWidth = () => {
+                        return selectedFormat === 'banner' ? '500px' : '300px';
+                      };
+                      // Get format label for display
+                      const getFormatLabel = () => {
+                        switch (selectedFormat) {
+                          case 'square': return 'Square (1:1)';
+                          case 'portrait': return 'Portrait (4:5)';
+                          case 'large': return 'Large (9:16)';
+                          case 'banner': return 'Banner (6:1)';
+                          default: return 'Portrait (4:5)';
+                        }
+                      };
+                      return (
+                        <>
+                          <div 
+                            className="relative w-full rounded-lg overflow-hidden border border-border" 
+                            style={{ 
+                              aspectRatio: getAspectRatio(),
+                              maxWidth: getMaxWidth()
+                            }}
+                          >
+                            <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                            <div className="absolute top-2 left-2">
+                              <span className="text-[10px] font-medium text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
+                                Sponsored
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-2 right-2"
+                              onClick={removeMedia}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground text-center">
+                            Preview shows how your ad will appear — {getFormatLabel()}
+                          </p>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
                 {videoPreview && (
                   <div className="flex flex-col items-center gap-4">
-                    {/* Preview container with 9:16 aspect ratio to match discover feed */}
-                    <div className="relative w-full max-w-[300px] rounded-lg overflow-hidden border border-border" style={{ aspectRatio: maxWidthFormat ? (videoAspectRatio || 16/9) : '9/16' }}>
-                      <video src={videoPreview} controls className="w-full h-full object-cover" />
-                      <div className="absolute top-2 left-2 z-10">
-                        <span className="text-[10px] font-medium text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
-                          Sponsored
-                        </span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 z-10"
-                        onClick={removeMedia}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="text-xs text-muted-foreground text-center">
-                      {videoAspectRatio !== null && (
-                        <p>
-                          Video aspect ratio: {videoAspectRatio.toFixed(2)}:1
-                          {maxWidthFormat && (
-                            <span className="ml-2 text-amber-600">
-                              (Requires 1:1 or 16:9 for max-width format)
-                            </span>
-                          )}
-                        </p>
-                      )}
-                      <p className="mt-1">Preview shows how your ad will appear in the Discover feed</p>
-                    </div>
+                    {/* Preview container with dynamic aspect ratio based on selected format */}
+                    {(() => {
+                      const selectedFormat = form.watch('adFormat');
+                      // For video, use actual aspect ratio if max-width, otherwise match format
+                      const getAspectRatio = () => {
+                        if (maxWidthFormat && videoAspectRatio) {
+                          return videoAspectRatio;
+                        }
+                        switch (selectedFormat) {
+                          case 'square': return '1/1';
+                          case 'portrait': return '4/5';
+                          case 'large': return '9/16';
+                          default: return '4/5';
+                        }
+                      };
+                      const getFormatLabel = () => {
+                        if (maxWidthFormat) return 'Max-width format';
+                        switch (selectedFormat) {
+                          case 'square': return 'Square (1:1)';
+                          case 'portrait': return 'Portrait (4:5)';
+                          case 'large': return 'Large (9:16)';
+                          default: return 'Portrait (4:5)';
+                        }
+                      };
+                      return (
+                        <>
+                          <div 
+                            className="relative w-full max-w-[300px] rounded-lg overflow-hidden border border-border" 
+                            style={{ aspectRatio: getAspectRatio() }}
+                          >
+                            <video src={videoPreview} controls className="w-full h-full object-cover" />
+                            <div className="absolute top-2 left-2 z-10">
+                              <span className="text-[10px] font-medium text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
+                                Sponsored
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-2 right-2 z-10"
+                              onClick={removeMedia}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="text-xs text-muted-foreground text-center">
+                            {videoAspectRatio !== null && (
+                              <p>
+                                Video aspect ratio: {videoAspectRatio.toFixed(2)}:1
+                                {maxWidthFormat && videoAspectRatio < 1 && (
+                                  <span className="ml-2 text-amber-600">
+                                    (Requires 1:1 or 16:9 for max-width format)
+                                  </span>
+                                )}
+                              </p>
+                            )}
+                            <p className="mt-1">Preview shows how your ad will appear — {getFormatLabel()}</p>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
