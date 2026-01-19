@@ -18,14 +18,13 @@ type AdTileProps = {
 };
 
 /**
- * Map ad format to grid tile size
+ * Map ad format to grid tile size (simplified: portrait or landscape only)
  */
 function getAdTileSize(adFormat: string | undefined): TileSize {
   switch (adFormat) {
-    case 'square':
-      return 'square';
     case 'landscape':
       return 'landscape';
+    case 'square':
     case 'portrait':
     case 'large':
     default:
@@ -168,21 +167,13 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format, 
   const isVideo = campaign.mediaType === 'video';
   const isMaxWidthFormat = campaign.maxWidthFormat && isVideo && isMobile;
 
-  // Calculate aspect ratio based on format or tileSize
+  // Calculate aspect ratio based on format or tileSize (simplified: portrait or landscape)
   const getAspectRatioPadding = () => {
     if (isMaxWidthFormat && videoAspectRatio) {
       return `${(1 / videoAspectRatio) * 100}%`;
     }
     // Use tileSize for structured grid layout
-    switch (effectiveTileSize) {
-      case 'square':
-        return '100%'; // 1:1
-      case 'landscape':
-        return '50%'; // 2:1
-      case 'portrait':
-      default:
-        return '150%'; // 2:3 (portrait)
-    }
+    return effectiveTileSize === 'landscape' ? '50%' : '200%'; // 2:1 or 1:2
   };
 
   return (

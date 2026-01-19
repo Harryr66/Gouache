@@ -51,71 +51,32 @@ export function StructuredGrid({
   getItemTileSize,
 }: StructuredGridProps) {
   
-  // Process items to assign tile sizes and shuffle for better distribution
+  // Process items to assign tile sizes (simplified: portrait or landscape only)
   const processedItems = useMemo(() => {
-    // Track index for deterministic random distribution when no aspect ratio
-    let noAspectIndex = 0;
-    const tileSizePattern: TileSize[] = ['portrait', 'square', 'landscape', 'portrait', 'square', 'portrait'];
+    // Alternating pattern for items without aspect ratio
+    const tileSizePattern: TileSize[] = ['portrait', 'landscape', 'portrait', 'portrait', 'landscape'];
+    let patternIndex = 0;
     
-    // First pass: assign tile sizes
-    const withTileSizes = items.map((item, index) => {
+    return items.map((item) => {
       // Check for pre-set tile size (e.g., ads with adFormat)
       const presetSize = getItemTileSize?.(item);
       if (presetSize) {
-        return { item, tileSize: presetSize, isAd: true };
+        // Map any 'square' to 'portrait' for simplified grid
+        const mappedSize = presetSize === 'square' ? 'portrait' : presetSize;
+        return { item, tileSize: mappedSize as TileSize };
       }
       
       // Get aspect ratio and determine tile size
       const aspectRatio = getItemAspectRatio?.(item);
       if (aspectRatio && aspectRatio > 0) {
-        return { item, tileSize: getTileSize(aspectRatio), isAd: false };
+        return { item, tileSize: getTileSize(aspectRatio) };
       }
       
-      // No aspect ratio - use varied pattern to create visual interest
-      const patternTileSize = tileSizePattern[noAspectIndex % tileSizePattern.length];
-      noAspectIndex++;
-      return { item, tileSize: patternTileSize, isAd: false };
+      // No aspect ratio - use alternating pattern
+      const tileSize = tileSizePattern[patternIndex % tileSizePattern.length];
+      patternIndex++;
+      return { item, tileSize };
     });
-    
-    // Second pass: shuffle to distribute items better
-    // Use Fisher-Yates shuffle with a twist: keep ads in roughly their original positions
-    // and ensure no two items with the same imageUrl are adjacent
-    const shuffled = [...withTileSizes];
-    
-    // Simple seeded shuffle based on items length for consistency
-    const seed = items.length;
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      // Skip ads - keep them roughly in position
-      if (shuffled[i].isAd) continue;
-      
-      // Generate pseudo-random index based on position and seed
-      const j = Math.floor(((i * seed * 9301 + 49297) % 233280) / 233280 * (i + 1));
-      
-      // Don't swap with ads
-      if (shuffled[j]?.isAd) continue;
-      
-      // Swap
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    
-    // Third pass: prevent adjacent duplicates (same imageUrl)
-    for (let i = 1; i < shuffled.length; i++) {
-      const prevUrl = shuffled[i - 1]?.item?.imageUrl;
-      const currUrl = shuffled[i]?.item?.imageUrl;
-      
-      if (prevUrl && currUrl && prevUrl === currUrl) {
-        // Find a non-adjacent item to swap with
-        for (let j = i + 2; j < shuffled.length; j++) {
-          const swapUrl = shuffled[j]?.item?.imageUrl;
-          if (swapUrl !== currUrl && swapUrl !== prevUrl && !shuffled[j].isAd) {
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            break;
-          }
-        }
-      }
-    }
-    
-    return shuffled.map(({ item, tileSize }) => ({ item, tileSize }));
   }, [items, getItemAspectRatio, getItemTileSize]);
 
   // Calculate responsive column count
@@ -146,32 +107,15 @@ export function StructuredGrid({
         {processedItems.map(({ item, tileSize }, index) => {
           const itemKey = 'id' in item ? item.id : ('campaign' in item ? item.campaign?.id : index);
           
-          // Calculate grid span based on tile size
-          let gridColumn = 'span 1';
-          let gridRow = 'span 1';
-          
-          switch (tileSize) {
-            case 'portrait':
-              gridColumn = 'span 1';
-              gridRow = 'span 2';
-              break;
-            case 'landscape':
-              gridColumn = `span ${landscapeSpan}`;
-              gridRow = 'span 1';
-              break;
-            case 'square':
-            default:
-              gridColumn = 'span 1';
-              gridRow = 'span 1';
-              break;
-          }
+          // Simplified: portrait = 1 col × 2 rows, landscape = 2 cols × 1 row
+          const isLandscape = tileSize === 'landscape';
           
           return (
             <div
               key={itemKey}
               style={{
-                gridColumn,
-                gridRow,
+                gridColumn: isLandscape ? `span ${landscapeSpan}` : 'span 1',
+                gridRow: isLandscape ? 'span 1' : 'span 2',
               }}
             >
               {renderItem(item, tileSize)}
