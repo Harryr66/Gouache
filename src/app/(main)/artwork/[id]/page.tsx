@@ -984,11 +984,11 @@ export default function ArtworkPage() {
               <Button variant="outline" onClick={() => setShowContactDialog(false)} className="flex-1">
                 Close
               </Button>
-              {artwork.artist.email && (
+              {artwork.artist?.email && (
                 <Button 
                   variant="gradient" 
                   onClick={() => {
-                    window.location.href = `mailto:${artwork.artist.email}?subject=Inquiry about ${encodeURIComponent(artwork.title)}&body=Hello,\n\nI'm interested in purchasing "${artwork.title}".${artwork.price && artwork.price > 0 && artwork.priceType !== 'contact' ? `\n\nI saw it is listed at ${artwork.currency || 'USD'} ${(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.` : ''}\n\nPlease let me know about availability and how we can proceed with the purchase.\n\nThank you!`;
+                    window.location.href = `mailto:${artwork.artist?.email}?subject=Inquiry about ${encodeURIComponent(artwork.title)}&body=Hello,\n\nI'm interested in purchasing "${artwork.title}".${artwork.price && artwork.price > 0 && artwork.priceType !== 'contact' ? `\n\nI saw it is listed at ${artwork.currency || 'USD'} ${(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.` : ''}\n\nPlease let me know about availability and how we can proceed with the purchase.\n\nThank you!`;
                   }}
                   className="flex-1"
                 >
