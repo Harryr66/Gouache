@@ -162,8 +162,20 @@ export default function ProfileEditPage() {
       if (offlineChanges) {
         try {
           const changes = JSON.parse(offlineChanges);
+          
+          // Split existing name for backward compatibility
+          const existingName = changes.name || user.displayName || '';
+          const nameParts = existingName.split(' ');
+          const userFirstName = changes.firstName || (user as any).firstName || nameParts[0] || '';
+          const userMiddleName = changes.middleName || (user as any).middleName || (nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '');
+          const userLastName = changes.lastName || (user as any).lastName || (nameParts.length > 1 ? nameParts[nameParts.length - 1] : '');
+          
           const nextFormData = {
-            name: changes.name || user.displayName || '',
+            firstName: userFirstName,
+            middleName: userMiddleName,
+            lastName: userLastName,
+            displayName: changes.displayName || (user as any).displayName || '',
+            useDisplayName: changes.useDisplayName || (user as any).useDisplayName || false,
             handle: changes.handle || user.username || '',
             email: changes.email || user.email || '',
             artistType: changes.artistType || user.artistType || '',
