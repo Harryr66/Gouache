@@ -26,7 +26,7 @@ const formSchema = z.object({
   caption: z.string().max(50, 'Caption must be 50 characters or less').optional(),
   placement: z.enum(['news', 'discover', 'learn']), // Legacy field for backwards compatibility
   placements: z.array(z.enum(['discover-tiles', 'news-tiles', 'news-banner', 'learn-tiles', 'learn-banner'])).min(1, 'Select at least one placement'),
-  adFormat: z.enum(['portrait', 'banner']), // Only formats that fit: Portrait (4:5) for tiles, Banner (6:1) for banners
+  adFormat: z.enum(['square', 'banner']), // Only formats that fit: Square (1:1) for tiles, Banner (6:1) for banners
   clickUrl: z.string().url('Please enter a valid URL'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().optional(),
@@ -100,7 +100,7 @@ const formSchema = z.object({
   }
   return true;
 }, {
-  message: "Tile placements require portrait format",
+  message: "Tile placements require square format",
   path: ["adFormat"],
 });
 
@@ -151,7 +151,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       caption: existingCampaign?.caption || '',
       placement: existingCampaign?.placement || 'news',
       placements: existingCampaign?.placements || [],
-      adFormat: existingCampaign?.adFormat || 'portrait',
+      adFormat: existingCampaign?.adFormat === 'portrait' ? 'square' : (existingCampaign?.adFormat || 'square'),
       clickUrl: existingCampaign?.clickUrl || '',
       startDate: formatDateForInput(existingCampaign?.startDate) || new Date().toISOString().split('T')[0],
       endDate: formatDateForInput(existingCampaign?.endDate) || '',
@@ -544,7 +544,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                         <p className="font-medium">Discover Feed - Tiles</p>
                         <p className="text-xs text-muted-foreground">Show in artwork grid</p>
                         <p className="text-xs text-muted-foreground/70 mt-1">
-                          Portrait: 1080×1350px (4:5 ratio)
+                          Square: 1080×1080px (1:1 ratio)
                         </p>
                       </div>
                     </div>
@@ -566,7 +566,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                         <p className="font-medium">Newsroom - Article Tiles</p>
                         <p className="text-xs text-muted-foreground">Show between news articles</p>
                         <p className="text-xs text-muted-foreground/70 mt-1">
-                          Portrait: 1080×1350px (4:5 ratio)
+                          Square: 1080×1080px (1:1 ratio)
                         </p>
                       </div>
                     </div>
@@ -610,7 +610,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                         <p className="font-medium">Learn - Course Tiles</p>
                         <p className="text-xs text-muted-foreground">Show between courses</p>
                         <p className="text-xs text-muted-foreground/70 mt-1">
-                          Portrait: 1080×1350px (4:5 ratio)
+                          Square: 1080×1080px (1:1 ratio)
                         </p>
                       </div>
                     </div>
@@ -665,16 +665,16 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                     </p>
                   )}
                   <div className="grid grid-cols-2 gap-3 mt-2">
-                    {/* Tile placements: Only Portrait format (4:5) - matches the grid layout */}
+                    {/* Tile placements: Only Square format (1:1) - matches the grid layout */}
                     {showTileFormats && (
                       <Card
-                        className={`p-3 cursor-pointer transition-all col-span-2 ${field.value === 'portrait' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
-                        onClick={() => field.onChange('portrait')}
+                        className={`p-3 cursor-pointer transition-all col-span-2 ${field.value === 'square' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                        onClick={() => field.onChange('square')}
                       >
                         <div className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-12 border-2 ${field.value === 'portrait' ? 'border-primary' : 'border-muted-foreground'}`} />
-                          <p className="font-medium text-sm">Portrait</p>
-                          <p className="text-xs text-muted-foreground text-center">4:5 (1080×1350px) — Fits the grid layout</p>
+                          <div className={`w-12 h-12 border-2 ${field.value === 'square' ? 'border-primary' : 'border-muted-foreground'}`} />
+                          <p className="font-medium text-sm">Square</p>
+                          <p className="text-xs text-muted-foreground text-center">1:1 (1080×1080px) — Fits the grid layout</p>
                         </div>
                       </Card>
                     )}
@@ -769,9 +769,9 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                     {/* Preview container with dynamic aspect ratio based on selected format */}
                     {(() => {
                       const selectedFormat = form.watch('adFormat');
-                      // Get aspect ratio based on format (only portrait and banner now)
+                      // Get aspect ratio based on format (only square and banner now)
                       const getAspectRatio = () => {
-                        return selectedFormat === 'banner' ? '6/1' : '4/5';
+                        return selectedFormat === 'banner' ? '6/1' : '1/1';
                       };
                       // Get max width based on format (banner is wider)
                       const getMaxWidth = () => {
@@ -779,7 +779,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                       };
                       // Get format label for display
                       const getFormatLabel = () => {
-                        return selectedFormat === 'banner' ? 'Banner (6:1)' : 'Portrait (4:5)';
+                        return selectedFormat === 'banner' ? 'Banner (6:1)' : 'Square (1:1)';
                       };
                       return (
                         <>
@@ -818,16 +818,16 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                   <div className="flex flex-col items-center gap-4">
                     {/* Preview container with dynamic aspect ratio based on selected format */}
                     {(() => {
-                      // For video, use actual aspect ratio if max-width, otherwise 4:5 portrait
+                      // For video, use actual aspect ratio if max-width, otherwise 1:1 square
                       const getAspectRatio = () => {
                         if (maxWidthFormat && videoAspectRatio) {
                           return videoAspectRatio;
                         }
-                        return '4/5'; // All tile ads use portrait
+                        return '1/1'; // All tile ads use square
                       };
                       const getFormatLabel = () => {
                         if (maxWidthFormat) return 'Max-width format';
-                        return 'Portrait (4:5)';
+                        return 'Square (1:1)';
                       };
                       return (
                         <>

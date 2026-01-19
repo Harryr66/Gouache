@@ -158,13 +158,13 @@ export function AdTile({ campaign, placement, userId, isMobile = false, tileSize
   const isVideo = campaign.mediaType === 'video';
   const isMaxWidthFormat = campaign.maxWidthFormat && isVideo && isMobile;
 
-  // Calculate aspect ratio - tiles are always 4:5 portrait to match the grid
+  // Calculate aspect ratio - tiles are always 1:1 square to match the grid
   const getAspectRatioPadding = () => {
     if (isMaxWidthFormat && videoAspectRatio) {
       return `${(1 / videoAspectRatio) * 100}%`;
     }
-    // All tile ads use 4:5 portrait to fit the grid layout
-    return '125%'; // 4:5 aspect ratio
+    // All tile ads use 1:1 square to fit the grid layout
+    return '100%'; // 1:1 aspect ratio
   };
 
   return (

@@ -1331,7 +1331,7 @@ export interface AdCampaign {
   description?: string;
   placement: 'news' | 'discover' | 'learn'; // Legacy: kept for backwards compatibility, use placements[] instead
   placements?: Array<'discover-tiles' | 'news-tiles' | 'news-banner' | 'learn-tiles' | 'learn-banner'>; // New: specific placement options
-  adFormat?: 'portrait' | 'banner'; // Ad format: Portrait (4:5) for tiles, Banner (6:1) for banner placements
+  adFormat?: 'square' | 'banner'; // Ad format: Square (1:1) for tiles, Banner (6:1) for banner placements
   imageUrl?: string;
   videoUrl?: string;
   mediaType: 'image' | 'video';

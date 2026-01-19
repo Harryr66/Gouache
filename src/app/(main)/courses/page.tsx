@@ -435,7 +435,7 @@ export default function CoursesPage() {
               return (
               <Link key={course.id} href={`/learn/${course.id}`}>
                 <Card className={`group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full ${isMobile ? 'flex flex-row min-h-[140px]' : 'flex flex-col'}`}>
-                  <div className={`${isMobile ? 'relative w-36 sm:w-40 h-full aspect-[3/2] flex-shrink-0' : 'relative aspect-[4/3]'} overflow-hidden`}>
+                  <div className={`${isMobile ? 'relative w-36 sm:w-40 h-full aspect-square flex-shrink-0' : 'relative aspect-square'} overflow-hidden`}>
                     {course.thumbnail ? (
                       <Image
                         src={course.thumbnail}

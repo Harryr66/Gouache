@@ -20,7 +20,7 @@ export function NewsTile({ article }: NewsTileProps) {
 
   const cardContent = (
     <>
-      <div className="relative w-full pt-[60%] overflow-hidden">
+      <div className="relative w-full pt-[100%] overflow-hidden">
         {article.imageUrl ? (
           <img
             src={article.imageUrl}
