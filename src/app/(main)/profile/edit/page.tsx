@@ -983,7 +983,6 @@ export default function ProfileEditPage() {
       // Automatically convert the account to professional artist (no admin approval needed)
       await updateDoc(doc(db, 'userProfiles', user.id), {
         isProfessional: true,
-        isVerified: true,
         portfolio: portfolioItems,
         experience: artistRequestData.experience,
         ...(artistRequestData.artistStatement?.trim() && { artistStatement: artistRequestData.artistStatement.trim() }),
