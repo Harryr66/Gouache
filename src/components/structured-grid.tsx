@@ -51,31 +51,71 @@ export function StructuredGrid({
   getItemTileSize,
 }: StructuredGridProps) {
   
-  // Process items to assign tile sizes
+  // Process items to assign tile sizes and shuffle for better distribution
   const processedItems = useMemo(() => {
     // Track index for deterministic random distribution when no aspect ratio
     let noAspectIndex = 0;
     const tileSizePattern: TileSize[] = ['portrait', 'square', 'landscape', 'portrait', 'square', 'portrait'];
     
-    return items.map((item, index) => {
+    // First pass: assign tile sizes
+    const withTileSizes = items.map((item, index) => {
       // Check for pre-set tile size (e.g., ads with adFormat)
       const presetSize = getItemTileSize?.(item);
       if (presetSize) {
-        return { item, tileSize: presetSize };
+        return { item, tileSize: presetSize, isAd: true };
       }
       
       // Get aspect ratio and determine tile size
       const aspectRatio = getItemAspectRatio?.(item);
       if (aspectRatio && aspectRatio > 0) {
-        return { item, tileSize: getTileSize(aspectRatio) };
+        return { item, tileSize: getTileSize(aspectRatio), isAd: false };
       }
       
       // No aspect ratio - use varied pattern to create visual interest
-      // This creates a mix of sizes instead of all portrait
       const patternTileSize = tileSizePattern[noAspectIndex % tileSizePattern.length];
       noAspectIndex++;
-      return { item, tileSize: patternTileSize };
+      return { item, tileSize: patternTileSize, isAd: false };
     });
+    
+    // Second pass: shuffle to distribute items better
+    // Use Fisher-Yates shuffle with a twist: keep ads in roughly their original positions
+    // and ensure no two items with the same imageUrl are adjacent
+    const shuffled = [...withTileSizes];
+    
+    // Simple seeded shuffle based on items length for consistency
+    const seed = items.length;
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      // Skip ads - keep them roughly in position
+      if (shuffled[i].isAd) continue;
+      
+      // Generate pseudo-random index based on position and seed
+      const j = Math.floor(((i * seed * 9301 + 49297) % 233280) / 233280 * (i + 1));
+      
+      // Don't swap with ads
+      if (shuffled[j]?.isAd) continue;
+      
+      // Swap
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    // Third pass: prevent adjacent duplicates (same imageUrl)
+    for (let i = 1; i < shuffled.length; i++) {
+      const prevUrl = shuffled[i - 1]?.item?.imageUrl;
+      const currUrl = shuffled[i]?.item?.imageUrl;
+      
+      if (prevUrl && currUrl && prevUrl === currUrl) {
+        // Find a non-adjacent item to swap with
+        for (let j = i + 2; j < shuffled.length; j++) {
+          const swapUrl = shuffled[j]?.item?.imageUrl;
+          if (swapUrl !== currUrl && swapUrl !== prevUrl && !shuffled[j].isAd) {
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            break;
+          }
+        }
+      }
+    }
+    
+    return shuffled.map(({ item, tileSize }) => ({ item, tileSize }));
   }, [items, getItemAspectRatio, getItemTileSize]);
 
   // Calculate responsive column count
