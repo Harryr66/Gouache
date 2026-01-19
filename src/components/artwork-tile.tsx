@@ -736,9 +736,9 @@ const generateArtistContent = (artist: Artist) => ({
         className="relative overflow-hidden w-full cursor-pointer"
         onClick={handleTileClick}
         style={{
-          // Use padding-bottom trick to maintain aspect ratio
-          // If tileSize is provided (structured grid), use that; otherwise use detected aspect ratio
-          paddingBottom: tileSize ? getTileAspectRatio(tileSize) : `${(1 / aspectRatio) * 100}%`,
+          // If tileSize is provided (structured grid), fill the container completely
+          // Otherwise use padding-bottom trick to maintain aspect ratio
+          ...(tileSize ? { height: '100%' } : { paddingBottom: `${(1 / aspectRatio) * 100}%` }),
         }}
       >
         {/* Temporary Delete Button - Top Right Corner - Only render on client to avoid hydration errors */}

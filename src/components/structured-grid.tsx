@@ -111,12 +111,17 @@ export function StructuredGrid({
           return (
             <div
               key={itemKey}
+              className="relative overflow-hidden"
               style={{
                 gridColumn: isLandscape ? `span ${landscapeSpan}` : 'span 1',
                 gridRow: isLandscape ? 'span 1' : 'span 2',
+                height: '100%',
+                minHeight: 0,
               }}
             >
-              {renderItem(item, tileSize)}
+              <div className="absolute inset-0">
+                {renderItem(item, tileSize)}
+              </div>
             </div>
           );
         })}

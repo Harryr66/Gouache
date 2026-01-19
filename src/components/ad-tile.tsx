@@ -180,15 +180,17 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format, 
     <Card 
       ref={tileRef} 
       className={cn(
-        'overflow-hidden transition hover:shadow-lg group flex flex-col cursor-pointer relative mb-1 rounded-none',
+        'overflow-hidden transition hover:shadow-lg group flex flex-col cursor-pointer relative rounded-none',
         // For max-width format in CSS columns, we need to break out of columns
-        isMaxWidthFormat ? 'column-span-all w-full' : 'break-inside-avoid'
+        isMaxWidthFormat ? 'column-span-all w-full' : 'break-inside-avoid',
+        // Fill container when tileSize is set
+        tileSize ? 'h-full' : 'mb-1'
       )}
       style={isMaxWidthFormat ? { 
         columnSpan: 'all',
         width: '100%',
-        gridColumn: '1 / -1' // Fallback for grid layouts
-      } : undefined}
+        gridColumn: '1 / -1'
+      } : tileSize ? { height: '100%' } : undefined}
     >
       <div className="absolute top-2 left-2 z-10">
         <span className="text-[10px] font-medium text-white/80 bg-black/40 px-1.5 py-0.5 rounded">
@@ -203,9 +205,10 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format, 
         className="flex flex-col h-full"
       >
         <div 
-          className="relative w-full overflow-hidden"
+          className="relative w-full overflow-hidden flex-1"
           style={{
-            paddingBottom: getAspectRatioPadding()
+            // If tileSize is set, fill container; otherwise use padding trick
+            ...(tileSize ? { height: '100%' } : { paddingBottom: getAspectRatioPadding() })
           }}
         >
           <div className="absolute inset-0">
@@ -245,13 +248,16 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format, 
           </div>
         </div>
 
-        <CardContent className="flex flex-col justify-between flex-1 p-5">
-          <div className="flex items-center justify-end text-xs">
-            <span className="font-medium text-primary flex items-center gap-1">
-              Learn more <ExternalLink className="h-3 w-3" />
-            </span>
-          </div>
-        </CardContent>
+        {/* Only show CardContent if not in structured grid (tileSize not set) */}
+        {!tileSize && (
+          <CardContent className="flex flex-col justify-between flex-1 p-5">
+            <div className="flex items-center justify-end text-xs">
+              <span className="font-medium text-primary flex items-center gap-1">
+                Learn more <ExternalLink className="h-3 w-3" />
+              </span>
+            </div>
+          </CardContent>
+        )}
       </a>
     </Card>
   );
