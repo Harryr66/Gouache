@@ -1326,9 +1326,9 @@ const generateArtistContent = (artist: Artist) => ({
                               {artwork.title}
                             </h3>
                           )}
-                          {artwork.artist?.name && (
+                          {artwork.artist && (
                             <p className="text-xs text-muted-foreground">
-                              by {artwork.artist.name}
+                              by {artwork.artist.hideName ? `@${artwork.artist.handle}` : artwork.artist.name}
                             </p>
                           )}
                         </div>
@@ -1884,7 +1884,7 @@ const generateArtistContent = (artist: Artist) => ({
               <div className="flex-1 min-w-0 pointer-events-none">
                 <div className="flex items-center gap-1 pointer-events-none">
                   <span className="text-sm font-medium truncate pointer-events-none">
-                    {artwork.artist.name}
+                    {artwork.artist.hideName ? `@${artwork.artist.handle}` : artwork.artist.name}
                   </span>
                 </div>
                 {artwork.artist.location && (
@@ -2061,9 +2061,11 @@ const generateArtistContent = (artist: Artist) => ({
                       </Avatar>
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-base truncate">{artwork.artist.name}</h3>
+                          <h3 className="font-semibold text-base truncate">{artwork.artist.hideName ? `@${artwork.artist.handle}` : artwork.artist.name}</h3>
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">@{artwork.artist.handle}</p>
+                        {!artwork.artist.hideName && (
+                          <p className="text-xs text-muted-foreground truncate">@{artwork.artist.handle}</p>
+                        )}
                       </div>
                       <Button
                         variant="ghost"
@@ -2203,9 +2205,11 @@ const generateArtistContent = (artist: Artist) => ({
                       </Avatar>
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h2 className="text-2xl font-bold">{artwork.artist.name}</h2>
+                          <h2 className="text-2xl font-bold">{artwork.artist.hideName ? `@${artwork.artist.handle}` : artwork.artist.name}</h2>
                         </div>
-                        <p className="text-muted-foreground">@{artwork.artist.handle}</p>
+                        {!artwork.artist.hideName && (
+                          <p className="text-muted-foreground">@{artwork.artist.handle}</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col gap-2 w-full sm:w-auto">

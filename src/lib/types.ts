@@ -11,6 +11,7 @@ export interface Artist {
   isVerified?: boolean;
   isProfessional?: boolean;
   location?: string;
+  hideName?: boolean; // Privacy setting - hide display name, show only handle
   // Optional country fields for advanced search filters
   countryOfOrigin?: string;
   countryOfResidence?: string;

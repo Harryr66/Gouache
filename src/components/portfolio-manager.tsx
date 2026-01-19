@@ -595,6 +595,7 @@ export function PortfolioManager() {
                 name: user.displayName || user.username || 'Artist',
                 handle: user.username || undefined,
                 avatarUrl: user.avatarUrl || null,
+                hideName: user.hideName || false,
               },
               tags: portfolioItem.tags, // Already includes print/original tag
               isForSale: true,
@@ -781,6 +782,7 @@ export function PortfolioManager() {
               handle: user.username || undefined,
               avatarUrl: user.avatarUrl || null,
               email: user.email || undefined,
+              hideName: user.hideName || false,
             },
             tags: updatedTags, // Use updated tags with print/original
             isForSale: true,
