@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Upload, X, Check, Plus, Trash2, Loader2, AlertCircle, Pin } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, Plus, Trash2, Loader2, AlertCircle, Pin, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { doc, updateDoc, getDoc, setDoc, collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -2278,8 +2279,30 @@ export default function ProfileEditPage() {
                       )}>
                         {identityVerificationStatus === 'verified' ? <Check className="h-4 w-4" /> : '1'}
                       </div>
-                      <div>
-                        <Label className="text-base">Identity Verification *</Label>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-base">Identity Verification *</Label>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-5 w-5 p-0 hover:bg-transparent"
+                                type="button"
+                              >
+                                <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                              <DialogHeader>
+                                <DialogTitle>Why do I need to verify my identity?</DialogTitle>
+                                <DialogDescription className="pt-4">
+                                  Gouache enforces ID verifications to prevent against fraudsters impersonating artists and listing or selling counterfeit artworks. ID verification is handled securely via Stripe Identification.
+                                </DialogDescription>
+                              </DialogHeader>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           Verify your identity using a government-issued ID. The name must match your account name exactly.
                         </p>
