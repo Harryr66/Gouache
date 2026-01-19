@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AdCampaign } from '@/lib/types';
+import { AdCampaign, TileSize } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Video, ExternalLink } from 'lucide-react';
 import { trackAdClick, trackAdImpression } from '@/lib/ad-tracking';
@@ -14,9 +14,26 @@ type AdTileProps = {
   userId?: string;
   isMobile?: boolean;
   format?: 'square' | 'portrait' | 'large'; // Override format for tile rendering
+  tileSize?: TileSize; // Grid tile size for structured layout
 };
 
-export function AdTile({ campaign, placement, userId, isMobile = false, format }: AdTileProps) {
+/**
+ * Map ad format to grid tile size
+ */
+function getAdTileSize(adFormat: string | undefined): TileSize {
+  switch (adFormat) {
+    case 'square':
+      return 'square';
+    case 'landscape':
+      return 'landscape';
+    case 'portrait':
+    case 'large':
+    default:
+      return 'portrait';
+  }
+}
+
+export function AdTile({ campaign, placement, userId, isMobile = false, format, tileSize }: AdTileProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
   const [isMediaLoaded, setIsMediaLoaded] = useState(false);
@@ -28,6 +45,9 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format }
   
   // Determine actual format to use (prop override or campaign setting)
   const actualFormat = format || campaign.adFormat || 'portrait';
+  
+  // Get tile size for structured grid (use prop, or derive from adFormat)
+  const effectiveTileSize = tileSize || getAdTileSize(campaign.adFormat);
   
   // Detect video aspect ratio for max-width format
   useEffect(() => {
@@ -148,20 +168,20 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format }
   const isVideo = campaign.mediaType === 'video';
   const isMaxWidthFormat = campaign.maxWidthFormat && isVideo && isMobile;
 
-  // Calculate aspect ratio based on format
+  // Calculate aspect ratio based on format or tileSize
   const getAspectRatioPadding = () => {
     if (isMaxWidthFormat && videoAspectRatio) {
       return `${(1 / videoAspectRatio) * 100}%`;
     }
-    switch (actualFormat) {
+    // Use tileSize for structured grid layout
+    switch (effectiveTileSize) {
       case 'square':
         return '100%'; // 1:1
+      case 'landscape':
+        return '50%'; // 2:1
       case 'portrait':
-        return `${(3 / 2) * 100}%`; // 2:3 (portrait)
-      case 'large':
-        return `${(16 / 9) * 100}%`; // 9:16 (tall portrait)
       default:
-        return `${(3 / 2) * 100}%`; // Default to 2:3
+        return '150%'; // 2:3 (portrait)
     }
   };
 

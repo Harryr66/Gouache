@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Textarea } from '@/components/ui/textarea';
-import { Artwork, Artist } from '@/lib/types';
+import { Artwork, Artist, TileSize, getTileAspectRatio } from '@/lib/types';
 import { useFollow } from '@/providers/follow-provider';
 import { usePlaceholder } from '@/hooks/use-placeholder';
 import { useTheme } from 'next-themes';
@@ -56,10 +56,11 @@ interface ArtworkTileProps {
   isInitialViewport?: boolean; // Flag to indicate this is in initial viewport
   showDeleteButton?: boolean; // Show temporary delete button (for cleanup)
   onDelete?: (itemId: string) => void; // Callback when delete button is clicked
+  tileSize?: TileSize; // Grid tile size for structured layout
 }
 
 // Memoize to prevent unnecessary re-renders (performance optimization)
-export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, onImageError, isInitialViewport: propIsInitialViewport, showDeleteButton = false, onDelete }: ArtworkTileProps) {
+export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, className, hideBanner = false, onVideoReady, onImageReady, onImageError, isInitialViewport: propIsInitialViewport, showDeleteButton = false, onDelete, tileSize }: ArtworkTileProps) {
   const [mounted, setMounted] = useState(false);
   const { isFollowing, followArtist, unfollowArtist } = useFollow();
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
@@ -165,14 +166,14 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
         // Use environment variable account ID (correct one) instead of URL account ID
         videoUrl = `https://customer-${accountId}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
         fullVideoUrl = videoUrl;
-        console.log('✅ Constructed Cloudflare Stream HLS URL:', {
+        console.log('? Constructed Cloudflare Stream HLS URL:', {
           videoId,
           accountId,
           url: videoUrl,
           originalUrl: (artwork as any).videoUrl
         });
       } else {
-        console.error('❌ Failed to extract Cloudflare Stream video ID or account ID:', {
+        console.error('? Failed to extract Cloudflare Stream video ID or account ID:', {
           originalUrl: videoUrl,
           extractedVideoId: videoId,
           envAccountId: accountId,
@@ -347,17 +348,17 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
     
     // Navigate to artwork detail page only if we have an artwork id
     if (artwork?.id) {
-      console.log('🎯 Artwork tile clicked:', artwork.id, artwork.title);
+      console.log('?? Artwork tile clicked:', artwork.id, artwork.title);
       // Don't prevent default - let navigation happen naturally
       // Record click engagement
       engagementTracker.recordClick(artwork.id);
       // Use window.location directly for more reliable navigation
       const artworkUrl = `/artwork/${encodeURIComponent(artwork.id)}`;
-      console.log('🚀 Navigating to:', artworkUrl);
+      console.log('?? Navigating to:', artworkUrl);
       window.location.href = artworkUrl;
     if (onClick) onClick();
     } else {
-      console.warn('⚠️ Artwork tile clicked but no ID:', artwork);
+      console.warn('?? Artwork tile clicked but no ID:', artwork);
     }
   };
 
@@ -687,7 +688,7 @@ const generateArtistContent = (artist: Artist) => ({
       // Always use the artist ID (Firestore document ID) for profile links
       router.push(`/profile/${profileSlug}`);
     } else {
-      console.warn('⚠️ No artist ID found for profile link');
+      console.warn('?? No artist ID found for profile link');
       router.push('/profile');
     }
   };
@@ -736,7 +737,8 @@ const generateArtistContent = (artist: Artist) => ({
         onClick={handleTileClick}
         style={{
           // Use padding-bottom trick to maintain aspect ratio
-          paddingBottom: `${(1 / aspectRatio) * 100}%`,
+          // If tileSize is provided (structured grid), use that; otherwise use detected aspect ratio
+          paddingBottom: tileSize ? getTileAspectRatio(tileSize) : `${(1 / aspectRatio) * 100}%`,
         }}
       >
         {/* Temporary Delete Button - Top Right Corner - Only render on client to avoid hydration errors */}
@@ -1123,7 +1125,7 @@ const generateArtistContent = (artist: Artist) => ({
                 
                 // Debug: Log image URL for troubleshooting
                 if (!imageUrl || imageUrl === '') {
-                  console.warn('⚠️ ArtworkTile: Missing imageUrl', {
+                  console.warn('?? ArtworkTile: Missing imageUrl', {
                     artworkId: artwork.id,
                     title: artwork.title,
                     hasVideo: hasVideo,
@@ -1141,7 +1143,7 @@ const generateArtistContent = (artist: Artist) => ({
                 
                 // Debug: Log the actual image source being used
                 if (process.env.NODE_ENV === 'development') {
-                  console.log('🖼️ ArtworkTile loading image:', {
+                  console.log('??? ArtworkTile loading image:', {
                     artworkId: artwork.id,
                     imageSrc,
                     isCloudflareImage: isCloudflareImage,
@@ -1171,7 +1173,7 @@ const generateArtistContent = (artist: Artist) => ({
                       const timeout = setTimeout(() => {
                         // If image hasn't loaded after 3 seconds, assume it's loaded or show it anyway
                         if (!isImageLoaded) {
-                          console.warn('⏱️ Image load timeout, showing anyway:', cloudflareUrl);
+                          console.warn('?? Image load timeout, showing anyway:', cloudflareUrl);
                           setIsImageLoaded(true);
                         }
                       }, 3000);
@@ -1193,7 +1195,7 @@ const generateArtistContent = (artist: Artist) => ({
                       onLoadStart={() => {
                         // Debug: Log when image starts loading
                         if (process.env.NODE_ENV === 'development') {
-                          console.log('🔄 Image load started:', cloudflareUrl);
+                          console.log('?? Image load started:', cloudflareUrl);
                         }
                       }}
                       onLoad={() => {
@@ -1205,7 +1207,7 @@ const generateArtistContent = (artist: Artist) => ({
                         }
                         // Debug logging
                         if (process.env.NODE_ENV === 'development') {
-                          console.log('✅ Image loaded successfully:', cloudflareUrl);
+                          console.log('? Image loaded successfully:', cloudflareUrl);
                         }
                       }}
                       onError={(e) => {
@@ -1220,7 +1222,7 @@ const generateArtistContent = (artist: Artist) => ({
                           // Log error for debugging (but only once per URL)
                           if (!failedUrlsRef.current.has(cloudflareUrl)) {
                             failedUrlsRef.current.add(cloudflareUrl);
-                            console.warn('⚠️ Cloudflare Stream thumbnail load error:', {
+                            console.warn('?? Cloudflare Stream thumbnail load error:', {
                               url: cloudflareUrl,
                               artworkId: artwork.id,
                               retryCount,
@@ -1253,7 +1255,7 @@ const generateArtistContent = (artist: Artist) => ({
                   const cloudflareMatch = imageSrc.match(/imagedelivery\.net\/([^/]+)\/([^/]+)(?:\/([^/]+))?/);
                   if (!cloudflareMatch) {
                     // Invalid URL format - return null, NO EXTERNAL IMAGES
-                    console.warn('⚠️ Invalid Cloudflare Images URL format, hiding tile:', imageSrc);
+                    console.warn('?? Invalid Cloudflare Images URL format, hiding tile:', imageSrc);
                     return null;
                   }
                   
@@ -1261,13 +1263,13 @@ const generateArtistContent = (artist: Artist) => ({
                   
                   // Validate components exist and are not empty
                   if (!accountHash || !imageId || accountHash.length === 0 || imageId.length === 0) {
-                    console.warn('⚠️ Invalid Cloudflare Images URL components, hiding tile:', { accountHash, imageId, url: imageSrc });
+                    console.warn('?? Invalid Cloudflare Images URL components, hiding tile:', { accountHash, imageId, url: imageSrc });
                     return null;
                   }
                   
                   // Validate format (alphanumeric)
                   if (!/^[a-zA-Z0-9_-]+$/.test(accountHash) || !/^[a-zA-Z0-9_-]+$/.test(imageId)) {
-                    console.warn('⚠️ Invalid Cloudflare Images URL format (non-alphanumeric), hiding tile:', { accountHash, imageId, url: imageSrc });
+                    console.warn('?? Invalid Cloudflare Images URL format (non-alphanumeric), hiding tile:', { accountHash, imageId, url: imageSrc });
                     return null;
                   }
                   
@@ -1289,7 +1291,7 @@ const generateArtistContent = (artist: Artist) => ({
                   
                   // DEBUG: Log URL construction for troubleshooting
                   if (process.env.NODE_ENV === 'development') {
-                    console.log('🖼️ Cloudflare URL:', {
+                    console.log('??? Cloudflare URL:', {
                       original: imageSrc,
                       hasVariant: !!existingVariant,
                       variant: existingVariant || 'none',
@@ -1301,7 +1303,7 @@ const generateArtistContent = (artist: Artist) => ({
                   
                   // CRITICAL: Double-check URL is valid before rendering to prevent React error #300
                   if (!cloudflareUrl || !cloudflareUrl.startsWith('http') || cloudflareUrl.includes('undefined') || cloudflareUrl.includes('null')) {
-                    console.warn('⚠️ Invalid constructed Cloudflare URL, showing alternative tile:', cloudflareUrl);
+                    console.warn('?? Invalid constructed Cloudflare URL, showing alternative tile:', cloudflareUrl);
                     return (
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-muted/50 flex flex-col items-center justify-center z-10 p-4 border-2 border-dashed border-primary/20 rounded-lg">
                         <div className="text-center space-y-2">
@@ -1337,7 +1339,7 @@ const generateArtistContent = (artist: Artist) => ({
                       const timeout = setTimeout(() => {
                         // If image hasn't loaded after 3 seconds, assume it's loaded or show it anyway
                         if (!isImageLoaded) {
-                          console.warn('⏱️ Image load timeout, showing anyway:', cloudflareUrl);
+                          console.warn('?? Image load timeout, showing anyway:', cloudflareUrl);
                           setIsImageLoaded(true);
                         }
                       }, 3000);
@@ -1354,7 +1356,7 @@ const generateArtistContent = (artist: Artist) => ({
                       cloudflareUrl.includes('undefined') ||
                       cloudflareUrl.includes('null') ||
                       cloudflareUrl.includes('NaN')) {
-                    console.warn('⚠️ Invalid Cloudflare URL detected, showing placeholder immediately:', cloudflareUrl);
+                    console.warn('?? Invalid Cloudflare URL detected, showing placeholder immediately:', cloudflareUrl);
                     return (
                       <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted flex items-center justify-center z-10">
                         <div className="text-muted-foreground text-xs text-center px-2">Invalid image URL</div>
@@ -1394,7 +1396,7 @@ const generateArtistContent = (artist: Artist) => ({
                         onLoadStart={() => {
                           // Debug: Log when image starts loading
                           if (process.env.NODE_ENV === 'development') {
-                            console.log('🔄 Image load started:', cloudflareUrl);
+                            console.log('?? Image load started:', cloudflareUrl);
                           }
                         }}
                         onLoad={() => {
@@ -1408,7 +1410,7 @@ const generateArtistContent = (artist: Artist) => ({
                           }
                           // Debug logging
                           if (process.env.NODE_ENV === 'development') {
-                            console.log('✅ Image loaded successfully:', cloudflareUrl);
+                            console.log('? Image loaded successfully:', cloudflareUrl);
                           }
                         }}
                         onError={(e) => {
@@ -1432,7 +1434,7 @@ const generateArtistContent = (artist: Artist) => ({
                             const accountHash = imageSrc.match(/imagedelivery\.net\/([^/]+)/)?.[1];
                             const imageId = imageSrc.match(/imagedelivery\.net\/[^/]+\/([^/]+)/)?.[1];
                             
-                            console.error('❌ Cloudflare image load FAILED:', {
+                            console.error('? Cloudflare image load FAILED:', {
                               artworkId: artwork.id,
                               title: artwork.title,
                               originalUrl: imageSrc,
@@ -1468,7 +1470,7 @@ const generateArtistContent = (artist: Artist) => ({
                                   
                                   // Don't retry with a URL we've already tried
                                   if (!failedUrlsRef.current.has(fallbackUrl) && fallbackUrl !== cloudflareUrl) {
-                                    console.log(`🔄 Retrying with ${nextVariant} variant (attempt ${retryCount + 1}/4):`, fallbackUrl);
+                                    console.log(`?? Retrying with ${nextVariant} variant (attempt ${retryCount + 1}/4):`, fallbackUrl);
                                     // Use setTimeout to retry, but don't update React state
                                     setTimeout(() => {
                                       if (!isMountedRef.current || !imgElement) return;
@@ -1522,7 +1524,7 @@ const generateArtistContent = (artist: Artist) => ({
                 // NOTE: New uploads go to Cloudflare, but old content may still have Firebase URLs
                 // These should be migrated to Cloudflare using the migration tool
                 if (isFirebaseImage) {
-                  console.warn('⚠️ Loading legacy Firebase image (should be migrated to Cloudflare):', imageSrc);
+                  console.warn('?? Loading legacy Firebase image (should be migrated to Cloudflare):', imageSrc);
                   const tileWidth = 400;
                   const calculatedHeight = Math.round(tileWidth / aspectRatio);
                   const imgWidth = artwork.imageWidth || tileWidth;
@@ -1558,7 +1560,7 @@ const generateArtistContent = (artist: Artist) => ({
                             imgElement.style.opacity = '0';
                           }
                           
-                          console.error('❌ Firebase image load error:', {
+                          console.error('? Firebase image load error:', {
                             url: imageSrc,
                             artworkId: artwork.id,
                             title: artwork.title,
@@ -1571,7 +1573,7 @@ const generateArtistContent = (artist: Artist) => ({
                           
                           // Check if URL is actually valid
                           if (!imageSrc || imageSrc === '' || !imageSrc.startsWith('http')) {
-                            console.error('❌ Invalid image URL:', imageSrc);
+                            console.error('? Invalid image URL:', imageSrc);
                             setTimeout(() => {
                               try {
                                 setImageError(true);
@@ -1586,7 +1588,7 @@ const generateArtistContent = (artist: Artist) => ({
                           
                           if (retryCount < 1 && !fallbackImageUrl) {
                             // Retry once with original URL
-                            console.log('🔄 Retrying image load:', imageSrc);
+                            console.log('?? Retrying image load:', imageSrc);
                             setTimeout(() => {
                               try {
                                 setRetryCount(prev => prev + 1);
@@ -1631,7 +1633,7 @@ const generateArtistContent = (artist: Artist) => ({
                 // SAFETY CHECK: If somehow a Cloudflare Stream URL got past the checks above,
                 // use native img instead of Next.js Image to prevent 400 errors
                 if (imageSrc.includes('cloudflarestream.com')) {
-                  console.warn('⚠️ Cloudflare Stream URL reached fallback - using native img:', imageSrc);
+                  console.warn('?? Cloudflare Stream URL reached fallback - using native img:', imageSrc);
                   const tileWidth = 400;
                   const calculatedHeight = Math.round(tileWidth / aspectRatio);
                   const imgWidth = artwork.imageWidth || tileWidth;
@@ -1687,7 +1689,7 @@ const generateArtistContent = (artist: Artist) => ({
                 // FINAL SAFETY CHECK: Never use Next.js Image for Cloudflare Stream URLs
                 // This is a last-resort check to prevent any Cloudflare Stream URLs from reaching Next.js Image
                 if (imageSrc && typeof imageSrc === 'string' && imageSrc.includes('cloudflarestream.com')) {
-                  console.error('🚨 CRITICAL: Cloudflare Stream URL reached Next.js Image fallback! Using native img instead:', imageSrc);
+                  console.error('?? CRITICAL: Cloudflare Stream URL reached Next.js Image fallback! Using native img instead:', imageSrc);
                   const tileWidth = 400;
                   const calculatedHeight = Math.round(tileWidth / aspectRatio);
                   const imgWidth = artwork.imageWidth || tileWidth;

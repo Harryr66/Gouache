@@ -7,7 +7,7 @@ import { Eye, Filter, Search, X, Palette, Calendar, ShoppingBag, MapPin, ArrowUp
 import { ViewSelector } from '@/components/view-selector';
 import { toast } from '@/hooks/use-toast';
 import { ArtworkTile } from '@/components/artwork-tile';
-import { Artwork, MarketplaceProduct, Event as EventType } from '@/lib/types';
+import { Artwork, MarketplaceProduct, Event as EventType, TileSize, getTileSize } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { useLikes } from '@/providers/likes-provider';
 import { fetchActiveAds, mixAdsIntoContent } from '@/lib/ad-fetcher';
@@ -36,6 +36,7 @@ import { useVideoControl } from '@/providers/video-control-provider';
 import Hls from 'hls.js';
 import { cn } from '@/lib/utils';
 import { DiscoverErrorBoundary } from '@/components/discover-error-boundary';
+import { StructuredGrid } from '@/components/structured-grid';
 
 const generatePlaceholderArtworks = (theme: string | undefined, count: number = 12): Artwork[] => {
   // NO EXTERNAL IMAGES - Return empty array
@@ -3562,11 +3563,11 @@ function DiscoverPageContent() {
                 )}
               </div>
             ) : !showLoadingScreen && artworkView === 'grid' ? (
-              <MasonryGrid
+              <StructuredGrid
                 items={imageOnlyArtworks}
                 columnCount={columnCount}
                 gap={4}
-                renderItem={(item) => {
+                renderItem={(item, tileSize) => {
                   // Check if this is an ad
                   const isAd = 'type' in item && item.type === 'ad';
                   if (isAd) {
@@ -3576,6 +3577,7 @@ function DiscoverPageContent() {
                         placement="discover"
                         userId={user?.id}
                         isMobile={isMobile}
+                        tileSize={tileSize}
                       />
                     );
                   }
@@ -3594,12 +3596,29 @@ function DiscoverPageContent() {
                       hideBanner={true}
                       isInitialViewport={isInitial && hasVideo}
                       onVideoReady={isInitial && hasVideo ? () => handleVideoReady(artwork.id) : undefined}
+                      tileSize={tileSize}
                     />
                   );
                 }}
                 loadMoreRef={loadMoreRef}
                 isLoadingMore={isLoadingMore}
                 hasMore={hasMore}
+                getItemAspectRatio={(item) => {
+                  // Return aspect ratio for artwork items
+                  if ('type' in item && item.type === 'ad') return undefined;
+                  const artwork = item as Artwork;
+                  return (artwork as any).aspectRatio || (artwork as any).imageAspectRatio || 0.75;
+                }}
+                getItemTileSize={(item) => {
+                  // Return tile size for ad items based on their adFormat
+                  if ('type' in item && item.type === 'ad') {
+                    const adFormat = item.campaign?.adFormat;
+                    if (adFormat === 'square') return 'square';
+                    if (adFormat === 'landscape') return 'landscape';
+                    return 'portrait';
+                  }
+                  return undefined;
+                }}
               />
             ) : !showLoadingScreen && artworkView === 'list' ? (
               <>
@@ -3644,11 +3663,11 @@ function DiscoverPageContent() {
                   }
                   
                   return (
-                    <MasonryGrid
+                    <StructuredGrid
                       items={pricedArtworks}
                       columnCount={columnCount}
                       gap={4}
-                      renderItem={(item) => {
+                      renderItem={(item, tileSize) => {
                         const isAd = 'type' in item && item.type === 'ad';
                         if (isAd) {
                           return (
@@ -3657,6 +3676,7 @@ function DiscoverPageContent() {
                               placement="discover"
                               userId={user?.id}
                               isMobile={isMobile}
+                              tileSize={tileSize}
                             />
                           );
                         }
@@ -3669,12 +3689,27 @@ function DiscoverPageContent() {
                             artwork={artwork} 
                             hideBanner={true}
                             isInitialViewport={isInitial}
+                            tileSize={tileSize}
                           />
                         );
                       }}
                       loadMoreRef={loadMoreRef}
                       isLoadingMore={isLoadingMore}
                       hasMore={hasMore}
+                      getItemAspectRatio={(item) => {
+                        if ('type' in item && item.type === 'ad') return undefined;
+                        const artwork = item as Artwork;
+                        return (artwork as any).aspectRatio || (artwork as any).imageAspectRatio || 0.75;
+                      }}
+                      getItemTileSize={(item) => {
+                        if ('type' in item && item.type === 'ad') {
+                          const adFormat = item.campaign?.adFormat;
+                          if (adFormat === 'square') return 'square';
+                          if (adFormat === 'landscape') return 'landscape';
+                          return 'portrait';
+                        }
+                        return undefined;
+                      }}
                     />
                   );
                 })()}

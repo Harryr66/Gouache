@@ -1372,3 +1372,36 @@ export interface AdClick {
   userAgent?: string;
   ipAddress?: string;
 }
+
+// Grid tile size for structured layout
+export type TileSize = 'portrait' | 'landscape' | 'square';
+
+/**
+ * Determine tile size based on image aspect ratio
+ * Portrait: taller than wide (aspect < 0.9)
+ * Landscape: wider than tall (aspect > 1.3)
+ * Square: roughly equal (0.9 <= aspect <= 1.3)
+ */
+export function getTileSize(aspectRatio: number): TileSize {
+  if (aspectRatio < 0.9) return 'portrait';
+  if (aspectRatio > 1.3) return 'landscape';
+  return 'square';
+}
+
+/**
+ * Get aspect ratio padding percentage for CSS
+ * Portrait: 150% (2:3 ratio, 1.5x taller than wide)
+ * Landscape: 50% (2:1 ratio, half as tall as wide)
+ * Square: 100% (1:1 ratio)
+ */
+export function getTileAspectRatio(tileSize: TileSize): string {
+  switch (tileSize) {
+    case 'portrait':
+      return '150%'; // 2:3 aspect ratio
+    case 'landscape':
+      return '50%'; // 2:1 aspect ratio
+    case 'square':
+    default:
+      return '100%'; // 1:1 aspect ratio
+  }
+}
