@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { startTransition } from 'react';
 import { Users, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,7 +32,13 @@ export function LearnViewSelector({ view, onViewChange, className, style, disabl
     >
       {/* All button (left) - default */}
       <button
-        onClick={() => !disabled && onViewChange('all')}
+        onClick={() => {
+          if (!disabled) {
+            startTransition(() => {
+              onViewChange('all');
+            });
+          }
+        }}
         disabled={disabled}
         className={cn(
           'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
@@ -46,7 +52,13 @@ export function LearnViewSelector({ view, onViewChange, className, style, disabl
       
       {/* Following button (right) */}
       <button
-        onClick={() => !disabled && onViewChange('following')}
+        onClick={() => {
+          if (!disabled) {
+            startTransition(() => {
+              onViewChange('following');
+            });
+          }
+        }}
         disabled={disabled}
         className={cn(
           'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',

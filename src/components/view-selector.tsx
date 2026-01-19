@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { startTransition } from 'react';
 import { Store, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,7 +32,13 @@ export function ViewSelector({ view, onViewChange, className, style, disabled = 
     >
       {/* Art Market button (left) - priced items only */}
       <button
-        onClick={() => !disabled && onViewChange('list')}
+        onClick={() => {
+          if (!disabled) {
+            startTransition(() => {
+              onViewChange('list');
+            });
+          }
+        }}
         disabled={disabled}
         className={cn(
           'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
@@ -46,7 +52,13 @@ export function ViewSelector({ view, onViewChange, className, style, disabled = 
       
       {/* All content button (right) - default */}
       <button
-        onClick={() => !disabled && onViewChange('grid')}
+        onClick={() => {
+          if (!disabled) {
+            startTransition(() => {
+              onViewChange('grid');
+            });
+          }
+        }}
         disabled={disabled}
         className={cn(
           'flex-1 flex items-center justify-center h-full relative z-10 transition-colors',
