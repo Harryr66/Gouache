@@ -187,7 +187,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
       setVideoPreview(existingCampaign.videoUrl || null);
       setMaxWidthFormat(existingCampaign.maxWidthFormat || false);
     }
-  }, [existingCampaign, form, formatDateForInput, centsToDisplay, cpmCentsToDisplay]);
+  }, [existingCampaign, formatDateForInput, centsToDisplay, cpmCentsToDisplay]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
