@@ -203,10 +203,10 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
         const aspectRatio = video.videoWidth / video.videoHeight;
         setVideoAspectRatio(aspectRatio);
         
-        if (duration > 60) {
+        if (duration > 15) {
           toast({
             title: 'Video too long',
-            description: 'Videos must be 60 seconds or less.',
+            description: 'Videos must be 15 seconds or less.',
             variant: 'destructive',
           });
           window.URL.revokeObjectURL(video.src);
@@ -510,7 +510,10 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                       />
                       <div className="flex-1">
                         <p className="font-medium">Discover Feed - Tiles</p>
-                        <p className="text-xs text-muted-foreground">Show in artwork grid (square, portrait, or large)</p>
+                        <p className="text-xs text-muted-foreground">Show in artwork grid</p>
+                        <p className="text-xs text-muted-foreground/70 mt-1">
+                          Square: 1080×1080px • Portrait: 1080×1350px • Large: 1080×1920px
+                        </p>
                       </div>
                     </div>
                   </Card>
@@ -530,7 +533,10 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                       />
                       <div className="flex-1">
                         <p className="font-medium">Newsroom - Article Tiles</p>
-                        <p className="text-xs text-muted-foreground">Show between news articles (square, portrait, or large)</p>
+                        <p className="text-xs text-muted-foreground">Show between news articles</p>
+                        <p className="text-xs text-muted-foreground/70 mt-1">
+                          Square: 1080×1080px • Portrait: 1080×1350px • Large: 1080×1920px
+                        </p>
                       </div>
                     </div>
                   </Card>
@@ -550,7 +556,10 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                       />
                       <div className="flex-1">
                         <p className="font-medium">Newsroom - Banner</p>
-                        <p className="text-xs text-muted-foreground">Full-width banner below newsletter signup (image only, banner format)</p>
+                        <p className="text-xs text-muted-foreground">Full-width banner below newsletter signup</p>
+                        <p className="text-xs text-muted-foreground/70 mt-1">
+                          Banner: 1800×300px (6:1 ratio) • Image only
+                        </p>
                       </div>
                     </div>
                   </Card>
@@ -570,7 +579,10 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                       />
                       <div className="flex-1">
                         <p className="font-medium">Learn - Course Tiles</p>
-                        <p className="text-xs text-muted-foreground">Show between courses (square, portrait, or large)</p>
+                        <p className="text-xs text-muted-foreground">Show between courses</p>
+                        <p className="text-xs text-muted-foreground/70 mt-1">
+                          Square: 1080×1080px • Portrait: 1080×1350px • Large: 1080×1920px
+                        </p>
                       </div>
                     </div>
                   </Card>
@@ -590,7 +602,10 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                       />
                       <div className="flex-1">
                         <p className="font-medium">Learn - Banner</p>
-                        <p className="text-xs text-muted-foreground">Full-width banner below "Gouache Learn" headline (image only, banner format)</p>
+                        <p className="text-xs text-muted-foreground">Full-width banner below "Gouache Learn" headline</p>
+                        <p className="text-xs text-muted-foreground/70 mt-1">
+                          Banner: 1800×300px (6:1 ratio) • Image only
+                        </p>
                       </div>
                     </div>
                   </Card>
@@ -625,13 +640,13 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                 }}
               >
                 <Video className="mr-2 h-4 w-4" />
-                Video (max 30s)
+                Video (max 15s)
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {mediaType === 'image' 
                 ? 'Recommended: 1080×1350px (4:5 portrait) or 1080×1080px (1:1 square). Min 600px width.'
-                : 'Recommended: 1080×1920px (9:16 portrait) or 1920×1080px (16:9 landscape). Max 30 seconds.'}
+                : 'Recommended: 1080×1920px (9:16 portrait) or 1920×1080px (16:9 landscape). Max 15 seconds.'}
             </p>
           </div>
 
@@ -650,7 +665,7 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                 <label htmlFor="media-upload" className="cursor-pointer">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    Click to upload {mediaType === 'image' ? 'an image' : 'a video (max 30 seconds)'}
+                    Click to upload {mediaType === 'image' ? 'an image' : 'a video (max 15 seconds)'}
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">
                     {mediaType === 'image' 
