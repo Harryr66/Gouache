@@ -112,7 +112,7 @@ export default function ArtistProfilePage() {
           // Map Firestore data to ProfileHeader expected format
           const profileData = {
             id: userDoc.id,
-            displayName: data.name || data.displayName || 'User',
+            displayName: data.displayName || data.name || 'User',
             isVerified: data.isVerified !== false && isProfessionalFlag === true, // All approved professional artists are verified
             username: data.handle || data.username || `user_${userDoc.id}`,
             avatarUrl: data.avatarUrl || undefined,
@@ -129,6 +129,7 @@ export default function ArtistProfilePage() {
             suggestionsEnabled: data.suggestionsEnabled || false,
             hideLocation: data.hideLocation || false,
             hideFlags: data.hideFlags || false,
+            hideName: data.hideName || false,
             hideCard: data.hideCard || false,
             hideUpcomingEvents: data.hideUpcomingEvents || false,
             hideShowcaseLocations: data.hideShowcaseLocations || false,

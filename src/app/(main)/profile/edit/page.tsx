@@ -98,7 +98,11 @@ export default function ProfileEditPage() {
   });
 
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    displayName: '',
+    useDisplayName: false,
     handle: '',
     email: '',
     artistType: '',
@@ -111,6 +115,7 @@ export default function ProfileEditPage() {
     hideFlags: false,
     hideCard: false,
     hideShowcaseLocations: false,
+    hideName: false,
     hideShop: true,   // Hidden by default
     hideLearn: true,   // Hidden by default
     hideLiveStream: false,   // Enabled by default for artists
@@ -255,8 +260,19 @@ export default function ProfileEditPage() {
             ? formData.email
             : firebaseAuthEmail;
           
+          // Split existing name for backward compatibility
+          const existingName = user.displayName || '';
+          const nameParts = existingName.split(' ');
+          const userFirstName = (user as any).firstName || nameParts[0] || '';
+          const userMiddleName = (user as any).middleName || (nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '');
+          const userLastName = (user as any).lastName || (nameParts.length > 1 ? nameParts[nameParts.length - 1] : '');
+          
           const nextFormData = {
-            name: user.displayName || '',
+            firstName: userFirstName,
+            middleName: userMiddleName,
+            lastName: userLastName,
+            displayName: (user as any).displayName || '',
+            useDisplayName: (user as any).useDisplayName || false,
             handle: user.username || '',
             email: currentEmail,
             artistType: user.artistType || '',
@@ -271,6 +287,7 @@ export default function ProfileEditPage() {
           hideFlags: user.hideFlags || false,
           hideCard: user.isProfessional ? (user.hideCard || false) : false,
           hideShowcaseLocations: user.isProfessional ? ((user as any).hideShowcaseLocations || false) : false,
+          hideName: (user as any).hideName || false,
           // Default to hidden (true) when field is undefined
           hideShop: ((user as any).hideShop ?? true),
           hideLearn: ((user as any).hideLearn ?? true),
@@ -753,13 +770,18 @@ export default function ProfileEditPage() {
     
     setIsStartingVerification(true);
     try {
+      // Generate full name from form parts for Stripe verification
+      const fullName = [formData.firstName, formData.middleName, formData.lastName]
+        .filter(part => part.trim())
+        .join(' ');
+      
       const response = await fetch('/api/stripe/identity/create-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: user.email,
           userId: user.id,
-          expectedName: formData.name || user.displayName, // Must match account name
+          expectedName: fullName || user.displayName, // Must match account name with full middle name
         }),
       });
 
@@ -1009,7 +1031,11 @@ export default function ProfileEditPage() {
     // Check if there are actual changes from initial data
     if (initialFormDataRef.current) {
       const hasChanges = 
-        formData.name !== initialFormDataRef.current.name ||
+        formData.firstName !== initialFormDataRef.current.firstName ||
+        formData.middleName !== initialFormDataRef.current.middleName ||
+        formData.lastName !== initialFormDataRef.current.lastName ||
+        formData.displayName !== initialFormDataRef.current.displayName ||
+        formData.useDisplayName !== initialFormDataRef.current.useDisplayName ||
         formData.email !== initialFormDataRef.current.email ||
         formData.artistType !== initialFormDataRef.current.artistType ||
         formData.location !== initialFormDataRef.current.location ||
@@ -1020,6 +1046,7 @@ export default function ProfileEditPage() {
         formData.hideLocation !== initialFormDataRef.current.hideLocation ||
         formData.hideFlags !== initialFormDataRef.current.hideFlags ||
         formData.hideShowcaseLocations !== initialFormDataRef.current.hideShowcaseLocations ||
+        formData.hideName !== initialFormDataRef.current.hideName ||
         formData.hideShop !== initialFormDataRef.current.hideShop ||
         formData.hideLearn !== initialFormDataRef.current.hideLearn ||
         formData.hideLiveStream !== initialFormDataRef.current.hideLiveStream ||
@@ -1060,15 +1087,30 @@ export default function ProfileEditPage() {
           ? formEmail 
           : firebaseAuthEmail;
         
+      // Generate full name from parts (legal name)
+      const fullName = [formData.firstName, formData.middleName, formData.lastName]
+        .filter(part => part.trim())
+        .join(' ');
+      
+      // Use custom display name if enabled, otherwise use legal name
+      const publicDisplayName = formData.useDisplayName && formData.displayName.trim() 
+        ? formData.displayName.trim() 
+        : fullName;
+      
       const updateData: any = {
-        name: formData.name,
-        displayName: formData.name, // Also update displayName (used by profile display) - same as handleSubmit
+        firstName: formData.firstName,
+        middleName: formData.middleName || '',
+        lastName: formData.lastName,
+        displayName: publicDisplayName, // Public display name (artist name or legal name)
+        useDisplayName: formData.useDisplayName,
+        name: fullName, // Keep legal name for backward compatibility and Stripe
         email: emailToSave, // Use synced email - same as handleSubmit
         location: formData.location,
         countryOfOrigin: formData.countryOfOrigin,
         countryOfResidence: formData.countryOfResidence,
         hideLocation: formData.hideLocation,
         hideFlags: formData.hideFlags,
+        hideName: formData.hideName,
         hideShop: formData.hideShop,
         hideLearn: formData.hideLearn,
         updatedAt: new Date(),
@@ -1167,7 +1209,11 @@ export default function ProfileEditPage() {
       }
     };
   }, [
-    formData.name,
+    formData.firstName,
+    formData.middleName,
+    formData.lastName,
+    formData.displayName,
+    formData.useDisplayName,
     formData.email,
     // formData.isProfessional removed - it's permanent for artist accounts
     formData.tipJarEnabled,
@@ -1280,9 +1326,23 @@ export default function ProfileEditPage() {
         console.warn('⚠️ Using Firebase Auth email to prevent mismatch');
       }
       
+      // Generate full name from parts (legal name)
+      const fullName = [formData.firstName, formData.middleName, formData.lastName]
+        .filter(part => part.trim())
+        .join(' ');
+      
+      // Use custom display name if enabled, otherwise use legal name
+      const publicDisplayName = formData.useDisplayName && formData.displayName.trim() 
+        ? formData.displayName.trim() 
+        : fullName;
+      
       const updateData: any = {
-        name: formData.name,
-        displayName: formData.name, // Also update displayName (used by profile display)
+        firstName: formData.firstName,
+        middleName: formData.middleName || '',
+        lastName: formData.lastName,
+        displayName: publicDisplayName, // Public display name (artist name or legal name)
+        useDisplayName: formData.useDisplayName,
+        name: fullName, // Keep legal name for backward compatibility and Stripe
         handle: formData.handle,
         email: emailToSave, // Always use Firebase Auth email or verified email
         location: formData.location,
@@ -1290,6 +1350,7 @@ export default function ProfileEditPage() {
         countryOfResidence: formData.countryOfResidence,
         hideLocation: formData.hideLocation,
         hideFlags: formData.hideFlags,
+        hideName: formData.hideName,
         hideShop: formData.hideShop,
         hideLearn: formData.hideLearn,
         updatedAt: new Date(),
@@ -1553,10 +1614,10 @@ export default function ProfileEditPage() {
                 <Avatar className="h-24 w-24">
                   <AvatarImage 
                     src={previewImage || user.avatarUrl} 
-                    alt={formData.name} 
+                    alt={[formData.firstName, formData.lastName].filter(p => p).join(' ')} 
                   />
                   <AvatarFallback className="text-xl">
-                    {formData.name?.charAt(0)?.toUpperCase() || 'U'}
+                    {formData.firstName?.charAt(0)?.toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 {previewImage && (
@@ -1637,17 +1698,80 @@ export default function ProfileEditPage() {
             <CardTitle>Basic Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  required
+            {/* Name Fields - Split for Stripe ID verification */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    required
+                    placeholder="John"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="middleName">Middle Name (Optional)</Label>
+                  <Input
+                    id="middleName"
+                    value={formData.middleName}
+                    onChange={(e) => handleInputChange('middleName', e.target.value)}
+                    placeholder="Robert"
+                  />
+                  <p className="text-xs text-muted-foreground">Include if on your ID</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    required
+                    placeholder="Smith"
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Enter your full legal name exactly as it appears on your government-issued ID for identity verification.
+              </p>
+            </div>
+
+            {/* Display Name (Artist Name) - Optional */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="text-base">Use Display Name (Artist/Brand Name)</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Show a custom name on your profile instead of your legal name for privacy
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.useDisplayName}
+                  onCheckedChange={(checked) => handleInputChange('useDisplayName', checked)}
                 />
               </div>
               
+              {formData.useDisplayName && (
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">Display Name (Public) *</Label>
+                  <Input
+                    id="displayName"
+                    value={formData.displayName}
+                    onChange={(e) => handleInputChange('displayName', e.target.value)}
+                    placeholder="Your artist or brand name"
+                    required={formData.useDisplayName}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This is the name that will appear on your public profile. Your legal name remains private and is only used for identity verification.
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="handle">Handle *</Label>
                 <div className="relative">
@@ -1739,6 +1863,24 @@ export default function ProfileEditPage() {
                 onChange={(e) => handleInputChange('location', e.target.value)}
                 placeholder="City, State/Region"
               />
+            </div>
+
+            {/* Privacy Settings - Available to all users */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Privacy Settings</h3>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Hide name on profile</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Only your handle will be visible on your public profile
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.hideName}
+                  onCheckedChange={(checked) => handleInputChange('hideName', checked)}
+                />
+              </div>
             </div>
 
             {/* Edit Profile Features - Artist accounts only */}
@@ -2317,8 +2459,8 @@ export default function ProfileEditPage() {
                             <div>
                               <p className="font-medium text-amber-800 dark:text-amber-200">Important</p>
                               <p className="text-sm text-amber-700 dark:text-amber-300">
-                                Your account name is: <strong>{formData.name || user?.displayName}</strong>. 
-                                The name on your ID must match this exactly.
+                                Your account name is: <strong>{[formData.firstName, formData.middleName, formData.lastName].filter(p => p.trim()).join(' ') || user?.displayName}</strong>. 
+                                The name on your ID must match this exactly, including middle name if present.
                               </p>
                             </div>
                           </div>
@@ -2372,8 +2514,8 @@ export default function ProfileEditPage() {
                               <p className="font-medium text-red-800 dark:text-red-200">Name Mismatch</p>
                               <p className="text-sm text-red-700 dark:text-red-300">
                                 ID name: <strong>{verifiedName}</strong><br />
-                                Account name: <strong>{formData.name || user?.displayName}</strong><br />
-                                Please update your account name above to match your ID, then verify again.
+                                Account name: <strong>{[formData.firstName, formData.middleName, formData.lastName].filter(p => p.trim()).join(' ') || user?.displayName}</strong><br />
+                                Please update your account name above to match your ID exactly, including middle name if present, then verify again.
                               </p>
                             </div>
                           </div>

@@ -247,6 +247,17 @@ export function AdminSidebar(props: AdminSidebarProps) {
               ({props.contentReports?.filter((r: any) => r.status === 'pending').length || 0})
             </Badge>
           </button>
+          <button
+            onClick={() => props.setSelectedView('account-reports')}
+            className={`w-full flex justify-between items-center px-3 py-2 rounded-md transition-colors ${
+              props.selectedView === 'account-reports' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+            }`}
+          >
+            <span className="text-sm">Account Reports</span>
+            <Badge variant={props.selectedView === 'account-reports' ? 'secondary' : 'outline'}>
+              New
+            </Badge>
+          </button>
         </CardContent>
       </Card>
 

@@ -27,6 +27,8 @@ import {
   Package,
   Pin,
   ExternalLink,
+  MoreVertical,
+  Flag,
 } from 'lucide-react';
 import { Instagram, Twitter } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -39,6 +41,8 @@ import { ShowcaseLocation } from '@/lib/types';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { NewsletterSubscribeModal } from './newsletter-subscribe-modal';
 import { FollowersFollowingDialog } from './followers-following-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ReportAccountDialog } from './report-account-dialog';
 
 interface ProfileHeaderProps {
   user: {
@@ -60,6 +64,7 @@ interface ProfileHeaderProps {
     suggestionsEnabled?: boolean;
     hideLocation?: boolean;
     hideFlags?: boolean;
+    hideName?: boolean;
     hideCard?: boolean;
     hideShowcaseLocations?: boolean;
     hideSocialIcons?: boolean;
@@ -98,6 +103,7 @@ export function ProfileHeader({
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
   const [showFollowersDialog, setShowFollowersDialog] = useState(false);
   const [followersDialogType, setFollowersDialogType] = useState<'followers' | 'following'>('followers');
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   // Early return if user is not properly loaded
   if (!user) {
@@ -133,11 +139,15 @@ export function ProfileHeader({
           <div className="flex-1 space-y-3 md:space-y-4">
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl md:text-3xl font-headline font-bold text-foreground">
-                  {user.displayName || 'User'}
-                </h1>
+                {!user.hideName && (
+                  <h1 className="text-2xl md:text-3xl font-headline font-bold text-foreground">
+                    {user.displayName || 'User'}
+                  </h1>
+                )}
               </div>
-              <p className="text-muted-foreground text-base md:text-lg">{user.username}</p>
+              <p className={`text-muted-foreground ${user.hideName ? 'text-2xl md:text-3xl font-headline font-bold text-foreground' : 'text-base md:text-lg'}`}>
+                {user.username}
+              </p>
               {user.location && !user.hideLocation && (
                 <div className="mt-1 flex items-center gap-2 text-muted-foreground">
                   <MapPin className="h-4 w-4" />
@@ -359,15 +369,36 @@ export function ProfileHeader({
                   )}
                 </>
               ) : (
-                <Button 
-                  variant={isFollowing ? "gradient" : "outline"}
-                  size="sm"
-                  className="text-xs md:text-sm"
-                  onClick={onFollowToggle}
-                >
-                  <Heart className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                  {isFollowing ? 'Following' : 'Follow'}
-                </Button>
+                <>
+                  <Button 
+                    variant={isFollowing ? "gradient" : "outline"}
+                    size="sm"
+                    className="text-xs md:text-sm"
+                    onClick={onFollowToggle}
+                  >
+                    <Heart className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </Button>
+                  
+                  {/* More Options Menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                        <Flag className="h-4 w-4 mr-2" />
+                        Report Account
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
               )}
             </div>
 
@@ -613,6 +644,16 @@ export function ProfileHeader({
         followerCount={user.followerCount}
         followingCount={user.followingCount}
       />
+
+      {/* Report Account Dialog */}
+      {!isOwnProfile && (
+        <ReportAccountDialog
+          open={showReportDialog}
+          onOpenChange={setShowReportDialog}
+          reportedUserId={user.id}
+          reportedUsername={user.username}
+        />
+      )}
 
     </>
   );

@@ -20,6 +20,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLikes } from '@/providers/likes-provider';
 import { ReportDialog } from '@/components/report-dialog';
+import { ReportAccountDialog } from '@/components/report-account-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { engagementTracker } from '@/lib/engagement-tracker';
 import { useVideoControl } from '@/providers/video-control-provider';
 import { useVideoPrefetch } from '@/hooks/use-video-prefetch';
@@ -82,6 +84,7 @@ export const ArtworkTile = React.memo(function ArtworkTile({ artwork, onClick, c
   const { registerVideo, requestPlay, isPlaying, getConnectionSpeed, registerVisibleVideo, unregisterVisibleVideo, canAutoplay, handleVideoEnded } = useVideoControl();
   const [showArtistPreview, setShowArtistPreview] = useState(false);
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null);
+  const [showReportAccountDialog, setShowReportAccountDialog] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [mediaAspectRatio, setMediaAspectRatio] = useState<number | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -1995,14 +1998,39 @@ const generateArtistContent = (artist: Artist) => ({
                 >
                   <Share2 className="h-4 w-4" />
                 </Button>
-                <ReportDialog
-                  contentId={artwork.id}
-                  contentType="Artwork"
-                  content={artwork.title || artwork.description || 'Artwork'}
-                  offenderId={artwork.artist.id}
-                  offenderHandle={artwork.artist.handle || artwork.artist.name}
-                  onReport={async () => {}}
-                />
+                
+                {/* More Options Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-12 w-12 rounded-xl border-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Flag className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuItem asChild>
+                      <ReportDialog
+                        contentId={artwork.id}
+                        contentType="Artwork"
+                        content={artwork.title || artwork.description || 'Artwork'}
+                        offenderId={artwork.artist.id}
+                        offenderHandle={artwork.artist.handle || artwork.artist.name}
+                        onReport={async () => {}}
+                      />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => {
+                      e.stopPropagation();
+                      setShowReportAccountDialog(true);
+                    }}>
+                      <Flag className="h-4 w-4 mr-2" />
+                      Report Account
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               
               {/* Mobile: Collapsible Artist Banner */}
@@ -2357,6 +2385,15 @@ const generateArtistContent = (artist: Artist) => ({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Report Account Dialog */}
+      <ReportAccountDialog
+        open={showReportAccountDialog}
+        onOpenChange={setShowReportAccountDialog}
+        reportedUserId={artwork.artist.id}
+        reportedUsername={artwork.artist.handle || artwork.artist.name}
+        artworkId={artwork.id}
+      />
     </>
   );
 }, (prevProps, nextProps) => {

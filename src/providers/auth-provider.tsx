@@ -362,7 +362,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             id: firebaseUser.uid,
             username: userData.handle || '',
             email: firebaseAuthEmail, // Always use Firebase Auth email as source of truth
-            displayName: userData.name || userData.displayName || firebaseUser.displayName || '',
+            displayName: userData.displayName || userData.name || firebaseUser.displayName || '',
             avatarUrl: userData.avatarUrl || firebaseUser.photoURL || undefined,
             bio: userData.bio || '',
             website: userData.website || '',
@@ -380,6 +380,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isAdmin: userData.isAdmin || false,
             hideLocation: userData.hideLocation || false,
             hideFlags: userData.hideFlags || false,
+            hideName: userData.hideName || false,
             hideCard: userData.hideCard || false,
             hideShowcaseLocations: userData.hideShowcaseLocations || false,
             hideShop: userData.hideShop ?? true,

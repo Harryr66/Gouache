@@ -14,6 +14,7 @@ import { X, Eye, Clock, User, Users, Calendar, ExternalLink, Upload, Plus, Megap
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { ArtistInviteConsole } from '@/components/admin/artist-invite-console';
+import { AccountReportsManager } from '@/components/admin/account-reports-manager';
 import { useRouter } from 'next/navigation';
 import { ArtistRequest, AdvertisingApplication, MarketplaceProduct, AffiliateProductRequest, Advertisement, AdvertisementAnalytics, Course, CourseSubmission, NewsArticle, UserReport, Report } from '@/lib/types';
 import { doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
@@ -1937,6 +1938,11 @@ export function AdminViewRouter(props: any) {
               </div>
             )}
           </div>
+        )}
+
+        {/* Account Reports */}
+        {props.selectedView === 'account-reports' && (
+          <AccountReportsManager />
         )}
 
         {/* Marketplace - Products */}
