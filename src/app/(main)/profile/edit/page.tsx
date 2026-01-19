@@ -2868,7 +2868,7 @@ export default function ProfileEditPage() {
                     <Button
                       type="button"
                       onClick={handleArtistRequestSubmit}
-                      disabled={isSubmittingRequest || portfolioImages.length < 3 || identityVerificationStatus !== 'verified'}
+                      disabled={isSubmittingRequest || portfolioImages.length < 3}
                     >
                       {isSubmittingRequest ? (
                         <>
@@ -2879,10 +2879,9 @@ export default function ProfileEditPage() {
                         'Submit Artist Account Request'
                       )}
                     </Button>
-                    {(portfolioImages.length < 3 || identityVerificationStatus !== 'verified') && (
+                    {portfolioImages.length < 3 && (
                       <p className="text-xs text-muted-foreground">
-                        {identityVerificationStatus !== 'verified' && 'Complete identity verification • '}
-                        {portfolioImages.length < 3 && `Upload ${3 - portfolioImages.length} more portfolio image${3 - portfolioImages.length > 1 ? 's' : ''}`}
+                        Upload {3 - portfolioImages.length} more portfolio image{3 - portfolioImages.length > 1 ? 's' : ''}
                       </p>
                     )}
                   </div>
