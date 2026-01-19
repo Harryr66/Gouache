@@ -788,10 +788,11 @@ function SettingsPageContent() {
                 <BusinessManager />
               </div>
             )}
-            <div data-payments-section>
+            {/* Payments section temporarily hidden - direct artist-to-buyer contact only */}
+            {/* <div data-payments-section>
               <h2 className="text-lg font-semibold mb-4">Payments & Payouts</h2>
               <StripeIntegrationWizard />
-            </div>
+            </div> */}
               </>
             )}
           </TabsContent>

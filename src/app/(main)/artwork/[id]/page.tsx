@@ -12,15 +12,11 @@ import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { AboutTheArtist } from '@/components/about-the-artist';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { X, Mail, Heart, ShoppingCart, Loader2 } from 'lucide-react';
+import { X, Mail, Heart, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useLikes } from '@/providers/likes-provider';
 import { useAuth } from '@/providers/auth-provider';
-import { CheckoutForm } from '@/components/checkout-form';
-import { Elements } from '@stripe/react-stripe-js';
-import { getStripePromise } from '@/lib/stripe-client';
 import Hls from 'hls.js';
-import { verifyArtworkPurchase } from '@/lib/purchase-verification';
 
 // Use shared Stripe promise utility
 
@@ -64,79 +60,7 @@ export default function ArtworkPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [isPrint, setIsPrint] = useState(false);
-  
-  // CRITICAL: Payment safety states
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Prevents double-clicks
-  const [isVerifying, setIsVerifying] = useState(false); // Shows verification overlay
-
-  // ============================================
-  // PAYMENT SUCCESS HANDLER - WAIT FOR WEBHOOK
-  // ============================================
-  const handleCheckoutSuccess = async (paymentIntentId: string) => {
-    console.log('[Artwork] Payment AUTHORIZED, marking as sold...');
-    
-    setIsVerifying(true);
-    setShowCheckout(false);
-    
-    try {
-      toast({
-        title: "Processing Purchase...",
-        description: "Please wait, do not close this page.",
-        duration: 30000,
-      });
-      
-      // STEP 1: Mark artwork as sold (via webhook trigger OR immediate update)
-      // For now, let webhook handle it, but capture payment ONLY after confirming sold status
-      console.log('[Artwork] Step 1: Checking if artwork marked as sold...');
-      
-      // Poll briefly to confirm webhook processed the sale
-      const verified = await verifyArtworkPurchase(artwork!.id, paymentIntentId, 5); // 10 seconds
-      
-      if (verified) {
-        // Artwork marked as sold, now capture payment
-        console.log('[Artwork] Step 2: Capturing payment...');
-        const captureResponse = await fetch('/api/stripe/capture-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentIntentId }),
-        });
-
-        if (!captureResponse.ok) {
-          throw new Error('Failed to capture payment');
-        }
-
-        console.log('[Artwork] ✅ Payment captured, purchase complete');
-        
-        toast({
-          title: "Purchase Complete!",
-          description: "You will receive a confirmation email shortly.",
-        });
-        
-        window.location.reload();
-      } else {
-        // Webhook didn't fire yet, payment still authorized but NOT captured
-        toast({
-          title: "Processing...",
-          description: "Your payment is being processed. Your card has NOT been charged yet. Please refresh in a moment.",
-          duration: 10000,
-        });
-      }
-    } catch (error: any) {
-      console.error('[Artwork] Error:', error);
-      
-      toast({
-        title: "Purchase Processing",
-        description: "Your card was NOT charged. Error: " + error.message,
-        variant: "destructive",
-        duration: 30000,
-      });
-    } finally {
-      setIsVerifying(false);
-      setIsProcessingPayment(false);
-    }
-  };
+  const [showContactDialog, setShowContactDialog] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalVideoRef = useRef<HTMLVideoElement>(null);
@@ -892,15 +816,16 @@ export default function ArtworkPage() {
                         <Button
                           variant="gradient"
                           onClick={() => {
-                            if (artwork.artist?.email) {
-                              window.location.href = `mailto:${artwork.artist.email}?subject=Inquiry about ${encodeURIComponent(artwork.title)}&body=Hello, I'm interested in learning more about "${artwork.title}". Could you please provide pricing and availability information?`;
-                            } else {
+                            if (!user) {
                               toast({
-                                title: 'Email not available',
-                                description: 'The artist has not provided an email address.',
+                                title: 'Sign in Required',
+                                description: 'Please sign in to contact the artist.',
                                 variant: 'destructive'
                               });
+                              router.push('/login');
+                              return;
                             }
+                            setShowContactDialog(true);
                           }}
                         >
                           <Mail className="h-4 w-4 mr-2" />
@@ -912,124 +837,26 @@ export default function ArtworkPage() {
                       <div className="flex items-center gap-2">
                         <Button
                           variant="gradient"
-                          disabled={isProcessingPayment}
                           onClick={() => {
-                            // ========================================
-                            // CRITICAL: COMPREHENSIVE PRE-PAYMENT VALIDATION
-                            // DO NOT PROCEED IF ANY CHECK FAILS
-                            // ========================================
-                            
-                            // Check 1: Idempotency - prevent double clicks
-                            if (isProcessingPayment) {
-                              toast({
-                                title: "Please Wait",
-                                description: "Payment is already being processed.",
-                              });
-                              return;
-                            }
-                            
-                            // Check 2: User authentication
                             if (!user) {
                               toast({
-                                title: 'Login Required',
-                                description: 'Please log in to purchase artwork.',
+                                title: 'Sign in Required',
+                                description: 'Please sign in to contact the artist.',
                                 variant: 'destructive'
                               });
                               router.push('/login?redirect=' + encodeURIComponent(`/artwork/${artwork.id}`));
                               return;
                             }
-                            
-                            // Check 3: Artwork data validation
-                            if (!artwork || !artwork.id) {
-                              toast({
-                                title: 'Error',
-                                description: 'Artwork data not loaded. Please refresh the page.',
-                                variant: 'destructive'
-                              });
-                              return;
-                            }
-                            
-                            // Check 4: Artwork not already sold
-                            if (artwork.sold) {
-                              toast({
-                                title: 'Already Sold',
-                                description: 'This artwork has already been sold.',
-                                variant: 'destructive'
-                              });
-                              return;
-                            }
-                            
-                            // Check 5: Artist information validation
-                            if (!artwork.artist?.id) {
-                              toast({
-                                title: 'Artist information missing',
-                                description: 'Unable to process purchase. Artist information is not available.',
-                                variant: 'destructive'
-                              });
-                              return;
-                            }
-                            
-                            // Check 6: Price validation
-                            if (!artwork.price || artwork.price <= 0) {
-                              toast({
-                                title: 'Invalid Price',
-                                description: 'Artwork price is not set correctly.',
-                                variant: 'destructive'
-                              });
-                              return;
-                            }
-                            
-                            // Check 7: Cannot purchase own artwork
-                            if (user.id === artwork.artist?.id) {
-                              toast({
-                                title: 'Cannot Purchase Own Artwork',
-                                description: 'You cannot purchase your own artwork.',
-                                variant: 'destructive'
-                              });
-                              return;
-                            }
-                            
-                            // ========================================
-                            // VALIDATION PASSED - REDIRECT TO STRIPE CHECKOUT
-                            // Physical artwork requires shipping address collection
-                            // ========================================
-                            setIsProcessingPayment(true);
-                            
-                            // Create Stripe Checkout Session for shipping address collection
-                            fetch('/api/stripe/create-checkout-session', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                itemId: artwork.id,
-                                itemType: 'artwork',
-                                buyerId: user.id,
-                                buyerEmail: user.email, // BUYER's email for checkout
-                              }),
-                            })
-                            .then(async (response) => {
-                              if (!response.ok) {
-                                const errorData = await response.json();
-                                throw new Error(errorData.error || 'Failed to create checkout session');
-                              }
-                              return response.json();
-                            })
-                            .then((data) => {
-                              // Redirect to Stripe Checkout
-                              window.location.href = data.url;
-                            })
-                            .catch((error) => {
-                              console.error('Error creating checkout session:', error);
-                              setIsProcessingPayment(false);
-                              toast({
-                                title: 'Checkout Error',
-                                description: error.message || 'Failed to start checkout process.',
-                                variant: 'destructive'
-                              });
-                            });
+                            setShowContactDialog(true);
                           }}
                         >
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                          Buy Now - {artwork.currency || 'USD'} {(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <Mail className="h-4 w-4 mr-2" />
+                          Contact Artist to Purchase
+                          {artwork.price && artwork.price > 0 && (
+                            <span className="ml-2">
+                              - {artwork.currency || 'USD'} {(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          )}
                         </Button>
                       </div>
                     )}
@@ -1098,64 +925,88 @@ export default function ArtworkPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Checkout Dialog */}
-      {artwork && artwork.isForSale && artwork.price && artwork.price > 0 && artwork.artist?.id && (
-        <Dialog open={showCheckout} onOpenChange={(open) => {
-          setShowCheckout(open);
-          if (!open) setIsProcessingPayment(false); // Reset processing state if dialog closed
-        }}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* Contact Artist Dialog */}
+      {artwork && artwork.artist && (
+        <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Purchase Artwork</DialogTitle>
+              <DialogTitle>Contact Artist</DialogTitle>
             </DialogHeader>
-            {getStripePromise() ? (
-              <CheckoutForm
-                amount={artwork.price / 100} // Convert from cents to dollars
-                currency={artwork.currency || 'USD'}
-                artistId={artwork.artist.id}
-                itemId={artwork.id}
-                itemType={isPrint ? 'print' : 'original'}
-                itemTitle={artwork.title}
-                buyerId={user?.id || ''}
-                onSuccess={handleCheckoutSuccess}
-                onCancel={() => {
-                  setShowCheckout(false);
-                  setIsProcessingPayment(false);
-                }}
-              />
-            ) : (
-              <div className="p-8 text-center">
-                <p className="text-muted-foreground mb-4">
-                  Payment processing is not configured. Please contact support.
-                </p>
-                <Button variant="outline" onClick={() => {
-                  setShowCheckout(false);
-                  setIsProcessingPayment(false);
-                }}>
-                  Close
-                </Button>
+            <div className="space-y-4 py-4">
+              <div className="flex items-start gap-4">
+                <User className="h-10 w-10 text-muted-foreground" />
+                <div className="flex-1 space-y-2">
+                  <div>
+                    <p className="font-medium">{artwork.artist.name}</p>
+                    <p className="text-sm text-muted-foreground">@{artwork.artist.handle}</p>
+                  </div>
+                  {artwork.price && artwork.price > 0 && artwork.priceType !== 'contact' && (
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm font-medium">Listed Price:</p>
+                      <p className="text-lg font-bold">
+                        {artwork.currency || 'USD'} {(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+              
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm font-medium mb-2">Artist Contact Email:</p>
+                {artwork.artist.email ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 p-2 bg-background rounded border">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <a 
+                        href={`mailto:${artwork.artist.email}?subject=Inquiry about ${encodeURIComponent(artwork.title)}`}
+                        className="text-sm font-medium text-blue-600 hover:underline break-all"
+                      >
+                        {artwork.artist.email}
+                      </a>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Contact the artist directly to discuss purchase details, shipping, and payment arrangements.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Artist email not available. Please try contacting through their profile.
+                  </p>
+                )}
+              </div>
+              
+              {artwork.deliveryScope && (
+                <div className="text-xs text-muted-foreground">
+                  <p className="font-medium mb-1">Delivery:</p>
+                  <p>
+                    {artwork.deliveryScope === 'worldwide' 
+                      ? 'Worldwide delivery available'
+                      : artwork.deliveryCountries 
+                        ? `Delivery to: ${artwork.deliveryCountries}`
+                        : 'Delivery location specified'}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowContactDialog(false)} className="flex-1">
+                Close
+              </Button>
+              {artwork.artist.email && (
+                <Button 
+                  variant="gradient" 
+                  onClick={() => {
+                    window.location.href = `mailto:${artwork.artist.email}?subject=Inquiry about ${encodeURIComponent(artwork.title)}&body=Hello,\n\nI'm interested in purchasing "${artwork.title}".${artwork.price && artwork.price > 0 && artwork.priceType !== 'contact' ? `\n\nI saw it is listed at ${artwork.currency || 'USD'} ${(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.` : ''}\n\nPlease let me know about availability and how we can proceed with the purchase.\n\nThank you!`;
+                  }}
+                  className="flex-1"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Email
+                </Button>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
-      )}
-      
-      {/* CRITICAL: Verification Loading Overlay */}
-      {isVerifying && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <Card className="w-full max-w-md p-6 mx-4">
-            <div className="flex flex-col items-center gap-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <h3 className="font-semibold text-lg text-center">Verifying Purchase</h3>
-              <p className="text-sm text-muted-foreground text-center">
-                Your payment was successful. We're verifying your purchase with the database...
-              </p>
-              <p className="text-xs text-muted-foreground text-center">
-                This usually takes just a few seconds.
-              </p>
-            </div>
-          </Card>
-        </div>
       )}
     </div>
   );
