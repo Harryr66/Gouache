@@ -167,13 +167,24 @@ export function AdTile({ campaign, placement, userId, isMobile = false, format, 
   const isVideo = campaign.mediaType === 'video';
   const isMaxWidthFormat = campaign.maxWidthFormat && isVideo && isMobile;
 
-  // Calculate aspect ratio based on format or tileSize (simplified: portrait or landscape)
+  // Calculate aspect ratio based on adFormat for proper grid fitting
   const getAspectRatioPadding = () => {
     if (isMaxWidthFormat && videoAspectRatio) {
       return `${(1 / videoAspectRatio) * 100}%`;
     }
-    // Use tileSize for structured grid layout
-    return effectiveTileSize === 'landscape' ? '50%' : '200%'; // 2:1 or 1:2
+    // Match the selected ad format to proper aspect ratios
+    switch (actualFormat) {
+      case 'square':
+        return '100%'; // 1:1
+      case 'portrait':
+        return '125%'; // 4:5 (same as most artwork tiles)
+      case 'large':
+        return '177.78%'; // 9:16
+      case 'banner':
+        return '16.67%'; // 6:1
+      default:
+        return '125%'; // Default to 4:5 portrait
+    }
   };
 
   return (
