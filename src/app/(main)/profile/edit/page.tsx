@@ -190,6 +190,7 @@ export default function ProfileEditPage() {
               : false,
             hideLocation: changes.hideLocation || user.hideLocation || false,
             hideFlags: changes.hideFlags || user.hideFlags || false,
+            hideName: changes.hideName || (user as any).hideName || false,
             hideCard: user.isProfessional ? (changes.hideCard || user.hideCard || false) : false,
             hideShowcaseLocations: user.isProfessional ? (changes.hideShowcaseLocations || user.hideShowcaseLocations || false) : false,
             // If undefined, default to hidden (true) until artist explicitly disables
