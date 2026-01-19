@@ -80,6 +80,18 @@ const formSchema = z.object({
   message: "Banner placements require banner format",
   path: ["placements"],
 }).refine((data) => {
+  // Can't mix tile and banner placements - they require different formats
+  const hasTilePlacement = data.placements.some(p => p.includes('tiles'));
+  const hasBannerPlacement = data.placements.some(p => p.includes('banner'));
+  
+  if (hasTilePlacement && hasBannerPlacement) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Cannot mix tile and banner placements - they require different formats. Create separate campaigns.",
+  path: ["placements"],
+}).refine((data) => {
   // Tile placements require non-banner formats
   const hasTilePlacement = data.placements.some(p => p.includes('tiles'));
   if (hasTilePlacement) {
@@ -443,59 +455,6 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
 
           <FormField
             control={form.control}
-            name="adFormat"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Ad Format *</FormLabel>
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  <Card
-                    className={`p-3 cursor-pointer transition-all ${field.value === 'square' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
-                    onClick={() => field.onChange('square')}
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <div className={`w-12 h-12 border-2 ${field.value === 'square' ? 'border-primary' : 'border-muted-foreground'}`} />
-                      <p className="font-medium text-sm">Square</p>
-                      <p className="text-xs text-muted-foreground text-center">1:1 (1080×1080px)</p>
-                    </div>
-                  </Card>
-                  <Card
-                    className={`p-3 cursor-pointer transition-all ${field.value === 'portrait' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
-                    onClick={() => field.onChange('portrait')}
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <div className={`w-10 h-12 border-2 ${field.value === 'portrait' ? 'border-primary' : 'border-muted-foreground'}`} />
-                      <p className="font-medium text-sm">Portrait</p>
-                      <p className="text-xs text-muted-foreground text-center">4:5 (1080×1350px)</p>
-                    </div>
-                  </Card>
-                  <Card
-                    className={`p-3 cursor-pointer transition-all ${field.value === 'large' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
-                    onClick={() => field.onChange('large')}
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <div className={`w-12 h-16 border-2 ${field.value === 'large' ? 'border-primary' : 'border-muted-foreground'}`} />
-                      <p className="font-medium text-sm">Large</p>
-                      <p className="text-xs text-muted-foreground text-center">9:16 (1080×1920px)</p>
-                    </div>
-                  </Card>
-                  <Card
-                    className={`p-3 cursor-pointer transition-all ${field.value === 'banner' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
-                    onClick={() => field.onChange('banner')}
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <div className={`w-16 h-6 border-2 ${field.value === 'banner' ? 'border-primary' : 'border-muted-foreground'}`} />
-                      <p className="font-medium text-sm">Banner</p>
-                      <p className="text-xs text-muted-foreground text-center">6:1 (1800×300px)</p>
-                    </div>
-                  </Card>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="placements"
             render={({ field }) => (
               <FormItem>
@@ -516,7 +475,6 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                             field.onChange(current.filter((v: string) => v !== 'discover-tiles'));
                           }
                         }}
-                        disabled={form.watch('adFormat') === 'banner'}
                       />
                       <div className="flex-1">
                         <p className="font-medium">Discover Feed - Tiles</p>
@@ -539,7 +497,6 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                             field.onChange(current.filter((v: string) => v !== 'news-tiles'));
                           }
                         }}
-                        disabled={form.watch('adFormat') === 'banner'}
                       />
                       <div className="flex-1">
                         <p className="font-medium">Newsroom - Article Tiles</p>
@@ -562,7 +519,6 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                             field.onChange(current.filter((v: string) => v !== 'news-banner'));
                           }
                         }}
-                        disabled={form.watch('adFormat') !== 'banner' || mediaType === 'video'}
                       />
                       <div className="flex-1">
                         <p className="font-medium">Newsroom - Banner</p>
@@ -585,7 +541,6 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                             field.onChange(current.filter((v: string) => v !== 'learn-tiles'));
                           }
                         }}
-                        disabled={form.watch('adFormat') === 'banner'}
                       />
                       <div className="flex-1">
                         <p className="font-medium">Learn - Course Tiles</p>
@@ -608,7 +563,6 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                             field.onChange(current.filter((v: string) => v !== 'learn-banner'));
                           }
                         }}
-                        disabled={form.watch('adFormat') !== 'banner' || mediaType === 'video'}
                       />
                       <div className="flex-1">
                         <p className="font-medium">Learn - Banner</p>
@@ -623,6 +577,81 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
                 <FormMessage />
               </FormItem>
             )}
+          />
+
+          <FormField
+            control={form.control}
+            name="adFormat"
+            render={({ field }) => {
+              // Dynamically determine available formats based on selected placements
+              const selectedPlacements = form.watch('placements') || [];
+              const hasTilePlacement = selectedPlacements.some(p => p.includes('tiles'));
+              const hasBannerPlacement = selectedPlacements.some(p => p.includes('banner'));
+              
+              // Show appropriate format options
+              const showTileFormats = hasTilePlacement;
+              const showBannerFormat = hasBannerPlacement;
+              
+              return (
+                <FormItem>
+                  <FormLabel>Ad Format *</FormLabel>
+                  {selectedPlacements.length === 0 && (
+                    <p className="text-sm text-amber-600 dark:text-amber-500">
+                      Please select placements above to see available formats
+                    </p>
+                  )}
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    {showTileFormats && (
+                      <>
+                        <Card
+                          className={`p-3 cursor-pointer transition-all ${field.value === 'square' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                          onClick={() => field.onChange('square')}
+                        >
+                          <div className="flex flex-col items-center gap-2">
+                            <div className={`w-12 h-12 border-2 ${field.value === 'square' ? 'border-primary' : 'border-muted-foreground'}`} />
+                            <p className="font-medium text-sm">Square</p>
+                            <p className="text-xs text-muted-foreground text-center">1:1 (1080×1080px)</p>
+                          </div>
+                        </Card>
+                        <Card
+                          className={`p-3 cursor-pointer transition-all ${field.value === 'portrait' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                          onClick={() => field.onChange('portrait')}
+                        >
+                          <div className="flex flex-col items-center gap-2">
+                            <div className={`w-10 h-12 border-2 ${field.value === 'portrait' ? 'border-primary' : 'border-muted-foreground'}`} />
+                            <p className="font-medium text-sm">Portrait</p>
+                            <p className="text-xs text-muted-foreground text-center">4:5 (1080×1350px)</p>
+                          </div>
+                        </Card>
+                        <Card
+                          className={`p-3 cursor-pointer transition-all ${field.value === 'large' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+                          onClick={() => field.onChange('large')}
+                        >
+                          <div className="flex flex-col items-center gap-2">
+                            <div className={`w-12 h-16 border-2 ${field.value === 'large' ? 'border-primary' : 'border-muted-foreground'}`} />
+                            <p className="font-medium text-sm">Large</p>
+                            <p className="text-xs text-muted-foreground text-center">9:16 (1080×1920px)</p>
+                          </div>
+                        </Card>
+                      </>
+                    )}
+                    {showBannerFormat && (
+                      <Card
+                        className={`p-3 cursor-pointer transition-all ${field.value === 'banner' ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'} ${!showTileFormats ? 'col-span-2' : ''}`}
+                        onClick={() => field.onChange('banner')}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div className={`w-16 h-6 border-2 ${field.value === 'banner' ? 'border-primary' : 'border-muted-foreground'}`} />
+                          <p className="font-medium text-sm">Banner</p>
+                          <p className="text-xs text-muted-foreground text-center">6:1 (1800×300px)</p>
+                        </div>
+                      </Card>
+                    )}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
           />
 
           <div className="space-y-2">
@@ -654,9 +683,24 @@ export function PartnerCampaignForm({ partnerId, existingCampaign, onSuccess, on
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {mediaType === 'image' 
-                ? 'Recommended: 1080×1350px (4:5 portrait) or 1080×1080px (1:1 square). Min 600px width.'
-                : 'Recommended: 1080×1920px (9:16 portrait) or 1920×1080px (16:9 landscape). Max 15 seconds.'}
+              {(() => {
+                const selectedFormat = form.watch('adFormat');
+                if (mediaType === 'video') {
+                  return 'Video: Max 15 seconds. Recommended 1080×1920px (9:16) or 1920×1080px (16:9)';
+                }
+                switch (selectedFormat) {
+                  case 'square':
+                    return 'Image: 1080×1080px (1:1 ratio)';
+                  case 'portrait':
+                    return 'Image: 1080×1350px (4:5 ratio)';
+                  case 'large':
+                    return 'Image: 1080×1920px (9:16 ratio)';
+                  case 'banner':
+                    return 'Image: 1800×300px (6:1 ratio) - Banner format only';
+                  default:
+                    return 'Select a format above to see recommended dimensions';
+                }
+              })()}
             </p>
           </div>
 
