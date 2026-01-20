@@ -739,24 +739,22 @@ export default function ProfileEditPage() {
           // Compress image
           const compressedFile = await compressImage(file);
           
-          // Create storage reference
-          const timestamp = Date.now();
-          const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-          const imageRef = ref(storage, `portfolio/${user.id}/${fileName}`);
+          // Upload to Cloudflare Images via API route
+          const formData = new FormData();
+          formData.append('file', compressedFile);
           
-          // Upload file with metadata
-          const metadata = {
-            contentType: compressedFile.type,
-            customMetadata: {
-              uploadedBy: user.id,
-              originalName: file.name
-            }
-          };
+          const uploadResponse = await fetch('/api/upload/cloudflare-images', {
+            method: 'POST',
+            body: formData,
+          });
           
-          const uploadResult = await uploadBytes(imageRef, compressedFile, metadata);
+          if (!uploadResponse.ok) {
+            const error = await uploadResponse.json();
+            throw new Error(error.error || 'Failed to upload image');
+          }
           
-          // Get download URL
-          const downloadURL = await getDownloadURL(imageRef);
+          const uploadResult = await uploadResponse.json();
+          const downloadURL = uploadResult.url;
           
           urls.push(downloadURL);
         } catch (fileError: any) {

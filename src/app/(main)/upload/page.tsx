@@ -76,11 +76,22 @@ export default function UploadPage() {
     try {
       setIsSubmittingEvent(true);
 
-      // Upload image
-      const path = `events/${user.id}/${Date.now()}-${eventImageFile.name}`;
-      const storageRef = ref(storage, path);
-      await uploadBytes(storageRef, eventImageFile);
-      const imageUrl = await getDownloadURL(storageRef);
+      // Upload image to Cloudflare Images
+      const formData = new FormData();
+      formData.append('file', eventImageFile);
+      
+      const uploadResponse = await fetch('/api/upload/cloudflare-images', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadResponse.ok) {
+        const error = await uploadResponse.json();
+        throw new Error(error.error || 'Failed to upload image');
+      }
+      
+      const uploadResult = await uploadResponse.json();
+      const imageUrl = uploadResult.url;
 
       // Combine date and time (if time provided)
       const startDateTime = eventForm.time

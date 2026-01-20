@@ -104,14 +104,25 @@ export function UploadArtworkNew() {
     setUploading(true);
 
     try {
-      // Upload files to Firebase Storage
+      // Upload files to Cloudflare Images via API route
       const uploadedUrls: string[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const fileRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${i}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        const fileUrl = await getDownloadURL(fileRef);
-        uploadedUrls.push(fileUrl);
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const uploadResponse = await fetch('/api/upload/cloudflare-images', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!uploadResponse.ok) {
+          const error = await uploadResponse.json();
+          throw new Error(error.error || 'Failed to upload image');
+        }
+        
+        const uploadResult = await uploadResponse.json();
+        uploadedUrls.push(uploadResult.url);
       }
 
       const primaryImageUrl = uploadedUrls[0];
