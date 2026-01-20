@@ -494,15 +494,6 @@ export default function CoursesPage() {
                 </Button>
               </div>
             </form>
-
-            <div className="mt-8 p-4 bg-muted/50 rounded-lg max-w-md">
-              <p className="text-sm text-muted-foreground">
-                <strong className="text-foreground">100% Commission-Free</strong>
-                <br />
-                Gouache Learn does not take any fees for courses advertised on our platform. 
-                Keep 100% of your earnings.
-              </p>
-            </div>
           </CardContent>
         </Card>
 
