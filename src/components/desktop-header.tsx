@@ -41,6 +41,13 @@ export function DesktopHeader() {
     >
       <Link 
         href="/" 
+        prefetch={false}
+        onClick={(e) => {
+          e.preventDefault();
+          startTransition(() => {
+            router.push('/');
+          });
+        }}
         className="flex items-center pl-2 sm:pl-3"
         style={{
           touchAction: 'manipulation',
