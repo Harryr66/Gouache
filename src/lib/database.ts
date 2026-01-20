@@ -823,10 +823,11 @@ export class PortfolioService {
    * Delete a portfolio item (soft delete)
    */
   static async deletePortfolioItem(itemId: string): Promise<void> {
-    await updateDoc(doc(db, 'portfolioItems', itemId), {
+    // Use setDoc with merge to handle cases where document doesn't exist
+    await setDoc(doc(db, 'portfolioItems', itemId), {
       deleted: true,
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
   }
 
   /**
