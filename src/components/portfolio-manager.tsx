@@ -1432,6 +1432,7 @@ export function PortfolioManager() {
           <DialogHeader>
             <DialogTitle>Edit Artwork</DialogTitle>
           </DialogHeader>
+          {editingItem && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1691,6 +1692,7 @@ export function PortfolioManager() {
               </Button>
             </div>
           </div>
+          )}
         </DialogContent>
       </Dialog>
 
