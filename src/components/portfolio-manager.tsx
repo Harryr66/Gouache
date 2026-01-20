@@ -44,19 +44,11 @@ export function PortfolioManager() {
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<PortfolioItem | null>(null);
-  const editFormRef = useRef<HTMLDivElement>(null);
   
   // Log mount only once
   useEffect(() => {
     console.log('🚀 PortfolioManager component MOUNTED');
   }, []);
-
-  // Scroll to edit form when it opens
-  useEffect(() => {
-    if (editingItem && editFormRef.current) {
-      editFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [editingItem]);
   
   // Log when portfolioItems changes
   useEffect(() => {
