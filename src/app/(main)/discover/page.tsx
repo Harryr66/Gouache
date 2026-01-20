@@ -1865,10 +1865,10 @@ function DiscoverPageContent() {
         const followedArtistIds = new Set(followedArtists.map((a: any) => a.id));
         
         // Apply engagement-based scoring if we have engagement data
-        let sortedArtworks = fetchedArtworks;
+        let sortedArtworks = deduplicatedArtworks;
         if (artworkEngagements.size > 0) {
           log(`📊 Discover: Using engagement-based ranking (${artworkEngagements.size} artworks with engagement data)`);
-          const scoredArtworks = engagementScorer.scoreArtworks(fetchedArtworks, artworkEngagements, followedArtistIds);
+          const scoredArtworks = engagementScorer.scoreArtworks(deduplicatedArtworks, artworkEngagements, followedArtistIds);
           const withDiversity = engagementScorer.applyDiversityBoost(scoredArtworks, 0.25, columnCount);
           sortedArtworks = engagementScorer.sortByScore(withDiversity);
         } else {
