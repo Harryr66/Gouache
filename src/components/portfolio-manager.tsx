@@ -725,6 +725,13 @@ export function PortfolioManager() {
   const handleUpdateItem = async (item: PortfolioItem) => {
     if (!user) return;
 
+    console.log('💾 SAVE TRIGGERED - Updating item:', { 
+      id: item.id, 
+      title: item.title,
+      description: item.description,
+      tags: item.tags 
+    });
+
     try {
       // Update tags to include print/original based on artworkType
       let updatedTags = [...item.tags];
@@ -773,6 +780,7 @@ export function PortfolioManager() {
         }
       }
 
+      console.log('💾 Saving to portfolioItems:', { id: item.id, updateData });
       await PortfolioService.updatePortfolioItem(item.id, updateData);
       console.log('✅ Portfolio item updated in portfolioItems collection');
       
@@ -860,9 +868,11 @@ export function PortfolioManager() {
       setEditingItem(null);
       setEditingItemSaleInfo(null);
 
+      console.log('✅ SAVE COMPLETE - Portfolio updated successfully');
+      
       toast({
-        title: "Portfolio updated",
-        description: "Artwork details have been updated.",
+        title: "✅ Saved successfully",
+        description: "Your artwork changes have been saved.",
       });
     } catch (error: any) {
       console.error('Error updating portfolio item:', error);
@@ -1495,33 +1505,12 @@ export function PortfolioManager() {
                     ...prev, 
                     tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
                   } : null)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      // Trigger the save action
-                      if (editingItem) {
-                        handleUpdateItem(editingItem);
-                      }
-                    }
-                  }}
                   placeholder="abstract, painting, modern (comma-separated)"
                   className="flex-1"
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    if (editingItem) {
-                      handleUpdateItem(editingItem);
-                    }
-                  }}
-                  className="shrink-0"
-                >
-                  Add Tags
-                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Separate tags with commas. Press Enter or click "Add Tags" to save.
+                Separate tags with commas. Tags are captured automatically as you type.
               </p>
             </div>
 
