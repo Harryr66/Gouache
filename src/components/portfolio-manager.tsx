@@ -458,10 +458,23 @@ export function PortfolioManager() {
     console.log('✅ Starting upload process...');
     setIsUploading(true);
     try {
+      // Upload to Cloudflare Images via API route (required for discover feed)
       const compressedFile = await compressImage(file);
-      const imageRef = ref(storage, `portfolio/${user.id}/${Date.now()}_${file.name}`);
-      await uploadBytes(imageRef, compressedFile);
-      const imageUrl = await getDownloadURL(imageRef);
+      const formData = new FormData();
+      formData.append('file', compressedFile);
+      
+      const uploadResponse = await fetch('/api/upload/cloudflare-images', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadResponse.ok) {
+        const error = await uploadResponse.json();
+        throw new Error(error.error || 'Failed to upload image');
+      }
+      
+      const uploadResult = await uploadResponse.json();
+      const imageUrl = uploadResult.url; // Cloudflare Images URL
 
       // Use current timestamp instead of serverTimestamp to avoid placeholder issues
       const now = new Date();
