@@ -417,6 +417,17 @@ export default function ProfileEditPage() {
       return;
     }
 
+    // Validate handle format (letters, numbers, underscores only)
+    if (!/^[a-zA-Z0-9_]+$/.test(handle)) {
+      setHandleAvailable(false);
+      toast({
+        title: "Invalid handle format",
+        description: "Handle can only contain letters, numbers, and underscores.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsCheckingHandle(true);
     try {
       const handleDoc = await withTimeout(getDoc(doc(db, 'handles', handle)), 5000);
@@ -1822,6 +1833,8 @@ export default function ProfileEditPage() {
                     onChange={(e) => handleInputChange('handle', e.target.value)}
                     required
                     className="pr-10"
+                    pattern="[a-zA-Z0-9_]+"
+                    title="Handle can only contain letters, numbers, and underscores"
                   />
                   {isCheckingHandle && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
