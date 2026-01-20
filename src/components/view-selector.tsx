@@ -30,7 +30,7 @@ export function ViewSelector({ view, onViewChange, className, style, disabled = 
       )}
       style={style}
     >
-      {/* Art Market button (left) - priced items only */}
+      {/* Art Market button (left) - all for sale artworks */}
       <button
         onClick={() => {
           if (!disabled) {
@@ -45,7 +45,6 @@ export function ViewSelector({ view, onViewChange, className, style, disabled = 
           view === 'list' ? 'bg-muted rounded-l-[4px]' : 'bg-transparent hover:bg-muted/50',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
-        title="Art Market - Priced artworks"
       >
         <Store className="h-4 w-4" />
       </button>
