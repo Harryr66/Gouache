@@ -373,16 +373,37 @@ export default function CoursesPage() {
     setIsSubmitting(true);
     
     try {
-      // TODO: Add email to waitlist/database
-      console.log('Early access signup:', email);
+      const response = await fetch('/api/learn-waitlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.error === 'Email already registered') {
+          toast({
+            title: "Already registered",
+            description: "This email is already on our waitlist!",
+            variant: "destructive"
+          });
+        } else {
+          throw new Error(data.error || 'Failed to sign up');
+        }
+        return;
+      }
       
       toast({
         title: "✅ You're on the list!",
-        description: "We'll notify you when Gouache Learn launches.",
+        description: "We'll notify you when Gouache Learn launches. Check your email for confirmation.",
       });
       
       setEmail('');
     } catch (error) {
+      console.error('Signup error:', error);
       toast({
         title: "Error",
         description: "Failed to sign up. Please try again.",
