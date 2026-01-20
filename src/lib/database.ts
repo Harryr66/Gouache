@@ -812,10 +812,11 @@ export class PortfolioService {
    */
   static async updatePortfolioItem(itemId: string, updates: Partial<PortfolioItem>): Promise<void> {
     const { id, userId, createdAt, ...updateData } = updates;
-    await updateDoc(doc(db, 'portfolioItems', itemId), {
+    // Use setDoc with merge to create if doesn't exist, or update if it does
+    await setDoc(doc(db, 'portfolioItems', itemId), {
       ...updateData,
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
   }
 
   /**
