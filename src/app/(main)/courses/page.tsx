@@ -18,6 +18,8 @@ import { useAuth } from '@/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { GoLiveButton } from '@/components/live-stream/go-live-button';
 import { StreamCard } from '@/components/live-stream/stream-card';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -35,6 +37,8 @@ export default function CoursesPage() {
   const [ads, setAds] = useState<any[]>([]);
   const [bannerAd, setBannerAd] = useState<any>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Check if user is an artist (can go live) - check user properties
   const isArtist = (user as any)?.accountType === 'artist' || 
@@ -353,6 +357,42 @@ export default function CoursesPage() {
     }
   }, [showLoadingScreen, coursesLoaded, isLoading]);
 
+  // Handle early access signup
+  const handleEarlyAccessSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !email.includes('@')) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // TODO: Add email to waitlist/database
+      console.log('Early access signup:', email);
+      
+      toast({
+        title: "✅ You're on the list!",
+        description: "We'll notify you when Gouache Learn launches.",
+      });
+      
+      setEmail('');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign up. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <>
       {/* Fixed Loading Screen Overlay - Identical to Discover page */}
@@ -395,98 +435,55 @@ export default function CoursesPage() {
           <AdBanner campaign={bannerAd} placement="learn" userId={user?.id} />
         )}
 
-        {/* Courses content - tabs hidden for now, showing courses by default */}
-        <div className="w-full">
-        {rankedCourses.length === 0 || rankedCourses.every((c: any) => {
-          const id = c.id || '';
-          const title = (c.title || '').trim().toLowerCase();
-          return id.includes('placeholder') || id.includes('dummy') || id.includes('sample') || 
-                 title.includes('placeholder') || title.includes('dummy');
-        }) ? (
-          <>
-            {process.env.NODE_ENV === 'development' && console.log('🚫 Rendering empty state - rankedCourses.length:', rankedCourses.length)}
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <GraduationCap className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-lg">No courses available yet</p>
-              <p className="text-sm text-muted-foreground mt-2">Check back soon for new courses!</p>
-            </CardContent>
-          </Card>
-          </>
-        ) : (
-          <>
-            {process.env.NODE_ENV === 'development' && console.log('✅ Rendering courses grid - coursesWithAds.length:', coursesWithAds.length, 'rankedCourses.length:', rankedCourses.length)}
-          <div className={isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3"}>
-            {coursesWithAds.map((item) => {
-              // Check if this is an ad
-              const isAd = 'type' in item && item.type === 'ad';
-              if (isAd) {
-                return (
-                  <AdTile
-                    key={item.campaign.id}
-                    campaign={item.campaign}
-                    placement="learn"
-                    userId={user?.id}
-                  />
-                );
-              }
-              
-              const course = item as any;
-              return (
-              <Link key={course.id} href={`/learn/${course.id}`}>
-                <Card className={`group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full ${isMobile ? 'flex flex-row min-h-[140px]' : 'flex flex-col'}`}>
-                  <div className={`${isMobile ? 'relative w-36 sm:w-40 h-full aspect-square flex-shrink-0' : 'relative aspect-square'} overflow-hidden`}>
-                    {course.thumbnail ? (
-                      <Image
-                        src={course.thumbnail}
-                        alt={course.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <GraduationCap className="h-12 w-12 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4 flex flex-col flex-grow">
-                    <Badge variant="secondary" className="mb-2 text-xs w-fit">{course.difficulty}</Badge>
-                    <h3 className="font-medium text-sm mb-1 line-clamp-2">{course.title}</h3>
-                    <div className="space-y-1 text-xs text-muted-foreground flex-grow">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        <span>{course.rating.toFixed(1)} ({course.reviewCount})</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        <span>{course.students} students</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-auto pt-2">
-                      <span className="font-semibold text-foreground text-sm">
-                        {course.isOnSale && course.originalPrice && (
-                          <span className="text-muted-foreground line-through mr-2">
-                            {new Intl.NumberFormat('en-US', {
-                              style: 'currency',
-                              currency: course.currency || 'USD',
-                            }).format(course.originalPrice)}
-                          </span>
-                        )}
-                        {new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: course.currency || 'USD',
-                        }).format(course.price)}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-              );
-            })}
-          </div>
-          </>
-        )}
-        </div>
+        {/* Coming Soon Sign-up Wall */}
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="flex flex-col items-center justify-center py-12 px-6 text-center">
+            <div className="mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
+                <GraduationCap className="h-10 w-10 text-primary" />
+              </div>
+              <h2 className="text-3xl font-bold mb-2">Coming Soon</h2>
+              <p className="text-xl text-muted-foreground mb-6">
+                Gouache Learn is launching soon
+              </p>
+              <p className="text-lg text-foreground mb-4">
+                Apply to list your course
+              </p>
+              <p className="text-muted-foreground">
+                Request early access today and be among the first to share your knowledge with our community
+              </p>
+            </div>
+
+            <form onSubmit={handleEarlyAccessSignup} className="w-full max-w-md space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1"
+                  required
+                />
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="px-6"
+                >
+                  {isSubmitting ? 'Joining...' : 'Join Waitlist'}
+                </Button>
+              </div>
+            </form>
+
+            <div className="mt-8 p-4 bg-muted/50 rounded-lg max-w-md">
+              <p className="text-sm text-muted-foreground">
+                <strong className="text-foreground">100% Commission-Free</strong>
+                <br />
+                Gouache Learn does not take any fees for courses advertised on our platform. 
+                Keep 100% of your earnings.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Live Lessons feature hidden for now - will be re-enabled in future */}
         </div>
