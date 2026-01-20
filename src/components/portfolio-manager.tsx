@@ -465,8 +465,9 @@ export function PortfolioManager() {
 
       // Use current timestamp instead of serverTimestamp to avoid placeholder issues
       const now = new Date();
+      const timestamp = Date.now();
       const portfolioItem: any = {
-        id: Date.now().toString(),
+        id: `portfolio-${timestamp}-${portfolioItems.length}`,
         imageUrl,
         title: newItem.title.trim(),
         description: newItem.description || '',
