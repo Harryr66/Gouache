@@ -1069,7 +1069,7 @@ export function PortfolioManager() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="dimensions">Dimensions</Label>
+                <Label htmlFor="dimensions">Dimensions (in)</Label>
                 <Input
                   id="dimensions"
                   value={newItem.dimensions}
@@ -1446,7 +1446,7 @@ export function PortfolioManager() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-dimensions">Dimensions</Label>
+                <Label htmlFor="edit-dimensions">Dimensions (in)</Label>
                 <Input
                   id="edit-dimensions"
                   value={(() => {
