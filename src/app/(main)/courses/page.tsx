@@ -463,10 +463,7 @@ export default function CoursesPage() {
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
                 <GraduationCap className="h-10 w-10 text-primary" />
               </div>
-              <h2 className="text-3xl font-bold mb-2">Coming Soon</h2>
-              <p className="text-xl text-muted-foreground mb-6">
-                Gouache Learn is launching soon
-              </p>
+              <h2 className="text-3xl font-bold mb-6">Coming Soon</h2>
               <p className="text-lg text-foreground mb-4">
                 Apply to list your course
               </p>
