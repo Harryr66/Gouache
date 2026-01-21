@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Mail, Heart, Package, TrendingUp, Check, X, Edit, Plus, Minus, Save, Trash2, Loader2, User } from 'lucide-react';
+import { ArrowLeft, Mail, Heart, Package, TrendingUp, Check, X, Edit, Plus, Minus, Save, Trash2, Loader2, User, ShoppingBag } from 'lucide-react';
 import { MarketplaceProduct } from '@/lib/types';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
