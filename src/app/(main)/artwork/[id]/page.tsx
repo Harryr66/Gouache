@@ -880,21 +880,10 @@ export default function ArtworkPage() {
                       <div className="flex items-center gap-2">
                         <Button
                           variant="gradient"
-                          onClick={() => {
-                            if (!user) {
-                              toast({
-                                title: 'Sign in Required',
-                                description: 'Please sign in to contact the artist.',
-                                variant: 'destructive'
-                              });
-                              router.push('/login?redirect=' + encodeURIComponent(`/artwork/${artwork.id}`));
-                              return;
-                            }
-                            setShowContactDialog(true);
-                          }}
+                          onClick={handleBuyNow}
+                          disabled={isProcessingCheckout || artwork.sold}
                         >
-                          <Mail className="h-4 w-4 mr-2" />
-                          Contact Artist to Purchase
+                          {isProcessingCheckout ? 'Processing...' : 'Buy Now'}
                           {artwork.price && artwork.price > 0 && (
                             <span className="ml-2">
                               - {artwork.currency || 'USD'} {(artwork.price / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
