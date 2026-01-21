@@ -297,6 +297,7 @@ function ProductDetailPage() {
   const [showContactDialog, setShowContactDialog] = useState(false);
   const [sellerProfilePicture, setSellerProfilePicture] = useState<string | null>(null);
   const [sellerEmail, setSellerEmail] = useState<string | null>(null);
+  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   
   // Edit mode state
   const isEditMode = searchParams?.get('edit') === 'true';
@@ -603,7 +604,7 @@ function ProductDetailPage() {
   const images = product.images && product.images.length > 0 ? product.images : [placeholderImage];
   const mainImage = images[selectedImageIndex] || placeholderImage;
 
-  const handlePurchase = () => {
+  const handlePurchase = async () => {
     // Check 1: Affiliate products - redirect to external site
     if (product.isAffiliate && product.affiliateLink) {
       window.open(product.affiliateLink, '_blank');
@@ -614,7 +615,7 @@ function ProductDetailPage() {
     if (!user) {
       toast({
         title: 'Sign in Required',
-        description: 'Please sign in to contact the seller.',
+        description: 'Please sign in to purchase products.',
         variant: 'destructive'
       });
       router.push('/login?redirect=' + encodeURIComponent(`/marketplace/${product.id}`));
@@ -641,7 +642,42 @@ function ProductDetailPage() {
       return;
     }
 
-    setShowContactDialog(true);
+    // Start Stripe checkout
+    setIsProcessingCheckout(true);
+    
+    try {
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: product.id,
+          itemType: 'product',
+          buyerId: user.id,
+          buyerEmail: user.email,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+
+      // Redirect to Stripe checkout
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout failed",
+        description: error.message || "Failed to start checkout process. Please try again.",
+        variant: "destructive"
+      });
+      setIsProcessingCheckout(false);
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -1143,7 +1179,7 @@ function ProductDetailPage() {
                   className="w-full gradient-button"
                   size="lg"
                   onClick={handlePurchase}
-                  disabled={product.stock === 0}
+                  disabled={product.stock === 0 || isProcessingCheckout}
                 >
                   {product.stock === 0 ? (
                     'Out of Stock'
@@ -1152,16 +1188,15 @@ function ProductDetailPage() {
                       <Mail className="h-5 w-5 mr-2" />
                       Visit External Site
                     </>
+                  ) : isProcessingCheckout ? (
+                    'Processing...'
                   ) : (
                     <>
-                      <Mail className="h-5 w-5 mr-2" />
-                      Contact Seller to Purchase
+                      <ShoppingBag className="h-5 w-5 mr-2" />
+                      Buy Now - {product.currency} {product.price.toFixed(2)}
                     </>
                   )}
                 </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                  Contact sellers directly to arrange payment and shipping
-                </p>
               </div>
                 </>
               )}

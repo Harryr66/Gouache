@@ -211,6 +211,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [deleting, setDeleting] = useState(false);
   const [showContactDialog, setShowContactDialog] = useState(false);
   const [instructorEmail, setInstructorEmail] = useState<string | null>(null);
+  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   
   const { generatePlaceholderUrl, generateAvatarPlaceholderUrl } = usePlaceholder();
   const placeholderUrl = generatePlaceholderUrl(800, 450);
@@ -410,9 +411,43 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       } else if (course.courseType === 'hosted') {
         // For hosted courses, check if payment is required
         if (course.price && course.price > 0) {
-          // Paid course - show contact instructor dialog
-          console.log('[handleEnroll] Opening contact instructor dialog for paid course');
-          setShowContactDialog(true);
+          // Paid course - start Stripe checkout
+          console.log('[handleEnroll] Starting Stripe checkout for paid course');
+          setIsProcessingCheckout(true);
+          
+          try {
+            const response = await fetch('/api/stripe/create-checkout-session', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                itemId: courseId,
+                itemType: 'course',
+                buyerId: user.id,
+                buyerEmail: user.email,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to create checkout session');
+            }
+
+            // Redirect to Stripe checkout
+            if (data.url) {
+              window.location.href = data.url;
+            }
+          } catch (error: any) {
+            console.error('Checkout error:', error);
+            toast({
+              title: "Checkout failed",
+              description: error.message || "Failed to start checkout process. Please try again.",
+              variant: "destructive"
+            });
+            setIsProcessingCheckout(false);
+          }
         } else {
           // Free course - enroll directly
           console.log('[handleEnroll] Enrolling in free course');
