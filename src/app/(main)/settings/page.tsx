@@ -782,17 +782,42 @@ function SettingsPageContent() {
               </Card>
             ) : (
               <>
-            {/* Business Management & Payments sections temporarily hidden - direct artist-to-buyer contact only */}
-            {/* {(user?.isProfessional || hasApprovedArtistRequest) && (
-              <div>
-                <h2 className="text-lg font-semibold mb-4">Business Management</h2>
-                <BusinessManager />
-              </div>
-            )}
-            <div data-payments-section>
-              <h2 className="text-lg font-semibold mb-4">Payments & Payouts</h2>
-              <StripeIntegrationWizard />
-            </div> */}
+                {(user?.isProfessional || hasApprovedArtistRequest) && (
+                  <div>
+                    <h2 className="text-lg font-semibold mb-4">Business Management</h2>
+                    <BusinessManager />
+                  </div>
+                )}
+                <div data-payments-section>
+                  <h2 className="text-lg font-semibold mb-4">Payments & Payouts</h2>
+                  <StripeIntegrationWizard />
+                </div>
+
+                {/* Platform Support - Voluntary Donations */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Support Gouache</CardTitle>
+                    <CardDescription>
+                      Gouache is 100% commission-free to support emerging and independent artists. 
+                      Our platform is funded entirely by voluntary donations from the artist community.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Help us keep Gouache free for all artists. Choose how you'd like to contribute:
+                      </p>
+                      <div className="space-y-2">
+                        <Button className="w-full" variant="outline">
+                          One-Time Donation
+                        </Button>
+                        <Button className="w-full" variant="outline">
+                          Monthly Support
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </>
             )}
           </TabsContent>
