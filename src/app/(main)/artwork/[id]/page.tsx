@@ -61,11 +61,62 @@ export default function ArtworkPage() {
   const [error, setError] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showContactDialog, setShowContactDialog] = useState(false);
+  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalVideoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const modalHlsRef = useRef<Hls | null>(null);
+
+  // Handle Stripe checkout for artwork purchases
+  const handleBuyNow = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to purchase artwork.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!artwork) return;
+
+    setIsProcessingCheckout(true);
+    
+    try {
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: artwork.id,
+          itemType: 'artwork',
+          buyerId: user.id,
+          buyerEmail: user.email,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+
+      // Redirect to Stripe checkout
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout failed",
+        description: error.message || "Failed to start checkout process. Please try again.",
+        variant: "destructive"
+      });
+      setIsProcessingCheckout(false);
+    }
+  };
 
   useEffect(() => {
     const fetchArtwork = async () => {
